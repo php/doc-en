@@ -218,7 +218,17 @@ function createINI($dir, $cfgs) {
                 $default = $vals['def'];
             }
         } else {
-            $default = "'".htmlspecialchars($vals['def'])."'";
+            if (is_numeric($vals['def'])) {
+                if (intval($vals['def']) == 1) {
+                    $default = 'On';
+                } elseif (intval($vals['def']) == 0) {
+                    $default = 'Off';
+                } else {
+                    $default = $vals['def'];
+                }
+            } else {
+                $default = "'".htmlspecialchars($vals['def'])."'";
+            }
         }
         $rows .= "      <entry>{$default}</entry>\n";
         $rows .= "      <entry>{$vals['mod']}</entry>\n";
