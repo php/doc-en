@@ -6,26 +6,42 @@
   <partintro>
 
    <simpara>
-    CLibPDF allows to create pdf documents with PHP. It is available
+    ClibPDF allows to create pdf documents with PHP. It is available
     at <ulink url="http://www.fastio.com">FastIO</ulink> but is not free
-    software. Its functionality and API is similar to Thomas Merz pdflib
+    software. You should definitely read the licence before you start
+    playing with ClibPDF. If you cannot fullfil the licence agreement
+    consider using pdflib by Thomas Merz, which is also very powerful.
+    ClibPDF functionality and API is similar to Thomas Merz pdflib
     but ClibPDF is according to FastIO faster and creates smaller documents.
-    This documentation should be read with the CLibPDF manual in reach since
-    it explains much of the library in more detail.
-
-    Many functions in CLibPDF and the php3 module as well as in pdflib
-    have the same name.
-    All functions exept for cpdf_open() take as a first parameter the
-    handle for the document on which the function is to be performed.
-    Currently this handle is not used internally since CLibPDF does not
-    support the creation of several pdf documents at the same time and
-    distinguishing them by a document handle.
-    According to the author of CLibPDF this will change in one of the
-    next releases.
+    This may have changed with the new version 2.0 of pdflib.
+    A simple benchmark (the pdfclock.c example from pdflib 2.0 turned
+    into a php script) actually
+    show no difference in speed at all. The file size is also similar
+    if compression is turned off.
 
    <simpara>
-    One big advantage of CLibPDF over pdflib is the possibility to create
+    This documentation should be read with the ClibPDF manual in reach since
+    it explains much of the library in much more detail.
+
+   <simpara>
+    Many functions in ClibPDF and the php3 module as well as in pdflib
+    have the same name.
+    All functions except for cpdf_open() take as a first parameter the
+    handle for the document on which the function is to be performed.
+    Currently this handle is not used internally since ClibPDF does not
+    support the creation of several pdf documents at the same time and
+    distinguishing them by a document handle. Actually, you should not
+    even try it, the results are unpredictable.
+    According to the author of ClibPDF this will change in one of the
+    next releases (current version when this was written is 1.10).
+    If you need this functionality use the pdflib module.
+
+   <simpara>
+    One big advantage of ClibPDF over pdflib is the possibility to create
     the pdf document completely in memory without using temporary files.
+    It also provides the possibility to pass coordinates in a predefined
+    unit lenght. This is a handy feature but can be simulated with
+    <function>pdf_translate</function>.
 
    <simpara>
     Most of the functions are fairly easy to use. The most difficult part
@@ -50,6 +66,103 @@ cpdf_finalize($cpdf);
 Header("Content-type: application/pdf");
 cpdf_output_buffer($cpdf);
 cpdf_close($cpdf);
+?>
+    </programlisting>
+    <para>
+  </example>
+  The pdflib distribution contains a more complex example which
+  creates a serious of pages with an analog clock. This example
+  converted into php using pdflib 2.0 looks as the following (you
+  can see the same example in the documentation for the pdf module):
+     <example>
+      <title>pdfclock example from pdflib 2.0 distribution</title>
+      <programlisting>
+&lt;?php
+$radius = 200;
+$margin = 20;
+$pagecount = 40;
+
+$pdf = cpdf_open(0);
+cpdf_set_creator($pdf, "pdf_clock.php3");
+cpdf_set_title($pdf, "Analog Clock");
+  
+while($pagecount-- > 0) {
+  cpdf_page_init($pdf, $pagecount+1, 0, 2 * ($radius + $margin), 2 * ($radius + $margin), 1.0);
+  
+  cpdf_set_page_animation($pdf, 4, 0.5, 0, 0, 0);  /* wipe */
+  
+  cpdf_translate($pdf, $radius + $margin, $radius + $margin);
+  cpdf_save($pdf);
+  cpdf_setrgbcolor($pdf, 0.0, 0.0, 1.0);
+  
+  /* minute strokes */
+  cpdf_setlinewidth($pdf, 2.0);
+  for ($alpha = 0; $alpha < 360; $alpha += 6)
+    {
+    cpdf_rotate($pdf, 6.0);
+    cpdf_moveto($pdf, $radius, 0.0);
+    cpdf_lineto($pdf, $radius-$margin/3, 0.0);
+    cpdf_stroke($pdf);
+    }
+  
+  cpdf_restore($pdf);
+  cpdf_save($pdf);
+ 
+  /* 5 minute strokes */
+  cpdf_setlinewidth($pdf, 3.0);
+  for ($alpha = 0; $alpha < 360; $alpha += 30)
+  {
+    cpdf_rotate($pdf, 30.0);
+    cpdf_moveto($pdf, $radius, 0.0);
+    cpdf_lineto($pdf, $radius-$margin, 0.0);
+    cpdf_stroke($pdf);
+  }
+
+  $ltime = getdate();
+
+  /* draw hour hand */
+  cpdf_save($pdf);
+  cpdf_rotate($pdf, -(($ltime['minutes']/60.0) + $ltime['hours'] - 3.0) * 30.0);
+  cpdf_moveto($pdf, -$radius/10, -$radius/20);
+  cpdf_lineto($pdf, $radius/2, 0.0);
+  cpdf_lineto($pdf, -$radius/10, $radius/20);
+  cpdf_closepath($pdf);
+  cpdf_fill($pdf);
+  cpdf_restore($pdf);
+
+  /* draw minute hand */
+  cpdf_save($pdf);
+  cpdf_rotate($pdf, -(($ltime['seconds']/60.0) + $ltime['minutes'] - 15.0) * 6.0);
+  cpdf_moveto($pdf, -$radius/10, -$radius/20);
+  cpdf_lineto($pdf, $radius * 0.8, 0.0);
+  cpdf_lineto($pdf, -$radius/10, $radius/20);
+  cpdf_closepath($pdf);
+  cpdf_fill($pdf);
+  cpdf_restore($pdf);
+
+  /* draw second hand */
+  cpdf_setrgbcolor($pdf, 1.0, 0.0, 0.0);
+  cpdf_setlinewidth($pdf, 2);
+  cpdf_save($pdf);
+  cpdf_rotate($pdf, -(($ltime['seconds'] - 15.0) * 6.0));
+  cpdf_moveto($pdf, -$radius/5, 0.0);
+  cpdf_lineto($pdf, $radius, 0.0);
+  cpdf_stroke($pdf);
+  cpdf_restore($pdf);
+
+  /* draw little circle at center */
+  cpdf_circle($pdf, 0, 0, $radius/30);
+  cpdf_fill($pdf);
+
+  cpdf_restore($pdf);
+
+  cpdf_finalize_page($pdf, $pagecount+1);
+}
+
+cpdf_finalize($pdf);
+Header("Content-type: application/pdf");
+cpdf_output_buffer($pdf);
+cpdf_close($pdf);
 ?>
     </programlisting>
     <para>
@@ -173,9 +286,9 @@ cpdf_close($cpdf);
        The return value will be needed in futher versons as the 
        first parameter in all other functions writing to the pdf document.
       </simpara><simpara>
-       The CLibPDF library takes the filename "-" as a synonym for stdout.
+       The ClibPDF library takes the filename "-" as a synonym for stdout.
        If PHP is compiled as an apache module this will not work because the
-       way CLibPDF outputs to stdout does not work with apache.
+       way ClibPDF outputs to stdout does not work with apache.
       </simpara></note>
 
     <para>

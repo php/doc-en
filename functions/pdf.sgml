@@ -20,9 +20,48 @@
     identical.  You should also understand some of the concepts of pdf
     to efficiently use this module.
 
+   <simpara>
+    There is another php module for pdf document creation based on
+    FastIO's ClibPDF. It has a slightly different API. Check the
+    php documentation for more info.
+
+   <simpara>
+    Currently two version of pdflib are support: 0.6 and 2.0. It is
+    recommended to use the newer version since it fixes some problems
+    which required a patch for the old version. Unfortunately, the
+    changes of the pdflib API in 2.0 have been so severe that even
+    some PHP functions had to be altered. Here is a list of changes:
+   
+    <itemizedlist>
+     <listitem>
+     <simpara>
+      The Info structure does not exist anymore. Therefore the function
+      <function>pdf_get_info</function> is obsolete and the functions
+      <function>pdf_set_info_creator</function>,
+      <function>pdf_set_info_title</function>,
+      <function>pdf_set_info_author</function>,
+      <function>pdf_set_info_subject</function> and
+      <function>pdf_set_info_keywords</function> do not take the
+      info structure as the first parameter but the pdf document. This
+      also means that the pdf document must be open before these functions
+      can be called.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara> 
+      The way a new document is opened has changed. The function
+      <function>pdf_open</function> takes only one parameter which is
+      the file handle of a file opened with <function>fopen</function>.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+
    <simpara> 
-    The pdf module introduces two new types of variables. They are called
-    <parameter>pdfdoc</parameter> and <parameter>pdfinfo</parameter>. 
+    The pdf module introduces two new types of variables (if pdflib 2.0
+    is used it is only one new type). They are called
+    <parameter>pdfdoc</parameter> and <parameter>pdfinfo</parameter>
+    (<parameter>pdfinfo</parameter> is not existent if use pdflib 2.0
+    is used. 
     <parameter>pdfdoc</parameter> is a pointer to a PDF document and
     almost all functions need it as its first parameter.
     <parameter>pdfinfo</parameter> contains meta data about the PDF
@@ -32,16 +71,18 @@
     In order to output text into a PDF document you will need to provide
     the afm file for each font. By default these afm files are searched
     for in a directory named 'fonts' relative to the directory where the
-    php3 script is located. 
+    php3 script is located. (Again, this was true for pdflib 0.6, newer
+    versions do not not neccessarily need the afm files.)
 
    <simpara>
     Most of the functions are fairly easy to use. The most difficult part
     is probably to create a very simple pdf document at all. The following
-    example should help to get started. It creates the file test.pdf
+    example should help to get started. It uses the PHP functions for
+    pdflib 0.6. It creates the file test.pdf
     with one page. The page contains the text "Times-Roman" in an
-    outlined 30pt font. The text is underlined.
+    outlined 30pt font. The text also is underlined.
      <example>
-      <title>PDF_get_info</title>
+      <title>Creating a PDF document with pdflib 0.6</title>
       <programlisting>
 &lt;?php
 $fp = fopen("test.pdf", "w");
@@ -65,23 +106,170 @@ PDF_close($pdf);
 echo "&lt;A HREF=gettest.php3>finished&lt;/A>";
 ?>
     </programlisting>
-    <para>
-     The php3 file gettext.php3 just outputs the pdf document.
-    <programlisting>
+   </example>
+
+   <para>
+
+    The php3 file gettext.php3 just outputs the pdf document.
+
+    <informalexample>
+     <programlisting>
 &lt;?php
-  $fp = fopen("test.pdf", "r");
-  header("Content-type: application/pdf");
-  fpassthru($fp);
-  fclose($fp);
+$fp = fopen("test.pdf", "r");
+header("Content-type: application/pdf");
+fpassthru($fp);
+fclose($fp);
 ?>
-</programlisting>
-  </example>
-  </partintro>
+     </programlisting>
+    </informalexample>
+
+     Doing the same with pdflib 2.0 looks like the following:
+
+    <example>
+     <title>Creating a PDF document with pdflib 2.0</title>
+     <programlisting>
+&lt;?php
+$fp = fopen("test.pdf", "w");
+$pdf = PDF_open($fp);
+pdf_set_info_author($pdf, "Uwe Steinmann");
+PDF_set_info_title($pdf, "Test for PHP3 wrapper of PDFlib 0.6");
+PDF_set_info_author($pdf, "Name of Author");
+pdf_set_info_creator($pdf, "See Author");
+pdf_set_info_subject($pdf, "Testing");
+PDF_begin_page($pdf, 595, 842);
+PDF_add_outline($pdf, "Page 1");
+pdf_set_font($pdf, "Times-Roman", 30, 4);
+pdf_set_text_rendering($pdf, 1);
+PDF_show_xy($pdf, "Times Roman outlined", 50, 750);
+pdf_moveto($pdf, 50, 740);
+pdf_lineto($pdf, 330, 740);
+pdf_stroke($pdf);
+PDF_end_page($pdf);
+PDF_close($pdf);
+echo "&lt;A HREF=gettest.php3>finished&lt;/A>";
+?>
+     </programlisting>
+     <para>
+      The php3 file gettext.php3 is the same as above.
+    </example>
+
+  The pdflib distribution contains a more complex example which
+  creates a serious of pages with an analog clock. This example
+  converted into php using pdflib 2.0 looks as the following (you
+  can see the same example in the documentation for the clibpdf module):
+
+    <example>
+     <title>pdfclock example from pdflib 2.0 distribution</title>
+     <programlisting>
+&lt;?php
+$pdffilename = "clock.pdf";
+$radius = 200;
+$margin = 20;
+$pagecount = 40;
+
+$fp = fopen($pdffilename, "w");
+$pdf = pdf_open($fp);
+pdf_set_info_creator($pdf, "pdf_clock.php3");
+pdf_set_info_author($pdf, "Uwe Steinmann");
+pdf_set_info_title($pdf, "Analog Clock");
+
+while($pagecount-- > 0) {
+    pdf_begin_page($pdf, 2 * ($radius + $margin), 2 * ($radius + $margin));
+
+    pdf_set_transition($pdf, 4);  /* wipe */ 
+    pdf_set_duration($pdf, 0.5);
+  
+    pdf_translate($pdf, $radius + $margin, $radius + $margin);
+    pdf_save($pdf);
+    pdf_setrgbcolor($pdf, 0.0, 0.0, 1.0);
+
+    /* minute strokes */
+    pdf_setlinewidth($pdf, 2.0);
+    for ($alpha = 0; $alpha < 360; $alpha += 6) {
+        pdf_rotate($pdf, 6.0);
+        pdf_moveto($pdf, $radius, 0.0);
+        pdf_lineto($pdf, $radius-$margin/3, 0.0);
+        pdf_stroke($pdf);
+    }
+
+    pdf_restore($pdf);
+    pdf_save($pdf);
+
+    /* 5 minute strokes */
+    pdf_setlinewidth($pdf, 3.0);
+    for ($alpha = 0; $alpha < 360; $alpha += 30) { 
+        pdf_rotate($pdf, 30.0);
+        pdf_moveto($pdf, $radius, 0.0);
+        pdf_lineto($pdf, $radius-$margin, 0.0);
+        pdf_stroke($pdf);
+    }
+
+    $ltime = getdate();
+
+    /* draw hour hand */
+    pdf_save($pdf);
+    pdf_rotate($pdf,-(($ltime['minutes']/60.0)+$ltime['hours']-3.0)*30.0);
+    pdf_moveto($pdf, -$radius/10, -$radius/20);
+    pdf_lineto($pdf, $radius/2, 0.0);
+    pdf_lineto($pdf, -$radius/10, $radius/20);
+    pdf_closepath($pdf);
+    pdf_fill($pdf);
+    pdf_restore($pdf);
+
+    /* draw minute hand */
+    pdf_save($pdf);
+    pdf_rotate($pdf,-(($ltime['seconds']/60.0)+$ltime['minutes']-15.0)*6.0);
+    pdf_moveto($pdf, -$radius/10, -$radius/20);
+    pdf_lineto($pdf, $radius * 0.8, 0.0);
+    pdf_lineto($pdf, -$radius/10, $radius/20);
+    pdf_closepath($pdf);
+    pdf_fill($pdf);
+    pdf_restore($pdf);
+
+    /* draw second hand */
+    pdf_setrgbcolor($pdf, 1.0, 0.0, 0.0);
+    pdf_setlinewidth($pdf, 2);
+    pdf_save($pdf);
+    pdf_rotate($pdf, -(($ltime['seconds'] - 15.0) * 6.0));
+    pdf_moveto($pdf, -$radius/5, 0.0);
+    pdf_lineto($pdf, $radius, 0.0);
+    pdf_stroke($pdf);
+    pdf_restore($pdf);
+
+    /* draw little circle at center */
+    pdf_circle($pdf, 0, 0, $radius/30);
+    pdf_fill($pdf);
+
+    pdf_restore($pdf);
+
+    pdf_end_page($pdf);
+}
+
+$pdf = pdf_close($pdf);
+fclose($fp);
+echo "&lt;A HREF=gettest.php3?filename=".$pdffilename.">finished&lt;/A>";
+?>
+     </programlisting>
+     <para>
+      The php3 file gettext.php3 just outputs the pdf document.
+      <programlisting>
+&lt;?php
+if($filename)
+    $fp = fopen($filename, "r");
+else
+    $fp = fopen("test.pdf", "r");
+header("Content-type: application/pdf");
+fpassthru($fp);
+fclose($fp);
+?>
+      </programlisting>
+    </example>
+   </partintro>
 
   <refentry id="function.pdf-get-info">
    <refnamediv>
-    <refname>PDF_get_info</refname> <refpurpose>Returns a default info
-    structure for a pdf document</refpurpose>
+    <refname>PDF_get_info</refname>
+    <refpurpose>Returns a default info structure for a pdf document</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
@@ -93,6 +281,10 @@ echo "&lt;A HREF=gettest.php3>finished&lt;/A>";
      The <function>PDF_get_info</function> function will return a
      default info structure for the pdf document. It can be filled
      with appropriate information like the author, subject etc.
+
+    <note><simpara>
+     This functions is not available if pdflib 2.0 support is activated.
+    </simpara></note>
 
     <para>
      See also <function>PDF_set_info_creator</function>,
@@ -119,9 +311,16 @@ echo "&lt;A HREF=gettest.php3>finished&lt;/A>";
      <function>PDF_open</function>. Calling it after <function>PDF_open</function>
      will have no effect on the document.
 
-     <note><simpara>
-       This function is not part of the pdf library.
-      </simpara></note>
+    <note><simpara>
+     This function is not part of the pdf library.
+    </simpara></note>
+
+    <note><simpara>
+     This function takes a different first parameter if pdflib 2.0 support
+     is activated. The first parameter has to be the identifier of the
+     pdf document as returned by <function>pdf_open</function>. Consequently,
+     <function>pdf_open</function> has to be called before this function.
+    </simpara></note>
 
     <para>
      See also <function>PDF_get_info</function>,
@@ -153,6 +352,13 @@ echo "&lt;A HREF=gettest.php3>finished&lt;/A>";
        This function is not part of the pdf library.
       </simpara></note>
 
+    <note><simpara>
+     This function takes a different first parameter if pdflib 2.0 support
+     is activated. The first parameter has to be the identifier of the
+     pdf document as returned by <function>pdf_open</function>. Consequently,
+     <function>pdf_open</function> has to be called before this function.
+    </simpara></note>
+
     <para>
      See also <function>PDF_get_info</function>,
               <function>PDF_set_info_xxxxx</function>.
@@ -182,6 +388,13 @@ echo "&lt;A HREF=gettest.php3>finished&lt;/A>";
      <note><simpara>
        This function is not part of the pdf library.
       </simpara></note>
+
+    <note><simpara>
+     This function takes a different first parameter if pdflib 2.0 support
+     is activated. The first parameter has to be the identifier of the
+     pdf document as returned by <function>pdf_open</function>. Consequently,
+     <function>pdf_open</function> has to be called before this function.
+    </simpara></note>
 
     <para>
      See also <function>PDF_get_info</function>,
@@ -213,6 +426,13 @@ echo "&lt;A HREF=gettest.php3>finished&lt;/A>";
        This function is not part of the pdf library.
       </simpara></note>
 
+    <note><simpara>
+     This function takes a different first parameter if pdflib 2.0 support
+     is activated. The first parameter has to be the identifier of the
+     pdf document as returned by <function>pdf_open</function>. Consequently,
+     <function>pdf_open</function> has to be called before this function.
+    </simpara></note>
+
     <para>
      See also <function>PDF_get_info</function>,
               <function>PDF_set_info_xxxxx</function>.
@@ -243,6 +463,13 @@ echo "&lt;A HREF=gettest.php3>finished&lt;/A>";
        This function is not part of the pdf library.
       </simpara></note>
 
+    <note><simpara>
+     This function takes a different first parameter if pdflib 2.0 support
+     is activated. The first parameter has to be the identifier of the
+     pdf document as returned by <function>pdf_open</function>. Consequently,
+     <function>pdf_open</function> has to be called before this function.
+    </simpara></note>
+
     <para>
      See also <function>PDF_get_info</function>,
               <function>PDF_set_info_xxxxx</function>.
@@ -271,10 +498,15 @@ echo "&lt;A HREF=gettest.php3>finished&lt;/A>";
      <function>pdf_get_info</function>. The info structure will be deleted
      within this function.
 
-     <note><simpara>
-       The return value is needed as the first parameter in all other
-       functions writing to the pdf document.
-      </simpara></note>
+    <note><simpara>
+     The return value is needed as the first parameter in all other
+     functions writing to the pdf document.
+    </simpara></note>
+
+    <note><simpara>
+     This function does not require the second parameter if pdflib 2.0 support
+     is activated.
+    </simpara></note>
 
     <para>
      See also <function>fopen</function>,
@@ -297,14 +529,20 @@ echo "&lt;A HREF=gettest.php3>finished&lt;/A>";
     <para>
      The <function>PDF_close</function> function closes the pdf document.
 
-    <para>Note: Due to an unclean implementation of the pdflib 0.6 the
+    <note><simpara>Due to an unclean implementation of the pdflib 0.6 the
      internal closing of the document also closes the file. This should
      not be done because pdflib didn't open the file, but expects an
      already open file when <function>PDF_open</function> is called.
      Consequently it shouldn't close the file. In order to fix this
-     just take out line 190 of the file p_basic.c in the pdflib
+     just take out line 190 of the file p_basic.c in the pdflib 0.6
      source distribution until the next release of pdflib will fix
      this.
+    </simpara></note>
+
+    <note><simpara>
+     This function works properly without any patches to pdflib if 
+     pdflib 2.0 support is activated.
+    </simpara></note>
 
     <para>
      See also <function>PDF_open</function>,
@@ -426,12 +664,12 @@ echo "&lt;A HREF=gettest.php3>finished&lt;/A>";
      font path (default is ./fonts). The last parameter
      <parameter>encoding</parameter> can take the following values:
      0 = builtin, 1 = pdfdoc, 2 = macroman, 3 = macexpert, 4 = winansi.
-     You should not pass a value greater than 5,
-     because pdflib 0.6 does a poor error checking and dies for greater
-     values.
+     An encoding greater than 4 and less than 0 will default to winansi.
 
-    <para>
-     See also <function>PDF_info</function>.
+    <note><simpara>
+     This function does not need the afm files for winansi encoding if 
+     pdflib 2.0 support is activated.
+    </simpara></note>
 
    </refsect1>
   </refentry>
@@ -1434,6 +1672,58 @@ PDF_restore($pdf) ?>
    </refsect1>
   </refentry>
 
+  <refentry id="function.pdf-open-gif">
+   <refnamediv>
+    <refname>PDF_open_gif</refname>
+    <refpurpose>Opens a GIF image</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>pdf_open_gifg</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>string <parameter>file name</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_open_gif</function> function opens an image stored
+     in the file with the name <parameter>file name</parameter>.
+     The format of the image has to be jpeg.
+    <para>
+     See also <function>PDF_close_image</function>,
+              <function>PDF_open_jpeg</function>,
+              <function>PDF_open_memory_image</function>,
+              <function>PDF_execute_image</function>,
+              <function>PDF_place_image</function>,
+              <function>PDF_put_image</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-open-memory-image">
+   <refnamediv>
+    <refname>PDF_open_memory_image</refname>
+    <refpurpose>Opens an image created with php3 image functions</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>pdf_open_memory_image</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>string <parameter>int image</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_open_memory_image</function> function takes
+     an image created with the php3 image functions and makes it available
+     for the pdf document.
+    <para>
+     See also <function>PDF_close_image</function>,
+              <function>PDF_open_jpeg</function>,
+              <function>PDF_open_gif</function>,
+              <function>PDF_execute_image</function>,
+              <function>PDF_place_image</function>,
+              <function>PDF_put_image</function>.
+   </refsect1>
+  </refentry>
+
   <refentry id="function.pdf-open-jpeg">
    <refnamediv>
     <refname>PDF_open_jpeg</refname>
@@ -1452,6 +1742,11 @@ PDF_restore($pdf) ?>
      The format of the image has to be jpeg.
     <para>
      See also <function>PDF_close_image</function>,
+              <function>PDF_open_gif</function>,
+              <function>PDF_open_memory_image</function>,
+              <function>PDF_execute_image</function>,
+              <function>PDF_place_image</function>,
+              <function>PDF_put_image</function>.
    </refsect1>
   </refentry>
 
@@ -1472,6 +1767,8 @@ PDF_restore($pdf) ?>
      functions. 
     <para>
      See also <function>PDF_open_jpeg</function>,
+              <function>PDF_open_gif</function>,
+              <function>PDF_open_memory_image</function>.
    </refsect1>
   </refentry>
 
@@ -1495,6 +1792,8 @@ PDF_restore($pdf) ?>
      on the page at postion (<parameter>x-koor</parameter>,
      <parameter>x-koor</parameter>). The image can be scaled at the same
      time.
+    <para>
+     See also <function>PDF_put_image</function>.
    </refsect1>
   </refentry>
 
@@ -1516,6 +1815,9 @@ PDF_restore($pdf) ?>
      displayed with the <function>PDF_execute_image</function>
      function. This is useful when using the same image multiple
      times.
+    <para>
+     See also <function>PDF_place_image</function>,
+              <function>PDF_execute_image</function>.
    </refsect1>
   </refentry>
 
