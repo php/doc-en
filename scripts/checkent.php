@@ -113,8 +113,8 @@ foreach ($entity_urls as $num => $entity_url) {
                         }
                     } else {
                         errormsg ($entity, "could not login as anonymous to FTP host: " . $url["host"]);
-                        ftp_quit($ftp);
                     }
+                    ftp_quit($ftp);
                 } else {
                     errormsg ($entity, "could not connect to " . $url["host"]);
                 }
