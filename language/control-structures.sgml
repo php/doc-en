@@ -617,22 +617,63 @@ switch ($i):
 
   </sect1>
  
-   <sect1 id="function.require">
-    <title><literal>require</literal></title>
- 
-    <simpara>
-     The <literal>require</literal> statement replaces itself with the
-     specified file, much like the C preprocessor's #include works.</simpara>
+  <sect1 id="function.require">
+   <title><function>require</function></title>
+   
+   <simpara>
+	The <function>require</function> statement replaces itself with
+	the specified file, much like the C preprocessor's
+	<literal>#include</literal> works.
+   </simpara>
 
-    <para>
-     This means that you can't put a <literal>require</literal>
-     statement inside of a loop structure and expect it to include the
-     contents of a different file on each iteration. To do that, use an
-     <literal>include</literal> statement.
+   <simpara>
+	An important note about how this works is that when a file is
+	<function>include</function>ed or <function>require</function>ed,
+	parsing drops out of PHP mode and into HTML mode at the beginning
+	of the target file, and resumes PHP mode again at the end. For
+	this reason, any code inside the target file which should be
+	executed as PHP code must be enclosed within <link
+	linkend="language.basic-syntax.phpmode">valid PHP start and end
+	tags</link>.
+   </simpara>
+
+   <simpara>
+	<function>require</function> is not actually a function in PHP;
+	rather, it is a language construct. It is subject to some
+	different rules than functions are. For instance,
+	<function>require</function> is not subject to any containing
+	control structures. For another, it does not return any value;
+	attempting to read a return value from a
+	<function>require</function> call results in a parse error.
+   </simpara>
+
+   <simpara>
+	Unlike <function>include</function>, <function>require</function>
+	will <emphasis>always</emphasis> read in the target file,
+	<emphasis>even if the line it's on never executes</emphasis>. If
+	you want to conditionally include a file, use
+	<function>include</function>. The conditional statement won't
+	affect the <function>require</function>. However, if the line on
+	which the <function>require</function> occurs is not executed,
+	neither will any of the code in the target file be executed.
+   </simpara>
+
+   <simpara>
+	Similarly, looping structures do not affect the behaviour of
+	<function>require</function>. Although the code contained in the
+	target file is still subject to the loop, the
+	<function>require</function> itself happens only once.
+   </simpara>
+
+   <para>
+	This means that you can't put a <function>require</function>
+	statement inside of a loop structure and expect it to include the
+	contents of a different file on each iteration. To do that, use an
+	<function>include</function> statement.
  
      <informalexample>
       <programlisting>
- require 'header.inc';
+require( 'header.inc' );
       </programlisting>
      </informalexample>
    </para>
@@ -648,58 +689,86 @@ switch ($i):
 	part of the calling file. 
 	<informalexample>
 	 <programlisting>
-include( "file.inc?varone=1&amp;vartwo=2" ); /* Won't work. */
+require( "file.inc?varone=1&amp;vartwo=2" ); /* Won't work. */
 
 $varone = 1;
 $vartwo = 2;
-include( "file.inc" );  /* $varone and $vartwo will be available in file.inc */
-
+require( "file.inc" );  /* $varone and $vartwo will be available in file.inc */
 	 </programlisting>
 	</informalexample>
-
    </para>
+
+   <simpara>
+	Don't be misled by the fact that you can require or include files
+	via HTTP using the <link linkend="features.remote-files">Remote
+	 files</link> feature; the above holds true regardless.
+   </simpara>
+
+   <simpara>
+	In PHP3, it is possible to execute a <literal>return</literal>
+	statement inside a <function>require</function>ed file, as long as
+	that statement occurs in the global scope of the
+	<function>require</function>ed file. It may not occur within any
+	block (meaning inside braces ({}). In PHP4, however, this ability
+	has been discontinued. If you need this functionality, see
+	<function>include</function>.
+   </simpara>
 
   </sect1>
  
-   <sect1 id="function.include">
-    <title><literal>include</literal></title>
+  <sect1 id="function.include">
+   <title><function>include</function></title>
+   
+   <simpara>
+	The <function>include</function> statement includes and evaluates
+	the specified file.
+   </simpara>
  
-    <simpara>
-     The <literal>include</literal> statement includes and evaluates
-     the specified file.</simpara>
- 
-    <para>
-     This happens each time the <literal>include</literal> statement is
-     encountered, so you can use an <literal>include</literal> statement
-     within a looping structure to include a number of different file.
- 
-     <informalexample>
-      <programlisting>
- $files = array ('first.inc', 'second.inc', 'third.inc');
- for ($i = 0; $i < count($files); $i++) {
-     include $files[$i];
- }
-      </programlisting>
-     </informalexample></para>
+   <simpara>
+	An important note about how this works is that when a file is
+	<function>include</function>ed or <function>require</function>ed,
+	parsing drops out of PHP mode and into HTML mode at the beginning
+	of the target file, and resumes again at the end. For this reason,
+	any code inside the target file which should be executed as PHP
+	code must be enclosed within <link
+	linkend="language.basic-syntax.phpmode">valid PHP start and end
+	tags</link>.
+   </simpara>
 
     <para>
-     <link linkend="function.include"><literal>include</literal></link>
-     differs from <link linkend="function.require"><literal>require</literal></link>
-     in that the include statement is re-evaluated each time it is
-     encountered (and only when it is being executed), whereas the
-     <link linkend="function.require"><literal>require</literal></link>
-     statement is replaced by the required file when it is first
-     encountered, whether the contents of the file will be evaluated or
-     not (for example, if it is inside an if statement whose condition
-     evaluated to false).</para>
+     This happens each time the <function>include</function> statement is
+     encountered, so you can use an <function>include</function> statement
+     within a looping structure to include a number of different files.
  
-    <para>
-     Because <link linkend="function.include"><literal>include</literal></link> is a
-     special language construct, you must enclose it within a statement
-     block if it is inside a conditional block.
+	<informalexample>
+	 <programlisting>
+$files = array ('first.inc', 'second.inc', 'third.inc');
+for ($i = 0; $i < count($files); $i++) {
+    include $files[$i];
+}
+	 </programlisting>
+	</informalexample>
+   </para>
+
+   <para>
+	<function>include</function> differs from
+	<function>require</function> in that the include statement is
+	re-evaluated each time it is encountered (and only when it is
+	being executed), whereas the <function>require</function>
+	statement is replaced by the required file when it is first
+	encountered, whether the contents of the file will be evaluated or
+	not (for example, if it is inside an <link
+	linkend="control-structures.if">if</link> statement whose
+	condition evaluated to false).
+   </para>
  
-     <informalexample>
-      <programlisting>
+   <para>
+	Because <function>include</function> is a special language
+	construct, you must enclose it within a statement block if it is
+	inside a conditional block.
+ 
+	<informalexample>
+	 <programlisting>
  /* This is WRONG and will not work as desired. */
  
  if ($condition)
@@ -714,13 +783,108 @@ include( "file.inc" );  /* $varone and $vartwo will be available in file.inc */
  } else {
      include($other);
  }
-      </programlisting>
-     </informalexample></para>
+	 </programlisting>
+	</informalexample>
+   </para>
  
-    <para>
-     When the file is evaluated, the parser begins in "HTML-mode" which
-     will output the contents of the file until the first PHP start tag
-     (&lt;?)  is encountered.</para>
+   <simpara>
+	In both PHP3 and PHP4, it is possible to execute a
+	<literal>return</literal> statement inside an
+	<function>include</function>ed file, in order to terminate
+	processing in that file and return to the script which called
+	it. Some differences in the way this works exist, however. The
+	first is that in PHP3, the <literal>return</literal> may not
+	appear inside a block unless it's a function block, in which case 
+	the <literal>return</literal> applies to that function and not the 
+	whole file. In PHP4, however, this restriction does not
+	exist. Also, PHP4 allows you to return values from
+	<function>include</function>ed files. You can take the value of the 
+	<function>include</function> call as you would a normal
+	function. This generates a parse error in PHP3.
+   </simpara>
+
+   <example>
+	<title><function>include</function> in PHP3 and PHP4</title>
+	<para>
+	 Assume the existence of the following file (named
+	 <filename>test.inc</filename>) in the same directory as the main
+	 file:
+	 <programlisting>
+&lt?php
+echo "Before the return &lt;br&gt;\n";
+if ( 1 ) {
+   return 27;
+}
+echo "After the return &lt;br&gt;\n";
+?&gt;
+	 </programlisting>
+	</para>
+	
+	<para>
+	 Assume that the main file (<filename>main.html</filename>)
+	 contains the following:
+	 <programlisting>
+&lt?php
+$retval = include( 'test.inc' );
+echo "File returned: '$retval'&lt;br&gt;\n";
+?&gt;
+	 </programlisting>
+	</para>
+	
+	<para>
+	 When <filename>main.html</filename> is called in PHP3, it will
+	 generate a parse error on line 2; you can't take the value of an
+	 <function>include</function> in PHP3. In PHP4, however, the
+	 result will be:
+	 <screen>
+Before the return
+File returned: '27'
+	 </screen>
+	</para>
+
+	<para>
+	 Now, assume that <filename>main.html</filename> has been altered
+	 to contain the following:
+	 <programlisting>
+&lt?php
+include( 'test.inc' );
+echo "Back in main.html&lt;br&gt;\n";
+?&gt;
+	 </programlisting>
+	</para>
+
+	<para>
+	 In PHP4, the output will be:
+	 <screen>
+Before the return
+Back in main.html
+	 </screen>
+	 However, PHP3 will give the following output:
+	 <screen>
+Before the return 
+27Back in main.html
+
+Parse error: parse error in /home/torben/public_html/phptest/main.html on line 5
+	 </screen>
+	</para>
+
+	<para>
+	 The above parse error is a result of the fact that the
+	 <literal>return</literal> statement is enclosed in a non-function 
+	 block within <filename>test.inc</filename>. When the return is
+	 moved outside of the block, the output is:
+	 <screen>
+Before the return
+27Back in main.html
+	 </screen>
+	</para>
+
+	<para>
+	 The spurious '27' is due to the fact that PHP3 does not support
+	 <literal>return</literal>ing values from files like that. 
+	</para>
+
+   </example>
 
    <para>
 	Please note that both <function>include</function> and
@@ -743,9 +907,17 @@ include( "file.inc" );  /* $varone and $vartwo will be available in file.inc */
 
    </para>
 
-    <para>
-     See also <function>readfile</function>, <function>require</function>,
-     <function>virtual</function>.</para></sect1>
+   <simpara>
+	Don't be misled by the fact that you can require or include files
+	via HTTP using the <link linkend="features.remote-files">Remote
+	 files</link> feature; the above holds true regardless.
+   </simpara>
+
+   <simpara>
+	See also <function>readfile</function>,
+	<function>require</function>, and <function>virtual</function>.
+   </simpara>
+  </sect1>
  
   </chapter>
  
