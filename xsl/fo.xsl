@@ -18,7 +18,8 @@
 <!-- Adjust the paper-Type -->
 <xsl:param name="paper.type">
  <xsl:choose>
-  <xsl:when test="$l10n.gentext.language='de'">'A4'</xsl:when>
+  <xsl:when test="$l10n.gentext.language='de' or
+                  $l10n.gentext.language='hu'">'A4'</xsl:when>
   <xsl:otherwise>'USletter'</xsl:otherwise>
  </xsl:choose>
 </xsl:param>
