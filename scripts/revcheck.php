@@ -375,6 +375,9 @@ function get_file_status($file)
     // Store files by status, and by maintainer too
     files_by_mark ($status_mark, 1);
     files_by_maint($status_mark, $this_maint);
+
+if ($rev_diff === 0 && $this_maint == "")
+echo $file."<br>\n";
     
     return array(
         "full_name"  => $file,
@@ -692,15 +695,15 @@ print <<<END_OF_MULTILINE
 <th rowspan="2" class="blue">Translator's name</th>
 <th rowspan="2" class="blue">Contact email</th>
 <th rowspan="2" class="blue">Nick</th>
-<th rowspan="2" class="blue">CVS</th>
+<th rowspan="2" class="blue">C<br>V<br>S</th>
 <th colspan="7" class="blue">Files maintained</th>
 </tr>
 <tr>
-<th class="{$CSS[REV_CREDIT]}" style="color:#000000">credits</th>
-<th class="{$CSS[REV_UPTODATE]}" style="color:#000000">uptodate</th>
+<th class="{$CSS[REV_CREDIT]}" style="color:#000000">cre-<br>dits</th>
+<th class="{$CSS[REV_UPTODATE]}" style="color:#000000">upto-<br>date</th>
 <th class="{$CSS[REV_OLD]}" style="color:#000000">old</th>
-<th class="{$CSS[REV_CRITICAL]}" style="color:#000000">critical</th>
-<th class="{$CSS[REV_NOREV]}" style="color:#000000">norev</th>
+<th class="{$CSS[REV_CRITICAL]}" style="color:#000000">cri-<br>tical</th>
+<th class="{$CSS[REV_NOREV]}" style="color:#000000">no<br>rev</th>
 <th class="{$CSS[REV_WIP]}" style="color:#000000">wip</th>
 <th class="blue">sum</th>
 </tr>
