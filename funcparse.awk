@@ -1,6 +1,7 @@
 BEGIN { parse=0; FS="[\"(,]"; }
 /^[[:space:]]*function_entry.*{$/ { parse=1; }
 /NULL.*?NULL.*?NULL/ { parse=0; }
+/^[[:space:]]{0},/ { parse=0; }
 /^[[:space:]]*{/ { if(parse) { print $2; } }
 /^[[:space:]]*PHP_FE/ { if(parse) { print $2; } }
 /^[[:space:]]*UODBC_FE/ { if(parse) { print "odbc_"$2; } }
