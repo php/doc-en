@@ -3,7 +3,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.18 2002-08-04 12:54:15 goba Exp $
+  $Id: html-common.xsl,v 1.19 2002-08-30 12:56:02 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -226,8 +226,13 @@ set       toc
 <!-- Print out the return type, the method name, then the parameters.
      Close all the optional signs opened and close the prentheses -->
 <xsl:template match="methodsynopsis" mode="php">
-  <xsl:value-of select="concat(./type/text(), ' ')"/>
-  <xsl:value-of select="concat(./methodname/text(), ' ( ')"/>
+  <span class="funcreturntype">
+   <xsl:value-of select="concat(./type/text(), ' ')"/>
+  </span>
+  <span class="funcname">
+   <xsl:value-of select="./methodname/text()"/>
+  </span>
+  <xsl:text> ( </xsl:text>
   <xsl:apply-templates select="./methodparam" mode="php"/>
   <xsl:for-each select="./methodparam[@choice = 'opt']">
     <xsl:text>]</xsl:text>
@@ -244,7 +249,13 @@ set       toc
   <xsl:if test="position() != 1">
     <xsl:text>, </xsl:text>
   </xsl:if>
-  <xsl:value-of select="concat(./type/text(), ' ', ./parameter/text())"/>
+  <span class="funcparamtype">
+   <xsl:value-of select="./type/text()"/>
+  </span>
+  <xsl:text> </xsl:text>
+  <span class="funcparamname">
+   <xsl:value-of select="./parameter/text()"/>
+  </span>
 </xsl:template>
 
 </xsl:stylesheet>
