@@ -267,14 +267,9 @@ function formatPre ()
     $example = str_replace(
         array("&gt;", "&lt;", "&amp;", "&quot;"),
         array(">", "<", "&", "\""),
-        $pre_found[2]
+        trim($pre_found[2])
     );
 
-    // Trim example code to get rid of extra line breaks
-    $example = trim($example);
-    
-    // Start output buffer, add PHP tags if none is there
-    ob_start();
     if (!strstr($example, "<?php")) {
         $example = "<?php " . $example . " ?>";
         $delimiter = FALSE;
@@ -283,9 +278,7 @@ function formatPre ()
     }
 
     // Get highlited source code
-    highlight_string($example);
-    $colored_example = ob_get_contents();
-    ob_end_clean();
+    $colored_example = highlight_string($example, true);
     
     // Strip out PHP delmiter, if we added it
     if (!$delimiter) {
@@ -311,8 +304,8 @@ function formatPre ()
     // Pre container to strip out uneeded font tags
     $colored_example = '<pre>' .  $colored_example . '</pre>';
     $colored_example = str_replace(
-        array('<pre><font color="#000000">', '</font></pre>'),
-        array('', ''),
+        array('<pre><font color="#000000">', '<pre><span style="color: #000000">', '</font></pre>', '</span></pre>'),
+        array('', '', '', ''),
         $colored_example
     );
 
