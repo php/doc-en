@@ -161,7 +161,6 @@ if ($USE_NOTES) {
 // $RELEASE_DIR = str_replace("/", "\\", $RELEASE_DIR):
 exec("copy suppfiles\\prefs $RELEASE_DIR /Y");
 exec("copy suppfiles\\quickref $RELEASE_DIR /Y");
-exec("copy suppfiles\\fixes $RELEASE_DIR /Y");
 exec("xcopy suppfiles\\skins $RELEASE_DIR\\skins /S /I /Q /EXCLUDE:exclude.txt");
 
 // Delete unused files
