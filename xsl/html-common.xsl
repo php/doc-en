@@ -1,8 +1,9 @@
+<?xml vedsion="1.0" encoding="iso-8859-1"?>
 <!-- 
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.4 2002-01-27 15:41:03 hholzgra Exp $
+  $Id: html-common.xsl,v 1.5 2002-02-09 12:19:54 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
