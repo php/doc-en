@@ -27,13 +27,15 @@ Check the revision of translated files against
 the actual english xml files, and print statistics
 
   Usage:
-  <?=$argv[0]?> <language-code> [<maintainer>]
+  <?=$argv[0]?> <language-code> [<maintainer>] [><revcheck.html>]
 
   <language-code> must be a valid language code used
   in the repository
 
   If you specify <maintainer>, the script only checks
-  the files maintaned by the person you add here
+  the files maintained by the person you add here
+
+  If you specify ><revcheck.html>, the output is an html file.
   
   Read more about Revision comments and related
   funcionality in the PHP Documentation Howto.
