@@ -9,8 +9,10 @@ Process the manual to do some replacements.
   <?=$argv[0]?> <apply-script> [<startdir>]
 
   <apply-script> must contain the function apply($input),
-  which recieves a whole xml-file, and should output
-  return the new file.
+  which recieves a whole xml-file, and should return
+  the new file, or false if no modification needed.
+  Apply scripts reside in the apply folder below this
+  script. You only need to give the file name.
 
   With <startdir> you can specify in which dir
   to start looking recursively for xml files.
@@ -23,7 +25,7 @@ Process the manual to do some replacements.
 
 echo "Starting with manual-process\n";
 echo "Including $argv[1]...";
-include("$argv[1]");
+include("apply/$argv[1]");
 echo " done\n";
 if (!function_exists('apply'))
 {
@@ -58,6 +60,7 @@ foreach ($files as $file)
 		continue;
 	}
 	$new = apply($old);
+    if ($new === FALSE) { echo "NO MODIFICATION: $file not modified"; }
 	$fp = fopen($file,'w');
 	$res = fwrite($fp,$new);
 	fclose($fp);
