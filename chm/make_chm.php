@@ -23,6 +23,7 @@ $MAIN_FILES = array(
     "features.html",
     "funcref.html",
     "zend.html",
+    "api.html",
     "faq.html",
     "appendixes.html"
 );
