@@ -1,77 +1,46 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!-- 
 
-  Common customizations for all formats
-
-  $Id: common.xsl,v 1.6 2002-02-10 12:57:56 goba Exp $
+  common.xsl: Common customizations for all formats
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0">
 
-<!-- Configuration parameters -->
-<xsl:param name="funcsynopsis.style" select="'ansi'"/>
-<xsl:param name="funcsynopsis.decoration" select="'1'"/>
+
+<!-- Set the LANGUAGE for autom. generated text -->
+<xsl:param name="l10n.gentext.language" select="/book/@lang"/>
+
+<!-- temporary till also this is in std.-distrib. -->
+<xsl:template match="titleabbrev"></xsl:template>
+
+<!-- Start NUMBERING (e.g. chapters) in every part -->
+<xsl:param name="label.from.part" select="'0'"/>
+
+<!-- Colorize background for programlisting and screens -->
+<xsl:param name="shade.verbatim" select="1"/>
+
+<!-- REFENTRIES: make functionnames the title -->
 <xsl:param name="refentry.generate.name" select="'0'"/>
+<xsl:param name="refentry.generate.title" select="1"/>
 
-<!-- Turn off separators on reference and refentry pages -->
-<xsl:param name="refentry.separator" select="'0'"/>
-<xsl:template name="reference.titlepage.separator"/>
-
-<!-- Start numbering in every part, toc to 2 section depth -->
-<xsl:param name="label.from.part" select="'1'"/>
-
-<!-- Load version information into variable -->
+<!-- Load VERSION INFORMATION into variable -->
 <xsl:param name="version" select="document('version.xml')/versions"/>
 
-<!-- We do not want semicolon at the end of prototype and our own style
-     of square brackets for optional parameters -->
-<xsl:template match="paramdef/parameter">
-  <xsl:apply-templates />
-</xsl:template>
 
-<xsl:template match="paramdef/parameter/optional">
-  <xsl:apply-templates />
-</xsl:template>
-
-<xsl:template match="paramdef">
-  <xsl:if test="preceding-sibling::paramdef=false()">(</xsl:if>
-  <xsl:apply-templates />
-  <xsl:choose>
-    <xsl:when test="following-sibling::paramdef">
-      <xsl:choose>
-        <xsl:when test="following-sibling::paramdef[position()=1]/child::parameter/child::optional">
-          <xsl:text> [, </xsl:text>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:text>, </xsl:text>
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:for-each select="preceding-sibling::paramdef/child::parameter/child::optional">
-        <xsl:text>]</xsl:text>
-      </xsl:for-each>
-      <xsl:if test="child::parameter/child::optional">
-        <xsl:text>]</xsl:text>
-      </xsl:if>
-      <xsl:text>)</xsl:text>
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
-<!-- same for docbook 4 style protos -->
+<!-- PROTOTYPES: PHP-Version without semicolon, etc. 
+     note: methodparams are separated in html-common and fo -->
 <xsl:template match="methodsynopsis">
   <xsl:apply-templates />
-</xsl:template>
-
-<xsl:template match="methodsynopsis/void">
-  <xsl:text>(void)</xsl:text>
 </xsl:template>
 
 <xsl:template match="methodsynopsis/type">
   <xsl:apply-templates />
   <xsl:text> </xsl:text>
+</xsl:template>
+
+<xsl:template match="methodsynopsis/void">
+  <xsl:text> (void)</xsl:text>
 </xsl:template>
 
 <xsl:template match="methodparam/type">
@@ -84,7 +53,12 @@
 </xsl:template>
 
 <xsl:template match="methodparam">
-  <xsl:if test="preceding-sibling::methodparam=false()">(</xsl:if>
+  <xsl:if test="preceding-sibling::methodparam=false()">
+    <xsl:text> (</xsl:text>
+    <xsl:if test="@choice='opt'">
+      <xsl:text>[</xsl:text>
+    </xsl:if>
+  </xsl:if>
   <xsl:apply-templates />
   <xsl:choose>
     <xsl:when test="following-sibling::methodparam">
@@ -101,12 +75,31 @@
       <xsl:for-each select="preceding-sibling::methodparam/attribute::choice[.='opt']">
         <xsl:text>]</xsl:text>
       </xsl:for-each>
-      <xsl:if test="child::methodparam/attribute::choice[.='opt']">
+      <xsl:if test="self::methodparam/attribute::choice[.='opt']">
         <xsl:text>]</xsl:text>
       </xsl:if>
       <xsl:text>)</xsl:text>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
+
+
+<!-- for the list of TRANSLATORS -->
+<xsl:template match="collab" mode="titlepage.mode">
+  <xsl:choose>
+    <xsl:when test="position()=last()">
+      <xsl:apply-templates/>
+    </xsl:when>
+    <xsl:when test="position() &gt; 1">
+      <xsl:apply-templates/><xsl:text>, </xsl:text>
+    </xsl:when>
+    <xsl:otherwise></xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="collabname">
+  <xsl:apply-templates/>
+</xsl:template>
+
 
 </xsl:stylesheet>
