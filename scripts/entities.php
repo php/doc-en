@@ -96,12 +96,15 @@ function check_dir($dir, &$defined_entities, $entity_regexp)
     // Open and traverse the directory
     $handle = @opendir($dir);
     while ($file = @readdir($handle)) {
-      if (preg_match("/^\.{1,2}/",$file) || $file == 'CVS')
-        continue;
-
-      // Collect files and directories
-      if (is_dir($dir.$file)) { $directories[] = $file; }
-      else { $files[] = $file; }
+      
+      // Collect directories and XML files
+      if ($file != 'CVS' && $file != '.' &&
+          $file != '..' && is_dir($dir.$file)) {
+        $directories[] = $file;
+      }
+      elseif (strstr($file, ".xml")) {
+        $files[] = $file;
+      }
 
     }
     @closedir($handle);
