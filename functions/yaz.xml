@@ -1,4 +1,4 @@
-<!-- $Revision: 1.14 $ -->
+<!-- $Revision: 1.15 $ -->
  <reference id="ref.yaz">
   <title>YAZ functions</title>
   <titleabbrev>YAZ</titleabbrev>
@@ -31,8 +31,8 @@
    <title>Installation</title>
    <para>
     Compile YAZ and install it. Build PHP with your favourite
-    modules and add option --with-yaz. Your task is roughly the
-    following:
+    modules and add option <literal>--with-yaz</literal>.
+    Your task is roughly the following:
    </para>
    <para>
    <informalexample>
@@ -176,8 +176,8 @@ if (empty($term) || count($host) == 0) {
       <paramdef>string
         <parameter>zurl</parameter>
       </paramdef>
-      <paramdef>string
-       <parameter><optional>authentication</optional></parameter>
+      <paramdef>mixed
+       <parameter><optional>options</optional></parameter>
       </paramdef>
       </funcprototype>
     </funcsynopsis>
@@ -193,6 +193,55 @@ if (empty($term) || count($host) == 0) {
      non-blocking and doesn't attempt to establish a socket - it
      merely prepares a connect to be performed later when
      <function>yaz_wait</function> is called.
+    </para>
+    <para>
+     If the second argument, <parameter>options</parameter>, is given as
+     a string it is treated as the Z39.50 V2 authentication string
+     (OpenAuth).
+    </para>
+    <para>
+     If <parameter>options</parameter> is given as an array the contents
+     of the array serves as options. Note that array options are only
+     supported for PHP 4.0.7 and later.
+
+    <variablelist>
+     <title><function>yaz_connect</function> options</title>
+     <varlistentry><term>user</term><listitem>
+      <simpara>Username for authentication.
+      </simpara></listitem>
+     </varlistentry>
+     <varlistentry><term>group</term><listitem>
+      <simpara>Group for authentication.
+      </simpara></listitem>
+     </varlistentry>
+     <varlistentry><term>password</term><listitem>
+      <simpara>Password for authentication.
+      </simpara></listitem>
+     </varlistentry>
+     <varlistentry><term>cookie</term><listitem>
+      <simpara>Cookie for session (YAZ proxy).
+      </simpara></listitem>
+     </varlistentry>
+     <varlistentry><term>proxy</term><listitem>
+      <simpara>Proxy for connection (YAZ proxy).
+      </simpara></listitem>
+     </varlistentry>
+     <varlistentry><term>persistent</term><listitem>
+      <simpara>A boolean. If &true; the connection is persistent; If
+&false; the connection is not persistent. By default connections are
+persistent.
+      </simpara></listitem>
+     </varlistentry>
+     <varlistentry><term>piggyback</term><listitem>
+      <simpara>A boolean. If &true; piggyback is enabled for
+searches; If &false; piggyback is disabled.
+By default piggyback is enabled. Enabling piggyback is more efficient
+and usually saves a network-round-trip for first time fetches of records.
+However, a few Z39.50 targets doesn't support piggyback or they ignore
+element set names. For those, piggyback should be disabled.
+      </simpara></listitem>
+     </varlistentry>
+    </variablelist>
     </para>
    </refsect1>
   </refentry>
@@ -471,35 +520,33 @@ if (empty($term) || count($host) == 0) {
       </tbody>
      </tgroup>
     </table>     
+    <example>
+    <title>Query Examples</title>
     <para>
-     The following illustrates valid query constructions:
-     <informalexample>
+     Query
       <screen>computer</screen>
-     </informalexample>
-      Matches documents where "computer" occur. No attributes are specified.
+      matches documents where "computer" occur. No attributes are specified.
     </para>
-    <para>
-     <informalexample>
+     <para>
+     The Query
       <screen>"donald knuth"</screen>
-     </informalexample>
-     Matches documents where "donald knuth" occur.
-    </para>
-    <para>
-     <informalexample>
+     matches documents where "donald knuth" occur.
+     </para>
+     <para>
+     For the query
       <screen>@attr 1=4 art</screen>
-     </informalexample>
-     Attribute type is 1 (Bib-1 use), attribute value is 4
-     Title), so this should match documents where "art" occur
-     in the title.
-    </para>
-    <para>
-     <informalexample>
+     attribute type is 1 (Bib-1 use), attribute value is 4
+     Title), so this should match documents where <literal>art</literal>
+     occur in the title.
+     </para>
+     <para>
+     Another more complex one:
 <screen>@attrset gils @and @attr 1=4 art @attr 1=1003 "donald knuth"</screen>
-     </informalexample>
      The query as a whole uses the GILS attributeset. The query matches
-     documents where "art" occur in the title and in which "donald knuth"
-     occur in the author.
-    </para>
+     documents where <literal>art</literal> occur in the title and in which
+     <literal>donald knuth</literal> occur in the author.
+     </para>
+    </example>
    </refsect1>
   </refentry>
 
@@ -883,7 +930,9 @@ itemorder-item
     <funcsynopsis>
      <funcprototype>
       <funcdef>int <function>yaz_wait</function></funcdef>
-      <void></void>
+       <paramdef>
+        <parameter><optional>array options</optional></parameter>
+       </paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
@@ -895,6 +944,88 @@ itemorder-item
      <function>yaz_wait</function> returns when all targets have either
      completed all requests or aborted (in case of errors).
     </para>
+    <para>
+      If the <parameter>options</parameter> array is given that holds
+      options that change the behaviour of <function>yaz_wait</function>.
+    </para>
+    <variablelist>
+     <varlistentry><term><literal>timeout</literal></term><listitem>
+      <para>Sets timeout in seconds. If a target hasn't responded within
+      the timeout it is considered dead and <function>yaz_wait</function>
+      returns. The default value for timeout is 15 seconds.
+      </para></listitem>
+     </varlistentry>
+    </variablelist>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.yaz-sort">
+   <refnamediv>
+    <refname>yaz_sort</refname>
+    <refpurpose>Sets sorting criteria</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>yaz_sort</function></funcdef>
+      <paramdef>int <parameter>id</parameter></paramdef>
+      <paramdef>string <parameter>criteria</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function sets sorting criteria and enables Z39.50 Sort.
+     Use this function together with <function>yaz_search</function>
+     or <function>yaz_present</function>. Using this function alone
+     doesn't have any effect. If used in conjunction with
+     <function>yaz_search</function> a Z39.50 Sort will be sent after
+     a search response has been received and before any records are
+     retrieved with Z39.50 Present. The <parameter>criteria</parameter>
+     takes the form
+    </para>
+    <para>
+      <replaceable>field1 flags1 field2 flags2</replaceable> ...
+    </para>
+    <para>
+     where field1 specifies primary attributes for sort, field2 seconds,
+     etc.. The field specifies either numerical attribute combinations consisting
+     of type=value pairs separated by comma (e.g. <literal>1=4,2=1</literal>)
+     ; or the field may specify a plain string criteria
+     (e.g. <literal>title</literal>. The flags is a sequnce of the
+     following characters which may not be separated by any white space.
+    </para>
+    <variablelist>
+      <title>Sort Flags</title>
+      <varlistentry><term><literal>a</literal></term><listitem>
+       <simpara>Sort ascending</simpara></listitem>
+      </varlistentry>
+      <varlistentry><term><literal>d</literal></term><listitem>
+       <simpara>Sort descending</simpara></listitem>
+      </varlistentry>
+      <varlistentry><term><literal>i</literal></term><listitem>
+       <simpara>Case insensitive sorting</simpara></listitem>
+      </varlistentry>
+      <varlistentry><term><literal>s</literal></term><listitem>
+       <simpara>Case sensitive sorting</simpara></listitem>
+      </varlistentry>
+    </variablelist>
+    <example>
+    <title>Sort Criterias</title>
+    <para>
+       To sort on Bib1 attribute title, case insensitive,
+       and ascending you'd use the following sort criteria:
+     <screen>
+       1=4 ia
+     </screen>
+    </para>
+    <para>
+       If the secondary sorting criteria should be author, case sensitive
+       and ascending you'd use:
+     <screen>
+       1=4 ia 1=1003 sa
+     </screen>
+    </para>
+    </example>
    </refsect1>
   </refentry>
 
