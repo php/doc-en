@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.17 $ -->
+<!-- $Revision: 1.18 $ -->
  <appendix id="migration5">
   <title>Migrating from PHP 4 to PHP 5</title>
 
@@ -69,9 +69,6 @@
     <listitem><simpara>
       An object with no properties is no longer considered "empty".
     </simpara></listitem>
-    <listitem><simpara>
-      Classes must be declared before used.
-    </simpara></listitem>
    </itemizedlist>
 
    <para>
@@ -105,29 +102,6 @@ if (!$t) {
 }
 ?>
 
-]]>
-     </programlisting>
-    </example>
-   </para>
-   <para>
-    The following example was valid in &php; 4, although it will produce a fatal
-    error in &php; 5.
-   </para>
-   <para>
-    <example>
-     <title>Classes must be declared before used</title>
-     <programlisting role="php">
-<![CDATA[
-<?php
-$test = new fubar();
-$test->barfu();
-
-class fubar {
-    function barfu() {
-        echo 'fubar';
-    }
-}
-?>
 ]]>
      </programlisting>
     </example>
@@ -1097,112 +1071,16 @@ echo "Foo::constant = " . Foo::constant . "\n";
      <programlisting role="php">
 <![CDATA[
 <?php
-class MyException {
-    function __construct($exception) {
-        $this->exception = $exception;
-    }
-
-    function Display() {
-        print "MyException: $this->exception\n";
-    }
-}
-
-class MyExceptionFoo extends MyException {
-    function __construct($exception) {
-        $this->exception = $exception;
-    }
-
-    function Display() {
-        print "MyException: $this->exception\n";
-    }
-}
-
 try {
-    throw new MyExceptionFoo('Hello');
-}
-catch (MyException $exception) {
-    $exception->Display();
+   throw new Exception('Hello');
 }
 catch (Exception $exception) {
-    echo $exception;
+   echo $exception;
 }
 ?>
 ]]>
      </programlisting>
     </example>
-    <para>
-     Even though the above example shows that it is possible to define
-     exception classes that don't inherit from Exception it is best to do so.
-     This is because the internal Exception class can gather a lot of
-     information otherwise not available. The &php; code emulation code would
-     look something like shown below. The comments show the meaning of each
-     property and hence their getter methods. As the code shows it is possible
-     to read any available information by using the getter methods. But since
-     some of the methods are used internally they are marked final. All in all
-     the class is very restrictive because it must be ensured that anything
-     used internally always works as expected.
-    </para>
-    <example>
-     <title>Base exceptions class</title>
-     <programlisting role="php">
-<![CDATA[
-<?php
-class Exception {
-    function __construct(string $message=NULL, int code=0) {
-        if (func_num_args()) {
-            $this->message = $message;
-        }
-        $this->code = $code;
-        $this->file = __FILE__; // of throw clause
-        $this->line = __LINE__; // of throw clause
-        $this->trace = debug_backtrace();
-        $this->string = StringFormat($this);
-    }
-
-    protected $message = 'Unknown exception'; // exception message
-    protected $code = 0; // user defined exception code
-    protected $file;    // source filename of exception
-    protected $line;    // source line of exception
-
-    private $trace;      // backtrace of exception
-    private $string;    // internal only!!
-
-    final function getMessage() {
-        return $this->message;
-    } 
-    final function getCode() {
-        return $this->code;
-    }
-    final function getFile() {
-        return $this->file;
-    }
-    final function getTrace() {
-        return $this->trace;
-    }
-    final function getTraceAsString() {
-        return self::TraceFormat($this);
-    }
-    function _toString() {
-        return $this->string;
-    }
-    static private function StringFormat(Exception $exception) {
-        // ... a function not available in PHP scripts
-        // that returns all relevant information as a string
-    }
-    static private function TraceFormat(Exception $exception) {
-        // ... a function not available in PHP scripts
-        // that returns the backtrace as a string
-    }
-}
-?>
-]]>
-     </programlisting>
-    </example>
-    <simpara>
-     If you derive your exception classes from this Exception base class your
-     exceptions will be nicely shown in the built-in handler for uncaught
-     exceptions.
-    </simpara> 
     <simpara>
      Old code that has no user-defined classes or functions 'catch', 'throw'
      and 'try' will run without modifications.
@@ -1552,7 +1430,7 @@ foreach($obj as $key => $val) {
 
 // matches the following 7 lines with the for directive.
 $it = $obj->getIterator();
-for($it->rewind(); $it->hasMore(); $it->next) {
+for($it->rewind(); $it->valid(); $it->next()) {
     $key = $it->current();
        $val = $it->key();
           echo "$key = $val\n";
@@ -1655,11 +1533,11 @@ class Foo {
     }
 }
 
-reflection_class::export('Foo');
-reflection_object::export(new Foo);
-reflection_method::export('Foo', 'func');
-reflection_property::export('Foo', 'prop');
-reflection_extension::export('standard');
+reflectionClass::export('Foo');
+reflectionObject::export(new Foo);
+reflectionMethod::export('Foo', 'func');
+reflectionProperty::export('Foo', 'prop');
+reflectionExtension::export('standard');
 ?> 
 ]]>
      </programlisting>
