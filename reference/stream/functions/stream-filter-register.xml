@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.3 $ -->
+<!-- $Revision: 1.4 $ -->
   <refentry id="function.stream-filter-register">
    <refnamediv>
     <refname>stream_filter_register</refname>
@@ -97,10 +97,42 @@
      <type>void</type><methodname>oncreate</methodname>
      <void/>
     </methodsynopsis>
-    <para>
+    <simpara>
      This method is called during instantiation of the filter class
      object.  If your filter allocates or initializes any other resources
-     (such as a buffer), this is the place to do it.
+     (such as a buffer), this is the place to do it.  Your implementation of
+     this method should return &false; on failure, or &true; on success.
+    </simpara>
+    <simpara>
+     When your filter is first instantiated, and 
+     <literal>yourfilter-&gt;oncreate()</literal> is called, a number of properties
+     will be available as shown in the table below.
+    </simpara>
+    <para>
+     <informaltable>
+      <tgroup cols="2">
+       <thead>
+        <row>
+         <entry>Property</entry>
+         <entry>Contents</entry>
+        </row>
+       </thead>
+       <tbody>
+        <row>
+         <entry><literal>FilterClass-&gt;filtername</literal></entry>
+         <entry>A string containing the name the filter was instantiated with.
+                Filters may be registered under multiple names or under wildcards.
+                Use this property to determine which name was used.</entry>
+        </row>
+        <row>
+         <entry><literal>FilterClass-&gt;params</literal></entry>
+         <entry>The contents of the <parameter>params</parameter> parameter passed
+                to <function>stream_filter_append</function> 
+                or <function>stream_filter_prepend</function>.</entry> 
+        </row>
+       </tbody>
+      </tgroup>
+     </informaltable>
     </para>
 
     <methodsynopsis>
@@ -170,6 +202,82 @@ EASY AS 123
       </programlisting>
      </example>
     </para>
+
+    <para>
+     <example>
+      <title>Registering a generic filter class to match multiple filter names.</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+/* Define our filter class */
+class string_filter extends php_user_filter {
+  var $mode;
+
+  function filter($in, $out, &$consumed, $closing) {
+    while ($bucket = stream_bucket_make_writeable($in)) {
+      if ($this->mode == 1) {
+        $bucket->data = strtoupper($bucket->data);
+      } elseif ($this->mode == 0) {
+        $bucket->data = strtoupper($bucket->data);
+      }
+
+      $consumed += $bucket->datalen;
+      stream_bucket_append($out, $bucket);
+    }
+    return PSFS_PASS_ON;
+  }
+
+  function oncreate() {
+    if ($this->filtername == 'str.toupper') {
+      $this->mode = 1;
+    } elseif ($this->filtername == 'str.tolower') {
+      $this->mode = 0;
+    } else {
+      /* Some other str.* filter was asked for,
+         report failure so that PHP will keep looking */
+      return false;
+    }
+
+    return true;
+  }
+} 
+
+/* Register our filter with PHP */
+stream_filter_register("str.*", "string_filter")
+    or die("Failed to register filter");
+
+$fp = fopen("foo-bar.txt", "w");
+
+/* Attach the registered filter to the stream just opened 
+   We could alternately bind to str.tolower here */
+stream_filter_append($fp, "str.toupper");
+
+fwrite($fp, "Line1\n");
+fwrite($fp, "Word - 2\n");
+fwrite($fp, "Easy As 123\n");
+
+fclose($fp);
+
+/* Read the contents back out
+ */
+readfile("foo-bar.txt");
+
+/* Output
+ * ------
+
+LINE1
+WORD - 2
+EASY AS 123
+
+ */
+
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+
     <simpara>
      See Also:
      <function>stream_wrapper_register</function>,
