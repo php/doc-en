@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.40 $ -->
+<!-- $Revision: 1.41 $ -->
  <reference id="ref.domxml">
   <title>DOM XML functions</title>
   <titleabbrev>DOM XML</titleabbrev>
@@ -41,6 +41,14 @@
 
    <sect1 id="domxml-deprecated">
     <title>Deprecated functions</title>
+    <para>
+     There a quite some functions which do not fit into the DOM standard and
+     should not be used anymore as listed a in the following table.
+     The function <function>DomNode_append_child</function> has changed its
+     behaviour. In now actually adds a child and not a sibling. If this
+     breaks your application use the non DOM function
+     <function>DomNode_append_sibling</function>.
+    </para>
     <para>
     <table>
      <title>Deprecated functions and its replacements</title>
@@ -544,7 +552,16 @@
         <entry></entry>
        </row>
        <row>
+        <entry><function>DomNode_append_sibling</function></entry>
+        <entry>Not in DOM standard. This function emulates the former
+         behaviour of <function>DomNode_append_child</function>.</entry>
+       </row>
+       <row>
         <entry><function>DomNode_remove_child</function></entry>
+        <entry></entry>
+       </row>
+       <row>
+        <entry><function>DomNode_replace_child</function></entry>
         <entry></entry>
        </row>
        <row>
@@ -2285,6 +2302,44 @@ echo "</PRE>";
    </refsect1>
   </refentry>
 
+  <refentry id='function.DomNode-append-sibling'>
+   <refnamediv>
+    <refname>DomNode->append_sibling</refname>
+    <refpurpose>
+     Adds new sibling to a node
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <methodsynopsis>
+     <type>object</type><methodname>DomNode->append_sibling</methodname>
+     <methodparam><type>object</type><parameter>newnode</parameter></methodparam>
+    </methodsynopsis>
+    <para>
+     This functions appends a sibling to an existing node.
+     The child can be created with e.g.
+     <function>DomDocument_create_element</function>,
+     <function>DomDocument_create_text</function> etc. or simply by using any
+     other node.
+    </para>
+    <para>
+     Before a new sibling is added it is first duplicated. Therefore the new
+     child is a completely new copy which can be modified without changing the
+     node which was passed to this function. If the node passed has children
+     itself, they will be duplicated as well, which makes it quite easy to
+     duplicate large parts of a xml document. The return value is the
+     added sibling. If you plan to do further modifications on the added
+     sibling you must use the returned node.
+    </para>
+    <para>
+     This function has been added to provide the behaviour of
+     <function>DomNode_append_child</function> as it works till PHP 4.2.
+    <para>
+     See also <function>DomNode_append_before</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
   <refentry id='function.DomNode-remove-child'>
    <refnamediv>
     <refname>DomNode->remove_child</refname>
@@ -2299,9 +2354,62 @@ echo "</PRE>";
      <methodparam><type>object</type><parameter>oldchild</parameter></methodparam>
     </methodsynopsis>
     <para>
-     This functions removes a child from a list of children. If child cannot
+     This functions removes a child from a list of children. If the child cannot
      be removed or is not a child the function will return false.
-     If the child could be removed the functions returns the old child.
+     If the child could be removed the function returns the old child.
+    </para>
+    <para>
+     <example>
+      <title>Removing a child</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+include("example.inc");
+
+if(!$dom = domxml_open_mem($xmlstr)) {
+  echo "Error while parsing the document\n";
+  exit;
+}
+
+$elements = $dom->get_elements_by_tagname("tbody");
+$element = $elements[0];
+$children = $element->child_nodes();
+$child = $element->remove_child($children[0]);
+
+echo "<PRE>";
+$xmlfile = $dom->dump_mem(true);
+echo htmlentities($xmlfile);
+echo "</PRE>";
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also <function>DomNode_append_child</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id='function.DomNode-replace-child'>
+   <refnamediv>
+    <refname>DomNode->replace_child</refname>
+    <refpurpose>
+     Replaces child from list of children
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <methodsynopsis>
+     <type>object</type><methodname>DomNode->replace_child</methodname>
+     <methodparam><type>object</type><parameter>oldchild</parameter></methodparam>
+     <methodparam><type>object</type><parameter>newchild</parameter></methodparam>
+    </methodsynopsis>
+    <para>
+     This functions replace a child from a list of children. If the child cannot
+     be replaced or the old child cannot be found the function will return
+     false.
+     If the child could be replaced the function returns the old child.
     </para>
     <para>
      <example>
