@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.19 2004-11-03 07:18:48 techtonik Exp $
+  $Id: common.xsl,v 1.20 2004-11-09 12:59:37 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -80,14 +80,15 @@
      </methodsynopsis>
 
      Note, that this is DSSSL like version. htmlhelp.xsl uses another, span style
-     TODO: <parameter role="reference">
 -->
 
 <!-- We do not want semicolon at the end of prototype and our own style
      of square brackets for optional parameters. Make methodnames bold
      like in DSSSL -->
 <xsl:template match="methodsynopsis">
-  <xsl:apply-templates />
+  <div class="{name(.)}">
+    <xsl:apply-templates />
+  </div>
 </xsl:template>
 
 <xsl:template match="methodsynopsis/type">
@@ -111,6 +112,9 @@
 </xsl:template>
 
 <xsl:template match="methodparam/parameter">
+  <xsl:if test="@role='reference'">
+    <xsl:text>&amp;</xsl:text>
+  </xsl:if>
   <xsl:apply-templates />
 </xsl:template>
 

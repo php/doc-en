@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.14 2004-11-04 07:41:11 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.15 2004-11-09 13:02:05 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -550,23 +550,24 @@ Usage: string date (string format, int [timestamp])<br></h2>
      </methodsynopsis>
 
      This overrides common.xsl templates
-     TODO: <parameter role="reference">
 -->
 <!-- Print out the return type, the method name, then the parameters.
      Close all the optional signs opened and close the prentheses -->
 <xsl:template match="methodsynopsis" mode="php">
-  <span class="funcreturntype">
-   <xsl:value-of select="concat(./type/text(), ' ')"/>
-  </span>
-  <span class="funcname">
-   <xsl:value-of select="./methodname/text()"/>
-  </span>
-  <xsl:text> ( </xsl:text>
-  <xsl:apply-templates select="./methodparam" mode="php"/>
-  <xsl:for-each select="./methodparam[@choice = 'opt']">
-    <xsl:text>]</xsl:text>
-  </xsl:for-each>
-  <xsl:text> )</xsl:text>
+  <div class="{name(.)}">
+    <span class="funcreturntype">
+     <xsl:value-of select="concat(./type/text(), ' ')"/>
+    </span>
+    <span class="funcname">
+     <xsl:value-of select="./methodname/text()"/>
+    </span>
+    <xsl:text> ( </xsl:text>
+    <xsl:apply-templates select="./methodparam" mode="php"/>
+    <xsl:for-each select="./methodparam[@choice = 'opt']">
+      <xsl:text>]</xsl:text>
+    </xsl:for-each>
+    <xsl:text> )</xsl:text>
+  </div>
 </xsl:template>
 
 <!-- Print out optional sign if needed, then a comma if this is
@@ -583,6 +584,9 @@ Usage: string date (string format, int [timestamp])<br></h2>
   </span>
   <xsl:text> </xsl:text>
   <span class="funcparamname">
+    <xsl:if test="./parameter/@role='reference'">
+      <xsl:text>&amp;</xsl:text>
+    </xsl:if>
    <xsl:value-of select="./parameter/text()"/>
   </span>
 </xsl:template>
