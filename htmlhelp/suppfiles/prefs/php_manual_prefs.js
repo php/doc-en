@@ -1,5 +1,5 @@
 prefs_online  = true;
-prefs_mirror  = "http://us.php.net/";
+prefs_mirror  = "http://www.php.net/";
 prefs_context_override = true;
 prefs_context_names = Array(
     "Manual TOC",
