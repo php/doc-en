@@ -20,7 +20,7 @@
 */
 
 /*
-	REQUIRES: PHP 4.3.2 or higher
+	REQUIRES: PHP 4.3.2 CLI or higher
 	
 	This file is temporary patch allow the hebrew and (in the future arabic) html generation.
 	
@@ -37,7 +37,6 @@
 */
 
 error_reporting(2047);
-
 // finding the real path of the needed files:
 $mypath = $_SERVER["SCRIPT_NAME"];
 $spos = strrpos($mypath,"/");

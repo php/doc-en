@@ -188,7 +188,7 @@ class CHtmlParse{
 		while($this->pos < $this->len){
 //debuginfo("pos is: ". $this->pos. ", character is: " .$this->data{$this->pos});
 			if($this->data{$this->pos} != "<"){
-				if ($x = $this->plaintext()) $this->map(&$x);
+				if ($x = $this->plaintext()) $this->map($x);
 			}else if(++$this->pos < $this->len){
 				$p = $this->data{$this->pos};
 				if($p == "!"){
@@ -201,7 +201,7 @@ class CHtmlParse{
 					$this->map($this->parse_process());
 				}else{
 //debuginfo("opening");
-					$this->map($this->parse_start(&$endfl),$endfl);
+					$this->map($this->parse_start($endfl),$endfl);
 					$this->pos++;
 				}
 			}
@@ -209,7 +209,7 @@ class CHtmlParse{
 		}
 	}
 	
-	function parse_start($endfl){
+	function parse_start(&$endfl){
 		global $HEType;
 		
 		//fining the <html> tag type:
