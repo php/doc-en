@@ -3,7 +3,7 @@
 
   HOWTO specific stylesheet based on Docbook XSL 1.66.1
 
-  $Id: howto.xsl,v 1.5 2004-11-02 19:04:44 techtonik Exp $
+  $Id: howto.xsl,v 1.6 2004-11-14 13:15:22 techtonik Exp $
 
 -->
 <!-- 
@@ -12,10 +12,11 @@
   - output directory for howto is 'howto/html'
   - xsltproc chunks quietly using division's ids as filenames
   - verbatim parts (like programlisting) are shaded and newlines from start and in the end 
-    are stripped (now in common.xsl)
+    are stripped (moved to common.xsl)
   - chunk default.css stylesheet
-  - TOCs are generated only for book, part, chapter and preface.2-level Book ToC and 1-level Part Toc
-  - TOC labels not included in href
+  - TOCs are generated only for book, part, chapter and preface.
+    2-level Book ToC and 1-level Part Toc
+  - TOC labels (like section numbers) are not included in TOC href (moved to common.xsl)
   - div class="p" is default <para> container to produce valid and customizable html
   - do not generate title for abstract
   - nav.header is not included on the first page
@@ -102,36 +103,6 @@
         </xsl:call-template>
       </xsl:otherwise>
     </xsl:choose>
-  </xsl:template>
-
-
-  <!-- Make the TOC line like in the DSSSL-version, i.e. label is not included in href -->
-  <xsl:template name="toc.line">
-    <xsl:param name="toc-context" select="."/>
-    <xsl:param name="depth" select="1"/>
-    <xsl:param name="depth.from.context" select="8"/>
-
-    <span>
-    <xsl:attribute name="class"><xsl:value-of select="local-name(.)"/></xsl:attribute>
-
-    <xsl:variable name="label">
-      <xsl:apply-templates select="." mode="label.markup"/>
-    </xsl:variable>
-    <xsl:copy-of select="$label"/>
-    <xsl:if test="$label != ''">
-      <xsl:value-of select="$autotoc.label.separator"/>
-    </xsl:if>
-
-    <a>
-      <xsl:attribute name="href">
-        <xsl:call-template name="href.target">
-          <xsl:with-param name="context" select="$toc-context"/>
-        </xsl:call-template>
-      </xsl:attribute>
-      
-      <xsl:apply-templates select="." mode="titleabbrev.markup"/>
-    </a>
-    </span>
   </xsl:template>
 
 
