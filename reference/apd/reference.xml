@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.3 $ -->
+<!-- $Revision: 1.4 $ -->
  <reference id="ref.apd">
   <title>Advanced PHP debugger</title>
   <titleabbrev>APD</titleabbrev>
@@ -8,28 +8,44 @@
   <section id="apd.intro">
     &reftitle.intro;
     <para>
-     APD is the Advanced PHP Debugger.  It was written to provide strace/truss 
-     capability for profiling and debugging php code, as well as providing the 
-     ability to print out a full stack backtrace.  APD does supports
-     interactive and non interactive debugging, by default it writes data to 
-     trace files. APD provides event based logging, so that varying levels of 
-     information (including function calls, arguments passed, timings, etc.) 
-     can be turned on or off for individual scripts. 
-    </para> 
+     APD is the Advanced PHP Debugger. It was written to provide profiling and
+     debugging capabilities for PHP code, as well as to provide the ability to
+     print out a full stack backtrace. APD supports interactive debugging, but
+     by default it writes data to trace files. It also offers event based
+     logging so that varying levels of information (including function calls,
+     arguments passed, timings, etc.) can be turned on or off for individual
+     scripts.
+    <caution>
     <para>
      APD is a Zend Extension, modifying the way the internals of PHP handle 
      function calls, and thus may or may not be compatible with other Zend 
      Extensions (for example Zend Optimizer). 
     </para>
+    </caution>
+    </para> 
    </section>
 
    &reference.apd.configure;
 
+   &reference.apd.ini;
 
-    <section id="apd.examples">
+   <section id="apd.resources">
+    &reftitle.resources;
+    &no.resource;
+   </section>
+
+   <section id="apd.constants">
+    &reftitle.constants;
+    &no.constants;
+   </section>
+
+   <section id="apd.examples">
      <title>How to use PHP-APD in your scripts</title>
+     <procedure>
+     <step>
      <para>
-      In your PHP script, add the following line:
+      As the first line of your PHP script, call the apd_set_pprof_trace() function
+      to start the trace:
      </para>
      <para>
       <programlisting role="php">
@@ -39,59 +55,71 @@ apd_set_pprof_trace();
       </programlisting>
      </para>
      <para>
-      Now run your script.
+     You can insert the line anywhere in your script, but if you do not start
+     tracing at the beginning of your script you discard profile data that might
+     otherwise lead you to a performance bottleneck.
      </para>
+     </step>
+     <step>
      <para>
-      The dump output will be writing to:
+      Now run your script. The dump output will be written to
+      <filename>apd.dumpdir/pprof_pid.ext</filename>.
+      <tip>
+      <para>
+        If you're running the CGI version of PHP, you will need to add the '-e'
+        flag to enable extended information for apd to work properly. For
+        example: 
+        <userinput>php -e -f script.php</userinput>
+      </para>
+      </tip>
      </para>
+
+     </step>
+     <step>
      <para>
-      <programlisting role="text">
-<![CDATA[
-<apd.dumpdir>/apd_dump_<pid>
-]]>
-      </programlisting>
-     </para>
-     <para>
-      The output itself will look something like:
+      To display formatted profile data, issue the <command>pprofp</command>
+      command with the sort and display options of your choice. The formatted
+      output will look something like:
       <screen>
 <![CDATA[
-16:37:51(george@wasabi)[~/src/apd]> cat /tmp/apd_dump_31994 
+bash-2.05b$ pprofp -R /tmp/pprof.22141.0
 
-APD - Advanced PHP Debugger Trace File
----------------------------------------------------------------------------
-Process Pid (31994)
-Trace Begun at Fri Aug 10 16:37:45 2001
----------------------------------------------------------------------------
-(  0.000000): apd_set_pprof_trace called at somewhere
-(  0.001482): apd_set_pprof_trace() returned.  Elapsed (997475865.364909)
-(  0.001563): getcwd() /opt/apache/htdocs/a.php:4
-(  0.001628): getcwd() returned.  Elapsed (0.000065)
-(  0.001819): require() /opt/apache/htdocs/a.php:6
-              ++ argv[0] $(??) = /tmp/a.php
-(  0.002231):   getcwd() /tmp/a.php:3
-(  0.002290):   getcwd() returned.  Elapsed (0.000059)
-(  0.002375):   include_once() /tmp/a.php:4
-                ++ argv[0] $(??) = /tmp/aa.php
-(  0.003276):   include_once() returned.  Elapsed (0.000901)
-(  0.003334): require() returned.  Elapsed (0.001515)
-(  0.003381): require_once() /opt/apache/htdocs/a.php:7
-              ++ argv[0] $(??) = /tmp/aa.php
-(  0.003515): require_once() returned.  Elapsed (0.000134)
-(  0.003564): include() /opt/apache/htdocs/a.php:8
-              ++ argv[0] $(??) = /tmp/b.php
-(  0.003792): include() returned.  Elapsed (0.000228)
-(  0.018341): RSHUTDOWN called - end of trace
----------------------------------------------------------------------------
-Process Pid (31994)
-Trace Ended at Fri Aug 10 16:37:45 2001
----------------------------------------------------------------------------
+Trace for /home/dan/testapd.php
+Total Elapsed Time = 0.00
+Total System Time  = 0.00
+Total User Time    = 0.00
+
+
+Real         User        System             secs/    cumm
+%Time (excl/cumm)  (excl/cumm)  (excl/cumm) Calls    call    s/call  Memory Usage Name
+--------------------------------------------------------------------------------------
+100.0 0.00 0.00  0.00 0.00  0.00 0.00     1  0.0000   0.0009            0 main
+56.9 0.00 0.00  0.00 0.00  0.00 0.00     1  0.0005   0.0005            0 apd_set_pprof_trace
+28.0 0.00 0.00  0.00 0.00  0.00 0.00    10  0.0000   0.0000            0 preg_replace
+14.3 0.00 0.00  0.00 0.00  0.00 0.00    10  0.0000   0.0000            0 str_replace
 ]]>
       </screen>
      </para>
+     <para>
+     The -R option used in this example sorts the profile table by the amount
+     of real time the script spent executing a given function. The "cumm call"
+     column reveals how many times each function was called, and the "s/call"
+     column reveals how many seconds each call to the function required, on
+     average.
+     </para>
+     </step>
+     <step>
+     <para>
+     To generate a calltree file that you can import into the KCacheGrind
+     profile analysis application, issue the <command>pprof2calltree</command>
+     comand.
+     </para>
+     </step>
+     </procedure>
     </section>
 
     <section id="apd.contact">
-     <title>Contact Information</title>
+     <title>Contact information</title>
      <para>
       If you have comments, bugfixes, enhancements or want to help developing 
       this beast, you can send an mail to 
