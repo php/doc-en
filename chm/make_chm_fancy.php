@@ -85,12 +85,21 @@ function fancy_design($fname)
     // HR dropout
     $content = preg_replace("/<HR\\s+ALIGN=\"LEFT\"\\s+WIDTH=\"100%\">/", '', $content);
 
+	if($LANGUAGE == "he") {
+    // Whole page table and backgrounds
+    $wpbegin = '<TABLE BORDER="0" WIDTH="100%" HEIGHT="100%" CELLSPACING="0" CELLPADDING="0" DIR="RTL"><TR><TD COLSPAN="3">';
+    $bnavt = '<TABLE BGCOLOR="#CCCCFF" BORDER="0" CELLPADDING="0" CELLSPACING="0" WIDTH="100%" DIR="RTL">';
+    $lnavt = '<TR BGCOLOR="#333366"><TD><IMG SRC="spacer.gif" BORDER="0" WIDTH="1" HEIGHT="1"><BR></TD></TR>';
+    $space = '<IMG SRC="spacer.gif" WIDTH="10" HEIGHT="1">';
+	}
+	else {
     // Whole page table and backgrounds
     $wpbegin = '<TABLE BORDER="0" WIDTH="100%" HEIGHT="100%" CELLSPACING="0" CELLPADDING="0"><TR><TD COLSPAN="3">';
     $bnavt = '<TABLE BGCOLOR="#CCCCFF" BORDER="0" CELLPADDING="0" CELLSPACING="0" WIDTH="100%">';
     $lnavt = '<TR BGCOLOR="#333366"><TD><IMG SRC="spacer.gif" BORDER="0" WIDTH="1" HEIGHT="1"><BR></TD></TR>';
     $space = '<IMG SRC="spacer.gif" WIDTH="10" HEIGHT="1">';
-
+	}
+	
     // Navheader backgound
     $content = preg_replace("/<DIV\\s+CLASS=\"NAVHEADER\"\\s*><TABLE(.*)CELLPADDING=\"0\"(.*)<\\/TABLE\\s*><\\/DIV\\s*>/Us",
         $wpbegin . '<DIV CLASS="NAVHEADER">' . $bnavt . '<TR><TD><TABLE\\1CELLPADDING="3"\\2</TABLE></TD></TR>' . $lnavt . '</TABLE></DIV></TD></TR><TR><TD>' . $space . '</TD><TD HEIGHT="100%" VALIGN="TOP" WIDTH="100%"><BR>', $content);
@@ -186,12 +195,20 @@ function fancy_parser_design($fname)
 		}
 	} while($tmp);
 	
+	if($LANGUAGE == "he") {
+	// Whole page table and backgrounds
+    $wpbegin = '<TABLE BORDER="0" WIDTH="100%" HEIGHT="100%" CELLSPACING="0" CELLPADDING="0" DIR="RTL"><TR><TD COLSPAN="3">';
+    $bnavt = '<TABLE BGCOLOR="#CCCCFF" BORDER="0" CELLPADDING="0" CELLSPACING="0" WIDTH="100%" DIR="RTL">';
+    $lnavt = '<TR BGCOLOR="#333366"><TD><IMG SRC="spacer.gif" BORDER="0" WIDTH="1" HEIGHT="1"><BR></TD></TR>';
+    $space = '<IMG SRC="spacer.gif" WIDTH="10" HEIGHT="1">';
+	}
+	else {
     // Whole page table and backgrounds
     $wpbegin = '<TABLE BORDER="0" WIDTH="100%" HEIGHT="100%" CELLSPACING="0" CELLPADDING="0"><TR><TD COLSPAN="3">';
     $bnavt = '<TABLE BGCOLOR="#CCCCFF" BORDER="0" CELLPADDING="0" CELLSPACING="0" WIDTH="100%">';
     $lnavt = '<TR BGCOLOR="#333366"><TD><IMG SRC="spacer.gif" BORDER="0" WIDTH="1" HEIGHT="1"><BR></TD></TR>';
     $space = '<IMG SRC="spacer.gif" WIDTH="10" HEIGHT="1">';
-
+	}
     // Navheader backgound
     if($tmp = $tree->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","NAVHEADER")))){
 		$tree->ATE[$tmp]["data"] = "$wpbegin<DIV CLASS=\"NAVHEADER\">$bnavt<TR><TD>";

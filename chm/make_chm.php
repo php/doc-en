@@ -28,6 +28,21 @@ $MAIN_FILES = array(
     "appendixes.html"
 );
 
+if($LANGUAGE == "he") {
+// Header for index and toc 
+$HEADER = '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//HE">
+<html>
+<head>
+  <meta name="generator" content="PHP 4 - Auto TOC script">
+  <!-- Sitemap 1.0 -->
+</head>
+<body dir="rtl" lang="he">
+  <object type="text/site properties">
+    <param name="Window Styles" value="0x800227">
+  </object>
+  <ul>';
+}
+else {
 // Header for index and toc 
 $HEADER = '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <html>
@@ -40,6 +55,7 @@ $HEADER = '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
     <param name="Window Styles" value="0x800227">
   </object>
   <ul>';
+}
 
 makeProjectFile();
 makeContentFiles();
