@@ -818,20 +818,126 @@ if (!odbc_execute ($stmt, &amp;$sqldata) || !odbc_fetch_into ($stmt, &amp;$tmp))
      <funcprototype>
       <funcdef>int <function>unset</function></funcdef>
       <paramdef>mixed <parameter>var</parameter></paramdef>
+      <paramdef>mixed <parameter><optional>var</optional></parameter></paramdef>
+      <paramdef><parameter><optional>...</optional></parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>unset</function> destroys the specified variable and
+     <function>unset</function> destroys the specified variables and
      returns true.
     </para>
     <para>
      <example>
       <title><function>Unset</function> example</title>
       <programlisting role="php">
+// destroy a single variable
 unset ($foo);
+
+// destroy a single element of an array
 unset ($bar['quux']);
+
+// destroy more than one variable
+unset ($foo1, $foo2, $foo3);
       </programlisting>
      </example>
+    </para>
+    <para>
+     The behavior of <function>unset</function> inside of a function
+     can vary depending on what type of variable you are attempting to
+     destroy.
+    </para>
+    <para>
+     If a globalized variable is <function>unset</function> inside of
+     a function, only the local variable is destroyed.  The variable
+     in the calling environment will retain the same value as before
+     <function>unset</function> was called.
+     <informalexample>
+      <programlisting role="php">
+function destroy_foo() {
+    global $foo;
+    unset($foo);
+}
+
+$foo = 'bar';
+destroy_foo();
+echo $foo;
+      </programlisting>
+     </informalexample>
+     The above example would output:
+     <informalexample>
+      <programlisting>
+bar
+      </programlisting>
+     </informalexample>
+    </para>
+    <para>
+     If a variable that is PASSED BY REFERENCE is
+     <function>unset</function> inside of a function, only the local
+     variable is destroyed.  The variable in the calling environment
+     will retain the same value as before <function>unset</function>
+     was called.
+     <informalexample>
+      <programlisting role="php">
+function foo(&$bar) { 
+    unset($bar); 
+    $bar = "blah"; 
+}
+
+$bar = 'something';
+echo "$bar\n";
+
+foo($bar);
+echo "$bar\n";
+      </programlisting>
+     </informalexample>
+     The above example would output:
+     <informalexample>
+      <programlisting>
+something
+something
+      </programlisting>
+     </informalexample>
+    </para>
+    <para>
+     If a static variable is <function>unset</function> inside of a
+     function, <function>unset</function> unsets the reference to the
+     static variable, rather than the static variable itself.
+     <informalexample>
+      <programlisting role="php">
+function foo() { 
+    static $a;
+    $a++;
+       echo "$a\n";
+
+    unset($a);
+}
+
+foo();
+foo();
+foo();
+      </programlisting>
+     </informalexample>
+     The above example would output:
+     <informalexample>
+      <programlisting>
+1
+2
+3
+      </programlisting>
+     </informalexample>
+    </para>
+    <para>
+     If you would like to <function>unset</function> a global variable inside of a function, you can use the <parameter>$GLOBALS</parameter> array to do so:
+     <informalexample>
+      <programlisting role="php">
+function foo() {
+    unset($GLOBALS['bar']);       
+}
+
+$bar = "something";
+foo();
+      </programlisting>
+     </informalexample>
     </para>
     <para>
      See also <function>isset</function> and
