@@ -288,6 +288,14 @@ function get_file_status($file)
         return FALSE;
     }
 
+    // Get credits from file and collect it
+    $this_credits = get_credits($trans_file);
+    
+    // Add credits to file by maintainer list
+    foreach ($this_credits as $nick) {
+        files_by_maint(REV_CREDIT, $nick);
+    }
+
     // If we need to check for a specific translator
     if (!empty($MAINT)) {
         // Get translated files tag, with maintainer
@@ -319,12 +327,6 @@ function get_file_status($file)
 
     // Distribute values in separate vars for further processing
     list(, $this_rev, $this_maint, $this_status) = $trans_tag;
-    $this_credits = get_credits($trans_file);
-    
-    // Add credits to file by maintainer list
-    foreach ($this_credits as $nick) {
-        files_by_maint(REV_CREDIT, $nick);
-    }
 
     // Get translated file name (without directories)
     $trans_name = substr($trans_file, strlen($DOCDIR) + strlen($LANG) + 1);
