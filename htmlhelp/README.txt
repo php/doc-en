@@ -10,7 +10,10 @@ How to build a CHM manual with this system?
     but that your XSL folder is dated 2002.12.31 23:00:00,
     since if you use XSL sheets from after this timestamp,
     the customizations will not work. Use the cvs date tag
-    to get this version.
+    to get this version:
+
+    From the phpdoc root directory:
+        cvs update -dP -D'December 31, 2002 11:00pm' xsl
 
     {Volunteer to fix the customizations if you are willing
      to, but otherwise you cannot do much more but use the old
@@ -52,9 +55,9 @@ How to build a CHM manual with this system?
 
  6. Get all the user notes from
     http://ANY_MIRROR.php.net/backend/notes/all.bz2,
-    extract it's contents, and place the resulting
-    "all" file to the same folder where the
-    make_chm.bat resides.
+    extract its contents (using bunzip2 all.bz2, for example),
+    and place the resulting "all" file to the same folder where
+    the make_chm.bat resides.
 
  7. Copy local_vars.php.src to local_vars.php and
     adjust settings as needed.
