@@ -1,21 +1,28 @@
 ;; $Id$
 ;;
 ;; This file is part of the Modular DocBook Stylesheet distribution.
-;; See ../README or http://www.berkshire.net/~norm/dsssl/
+;; See ../README or http://docbook.sourceforge.net/projects/dsssl/
 ;;
 
 ;; ============================== INLINES ===============================
 
+(element abbrev (if %html40%
+                    ($abbr-seq$)
+                    ($charseq$)))
+(element acronym (if %html40%
+                     ($acronym-seq$)
+                     ($charseq$)))
 (element accel ($charseq$))
 (element action ($charseq$))
 (element application ($charseq$))
-(element classname ($mono-seq$))
+(element classname ($code-seq$))
+(element constant ($code-seq$))
 (element command ($bold-seq$))
-(element computeroutput ($mono-seq$))
+(element computeroutput ($samp-seq$))
 (element database ($charseq$))
 
 (element email 
-  ($mono-seq$ 
+  ($code-seq$ 
    (make sequence 
      (literal "&#60;")
      (make element gi: "A"
@@ -28,9 +35,9 @@
 (element errorcode ($charseq$))
 (element errorname ($charseq$))
 (element errortype ($charseq$))
-(element envar ($mono-seq$))
-(element filename ($mono-seq$))
-(element function ($mono-seq$))
+(element envar ($var-seq$))
+(element filename ($mono-seq$))         ; unsure
+(element function ($code-seq$))
 (element guibutton ($charseq$))
 (element guiicon ($charseq$))
 (element guilabel ($charseq$))
@@ -67,7 +74,7 @@
 		(loop (node-list-rest nl) (+ count 1))))))))
 
 (element keysym ($charseq$))
-(element literal ($mono-seq$))
+(element literal ($var-seq$))
 (element medialabel ($italic-seq$))
 
 (element menuchoice
@@ -101,10 +108,10 @@
 	    (process-node-list shortcut)
 	    (literal ")"))))))
 
-(element methodname ($mono-seq$))
+(element methodname ($code-seq$))
 (element shortcut ($bold-seq$))
 (element mousebutton ($charseq$))
-(element option ($mono-seq$))
+(element option ($var-seq$))
 
 (element optional 
   (make sequence 
@@ -112,20 +119,19 @@
     ($charseq$)
     (literal %arg-choice-opt-close-str%)))
 
-(element parameter ($italic-mono-seq$))
+(element parameter ($var-seq$))
 (element property ($charseq$))
-(element prompt ($mono-seq$))
-(element replaceable ($italic-mono-seq$))
+(element prompt ($samp-seq$))
+(element replaceable ($var-seq$))
 (element returnvalue ($charseq$))
-(element structfield ($italic-mono-seq$))
-(element structname ($charseq$))
-(element symbol ($charseq$))
-(element systemitem ($charseq$))
+(element structfield ($code-seq$))
+(element structname ($code-seq$))
+(element symbol ($var-seq$))
+(element systemitem ($charseq$))        ; ambiguous, should look at class
 (element token ($charseq$))
-(element type ($charseq$))
-(element userinput ($bold-mono-seq$))
-(element abbrev ($charseq$))
-(element acronym ($charseq$))
+(element type ($charseq$))              ; ambiguous
+(element userinput ($kbd-seq$))
+(element varname ($var-seq$))
 
 (element citation 
   (if biblio-citation-check
@@ -236,42 +242,42 @@
 		   (normalize "element"))))
 <![CDATA[
   (cond
-   ((equal? class (normalize "attribute")) ($mono-seq$))
-   ((equal? class (normalize "attvalue")) ($mono-seq$))
-   ((equal? class (normalize "element")) ($mono-seq$))
-   ((equal? class (normalize "endtag")) ($mono-seq$ (make sequence 
+   ((or (equal? class (normalize "attribute"))
+        (equal? class (normalize "attvalue"))
+        (equal? class (normalize "element"))) ($code-seq$))
+   ((equal? class (normalize "endtag")) ($code-seq$ (make sequence 
 						      (literal "</") 
 						      (process-children)
 						      (literal ">"))))
-   ((equal? class (normalize "genentity")) ($mono-seq$ (make sequence
+   ((equal? class (normalize "genentity")) ($code-seq$ (make sequence
 							 (literal "&")
 							 (process-children)
 							 (literal ";"))))
-   ((equal? class (normalize "numcharref")) ($mono-seq$ (make sequence
+   ((equal? class (normalize "numcharref")) ($code-seq$ (make sequence
 							  (literal "&#")
 							  (process-children)
 							  (literal ";"))))
-   ((equal? class (normalize "paramentity")) ($mono-seq$ (make sequence
+   ((equal? class (normalize "paramentity")) ($code-seq$ (make sequence
 							   (literal "%")
 							   (process-children)
 							   (literal ";"))))
-   ((equal? class (normalize "pi")) ($mono-seq$ (make sequence 
+   ((equal? class (normalize "pi")) ($code-seq$ (make sequence 
 						  (literal "<?")
 						  (process-children)
 						  (literal ">"))))
-   ((equal? class (normalize "xmlpi")) ($mono-seq$ (make sequence 
+   ((equal? class (normalize "xmlpi")) ($code-seq$ (make sequence 
 						  (literal "<?")
 						  (process-children)
 						  (literal "?>"))))
-   ((equal? class (normalize "starttag")) ($mono-seq$ (make sequence 
+   ((equal? class (normalize "starttag")) ($code-seq$ (make sequence 
 							(literal "<") 
 							(process-children)
 							(literal ">"))))
-   ((equal? class (normalize "emptytag")) ($mono-seq$ (make sequence 
+   ((equal? class (normalize "emptytag")) ($code-seq$ (make sequence 
 							(literal "<") 
 							(process-children)
 							(literal "/>"))))
-   ((equal? class (normalize "sgmlcomment")) ($mono-seq$ (make sequence 
+   ((equal? class (normalize "sgmlcomment")) ($code-seq$ (make sequence 
 							   (literal "<!--")
 							   (process-children)
 							   (literal "-->"))))

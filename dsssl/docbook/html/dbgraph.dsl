@@ -1,7 +1,7 @@
 ;; $Id$
 ;;
 ;; This file is part of the Modular DocBook Stylesheet distribution.
-;; See ../README or http://www.berkshire.net/~norm/dsssl/
+;; See ../README or http://docbook.sourceforge.net/projects/dsssl/
 ;;
 
 ;; ==================== GRAPHICS ====================
@@ -53,7 +53,7 @@
 						  "content"
 						  (node-list-first meta))))))
 				 (loop (node-list-rest meta) attrlist))))
-		       (empty-node-list)))
+		       '()))
 	 (width    (if prop (attribute-string "width" prop) #f))
 	 (height   (if prop (attribute-string "height" prop) #f))
 	 (alttext  (if image

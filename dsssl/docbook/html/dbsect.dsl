@@ -1,7 +1,7 @@
 ;; $Id$
 ;;
 ;; This file is part of the Modular DocBook Stylesheet distribution.
-;; See ../README or http://www.berkshire.net/~norm/dsssl/
+;; See ../README or http://docbook.sourceforge.net/projects/dsssl/
 ;;
 
 ;; ============================== SECTIONS ==============================
@@ -92,14 +92,13 @@
     (make sequence
       (make element gi: h1elem
 	    attributes: (list (list "CLASS" (gi sect)))
-	    (make sequence
-	      (make element gi: "A"
-		    attributes: (list (list "NAME" name))
-		    (empty-sosofo))
-	      (if (string=? (element-label (current-node)) "")
-		  (empty-sosofo)
-		  (literal (element-label (current-node)) nsep))
-	      (element-title-sosofo sect)))
+	    (make element gi: "A"
+		  attributes: (list (list "NAME" name))
+		  (make sequence
+		    (if (string=? (element-label (current-node)) "")
+			(empty-sosofo)
+			(literal (element-label (current-node)) nsep))
+		    (element-title-sosofo sect))))
       (if (node-list-empty? subtitles) 
 	  (empty-sosofo)
 	  (with-mode subtitle-mode

@@ -1,7 +1,7 @@
 ;; $Id$
 ;;
 ;; This file is part of the Modular DocBook Stylesheet distribution.
-;; See ../README or http://www.berkshire.net/~norm/dsssl/
+;; See ../README or http://docbook.sourceforge.net/projects/dsssl/
 ;;
 
 ;; =============================== LISTS ================================
@@ -59,11 +59,11 @@
 ;; Improve spacing on lists, remove extra space before..
 ;; Suggested by Adam Di Carlo, adam@onshore.com
 (define ($list$)
-  (make display-group
-    start-indent: (if (INBLOCK?)
-                      (inherited-start-indent)
-                      (+ %block-start-indent% (inherited-start-indent)))
-    space-after:  (if (INLIST?) %para-sep% %block-sep%)))
+   (make display-group
+     start-indent: (if (INBLOCK?)
+		       (inherited-start-indent)
+		       (+ %block-start-indent% (inherited-start-indent)))
+     space-after:  (if (INLIST?) %para-sep% %block-sep%)))
 
 (element itemizedlist ($list$))
 
@@ -105,7 +105,7 @@
 (define (process-listitem-content)
   (if (absolute-first-sibling?) 
       (make sequence
-	(process-node-list (children (current-node))))
+	(process-children-trim))
       (next-match)))
 
 (mode listitem-content-mode
@@ -499,7 +499,6 @@
 	 (idlist (split arearefs)))
     (make sequence
       start-indent: (+ (inherited-start-indent) (COSTEP))
-
       (make paragraph
 	space-before: %para-sep%
 	first-line-start-indent: (- (COSTEP))

@@ -865,6 +865,47 @@
   ;; /REFENTRY
   #f)
 
+(define %epigraph-start-col%
+  ;; REFENTRY epigraph-start-col
+  ;; PURP Size of start indent for epigraphs.
+  ;; DESC
+  ;; Width of the table column which provides a starting indent for
+  ;; epigraphs, expressed as a percentage.
+  ;; AUTHOR Ola Lundqvist
+  ;; /REFENTRY
+  "45%")
+
+(define %epigraph-content-col%
+  ;; REFENTRY epigraph-content-col
+  ;; PURP Size of epigraph text column.
+  ;; DESC
+  ;; Width of the table column which contains the contents of
+  ;; epigraphs, expressed as a percentage.
+  ;; AUTHOR Ola Lundqvist
+  ;; /REFENTRY
+  "45%")
+
+(define %blockquote-start-col%
+  ;; REFENTRY blockquote-start-col
+  ;; PURP Size of start indent for blockquoted text.
+  ;; DESC
+  ;; Width of the table column which provides a starting indent for
+  ;; blockquoted text, expressed as a percentage.
+  ;; AUTHOR Ola Lundqvist
+  ;; /REFENTRY
+  "10%")
+
+(define %blockquote-end-col%
+  ;; REFENTRY blockquote-end-col
+  ;; PURP Size of end indent for blockquoted text.
+  ;; DESC
+  ;; Width of the table column which provides and end indent after
+  ;; blockquoted text, expressed as a percentage.
+  ;; AUTHOR Ola Lundqvist
+  ;; /REFENTRY
+  "10%")
+
+
 ;; REFERENCE Bibliographies
 
 (define biblio-citation-check
@@ -1127,7 +1168,9 @@
   ;; /DESC
   ;; AUTHOR N/A
   ;; /REFENTRY
-  #f)
+  (if %html40%
+      "-//W3C//DTD HTML 4.01 Transitional//EN"
+      #f))
 
 (define %root-filename%
   ;; REFENTRY root-filename
@@ -1353,8 +1396,8 @@
   ;; REFENTRY html40
   ;; PURP Generate HTML 4.0
   ;; DESC
-  ;; If '%html40%' is true then the output more-closely resembles HTML 4.0.
-  ;; In partucular, the HTML table module includes THEAD, TBODY, and TFOOT
+  ;; If '%html40%' is true then the output more closely resembles HTML 4.0.
+  ;; In particular, the HTML table module includes COL, THEAD, TBODY, and TFOOT
   ;; elements.
   ;; /DESC
   ;; AUTHOR N/A
@@ -1408,7 +1451,8 @@
   ;; DESC
   ;; Should extraneous "P" tags be output to force the correct vertical
   ;; spacing around things like tables.  This is ugly because different
-  ;; browsers do different things.
+  ;; browsers do different things.  Turning this one can also create
+  ;; illegal HTML.
   ;; /DESC
   ;; AUTHOR N/A
   ;; /REFENTRY

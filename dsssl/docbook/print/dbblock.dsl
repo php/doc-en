@@ -1,7 +1,7 @@
 ;; $Id$
 ;;
 ;; This file is part of the Modular DocBook Stylesheet distribution.
-;; See ../README or http://www.berkshire.net/~norm/dsssl/
+;; See ../README or http://docbook.sourceforge.net/projects/dsssl/
 ;;
 
 (element revhistory ($book-revhistory$))
@@ -24,8 +24,8 @@
 	line-spacing: (* %bf-size% %line-spacing-factor%
 			 %smaller-size-factor%)
 	space-before: %para-sep%
-	start-indent: (+ (inherited-start-indent) 1em)
-	end-indent: 1em
+        start-indent: (+ (inherited-start-indent) %blockquote-start-indent%)
+        end-indent: %blockquote-end-indent%
 	(process-node-list paras))
       (if (node-list-empty? attrib)
 	  (empty-sosofo)
@@ -52,8 +52,8 @@
 	line-spacing: (* %bf-size% %line-spacing-factor%
 			 %smaller-size-factor%)
 	space-before: %para-sep%
-	start-indent: (+ (inherited-start-indent) 1em)
-	end-indent: 1em
+        start-indent: (+ (inherited-start-indent) %blockquote-start-indent%)
+        end-indent: %blockquote-end-indent%
 	(process-node-list paras))
       (if (node-list-empty? attrib)
 	  (empty-sosofo)
@@ -78,7 +78,7 @@
       ($paragraph$)))
 
 (element epigraph
-  (let* ((addln-indent (* %text-width% 0.55))
+  (let* ((addln-indent %epigraph-start-indent%)
 	 (attrib       (select-elements (children (current-node))
 					(normalize "attribution")))
 	 (paras        (node-list-filter-by-not-gi
@@ -86,6 +86,7 @@
 			(list (normalize "attribution")))))
     (make display-group
       start-indent: (+ %body-start-indent% addln-indent)
+      end-indent: %epigraph-end-indent%
       font-posture: 'italic
       (process-node-list paras)
       (if (node-list-empty? attrib)
@@ -113,7 +114,7 @@
 (element formalpara ($para-container$))
 
 (element (formalpara title) ($runinhead$))
-(element (formalpara para) (make sequence (process-children)))
+(element (formalpara para) (make sequence (process-children-trim)))
 
 (element sidebar 
   (make box
@@ -263,7 +264,7 @@
     (let* ((object (parent (current-node)))
 	   (nsep   (gentext-label-title-sep (gi object))))
       (make paragraph
-	font-weight: 'bold
+	font-weight: %formal-object-title-font-weight%
 	space-before: (if (object-title-after (parent (current-node)))
 			  %para-sep%
 			  0pt)
@@ -335,7 +336,7 @@
 	 (rule-before? %table-rules%)
 	 (rule-after? %table-rules%)
 	 (title-sosofo (make paragraph
-			 font-weight: 'bold
+			 font-weight: %table-title-font-weight%
 			 space-before: (if (object-title-after)
 					   %para-sep%
 					   0pt)
@@ -475,12 +476,11 @@
   ;; Note: this can only get called if the backend is 'tex
   ;; If the backend is anything else, footnote never calls process
   ;; children except in endnote-mode, so this doesn't get called.
-  (let ((fnnum  (footnote-number (parent (current-node)))))
+  (let ((fnnum	(footnote-number (parent (current-node)))))
     (if (= (child-number) 1)
 	(make paragraph
- 	  font-family-name: %body-font-family%
+	  use: default-text-style
 	  font-size: (* %footnote-size-factor% %bf-size%)
-	  font-posture: 'upright
 	  quadding: %default-quadding%
 	  line-spacing: (* (* %footnote-size-factor% %bf-size%)
 			   %line-spacing-factor%)
@@ -488,21 +488,22 @@
 	  space-after: %para-sep%
 	  start-indent: %footnote-field-width%
 	  first-line-start-indent: (- %footnote-field-width%)
+	  lines: 'wrap			; doesn't seem to work
 	  (make line-field
 	    field-width: %footnote-field-width%
 	    (literal fnnum 
 		     (gentext-label-title-sep (normalize "footnote"))))
 	  (process-children-trim))
 	(make paragraph
- 	  font-family-name: %body-font-family%
+	  use: default-text-style
 	  font-size: (* %footnote-size-factor% %bf-size%)
-	  font-posture: 'upright
 	  quadding: %default-quadding%
 	  line-spacing: (* (* %footnote-size-factor% %bf-size%)
 			   %line-spacing-factor%)
 	  space-before: %para-sep%
 	  space-after: %para-sep%
 	  start-indent: %footnote-field-width%
+	  lines: 'wrap			; doesn't seem to work
 	  (process-children-trim)))))
 
 (define (non-table-footnotes footnotenl)

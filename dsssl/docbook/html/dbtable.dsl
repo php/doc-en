@@ -1,7 +1,7 @@
 ;; $Id$
 ;;
 ;; This file is part of the Modular DocBook Stylesheet distribution.
-;; See ../README or http://www.berkshire.net/~norm/dsssl/
+;; See ../README or http://docbook.sourceforge.net/projects/dsssl/
 ;;
 ;; Table support completely reimplemented by norm 15/16 Nov 1997.
 ;; Adapted from print support.
@@ -106,7 +106,7 @@
 
 (define (cals-relative-colwidth colwidth)
   (let ((number (length-string-number-part colwidth))
-	(units  (length-string-unit-part colwidth)))
+	(units	(length-string-unit-part colwidth)))
     (if (string=? units "*")
 	(if (string=? number "")
 	    1
@@ -114,23 +114,31 @@
 	0)))
 
 (define (cell-relative-colwidth cell relative)
-  (let* ((tgroup (find-tgroup cell)))
-    (let loop ((colspecs (select-elements (children tgroup)
-					  (normalize "colspec")))
-	       (reltotal 0))
-      (if (node-list-empty? colspecs)
-	  (string-append (number->string (round (* (/ relative reltotal) 100))) "%")
-	  (loop (node-list-rest colspecs) 
-		(+ reltotal (cals-relative-colwidth 
-			     (colspec-colwidth 
-			      (node-list-first colspecs)))))))))
+  ;; given a cell and a relative width, work out the HTML cell WIDTH attribute
+  (let* ((tgroup (find-tgroup cell))
+	 (pgwide? (equal? (attribute-string (normalize "pgwide") (parent tgroup)) "1")))
+    (if (and (not pgwide?) %html40%)
+	;; html4 allows widths like "1*", we don't wanna use 50% if pgwide is not on
+	(string-append (number->string relative) "*")
+	(let loop ((colspecs (select-elements (children tgroup)
+					      (normalize "colspec")))
+		   (reltotal 0))
+	  (if (not (node-list-empty? colspecs))
+	      (loop (node-list-rest colspecs)
+		    (+ reltotal (cals-relative-colwidth 
+				 (colspec-colwidth 
+				  (node-list-first colspecs)))))
+	      (if (equal? reltotal 0)
+		  ""
+		  (string-append (number->string (round (* (/ relative reltotal) 100))) "%")))))))
 
 (define (cell-colwidth cell colnum)
-  (let* ((entry     (ancestor-member cell (list (normalize "entry") 
+  ;; return the width of a cell, or "" if not specified
+  (let* ((entry	    (ancestor-member cell (list (normalize "entry") 
 						(normalize "entrytbl"))))
 	 (colspec   (find-colspec-by-number colnum))
 	 (colwidth  (colspec-colwidth colspec))
-	 (width     (round (/ (colwidth-length colwidth) 1px))))
+	 (width	    (round (/ (colwidth-length colwidth) 1px))))
     (if (node-list-empty? colspec)
 	""
 	(if (and (equal? (hspan entry) 1) colwidth)
@@ -142,45 +150,76 @@
 ;; ======================================================================
 
 (define (cell-align cell colnum)
-  (let* ((entry     (ancestor-member cell (list (normalize "entry") 
+  ;; horizontal alignment for the cell, or "" if not set; efficiency
+  ;; here is important
+  (let* ((entry	    (ancestor-member cell (list (normalize "entry") 
 						(normalize "entrytbl"))))
-	 (tgroup    (find-tgroup entry))
-	 (spanname  (attribute-string (normalize "spanname") entry))
-	 (calsalign (if (attribute-string (normalize "align") entry)
-			(attribute-string (normalize "align") entry)
-			(if (and spanname 
-				 (spanspec-align (find-spanspec spanname)))
-			    (spanspec-align (find-spanspec spanname))
-			    (if (colspec-align (find-colspec-by-number colnum))
-				(colspec-align (find-colspec-by-number colnum))
-				(if (tgroup-align tgroup)
-				    (tgroup-align tgroup)
-				    (normalize "left")))))))
-    (cond
-     ((equal? calsalign (normalize "left")) "LEFT")
-     ((equal? calsalign (normalize "center")) "CENTER")
-     ((equal? calsalign (normalize "right")) "RIGHT")
-     (else "LEFT"))))
-    
+	 (spanname  (attribute-string (normalize "spanname") entry)))
+    (if (attribute-string (normalize "align") entry)
+	(attribute-string (normalize "align") entry)
+	(if (and spanname (spanspec-align (find-spanspec spanname)))
+	    (spanspec-align (find-spanspec spanname))
+	    (if %html40%
+		;; no need to set align explictly, let COL do the work
+		""
+		(if (colspec-align (find-colspec-by-number colnum))
+		    (colspec-align (find-colspec-by-number colnum))
+		    (let ((tgroup (find-tgroup entry)))
+		      (if (tgroup-align tgroup)
+			  (tgroup-align tgroup)
+			  (normalize "left")))))))))
+
 (define (cell-valign cell colnum)
-  (let* ((entry      (ancestor-member cell (list (normalize "entry")
-						 (normalize "entrytbl"))))
-	 (row        (ancestor (normalize "row") entry))
-	 (tbody      (ancestor-member cell (list (normalize "tbody") 
-						 (normalize "thead") (normalize "tfoot"))))
-	 (tgroup     (find-tgroup entry))
-	 (calsvalign (if (attribute-string (normalize "valign") entry)
-			 (attribute-string (normalize "valign") entry)
-			 (if (attribute-string (normalize "valign") row)
-			     (attribute-string (normalize "valign") row)
-			     (if (attribute-string (normalize "valign") tbody)
-				 (attribute-string (normalize "valign") tbody)
-				 %cals-valign-default%)))))
-    (cond
-     ((equal? calsvalign (normalize "top")) "TOP")
-     ((equal? calsvalign (normalize "middle")) "MIDDLE")
-     ((equal? calsvalign (normalize "bottom")) "BOTTOM")
-     (else "MIDDLE"))))
+  ;; vertical alignment for the cell, or "" if not set; efficiency
+  ;; here is important
+  (let ((entry	    (ancestor-member cell (list (normalize "entry")
+						(normalize "entrytbl")))))
+    (if (attribute-string (normalize "valign") entry)
+	(attribute-string (normalize "valign") entry)
+	"")))
+
+(define ($table-frame$ table)
+  ;; determine the proper setting for the html 4 FRAME attribute
+  (let* ((wrapper   (parent (current-node)))
+	 (frameattr (attribute-string (normalize "frame") wrapper)))
+    (if (and %html40% frameattr)
+	(cond
+	 ((equal? frameattr (normalize "all"))
+	  (list (list "FRAME" "border")))
+	 ((equal? frameattr (normalize "bottom"))
+	  (list (list "FRAME" "below")))
+	 ((equal? frameattr (normalize "none"))
+	  (list (list "FRAME" "void")))
+	 ((equal? frameattr (normalize "sides"))
+	  (list (list "FRAME" "vsides")))
+	 ((equal? frameattr (normalize "top"))
+	  (list (list "FRAME" "above")))
+	 ((equal? frameattr (normalize "topbot"))
+	  (list (list "FRAME" "hsides")))
+	 (else '()))
+	'())))
+
+(define ($table-border$ table)
+  ;; determine the proper setting for the html 4 BORDER attribute (cell frames)
+  ;; FIXME: rules can be overriden by COLSPEC elements, use "group" value?
+  (let* ((wrapper   (parent (current-node)))
+	 (rowsepattr (or (attribute-string (normalize "rowsep") (current-node))
+			 (attribute-string (normalize "rowsep") wrapper)))
+	 (colsepattr (or (attribute-string (normalize "colsep") (current-node))
+			 (attribute-string (normalize "colsep") wrapper))))
+    (if (and %html40% (or rowsepattr colsepattr))
+	;; remember there are actually 3 possible values: 0, 1, unset
+	(cond
+	 ((and (equal? colsepattr "1") (equal? rowsepattr "1"))
+	  (list (list "RULES" "all")))
+	 ((and (equal? colsepattr "0") (equal? rowsepattr "0"))
+	  (list (list "RULES" "none")))
+	 ((and (equal? colsepattr "1") (equal? rowsepattr "0"))
+	  (list (list "RULES" "cols")))
+	 ((and (equal? colsepattr "0") (equal? rowsepattr "1"))
+	  (list (list "RULES" "rows")))
+	 (else '()))	    ; if rowsep set but not colsep, ignore it
+	'())))
 
 ;; ======================================================================
 ;; Element rules
@@ -188,64 +227,63 @@
 (element tgroup
   (let* ((wrapper   (parent (current-node)))
 	 (frameattr (attribute-string (normalize "frame") wrapper))
-	 (pgwide    (attribute-string (normalize "pgwide") wrapper))
-	 (footnotes (select-elements (descendants (current-node)) 
-				     (normalize "footnote")))
-	 (border (if (equal? frameattr (normalize "none"))
-		     '(("BORDER" "0"))
-		     '(("BORDER" "1"))))
-	 (width (if (equal? pgwide "1")
-		    (list (list "WIDTH" ($table-width$)))
-		    '()))
-	 (head (select-elements (children (current-node)) (normalize "thead")))
-	 (body (select-elements (children (current-node)) (normalize "tbody")))
-	 (feet (select-elements (children (current-node)) (normalize "tfoot"))))
+	 (pgwide    (attribute-string (normalize "pgwide") wrapper)))
     (make element gi: "TABLE"
 	  attributes: (append
-		       border
-		       width
+		       (if (equal? frameattr (normalize "none"))
+                           '(("BORDER" "0"))
+                           '(("BORDER" "1")))
+		       ($table-frame$ (current-node))
+                       ($table-border$ (current-node))
+		       (if (equal? pgwide "1")
+                           (list (list "WIDTH" ($table-width$)))
+                           '())
 		       (if %cals-table-class%
 			   (list (list "CLASS" %cals-table-class%))
 			   '()))
-	  (process-node-list head)
-	  (process-node-list body)
-	  (process-node-list feet)
+	  ($process-colspecs$ (current-node))
+	  (process-node-list (select-elements (children (current-node)) (normalize "thead")))
+	  (process-node-list (select-elements (children (current-node)) (normalize "tbody")))
+	  (process-node-list (select-elements (children (current-node)) (normalize "tfoot")))
 	  (make-table-endnotes))))
 
 (element entrytbl ;; sortof like a tgroup...
   (let* ((wrapper   (parent (parent (parent (parent (current-node))))))
 	 ;;	     table   tgroup  tbody   row  
 	 (frameattr (attribute-string (normalize "frame") wrapper))
-	 (tgrstyle  (attribute-string (normalize "tgroupstyle")))
-	 (border    (if (and (or (equal? frameattr (normalize "none"))
-				 (equal? tgrstyle (normalize "noborder")))
-			     (not (equal? tgrstyle (normalize "border"))))
-			'(("BORDER" "0"))
-			'(("BORDER" "1"))))
-	 (head (select-elements (children (current-node)) (normalize "thead")))
-	 (body (select-elements (children (current-node)) (normalize "tbody"))))
+	 (tgrstyle  (attribute-string (normalize "tgroupstyle"))))
     (make element gi: "TABLE"
 	  attributes: (append
-		       border
+		       (if (and (or (equal? frameattr (normalize "none"))
+                                    (equal? tgrstyle (normalize "noborder")))
+                                (not (equal? tgrstyle (normalize "border"))))
+                           '(("BORDER" "0"))
+                           '(("BORDER" "1")))
+		       ($table-frame$ (current-node))
+		       ($table-border$ (current-node))
 		       (if %cals-table-class%
 			   (list (list "CLASS" %cals-table-class%))
 			   '()))
-	  (process-node-list head)
-	  (process-node-list body))))
+	  ($process-colspecs$ (current-node))
+	  (process-node-list (select-elements (children (current-node)) (normalize "thead")))
+	  (process-node-list (select-elements (children (current-node)) (normalize "tbody"))))))
 
 (element colspec
+  ;; now handled by $process-colspecs$
   (empty-sosofo))
 
 (element spanspec
   (empty-sosofo))
 
 (element thead
+  ;; note that colspec/spanspec in thead isn't supported by HTML table model
   (if %html40%
       (make element gi: "THEAD"
 	    ($process-table-body$ (current-node)))
       ($process-table-body$ (current-node))))
 
 (element tfoot
+  ;; note that colspec/spanspec in tfoot isn't supported by HTML table model
   (if %html40%
       (make element gi: "TFOOT"
 	    ($process-table-body$ (current-node)))
@@ -254,6 +292,9 @@
 (element tbody
   (if %html40%
       (make element gi: "TBODY"
+            attributes: (if (attribute-string (normalize "valign"))
+                            (list (list "VALIGN" (attribute-string (normalize "valign"))))
+                            '())
 	    ($process-table-body$ (current-node)))
       ($process-table-body$ (current-node))))
 
@@ -266,9 +307,45 @@
 ;; ======================================================================
 ;; Functions that handle processing of table bodies, rows, and cells
 
+(define ($process-colspecs$ tgroup)
+  ;; given tgroup or entrytbl, convert the colspecs to HTML4 COL elements
+  (if (not %html40%)
+      (empty-sosofo)
+      (let ((cols (string->number (attribute-string (normalize "cols")))))
+	(let loop ((colnum 1))
+	  (if (> colnum cols)
+	      (empty-sosofo)
+	      (make sequence
+		(let* ((colspec	 (find-colspec-by-number colnum))
+		       (colwidth (colspec-colwidth colspec)))
+		  (if (node-list-empty? colspec)
+		      (make empty-element gi: "COL")
+		      (make empty-element gi: "COL"
+			    attributes:
+			    (append
+			     (if colwidth
+				 (list (list "WIDTH"
+					     (if (cals-relative-colwidth? colwidth)
+						 (cell-relative-colwidth colspec (cals-relative-colwidth colwidth))
+						 (number->string (round (/ (colwidth-length colwidth) 1px))))))
+				 '())
+			     (if (attribute-string (normalize "align") colspec)
+				 (list (list "ALIGN" (attribute-string (normalize "align") colspec)))
+				 '())
+			     (if (attribute-string (normalize "char") colspec)
+				 (list (list "CHAR" (attribute-string (normalize "char") colspec)))
+				 '())
+			     (if (attribute-string (normalize "charoff") colspec)
+				 (list (list "CHAROFF" (attribute-string (normalize "charoff") colspec)))
+				 '())
+			     (if (attribute-string (normalize "colname") colspec)
+				 (list (list "TITLE" (attribute-string (normalize "colname") colspec)))
+				 '())))))
+		(loop (+ colnum 1))))))))
+
 (define ($process-table-body$ body)
   (let* ((tgroup (find-tgroup body))
-	 (cols   (string->number (attribute-string (normalize "cols") 
+	 (cols	 (string->number (attribute-string (normalize "cols") 
 						   tgroup))))
     (let loop ((rows (select-elements (children body) (normalize "row")))
 	       (overhang (constant-list 0 cols)))
@@ -280,23 +357,18 @@
 		  (update-overhang (node-list-first rows) overhang)))))))
 
 (define ($process-row$ row overhang)
+  ;; FIXME: rowsep
   (let* ((tgroup (find-tgroup row))
 	 (rowcells (node-list-filter-out-pis (children row)))
+	 (rowalign (attribute-string (normalize "valign") row))
 	 (maxcol (string->number (attribute-string (normalize "cols") tgroup)))
-	 (lastentry (node-list-last rowcells))
-	 (table  (ancestor-member tgroup (list (normalize "table")
-					       (normalize "informaltable"))))
-	 (rowsep (if (attribute-string (normalize "rowsep") row)
-		     (attribute-string (normalize "rowsep") row)
-		     (if (attribute-string (normalize "rowsep") tgroup)
-			 (attribute-string (normalize "rowsep") tgroup)
-			 (if (attribute-string (normalize "rowsep") table)
-			     (attribute-string (normalize "rowsep") table)
-			     %cals-rule-default%))))
-	 (after-row-border (if rowsep
-			       (> (string->number rowsep) 0)
-			       #f)))
+	 (lastentry (node-list-last rowcells)))
     (make element gi: "TR"
+	  attributes: (append
+		       (if rowalign
+			   (list (list "VALIGN" rowalign))
+			   '())
+		       '())
 	  (let loop ((cells rowcells)
 		     (prevcell (empty-node-list)))
 	    (if (node-list-empty? cells)
@@ -324,7 +396,7 @@
   (let loop ((nl (children entry)))
     (if (node-list-empty? nl)
 	#t
-	(let* ((node       (node-list-first nl))
+	(let* ((node	   (node-list-first nl))
 	       (nodeclass  (node-property 'class-name node))
 	       (nodechar   (if (equal? nodeclass 'data-char)
 			       (node-property 'char node)
@@ -393,27 +465,30 @@
 		    )
 	      (loop (overhang-skip overhang (+ count 1))))))
 
-;      (if (equal? (gi entry) (normalize "entrytbl"))
-;	  (make element gi: htmlgi
-;		(literal "ENTRYTBL not supported."))
-	  (make element gi: htmlgi
-		attributes: (append
-			     (if (> (hspan entry) 1)
-				 (list (list "COLSPAN" (number->string (hspan entry))))
-				 '())
-			     (if (> (vspan entry) 1)
-				 (list (list "ROWSPAN" (number->string (vspan entry))))
-				 '())
-			     (if (equal? (cell-colwidth entry colnum) "")
-				 '()
-				 (list (list "WIDTH" (cell-colwidth entry colnum))))
+      ;; Now we've output empty cells for any missing entries, so we 
+      ;; are ready to output the cell for this entry...
+      (make element gi: htmlgi
+	    attributes: (append
+			 (if (> (hspan entry) 1)
+			     (list (list "COLSPAN" (number->string (hspan entry))))
+			     '())
+			 (if (> (vspan entry) 1)
+			     (list (list "ROWSPAN" (number->string (vspan entry))))
+			     '())
+			 (if (and (not %html40%) (not (equal? (cell-colwidth entry colnum) "")))
+			     (list (list "WIDTH" (cell-colwidth entry colnum)))
+			     '())
+			 (if (not (equal? (cell-align entry colnum) ""))
 			     (list (list "ALIGN" (cell-align entry colnum)))
-			     (list (list "VALIGN" (cell-valign entry colnum))))
-		(if (empty-cell? entry) 
-		    (make entity-ref name: "nbsp")
-		    (if (equal? (gi entry) (normalize "entrytbl"))
-			(process-node-list entry)
-			(process-node-list (children entry))))))))
+			     '())
+			 (if (not (equal? (cell-valign entry colnum) ""))
+			     (list (list "VALIGN" (cell-valign entry colnum)))
+			     '()))
+	    (if (empty-cell? entry) 
+		(make entity-ref name: "nbsp")
+		(if (equal? (gi entry) (normalize "entrytbl"))
+		    (process-node-list entry)
+		    (process-node-list (children entry))))))))
 
 ;; EOF dbtable.dsl
 

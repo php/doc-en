@@ -456,6 +456,8 @@
   ;; vary depending on the setting of '%visual-acuity%'. There
   ;; are three legal values: 'normal', 
   ;; the normal, standard document size (10pt body text);
+  ;; 'tiny',
+  ;; a small text size (8pt body text);
   ;; 'presbyopic', 
   ;; a slightly more generous size (12pt body text); and
   ;; 'large-type',
@@ -463,6 +465,7 @@
   ;; /DESC
   ;; AUTHOR N/A
   ;; /REFENTRY
+  ;; "tiny"
   ;; "presbyopic"
   ;; "large-type"
   "normal")
@@ -560,6 +563,28 @@
   ;; /DESC
   ;; /REFENTRY
   0.9)
+
+(define %formal-object-title-font-weight%
+  ;; REFENTRY formal-object-title-font-weight
+  ;; PURP Formal object title font weight
+  ;; DESC
+  ;; Specifies the title font weight (i.e., 'bold or 'medium) of
+  ;; formal objects (e.g., figures).
+  ;; /DESC
+  ;; AUTHOR N/A
+  ;; /REFENTRY
+  'bold)
+
+(define %table-title-font-weight%
+  ;; REFENTRY table-title-font-weight
+  ;; PURP Table title font weight
+  ;; DESC
+  ;; Specifies the title font weight (i.e., 'bold or 'medium) of the
+  ;; formal tables.
+  ;; /DESC
+  ;; AUTHOR N/A
+  ;; /REFENTRY
+  'bold)
 
 ;; REFERENCE Backends
 
@@ -933,9 +958,9 @@
   ;; 'A4' or 'USletter'. Setting the paper type is an
   ;; easy shortcut for setting the correct paper height and width.
   ;; 
-  ;; As distributed, only 'A4' and 'USletter' are supported.  You can add
-  ;; additional paper types by updating 'page-width' and 'page-height'.
-  ;; If you do, please pass along your updates. 
+  ;; See %page-width% and %page-height concerning what other page size
+  ;; are available.  Some common examples are 'A4', 'USletter',
+  ;; 'A4landscape', 'USlandscape'.
   ;; /DESC
   ;; AUTHOR N/A
   ;; /REFENTRY
@@ -1137,6 +1162,24 @@
   ;; /DESC
   ;; /REFENTRY
   (- %page-width% (+ %left-margin% %right-margin%)))
+
+(define %epigraph-start-indent%
+  ;; REFENTRY epigraph-start-indent
+  ;; PURP Specifies the left indent of epigraphs.
+  ;; DESC
+  ;; The indent of a epigraph. Default 55% of the text width.
+  ;; /DESC
+  ;; /REFENTRY
+  (* %text-width% 0.55))
+
+(define %epigraph-end-indent%
+  ;; REFENTRY epigraph-end-indent
+  ;; PURP Specified the right indent of epigraphs.
+  ;; DESC
+  ;; The right indent of a epigraph. Default none.
+  ;; /DESC
+  ;; /REFENTRY
+  0pt)
 
 (define %body-width% 
   ;; REFENTRY body-width
@@ -1556,7 +1599,7 @@
   ;; /DESC
   ;; AUTHOR N/A
   ;; /REFENTRY
-  '("eps" "epsf" "gif" "tif" "tiff" "jpg" "jpeg" "png"))
+  '("eps" "epsf" "gif" "tif" "tiff" "jpg" "jpeg" "png" "pdf"))
 
 (define image-library
   ;; REFENTRY image-library
@@ -1703,6 +1746,24 @@
   ;; AUTHOR N/A
   ;; /REFENTRY
   4pi)
+
+(define %blockquote-start-indent%
+  ;; PURP Default indent of blockquoted text
+  ;; DESC
+  ;; The default start (usually left) indent of blockquoted text.
+  ;; /DESC
+  ;; AUTHOR Ola Lundqvist
+  ;; /REFENTRY
+  1em)
+
+(define %blockquote-end-indent%
+  ;; PURP Default indent of blockquoted text
+  ;; DESC
+  ;; The default end (usually right) indent of blockquoted text.
+  ;; /DESC
+  ;; AUTHOR Ola Lundqvist
+  ;; /REFENTRY
+  1em)
 
 (define %para-sep% 
   ;; REFENTRY para-sep

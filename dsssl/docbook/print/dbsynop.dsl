@@ -1,7 +1,7 @@
 ;; $Id$
 ;;
 ;; This file is part of the Modular DocBook Stylesheet distribution.
-;; See ../README or http://www.berkshire.net/~norm/dsssl/
+;; See ../README or http://docbook.sourceforge.net/projects/dsssl/
 ;;
 
 ;; ========================= SYNTAX DEFINITIONS =========================
@@ -47,14 +47,14 @@
        (else (literal %arg-choice-def-open-str%)))
       (process-children)
       (cond
-       ((equal? rep (normalize "repeat")) (literal %arg-rep-repeat-str%))
-       ((equal? rep (normalize "norepeat")) (literal %arg-rep-norepeat-str%))
-       (else (literal %arg-rep-def-str%)))
-      (cond
        ((equal? choice (normalize "plain")) (literal %arg-choice-plain-close-str%))
        ((equal? choice (normalize "req")) (literal %arg-choice-req-close-str%))
        ((equal? choice (normalize "opt")) (literal %arg-choice-opt-close-str%))
-       (else (literal %arg-choice-def-close-str%))))))
+       (else (literal %arg-choice-def-close-str%)))
+      (cond
+       ((equal? rep (normalize "repeat")) (literal %arg-rep-repeat-str%))
+       ((equal? rep (normalize "norepeat")) (literal %arg-rep-norepeat-str%))
+       (else (literal %arg-rep-def-str%))))))
 
 (element arg
   (let ((choice  (attribute-string (normalize "choice")))

@@ -1,7 +1,7 @@
 ;; $Id$
 ;;
 ;; This file is part of the Modular DocBook Stylesheet distribution.
-;; See ../README or http://www.berkshire.net/~norm/dsssl/
+;; See ../README or http://docbook.sourceforge.net/projects/dsssl/
 ;;
 
 ;; ============================== SECTIONS ==============================
@@ -20,7 +20,7 @@
 	      (section-level-by-gi #f (normalize renderas))
 	      ;; else use the real level
 	      (SECTLEVEL)))
-	 (hs (HSIZE (- 4 hlevel))))	
+	 (hs (HSIZE (- 5 hlevel))))	
     (make paragraph
       font-family-name: %title-font-family%
       font-weight:  (if (< hlevel 5) 'bold 'medium)
@@ -90,7 +90,7 @@
 	      (section-level-by-gi #f (normalize renderas))
 	      ;; else use the real level
 	      (SECTLEVEL)))
-	 (hs (HSIZE (- 4 hlevel))))
+	 (hs (HSIZE (- 5 hlevel))))
     (make sequence
       (make paragraph
 	font-family-name: %title-font-family%
@@ -135,7 +135,7 @@
 		(section-level-by-gi #f (normalize renderas))
 		;; else use the real level
 		(SECTLEVEL)))
-	   (hs (HSIZE (- 3 hlevel))))       ;; one smaller than the title...
+	   (hs (HSIZE (- 4 hlevel))))       ;; one smaller than the title...
       (make paragraph
 	font-family-name: %title-font-family%
 	font-weight:  (if (< hlevel 5) 'bold 'medium)

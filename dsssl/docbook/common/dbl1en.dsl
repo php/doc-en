@@ -195,8 +195,8 @@
    (list (normalize "sect5")		"&Section;")
    (list (normalize "section")		"&Section;")
    (list (normalize "simplesect")	"&Section;")
-   (list (normalize "seeie")		"&See;")
-   (list (normalize "seealsoie")	"&Seealso;")
+   (list (normalize "seeie")		"&see;")
+   (list (normalize "seealsoie")	"&seealso;")
    (list (normalize "set")		"&Set;")
    (list (normalize "sidebar")		"&Sidebar;")
    (list (normalize "step")		"&step;")
@@ -415,9 +415,9 @@
 
 (define %gentext-en-table-endnotes% "&TableNotes;:")
 
-(define %gentext-en-index-see% "&See;")
+(define %gentext-en-index-see% "&see;")
 
-(define %gentext-en-index-seealso% "&SeeAlso;")
+(define %gentext-en-index-seealso% "&seealso;")
 
 
 (define (gentext-en-nav-prev prev) 

@@ -1,7 +1,7 @@
 ;; $Id$
 ;;
 ;; This file is part of the Modular DocBook Stylesheet distribution.
-;; See ../README or http://www.berkshire.net/~norm/dsssl/
+;; See ../README or http://docbook.sourceforge.net/projects/dsssl/
 ;;
 
 (define (HSIZE n)
@@ -78,7 +78,7 @@
 	quadding: %default-quadding%
 	hyphenate?: %hyphenation%
 	language: (dsssl-language-code)
-	(process-children))
+	(process-children-trim))
       (make paragraph
 	first-line-start-indent: (if (is-first-para)
 				     %para-indent-firstpara%
@@ -89,7 +89,7 @@
 	hyphenate?: %hyphenation%
 	language: (dsssl-language-code)
 	country: (dsssl-country-code)
-	(process-children))))
+	(process-children-trim))))
 
 (define ($para-container$)
   (make paragraph

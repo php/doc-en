@@ -1,7 +1,7 @@
 ;; $Id$
 ;;
 ;; This file is part of the Modular DocBook Stylesheet distribution.
-;; See ../README or http://www.berkshire.net/~norm/dsssl/
+;; See ../README or http://docbook.sourceforge.net/projects/dsssl/
 ;;
 
 ;; ========================= LINKS AND ANCHORS ==========================
@@ -220,6 +220,8 @@
 		  (xref-callout target))
 		 ((equal? (gi target) (normalize "listitem"))
 		  (xref-listitem target))
+		 ((equal? (gi target) (normalize "varlistentry"))
+		  (xref-varlistentry target))
 		 ((equal? (gi target) (normalize "question"))
 		  (xref-question target))
 		 ((equal? (gi target) (normalize "answer"))
@@ -303,6 +305,14 @@
 			  (inherited-font-posture))
 
 	(process-node-list (children title))))))
+
+(define (xref-varlistentry target)
+  (let ((terms (select-elements (children target)
+				(normalize "term"))))
+    (make link 
+      destination: (node-list-address target)
+      (with-mode xref-varlistentry-mode
+	(process-node-list (node-list-first terms))))))
 
 (define (xref-glossentry target)
   (let ((glossterms (select-elements (children target)
@@ -424,6 +434,10 @@
   (element refentrytitle
     (process-children-trim))
 )
+
+(mode xref-varlistentry-mode
+  (element term
+    ($italic-seq$)))
 
 (mode xref-glossentry-mode
   (element glossterm

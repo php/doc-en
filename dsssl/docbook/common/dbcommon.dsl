@@ -384,7 +384,7 @@
 			    (normalize "section")))))
 	(if (> depth 5)
 	    6
-	    (+ depth 1)))
+	    (if chunked? (+ depth 1) (+ depth 2))))
       (if (equal? (gi sect) (normalize "simplesect"))
 	  ;; SimpleSect is special, it should be level "n+1", where "n" is
 	  ;; the level of the numbered section that contains it.  If it is

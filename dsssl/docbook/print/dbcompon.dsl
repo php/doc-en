@@ -418,11 +418,15 @@
 				  (article-titlepage nl 'recto)
 				  (article-titlepage nl 'verso)))))
     (make sequence
+
+      ;; make the titlepage first if its on a separate page
       (if (and %generate-article-titlepage% 
 	       %generate-article-titlepage-on-separate-page%)
 	  article-titlepage
 	  (empty-sosofo))
 
+      ;; make the TOC on a separate page if requested and it's not
+      ;; already on the title page and it's supposed to be in front
       (if (and %generate-article-toc% 
 	       (not %generate-article-toc-on-titlepage%)
 	       %generate-article-titlepage-on-separate-page%
@@ -443,7 +447,8 @@
 	    (build-toc (current-node)
 		       (toc-depth (current-node))))
 	  (empty-sosofo))
-	  
+
+      ;; start a new page for the article itself
       (make simple-page-sequence
 	page-n-columns: %page-n-columns%
 	page-number-restart?: (or %article-page-number-restart% 
@@ -460,11 +465,15 @@
 	input-whitespace-treatment: 'collapse
 	quadding: %default-quadding%
 
+	;; ... and include the titlepage if there is one and it's not
+	;; already generated on a separate page
 	(if (and %generate-article-titlepage% 
 		 (not %generate-article-titlepage-on-separate-page%))
 	    article-titlepage
 	    (empty-sosofo))
 
+	;; ... and include the TOC if it is in front and not already
+	;; generated
 	(if (and %generate-article-toc% 
 		 (generate-toc-in-front)
 		 (not %generate-article-toc-on-titlepage%)
@@ -475,10 +484,14 @@
 			 (toc-depth (current-node))))
 	    (empty-sosofo))
 
+	;; .. and the contents of the article
 	(process-children)
 
+        ;; ... and the endnotes
 	(make-endnotes)
 
+	;; ... and the TOC if it is supposed to be on the back and not
+	;; on the titlepage nor on a separate pagee
 	(if (and %generate-article-toc% 
 		 (not (generate-toc-in-front))
 		 (not %generate-article-toc-on-titlepage%)
@@ -489,6 +502,8 @@
 			 (toc-depth (current-node))))
 	    (empty-sosofo)))
 
+      ;; finally, produce the TOC if it is supposed to be at the end
+      ;; and on its own page
       (if (and %generate-article-toc% 
 	       (not %generate-article-toc-on-titlepage%)
 	       %generate-article-titlepage-on-separate-page%

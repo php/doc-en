@@ -528,6 +528,7 @@
     (make paragraph
       use: set-titlepage-recto-style
       quadding: %division-title-quadding%
+      space-before: (* (HSIZE 2) %head-before-factor%)
       (literal (gentext-element-name (current-node)))
       (literal "\no-break-space;")
       (literal (dingbat "copyright"))
@@ -1834,6 +1835,7 @@
     (make paragraph
       use: book-titlepage-recto-style
       quadding: %division-title-quadding%
+      space-before: (* (HSIZE 2) %head-before-factor%)
       (literal (gentext-element-name (current-node)))
       (literal "\no-break-space;")
       (literal (dingbat "copyright"))
@@ -3145,6 +3147,7 @@
     (make paragraph
       use: part-titlepage-recto-style
       quadding: %division-title-quadding%
+      space-before: (* (HSIZE 2) %head-before-factor%)
       (literal (gentext-element-name (current-node)))
       (literal "\no-break-space;")
       (literal (dingbat "copyright"))
@@ -4423,6 +4426,7 @@
     (make paragraph
       use: article-titlepage-recto-style
       quadding: %article-title-quadding%
+      space-before: (* (HSIZE 2) %head-before-factor%)
       (literal (gentext-element-name (current-node)))
       (literal "\no-break-space;")
       (literal (dingbat "copyright"))
@@ -5738,6 +5742,7 @@
     (make paragraph
       use: reference-titlepage-recto-style
       quadding: %division-title-quadding%
+      space-before: (* (HSIZE 2) %head-before-factor%)
       (literal (gentext-element-name (current-node)))
       (literal "\no-break-space;")
       (literal (dingbat "copyright"))

@@ -1,7 +1,7 @@
 ;; $Id$
 ;;
 ;; This file is part of the Modular DocBook Stylesheet distribution.
-;; See ../README or http://www.berkshire.net/~norm/dsssl/
+;; See ../README or http://docbook.sourceforge.net/projects/dsssl/
 ;;
 
 (element highlights ($block-container$))
@@ -12,6 +12,8 @@
   (let ((id     (element-id))
 	(attrib (select-elements (children (current-node))
 				 (normalize "attribution")))
+        (startc (list (list "WIDTH" %blockquote-start-col%)))
+        (endc   (list (list "WIDTH" %blockquote-end-col%)))
 	(paras  (node-list-filter-by-not-gi
 		 (children (current-node))
 		 (list (normalize "attribution")))))
@@ -34,16 +36,15 @@
 			      ("CLASS" "BLOCKQUOTE"))
 		(make element gi: "TR"
 		      (make element gi: "TD"
-			    attributes: '(("WIDTH" "10%")
-					  ("VALIGN" "TOP"))
+			    attributes: (append startc
+                                                '(("VALIGN" "TOP")))
 			    (make entity-ref name: "nbsp"))
 		      (make element gi: "TD"
-			    attributes: '(("WIDTH" "80%")
-					  ("VALIGN" "TOP"))
+			    attributes: '(("VALIGN" "TOP"))
 			    (process-node-list paras))
 		      (make element gi: "TD"
-			    attributes: '(("WIDTH" "10%")
-					  ("VALIGN" "TOP"))
+			    attributes: (append endc
+                                                '(("VALIGN" "TOP")))
 			    (make entity-ref name: "nbsp")))
 		(make element gi: "TR"
 		      (make element gi: "TD"
@@ -54,12 +55,14 @@
 			      (literal "--")
 			      (process-node-list attrib)))
 		      (make element gi: "TD"
-			    attributes: '(("WIDTH" "10%"))
+			    attributes: endc
 			    (make entity-ref name: "nbsp"))))))))
 	
 (element epigraph
   (let* ((attrib       (select-elements (children (current-node))
 					(normalize "attribution")))
+         (startcol     (list (list "WIDTH" %epigraph-start-col%)))
+         (contentcol   (list (list "WIDTH" %epigraph-content-col%)))
 	 (paras        (node-list-filter-by-not-gi
 			(children (current-node))
 			(list (normalize "attribution")))))
@@ -71,24 +74,24 @@
 		      ("CLASS" "EPIGRAPH"))
 	(make element gi: "TR"
 	      (make element gi: "TD"
-		    attributes: '(("WIDTH" "45%"))
+		    attributes: startcol
 		    (make entity-ref name: "nbsp"))
 	      (make element gi: "TD"
-		    attributes: '(("WIDTH" "45%")
-				  ("ALIGN" "LEFT")
-				  ("VALIGN" "TOP"))
+		    attributes: (append contentcol
+                                        '(("ALIGN" "LEFT")
+                                          ("VALIGN" "TOP")))
 		    (make element gi: "I"
 			  (process-node-list paras))))
 	(if (node-list-empty? attrib)
 	    (empty-sosofo)
 	    (make element gi: "TR"
 		  (make element gi: "TD"
-			attributes: '(("WIDTH" "45%"))
+			attributes: startcol
 			(make entity-ref name: "nbsp"))
 		  (make element gi: "TD"
-			attributes: '(("WIDTH" "45%")
-				      ("ALIGN" "RIGHT")
-				      ("VALIGN" "TOP"))
+			attributes: (append contentcol
+                                            '(("ALIGN" "RIGHT")
+                                              ("VALIGN" "TOP")))
 			(make element gi: "I"
 			      (process-node-list attrib))))))))
 
@@ -154,12 +157,6 @@
     (make element gi: "DIV"
 	  attributes: (list
 		       (list "CLASS" (gi)))
-	  (if id
-	      (make element gi: "A"
-		    attributes: (list (list "NAME" id))
-		    (empty-sosofo))
-	      (empty-sosofo))
-
 	  (if %spacing-paras%
 	      (make element gi: "P" (empty-sosofo))
 	      (empty-sosofo))
@@ -168,7 +165,21 @@
 	      (make empty-element gi: "HR")
 	      (empty-sosofo))
 
-	  (process-children)
+	  (if id
+              ;; empty A is a little evil but for instance you can't
+              ;; wrap TABLE within A
+	      (make element gi: "A"
+		    attributes: (list (list "NAME" id))
+		    (empty-sosofo))
+	      (empty-sosofo))
+
+          ;; reset the mode to make processing of elements within an
+          ;; informal object not subject to whatever mode they would
+          ;; be in on the top level; e.g.,
+          ;; bookinfo-legalnotice-productname distinguished from
+          ;; bookinfo-productname
+          (with-mode #f
+            (process-children))
 
 	  (if rule-after?
 	      (make empty-element gi: "HR")
@@ -208,7 +219,14 @@
 	 (title-sosofo (make element gi: "P"
 			     (make element gi: "B"
 				   title-inline-sosofo)))
-	 (object-sosofo (process-children)))
+
+         ;; reset the mode to make processing of elements within an
+         ;; formal object not subject to whatever mode they would be
+         ;; in on the top level; e.g.,
+         ;; bookinfo-legalnotice-productname distinguished from
+         ;; bookinfo-productname
+	 (object-sosofo (with-mode #f
+                          (process-children))))
     (make element gi: "DIV" 
 	  attributes: (list
 		       (list "CLASS" (gi)))
@@ -264,18 +282,21 @@
 
 (element (table title) (empty-sosofo))
 
-(element comment
+;; remark and comment use the same rendering
+(define ($remark$)
   (if %show-comments%
-      (make element gi: "P"
-	    attributes: '(("CLASS" "COMMENT"))
-	    (process-children))
+      (let ((inpara (equal? (gi (parent (current-node))) (normalize "para"))))
+        (if inpara
+            (make element gi: "SPAN"
+                  attributes: '(("CLASS" "COMMENT"))
+                  (process-children))
+            (make element gi: "P"
+                  attributes: '(("CLASS" "COMMENT"))
+                  (process-children))))
       (empty-sosofo)))
 
+(element comment ($remark$))
+
 ;; In DocBook V4.0 comment became remark
-(element remark
-  (if %show-comments%
-      (make element gi: "P"
-	    attributes: '(("CLASS" "COMMENT"))
-	    (process-children))
-      (empty-sosofo)))
+(element remark ($remark$))
 
