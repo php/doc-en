@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.16 2004-11-01 21:27:53 techtonik Exp $
+  $Id: common.xsl,v 1.17 2004-11-02 13:19:10 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -33,7 +33,7 @@
 <xsl:param name="version" select="document('version.xml')/versions"/>
 
 <!-- Add version information below function name. Use H1 tags to denote
-    function title like in DSSSL -->
+     function title like in DSSSL -->
 <xsl:template match="refnamediv">
   <div class="{name(.)}">
     <xsl:call-template name="anchor"/>
@@ -100,7 +100,7 @@
 
 <xsl:template match="methodsynopsis/methodname">
   <b class="{local-name(.)}">
-    <xsl:copy-of select="."/>
+    <xsl:value-of select="."/>
   </b>
 </xsl:template>
 
