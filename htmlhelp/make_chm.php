@@ -162,8 +162,7 @@ if ($USE_NOTES) {
 exec("copy suppfiles\\prefs $RELEASE_DIR /Y");
 exec("copy suppfiles\\quickref $RELEASE_DIR /Y");
 exec("copy suppfiles\\fixes $RELEASE_DIR /Y");
-exec("xcopy /S /I /Q suppfiles\\skins $RELEASE_DIR\\skins");
-exec("rmdir /S /Q $RELEASE_DIR\\skins\\CVS");
+exec("xcopy suppfiles\\skins $RELEASE_DIR\\skins /S /I /Q /EXCLUDE:exclude.txt");
 
 // Delete unused files
 if ($END_CLEANUP) {
