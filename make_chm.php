@@ -13,19 +13,17 @@ $language = getenv("PHP_HELP_COMPILE_LANG");
 $original_index = getenv("PHP_HELP_COMPILE_INDEX");
 
 // header for index and toc 
-$header = '
-    <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
-    <HTML>
-    <HEAD>
-    <meta name="GENERATOR" content="PHP 4 - Auto TOC script">
-    <!-- Sitemap 1.0 -->
-    </HEAD>
-    <BODY>
-    <OBJECT type="text/site properties">
+$header = '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+  <meta name="generator" content="PHP 4 - Auto TOC script">
+  <!-- Sitemap 1.0 -->
+</head>
+<body>
+  <object typre="text/site properties">
     <param name="Window Styles" value="0x800227">
-    </OBJECT>
-    <UL>
-    ';
+  </object>
+  <ul>';
 
 MakeProjectFile();
 MakeContentFiles();
@@ -43,8 +41,8 @@ function MakeContentFiles()
     $index = fopen("php_manual_$language.hhk", "w");
 
     // Write out file headers
-    fputs ($toc, $header);
-    fputs ($index, $header);
+    fputs($toc, $header);
+    fputs($index, $header);
 
     // Read original index file and drop out newlines
     $index_a = file("$fancydir/$original_index");
@@ -52,7 +50,7 @@ function MakeContentFiles()
     $ijoin = preg_replace("/[\r|\n]{1,2}/", " ", $ijoin);
 
     // Print out the objects, autoparsing won't find
-    SiteMapObj($manual_title, $indexfile, "  ", $toc, 21);
+    SiteMapObj($manual_title, $indexfile, "    ", $toc, 21);
     IndexObj($manual_title, $indexfile, $index);
 
     // Find the name of the Table of Contents
@@ -61,7 +59,7 @@ function MakeContentFiles()
         if (empty($match[1])) { // Fallback
             $match[1] = "Table of Contents";
         }
-        SiteMapObj($match[1], $original_index, "  ", $toc, 21);
+        SiteMapObj($match[1], $original_index, "    ", $toc, 21);
         IndexObj($match[1], $original_index, $index);
     }
 
@@ -70,18 +68,18 @@ function MakeContentFiles()
     if (empty($match[1])) { // Fallback
         $match[1] = "Preface";
     }
-    SiteMapObj($match[1], "preface.html", "  ", $toc);
+    SiteMapObj($match[1], "preface.html", "    ", $toc);
     IndexObj($match[1], "preface.html", $index);
 
     // Find the name of the Preface/About this Manual
-    fputs($toc, "\n  <UL>");
+    fputs($toc, "\n    <ul>");
     preg_match('|<A HREF="preface.html#about" >(.*)</A >|U', $ijoin, $match);
     if (empty($match[1])) { // Fallback
         $match[1]="About this Manual";
     }
-    SiteMapObj($match[1], "preface.html#about", "    ", $toc);
+    SiteMapObj($match[1], "preface.html#about", "      ", $toc);
     IndexObj($match[1], "preface.html#about", $index);
-    fputs($toc, "  </UL>\n");
+    fputs($toc, "    </ul>\n");
 
     // Now autofind the chapters/subchapters
     $not_closed = 0;
@@ -93,7 +91,7 @@ function MakeContentFiles()
 
             $new_list = 1;
             if ($not_closed == 1) {
-                fputs($toc, "\n  </UL>\n");
+                fputs($toc, "\n    </ul>\n");
             }
 
             //preg_match ("/>([IVX]+)\. <A/", $index_a[$i], $matches);
@@ -102,7 +100,7 @@ function MakeContentFiles()
             $chapter["html"] = $matches[1];
             preg_match("/>([^<]+)/", $index_a[$i+2], $matches);
             $chapter["title"] = $matches[1];
-            SiteMapObj($chapter["title"], $chapter["html"], "  ", $toc);
+            SiteMapObj($chapter["title"], $chapter["html"], "    ", $toc);
             IndexObj($chapter["title"], $chapter["html"], $index);
         }
 
@@ -112,7 +110,7 @@ function MakeContentFiles()
             if ($new_list == 1) {
                 $new_list = 0;
                 $not_closed = 1;
-                fputs($toc, "\n  <UL>\n");
+                fputs($toc, "\n    <ul>\n");
             }
 
             //preg_match ("/>([0-9]+|[IVXL]+|[A-Z])\. <A/", $index_a[$i], $matches);
@@ -121,14 +119,14 @@ function MakeContentFiles()
             $schapter["html"] = $matches[1];
             preg_match("/>([^<]+)/", $index_a[$i+2], $matches);
             $schapter["title"] = $matches[1];
-            SiteMapObj($schapter["title"], $schapter["html"], "    ", $toc);
+            SiteMapObj($schapter["title"], $schapter["html"], "      ", $toc);
             IndexObj($chapter["title"], $schapter["html"], $index);
 
             DoFile($schapter["html"], $toc, $index);
         }
     }
 
-    fputs($toc, "  </UL>\n");
+    fputs($toc, "  </ul>\n");
 
     // Link in directly the copyright page
     $cjoin = join("", file("$fancydir/copyright.html"));
@@ -137,12 +135,12 @@ function MakeContentFiles()
     if (empty($match[1])) { // fallback
         $match[1] = "Copyright";
     }
-    SiteMapObj($match[1], "copyright.html", "  ", $toc, 17);
+    SiteMapObj($match[1], "copyright.html", "    ", $toc, 17);
     IndexObj($match[1], "copyright.html", $index);
 
     // Write out closing line, and end files
-    fputs($index, "</UL>\n</BODY></HTML>");
-    fputs($toc, "</UL>\n</BODY></HTML>");
+    fputs($index, "  </ul>\n</body>\n</html>");
+    fputs($toc, "  </ul>\n</body>\n</html>");
 
     fclose($index);
     fclose($toc);
@@ -225,14 +223,16 @@ function SiteMapObj($name, $local, $tabs, $toc, $imgnum = "auto")
     global $fancydir;
     $name = str_replace('"', '&quot;', $name);
 
-    fputs($toc, "\n$tabs<LI> <OBJECT type=\"text/sitemap\">
-      $tabs  <param name=\"Name\" value=\"$name\">
-      $tabs  <param name=\"Local\" value=\"$fancydir\\$local\">");
+    fputs($toc, "
+$tabs<li><object type=\"text/sitemap\">
+$tabs  <param name=\"Name\" value=\"$name\">
+$tabs  <param name=\"Local\" value=\"$fancydir\\$local\">
+");
 
     if ($imgnum != "auto") {
-        fputs($toc, "\n$tabs <param name=\"ImageNumber\" value=\"$imgnum\">");
+        fputs($toc, "$tabs  <param name=\"ImageNumber\" value=\"$imgnum\">\n");
     }
-    fputs($toc, "\n$tabs  </OBJECT>\n");
+    fputs($toc, "$tabs  </object>\n");
 } // SiteMapObj() function end
 
 // Print out an object for an Index file
@@ -241,41 +241,47 @@ function IndexObj($name, $local, $index)
     global $fancydir;
     $name = str_replace('"', '&quot;', $name);
 
-    fputs($index, "\n<LI><OBJECT type=\"text/sitemap\">
+    fputs($index, "
+    <li><object type=\"text/sitemap\">
       <param name=\"Local\" value=\"$fancydir\\$local\">
       <param name=\"Name\" value=\"$name\">
-      </OBJECT></LI>");
+    </object></li>
+");
 }
 
 // Process a file, and find any links need to be presented in tree
 function DoFile ($filename, $toc, $index)
 {
     global $fancydir;
-    fputs($toc, "    <UL>");
     $content = file ("$fancydir/$filename");
-    for ($i = 0; $i < count ($content); $i++) {
-        if (ereg ("><DT", $content[$i]) &&
-          ereg ("><A", $content[$i+1]) &&
-          ereg ("HREF=\"([a-z0-9-]+\.)+html(\#[0-9a-z\.-]+)?\"", $content[$i+2])) {
-
-            preg_match ("/HREF=\"(([0-9a-z-]+\.)+html)(\#[0-9a-z\.-]+)?\"/", $content[$i+2], $matches);
-            $param["html"] = $matches[1];
-            if (isset($matches[3])) {
-                $param["html"] .= $matches[3];
+    $contents = preg_replace("/[\n|\r]/", " ", join("", $content));
+    
+    // Find all sublinks
+    if (preg_match_all("!<DT\s+><A\s+HREF=\"(([\w\.-]+\.)+html)(\#[\w\.-]+)?\"\s+>(.+)</A\s+>!U", $contents, $matches, PREG_SET_ORDER)) {
+        
+        // Print out the file informations for all the links
+        fputs($toc, "    <ul>");
+        foreach ($matches as $onematch) {
+            $param["html"] = $onematch[1];
+            if (!empty($onematch[3])) {
+                $param["html"] .= $onematch[3];
             }
-
-            if (ereg ("CLASS=\"literal\"", $content[$i+4])) {
-                preg_match ("/>([^<]+)/", $content[$i+5], $matches);
-            } elseif($content[$i+2] == $content[$i+4]) {
-                preg_match ("/>([^<]+)/", $content[$i+7], $matches);
-            } else {
-                preg_match ("/>([^<]+)/", $content[$i+3], $matches);
-            }
-            $param["title"] = $matches[1];
+            $param["title"] = strip_tags($onematch[4]);
             SiteMapObj($param["title"], $param["html"], "      ", $toc);
             IndexObj($param["title"], $param["html"], $index);
         }
-   }
-   fputs($toc, "    </UL>\n");
+        fputs($toc, "    </ul>\n");
+
+    } else {
+
+        // Uncomment this if you want to debug the above pregs
+        // Note: there are many files normally without deeper
+        // TOC info, eg. language.expressions.html
+
+        // echo "no deeper TOC info found in $filename\n";
+        // return;
+
+    }
+    
 } // DoFile() function end
 ?>
