@@ -20,8 +20,11 @@
     - all map and alias parts deleted, we do not need them
     - deleted autoindex from [OPTIONS]
     - added Index file to [OPTIONS] => new $htmlhelp.hhk param!
-    - made indexfile and title variables => two places to use them
+    - the index file will always be _index.html
+    - made title a variable => two places to use it
     - added phpdoc window definition
+    - added [MERGE FILES] section for manual notes file
+    - added more special files to [FILES]
     - removed enumerate-images parts, we do not have any
       images to enumerate for compatibility reasons with
       other formats
@@ -31,6 +34,8 @@
     - removed blocks for index terms, maps and aliases
     - removed href.target.with.base.dir, as we have all the
       files in the same dir
+    - added a HHK generator part (slightly modified version of
+      HHC generator)
 -->
      
 <xsl:import href="@DOCBOOKXSL_HTML@"/>
@@ -66,13 +71,19 @@
 
   <xsl:call-template name="hhp"/>
   <xsl:call-template name="hhc"/>
+  <xsl:call-template name="hhk"/>
 </xsl:template>
 
 <!-- ==================================================================== -->
 
 <xsl:template name="hhp">
+  <xsl:variable name="htmlhelp.hhp.with.base">
+    <xsl:value-of select="$base.dir"/>
+    <xsl:text>/</xsl:text>
+    <xsl:value-of select="$htmlhelp.hhp"/>
+  </xsl:variable>
   <xsl:call-template name="write.text.chunk">
-    <xsl:with-param name="filename" select="$htmlhelp.hhp"/>
+    <xsl:with-param name="filename" select="$htmlhelp.hhp.with.base"/>
     <xsl:with-param name="method" select="'text'"/>
     <xsl:with-param name="content">
       <xsl:call-template name="hhp-main"/>
@@ -89,24 +100,7 @@
 Compiled file=</xsl:text><xsl:value-of select="$htmlhelp.chm"/><xsl:text>
 Contents file=</xsl:text><xsl:value-of select="$htmlhelp.hhc"/><xsl:text>
 Index file=</xsl:text><xsl:value-of select="$htmlhelp.hhk"/><xsl:text>
-Default topic=</xsl:text>
-<xsl:variable name="htmlhelp.indexfile">
- <xsl:call-template name="make-relative-filename">
-   <xsl:with-param name="base.dir" select="''"/>
-   <xsl:with-param name="base.name">
-     <xsl:choose>
-       <xsl:when test="$rootid != ''">
-         <xsl:apply-templates select="key('id',$rootid)" mode="chunk-filename"/>
-       </xsl:when>
-       <xsl:otherwise>
-         <xsl:apply-templates select="/" mode="chunk-filename"/>
-       </xsl:otherwise>
-     </xsl:choose>
-   </xsl:with-param>
- </xsl:call-template>
-</xsl:variable>
-<xsl:value-of select="$htmlhelp.indexfile"/>
-<xsl:text>
+Default topic=_index.html
 Default Window=phpdoc
 Display compile progress=No
 Full-text search=Yes
@@ -140,13 +134,17 @@ phpdoc="</xsl:text>
 <xsl:value-of select="$htmlhelp.hhc"/>
 <xsl:text>","</xsl:text>
 <xsl:value-of select="$htmlhelp.hhk"/>
-<xsl:text>","</xsl:text>
-<xsl:value-of select="$htmlhelp.indexfile"/>
-<xsl:text>","</xsl:text>
-<xsl:value-of select="$htmlhelp.indexfile"/>
-<xsl:text>",,,,,0x23520,,0x386e,,,,,,,,0
+<xsl:text>","_index.html","_index.html",,,,,0x23520,,0x386e,,,,,,,,0
+
+[MERGE FILES]
+php_manual_notes.chm
 
 [FILES]
+_index.html
+_redirect.html
+_style_lo.css
+_style_hi.css
+_script.js
 </xsl:text>
 
 <xsl:choose>
@@ -175,7 +173,7 @@ phpdoc="</xsl:text>
   <xsl:variable name="ischunk"><xsl:call-template name="chunk"/></xsl:variable>
   <xsl:if test="$ischunk='1'">
     <xsl:call-template name="make-relative-filename">
-      <xsl:with-param name="base.dir" select="$base.dir"/>
+      <xsl:with-param name="base.dir" select="''"/>
       <xsl:with-param name="base.name">
         <xsl:apply-templates mode="chunk-filename" select="."/>
       </xsl:with-param>
@@ -195,8 +193,13 @@ phpdoc="</xsl:text>
      stuff instead. -->
 
 <xsl:template name="hhc">
+  <xsl:variable name="htmlhelp.hhc.with.base">
+    <xsl:value-of select="$base.dir"/>
+    <xsl:text>/</xsl:text>
+    <xsl:value-of select="$htmlhelp.hhc"/>
+  </xsl:variable>
   <xsl:call-template name="write.text.chunk">
-    <xsl:with-param name="filename" select="$htmlhelp.hhc"/>
+    <xsl:with-param name="filename" select="$htmlhelp.hhc.with.base"/>
     <xsl:with-param name="method" select="'text'"/>
     <xsl:with-param name="content">
       <xsl:call-template name="hhc-main"/>
@@ -211,7 +214,7 @@ phpdoc="</xsl:text>
 &lt;/HEAD&gt;
 &lt;BODY&gt;
 &lt;OBJECT type="text/site properties"&gt;
-        &lt;param name="ImageType" value="Folder"&gt;
+        &lt;param name="Window Styles" value="0x800227"&gt;
 &lt;/OBJECT&gt;
 &lt;UL&gt;
 </xsl:text>
@@ -230,7 +233,7 @@ phpdoc="</xsl:text>
 &lt;/HTML&gt;</xsl:text>
 </xsl:template>
 
-<xsl:template match="set" mode="hhc">
+<xsl:template match="book" mode="hhc">
   <xsl:variable name="title">
     <xsl:if test="$htmlhelp.autolabel=1">
       <xsl:variable name="label.markup">
@@ -247,29 +250,8 @@ phpdoc="</xsl:text>
     &lt;param name="Name" value="</xsl:text>
         <xsl:value-of select="normalize-space($title)"/>
     <xsl:text>"&gt;
-    &lt;param name="Local" value="</xsl:text>
-        <xsl:call-template name="href.target"/>
-    <xsl:text>"&gt;
+    &lt;param name="Local" value="_index.html"&gt;
   &lt;/OBJECT&gt;</xsl:text>
-  <xsl:if test="book">
-    <xsl:text>&lt;UL&gt;</xsl:text>
-      <xsl:apply-templates select="book" mode="hhc"/>
-    <xsl:text>&lt;/UL&gt;</xsl:text>
-  </xsl:if>
-</xsl:template>
-
-<xsl:template match="book" mode="hhc">
-  <xsl:variable name="title">
-    <xsl:if test="$htmlhelp.autolabel=1">
-      <xsl:variable name="label.markup">
-        <xsl:apply-templates select="." mode="label.markup"/>
-      </xsl:variable>
-      <xsl:if test="normalize-space($label.markup)">
-        <xsl:value-of select="concat($label.markup,$autotoc.label.separator)"/>
-      </xsl:if>
-    </xsl:if>
-    <xsl:apply-templates select="." mode="title.markup"/>
-  </xsl:variable>
 
   <xsl:text>&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
     &lt;param name="Name" value="</xsl:text>
@@ -480,5 +462,115 @@ phpdoc="</xsl:text>
     <xsl:text>"&gt;
   &lt;/OBJECT&gt;</xsl:text>
 </xsl:template>
+
+<!-- ==================================================================== -->
+
+<!-- Similar code to HHC, but quite modified for HHK generation -->
+
+<!-- Following templates are not nice. It is because MS help compiler is unable
+     to process correct HTML files. We must generate following weird
+     stuff instead. -->
+
+<xsl:template name="hhk">
+  <xsl:variable name="htmlhelp.hhk.with.base">
+    <xsl:value-of select="$base.dir"/>
+    <xsl:text>/</xsl:text>
+    <xsl:value-of select="$htmlhelp.hhk"/>
+  </xsl:variable>
+  <xsl:call-template name="write.text.chunk">
+    <xsl:with-param name="filename" select="$htmlhelp.hhk.with.base"/>
+    <xsl:with-param name="method" select="'text'"/>
+    <xsl:with-param name="content">
+      <xsl:call-template name="hhk-main"/>
+    </xsl:with-param>
+    <xsl:with-param name="encoding" select="$htmlhelp.encoding"/>
+  </xsl:call-template>
+</xsl:template>
+
+<xsl:template name="hhk-main">
+  <xsl:text>&lt;HTML&gt;
+&lt;HEAD&gt;
+&lt;/HEAD&gt;
+&lt;BODY&gt;
+&lt;OBJECT type="text/site properties"&gt;
+        &lt;param name="Window Styles" value="0x800227"&gt;
+&lt;/OBJECT&gt;
+&lt;UL&gt;
+</xsl:text>
+
+  <xsl:choose>
+    <xsl:when test="$rootid != ''">
+      <xsl:apply-templates select="key('id',$rootid)" mode="hhk"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="." mode="hhk"/>
+    </xsl:otherwise>
+  </xsl:choose>
+
+  <xsl:text>&lt;/UL&gt;
+&lt;/BODY&gt;
+&lt;/HTML&gt;</xsl:text>
+</xsl:template>
+
+<xsl:template match="book" mode="hhk">
+  <xsl:variable name="title">
+    <xsl:apply-templates select="." mode="title.markup"/>
+  </xsl:variable>
+
+  <xsl:text>&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
+    &lt;param name="Name" value="</xsl:text>
+        <xsl:value-of select="normalize-space($title)"/>
+    <xsl:text>"&gt;
+    &lt;param name="Local" value="_index.html"&gt;
+  &lt;/OBJECT&gt;</xsl:text>
+
+  <xsl:text>&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
+    &lt;param name="Name" value="</xsl:text>
+        <xsl:value-of select="normalize-space($title)"/>
+    <xsl:text>"&gt;
+    &lt;param name="Local" value="</xsl:text>
+        <xsl:call-template name="href.target"/>
+    <xsl:text>"&gt;
+  &lt;/OBJECT&gt;</xsl:text>
+  <xsl:apply-templates select="part|reference|preface|chapter|bibliography|appendix|article|colophon"
+                       mode="hhk"/>
+</xsl:template>
+
+<xsl:template match="part|preface|chapter|appendix
+                     |article
+                     |reference|refentry
+                     |sect1|sect2|sect3|sect4|sect5
+                     |section
+                     |book/glossary|article/glossary
+                     |book/bibliography|article/bibliography
+                     |book/glossary|article/glossary
+                     |colophon"
+              mode="hhk">
+  <xsl:variable name="ischunk"><xsl:call-template name="chunk"/></xsl:variable>
+  <xsl:if test="$ischunk='1'">
+    <xsl:variable name="title">
+      <xsl:apply-templates select="." mode="title.markup"/>
+    </xsl:variable>
+    <xsl:variable name="filename">
+      <xsl:call-template name="make-relative-filename">
+        <xsl:with-param name="base.dir" select="''"/>
+        <xsl:with-param name="base.name">
+          <xsl:apply-templates mode="chunk-filename" select="."/>
+        </xsl:with-param>
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:text>&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
+    &lt;param name="Name" value="</xsl:text>
+          <xsl:value-of select="normalize-space($title)"/>
+      <xsl:text>"&gt;
+    &lt;param name="Local" value="</xsl:text>
+          <xsl:value-of select="$filename"/>
+      <xsl:text>"&gt;
+  &lt;/OBJECT&gt;</xsl:text>
+  </xsl:if>
+  <xsl:apply-templates select="*" mode="hhk"/>
+</xsl:template>
+
+<xsl:template match="text()" mode="hhk"/>
 
 </xsl:stylesheet>
