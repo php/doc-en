@@ -169,10 +169,12 @@ function write_reference_xml()
        "    Type of resource types (link id, etc.) this extension returns.\n" .
        "    &no.resources;\n" .
        "   </para>\n" .
-       "  </section>\n" .
-       "  <!-- Information found in constants.xml -->\n" .
-       "  &reference." . $extension_name . ".constants;\n" .
-       " </partintro>\n" .
+       "  </section>\n");
+       if ($num_const > 0) {
+         fwrite($fp, "  <!-- Information found in constants.xml -->\n" .
+                     "  &reference." . $extension_name . ".constants;\n");
+       }
+       fwrite($fp, " </partintro>\n" .
        " &reference." . $extension_name . ".functions;\n" .
        "</reference>\n\n" .
        "<!-- Keep this comment at the end of the file\n" .
