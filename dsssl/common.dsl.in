@@ -115,3 +115,102 @@
 	(normalize "abstract")
 	(normalize "legalnotice")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;
+;;;; render function prototypes, esp. with optional arguments
+;;;; for new docbook4 methodsynopsis tag and friends
+;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; helper function generating closing optional brackets
+(define (methodsynopsis-generate-closing-optionals nl)
+  (if (node-list-empty? nl)
+      (empty-sosofo) ;; empty list -> do nothing
+      (make sequence ;; process list node
+        (if (attribute-string (normalize "choice") (node-list-first nl))
+            (if (string=? "opt" (attribute-string (normalize "choice") (node-list-first nl)))
+                (literal %arg-choice-opt-close-str%) ;; is optional parameter -> close a bracket
+                (empty-sosofo)
+                )         
+            (empty-sosofo)
+            )         
+        (methodsynopsis-generate-closing-optionals (node-list-rest nl)) ;; process rest of list
+        )
+      )
+  )
+  
+;; render methodsynopsis
+(element methodsynopsis 
+	(make sequence 
+    (process-children) ;; render content
+    (methodsynopsis-generate-closing-optionals (children (current-node))) ;; close optional brackets
+    (literal ")") ;; close parameter list
+    )
+)
+
+;; render return type
+(element (methodsynopsis type)
+	(make sequence 
+		(process-children-trim)
+		(literal " ")
+		)
+)
+
+;; render function name
+(element (methodsynopsis methodname)
+	(make sequence
+		($bold-seq$
+		 (process-children-trim)
+		 )
+		(literal " ( ") ;; start parameter list
+		)
+	)
+
+;; render parameters
+(element (methodsynopsis methodparam)
+	(make sequence 
+    ;; special case -> first parameter is optional
+    (if (equal? (gi (ipreced (current-node))) (normalize "methodparam"))
+        (empty-sosofo) ;; have prev. parameters -> is not first
+        (if  (equal? (attribute-string (normalize "choice")) "opt")
+             (literal %arg-choice-opt-open-str%) ;; generate opening bracket
+             (empty-sosofo) 
+             )
+        )
+
+		(process-children-trim)
+
+    ;; have more parameters following me?
+    (if (equal? (gi (ifollow (current-node))) (normalize "methodparam"))
+        (make sequence
+          ;; is next parameter optional?
+          (if  (equal? (attribute-string (normalize "choice") (ifollow (current-node))) "opt")
+               (make sequence 
+                 (literal " ")
+                 (literal %arg-choice-opt-open-str%)
+                 )
+               (empty-sosofo)
+               )
+          ;; parameter list separator
+          (literal ", ")
+          )
+        (empty-sosofo)
+        )
+    )
+  )
+  
+;; render parameter type
+(element (methodparam type)
+	(make sequence 
+		(process-children-trim)
+		(literal " ")
+		)
+	)
+
+;; render parameter name
+(element (methodparam parameter)
+	(make sequence
+		(process-children-trim)
+		)
+	)
+
