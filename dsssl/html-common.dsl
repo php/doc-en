@@ -430,4 +430,9 @@
 	      (empty-sosofo))
 	  (process-children))))
 
+
+
+(define (linebreak) (make element gi: "BR" (empty-sosofo)))
+
+
 ;; vim: ts=2 sw=2 et
