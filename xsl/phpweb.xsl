@@ -3,7 +3,7 @@
 
   PHP.net web site specific stylesheet
 
-  $Id: phpweb.xsl,v 1.4 2003-04-21 12:52:28 goba Exp $
+  $Id: phpweb.xsl,v 1.5 2003-04-21 19:33:48 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -22,9 +22,7 @@
 <xsl:param name="chunk.quietly">1</xsl:param>
 
 <!-- Special PHP code navigation for generated pages
-     Note: I have used xsl:text instead of
-     xsl:processing-instrunction, because the later
-     added > to end the PI, instead of ?> with saxon
+     There are some xsl:text parts added for formatting!
  --> 
 <xsl:template name="header.navigation">
  <xsl:param name="prev" select="/foo"/>
@@ -32,12 +30,26 @@
  <xsl:variable name="home" select="/*[1]"/>
  <xsl:variable name="up" select="parent::*"/>
 
- <xsl:call-template name="phpweb.header"/>
+ <xsl:processing-instruction name="php">
+  <xsl:text>
+  require('shared-manual.inc');
+  </xsl:text>
+  <xsl:call-template name="phpweb.header"/>
+  <xsl:text disable-output-escaping="yes">
+  setupNavigation(array(
+    'home' =&gt; </xsl:text>
  
- <xsl:call-template name="phpdoc.nav.array">
-  <xsl:with-param name="node" select="$home"/>
- </xsl:call-template>
+  <xsl:call-template name="phpdoc.nav.array">
+   <xsl:with-param name="node" select="$home"/>
+  </xsl:call-template>
   
+ <xsl:text disable-output-escaping="yes">,
+    'this' =&gt; </xsl:text>
+
+ <xsl:call-template name="phpdoc.nav.array">
+  <xsl:with-param name="node" select="."/>
+ </xsl:call-template>
+
  <xsl:text disable-output-escaping="yes">,
     'prev' =&gt; </xsl:text>
 
@@ -53,14 +65,14 @@
  </xsl:call-template>
  
  <xsl:text disable-output-escaping="yes">,
-    'up' =&gt; </xsl:text>
+    'up'   =&gt; </xsl:text>
 
  <xsl:call-template name="phpdoc.nav.array">
   <xsl:with-param name="node" select="$up"/>
  </xsl:call-template>
 
  <xsl:text disable-output-escaping="yes">,
-    'toc' =&gt; array(</xsl:text>
+    'toc'  =&gt; array(</xsl:text>
  
  <xsl:for-each select="../*">
   <xsl:variable name="ischunk"><xsl:call-template name="chunk"/></xsl:variable>
@@ -77,36 +89,20 @@
  <xsl:text>
     )
   ));
-  manualHeader('</xsl:text>
-  <xsl:apply-templates select="." mode="phpdoc.object.title"/>
-  <xsl:text>','</xsl:text>
-  <xsl:call-template name="href.target">
-   <xsl:with-param name="object" select="."/>
-  </xsl:call-template>
-  <xsl:text>');</xsl:text>
-<xsl:text disable-output-escaping="yes">
-?&gt;
+  manualHeader();
+?</xsl:text>
+ </xsl:processing-instruction>
+ <xsl:text>
 </xsl:text>
-
 </xsl:template>
 
+<!-- Similar to the manualHeader() call above -->
 <xsl:template name="footer.navigation">
-
-<!-- Same as the manualHeader() call above -->
-<xsl:text disable-output-escaping="yes">
-&lt;?php
+ <xsl:text>
 </xsl:text>
-  <xsl:text>manualFooter('</xsl:text>
-  <xsl:apply-templates select="." mode="phpdoc.object.title"/>
-  <xsl:text>','</xsl:text>
-  <xsl:call-template name="href.target">
-   <xsl:with-param name="object" select="."/>
-  </xsl:call-template>
-  <xsl:text>');</xsl:text>
-<xsl:text disable-output-escaping="yes">
-?&gt;
-</xsl:text>
-
+ <xsl:processing-instruction name="php">
+  <xsl:text>manualFooter(); ?</xsl:text>
+  </xsl:processing-instruction>
 </xsl:template>
 
 <!-- Eliminate HTML from chunked file contents -->
