@@ -102,9 +102,9 @@ ob_end_flush();
      </funcprototype>
     </funcsynopsis>
     <para>
-     This function will turn output buffering on. While output buffering
-     is active no output is sent from the script, instead the output
-     is stored in an internal buffer.
+     This function will turn output buffering on. While output
+     buffering is active no output is sent from the script (other than
+     headers), instead the output is stored in an internal buffer.
     </para>
     <para>
      The contents of this internal buffer may be copied into a string
@@ -115,52 +115,81 @@ ob_end_flush();
      buffer contents.
     </para>
     <para>
-     An optional output_callback function may be specified. This 
-     function takes a string as a parameter and returns a string.
-     The function will be called at <function>ob_end_flush</function>
-     time and will receive the contents of the output buffer as its
-     parameter. It must return a new output buffer as a result, 
-     which is what will be printed.
+     An optional <parameter>output_callback</parameter> function may
+     be specified. This function takes a string as a parameter and
+     should return a string. The function will be called when
+     <function>ob_end_flush</function> is called, or when the output
+     buffer is flushed to the browser at the end of the request.  When
+     <parameter>output_callback</parameter> is called, it will receive
+     the contents of the output buffer as its parameter and is
+     expected to return a new output buffer as a result, which will be
+     sent to the browser.
     </para>
+    <note>
+     <para>
+      In PHP 4.0.4, <function>ob_gzhandler</function> was introduced
+      to facilitate sending gz-encoded data to web browsers that
+      support compressed web pages.  <function>ob_gzhandler</function>
+      determines what type of content encoding the browser will accept
+      and will return it's output accordingly.
+     </para>
+    </note>
     <para>
      Output buffers are stackable, that is, you may call
      <function>ob_start</function> while another
      <function>ob_start</function> is active. Just make
-     sure that you call <function>ob_end_flush()</function>
+     sure that you call <function>ob_end_flush</function>
      the appropriate number of times. If multiple output callback
      functions are active, output is being filtered sequentially
      through each of them in nesting order.
     </para>
     <example>
-     <title>Callback function example</title>
+     <title>User defined callback function example</title>
      <programlisting role="php">
 &lt;?php
-function c($str) {
-  // Druu Chunusun mut dum Kuntrubuﬂ...
-  return nl2br(ereg_replace("[aeiou]", "u", $str));
+
+function callback($buffer) {
+
+  // replace all the apples with oranges
+  return (ereg_replace("apples", "oranges", $buffer));
+
 }
 
-function d($str) {
-  return strip_tags($str);
-}
-?>
+ob_start("callback");
 
-&lt;?php ob_start("c"); ?&gt;
-Drei Chinesen mit dem Kontrabaﬂ...
-&lt;?php ob_start("d"); ?&gt;
-&lt;h1&gt;..saﬂen auf der Straﬂe und erz‰hlten sich was...&lt;/h1&gt;
-&lt;?php ob_end_flush(); ?&gt;
-... da kam die Polizei, ja was ist denn das?
-&lt;?php ob_end_flush(); ?&gt;
+?&gt;
+
+&lt;html&gt;
+&lt;body&gt;
+&lt;p&gt;It's like comparing apples to oranges.
+&lt;/body&gt;
+&lt;/html&gt;
+
+&lt;?php
+
+ob_end_flush();
 
 ?&gt;
      </programlisting>
     </example>
     <para>
+     Would produce:
+     <informalexample>
+      <programlisting role="php">
+&lt;html&gt;
+&lt;body&gt;
+&lt;p&gt;It's like comparing oranges to oranges.
+&lt;/body&gt;
+&lt;/html&gt;
+      </programlisting>
+     </informalexample>
+    </para>
+    <para>
      See also <function>ob_get_contents</function>,
      <function>ob_end_flush</function>,
-     <function>ob_end_clean</function>, and
-     <function>ob_implicit_flush</function>
+     <function>ob_end_clean</function>,
+     <function>ob_implicit_flush</function> and
+     <function>ob_gzhandler</function>.
     </para>
    </refsect1>
   </refentry>
@@ -213,6 +242,56 @@ Drei Chinesen mit dem Kontrabaﬂ...
     <para>
      See also <function>ob_start</function> and
      <function>ob_get_contents</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ob-gzhandler">
+   <refnamediv>
+    <refname>ob_gzhandler</refname>
+    <refpurpose>
+     ob_start callback function to gzip output buffer
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>ob_gzhandler</function></funcdef>
+      <paramdef>string <parameter>buffer</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ob_gzhandler</function> is intended to be used as a
+     callback function for <function>ob_start</function> to help
+     facilitate sending gz-encoded data to web browsers that support
+     compressed web pages.  Before <function>ob_gzhandler</function>
+     actually sends compressed data, it determines what type of
+     content encoding the browser will accept ("gzip", "deflate" or
+     none at all) and will return it's output accordingly.  All
+     browsers are supported since it's up to the browser to send the
+     correct header saying that it accepts compressed web pages.
+    </para>
+    <para>
+     <example>
+      <title><function>ob_gzhandler</function> Example</title>
+      <programlisting role="php">
+&lt;php
+
+ob_start("ob_gzhandler");
+
+?>
+&lt;html&gt;
+&lt;body&gt;
+&lt;p&gt;This should be a compressed page.
+&lt;/html&gt;
+&lt;/body&gt;
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also <function>ob_start</function> and
+     <function>ob_end_flush</function>.
     </para>
    </refsect1>
   </refentry>
