@@ -1,45 +1,93 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 <!-- splitted from ./en/functions/pgsql.xml, last change in rev 1.2 -->
 <refentry id="function.pg-query-params">
  <refnamediv>
   <refname>pg_query_params</refname>
-  <refpurpose>Execute a query, specifying query variables as separate parameters</refpurpose>
+  <refpurpose>Submits a command to the server and waits for the result, with the ability to pass parameters separately from the SQL command text.</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
    <type>resource</type><methodname>pg_query_params</methodname>
-   <methodparam><type>string</type><parameter>query</parameter></methodparam>
-   <methodparam><type>array</type><parameter>params</parameter></methodparam>
-  </methodsynopsis>
-  <methodsynopsis>
-   <type>resource</type><methodname>pg_query_params</methodname>
-   <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
+   <methodparam choice="opt"><type>resource</type><parameter>connection</parameter></methodparam>
    <methodparam><type>string</type><parameter>query</parameter></methodparam>
    <methodparam><type>array</type><parameter>params</parameter></methodparam>
   </methodsynopsis>
   <para>
-   <function>pg_query_params</function> works identically to
-   <function>pg_query</function>, except that instead of putting
-   query parameters directly into the <parameter>query</parameter>
-   <type>string</type>, placeholders are used and the parameters are
-   passed in separately. Unlike <function>pg_query</function>,
-   only one non-empty SQL statement can be executed at a time.
+    Submits a command to the server and waits for the result, with the ability 
+    to pass parameters separately from the SQL command text.
   </para>
   <para>
-   Parameters passed in this way are automatically quoted and escaped
-   if necessary.  This is an effective way of improving the security
-   of your scripts and eliminating the need for manual quoting and
-   escaping of parameters.
+    <function>pg_query_params</function> is like <function>pg_query</function>, 
+    but offers additional functionality: parameter 
+    values can be specified separately from the command string proper. 
+    <function>pg_query_params</function> is supported only against PostgreSQL 7.4 or
+    higher connections; it will fail when using earlier versions.
   </para>
-  <para>Placeholders are indicated in the <parameter>query</parameter>
-   by $1, $2, $3 and so on.  The first parameter will be substituted for
-   $1, the second for $2, the third for $3.
+  <para>
+    If parameters are used, they are referred to in the <parameter>query</parameter> 
+    string as $1, $2, etc.  <param>params</param> specifies the actual values of the 
+    parameters. A &null; value in this array means the corresponding parameter is SQL
+    <literal>NULL</literal>.
+  </para>
+  <para>
+    The primary advantage of <function>pg_query_params</function> over <function>pg_query</function> 
+    is that parameter values 
+    may be separated from the <parameter>query</parameter> string, thus avoiding the need for tedious 
+    and error-prone quoting and escaping. Unlike <function>pg_query</function>, 
+    <function>pg_query_params</function> allows at 
+    most one SQL command in the given string. (There can be semicolons in it, 
+    but not more than one nonempty command.)
   </para>
  </refsect1>
 
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>connection</parameter></term>
+     <listitem>
+      <para>
+       PostgreSQL database connection resource.  When 
+       <parameter>connection</parameter> is not present, the default connection 
+       is used. The default connection is the last connection made by 
+       <function>pg_connect</function> or <function>pg_pconnect</function>.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>query</parameter></term>
+     <listitem>
+      <para>
+       The parameterised SQL statement.  Must contain only a single statement.
+       (multiple statements separated by semi-colons are not allowed.)  If any parameters 
+       are used, they are referred to as $1, $2, etc.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>params</parameter></term>
+     <listitem>
+      <para>
+        An array of parameter values to substitute for the $1, $2, etc. placeholders
+        in the original prepared query string.  The number of elements in the array
+        must match the number of placeholders.
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+    A query result resource on success, or &false; on failure.</para>
+ </refsect1>
+ 
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
@@ -71,8 +119,6 @@ $result = pg_query($dbconn, "SELECT * FROM shops WHERE name = '{$str}'");
   <para>
    <simplelist>
     <member><function>pg_query</function></member>
-    <member><function>pg_connect</function></member>
-    <member><function>pg_escape_string</function></member>
    </simplelist>
   </para>
  </refsect1>

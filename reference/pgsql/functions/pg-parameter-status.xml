@@ -1,11 +1,9 @@
 <?xml version='1.0' encoding='iso-8859-1'?>
-<!-- $Revision: 1.6 $ -->
+<!-- $Revision: 1.7 $ -->
 <refentry id="function.pg-parameter-status">
  <refnamediv>
   <refname>pg_parameter_status</refname>
-  <refpurpose>
-   Returns the value of a server parameter
-  </refpurpose>
+  <refpurpose>Looks up a current parameter setting of the server.</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -16,19 +14,100 @@
    <methodparam><type>string</type><parameter>param_name</parameter></methodparam>
   </methodsynopsis>
   <para>
-   <function>pg_parameter_status</function> returns a string with the
-   current <parameter>param_name</parameter> value. Returns &false; on
-   failure.
+    Looks up a current parameter setting of the server.
   </para>
   <para>
-   The parameters currently available include: <literal>server_version</literal>, 
-   <literal>server_encoding</literal>, <literal>client_encoding</literal>, 
-   <literal>is_superuser</literal>, <literal>session_authorization</literal>,
-   <literal>DateStyle</literal>, <literal>TimeZone</literal>
-   and <literal>integer_datetimes</literal>. (<literal>server_encoding</literal>,
-   <literal>TimeZone</literal> and <literal>integer_datetimes</literal> were
-   not reported before PostgreSQL 8.0.)
-  </para>  
+    Certain parameter values are reported by the server automatically at 
+    connection startup or whenever their values change. <function>pg_parameter_status</function> can be 
+    used to interrogate these settings. It returns the current value of a 
+    parameter if known, or &false; if the parameter is not known.
+  </para>
+  <para>
+    Parameters reported as of PostgreSQL 8.0 include <literal>server_version</literal>, 
+    <literal>server_encoding</literal>, <literal>client_encoding</literal>, 
+    <literal>is_superuser</literal>, <literal>session_authorization</literal>, 
+    <literal>DateStyle</literal>, <literal>TimeZone</literal>, and <literal>integer_datetimes</literal>.
+    (<literal>server_encoding</literal>, <literal>TimeZone</literal>, and 
+    <literal>integer_datetimes</literal> were not reported by releases before 8.0.) Note that 
+    <literal>server_version</literal>, <literal>server_encoding</literal> and <literal>integer_datetimes</literal> 
+    cannot change after PostgreSQL startup.
+  </para>
+  <para>
+    PostgreSQL 7.3 or lower servers do not report parameter settings,
+    <function>pg_parameter_status</function>
+    includes logic to obtain values for <literal>server_version</literal> and 
+    <literal>client_encoding</literal>
+    anyway. Applications are encouraged to use <function>pg_parameter_status</function> rather than ad 
+    hoc code to determine these values.
+  </para>
+  <caution>
+    <para>
+      On a pre-7.4
+      PostgreSQL server, changing <literal>client_encoding</literal> via <literal>SET</literal> after connection startup will 
+      not be reflected by <function>pg_parameter_status</function>.
+     </para>
+  </caution>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>connection</parameter></term>
+     <listitem>
+      <para>
+       PostgreSQL database connection resource.  When 
+       <parameter>connection</parameter> is not present, the default connection 
+       is used. The default connection is the last connection made by 
+       <function>pg_connect</function> or <function>pg_pconnect</function>.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>param_name</parameter></term>
+     <listitem>
+        <para>
+         Possible <parameter>param_name</parameter> values include <literal>server_version</literal>, 
+        <literal>server_encoding</literal>, <literal>client_encoding</literal>, 
+        <literal>is_superuser</literal>, <literal>session_authorization</literal>, 
+        <literal>DateStyle</literal>, <literal>TimeZone</literal>, and 
+        <literal>integer_datetimes</literal>.
+        </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>A &string; containing the value of the parameter, &false; on failure or invalid
+  <param>param_name</param>.</para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>pg_parameter_status</function> example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+  $dbconn = pg_connect("dbname=publisher") or die("Could not connect");
+
+  echo "Server encoding: ", pg_parameter_status($dbconn, "server_encoding");
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Server encoding: SQL_ASCII
+]]>
+    </screen>
+   </example>
+  </para>
  </refsect1>
 </refentry>
 
