@@ -45,7 +45,8 @@ list used and unused entities.
 }
 
 // CONFIG SECTION
-$docdir = "../"; // Main directory of the PHP documentation (one dir up in cvs)
+// Main directory of the PHP documentation (one dir up in cvs)
+$docdir = dirname(realpath(__FILE__)) ."/../";
 
 /*********************************************************************/
 /* Nothing to modify below this line                                 */
