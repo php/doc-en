@@ -51,9 +51,10 @@
                  - Wildcard scanning is now allowed
 		 - Requires PHP 4.3.0-pre1 or higher now
 		 - Usage is totally different
+   05/06/04 v2.1 - Corrected filenames for OO functions
 */
 
-$version="2.0";
+$version="2.1";
 
 $funclist=array();
 $num_funcs=0;
@@ -79,18 +80,14 @@ function new_function()
 
 function fix_name($name)
 {
-  $ret="";
-  $len=strlen($name);
+  $replace = array('_' => '-',
+                   '::' => '-',
+                   '->' => '-');
 
-  for ($i=0; $i<$len; $i++) {
-    $c=substr($name, $i, 1);
-    if ($c == '_') {
-      $ret .= '-';
-    } else {
-      $ret .= $c;
-    }
-  }
-  return($ret);
+  $name = strtr($name, $replace);
+  $name = strtr($name, array('---' => '-'));
+
+  return $name;
 }
 
 function function_add_name($num, $name)
@@ -663,10 +660,7 @@ function create_xml_docs()
 }
 
 function minimum_version($vercheck) {
-  $minver = explode(".", $vercheck);
-  $curver = explode(".", phpversion());
-  if (($curver[0] < $minver[0]) || (($curver[0] == $minver[0]) && ($curver[1] < $minver[1])) ||
-      (($curver[0] == $minver[0]) && ($curver[1] == $minver[1]) && ($curver[2][0] < $minver[2][0]))) {
+  if(version_compare(phpversion(), $vercheck) == -1) {
     return false;
   } else {
     return true;
