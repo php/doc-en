@@ -13,7 +13,8 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Authors:    Vincent Gevers <vincent@php.net>                         |
+  | Authors:    Mehdi Achour <didou@php.net> (Original Author)           |
+  |             Vincent Gevers <vincent@php.net>                         |          
   +----------------------------------------------------------------------+
 
  $Id$
@@ -22,6 +23,13 @@
 /*
  * Usage:
  * $ php notes_stats.php > notes.php
+ */
+ 
+/*
+ * TODO:
+ * - Caching the articles (SQLite?)
+ * - Speed improvements
+ * - Nicer layout
  */
 
 // minimum amount actions
