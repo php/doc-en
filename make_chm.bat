@@ -15,7 +15,7 @@ set PHP_HELP_COMPILE_LANG=en
 rem The source directory with the original DSSSL made HTML
 set PHP_HELP_COMPILE_DIR=html
 
-rem The index file in this directory (manual.html or idex.html)
+rem The index file in this directory (manual.html or index.html)
 set PHP_HELP_COMPILE_INDEX=index.html
 
 rem The directory, where the fancy files need to be copied
@@ -30,6 +30,7 @@ echo.
 if a%1a == anormala goto skipfancy
 
 echo Now generating the fancy manual in %PHP_HELP_COMPILE_FANCYDIR% dir...
+IF NOT EXIST %PHP_HELP_COMPILE_FANCYDIR%\NUL md %PHP_HELP_COMPILE_FANCYDIR%
 %PHP_PATH% -q make_chm_fancy.php
 
 goto normal
@@ -45,6 +46,10 @@ echo Now running the toc and project file generator script...
 
 echo Compiling the actual helpfile (manual-%PHP_HELP_COMPILE_LANG%-date.chm)...
 %PHP_HELP_COMPILER% manual-%PHP_HELP_COMPILE_LANG%.hhp
+
+echo.
+echo Cleaning up the directory
+del manual-%PHP_HELP_COMPILE_LANG%.hh?
 
 echo Done!
 echo.
