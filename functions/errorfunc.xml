@@ -317,7 +317,14 @@ error_reporting (E_ALL); // New syntax for PHP 3/4
     </para>
     <para>
      The user function needs to accept 2 parameters: the error code, and a
-     string describing the error. The example below shows the handling of 
+     string describing the error. From PHP 4.0.2, an additional 3 optional
+     parameters are supplied: the filename in which the error occured, the
+     line number in which the error occured, and the context in which the
+     error occured (an array that points to the active symbol table at the
+     point the error occurred).
+    </para>
+    <para>
+     The example below shows the handling of 
      internal execptions by triggering errors and handling them with a user
      defined function:
      <example>
@@ -334,46 +341,46 @@ define (ERROR,E_USER_WARNING);
 define (WARNING,E_USER_NOTICE);
 
 // set the error reporting level for this script
-error_reporting  (FATAL + ERROR + WARNING);
+error_reporting (FATAL | ERROR | WARNING);
 
 // error handler function
-function myErrorHandler ($errno, $errstr) {
-    switch ($errno) {
-    case FATAL:
+function myErrorHandler ($errno, $errstr, $errfile, $errline) {
+  switch ($errno) {
+  case FATAL:
     echo &quot;&lt;b&gt;FATAL&lt;/b&gt; [$errno] $errstr&lt;br&gt;\n&quot;;
-    echo &quot;  Fatal error in line &quot;.__LINE__.&quot; of file &quot;.__FILE__;
+    echo &quot;  Fatal error in line &quot;.$errline.&quot; of file &quot;.$errfile;
     echo &quot;, PHP &quot;.PHP_VERSION.&quot; (&quot;.PHP_OS.&quot;)&lt;br&gt;\n&quot;;
     echo &quot;Aborting...&lt;br&gt;\n&quot;;
     exit -1;
     break;
-    case ERROR:
+  case ERROR:
     echo &quot;&lt;b&gt;ERROR&lt;/b&gt; [$errno] $errstr&lt;br&gt;\n&quot;;
     break;
-    case WARNING:
+  case WARNING:
     echo &quot;&lt;b&gt;WARNING&lt;/b&gt; [$errno] $errstr&lt;br&gt;\n&quot;;
     break;
     default:
     echo &quot;Unkown error type: [$errno] $errstr&lt;br&gt;\n&quot;;
     break;
-    }
+  }
 }
 
 // function to test the error handling
 function scale_by_log ($vect, $scale) {
-    if ( !is_numeric($scale) || $scale &lt;= 0 )
-    trigger_error(&quot;log(x) for x &lt;= 0 is undefined, you used: scale = $scale&quot;, 
+  if ( !is_numeric($scale) || $scale &lt;= 0 )
+    trigger_error(&quot;log(x) for x &lt;= 0 is undefined, you used: scale = $scale&quot;,
       FATAL);
-    if (!is_array($vect)) {
+  if (!is_array($vect)) {
     trigger_error(&quot;Incorrect input vector, array of values expected&quot;, ERROR);
     return null;
-    }
-    for ($i=0; $i&lt;count($vect); $i++) {
+  }
+  for ($i=0; $i&lt;count($vect); $i++) {
     if (!is_numeric($vect[$i]))
-    trigger_error(&quot;Value at position $i is not a number, using 0 (zero)&quot;, 
-      WARNING);
+      trigger_error(&quot;Value at position $i is not a number, using 0 (zero)&quot;, 
+        WARNING);
     $temp[$i] = log($scale) * $vect[$i];
-    }
-    return $temp;
+  }
+  return $temp;
 }
 
 // set to the user defined error handler
@@ -433,10 +440,25 @@ NULL
 ----
 vector d - fatal error
 &lt;b&gt;FATAL&lt;/b&gt; [256] log(x) for x &lt;= 0 is undefined, you used: scale = -2.5&lt;br&gt;
-  Fatal error in line 16 of file trigger_error.php, PHP 4.0.1pl2 (Linux)&lt;br&gt;
+  Fatal error in line 36 of file trigger_error.php, PHP 4.0.2 (Linux)&lt;br&gt;
 Aborting...&lt;br&gt;
       </programlisting>
      </informalexample>
+    </para>
+    <para>
+     It is important to remember that the standard PHP error handler is completely
+     bypassed. <function>error_reporting</function> settings will have no effect
+     and your error handler will be called regardless - however you are still
+     able to read the current value of <function>error_reporting</function> and
+     act appropriately. Of particular note is that this value will be 0 if the
+     statement that caused the error was prepended by the
+     <link linkend="language.operators.errorcontrol">@ error-control
+     operator</link>.
+    </para>
+    <para>
+     Also note that it is your responsibility to <function>die</function> if
+     necessary. If the error-handler function returns, script execution
+     will continue with the next statement after the one that caused an error.
     </para>
     <para>
      See also <function>error_reporting</function>,
