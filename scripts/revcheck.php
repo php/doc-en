@@ -188,7 +188,7 @@ function get_file_status($file)
     if (!@file_exists($trans_file)) {
         $files_by_mark[REV_NOTRANS]++;
         $trans_name = substr($trans_file, strlen($DOCDIR) + strlen($LANG) + 1);
-        $size = round(filesize($file)/1024, 1);
+        $size = intval(filesize($file)/1024);
         $missing_files[$trans_name] = array( $size );
         $file_sizes_by_mark[REV_NOTRANS] += $size;
         // compute en-tags just if they're needed in the WIP-Table
@@ -328,6 +328,7 @@ function get_dir_status($dir)
       if (
           $file == "make_chm_index_en.html"
 	  || $file == "rsusi.txt"
+	  || $file == "README"
 	  || $file == "DO_NOT_TRANSLATE" 
 	  || ($file == "functions.xml" && strpos($dir, '/reference/')))
         continue;
