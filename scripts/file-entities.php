@@ -10,11 +10,11 @@ exists
 ob_end_clean();
 ob_implicit_flush();
 
-$base_dir  = abs_path($argv[1]);
+$base_dir  = abs_path($argv[$argc-2]);
 if(php_sapi_name()!="cli") $base_dir=ereg_replace("/scripts$","",$base_dir);
 
 $orig_dir  = $base_dir."/en";
-$trans_dir = $base_dir."/".$argv[2];
+$trans_dir = $base_dir."/".$argv[$argc-1];
 
 process($orig_dir,$trans_dir,$orig_dir);
 
