@@ -187,14 +187,13 @@ function fh_NewText()
 function fh_EFocus()
 {
     if (f_s.value=="quickref") {
-        f_p.autocomplete="off";
-        _d.forms[0].autocomplete="off";
+        f_p.setAttribute("autocomplete", "off");
         fh_NewText();
     }
 }
 
 function fh_EBlur() { setTimeout("fh_EBlurT()", 200); }
-function fh_EBlurT() { f_p.autocomplete="on"; _d.forms[0].autocomplete="on"; fh_HideAll(); }
+function fh_EBlurT() { f_p.setAttribute("autocomplete", "on"); fh_HideAll(); }
 
 function fh_EKeyPress(ev)
 {
