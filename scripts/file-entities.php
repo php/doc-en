@@ -41,10 +41,26 @@ function process($work_dir, $trans_dir, $orig_dir) {
 		if($file=="."||$file==".."||$file=="CVS") continue;
 		if(is_dir($work_dir."/".$file)) process($work_dir."/".$file, $trans_dir, $orig_dir);
 		if(ereg("\\.xml$",$file)) {
-			$name = str_replace("$orig_dir/","",$work_dir."/".ereg_replace("\\.xml$","",$file));
+      $name = str_replace("$orig_dir/","",$work_dir."/".ereg_replace("\\.xml$","",$file));
 			$name = str_replace("/",".",$name);
 			$name = str_replace("_","-",$name);
-			if(file_exists("$trans_path/$file")) {
+
+      // new: special treatment for function reference entities if splitted version available
+      if(strstr($work_dir,"/functions")) {
+        $splitfile = str_replace(".xml","/reference.xml",$file);
+        $splitpath = str_replace("/functions","/reference",$trans_path) . "/" . $splitfile;
+        if(file_exists($splitpath)) {
+          echo sprintf("<!ENTITY %-40s SYSTEM '%s'>\n",$name,$splitpath);
+          continue;
+        } 
+        $splitpath = str_replace("/functions","/reference",$trans_path) . "/" . $splitfile;
+        if(file_exists($splitpath)) {
+          echo sprintf("<!ENTITY %-40s SYSTEM '%s'>\n",$name,$splitpath);
+          continue;
+        } 
+      }
+  
+      if(file_exists("$trans_path/$file")) {
 				$path= "$trans_path/$file";
 			} else {
 				$path= "$work_dir/$file";
@@ -53,5 +69,28 @@ function process($work_dir, $trans_dir, $orig_dir) {
 		}
 	}
 	closedir($dh);
+
+  // now find all files available in the translation but not the original
+  if(file_exists($trans_path) && is_dir($trans_path)) {
+    $dh = @opendir($trans_path);
+    if($dh) {
+      while(false !== ($file = readdir($dh))) {
+        if($file=="."||$file==".."||$file=="CVS") continue;
+        if(is_dir($trans_path."/".$file)) continue;
+        if(ereg("\\.xml$",$file)) {
+          $name = str_replace("$orig_dir/","",$work_dir."/".ereg_replace("\\.xml$","",$file));
+          $name = str_replace("/",".",$name);
+          $name = str_replace("_","-",$name);
+          
+          if(!file_exists("$work_dir/$file")) {
+            $path= "$trans_path/$file";
+            echo sprintf("<!ENTITY %-40s SYSTEM '$path'>\n",$name);
+          }
+        }
+      }
+      closedir($dh);
+    } 
+  }
+
 }
 ?>
