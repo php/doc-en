@@ -1,301 +1,302 @@
  <appendix id="migration4">
-	<title>Migrating from PHP 3.0 to PHP 4.0</title>
+  <title>Migrating from PHP 3.0 to PHP 4.0</title>
 	
-	<section>
-	 <title>What has changed in PHP 4.0</title>
-	 <para>
-		PHP 4.0 and the integrated Zend engine have greatly inproved PHPs
-		performance and capabilities, but great care has been taken to
-		break as little existing code as possible. So migrating your code
-		from PHP 3.0 to 4.0 should be much easier than migrating from
-		PHP/FI 2.0 to PHP 3.0. A lot of existing PHP 3.0 code should be
-		ready to run without changes, but you should still know about the
-		few differences and take care to test your code before switching
-		versions in production environments. The following should give you
-		some hints about what to look for.
-	 </para>
-	</section>
+  <section>
+   <title>What has changed in PHP 4.0</title>
+   <para>
+    PHP 4.0 and the integrated Zend engine have greatly inproved PHPs
+    performance and capabilities, but great care has been taken to
+    break as little existing code as possible. So migrating your code
+    from PHP 3.0 to 4.0 should be much easier than migrating from
+    PHP/FI 2.0 to PHP 3.0. A lot of existing PHP 3.0 code should be
+    ready to run without changes, but you should still know about the
+    few differences and take care to test your code before switching
+    versions in production environments. The following should give you
+    some hints about what to look for.
+   </para>
+  </section>
 
+  <section>
+   <title>Parser behavior</title>
+   <para>
+    Parsing and execution are now two completely seperated steps, no
+    execution of a files code will happen until the complete file and
+    everything it requires has completely and successfully been
+    parsed.
+   </para>
+   <para>
+    One of the new requirenments introduced with this split is that
+    required and included files now have to be syntactically
+    complete. You can no longer spread the different controling parts
+    of a control structure across file boundaries. That is you cannot
+    start a <literal>for</literal> or <literal>while</literal> loop,
+    an <literal>if</literal> statement or a <literal>switch</literal>
+    block in one file and have the end of loop,
+    <literal>else</literal>, <literal>endif</literal>,
+    <literal>case</literal> or <literal>break</literal> statements in
+    a different file.
+   </para>
+   <para>
+    It still perfectly legal to include additional code within loops
+    or other control structures, only the controling keywords and
+    corresponding curly braces <literal>{...}</literal> have to be
+    within the same compile unit (file or <function>eval</function>ed
+    string).
+   </para>
+   <para>
+    This should not harm to much as spreading code like this should be
+    considered as very bad style anyway.
+   </para>
+   <para>
+    Another thing no longer possible, though rarely seen in PHP 3.0
+    code is returning values from a required file. Returning a value
+    from an included file is still possible.
+   </para>
+  </section>
 
-	<section>
-	 <title>Parser behavior</title>
-	 <para>
-		Parsing and execution are now two completely seperated steps, no
-		execution of a files code will happen until the complete file and
-		everything it requires has completely and successfully been parsed.
-	 </para>
-	 <para>
-		One of the new requirenments introduced with this split is that
-		required and included files now have to be syntactically
-		complete. You can no longer spread the different controling parts
-		of a control structure across file boundaries. That is you cannot
-		start a <literal>for</literal> or <literal>while</literal> loop,
-		an <literal>if</literal> statement or a <literal>switch</literal>
-		block in one file and have the end of loop,
-		<literal>else</literal>, <literal>endif</literal>,
-		<literal>case</literal> or <literal>break</literal> statements in a different file. 
-	 </para>
-	 <para>
-		It still perfectly legal to include additional code within loops
-		or other control structures, only the controling keywords and
-		corresponding curly braces <literal>{...}</literal> have to be
-		within the same compile unit (file or <function>eval</function>ed string).
-	 </para>
-	 <para>
-		This should not harm to much as spreading code like this should be
-		considered as very bad style anyway.
-	 </para>
-	 <para>
-		Another thing no longer possible, though rarely seen in PHP 3.0
-		code is returning values from a required file. Returning a value
-		from an included file is still possible. 
-	 </para>
-	</section>
-
-	
-	<section>
-	 <title>Error reporting</title>
+  <section>
+   <title>Error reporting</title>
 	 
-	 <section>
-		<title>Configuration changes</title>
-		<para>
-		 With PHP 3.0 the error reporting level was set as a simple
-		 numeric value formed by summing up the numbers related to
-		 different error levels. Usual values where 15 for reporting all
-		 errors and warnings or 7 for reporting everything but simple
-		 notice messages reporting bad style and things like that.
-		</para>
-		<para>
-		 PHP 4.0 now has a greater set of different error and warning
-		 levels and comes with a configuration parser that now allows for
-		 symbolic constants to be used for setting up the intended behavior.
-		</para>
-		<para>
-		 Error reporting level should now be configured by explicitly
-		 taking away the warning levels you do not want to generate error
-		 messages by x-oring them from the symbolic constant 
-		 <literal>E_ALL</literal>. Sounds complicated? Well, lets say you want 
-		 the error reporting system to report all but the simple style warnings 
-		 that are categorized by the symbolic constant <literal>E_NOTICE</literal>. 
-		 Then you'll put the following into your <filename>php.ini</filename>: 
-         <literal>error_reporting = E_ALL & ~ ( E_NOTICE )</literal>. 
-         If you want to suppress warnings too you add up the appropriate 
-		 constant within the braces using the binary or operator '|':
-         <literal>error_reporting= E_ALL & ~ ( E_NOTICE | E_WARNING )</literal>.
-		</para>
-		<warning>
-		 <para>
-			Using the old values 7 and 15 for setting up error reporting is a
-			very bad idea as this suppresses some of the newly added error
-			classes including parese errors. This may lead to very strange
-			behavior as scripts might no longer work without error messages
-			showing up anywhere.
-		 </para>
-		 <para>
-			This has lead to a lot of unreproduceable bug reports in the
-			past where people reported script engine problems they were not
-			capable to track down while the true case was usually some
-			missing '}' in a required file that the parser was not able to
-			report due to a misconfigured error reporting system.
-		 </para>
-		 <para>
-			So checking your error reporting setup should be the first thing
-			to do whenever your scripts silently die. The Zend enginge can
-			be considererd mature enough nowadays to not cause this kind of
-			strange behavior.
-		 </para>
-		</warning>
-	 </section>
+   <section>
+    <title>Configuration changes</title>
+    <para>
+     With PHP 3.0 the error reporting level was set as a simple
+     numeric value formed by summing up the numbers related to
+     different error levels. Usual values where 15 for reporting all
+     errors and warnings or 7 for reporting everything but simple
+     notice messages reporting bad style and things like that.
+    </para>
+    <para>
+     PHP 4.0 now has a greater set of different error and warning
+     levels and comes with a configuration parser that now allows for
+     symbolic constants to be used for setting up the intended
+     behavior.
+    </para>
+    <para>
+     Error reporting level should now be configured by explicitly
+     taking away the warning levels you do not want to generate error
+     messages by x-oring them from the symbolic constant
+     <literal>E_ALL</literal>. Sounds complicated? Well, lets say you
+     want the error reporting system to report all but the simple
+     style warnings that are categorized by the symbolic constant
+     <literal>E_NOTICE</literal>.  Then you'll put the following into
+     your <filename>php.ini</filename>: <literal>error_reporting =
+     E_ALL & ~ ( E_NOTICE )</literal>.  If you want to suppress
+     warnings too you add up the appropriate constant within the
+     braces using the binary or operator '|':
+     <literal>error_reporting= E_ALL & ~ ( E_NOTICE | E_WARNING
+     )</literal>.
+    </para>
+    <warning>
+     <para>
+      Using the old values 7 and 15 for setting up error reporting is
+      a very bad idea as this suppresses some of the newly added error
+      classes including parese errors. This may lead to very strange
+      behavior as scripts might no longer work without error messages
+      showing up anywhere.
+     </para>
+     <para>
+      This has lead to a lot of unreproduceable bug reports in the
+      past where people reported script engine problems they were not
+      capable to track down while the true case was usually some
+      missing '}' in a required file that the parser was not able to
+      report due to a misconfigured error reporting system.
+     </para>
+     <para>
+      So checking your error reporting setup should be the first thing
+      to do whenever your scripts silently die. The Zend enginge can
+      be considererd mature enough nowadays to not cause this kind of
+      strange behavior.
+     </para>
+    </warning>
+   </section>
 
-	 <section>
-		<title>Additional warning messages</title>
-		<para>
-		 A lot of existing PHP 3.0 code uses language constructs that
-		 should be considered as very bad style as this code, while doing
-		 the intended thing now, could easily be broken by changes in
-		 other places. PHP 4.0 will output a lot of notice messages in
-		 such situations where PHP 3.0 didn't.
-		 The easy fix is to just turn off E_NOTICE messages, but it is
-		 usually a good idea to fix the code instead.
-		</para>
-		<para>
-		 The most common case that will now produce notice messages is the
-		 use of unquoted string constants as array indices. Both PHP 3.0
-		 and 4.0 will fall back to interprete theese as strings if no
-		 keyword or constant is known by that name, but whenever a
-		 constant by that name had been defined anywhere else in the code
-		 it might break your script. This can even become a security risk
-		 if some intruder manages to redefine string constants in a way
-		 that makes your script give him access rights he wasn't intended
-		 to have. So PHP 4.0 will now warn you whenever you use unquoted
-		 string constants as for example in
-		 <literal>$HTTP_SERVER_VARS[REQUEST_METHOD]</literal>. Changing it
-		 to <literal>$HTTP_SERVER_VARS['REQUEST_METHOD']</literal> will
-		 make the parser happy and greatly improve the style and security
-		 of your code.
-		</para>
-		<para>
-		 Another thing PHP 4.0 will now tell you about is the use of
-		 uninitialized variables or array elements. 
-		</para>
-	 </section>
+   <section>
+    <title>Additional warning messages</title>
+    <para>
+     A lot of existing PHP 3.0 code uses language constructs that
+     should be considered as very bad style as this code, while doing
+     the intended thing now, could easily be broken by changes in
+     other places. PHP 4.0 will output a lot of notice messages in
+     such situations where PHP 3.0 didn't.  The easy fix is to just
+     turn off E_NOTICE messages, but it is usually a good idea to fix
+     the code instead.
+    </para>
+    <para>
+     The most common case that will now produce notice messages is the
+     use of unquoted string constants as array indices. Both PHP 3.0
+     and 4.0 will fall back to interprete theese as strings if no
+     keyword or constant is known by that name, but whenever a
+     constant by that name had been defined anywhere else in the code
+     it might break your script. This can even become a security risk
+     if some intruder manages to redefine string constants in a way
+     that makes your script give him access rights he wasn't intended
+     to have. So PHP 4.0 will now warn you whenever you use unquoted
+     string constants as for example in
+     <literal>$HTTP_SERVER_VARS[REQUEST_METHOD]</literal>. Changing it
+     to <literal>$HTTP_SERVER_VARS['REQUEST_METHOD']</literal> will
+     make the parser happy and greatly improve the style and security
+     of your code.
+    </para>
+    <para>
+     Another thing PHP 4.0 will now tell you about is the use of
+     uninitialized variables or array elements.
+    </para>
+   </section>
+   
+  </section>
 
-	</section>
+  <section>
+   <title>Initializers</title>
+   <para>
+    Static variable and class member initializers only accept scalar
+    values while in PHP 3.0 they accepted any valid expression.  This
+    is, once again, due to the split between parsing and execution as
+    no code has yet been executed when the parser sees the
+    initializer.
+   </para>
+   <para>
+    For classes you should use constructors to initialize member
+    variables instead. For static variables anything but a simple
+    static value rarely makes sense anyway.
+   </para>
+  </section>
 
-	<section>
-	 <title>Initializers</title>
-	 <para>
-		Static variable and class member initializers only accept scalar
-		values while in PHP 3.0 they accepted any valid expression.
-		This is, once again, due to the split between parsing and
-		execution as no code has yet been executed when the parser sees
-		the initializer.
-	 </para>
-	 <para>
-		For classes you should use constructors to initialize member
-		variables instead. For static variables anything but a simple
-		static value rarely makes sense anyway.
-	 </para>
-	</section>
-
-
-	<section>
-	 <title><literal>empty("0")</literal></title>
-	 <para>
-		The perhaps most cotroversal change in behavior has happend to the
-		behavior of the <function>empty</function>. A String containing
-		only the character '0' (zero) is now considered empty while it
-		wasn't in PHP 3.0.
-	 </para>
+  <section>
+   <title><literal>empty("0")</literal></title>
+   <para>
+    The perhaps most cotroversal change in behavior has happend to the
+    behavior of the <function>empty</function>. A String containing
+    only the character '0' (zero) is now considered empty while it
+    wasn't in PHP 3.0.
+   </para>
    <para> 
-	  This new behavior makes sense in web applications, with all input
-    fields returning strings even if numeric input is requested, and 
-    with PHP's capabilities of automatic type conversion.
-    But on the other had it might break your code in a rather subtele
-    was, leading to misbehavior that is hard to track down if you 
-    do not know about what to look for.
-	 </para>
-	</section>
+    This new behavior makes sense in web applications, with all input
+    fields returning strings even if numeric input is requested, and
+    with PHP's capabilities of automatic type conversion.  But on the
+    other had it might break your code in a rather subtele was,
+    leading to misbehavior that is hard to track down if you do not
+    know about what to look for.
+   </para>
+  </section>
 
-	<section>
-	 <title>Missing functions</title>
-	 <para>
-		While PHP 4.0 comes with a lot of new features, functions and
-		extensions, you may still find some functions from version 3.0
-		missing. A small number of core functions has vanished because
-		they do not work with the new scheme of splitting parsing and
-		execution as introduced into 4.0 with the Zend engine.
-		Other functions and even complete extensions have become obsolete
-		as newer functions and extensions serve the same task better
-		and/or in a more general way. Some functions just simply haven't 
-		been ported yet and finally some functions or extensions may be
-		missing due to license conflicts.
-	 </para>
+  <section>
+   <title>Missing functions</title>
+   <para>
+    While PHP 4.0 comes with a lot of new features, functions and
+    extensions, you may still find some functions from version 3.0
+    missing. A small number of core functions has vanished because
+    they do not work with the new scheme of splitting parsing and
+    execution as introduced into 4.0 with the Zend engine.  Other
+    functions and even complete extensions have become obsolete as
+    newer functions and extensions serve the same task better and/or
+    in a more general way. Some functions just simply haven't been
+    ported yet and finally some functions or extensions may be missing
+    due to license conflicts.
+   </para>
 
-	 <section>
-		<title>Functions missing due to conceptual changes</title>
-		<para>
-		 As PHP 4.0 now seperates parsing from execution it is no longer
-		 possible to change the behavior of the parser (now embedded in
-		 the Zend engine) at runtime as parsing already happend by
-		 then. So the function <function>short_tags</function> has ceased
-		 to exist. You can still change the parsers behavior by setting
-		 appropriate values in the <filename>php.ini</filename> file.		 
-		</para>
-		<para>
-		 Another feature from PHP 3.0 that didn't make it into 4.0 is the
-		 experimental debugging interface as described in ??? in this
-		 manual.
-		 A seperate true debuger is promissed to be released as a Zend
-		 product but hasn't become visible yet.
-		</para>
-	 </section>
+   <section>
+    <title>Functions missing due to conceptual changes</title>
+    <para>
+     As PHP 4.0 now seperates parsing from execution it is no longer
+     possible to change the behavior of the parser (now embedded in
+     the Zend engine) at runtime as parsing already happend by
+     then. So the function <function>short_tags</function> has ceased
+     to exist. You can still change the parsers behavior by setting
+     appropriate values in the <filename>php.ini</filename> file.
+    </para>
+    <para>
+     Another feature from PHP 3.0 that didn't make it into 4.0 is the
+     experimental debugging interface as described in ??? in this
+     manual.  A seperate true debuger is promissed to be released as a
+     Zend product but hasn't become visible yet.
+    </para>
+   </section>
 
-	 <section>
-		<title>Deprecate functions and extensions</title>
-		<para>
-		 The Adabas and Solid database extensions are no more. Long live
-		 the unified ODBC extension instead.
-		</para>
-	 </section>
+   <section>
+    <title>Deprecate functions and extensions</title>
+    <para>
+     The Adabas and Solid database extensions are no more. Long live
+     the unified ODBC extension instead.
+    </para>
+   </section>
 
-	 <section>
-		<title>Changed status for <function>unset</function></title>
-		<para>
-		 <function>unset</function>, although still available, is
-		 implemented a literal different in PHP 4.0 so that it no longer
-		 counts as a 'real' function. 
-		</para>
-		<para>
-		 This has no direct consequences as
-		 the behavior of <function>unset</function> didn't change, but 
-		 testing for "unset" usign  <function>function_exists</function>
-		 will return <literal>false</literal> as it would with othern
-		 lowlevel functions like <function>echo</function>.
-		</para>
-		<para>
-		 Another more practical change is that it is no longer possible to
-		 call <function>unset</function> indirectly, that is 
-         <literal>$func="unset"; $func($somevar)</literal> won't work anymore. 
-		</para>
-	 </section>
-	</section>
+   <section>
+    <title>Changed status for <function>unset</function></title>
+    <para>
+     <function>unset</function>, although still available, is
+     implemented a literal different in PHP 4.0 so that it no longer
+     counts as a 'real' function.
+    </para>
+    <para>
+     This has no direct consequences as the behavior of
+     <function>unset</function> didn't change, but testing for "unset"
+     usign <function>function_exists</function> will return
+     <literal>false</literal> as it would with othern lowlevel
+     functions like <function>echo</function>.
+    </para>
+    <para>
+     Another more practical change is that it is no longer possible to
+     call <function>unset</function> indirectly, that is
+     <literal>$func="unset"; $func($somevar)</literal> won't work
+     anymore.
+    </para>
+   </section>
+  </section>
 
-	<section>
-	 <title>PHP 3.0 extension</title>
-	 <para>
-		Extensions written for PHP 3.0 will not work with PHP 4.0
-		anymore, neither as binaries nor at the source level. It is not to
-		difficult to port your extensions to PHP 4.0 if you have access to
-		the original sources. A detailed description of the  actual
-		porting process is not part of this text (yet).
-	 </para>
-	</section>
+  <section>
+   <title>PHP 3.0 extension</title>
+   <para>
+    Extensions written for PHP 3.0 will not work with PHP 4.0 anymore,
+    neither as binaries nor at the source level. It is not to
+    difficult to port your extensions to PHP 4.0 if you have access to
+    the original sources. A detailed description of the actual porting
+    process is not part of this text (yet).
+   </para>
+  </section>
 
-	<section>
-	 <title>Variable substitution in strings</title>
-	 <para>
-		PHP 4.0 adds a new mechanism to variable substitution in
-		strings. You can now finally access object member variables and
-		elements from multidimensional arrays within strings.
-	 </para>
-	 <para>
-		To do so you have to enclose your variables with curly braces
-		with the dollar sign immediately following the opening brace:
-        <literal>{$...}</literal> 
-	 </para>
-	 <para>
-		To embed the value of an object member variable into a string you
-        simply write <literal>"text {$obj->member} text"</literal> while
-		in PHP 3.0 you had to use something like <literal>"text
-		 ".$obj->member." text"</literal>.
-	 </para>
-	 <para>
-		This should lead to more readable code, while it may break existing
-		scripts written for PHP 3.0. But you can easily check for this kind of
-		problem by checking for the character combination
-		<literal>{$</literal> in your code and by replacing it with
-		<literal>\{$</literal> with your favourite search-and-replace tool.
-	 </para>
-	</section>
+  <section>
+   <title>Variable substitution in strings</title>
+   <para>
+    PHP 4.0 adds a new mechanism to variable substitution in
+    strings. You can now finally access object member variables and
+    elements from multidimensional arrays within strings.
+   </para>
+   <para>
+    To do so you have to enclose your variables with curly braces with
+    the dollar sign immediately following the opening brace:
+    <literal>{$...}</literal>
+   </para>
+   <para>
+    To embed the value of an object member variable into a string you
+    simply write <literal>"text {$obj->member} text"</literal> while
+    in PHP 3.0 you had to use something like <literal>"text
+    ".$obj->member." text"</literal>.
+   </para>
+   <para>
+    This should lead to more readable code, while it may break
+    existing scripts written for PHP 3.0. But you can easily check for
+    this kind of problem by checking for the character combination
+    <literal>{$</literal> in your code and by replacing it with
+    <literal>\{$</literal> with your favourite search-and-replace
+    tool.
+   </para>
+  </section>
 
-
-	<section>
-	 <title>Cookies</title>
-	 <para>
-		PHP 3.0 hat the bad habit of setting cookies in the reverse order
-		of the <function>setcookie</function> calls in your code. PHP 4.0
-		breaks with this habbit and creates the cookie header lines in
-		exactly the same order as you set the cookies in the code.
-	 </para>
-	 <para>
-		This might break some existing code, but the old behaviour was so
-		strange to understand that it deserved a change to prevent further
-		problems in the future. 
-	 </para>
-	</section>
-
-
+  <section>
+   <title>Cookies</title>
+   <para>
+    PHP 3.0 hat the bad habit of setting cookies in the reverse order
+    of the <function>setcookie</function> calls in your code. PHP 4.0
+    breaks with this habbit and creates the cookie header lines in
+    exactly the same order as you set the cookies in the code.
+   </para>
+   <para>
+    This might break some existing code, but the old behaviour was so
+    strange to understand that it deserved a change to prevent further
+    problems in the future.
+   </para>
+  </section>
 
  </appendix>
 
