@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.10 $ -->
+<!-- $Revision: 1.11 $ -->
 <appendix id="wrappers">
  <title>List of Supported Protocols/Wrappers</title>
  <para>
@@ -93,8 +93,9 @@
  <section id="wrappers.php">
   <title>PHP input/output streams</title>
   <simpara>
-   PHP 3.0.13 and up, <filename>php://output</filename> 
-   and <filename>php://input</filename> since PHP 4.3
+   <literal>PHP 3.0.13</literal> and up, <filename>php://output</filename> 
+   and <filename>php://input</filename> since <literal>PHP 4.3</literal>,
+   <filename>php://filter</filename> since <literal>PHP 5.0</literal>
   </simpara>
 
   <itemizedlist>
@@ -103,6 +104,7 @@
    <listitem><simpara><filename>php://stderr</filename></simpara></listitem>
    <listitem><simpara><filename>php://output</filename></simpara></listitem>
    <listitem><simpara><filename>php://input</filename></simpara></listitem>
+   <listitem><simpara><filename>php://filter</filename></simpara></listitem>
   </itemizedlist>
 
   <simpara>
@@ -128,6 +130,93 @@
    <filename>php://stderr</filename> and
    <filename>php://output</filename> are write-only.
   </simpara>
+
+  <simpara>
+   <filename>php://filter</filename> is a kind of meta-wrapper designed
+   to permit the application of filters to a stream at the time of 
+   opening.  This is useful with all-in-one file functions such as
+   <function>readfile</function>, <function>file</function>, and
+   <function>file_get_contents</function> where there is otherwise
+   no opporotunity to apply a filter to the stream prior the contents
+   being read.
+  </simpara>
+  <simpara>
+   The <filename>php://filter</filename> target takes the following 
+   &apos;parameters&apos; as parts of its &apos;path&apos;.
+  </simpara>
+  <itemizedlist>
+   <listitem>
+    <para>
+     <literal>/resource=&lt;stream to be filtered&gt;</literal>
+     (<emphasis>required</emphasis>)  This parameter must be located at
+     the end of your <filename>php://filter</filename> specification and
+     should point to the stream which you want filtered.
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+<?php
+/* This is equivalent to simply:
+   readfile("http://www.example.com");
+   since no filters are actually specified */
+
+readfile("php://filter/resource=http://www.example.com");
+?>
+]]>
+      </programlisting>
+     </informalexample>
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     <literal>/read=&lt;filter list to apply to read chain&gt;</literal>
+     (<emphasis>optional</emphasis>)  This parameter takes one or more
+     filternames separated by the pipe character <literal>|</literal>.
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+<?php
+/* This will output the contents of 
+   www.example.com entirely in uppercase */
+readfile("php://filter/read=string.toupper/resource=http://www.example.com");
+
+/* This will do the same as above
+   but will also ROT13 encode it */
+readfile("php://filter/read=string.toupper|string.rot13/resource=http://www.example.com");
+?>
+]]>
+      </programlisting>
+     </informalexample>
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     <literal>/write=&lt;filter list to apply to write chain&gt;</literal>
+     (<emphasis>optional</emphasis>)  This parameter takes one or more
+     filternames separated by the pipe character <literal>|</literal>.
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+<?php
+/* This will filter the string "Hello World"
+   through the rot13 filter, then write to
+   example.txt in the current directory */
+file_set_contents("php://filter/write=string.rot13/resource=example.txt","Hello World");
+?>
+]]>
+      </programlisting>
+     </informalexample>
+    </para>
+   </listitem>
+   <listitem>
+    <simpara>
+     <literal>/&lt;filter list to apply to both chains&gt;</literal>
+     (<emphasis>optional</emphasis>)  Any filter lists which are not
+     prefixed specifically by <literal>read=</literal> or 
+     <literal>write=</literal> will be applied to both the read and
+     write chains (as appropriate).
+    </simpara>
+   </listitem>
+  </itemizedlist>
  </section>
 
  <section id="wrappers.compression">
