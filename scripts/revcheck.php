@@ -58,7 +58,7 @@ the actual english xml files, and print statistics
   set_time_limit(0);
 
   // Initializing arrays and vars
-  $miss_file = array();
+  $missed_files = array();
   $miss_tag  = array();
   $t_alert   = -1 * $t_alert;
   $lang      = $argv[1];
@@ -119,15 +119,15 @@ the actual english xml files, and print statistics
   function check_file($file, $file_cnt)
   {
     // The information is contained in these global arrays and vars
-    global $miss_file, $miss_tag, $lang, $docdir, $r_alert, 
+    global $missed_files, $miss_tag, $lang, $docdir, $r_alert, 
          $s_alert, $t_alert, $maintainer, $cvs_opt, $plist,
          $personinfo;
 
     // Translated file name check
     $t_file = preg_replace( "'^".$docdir."en/'", $docdir.$lang."/", $file );
     if (!file_exists($t_file)) {
-      $miss_file[] = array(substr($t_file, strlen($docdir)+strlen($lang)), 
-                 round(filesize($file)/1024, 1));
+      $missed_files[substr($t_file, strlen($docdir)+strlen($lang)+1)] = 
+        array(round(filesize($file)/1024, 1), get_tag($file));
       return FALSE;
     }
 
@@ -335,7 +335,7 @@ the actual english xml files, and print statistics
  <tr><td>
   <table width=100% border=0 cellspacing=1 bgcolor=#9999CC>
    <tr><td><h2 align=center>Status of the translated PHP Manual</h2>
-      <p align=center style=\"font-size:12px; color:#FFFFFF;\">Generated: ".date("Y-m-d, H:i:s").
+      <p align=center style=\"font-size:12px; color:#FFFFFF;\">Generated: ".date("Y-m-d, H:i:s T").
       " &nbsp; / &nbsp; Language: $lang<br>&nbsp;</p>
    </td></tr>
   </table>
@@ -378,14 +378,21 @@ print("</table>\n<p>&nbsp;</p>\n");
 
 // If work-in-progress available (valid translation.xml file in lang)
 if (isset($translation["files"])) {
+  $using_date = FALSE; $using_rev = FALSE;
+  foreach ($translation["files"] as $file) {
+    if (isset($file["date"])) { $using_date = TRUE; }
+    if (isset($file["revision"])) { $using_rev = TRUE; }
+  }
   print("
   <table width=750 border=0 cellpadding=4 cellspacing=1 align=center>
   <tr>
    <th bgcolor=#666699>Work in progress files</th>
    <th bgcolor=#666699>Translator</th>
    <th bgcolor=#666699>Type</th>
-  </tr>
   ");
+  if ($using_date) { print ("<th bgcolor=#666699>Date</th>\n"); }
+  if ($using_rev) { print ("<th bgcolor=#666699>CO-Revision</th><th bgcolor=#666699>EN-Revision</th>\n"); }
+  print("</tr>\n");
   
   foreach($translation["files"] as $num => $finfo) {
     if (isset($plist[$finfo["person"]])) {
@@ -394,7 +401,10 @@ if (isset($translation["files"])) {
       $maintd = $finfo["person"];
     }
     print("<tr bgcolor=#DDDDDD><td>$finfo[name]</td>" .
-          "<td>$maintd</td><td>$finfo[type]</td></tr>");
+          "<td>$maintd</td><td>$finfo[type]</td>");
+    if ($using_date) { print("<td>$finfo[date]</td>"); }
+    if ($using_rev) { print("<td>$finfo[revision]</td><td>1." . $missed_files[$finfo["name"]][1] . "</td>"); }
+    print("</tr>");
     $personinfo[$finfo["person"]]["wip"]++;
     $wip_files[$finfo["name"]] = TRUE;
  }
@@ -456,19 +466,19 @@ if ($count > 0) {
 
 // Clear out work in progress files from available files
 if (isset($wip_files)) {
-  foreach($miss_file as $num => $finfo) {
-    if (isset($wip_files[substr($finfo[0],1)])) { unset($miss_file[$num]); }
+  foreach($wip_files as $fname => $one) {
+    if (isset($missed_files[$fname])) { unset($missed_files[$fname]); }
   }
 }
 
 // Files not translated and not "wip"
-$count = count($miss_file);
+$count = count($missed_files);
 if ($count > 0) {
   print("<table width=350 border=0 cellpadding=3 cellspacing=1 align=center>\n".
         " <tr><th colspan=2 bgcolor=#666699><b>Available for translation ($count files):</b></th></tr>\n");
-  foreach($miss_file as $v) {
-      print(" <tr><td bgcolor=#DDDDDD>&nbsp; en$v[0]</td>".
-            "<td align=right bgcolor=#DDDDDD>$v[1] kB &nbsp;</td></tr>\n");
+  foreach($missed_files as $file => $info) {
+      print(" <tr><td bgcolor=#DDDDDD>&nbsp; $file</td>".
+            "<td align=right bgcolor=#DDDDDD>$info[0] kB &nbsp;</td></tr>\n");
   }
   print("</table>\n<p>&nbsp;</p>\n");
 }
