@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.17 2004-11-02 13:19:10 techtonik Exp $
+  $Id: common.xsl,v 1.18 2004-11-02 19:03:53 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -75,11 +75,12 @@
       <type>int</type><methodname>preg_match_all</methodname>
       <methodparam><type>string</type><parameter>pattern</parameter></methodparam>
       <methodparam><type>string</type><parameter>subject</parameter></methodparam>
-      <methodparam><type>array</type><parameter>matches</parameter></methodparam>
+      <methodparam><type>array</type><parameter role="reference">matches</parameter></methodparam>
       <methodparam choice="opt"><type>int</type><parameter>flags</parameter></methodparam>
      </methodsynopsis>
 
      Note, that this is DSSSL like version. htmlhelp.xsl uses another, span style
+     TODO: <parameter role="reference">
 -->
 
 <!-- We do not want semicolon at the end of prototype and our own style
@@ -318,6 +319,40 @@
   <var class="{local-name(.)}">
     <xsl:apply-templates />
   </var>
+</xsl:template>
+
+<!-- Enclose FUNCTION in links, add parenthesis, make 'em bold. Do not link if
+     current page is description of current function or target is not available -->
+<xsl:template match="function">
+  <xsl:variable name="content">
+      <b class="{local-name(.)}">
+         <xsl:apply-templates/>
+          <xsl:text>()</xsl:text>
+      </b>
+  </xsl:variable>
+
+  <xsl:variable name="function.href">
+    <xsl:call-template name="href.target">
+      <xsl:with-param name="object" select="id(concat('function.', translate(string(current()),'_','-')))"/> 
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:choose>
+    <xsl:when test="ancestor::refentry/refnamediv/refname=translate(current(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')">
+       <xsl:copy-of select="$content"/>
+    </xsl:when>
+    <xsl:when test="string-length($function.href) != 0">
+      <a>
+        <xsl:attribute name="href">
+          <xsl:value-of select="$function.href"/>
+        </xsl:attribute>
+        <xsl:copy-of select="$content"/>
+      </a>
+    </xsl:when>
+    <xsl:otherwise>
+        <xsl:copy-of select="$content"/>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 
