@@ -1,0 +1,1402 @@
+ <reference id="ref.mbstring">
+  <title>Multi-Byte String Functions</title> 
+  <titleabbrev>Multi-Byte String</titleabbrev>
+  <partintro>
+   <sect1 id="mb-intro">
+    <title>Introduction</title>
+    <warning>
+     <simpara>
+      This module is EXPERIMENTAL. Function name/API is subject to be
+      changed. Current conversion filter supports Japanese only.
+     </simpara>
+    </warning>
+    <para>
+     There are many languages that all characters cannot be expressed
+     by single byte. Multi-byte character codes are used to express
+     many characters for many languages.  <literal>mbstring</literal>
+     is developed to handle Japanese characters. However, many
+     <literal>mbstring</literal> functions are able to handle
+     character codes other than Japanese.
+    </para>
+    <para>
+     Multi-byte character encoding represents single character with
+     consecutive bytes. Some character encoding has shift(escape)
+     sequences to start/end multi-byte character string. Therefore,
+     multi-byte character string may be destroyed when it is divided
+     and/or counted, unless multi-byte character encoding safe method
+     is used. <literal>mbstring</literal> functions support multi-byte
+     character safe string functions and other utility functions such
+     as conversion functions.
+    </para>
+
+    <sect2 id="mb-ja-basic">
+     <title>Basics for Japanese multi-byte character</title>
+     <para>
+      Most Japanese characters need more than 1 byte for a
+      character. In addition to this, several character encodings are
+      used under Japanese environment. There are EUC-JP, Shift_JIS and
+      ISO-2022-JP character encoding. As Unicode is getting popular,
+      UTF-8 is used also. To develop Web application for Japanese
+      environment, it is important to use these character codes depend
+      on its purpose, HTTP input/output, RDBMS and E-mail.
+     </para>
+     <para>
+      <itemizedlist>
+       <listitem>
+	<simpara>
+	 Storage for a character can be upto four bytes
+	</simpara>
+       </listitem>
+       <listitem>
+	<simpara>
+	 A multi-byte character usually has twice of width compare to
+	 single byte characters. Wider character is called "zen-kaku"
+	 - meaning full width, narrower character called "han-kaku" -
+	 meaning half width. "zen-kaku" characters are fixed width
+	 usually.
+	</simpara>
+       </listitem>
+       <listitem>
+	<simpara>
+	 Some character encoding defines shift sequence for
+	 entering/exiting multi-byte character strings.
+	</simpara>
+       </listitem>
+       <listitem>
+	<simpara>
+	 Database may allocate storage for characters that differs
+	 from size used in PHP even if the same character encoding is
+	 used. (For example, PostgreSQL)
+	</simpara>
+       </listitem>
+       <listitem>
+	<simpara>
+	 E-mail is supposed to use ISO-2022-JP.
+	</simpara>
+       </listitem>
+       <listitem>
+	<para>
+	 &quot;i-mode&quot; web site is supposed to use Shift_JIS.
+	</para>
+       </listitem>
+      </itemizedlist>
+     </para>
+    </sect2>
+
+    <sect2 id="mb-code">
+     <title>Supported character encodings</title>
+     <para>
+      Following character encodings are supported in this PHP
+      extension : <literal>UCS-4</literal>,
+      <literal>UCS-4BE</literal>, <literal>UCS-4LE</literal>,
+      <literal>UCS-2</literal>, <literal>UCS-2BE</literal>,
+      <literal>UCS-2LE</literal>, <literal>UTF-32</literal>, 
+      <literal>UTF-32BE</literal>, <literal>UTF-32LE</literal>,  
+      <literal>UCS-2LE</literal>, <literal>UTF-16</literal>, 
+      <literal>UTF-16BE</literal>, <literal>UTF-16LE</literal>,  
+      <literal>UTF-8</literal>, <literal>UTF-7</literal>, 
+      <literal>ASCII</literal>, <literal>EUC-JP</literal>,
+      <literal>SJIS</literal>, <literal>eucJP-win</literal>,  
+      <literal>SJIS-win</literal>,
+      <literal>ISO-2022-JP</literal>(<literal>JIS</literal>),
+      <literal>ISO-8859-1</literal>, <literal>ISO-8859-2</literal>,
+      <literal>ISO-8859-3</literal>, <literal>ISO-8859-4</literal>,
+      <literal>ISO-8859-5</literal>, <literal>ISO-8859-6</literal>,
+      <literal>ISO-8859-7</literal>, <literal>ISO-8859-8</literal>,
+      <literal>ISO-8859-9</literal>, <literal>ISO-8859-10</literal>,
+      <literal>ISO-8859-13</literal>, <literal>ISO-8859-14</literal>,
+      <literal>ISO-8859-15</literal>.
+     </para>
+    </sect2>
+    
+    <sect2 id="mb-ini">
+     <title> php.ini settings </title>
+     <para>
+      <itemizedlist>
+       <listitem>
+	<simpara>
+	 <literal>mbstring.internal_encoding</literal> defines default
+	 internal character encoding.
+	</simpara>
+       </listitem>
+       <listitem>
+	<simpara>
+	 <literal>mbstring.http_input</literal> defines default HTTP input
+	 character encoding.
+	</simpara>
+       </listitem>
+       <listitem>
+	<simpara>
+	 <literal>mbstring.http_output</literal> defines default HTTP output
+	 character encoding.
+	</simpara>
+       </listitem>
+       <listitem>
+	<simpara>
+	 <literal>mbstring.detect_order</literal> defines default character
+	 encoding detection order.
+	</simpara>
+       </listitem>
+       <listitem>
+	<simpara>
+	 <literal>mbstring.substitute_character</literal> defines character
+	 to substitute for invalid character codes.
+	</simpara>
+       </listitem>
+      </itemizedlist>
+     </para>
+     <para>
+      <example>
+       <title><literal>php.ini</literal> setting example</title>
+       <programlisting role="php.ini">
+;; Set default internal encoding
+mbstring.internal_encoding    = UTF-8  ; Set internal encoding to UTF-8
+
+;; Set default HTTP input character code
+mbstring.http_input = auto     ; Set HTTP input to auto
+; or
+; mbstring.http_input = SJIS     ; Set HTTP input to  SJIS
+; mbstring.http_input = eucjp-win, sjis-win, UTF-8 ; Specify order
+
+;; Set default HTTP output character code 
+mbstring.http_output = UTF-8   ; Set HTTP output encoding to UTF-8
+
+;; Set default character code detection order
+mbstring.detect_order = auto   ; Set HTTP output to auto
+; or 
+; mbstring.detect_order = eucjp-win, sjis-win, UTF-8 ; Specify order
+
+;; Set default substitute character
+mbstring.substitute_character = 12307 ; Specify character code
+; or
+; mbstring.substitute_character = none  ; Null character
+; mbstring.substitute_character = long  ; Long 
+       </programlisting>
+      </example>
+     </para>
+    </sect2>
+   </sect1>
+  </partintro>
+
+  <refentry id="function.mb-internal-encoding">
+   <refnamediv>
+    <refname>mb_internal_encoding</refname>
+    <refpurpose>
+     Set/Get internal character encoding
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string
+       <function>mb_internal_encoding</function></funcdef>
+      <paramdef>string
+       <parameter><optional>encoding</optional></parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_internal_encoding</function> sets internal character
+     encoding to <parameter>encoding</parameter> If parameter is
+     omitted, it returns current internal encoding.
+    </para>
+    <para>
+     <parameter>encoding</parameter> is used for HTTP input character
+     encoding conversion, HTTP output character encoding conversion
+     and default character encoding for string functions defined by
+     mbstring module.
+    </para>
+    <para>
+     <parameter>encoding</parameter>: Character encoding name
+    </para>
+    <para>
+     Return Value: If encoding is
+     set,<function>mb_internal_encoding</function> returns
+     <literal>TRUE</literal> for success, otherwise returns
+     <literal>FALSE</literal>. If <parameter>encoding</parameter> is
+     omitted, it returns current character encoding name.
+    </para>
+    <para>
+     <example>
+      <title><function>mb_internal_encoding</function> example</title>
+      <programlisting role="php">
+/* Set internal character encoding to UTF-8 */
+mb_internal_encoding("UTF-8");
+
+/* Display current internal character encoding */
+echo mb_internal_encoding();
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also <function>mb_http_input</function>,
+     <function>mb_http_output</function>,
+     <function>mb_detect_order</function>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-http-input">
+   <refnamediv>
+    <refname>mb_http_input</refname>
+    <refpurpose>Detect HTTP input character encoding</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_http_input</function></funcdef>
+      <paramdef>string 
+       <parameter><optional>type</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <simpara>
+     <function>mb_http_input</function> returns result of HTTP input
+     character encoding detection. 
+    </simpara>
+    <para>
+     <parameter>type</parameter>: Input string specifies input
+     type. &quot;G&quot; for GET, &quot;P&quot; for POST,
+     &quot;C&quot; for COOKIE. If type is omitted, it returns last
+     input type processed. 
+    </para>
+    <para>
+     Return Value: Character encoding name.
+     If <function>mb_http_input</function> does not process specified
+     HTTP input, it returns FALSE.
+    </para>
+    <para>
+     See also <function>mb_internal_encoding</function>,
+     <function>mb_http_output</function>,
+     <function>mb_detect_order</function>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-http-output">
+   <refnamediv>
+    <refname>mb_http_output</refname>
+    <refpurpose>Set/Get HTTP output character encoding</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_http_output</function></funcdef>
+      <paramdef>string 
+       <parameter><optional>encoding</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     If <parameter>encoding</parameter> is set,
+     <function>mb_http_output</function> sets HTTP output character
+     encoding to <parameter>encoding</parameter>. Output after this
+     function is converted to <parameter>encoding</parameter>. 
+     <function>mb_http_output</function> returns TRUE for success and
+     FALSE for failure.
+    </para>
+    <para>
+     If <parameter>encoding</parameter> is omitted,
+     <function>mb_http_output</function> returns current HTTP output
+     character encoding.
+    </para>
+    <para>
+     See also <function>mb_internal_encoding</function>,
+     <function>mb_http_input</function>,
+     <function>mb_detect_order</function>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-detect-order">
+   <refnamediv>
+    <refname>mb_detect_order</refname>
+    <refpurpose>
+     Set/Get character encoding detection order
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>array <function>mb_detect_order</function></funcdef>
+      <paramdef>mixed
+       <parameter><optional>encoding-list</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_detect_order</function> sets automatic character
+     encoding detection order to <parameter>encoding-list</parameter>.
+     It returns TRUE for success, FALSE for failure.
+    </para>
+    <para>
+     <parameter>encoding-list</parameter> is array or comma separated
+     list of character encodings. ("auto" is expanded to
+     "ASCII, JIS, UTF-8, EUC-JP, SJIS")
+    </para>
+    <para>
+     If <parameter>encoding-list</parameter> is omitted, it returns
+     current character encoding detection order as array.
+    </para>
+    <para>
+     This setting affects <function>mb_detect_encoding</function> and
+     <function>mb_send_mail</function>.
+    </para>
+    <para>
+     <example>
+      <title><function>mb_detect_order</function> examples</title>
+      <programlisting role="php">
+/* Set detection order by enumerated list */
+mb_detect_order("eucjp-win,sjis-win,UTF-8");
+
+/* Set detection order by array */
+$ary[] = "ASCII";
+$ary[] = "JIS";
+$ary[] = "EUC-JP";
+mb_detect_order($ary);
+
+/* Display current detection order */
+echo implode(", ", mb_detect_order());
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also <function>mb_internal_encoding</function>,
+     <function>mb_http_input</function>,
+     <function>mb_http_output</function>
+     <function>mb_send_mail</function>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-substitute-character">
+   <refnamediv>
+    <refname>mb_substitute_character</refname>
+    <refpurpose>Set/Get substitution character</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>mixed <function>mb_substitute_character</function></funcdef>
+      <paramdef>mixed 
+       <parameter><optional>substrchar</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_substitute_character</function> specifies
+     substitution character when input character encoding is invalid
+     or character code is not exist in output character
+     encoding. Invalid characters may be substituted null(no output),
+     string or hex value (Unicode character code value).
+    </para>
+    <para>
+     This setting affects <function>mb_detect_encoding</function>
+     and <function>mb_send_mail</function>.
+    </para>
+    <para>
+     <parameter>substchar</parameter> : Specify Unicode value as
+     integer or specify as string as follows
+     <itemizedlist>
+      <listitem>
+       <simpara>
+	&quot;none&quot; : no output
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+	&quot;long&quot; :  Output hex value  (Example: U+3000,JIS+7E7E)
+       </simpara>
+      </listitem>
+     </itemizedlist>
+    </para>
+    <para>
+     Return Value: If <parameter>substchar</parameter> is set, it
+     returns TRUE for success, otherwise returns FALSE. If
+     <parameter>substchar</parameter> is not set, it returns Unicode
+     value or
+     &quot;<literal>none</literal>&quot;/&quot;<literal>long</literal>&quot;.
+    </para>
+    <para>
+     <example>
+      <title><function>mb_substitute_character</function> example</title>
+      <programlisting role="php">
+/* Set with Unicode U+3013 (GETA MARK) */
+mb_substitute_character(0x3013);
+
+/* Set hex format */
+mb_substitute_character("long");
+
+/* Display current setting */
+echo mb_substitute_character();
+      </programlisting>
+     </example>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-output-handler">
+   <refnamediv>
+    <refname>mb_output_handler</refname>
+    <refpurpose>
+     Callback function converts character encoding in output buffer
+    </refpurpose> 
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_output_handler</function></funcdef>
+      <paramdef>string <parameter>contents</parameter></paramdef>
+      <paramdef>int <parameter>status</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_output_handler</function> is
+     <function>ob_start</function> callback
+     function. <function>mb_output_handler</function> converts
+     characters in output buffer from internal character encoding to
+     HTTP output character encoding.
+    </para>
+    <para>
+     <parameter>contents</parameter> : Output buffer contents
+    </para>
+    <para>
+     <parameter>status</parameter> : Output buffer status
+    </para>
+    <para>
+     Return Value: String converted
+    </para>
+    <para>
+     <example>
+      <title><function>mb_output_handler</function> example</title>
+      <programlisting role="php">
+mb_http_output("UTF-8");
+ob_start("mb_output_handler");
+      </programlisting>
+     </example>
+    </para>
+    <note>
+     <para>
+      If you want to output some binary data such as image from php
+      script, you must set output encoding to "pass" using
+      <function>mb_http_output</function>.
+     </para>
+    </note>
+    <para>
+     See also <function>ob_start</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-preferred-mime-name">
+   <refnamediv>
+    <refname>mb_preferred_mime_name</refname>
+    <refpurpose>Get MIME charset string</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_preferred_mime_name</function></funcdef>
+      <paramdef>string <parameter>encoding</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_preferred_mime_name</function> returns MIME
+     <literal>charset</literal> string for character encoding
+     <parameter>encoding</parameter>. It returns
+     <literal>charset</literal> string.
+    </para>
+    <para>
+     <example>
+      <title><function>mb_preferred_mime_string</function> example</title>
+      <programlisting role="php">
+$outputenc = "sjis-win";
+mb_http_output($outputenc);
+ob_start("mb_output_handler");
+Header("Content-Type: text/html; charset=" . mb_preferred_mime_name($outputenc));
+      </programlisting>
+     </example>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-strlen">
+   <refnamediv>
+    <refname>mb_strlen</refname>
+    <refpurpose>Get string length</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_strlen</function></funcdef>
+      <paramdef>string <parameter>str</parameter></paramdef>
+      <paramdef>string 
+       <parameter><optional>encoding</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_strlen</function> returns number of characters in
+     string <parameter>str</parameter> having character encoding
+     <parameter>encoding</parameter>. A multi-byte character is
+     counted as 1.
+    </para>
+    <para>
+     See also <function>mb_internal_encoding</function>, 
+     <function>strlen</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-strpos">
+   <refnamediv>
+    <refname>mb_strpos</refname>
+    <refpurpose>
+     Find position of first occurrence of string in a string
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_strpos</function></funcdef>
+      <paramdef>string <parameter>haystack</parameter></paramdef>
+      <paramdef>string <parameter>needle</parameter></paramdef>
+      <paramdef>int 
+       <parameter><optional>offset</optional></parameter>
+      </paramdef>
+      <paramdef>string 
+       <parameter><optional>encoding</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_strpos</function> returns the numeric position of
+     the first occurrence of <parameter>needle</parameter> in the
+     <parameter>haystack</parameter> string. If
+     <parameter>needle</parameter> is not found, it returns FALSE.
+    </para>
+    <para>
+     <function>mb_strpos</function> performs multi-byte safe
+     <function>strpos</function> operation based on number of
+     characters. <parameter>needle</parameter> position is counted
+     from the beginning of the <parameter>haystack</parameter>. First
+     character's position is 0. Second character position is 1, and so
+     on. 
+    </para>
+    <para>
+     If <parameter>encoding</parameter> is omitted, internal
+     character encoding is used. <function>mb_strrpos</function>
+     accepts <literal>string</literal> for
+     <parameter>needle</parameter> where <function>strrpos</function>
+     accepts only character.
+    </para>
+    <para>
+     <parameter>offset</parameter> is search offset. If it is not
+     specified, 0 is used.
+    </para>
+    <para>
+     <parameter>encoding</parameter> is character encoding name. If it
+     is not specified, internal character encoding is used.
+    </para>
+    <para>
+     See also <function>mb_strpos</function>,
+     <function>mb_internal_encoding</function>, 
+     <function>strpos</function>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-strrpos">
+   <refnamediv>
+    <refname>mb_strrpos</refname>
+    <refpurpose>
+     Find position of last occurrence of a string in a string
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_strrpos</function></funcdef>
+      <paramdef>string <parameter>haystack</parameter></paramdef>
+      <paramdef>string <parameter>needle</parameter></paramdef>
+      <paramdef>string 
+       <parameter><optional>encoding</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_strrpos</function> returns the numeric position of
+     the last occurrence of <parameter>needle</parameter> in the
+     <parameter>haystack</parameter> string. If
+     <parameter>needle</parameter> is not found, it returns FALSE.
+    </para>
+    <para>
+     <function>mb_strrpos</function> performs multi-byte safe
+     <function>strrpos</function> operation based on
+     number of characters. <parameter>needle</parameter> position is
+     counted from the beginning of
+     <parameter>haystack</parameter>. First character's position is
+     0. Second character position is 1. 
+    </para>
+    <para>
+     If <parameter>encoding</parameter> is not set, internal encoding
+     is assumed. <function>mb_strrpos</function> accepts
+     <literal>string</literal> for <parameter>needle</parameter> where
+     <function>strrpos</function> accepts only character.
+    </para>
+    <para>
+     <parameter>encoding</parameter> is character encoding. If it is
+     not specified, internal character encoding is used.
+    </para>
+    <para>
+     See also <function>mb_strpos</function>,
+     <function>mb_internal_encoding</function>, 
+     <function>strrpos</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-substr">
+   <refnamediv>
+    <refname>mb_substr</refname>
+    <refpurpose>Get part of string</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_substr</function></funcdef>
+      <paramdef>string <parameter>str</parameter></paramdef>
+      <paramdef>int <parameter>start</parameter></paramdef>
+      <paramdef>int 
+       <parameter><optional>length</optional></parameter>
+      </paramdef>
+      <paramdef>string 
+       <parameter><optional>encoding</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_substr</function> returns the portion of
+     <parameter>str</parameter> specified by the
+     <parameter>start</parameter> and
+     <parameter>length</parameter> parameters.
+    </para>
+    <para>
+     <function>mb_substr</function> performs multi-byte safe
+     <function>substr</function> operation based on
+     number of characters. Position is
+     counted from the beginning of
+     <parameter>str</parameter>. First character's position is
+     0. Second character position is 1, and so on. 
+    </para>
+    <para>
+     If <parameter>encoding</parameter> is omitted, internal encoding
+     is assumed.
+    </para>
+    <para>
+     <parameter>encoding</parameter> is character encoding. If it is
+     omitted, internal character encoding is used.
+    </para>
+    <para>
+     See also <function>mb_struct</function>, 
+     <function>mb_internal_encoding</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-strcut">
+   <refnamediv>
+    <refname>mb_strcut</refname>
+    <refpurpose>Get part of string</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_strcut</function></funcdef>
+      <paramdef>string <parameter>str</parameter></paramdef>
+      <paramdef>int <parameter>start</parameter></paramdef>
+      <paramdef>int 
+       <parameter><optional>length</optional></parameter>
+      </paramdef>
+      <paramdef>string 
+       <parameter><optional>encoding</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_strcut</function> returns the portion of
+     <parameter>str</parameter> specified by the
+     <parameter>start</parameter> and
+     <parameter>length</parameter> parameters.
+    </para>
+    <para>
+     <function>mb_strcut</function> performs equivalent operation as
+     <function>mb_substr</function> with different method. If
+     <parameter>start</parameter> position is multi-byte character's
+     second byte or larger, it starts from first byte of multi-byte
+     character. 
+    </para>
+    <para>
+     It subtracts string from <parameter>str</parameter> that is
+     shorter than <parameter>length</parameter> AND character that is
+     not part of multi-byte string or not being middle of shift
+     sequence. 
+    </para>
+    <para>
+     <parameter>encoding</parameter> is character encoding. If it is
+     not set, internal character encoding is used.
+    </para>
+    <para>
+     See also <function>mb_substr</function>,
+     <function>mb_internal_encoding</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-strwidth">
+   <refnamediv>
+    <refname>mb_strwidth</refname>
+    <refpurpose>Return width of string</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>mb_strwidth</function></funcdef>
+      <paramdef>string <parameter>str</parameter></paramdef>
+      <paramdef>string 
+       <parameter><optional>encoding</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_strwidth</function> returns width of string
+     <parameter>str</parameter>.
+    </para>
+    <para>
+     Multi-byte character usually twice of width compare to single
+     byte character.
+    </para>
+    <para>
+     <informalexample>
+      <programlisting>
+       Character width
+
+       U+0000 - U+0019   0
+       U+0020 - U+1FFF   1
+       U+2000 - U+FF60   2
+       U+FF61 - U+FF9F   1
+       U+FFA0 -          2
+      </programlisting>
+     </informalexample>
+    </para>
+    <para>
+     <parameter>encoding</parameter> is character encoding. If it is
+     omitted, internal encoding is used.
+    </para>
+    <para>
+     See also: <function>mb_strimwidth</function>,
+     <function>mb_internal_encoding</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-strimwidth">
+   <refnamediv>
+    <refname>mb_strimwidth</refname>
+    <refpurpose>Get truncated string with specified width</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_strmwidth</function></funcdef>
+      <paramdef>string <parameter>str</parameter></paramdef>
+      <paramdef>int <parameter>start</parameter></paramdef>
+      <paramdef>int <parameter>width</parameter></paramdef>
+      <paramdef>string <parameter>trimmarker</parameter></paramdef>
+      <paramdef>string 
+       <parameter><optional>encoding</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_strmwidth</function> truncates string
+     <parameter>str</parameter> to specified
+     <parameter>width</parameter>. It returns truncated string.
+    </para>
+    <para>
+     If <parameter>trimmarker</parameter> is set,
+     <parameter>trimmarker</parameter> is appended to return value.
+    </para>
+    <para>
+     <parameter>start</parameter> is start position offset. Number of
+     characters from the beginning of string. (Fist character is 0)
+    </para>
+    <para>
+     <parameter>trimmarker</parameter> is string that is added to the
+     end of string when string is truncated.
+    </para>
+    <para>
+     <parameter>encoding</parameter> is character encoding. If it is
+     omitted, internal encoding is used.
+    </para>
+    <para>
+     <example>
+      <title><function>mb_strimwidth</function> example</title>
+      <programlisting role="php">
+$str = mb_strimwidth($str, 0, 40, "..>");
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also: <function>mb_strwidth</function>,
+     <function>mb_internal_encoding</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-convert-encoding">
+   <refnamediv>
+    <refname>mb_convert_encoding</refname>
+    <refpurpose>Convert character encoding</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_convert_encoding</function></funcdef>
+      <paramdef>string <parameter>str</parameter></paramdef>
+      <paramdef>string <parameter>to-encoding</parameter></paramdef>
+      <paramdef>mixed 
+       <parameter><optional>from-encoding</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_convert_encoding</function> converts 
+     character encoding of string <parameter>str</parameter> from
+     <parameter>from-encoding</parameter> to
+     <parameter>to-encoding</parameter>.
+    </para>
+    <para>
+     <parameter>str</parameter> : String to be converted.
+    </para>
+    <para>
+     <parameter>from-encoding</parameter> is specified by character
+     code name before conversion. it can be array or string - comma
+     separated  enumerated list.
+    </para>
+    <para>
+     <example>
+      <title><function>mb_convert_encoding</function> example</title>
+      <programlisting role="php">
+/* Convert internal character encoding to SJIS */
+$str = mb_convert_encoding($str, "SJIS");
+
+/* Convert EUC-JP to UTF-7 */
+$str = mb_convert_encoding($str, "UTF-7", "EUC-JP");
+
+/* Auto detect encoding from JIS, eucjp-win, sjis-win, then convert str to UCS-2LE */
+$str = mb_convert_encoding($str, "UCS-2LE", "JIS, eucjp-win, sjis-win");
+
+/* "auto" is expanded to "ASCII,JIS,UTF-8,EUC-JP,SJIS" */
+$str = mb_convert_encoding($str, "EUC-JP", "auto");
+
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also: <function>mb_detect_order</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-detect-encoding">
+   <refnamediv>
+    <refname>mb_detect_encoding</refname>
+    <refpurpose>Detect character encoding</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_detect_encoding</function></funcdef>
+      <paramdef>string <parameter>str</parameter></paramdef>
+      <paramdef>mixed 
+       <parameter><optional>encoding-list</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_detect_encoding</function> detects character
+     encoding in string <parameter>str</parameter>. It returns
+     detected character encoding.
+    </para>
+    <para>
+     <parameter>encoding-list</parameter> is list of character
+     encoding. Encoding order may be specified by array or comma
+     separated list string.
+    </para>
+    <para>
+     If <parameter>encoding_list</parameter> is omitted,
+     detect_order is used.
+    </para>
+    <para>
+     <example>
+      <title><function>mb_detect_encoding</function> example</title>
+      <programlisting role="php">
+/* Detect character encoding with current detect_order */
+echo mb_detect_encoding($str);
+
+/* "auto" is expanded to "ASCII,JIS,UTF-8,EUC-JP,SJIS" */
+echo mb_detect_encoding($str, "auto");
+
+/* Specify encoding_list character encoding by comma separated list */
+echo mb_detect_encoding($str, "JIS, eucjp-win, sjis-win");
+
+/* Use array to specify encoding_list  */
+$ary[] = "ASCII";
+$ary[] = "JIS";
+$ary[] = "EUC-JP";
+echo mb_detect_encoding($str, $ary);
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also: <function>mb_detect_order</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-convert-kana">
+   <refnamediv>
+    <refname>mb_convert_kana</refname>
+    <refpurpose>
+     Convert "kana" one from another ("zen-kaku" ,"han-kaku" and more)
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_convert_kana</function></funcdef>
+      <paramdef>string <parameter>str</parameter></paramdef>
+      <paramdef>string <parameter>option</parameter></paramdef>
+      <paramdef>mixed 
+       <parameter><optional>encoding</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_convert_kana</function> performs "han-kaku" -
+     "zen-kaku" conversion for string <parameter>str</parameter>. It
+     returns converted string. This function is only useful for
+     Japanese.
+    </para>
+    <para>
+     <parameter>option</parameter> is conversion option. Default value
+     is <literal>"KV"</literal>.
+    </para>
+    <para>
+     <parameter>encoding</parameter> is character encoding. If it is
+     omitted, internal character encoding is used.
+    </para>
+    <para>
+     <informalexample>
+      <programlisting>
+       Applicable Conversion Options 
+
+       option : Specify with conversion of following options. Default "KV"
+       "r" :  Convert "zen-kaku" alphabets to "han-kaku"
+       "R" :  Convert "han-kaku" alphabets to "zen-kaku"
+       "n" :  Convert "zen-kaku" numbers to "han-kaku"
+       "N" :  Convert "han-kaku" numbers to "zen-kaku"
+       "a" :  Convert "zen-kaku" alphabets and numbers to "han-kaku"
+       "A" :  Convert "zen-kaku" alphabets and numbers to "han-kaku"
+       (Characters included in "a", "A" options are
+       U+0021 - U+007E excluding U+0022, U+0027, U+005C, U+007E)
+       "s" :  Convert "zen-kaku" space to "han-kaku" (U+3000 -> U+0020)
+       "S" :  Convert "han-kaku" space to "zen-kaku" (U+0020 -> U+3000)
+       "k" :  Convert "zen-kaku kata-kana" to "han-kaku kata-kana"
+       "K" :  Convert "han-kaku kata-kana" to "zen-kaku kata-kana"
+       "h" :  Convert "zen-kaku hira-gana" to "han-kaku kata-kana"
+       "H" :  Convert "han-kaku kata-kana" to "zen-kaku hira-gana"
+       "c" :  Convert "zen-kaku kata-kana" to "zen-kaku hira-gana"
+       "C" :  Convert "zen-kaku hira-gana" to "zen-kaku kata-kana"
+       "V" :  Collapse voiced sound notation and convert them into a character. Use with "K","H"
+      </programlisting>
+     </informalexample>
+    </para>
+    <para>
+     <example>
+      <title><function>mb_convert_kana</function> example</title>
+      <programlisting role="php">
+/* Convert all "kana" to "zen-kaku" "kata-kana" */
+$str = mb_convert_kana($str, "KVC");
+
+/* Convert "han-kaku" "kata-kana" to "zen-kaku" "kata-kana" 
+   and "zen-kaku" alpha-numeric to "han-kaku" */
+$str = mb_convert_kana($str, "KVa");
+      </programlisting>
+     </example>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-encode-mimeheader">
+   <refnamediv>
+    <refname>mb_encode_mimeheader</refname>
+    <refpurpose>Encode string for MIME header</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_encode_mimeheader</function></funcdef>
+      <paramdef>string <parameter>str</parameter></paramdef>
+      <paramdef>string 
+       <parameter><optional>charset</optional></parameter>
+      </paramdef>
+      <paramdef>string 
+       <parameter><optional>transfer-encoding</optional></parameter>
+      </paramdef>
+      <paramdef>string 
+       <parameter><optional>linefeed</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_encode_mimeheader</function> converts string
+     <parameter>str</parameter> to encoded-word for header field.
+     It returns converted string in ASCII encoding.
+    </para>
+    <para>
+     <parameter>charset</parameter> is character encoding
+     name. Default is <literal>ISO-2022-JP</literal>.
+    </para>
+    <para>
+     <parameter>transfer-encoding</parameter> is transfer encoding. It
+     should be one of <literal>"B"</literal> (Base64) or
+     <literal>"Q"</literal> (Quoted-Printable). Default is
+     <literal>"B"</literal>.
+    </para>
+    <para>
+     <parameter>linefeed</parameter> is end of line marker. Default is
+     <literal>"\r\n"</literal> (CRLF).
+    </para>
+    <para>
+     <example>
+      <title><function>mb_convert_kana</function> example</title>
+      <programlisting role="php">
+$name = ""; // kanji
+$mbox = "kru";
+$doma = "gtinn.mon";
+$addr = mb_encode_mimeheader($name, "UTF-7", "Q") . " <" . $mbox . "@" . $doma . ">";
+echo $addr;
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also <function>mb_decode_mimeheader</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-decode-mimeheader">
+   <refnamediv>
+    <refname>mb_decode_mimeheader</refname>
+    <refpurpose>Decode string in MIME header field</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_decode_mimeheader</function></funcdef>
+      <paramdef>string <parameter>str</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_decode_mimeheader</function> decodes encoded-word
+     string <parameter>str</parameter> in MIME header. 
+    </para>
+    <para>
+     It returns decoded string in internal character encoding.
+    </para>
+    <para>
+     See also <function>mb_encode_mimeheader</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-convert-variables">
+   <refnamediv>
+    <refname>mb_convert_variables</refname>
+    <refpurpose>Convert character code in variable(s)</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_convert_variables</function></funcdef>
+      <paramdef>string <parameter>to-encoding</parameter></paramdef>
+      <paramdef>mixed <parameter>from-encoding</parameter></paramdef>
+      <paramdef>mixed <parameter>vars</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_convert_variables</function> convert 
+     character encoding of variables <parameter>vars</parameter> in
+     encoding <parameter>from-encoding</parameter> to encoding 
+     <parameter>to-encoding</parameter>. It returns character encoding
+     before conversion for success, FALSE for failure.
+    </para>
+    <para>
+     It <parameter>from-encoding</parameter> is specified by 
+     array or comma separated string, it tries to detect encoding from
+     <parameter>from-coding</parameter>. When
+     <parameter>encoding</parameter> is omitted,
+     <literal>detect_order</literal> is used.
+    </para>
+    <para>
+     <parameter>vars (3rd and larger)</parameter> is reference to
+     variable to be converted. String, Array and Object are accepted. 
+    </para>
+    <para>
+     <example>
+      <title><function>mb_convert_variables</function> example</title>
+      <programlisting role="php">
+/* Convert variables $post1, $post2 to internal encoding */
+$interenc = mb_internal_encoding();
+$inputenc = mb_convert_variables($interenc, "ASCII,UTF-8,SJIS-win", $post1, $post2);
+      </programlisting>
+     </example>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-encode-numericentity">
+   <refnamediv>
+    <refname>mb_encode_numericentity</refname>
+    <refpurpose>
+     Encode character to HTML numeric string reference
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_encode_numericentity</function></funcdef>
+      <paramdef>string <parameter>str</parameter></paramdef>
+      <paramdef>array <parameter>convmap</parameter></paramdef>
+      <paramdef>string 
+       <parameter><optional>encoding</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_encode_numericentity</function> converts
+     specified character codes in string <parameter>str</parameter>
+     from HTML numeric character reference to character code. It
+     returns converted string.
+    </para>
+    <para>
+     <parameter>array</parameter> is array specifies code area to
+     convert.
+    </para>
+    <para>
+     <parameter>encoding</parameter> is character encoding.
+    </para>
+    <para>
+     <example>
+      <title><parameter>convmap</parameter> example</title>
+      <programlisting role="php">
+$convmap = array (
+ int start_code1, int end_code1, int offset1, int mask1,
+ int start_code2, int end_code2, int offset2, int mask2,
+ ........
+ int start_codeN, int end_codeN, int offsetN, int maskN );
+// Specify Unicode value for start_codeN and end_codeN
+// Add offsetN to value and take bit-wise 'AND' with maskN, then
+// it converts value to numeric string reference.
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     <example>
+      <title>
+       <function>mb_encode_numericentity</function> example
+      </title>
+      <programlisting role="php">
+/* Convert Left side of ISO-8859-1 to HTML numeric character reference */
+$convmap = array(0x80, 0xff, 0, 0xff);
+$str = mb_encode_numericentity($str, $convmap, "ISO-8859-1");
+
+/* Convert user defined SJIS-win code in block 95-104 to numeric
+   string reference */
+$convmap = array(
+       0xe000, 0xe03e, 0x1040, 0xffff,
+       0xe03f, 0xe0bb, 0x1041, 0xffff,
+       0xe0bc, 0xe0fa, 0x1084, 0xffff,
+       0xe0fb, 0xe177, 0x1085, 0xffff,
+       0xe178, 0xe1b6, 0x10c8, 0xffff,
+       0xe1b7, 0xe233, 0x10c9, 0xffff,
+       0xe234, 0xe272, 0x110c, 0xffff,
+       0xe273, 0xe2ef, 0x110d, 0xffff,
+       0xe2f0, 0xe32e, 0x1150, 0xffff,
+       0xe32f, 0xe3ab, 0x1151, 0xffff );
+$str = mb_encode_numericentity($str, $convmap, "sjis-win");
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also: <function>mb_decode_numericentity</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb_decode_numericentity">
+   <refnamediv>
+    <refname>mb_decode_numericentity</refname>
+    <refpurpose>
+     Decode HTML numeric string reference to character
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mb_decode_numericentity</function></funcdef>
+      <paramdef>string <parameter>str</parameter></paramdef>
+      <paramdef>array <parameter>convmap</parameter></paramdef>
+      <paramdef>string 
+       <parameter><optional>encoding</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Convert numeric string reference of string
+     <parameter>str</parameter> in specified block to character. It
+     returns converted string.
+    </para>
+    <para>
+     <parameter>array</parameter> is array to specifies code area to
+     convert.
+    </para>
+    <para>
+     <parameter>encoding</parameter> is character encoding.
+    </para>
+    <para>
+     <example>
+      <title><parameter>convmap</parameter> example</title>
+      <programlisting>
+$convmap = array (
+   int start_code1, int end_code1, int offset1, int mask1,
+   int start_code2, int end_code2, int offset2, int mask2,
+   ........
+   int start_codeN, int end_codeN, int offsetN, int maskN );
+// Specify Unicode value for start_codeN and end_codeN
+// Add offsetN to value and take bit-wise 'AND' with maskN, 
+// then convert value to numeric string reference.
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also: <function>mb_encode_numericentity</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mb-send-mail">
+   <refnamediv>
+    <refname>mb_send_mail</refname>
+    <refpurpose>
+     Send mail with ISO-2022-JP character code. (Japanese specific)
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>boolean <function>mb_send_mail</function></funcdef>
+      <paramdef>string <parameter>to</parameter></paramdef>
+      <paramdef>string <parameter>subject</parameter></paramdef>
+      <paramdef>string <parameter>message</parameter></paramdef>
+      <paramdef>string 
+       <parameter><optional>additional_headers</optional></parameter>
+      </paramdef>
+      <paramdef>string 
+       <parameter><optional>additional_parameter</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>mb_send_mail</function> sends email. Headers and
+     message are converted and encoded in ISO-2022-JP.
+     <function>mb_send_mail</function> is wrapper
+     function of <function>mail</function>. See
+     <function>mail</function> for details.
+    </para>
+    <para>
+     <parameter>to</parameter> is mail addresses send to. Multiple
+     recipients can be specified by putting a comma between each
+     address in to.
+    </para>
+    <para>
+     <parameter>subject</parameter> is subject of mail.
+    </para>
+    <para>
+     <parameter>message</parameter> is mail message.
+    </para>
+    <para>
+     string <parameter>additional_headers</parameter> is inserted at
+     the end of the header. This is typically used to add
+     extra headers.  Multiple extra headers are separated with a
+     newline(\n).
+    </para>
+    <para>
+     It returns TRUE for success, otherwise it returns FALSE.
+    </para>
+    <para>
+     <parameter>additional_parameter</parameter> is added this
+     data to the call to the mailer by PHP. This is useful when
+     setting the correct Return-Path header when using sendmail.
+    </para>
+    <para>
+     See also: <function>mail</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+ </reference>
+
+ <!-- Keep this comment at the end of the file
+ Local variables:
+ mode: sgml
+ sgml-omittag:t
+ sgml-shorttag:t
+ sgml-minimize-attributes:nil
+ sgml-always-quote-attributes:t
+ sgml-indent-step:1
+ sgml-indent-data:t
+ sgml-parent-document:nil
+ sgml-default-dtd-file:"../../manual.ced"
+ sgml-exposed-tags:nil
+ sgml-local-catalogs:nil
+ sgml-local-ecat-files:nil
+ End:
+ -->
+ <!-- Keep this comment for vi/vim/gvim
+ vi: et:ts=1:sw=1
+ -->
