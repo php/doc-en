@@ -22,7 +22,7 @@
 
 /*
  * Usage:
- * $ php notes_stats.php > notes.php
+ * $ php notes_stats.php [mbox-file] > notes.php
  */
  
 /*
@@ -37,31 +37,47 @@ $minact = 100;
 // after how many secs should the list be chopped
 $after = 182.5*24*60*60; // half year
 
-$s = nntp_connect("news.php.net")
-  or die("failed to connect to news server");
+$inputs = array(); // pair subjects w/ dates from multiple sources
 
-$res = nntp_cmd($s,"GROUP php.notes",211)
-  or die("failed to get infos on news group");
+if (isset($argv[1]) && file_exists($argv[1])) { // from file
+ $lines = file($argv[1]);
+ $count = count($lines);
+ for ($i = 0; $i < $count; ++$i) {
+  list($time, $subj) = explode(' ', $lines[$i], 2);
+  $inputs[] = array($time, substr($subj, 12));
+ }
+} elseif (isset($argv[1])) {
+ echo "File doesn't exist!";
+ exit(1);
+} else { // from nntp
+ $s = nntp_connect("news.php.net")
+   or die("failed to connect to news server");
 
-$new = explode(" ", $res);
-$first = 1;
-$last =  $new[0];
+ $res = nntp_cmd($s,"GROUP php.notes",211)
+   or die("failed to get infos on news group");
 
-//$first = 69000;
-//$last =  70000;
+ $new = explode(" ", $res);
+ $first = 1;
+ $last =  $new[0];
 
-$time_start = getmicrotime();
+ //$first = 69000;
+ //$last =  70000;
 
-$res = nntp_cmd($s,"XOVER $first-$last", 224)
-    or die("failed to XOVER the new items");
+ $time_start = getmicrotime();
+
+ $res = nntp_cmd($s,"XOVER $first-$last", 224)
+     or die("failed to XOVER the new items");
+
+ for ($i = $first; $i < $last; $i++) {
+  $line = fgets($s, 4096);
+  list($n,$subj,$author,$odate,$messageid,$references,$bytes,$lines,$extra)= explode("\t", $line, 9);
+  $inputs[] = array($odate, $subj);
+ }
+}
 
 $files = $team = $tmp = array();
 
 $in_old = false;
-
-for ($i = $first; $i < $last; $i++) {
-$line = fgets($s, 4096);
- list($n,$subj,$author,$odate,$messageid,$references,$bytes,$lines,$extra)= explode("\t", $line, 9);
 
 /*
  * What should be matched:
@@ -73,37 +89,39 @@ $line = fgets($s, 4096);
 
 $reg = '/^note (\d*) (.*) (?:from|in) (\S*) by (\w*)/';
 
-if (preg_match($reg, $subj, $d)) {
-    if ($d[2] == 'rejected and deleted')
-        $d[2] = 'rejected';
-    if ($d[2] == 'approved')
-        continue;
+reset($inputs);
+
+while (list( , $inp) = each($inputs)) {
+    list($odate, $subj) = $inp;
+
+    if (preg_match($reg, $subj, $d)) {
+        if ($d[2] == 'rejected and deleted')
+            $d[2] = 'rejected';
+        if ($d[2] == 'approved')
+            continue;
+         
+        if(calc_time($odate)) {
+            // 'new' before $after
+            @$team['n'][$d[4]]['total']++;
+            @$team['n'][$d[4]][$d[2]]++; 
+            @$tmp['n'][$d[4]]++;
+            @$files['n'][$d[3]]++;
+        } else {
+            // 'old' after $after
+            @$team['o'][$d[4]][$d[2]]++; 
+            @$tmp['o'][$d[4]]++;
+            @$team['o'][$d[4]]['total']++; 
+            @$files['o'][$d[3]]++;
+        }
         
-    if(calc_time($odate)) {
-        // 'new' before $after
-        @$team['n'][$d[4]]['total']++;
-        @$team['n'][$d[4]][$d[2]]++; 
-        @$tmp['n'][$d[4]]++;
-        @$files['n'][$d[3]]++;
-    } else {
-        // 'old' after $after
-        @$team['o'][$d[4]][$d[2]]++; 
-        @$tmp['o'][$d[4]]++;
-        @$team['o'][$d[4]]['total']++; 
-        @$files['o'][$d[3]]++;
-    }
-       
         // the normal arrays
         @$team[$d[4]]['total']++;
         @$team[$d[4]][$d[2]]++; 
         @$tmp[$d[4]]++;
         @$files[$d[3]]++;
-    
+     
     } // end if(preg_match
-    if ($i == $last) {
-        break;
-   }
-}
+} // end while(each
 
 
 ksort($team);
@@ -390,7 +408,9 @@ global $after;
 if(@$in_old == true) 
    return false;
 
-$before = strtotime($before);
+if (!is_numeric($before)) {
+    $before = strtotime($before);
+}
 
 $afterall =  $before - (time() - $after);
 
