@@ -346,11 +346,18 @@
 ;; Put version info where the refname part in the refnamediv is
 (element (refnamediv refname)
   (make sequence
+   (if (node-list-empty? 
+     (select-elements (children
+       (select-elements (children (parent (parent (current-node)))) (normalize "refsect1"))
+      ) (normalize "methodsynopsis"))
+    )
+    (empty-sosofo)
     (make element gi: "P"
       (literal "    (")
       (version-info (current-node))
       (literal ")")
       )
+    )
     (process-children)
     )
   )
