@@ -69,6 +69,7 @@
 	* Parse the C code to get the return types where possible
 	* Make a better dysplay. (Should it write its output to a file?)
 	* Better document above
+	* Support for void types, minding the unnecessary optional character
 
 */
 
@@ -86,15 +87,19 @@ Class BugHunter {
 	var $parse_ext       = '';
 	var $module          = 'php5';
 	var $root            = '../../';
+	var $funclist        = 'phpdoc/funclist.txt';
+	var $index           = Array();
 	var $php_types       = Array(
 		 'int'
 		,'string'
 		,'array'
 		,'object'
 		,'mixed'
+		,'float'
+		,'bool'
+		,'resource'
 	);
 	var $rex_php_types   = '';
-	var $index           = Array();
 
 	function BugHunter() {
 
@@ -117,7 +122,8 @@ Class BugHunter {
 		}
 
 		$skip = False;
-		foreach(explode("\r\n", $this->read_file("{$this->root}phpdoc/funclist.txt")) as $line) {
+		echo "\n\n<b>Indexing functions from `{$this->funclist}'</b>\n";
+		foreach(explode("\r\n", $this->read_file($this->root . $this->funclist)) as $line) {
 			flush();
 			if(preg_match_all("/^# ([[:alnum:]_\/]+\/([[:alnum:]_]+)\/[[:alnum:]_]+\.c)$/", $line, $file, PREG_SET_ORDER)) {
 
@@ -126,8 +132,7 @@ Class BugHunter {
 				if(!file_exists($this->root . $file[0][1])) {
 					$skip      = True;
 					$cache = $file;
-					echo "\nExtension <b>{$file[0][2]}</b> does not exist in <b>{$file[0][1]}</b>!";
-					echo "  Ommitting ...\n";
+					echo "\n\tSkipping <b>{$file[0][2]}</b>  -  <i>{$file[0][1]} not in repository</i>...";
 					Continue;
 				}
 
@@ -136,17 +141,16 @@ Class BugHunter {
 				$this->{$skip? 'skipped' : 'index'}[$ext]['location']   = $file[0][1];
 			}
 			else {
-				if($skip)
-					echo "\t$line()\n";
-
 				$this->{$skip? 'skipped' : 'index'}[$ext]['function'][] = strtolower($line);
 			}
 		}
 
+		echo "\n\n<b>Parsing Extensions</b>\n";
 		if($this->parse_all) {
-			flush();
 			foreach($this->index as $ext => $data) {
 				$this->cur_ext = $ext;
+				flush();
+				echo "\n\t{$this->cur_ext}";
 				$this->result[$ext] = $this->parse_source($this->read_file($this->root . $data['location']));
 			}
 		}
@@ -158,6 +162,8 @@ Class BugHunter {
 				Return Exit;
 			}
 
+			$this->cur_ext = $ext;
+			echo "\n\t{$this->cur_ext}";
 			$this->result[$this->parse_ext] = $this->parse_source($this->read_file("{$this->root}{$this->index[$this->parse_ext]['location']}"));
 		}
 
@@ -334,7 +340,8 @@ $t_start = getmicrotime();
 
 $hunter = new BugHunter();
 
-echo "\n<hr>Process took : " . (round(getmicrotime() - $t_start, 3)*1000) . " ms\n<hr>\n";
+echo "\n\n<hr>Process took : " . round(getmicrotime() - $t_start, 3) . " seconds\n<hr>\n\n";
+echo "\n\n<b>Results :</b>\n\n";
 
 #print_r((array) $hunter);
 
@@ -352,8 +359,9 @@ foreach($hunter->result as $ext => $function) {
 				echo "\t\tp: $param : ";
 
 				foreach($error as $err_type=>$err_val) {
-					echo "<b>" . str_pad($err_type, 10) . "</b>" . " - "
+					echo "<b>" . str_pad($err_type, 10) . "</b>" . " : "
 						 .str_pad($err_val , 10)
+						 .','
 					;
 					$err++;
 				}
@@ -364,7 +372,7 @@ foreach($hunter->result as $ext => $function) {
 	$tot += $err;
 }
 
-echo "\n\nTotal proto inconsistencies: $tot";
+echo "\n\nTotal proto inconsistencies: <b>$tot</b>";
 
 
 ?>
