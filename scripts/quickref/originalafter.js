@@ -13,8 +13,10 @@ fh_inmenu=fh_menupos=0;
 fh_matchesjoined="";
 fh_currenttext="";
 
+// form shortcuts and autocomplete setting on input field
 var f_p=_d.forms[0].pattern;
 var f_s=_d.forms[0].show;
+fh_EDropDownChange();
 
 // Layer setup -----------------------------------------------------------------
 
@@ -186,14 +188,11 @@ function fh_NewText()
 
 function fh_EFocus()
 {
-    if (f_s.value=="quickref") {
-        f_p.setAttribute("autocomplete", "off");
-        fh_NewText();
-    }
+    if (f_s.value=="quickref") {fh_NewText();}
 }
 
-function fh_EBlur() { setTimeout("fh_EBlurT()", 200); }
-function fh_EBlurT() { f_p.setAttribute("autocomplete", "on"); fh_HideAll(); }
+// Timeout, so the user can click on a link before it disappears
+function fh_EBlur() { setTimeout("fh_HideAll()", 200); }
 
 function fh_EKeyPress(ev)
 {
@@ -267,6 +266,16 @@ function fh_EKeyUp(ev)
     return true;
 }
 
+// turn off browser's built in autocomplete if in quickref mode
+function fh_EDropDownChange(ev)
+{
+    if(f_s.value=="quickref") {
+      f_p.setAttribute("autocomplete", "off");
+    } else {
+      f_p.setAttribute("autocomplete", "on");
+    }
+}
+
 // Event listener setup --------------------------------------------------------
 
 f_p.onkeypress=fh_EKeyPress;
@@ -274,3 +283,4 @@ f_p.onfocus=fh_EFocus;
 f_p.onblur=fh_EBlur;
 f_p.onkeydown=fh_EKeyDown;
 f_p.onkeyup=fh_EKeyUp;
+f_s.onchange=fh_EDropDownChange;
