@@ -147,12 +147,93 @@ swf_closefile ();
       <funcdef>void 
        <function>swf_closefile</function>
       </funcdef>
-      <void/>
+      <paramdef>int
+       <parameter>
+        <optional>return_file</optional>
+       </parameter>
+      </paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
      Close a file that was opened by the
-     <function>swf_openfile</function> function.
+     <function>swf_openfile</function> function.  If the 
+     <parameter>return_file</parameter> parameter is set then the contents
+     of the SWF file are returned from the function.
+    </para>
+    <para>
+     <example>
+      <title>
+       Creating a simple flash file based on user input and outputting it
+       and saving it in a database
+      </title>
+      <programlisting role="php">
+&lt;?php
+
+// The $text variable is submitted by the
+// user
+
+// Global variables for database
+// access (used in the swf_savedata() function)
+$DBHOST = "localhost";
+$DBUSER = "sterling";
+$DBPASS = "secret";
+
+swf_openfile ("php://stdout", 256, 256, 30, 1, 1, 1);
+
+    swf_definefont (10, "Ligon-Bold");
+        swf_fontsize (12);
+        swf_fontslant (10);
+    
+    swf_definetext (11, $text, 1);
+    
+    swf_pushmatrix ();
+        swf_translate (-50, 80, 0);
+        swf_placeobject (11, 60);
+    swf_popmatrix ();
+
+    swf_showframe ();
+  
+    swf_startdoaction ();
+        swf_actionstop ();
+    swf_enddoaction ();
+
+$data = swf_closefile (1);
+
+$data ?
+  swf_savedata ($data) :
+  die ("Error could not save SWF file");
+
+// void swf_savedata (string data)
+// Save the generated file a database
+// for later retrieval
+function swf_savedata ($data)
+{
+    global $DBHOST, 
+           $DBUSER,
+           $DBPASS;
+    
+    $dbh = @mysql_connect ($DBHOST, $DBUSER, $DBPASS);
+
+    if (!$dbh) {
+        die (sprintf ("Error [%d]: %s",
+                      mysql_errno (), mysql_error ()));
+    }
+
+    $stmt = "INSERT INTO swf_files (file) VALUES ('$data')";
+
+    $sth = @mysql_query ($stmt, $dbh);
+
+    if (!$sth) {
+        die (sprintf ("Error [%d]: %s",
+                      mysql_errno (), mysql_error ()));
+    }
+
+    @mysql_free_result ($sth);
+    @mysql_close ($dbh);
+}
+?>
+      </programlisting>
+     </example>
     </para>
    </refsect1>
   </refentry>
