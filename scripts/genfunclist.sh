@@ -17,10 +17,10 @@
 # |             Rasmus Lerdorf <rasmus@lerdorf.on.ca>                    |
 # +----------------------------------------------------------------------+
 # 
-# $Id: genfunclist.sh,v 1.4 2002-01-27 17:33:25 hholzgra Exp $
+# $Id: genfunclist.sh,v 1.5 2004-01-09 16:27:08 nlopess Exp $
 
 for i in `find $1 -name "*.[c]" -print -o -name "*.ec" -print | xargs egrep -li function_entry | sort` ; do
- echo $i | sed -e "s|$1|# php4|"
+ echo $i | sed -e "s|$1|# php-src|"
  if test -f funcparse.awk ; then
   awk -f funcparse.awk < $i | sort
  elif test -f scripts/funcparse.awk; then
