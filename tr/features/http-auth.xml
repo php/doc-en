@@ -1,0 +1,149 @@
+<!-- $Revision: 1.13 $ -->
+ <chapter id="features.http-auth">
+  <title>HTTP authentication with PHP</title>
+
+  <simpara>
+   The HTTP Authentication hooks in PHP are only available when it is
+   running as an Apache module and is hence not available in the CGI version.
+   In an Apache module PHP script, it is possible to use the 
+   <function>header</function> function to send an "Authentication Required" 
+   message to the client browser causing it to pop up a Username/Password 
+   input window.  Once the user has filled in a username and a password, 
+   the URL containing the PHP script will be called again with the variables,
+   $PHP_AUTH_USER, $PHP_AUTH_PW and $PHP_AUTH_TYPE set to the user
+   name, password and authentication type respectively.  Only "Basic"
+   authentication is supported at this point. See the <function>header</function>
+   function for more information.</simpara>
+   
+  <para>
+   An example script fragment which would force client authentication
+   on a page would be the following:
+
+   <example>
+    <title>HTTP Authentication example</title>
+    <programlisting role="php">
+&lt;?php
+  if(!isset($PHP_AUTH_USER)) {
+    header(&quot;WWW-Authenticate: Basic realm=\&quot;My Realm\&quot;&quot;);
+    header(&quot;HTTP/1.0 401 Unauthorized&quot;);
+    echo &quot;Text to send if user hits Cancel button\n&quot;;
+    exit;
+  } else {
+    echo &quot;&lt;p&gt;Hello $PHP_AUTH_USER.&lt;/p&gt;&quot;;
+    echo &quot;&lt;p&gt;You entered $PHP_AUTH_PW as your password.&lt;/p&gt;&quot;;
+  }
+?>
+    </programlisting>
+   </example></para>
+
+  <note>
+   <title>Note</title>
+   <para>
+    Please be careful when coding the HTTP header lines. In order to guarantee maximum
+    compatibility with all clients, the keyword "Basic" should be written with an
+    uppercase "B", the realm string must be enclosed in double (not single) quotes,
+    and exactly one space should precede the "401" code in the "HTTP/1.0 401" header line.
+   </para>
+  </note>
+
+  <para>
+   Instead of simply printing out the $PHP_AUTH_USER and
+   $PHP_AUTH_PW, you would probably want to check the username and
+   password for validity.  Perhaps by sending a query to a database,
+   or by looking up the user in a dbm file.</para>
+
+  <para>
+   Watch out for buggy Internet Explorer browsers out there.  They
+   seem very picky about the order of the headers.  Sending the
+   <emphasis>WWW-Authenticate</emphasis> header before the
+   <errorcode>HTTP/1.0 401</errorcode> header seems to do the trick
+   for now.</para>
+
+  <simpara>
+   In order to prevent someone from writing a script which reveals
+   the password for a page that was authenticated through a
+   traditional external mechanism, the PHP_AUTH variables will not be
+   set if external authentication is enabled for that particular
+   page. In this case, the $REMOTE_USER variable can be used to
+   identify the externally-authenticated user.</simpara>
+
+  <note>
+   <title>Configuration Note</title>
+   <para>
+    PHP uses the presence of an <literal>AuthType</literal> directive
+    to determine whether external authentication is in effect.
+    Remember to avoid this directive for the context where you want to
+    use PHP authentication (otherwise each authentication attempt
+    will fail).
+   </para>
+  </note>
+
+  <simpara>
+   Note, however, that the above does not prevent someone who
+   controls a non-authenticated URL from stealing passwords from
+   authenticated URLs on the same server.</simpara>
+  <simpara>
+   Both Netscape Navigator and Internet Explorer will clear the local browser
+   window's authentication cache for the realm upon receiving a
+   server response of 401. This can effectively "log out" a user,
+   forcing them to re-enter their username and password. Some people
+   use this to "time out" logins, or provide a "log-out" button.</simpara>
+  <simpara></simpara>
+   <example>
+     <title>HTTP Authentication example forcing a new name/password</title>
+     <programlisting role="php">
+&lt;?php
+  function authenticate() {
+    header( &quot;WWW-Authenticate: Basic realm=\&quot;Test Authentication System\&quot;&quot;);
+    header( &quot;HTTP/1.0 401 Unauthorized&quot;);
+    echo &quot;You must enter a valid login ID and password to access this resource\n&quot;;
+    exit;
+  }
+ 
+  if(!isset($PHP_AUTH_USER) || ($SeenBefore == 1 &amp;&amp; !strcmp($OldAuth, $PHP_AUTH_USER)) ) {
+   authenticate();
+  } 
+  else {
+   echo &quot;&lt;/p&gt;Welcome: $PHP_AUTH_USER&lt;br&gt;&quot;;
+   echo &quot;Old: $OldAuth&quot;;
+   echo &quot;&lt;form action=\&quot;$PHP_SELF\&quot; METHOD=POST&gt;\n&quot;;
+   echo &quot;&lt;input type=\&quot;hidden\&quot; name=\&quot;SeenBefore\&quot; value=\&quot;1\&quot;&gt;\n&quot;;
+   echo &quot;&lt;input type=\&quot;hidden\&quot; name=\&quot;OldAuth\&quot; value=\&quot;$PHP_AUTH_USER\&quot;&gt;\n&quot;;
+   echo &quot;&lt;input type=\&quot;submit\&quot; value=\&quot;Re Authenticate\&quot;&gt;\n&quot;;
+   echo &quot;&lt;/form&gt;&lt;/p&gt;\n&quot;;
+  }
+?>
+   </programlisting>
+  </example>
+  <simpara>
+   This behavior is not required by the HTTP Basic authentication
+   standard, so you should never depend on this. Testing with Lynx
+   has shown that Lynx does not clear the authentication credentials
+   with a 401 server response, so pressing back and then forward
+   again will open the resource as long as the credential
+   requirements haven't changed. The user can press the
+   '_' key to clear their authentication information, however.
+  </simpara>
+  <simpara>
+   Also note that this does not work using Microsoft's IIS server and
+   the CGI version of PHP due to a limitation of IIS.
+  </simpara>
+
+ </chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->
