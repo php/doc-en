@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.26 $ -->
+<!-- $Revision: 1.27 $ -->
  <reference id="ref.sockets">
   <title>Socket functions</title>
   <titleabbrev>Sockets</titleabbrev>
@@ -58,28 +58,28 @@ set_time_limit (0);
 $address = '192.168.1.53';
 $port = 10000;
 
-if (($sock = socket (AF_INET, SOCK_STREAM, 0)) < 0) {
-    echo "socket() failed: reason: " . strerror ($sock) . "\n";
+if (($sock = socket_create (AF_INET, SOCK_STREAM, 0)) < 0) {
+    echo "socket_create() failed: reason: " . socket_strerror ($sock) . "\n";
 }
 
-if (($ret = bind ($sock, $address, $port)) < 0) {
-    echo "bind() failed: reason: " . strerror ($ret) . "\n";
+if (($ret = socket_bind ($sock, $address, $port)) < 0) {
+    echo "socket_bind() failed: reason: " . socket_strerror ($ret) . "\n";
 }
 
-if (($ret = listen ($sock, 5)) < 0) {
-    echo "listen() failed: reason: " . strerror ($ret) . "\n";
+if (($ret = socket_listen ($sock, 5)) < 0) {
+    echo "socket_listen() failed: reason: " . socket_strerror ($ret) . "\n";
 }
 
 do {
-    if (($msgsock = accept_connect($sock)) < 0) {
-        echo "accept_connect() failed: reason: " . strerror ($msgsock) . "\n";
+    if (($msgsock = socket_accept($sock)) < 0) {
+        echo "socket_accept() failed: reason: " . socket_strerror ($msgsock) . "\n";
         break;
     }
     do {
         $buf = '';
-        $ret = read ($msgsock, $buf, 2048);
+        $ret = socket_read ($msgsock, $buf, 2048);
         if ($ret < 0) {
-            echo "read() failed: reason: " . strerror ($ret) . "\n";
+            echo "socket_read() failed: reason: " . socket_strerror ($ret) . "\n";
             break 2;
         }
         if ($ret == 0) {
@@ -87,17 +87,17 @@ do {
         }
         $buf = trim ($buf);
         if ($buf == 'quit') {
-            close ($msgsock);
+            socket_close ($msgsock);
             break 2;
         }
         $talkback = "PHP: You said '$buf'.\n";
-        write ($msgsock, $talkback, strlen ($talkback));
+        socket_write ($msgsock, $talkback, strlen ($talkback));
         echo "$buf\n";
     } while (true);
-    close ($msgsock);
+    socket_close ($msgsock);
 } while (true);
 
-close ($sock);
+socket_close ($sock);
 ?>
 ]]>
      </programlisting>
@@ -125,17 +125,17 @@ $service_port = getservbyname ('www', 'tcp');
 $address = gethostbyname ('www.php.net');
 
 /* Create a TCP/IP socket. */
-$socket = socket (AF_INET, SOCK_STREAM, 0);
+$socket = socket_create (AF_INET, SOCK_STREAM, 0);
 if ($socket < 0) {
-    echo "socket() failed: reason: " . strerror ($socket) . "\n";
+    echo "socket_create() failed: reason: " . socket_strerror ($socket) . "\n";
 } else {
-    "socket() successful: " . strerror ($socket) . "\n";
+    "socket_create() successful: " . socket_strerror ($socket) . "\n";
 }
 
 echo "Attempting to connect to '$address' on port '$service_port'...";
-$result = connect ($socket, $address, $service_port);
+$result = socket_connect ($socket, $address, $service_port);
 if ($result < 0) {
-    echo "connect() failed.\nReason: ($result) " . strerror($result) . "\n";
+    echo "socket_connect() failed.\nReason: ($result) " . socket_strerror($result) . "\n";
 } else {
     echo "OK.\n";
 }
@@ -144,16 +144,16 @@ $in = "HEAD / HTTP/1.0\r\n\r\n";
 $out = '';
 
 echo "Sending HTTP HEAD request...";
-write ($socket, $in, strlen ($in));
+socket_write ($socket, $in, strlen ($in));
 echo "OK.\n";
 
 echo "Reading response:\n\n";
-while (read ($socket, $out, 2048)) {
+while (socket_read ($socket, $out, 2048)) {
     echo $out;
 }
 
 echo "Closing socket...";
-close ($socket);
+socket_close ($socket);
 echo "OK.\n\n";
 ?>
 ]]>
@@ -162,39 +162,39 @@ echo "OK.\n\n";
     </para>
   </partintro>
 
-  <refentry id="function.accept-connect">
+  <refentry id="function.socket-accept">
    <refnamediv>
-    <refname>accept_connect</refname>
+    <refname>socket_accept</refname>
     <refpurpose>Accepts a connection on a socket</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>int <function>accept_connect</function></funcdef>
+      <funcdef>int <function>socket_accept</function></funcdef>
       <paramdef>resource <parameter>socket</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
 	&warn.experimental.func;
     <para>
      After the socket <parameter>socket</parameter> has been created
-     using <function>socket</function>, bound to a name with
-     <function>bind</function>, and told to listen for connections
-     with <function>listen</function>, this function will accept
+     using <function>socket_create</function>, bound to a name with
+     <function>socket_bind</function>, and told to listen for connections
+     with <function>socket_listen</function>, this function will accept
      incoming connections on that socket. Once a successful connection
      is made, a new socket descriptor is returned, which may be used
      for communication. If there are multiple connections queued on
      the socket, the first will be used. If there are no pending
-     connections, <function>accept_connect</function> will block until
+     connections, <function>socket_accept</function> will block until
      a connection becomes present. If <parameter>socket</parameter>
      has been made non-blocking using
      <function>socket_set_blocking</function> or
-     <function>set_nonblock</function>, an error code will be
+     <function>socket_set_nonblock</function>, an error code will be
      returned.
     </para>
     <para>
      The socket descriptor returned by
-     <function>accept_connect</function> may not be used to accept new
+     <function>socket_accept</function> may not be used to accept new
      connections. The original listening socket
      <parameter>socket</parameter>, however, remains open and may be
      reused.
@@ -202,31 +202,31 @@ echo "OK.\n\n";
     <para>
      Returns a new socket descriptor on success, or a negative error
      code on failure. This code may be passed to
-     <function>strerror</function> to get a textual explanation of the
+     <function>socket_strerror</function> to get a textual explanation of the
      error.
     </para>
     <para>
      See also 
-     <function>bind</function>,
-     <function>connect</function>,
-     <function>listen</function>,
-     <function>socket</function>,
+     <function>socket_bind</function>,
+     <function>socket_connect</function>,
+     <function>socket_listen</function>,
+     <function>socket_create</function>,
      <function>socket_get_status</function>, and
-     <function>strerror</function>.
+     <function>socket_strerror</function>.
     </para>
    </refsect1>
   </refentry>
 
-  <refentry id="function.bind">
+  <refentry id="function.socket-bind">
    <refnamediv>
-    <refname>bind</refname>
+    <refname>socket_bind</refname>
     <refpurpose>Binds a name to a socket</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>int <function>bind</function></funcdef>
+      <funcdef>int <function>socket_bind</function></funcdef>
       <paramdef>resource <parameter>socket</parameter></paramdef>
       <paramdef>string <parameter>address</parameter></paramdef>
       <paramdef>int 
@@ -236,10 +236,10 @@ echo "OK.\n\n";
     </funcsynopsis>
 	&warn.experimental.func;
     <para>
-     <function>bind</function> binds the name given in
+     <function>socket_bind</function> binds the name given in
      <parameter>address</parameter> to the socket described by
      <parameter>socket</parameter>, which must be a valid socket
-     descriptor created with <function>socket</function>.
+     descriptor created with <function>socket_create</function>.
     </para>
     <para>
      The <parameter>address</parameter> parameter is either an IP
@@ -257,70 +257,69 @@ echo "OK.\n\n";
     </para>
     <para>
      Returns zero on success, or a negative error code on
-     failure. This code may be passed to <function>strerror</function>
+     failure. This code may be passed to <function>socket_strerror</function>
      to get a textual explanation of the error.
     </para>
     <para>
      See also 
-     <function>accept_connect</function>,
-     <function>connect</function>,
-     <function>listen</function>,
-     <function>socket</function>,
+     <function>socket_connect</function>,
+     <function>socket_listen</function>,
+     <function>socket_create</function>,
      <function>socket_get_status</function>, and
-     <function>strerror</function>.
+     <function>socket_strerror</function>.
     </para>
    </refsect1>
   </refentry>
 
-  <refentry id="function.close">
+  <refentry id="function.socket-close">
    <refnamediv>
-    <refname>close</refname>
-    <refpurpose>Closes a file descriptor</refpurpose>
+    <refname>socket_close</refname>
+    <refpurpose>Closes a socket descriptor</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>bool <function>close</function></funcdef>
+      <funcdef>bool <function>soclet_close</function></funcdef>
       <paramdef>resource <parameter>socket</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
 	&warn.experimental.func;
     <para>
-     <function>close</function> closes the file (or socket) descriptor
+     <function>socket_close</function> closes the file (or socket) descriptor
      given by <parameter>socket</parameter>.
     </para>
     <para>
-     Note that <function>close</function> should not be used on PHP
+     Note that <function>socket_close</function> should not be used on PHP
      file descriptors created with <function>fopen</function>,
      <function>popen</function>, <function>fsockopen</function>, or
      <function>psockopen</function>; it is meant for sockets created
-     with <function>socket</function> or
-     <function>accept_connect</function>.
+     with <function>socket_create</function> or
+     <function>socket_accept</function>.
     </para>
     <para>
      Returns &true; on success, or &false;
      if an error occurs (i.e., <parameter>socket</parameter> is invalid).
     </para>
     <para>
-     See also <function>bind</function>, <function>listen</function>,
-     <function>socket</function>,
+     See also <function>socket_bind</function>, <function>socket_listen</function>,
+     <function>socket_create</function>,
      <function>socket_get_status</function>, and
-     <function>strerror</function>.
+     <function>socket_strerror</function>.
     </para>
    </refsect1>
   </refentry>
 
-  <refentry id="function.connect">
+  <refentry id="function.socket-connect">
    <refnamediv>
-    <refname>connect</refname>
+    <refname>socket_connect</refname>
     <refpurpose>Initiates a connection on a socket</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>int <function>connect</function></funcdef>
+      <funcdef>int <function>socket_connect</function></funcdef>
       <paramdef>resource <parameter>socket</parameter></paramdef>
       <paramdef>string <parameter>address</parameter></paramdef>
       <paramdef>int 
@@ -328,11 +327,11 @@ echo "OK.\n\n";
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
+     &warn.experimental.func;
     <para>
      Initiates a connection using the socket descriptor
      <parameter>socket</parameter>, which must be a valid socket
-     descriptor created with <function>socket</function>.
+     descriptor created with <function>socket_create</function>.
     </para>
     <para>
      The <parameter>address</parameter> parameter is either an IP
@@ -350,75 +349,75 @@ echo "OK.\n\n";
     </para>
     <para>
      Returns zero on success, or a negative error code on
-     failure. This code may be passed to <function>strerror</function>
+     failure. This code may be passed to <function>socket_strerror</function>
      to get a textual explanation of the error.
     </para>
     <para>
      See also 
-     <function>bind</function>,
-     <function>listen</function>,
-     <function>socket</function>,
+     <function>socket_bind</function>,
+     <function>socket_listen</function>,
+     <function>socket_create</function>,
      <function>socket_get_status</function>, and
-     <function>strerror</function>.
+     <function>socket_strerror</function>.
     </para>
    </refsect1>
   </refentry>
 
-  <refentry id="function.listen">
+  <refentry id="function.socket-listen">
    <refnamediv>
-    <refname>listen</refname>
+    <refname>socket_listen</refname>
     <refpurpose>Listens for a connection on a socket</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>int <function>listen</function></funcdef>
+      <funcdef>int <function>socket_listen</function></funcdef>
       <paramdef>resource <parameter>socket</parameter></paramdef>
       <paramdef>int <parameter>backlog</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
+     &warn.experimental.func;
     <para>
      After the socket <parameter>socket</parameter> has been created
-     using <function>socket</function> and bound to a name with
-     <function>bind</function>, it may be told to listen for incoming
+     using <function>socket_create</function> and bound to a name with
+     <function>socket_bind</function>, it may be told to listen for incoming
      connections on <parameter>socket</parameter>. A maximum of
      <parameter>backlog</parameter> incoming connections will be
      queued for processing.
     </para>
     <para>
-     <function>listen</function> is applicable only to sockets with
+     <function>socket_listen</function> is applicable only to sockets with
      type <literal>SOCK_STREAM</literal> or
      <literal>SOCK_SEQPACKET</literal>.
     </para>
     <para>
      Returns zero on success, or a negative error code on
-     failure. This code may be passed to <function>strerror</function>
+     failure. This code may be passed to <function>socket_strerror</function>
      to get a textual explanation of the error.
     </para>
     <para>
      See also 
-     <function>accept_connect</function>,
-     <function>bind</function>,
-     <function>connect</function>,
-     <function>socket</function>,
+     <function>socket_accept</function>,
+     <function>socket_bind</function>,
+     <function>socket_connect</function>,
+     <function>socket_create</function>,
      <function>socket_get_status</function>, and
-     <function>strerror</function>.
+     <function>socket_strerror</function>.
     </para>
    </refsect1>
   </refentry>
 
-  <refentry id="function.read">
+  <refentry id="function.socket-read">
    <refnamediv>
-    <refname>read</refname>
+    <refname>socket_read</refname>
     <refpurpose>Read from a socket</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>int <function>read</function></funcdef>
+      <funcdef>int <function>socket_read</function></funcdef>
       <paramdef>resource <parameter>socket_des</parameter></paramdef>
       <paramdef>string <parameter>buffer</parameter></paramdef>
       <paramdef>int <parameter>length</parameter></paramdef>
@@ -427,9 +426,9 @@ echo "OK.\n\n";
     </funcsynopsis>
 	&warn.experimental.func;
     <para>
-     The function <function>read</function> reads from socket 
+     The function <function>socket_read</function> reads from socket 
      <parameter>socket_des</parameter>created by the
-     <function>accept_connect</function> function into
+     <function>socket_accept</function> function into
      <parameter>buffer</parameter> the number of bytes set by
      <parameter>length</parameter>. Otherwise you can use \n, \t or \0 to
       end reading. Returns number of bytes that have been read.
@@ -439,7 +438,7 @@ echo "OK.\n\n";
      <itemizedlist>
       <listitem>
        <simpara>
-        PHP_BINARY_READ - use the system <function>read</function>
+        PHP_BINARY_READ - use the system <function>socket_read</function>
         (Default in PHP &gt;= 4.1.0)
        </simpara>
       </listitem>
@@ -452,33 +451,33 @@ echo "OK.\n\n";
     </para>
     <para>
      See also 
-     <function>accept_connect</function>,
-     <function>bind</function>,
-     <function>connect</function>,
-     <function>listen</function>,
-     <function>strerror</function>,
+     <function>socket_accept</function>,
+     <function>socket_bind</function>,
+     <function>socket_connect</function>,
+     <function>socket_listen</function>,
+     <function>socket_strerror</function>,
      <function>socket_get_status</function> and
-     <function>write</function>.     
+     <function>socket_write</function>.     
     </para>
    </refsect1>
   </refentry>
 
-  <refentry id="function.socket">
+  <refentry id="function.socket-create">
    <refnamediv>
-    <refname>socket</refname>
+    <refname>socket_create</refname>
     <refpurpose>Create a socket (endpoint for communication)</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>int <function>socket</function></funcdef>
+      <funcdef>int <function>socket_create</function></funcdef>
       <paramdef>int <parameter>domain</parameter></paramdef>
       <paramdef>int <parameter>type</parameter></paramdef>
       <paramdef>int <parameter>protocol</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
+     &warn.experimental.func;
     <para>
      Creates a communication endpoint (a socket), and returns a
      descriptor to the socket.
@@ -502,62 +501,62 @@ echo "OK.\n\n";
     <para>
      Returns a valid socket descriptor on success, or a negative error
      code on failure. This code may be passed to
-     <function>strerror</function> to get a textual explanation of the
+     <function>socket_strerror</function> to get a textual explanation of the
      error.
     </para>
     <para>
-     For more information on the usage of <function>socket</function>,
+     For more information on the usage of <function>socket_create</function>,
      as well as on the meanings of the various parameters, see the
      Unix man page socket (2).
     </para>
     <para>
      See also 
-     <function>accept_connect</function>,
-     <function>bind</function>,
-     <function>connect</function>,
-     <function>listen</function>,
-     <function>strerror</function>, and
+     <function>socket_accept</function>,
+     <function>socket_bind</function>,
+     <function>socket_connect</function>,
+     <function>socket_listen</function>,
+     <function>socket_strerror</function>, and
      <function>socket_get_status</function>.
     </para>
    </refsect1>
   </refentry>
 
-  <refentry id="function.strerror">
+  <refentry id="function.socket-strerror">
    <refnamediv>
-    <refname>strerror</refname>
+    <refname>socket_strerror</refname>
     <refpurpose>Return a string describing a socket error</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>string <function>strerror</function></funcdef>
+      <funcdef>string <function>socket_strerror</function></funcdef>
       <paramdef>int <parameter>errno</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
 	&warn.experimental.func;
     <para>
-     <function>strerror</function> takes as its
+     <function>socket_strerror</function> takes as its
      <parameter>errno</parameter> parameter the return value of one of
      the socket functions, and returns the corresponding explanatory
      text. This makes it a bit more pleasant to figure out why
      something didn't work; for instance, instead of having to track
      down a system include file to find out what '-111' means, you
-     just pass it to <function>strerror</function>, and it tells you
+     just pass it to <function>socket_strerror</function>, and it tells you
      what happened.
     </para>
     <para>
      <example>
-      <title><function>strerror</function> example</title>
+      <title><function>socket_strerror</function> example</title>
       <programlisting role="php">
 <![CDATA[
 <?php
-if (($socket = socket (AF_INET, SOCK_STREAM, 0)) < 0) {
-   echo "socket() failed: reason: " . strerror ($socket) . "\n";
+if (($socket = socket_create (AF_INET, SOCK_STREAM, 0)) < 0) {
+   echo "socket_create() failed: reason: " . socket_strerror ($socket) . "\n";
 } 
 
-if (($ret = bind ($socket, '127.0.0.1', 80)) < 0) {
-   echo "bind() failed: reason: " . strerror ($ret) . "\n";
+if (($ret = socket_bind ($socket, '127.0.0.1', 80)) < 0) {
+   echo "socket_bind() failed: reason: " . socket_strerror ($ret) . "\n";
 }
 ?>
 ]]>
@@ -573,26 +572,26 @@ if (($ret = bind ($socket, '127.0.0.1', 80)) < 0) {
     </para>
     <para>
      See also 
-     <function>accept_connect</function>,
-     <function>bind</function>,
-     <function>connect</function>,
-     <function>listen</function>,
-     <function>socket</function>, and
+     <function>socket_accept</function>,
+     <function>socket_bind</function>,
+     <function>socket_connect</function>,
+     <function>socket_listen</function>,
+     <function>socket_create</function>, and
      <function>socket_get_status</function>.
     </para>
    </refsect1>
   </refentry>
 
-  <refentry id="function.write">
+  <refentry id="function.socket-write">
    <refnamediv>
-    <refname>write</refname>
+    <refname>socket_write</refname>
     <refpurpose>Write to a socket</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>int <function>write</function></funcdef>
+      <funcdef>int <function>socket_write</function></funcdef>
       <paramdef>resource <parameter>socket_des</parameter></paramdef>
       <paramdef>string <parameter>&amp;buffer</parameter></paramdef>
       <paramdef>int <parameter>length</parameter></paramdef>
@@ -600,20 +599,694 @@ if (($ret = bind ($socket, '127.0.0.1', 80)) < 0) {
     </funcsynopsis>
 	&warn.experimental.func;
     <para>
-     The function <function>write</function> writes to the socket 
+     The function <function>socket_write</function> writes to the socket 
      <parameter>socket_des</parameter> from
      <parameter>&amp;buffer</parameter> the number of bytes set by
      <parameter>length</parameter>.
     </para>
     <para>
      See also 
-     <function>accept_connect</function>,
-     <function>bind</function>,
-     <function>connect</function>,
-     <function>listen</function>,
-     <function>read</function>,
-     <function>strerror</function>, and
+     <function>socket_accept</function>,
+     <function>socket_bind</function>,
+     <function>socket_connect</function>,
+     <function>socket_listen</function>,
+     <function>socket_read</function>,
+     <function>socket_strerror</function>, and
      <function>socket_get_status</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-fd-alloc">
+   <refnamediv>
+    <refname>socket_fd_alloc</refname>
+    <refpurpose>Allocates a new file descriptor set </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>resource <function>socket_fd_alloc</function></funcdef>
+      <void/>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-fd-free">
+   <refnamediv>
+    <refname>socket_fd_free</refname>
+    <refpurpose>Deallocates a file descriptor set </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_fd_free</function></funcdef>
+      <paramdef>resource <parameter>set</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-fd-set">
+   <refnamediv>
+    <refname>socket_fd_set</refname>
+    <refpurpose>Adds (a) file descriptor(s) to a set </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_fd_set</function></funcdef>
+      <paramdef>resource <parameter>set</parameter></paramdef>
+      <paramdef>mixed <parameter>socket</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-fd-clear">
+   <refnamediv>
+    <refname>socket_fd_clear</refname>
+    <refpurpose>Clears (a) file descriptor(s) from a set </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_fd_clear</function></funcdef>
+      <paramdef>resource <parameter>set</parameter></paramdef>
+      <paramdef>mixed <parameter>socket</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-fd-isset">
+   <refnamediv>
+    <refname>socket_fd_isset</refname>
+    <refpurpose>Checks to see if a file descriptor is set within the file descrirptor set </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_fd_isset</function></funcdef>
+      <paramdef>resource <parameter>set</parameter></paramdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-fd-zero">
+   <refnamediv>
+    <refname>socket_fd_zero</refname>
+    <refpurpose>Clears a file descriptor set </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_fd_zero</function></funcdef>
+      <paramdef>resource <parameter>set</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-select">
+   <refnamediv>
+    <refname>socket_select</refname>
+    <refpurpose>Runs the select() system call on the sets mentioned with a timeout specified by tv_sec and tv_usec </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>socket_select</function></funcdef>
+      <paramdef>resource <parameter>read_fd</parameter></paramdef>
+      <paramdef>resource <parameter>write_fd</parameter></paramdef>
+      <paramdef>resource <parameter>except_fd</parameter></paramdef>
+      <paramdef>int <parameter>tv_sec</parameter></paramdef>
+      <paramdef>int
+       <parameter><optional>tv_usec</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-create-listen">
+   <refnamediv>
+    <refname>socket_create_listen</refname>
+    <refpurpose>Opens a socket on port to accept connections </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>resource <function>socket_create_listen</function></funcdef>
+      <paramdef>int <parameter>port</parameter></paramdef>
+      <paramdef>int
+       <parameter><optional>backlog</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-set-nonblock">
+   <refnamediv>
+    <refname>socket_set_nonblock</refname>
+    <refpurpose>Sets nonblocking mode for file descriptor fd </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_set_nonblock</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-getsockname">
+   <refnamediv>
+    <refname>socket_getsockname</refname>
+    <refpurpose>Given an fd, stores a string representing sa.sin_addr and the value of sa.sin_port into addr and port describing the local side of a socket </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_getsockname</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+      <paramdef>string <parameter>&amp;addr</parameter></paramdef>
+      <paramdef>int
+       <parameter><optional>&amp;port</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-getpeername">
+   <refnamediv>
+    <refname>socket_getpeername</refname>
+    <refpurpose>Given an fd, stores a string representing sa.sin_addr and the value of sa.sin_port into addr and port describing the remote side of a socket </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_getpeername</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+      <paramdef>string <parameter>&amp;addr</parameter></paramdef>
+      <paramdef>int
+       <parameter><optional>&amp;port</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-iovec-alloc">
+   <refnamediv>
+    <refname>socket_iovec_alloc</refname>
+    <refpurpose>...]) Builds a 'struct iovec' for use with sendmsg, recvmsg, writev, and readv </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>resource <function>socket_iovec_alloc</function></funcdef>
+      <paramdef>int <parameter>num_vectors</parameter></paramdef>
+      <paramdef>int
+       <parameter><optional></optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-iovec-fetch">
+   <refnamediv>
+    <refname>socket_iovec_fetch</refname>
+    <refpurpose>Returns the data held in the iovec specified by iovec_id[iovec_position] </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>socket_iovec_fetch</function></funcdef>
+      <paramdef>resource <parameter>iovec</parameter></paramdef>
+      <paramdef>int <parameter>iovec_position</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-iovec-set">
+   <refnamediv>
+    <refname>socket_iovec_set</refname>
+    <refpurpose>Sets the data held in iovec_id[iovec_position] to new_val </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_iovec_set</function></funcdef>
+      <paramdef>resource <parameter>iovec</parameter></paramdef>
+      <paramdef>int <parameter>iovec_position</parameter></paramdef>
+      <paramdef>string <parameter>new_val</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-iovec-add">
+   <refnamediv>
+    <refname>socket_iovec_add</refname>
+    <refpurpose>Adds a new vector to the scatter/gather array </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_iovec_add</function></funcdef>
+      <paramdef>resource <parameter>iovec</parameter></paramdef>
+      <paramdef>int <parameter>iov_len</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-iovec-delete">
+   <refnamediv>
+    <refname>socket_iovec_delete</refname>
+    <refpurpose>Deletes a vector from an array of vectors </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_iovec_delete</function></funcdef>
+      <paramdef>resource <parameter>iovec</parameter></paramdef>
+      <paramdef>int <parameter>iov_pos</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-iovec-free">
+   <refnamediv>
+    <refname>socket_iovec_free</refname>
+    <refpurpose>Frees the iovec specified by iovec_id </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_iovec_free</function></funcdef>
+      <paramdef>resource <parameter>iovec</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-readv">
+   <refnamediv>
+    <refname>socket_readv</refname>
+    <refpurpose>Reads from an fd, using the scatter-gather array defined by iovec_id </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_readv</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+      <paramdef>resource <parameter>iovec_id</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-writev">
+   <refnamediv>
+    <refname>socket_writev</refname>
+    <refpurpose>Writes to a file descriptor, fd, using the scatter-gather array defined by iovec_id </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_writev</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+      <paramdef>resource <parameter>iovec_id</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-recv">
+   <refnamediv>
+    <refname>socket_recv</refname>
+    <refpurpose>Receives data from a connected socket </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>mixed <function>socket_recv</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+      <paramdef>int <parameter>len</parameter></paramdef>
+      <paramdef>int <parameter>flags</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-send">
+   <refnamediv>
+    <refname>socket_send</refname>
+    <refpurpose>Sends data to a connected socket </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>socket_send</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+      <paramdef>string <parameter>buf</parameter></paramdef>
+      <paramdef>int <parameter>len</parameter></paramdef>
+      <paramdef>int <parameter>flags</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-recvfrom">
+   <refnamediv>
+    <refname>socket_recvfrom</refname>
+    <refpurpose>Receives data from a socket, connected or not </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>socket_recvfrom</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+      <paramdef>string <parameter>&amp;buf</parameter></paramdef>
+      <paramdef>int <parameter>len</parameter></paramdef>
+      <paramdef>int <parameter>flags</parameter></paramdef>
+      <paramdef>string <parameter>&amp;name</parameter></paramdef>
+      <paramdef>int
+       <parameter><optional>&amp;port</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-sendto">
+   <refnamediv>
+    <refname>socket_sendto</refname>
+    <refpurpose>Sends a message to a socket, whether it is connected or not </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>socket_sendto</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+      <paramdef>string <parameter>buf</parameter></paramdef>
+      <paramdef>int <parameter>len</parameter></paramdef>
+      <paramdef>int <parameter>flags</parameter></paramdef>
+      <paramdef>string <parameter>addr</parameter></paramdef>
+      <paramdef>int
+       <parameter><optional>port</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-recvmsg">
+   <refnamediv>
+    <refname>socket_recvmsg</refname>
+    <refpurpose>Used to receive messages on a socket, whether connection-oriented or not </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_recvmsg</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+      <paramdef>resource <parameter>iovec</parameter></paramdef>
+      <paramdef>array <parameter>&amp;control</parameter></paramdef>
+      <paramdef>int <parameter>&amp;controllen</parameter></paramdef>
+      <paramdef>int <parameter>&amp;flags</parameter></paramdef>
+      <paramdef>string <parameter>&amp;addr</parameter></paramdef>
+      <paramdef>int
+       <parameter><optional>&amp;port</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-sendmsg">
+   <refnamediv>
+    <refname>socket_sendmsg</refname>
+    <refpurpose>Sends a message to a socket, regardless of whether it is connection-oriented or not </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_sendmsg</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+      <paramdef>resource <parameter>iovec</parameter></paramdef>
+      <paramdef>int <parameter>flags</parameter></paramdef>
+      <paramdef>string <parameter>addr</parameter></paramdef>
+      <paramdef>int
+       <parameter><optional>port</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-getopt">
+   <refnamediv>
+    <refname>socket_getopt</refname>
+    <refpurpose>Gets socket options for the socket </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>mixed <function>socket_getopt</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+      <paramdef>int <parameter>level</parameter></paramdef>
+      <paramdef>int <parameter>optname</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-setopt">
+   <refnamediv>
+    <refname>socket_setopt</refname>
+    <refpurpose>|array optval) Sets socket options for the socket </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_setopt</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+      <paramdef>int <parameter>level</parameter></paramdef>
+      <paramdef>int <parameter>optname</parameter></paramdef>
+      <paramdef>int <parameter></parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-create-pair">
+   <refnamediv>
+    <refname>socket_create_pair</refname>
+    <refpurpose>Creates a pair of indistinguishable sockets and stores them in fds. </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_create_pair</function></funcdef>
+      <paramdef>int <parameter>domain</parameter></paramdef>
+      <paramdef>int <parameter>type</parameter></paramdef>
+      <paramdef>int <parameter>protocol</parameter></paramdef>
+      <paramdef>array <parameter>&amp;fd</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-shutdown">
+   <refnamediv>
+    <refname>socket_shutdown</refname>
+    <refpurpose>Shuts down a socket for receiving, sending, or both. </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>socket_shutdown</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+      <paramdef>int
+       <parameter><optional>how</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.socket-last-error">
+   <refnamediv>
+    <refname>socket_last_error</refname>
+    <refpurpose>Returns/Clears the last error on the socket </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>socket_last_error</function></funcdef>
+      <paramdef>resource <parameter>socket</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+     &warn.experimental.func;
+    <para>
+     &warn.undocumented.func;
     </para>
    </refsect1>
   </refentry>
