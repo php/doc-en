@@ -1,6 +1,7 @@
 <!DOCTYPE style-sheet PUBLIC "-//James Clark//DTD DSSSL Style Sheet//EN" [
 <!ENTITY docbook.dsl SYSTEM "@DOCBOOK_PRINT@" CDATA DSSSL>
 <!ENTITY common.dsl SYSTEM "common.dsl">
+<!ENTITY version.dsl SYSTEM "version.dsl">
 ]>
 
 <!--
@@ -27,7 +28,73 @@
 @FOOTER_MARGIN@
 @BOTTOM_MARGIN@
 
-;;(element (refsect1 title) (literal "- - -"))
+&version.dsl;
+
+(define ($refentry-title$)
+  (let* ((refmeta (select-elements (children (current-node)) (normalize "refmeta")))
+	 (refentrytitle (select-elements (children refmeta)        (normalize "refentrytitle")))
+	 (refnamediv    (select-elements (children (current-node)) (normalize "refnamediv")))
+	 (refdescriptor (select-elements (children refnamediv)     (normalize "refdescriptor")))
+	 (refname       (select-elements (children refnamediv)     (normalize "refname")))
+	 (title         (if (node-list-empty? refentrytitle)
+											(if (node-list-empty? refdescriptor)
+													(node-list-first refname)
+													refdescriptor)
+											refentrytitle))
+	 (slevel (SECTLEVEL)) ;; the true level in the section hierarchy
+	 (hlevel (if (> slevel 2) 2 slevel)) ;; limit to sect2 equiv.
+	 (hs (HSIZE (- 4 hlevel))))
+    (make paragraph
+      font-family-name: %title-font-family%
+      font-weight: 'bold
+      font-size: hs
+      line-spacing: (* hs %line-spacing-factor%)
+      space-before: (* hs %head-before-factor%)
+      space-after: (* hs %head-after-factor%)
+      start-indent: %body-start-indent%
+      first-line-start-indent: (- %body-start-indent%)
+      quadding: 'start
+      heading-level: (if %generate-heading-level% 2 0)
+      keep-with-next?: #t
+			(make sequence
+				(process-node-list (children title))
+				(make sequence
+					font-weight: 'light
+					font-size: (* 0.5 (inherited-font-size))
+					font-posture: 'italic
+					(literal "    (")
+					(version-info title)
+					(literal ")")
+					)
+				)
+			)
+		)
+	)
+
+(element refentry 
+  (make display-group
+    keep: %refentry-keep%
+    (if (or %refentry-new-page%
+	    (node-list=? (current-node) (sgml-root-element)))
+	(make simple-page-sequence
+	  page-n-columns: %page-n-columns%
+	  page-number-format: ($page-number-format$)
+	  use: default-text-style
+	  left-header:   ($left-header$)
+	  center-header: ($center-header$)
+	  right-header:  ($right-header$)
+	  left-footer:   ($left-footer$)
+	  center-footer: ($center-footer$)
+	  right-footer:  ($right-footer$)
+	  input-whitespace-treatment: 'collapse
+	  quadding: %default-quadding%
+	  ($refentry-title$)
+	  (process-children))
+	(make sequence
+	  ($refentry-title$)
+	  ($block-container$)))
+    (make-endnotes)))
+
 
 
 (element refname

@@ -226,3 +226,18 @@
               (literal author-name))
         (process-node-list author-affil))))
 	)
+
+
+
+(element (refnamediv refname)
+	(make sequence
+		(make element gi: "P"
+					(literal "    (")
+					(version-info (current-node))
+					(literal ")")
+					)
+		(process-children)
+		)
+	)
+
+
