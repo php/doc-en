@@ -1,6 +1,4 @@
-# todo create different outdir pathes
-
-<script language="php">
+<?php
 
 set_time_limit(0);
 error_reporting(E_ALL);
@@ -196,4 +194,4 @@ function convert_dir($dirname) {
 // convert the current directory
 convert_dir(".");
 
-</script>
+?>
