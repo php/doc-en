@@ -790,5 +790,6 @@ Note: Also be sure to double check the documentation before commit as this
          diffs before commit!
       e) Run script check-references.php and add role="reference" where required.
       f) Report problems to phpdoc@lists.php.net
+
 NOTES;
 ?>
