@@ -17,6 +17,7 @@
 # | Authors:    Thomas Schöfbeck <tom@php.net>                           |
 # |             Gabor Hojtsy <goba@php.net>                              |
 # |             Mark Kronsbein <mk@php.net>                              |
+# |             Jan Fabry <cheezy@php.net>
 # +----------------------------------------------------------------------+
 */
 if ($argc < 2 || $argc > 3) {
@@ -40,6 +41,7 @@ the actual english xml files, and print statistics
   Authors: Thomas Schöfbeck <tom@php.net>
            Gabor Hojtsy <goba@php.net>
            Mark Kronsbein <mk@php.net> 
+           Jan Fabry <cheezy@php.net>
 
 <?php
   exit;
@@ -173,6 +175,7 @@ function get_file_status($file)
 {
     // The information is contained in these global arrays and vars
     global $DOCDIR, $LANG, $MAINT, $files_by_mark, $files_by_maint;
+    global $file_sizes_by_mark;
     global $missing_files, $missing_tags, $using_rev;
 
     // Transform english file name to translated file name
@@ -182,7 +185,9 @@ function get_file_status($file)
     if (!@file_exists($trans_file)) {
         $files_by_mark[REV_NOTRANS]++;
         $trans_name = substr($trans_file, strlen($DOCDIR) + strlen($LANG) + 1);
-        $missing_files[$trans_name] = array( round(filesize($file)/1024, 1) );
+        $size = round(filesize($file)/1024, 1);
+        $missing_files[$trans_name] = array( $size );
+        $file_sizes_by_mark[REV_NOTRANS] += $size;
         // compute en-tags just if they're needed in the WIP-Table
         if($using_rev) {
         	$missing_files[$trans_name][] = "1.".get_tags($file);
@@ -220,6 +225,7 @@ function get_file_status($file)
     // file in the missing tags list
     if (count($trans_tag) == 0) {
         $files_by_mark[REV_NOTAG]++;
+        $file_sizes_by_mark[REV_NOTAG] += $en_size;
         $missing_tags[] = array(substr($trans_file, strlen($DOCDIR)), $en_size, $trans_size, $size_diff);
         return FALSE;
     }
@@ -247,6 +253,7 @@ function get_file_status($file)
         // Store file by status and maintainer
         $files_by_mark[REV_UPTODATE]++;
         $files_by_maint[$this_maint][REV_UPTODATE]++;
+        $file_sizes_by_mark[REV_UPTODATE] += $en_size;
         
         return FALSE;
     } 
@@ -268,6 +275,7 @@ function get_file_status($file)
     // Store files by status, and by maintainer too
     $files_by_mark[$status_mark]++;
     $files_by_maint[$this_maint][$status_mark]++;
+    $file_sizes_by_mark[$status_mark] += $en_size;
 
     return array(
         "full_name"  => $file,
@@ -679,10 +687,13 @@ if (empty($MAINT)) {
 <th>File status type</th>
 <th>Number of files</th>
 <th>Percent of files</th>
+<th>Size of files (kB)</th>
+<th>Percent of size</th>
 </tr>
 END_OF_MULTILINE;
 
     $files_sum = array_sum($files_by_mark);
+    $file_sizes_sum = array_sum($file_sizes_by_mark);
     
     $file_types = array(
       array (REV_UPTODATE, "Up to date files"),
@@ -699,10 +710,13 @@ END_OF_MULTILINE;
     		  "<td>".$type[1]."</td>".
     		  "<td class=c>".intval($files_by_mark[$type[0]])."</td>".
     		  "<td class=c>".number_format($files_by_mark[$type[0]] * 100 / $files_sum, 2 ).
-    		  "%</td></tr>\n";
+    		  "%</td>".
+                  "<td class=c>".intval($file_sizes_by_mark[$type[0]])."</td>".
+                  "<td class=c>".number_format($file_sizes_by_mark[$type[0]] * 100 / $file_sizes_sum, 2).
+                  "%</td></tr>\n";
     }
 
-	print "<tr class=blue><th>Files total</th><th>$files_sum</th><th>100%</th></tr>\n".
+	print "<tr class=blue><th>Files total</th><th>$files_sum</th><th>100%</th><th>$file_sizes_sum</th><th>100%</th></tr>\n".
 		  "</table>\n<p>&nbsp;</p>\n";
 
 }
@@ -923,7 +937,7 @@ if ($count > 0) {
             $prev_dir = $new_dir;
         }
 
-        print "<tr class=wip><td>$short_file</td>" .
+        print "<tr class=wip><td><a href=\"http://cvs.php.net/co.php/phpdoc/en/$file\">$short_file</a></td>" .
               "<td class=r>$info[0]</td></tr>\n";
     }
     print "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
