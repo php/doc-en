@@ -48,7 +48,8 @@ AC_ARG_WITH(dsssl,
         AC_MSG_RESULT(in $withval)
     fi
 ],[
-    for dir in /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh \
+    for dir in \
+           /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh \
 	   /usr/local/share/sgml/docbook/dsssl/modular \
 	   /usr/lib/dsssl/stylesheets/docbook \
 	   /usr/lib/dsssl/stylesheets/nwalsh-modular \
@@ -65,19 +66,24 @@ AC_ARG_WITH(dsssl,
 	   /usr/local/lib/sgml/stylesheets/docbook \
 	   /usr/local/lib/sgml/stylesheets/nwalsh-modular \
 	   /usr/local/lib/sgml/docbook \
-	   /usr/local/share/sgml/docbook/dsssl/modular ; do
+	   /usr/local/share/sgml/docbook/dsssl/modular \
+	   ../phpdoc-tools/dsssl/docbook \
+	   ../phpdoc-tools/dsssl \
+	   phpdoc-tools/dsssl/docbook \
+	   phpdoc-tools/dsssl
+    do
 	if test -d "$dir"; then
-	DOCBOOK_HTML="$dir/html/docbook.dsl"
-	DOCBOOK_PRINT="$dir/print/docbook.dsl"
-	AC_MSG_RESULT(in $dir)
-	break
+            DOCBOOK_HTML="$dir/html/docbook.dsl"
+            DOCBOOK_PRINT="$dir/print/docbook.dsl"
+            AC_MSG_RESULT(autodetected: $dir)
+            break
 	fi
     done
 ])
 if test -z "$DOCBOOK_HTML"; then
     DOCBOOK_HTML="/usr/lib/sgml/stylesheets/nwalsh-modular/html/docbook.dsl"
     DOCBOOK_PRINT="/usr/lib/sgml/stylesheets/nwalsh-modular/print/docbook.dsl"
-    AC_MSG_RESULT(defaulting)
+    AC_MSG_RESULT(defaulting - WARNING!!! DSSSL NOT FOUND - WON'T WORK THIS WAY)
 fi
 AC_SUBST(DOCBOOK_HTML)
 AC_SUBST(DOCBOOK_PRINT)
@@ -92,18 +98,29 @@ AC_ARG_WITH(xsl,
     DOCBOOKXSL_PRINT=$withval/fo/docbook.xsl
     AC_MSG_RESULT(in $withval)
 ],[
-    DOCBOOKXSL_BIGHTML="there-is-no-autodetect-yet"
-    DOCBOOKXSL_HTML="there-is-no-autodetect-yet"
-    DOCBOOKXSL_HTMLHELP="there-is-no-autodetect-yet"
-    DOCBOOKXSL_PRINT="there-is-no-autodetect-yet"
-    AC_MSG_RESULT(not detected)
+    for dir in \
+        ../phpdoc-tools/xsl/docbook \
+        ../phpdoc-tools/xsl \
+        phpdoc-tools/xsl/docbook \
+        phpdoc-tools/xsl
+    do
+        if test -d "$dir"; then
+            DOCBOOKXSL_BIGHTML=$dir/html/docbook.xsl
+            DOCBOOKXSL_HTML=$dir/html/chunk.xsl
+            DOCBOOKXSL_HTMLHELP=$dir/contrib/htmlhelp/htmlhelp.xsl
+            DOCBOOKXSL_PRINT=$dir/fo/docbook.xsl
+            AC_MSG_RESULT(autodetected: $dir)
+            
+            break
+        fi
+    done
 ])
 if test -z "$DOCBOOKXSL_BIGHTML"; then
-    DOCBOOKXSL_BIGHTML="there-is-not-default-yet"
-    DOCBOOKXSL_HTML="there-is-not-default-yet"
-    DOCBOOKXSL_HTMLHELP="there-is-not-default-yet"
-    DOCBOOKXSL_PRINT="there-is-not-default-yet"
-    AC_MSG_RESULT(defaulting)
+    DOCBOOKXSL_BIGHTML=../xsl/html/docbook.xsl
+    DOCBOOKXSL_HTML=../xsl/html/chunk.xsl
+    DOCBOOKXSL_HTMLHELP=../xsl/contrib/htmlhelp/htmlhelp.xsl
+    DOCBOOKXSL_PRINT=../xsl/fo/docbook.xsl
+    AC_MSG_RESULT(FAILED - WARNING: XSL COULDN'T BE FOUND)
 fi
 AC_SUBST(DOCBOOKXSL_BIGHTML)
 AC_SUBST(DOCBOOKXSL_HTML)
@@ -270,7 +287,14 @@ if test $OPENJADECHK = "no"; then
     dnl OpenJade isnt present, so look for the older Jade instead
     AC_PATH_PROG(JADECHK, "jade", no)
     if test $JADECHK = "no"; then
-        AC_MSG_ERROR(unable to locate either Jade or OpenJade)
+        AC_MSG_CHECKING(for jade in phpdoc-tools)
+        if test -e ../phpdoc-tools/jade/jade.exe ; then
+            JADEPATH=../phpdoc-tools/jade/jade.exe
+            AC_MSG_RESULT("yes")
+        else
+            AC_MSG_RESULT("no")
+            AC_MSG_ERROR(unable to locate either Jade or OpenJade)
+        fi
     else
         JADEPATH=$JADECHK
     fi
@@ -304,12 +328,39 @@ AC_SUBST(JADE)
 AC_SUBST(NSGMLS)
 AC_SUBST(HTMLHELP_ENCODING)
 
+
+dnl Do something smart to find catalog-files
+CATALOG=""
+
 dnl SuSE 6.2/6.3 need this
 if test -e /usr/share/sgml/CATALOG.docbk30
 then
-  CATALOG="-c /usr/share/sgml/CATALOG.docbk30"
+  CATALOG="$CATALOG -c /usr/share/sgml/CATALOG.docbk30"
 fi
+
+dnl For windows (and maybe *nix too?) users lacking catalog-files
+
+dnl jade catalog file
+# how about using JADEPATH? You should replace the last 4 chars ('jade') with catalog
+if test -e ../phpdoc-tools/jade/catalog
+then
+  CATALOG="$CATALOG -c ../phpdoc-tools/jade/catalog"
+fi
+
+dnl iso-ents catalog file
+if test -e ../phpdoc-tools/iso-entities/catalog
+then
+  CATALOG="$CATALOG -c ../phpdoc-tools/iso-entities/catalog"
+fi
+
+dnl dsssl catalog file
+if test -e ../phpdoc-tools/dsssl/docbook/catalog
+then
+  CATALOG="$CATALOG -c ../phpdoc-tools/dsssl/docbook/catalog"
+fi
+
 AC_SUBST(CATALOG)
+
 
 
 AC_OUTPUT(\
