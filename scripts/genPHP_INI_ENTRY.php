@@ -8,7 +8,7 @@
  */
 
 // figure out the php4 source dir
-$phpsrc_dir = '';
+$phpsrc_dir = '/cvs/php5';
 if ($phpsrc_dir == '') {
     if (file_exists('../php4')) {
         $phpsrc_dir = realpath('../php4');
@@ -179,7 +179,7 @@ function findINI($fname) {/*{{{*/
     }
     $data = file_get_contents($fname);
     //$re = '/PHP_INI_ENTRY\("([^"]+)",\s+"([^"]+)",\s+([A-Z_]),/';
-    $re = '/(PHP_INI_ENTRY|PHP_INI_ENTRY_EX)\(([^)]+)/';
+    $re = '/(PHP_INI_ENTRY|PHP_INI_ENTRY_EX|PHP_INI_BOOLEAN)\(([^)]+)/';
     preg_match_all($re, $data, &$matches);
     foreach ($matches[2] as $match) {
         $match = str_replace('"','',$match);
