@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.14 2004-11-01 19:30:47 techtonik Exp $
+  $Id: common.xsl,v 1.15 2004-11-01 19:44:31 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -16,6 +16,8 @@
 
 
 
+<!--                   Tune different PAGE TYPES                    -->
+
 <!-- *************** TUNE FUNCTION REFERENCE PAGES **************** -->
 <!-- Generate title from function name instead of word "NAME" in title -->
 <xsl:param name="refentry.generate.name" select="'0'"/>
@@ -27,13 +29,45 @@
 <!-- FIX: temporary till also this is in std.-distrib. -->
 <xsl:template match="reference/titleabbrev"/>
 
-
 <!-- Load VERSION INFORMATION into variable -->
 <xsl:param name="version" select="document('version.xml')/versions"/>
 
+<!-- Add version information below function name. Use H1 tags to denote
+    function title like in DSSSL -->
+<xsl:template match="refnamediv">
+  <div class="{name(.)}">
+    <xsl:call-template name="anchor"/>
+    <xsl:choose>
+      <xsl:when test="$refentry.generate.name != 0">
+        <h1>
+          <xsl:call-template name="gentext">
+            <xsl:with-param name="key" select="'RefName'"/>
+          </xsl:call-template>
+        </h1>
+      </xsl:when>
+      <xsl:when test="$refentry.generate.title != 0">
+        <h1>
+          <xsl:choose>
+            <xsl:when test="../refmeta/refentrytitle">
+              <xsl:apply-templates select="../refmeta/refentrytitle"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:apply-templates select="refname[1]"/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </h1>
+      </xsl:when>
+    </xsl:choose>
+    <p>(<xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>)</p>
+    <p>
+      <xsl:apply-templates/>
+    </p>
+  </div>
+</xsl:template>
 
 <!-- We do not want semicolon at the end of prototype and our own style
-     of square brackets for optional parameters -->
+     of square brackets for optional parameters. Make methodnames bold
+     like in DSSSL -->
 <xsl:template match="methodsynopsis">
   <xsl:apply-templates />
 </xsl:template>
@@ -44,7 +78,13 @@
 </xsl:template>
 
 <xsl:template match="methodsynopsis/void">
-  <xsl:text> (void)</xsl:text>
+  <xsl:text> ( void )</xsl:text>
+</xsl:template>
+
+<xsl:template match="methodsynopsis/methodname">
+  <b class="{local-name(.)}">
+    <xsl:copy-of select="$content"/>
+  </b>
 </xsl:template>
 
 <xsl:template match="methodparam/type">
@@ -90,6 +130,8 @@
 </xsl:template>
 
 
+
+<!--                  Tune different PAGE BLOCKS                  -->
 
 <!-- *************** TUNE PROGRAMLISTING DISPLAY **************** -->
 <!-- This is the same as in DocBook XSL verbatim.xsl, except
@@ -227,6 +269,10 @@
 </xsl:template>
 
 
+<!-- **************** ADMONITIONS STYLE ****************** -->
+<!-- We do not want style="" atts to appear in HTML output -->
+<xsl:param name="admon.style" select="''"/>
+
 
 <!-- *************** FOR TRANSLATORS LIST **************** -->
 <xsl:template match="collab" mode="titlepage.mode">
@@ -244,5 +290,6 @@
 <xsl:template match="collabname">
   <xsl:apply-templates/>
 </xsl:template>
+
 
 </xsl:stylesheet>
