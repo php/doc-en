@@ -55,7 +55,7 @@ errors in $filename.
 
 // Find entity names and URLs
 $schemes_preg = "(" . join("|", $schemes) . ")";
-preg_match_all("/<!ENTITY\s+(\S+)\s+([\"'])(({$schemes_preg})[^\"]+)\\2\s*>/U",
+preg_match_all("/<!ENTITY\s+(\S+)\s+([\"'])(({$schemes_preg})[^\\2]+)\\2\s*>/U",
     $file_string, $entities_found);
 
 // These are the useful parts
