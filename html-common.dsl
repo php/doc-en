@@ -377,10 +377,14 @@
       (gi))))
        (if (or indent line-numbers?)
    ($verbatim-line-by-line$ indent line-numbers?)
-   (process-children)))))
+   (process-children-trim)))))
     (if %shade-verbatim%
 (make element gi: "TABLE"
-      attributes: ($shade-verbatim-attr$)
+      attributes: (list 
+                   (list "BORDER" "0")
+                   (list "BGCOLOR" "#E0E0E0")
+                   (list "CELLPADDING" "5")
+                   )
       (make element gi: "TR"
     (make element gi: "TD"
   content)))
