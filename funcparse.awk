@@ -1,5 +1,8 @@
 BEGIN { parse=0; FS="[\"(,]"; }
 /^.*function_entry.*$/ { parse=1; }
+/^.*function_entry.*_class_functions.*$/ { parse=0; }
+/^.*function_entry.*OrbitStruct.*$/ { parse=0; }
+/^.*function_entry.*OrbitObject.*$/ { parse=0; }
 /^.*shutdown_function_entry.*$/ { parse=0; }
 /^.*\(function_entry.*$/ { parse=0; }
 /^.*function_entry \*ptr.*$/ { parse=0; }
