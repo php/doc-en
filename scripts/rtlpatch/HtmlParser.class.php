@@ -171,6 +171,9 @@ class CHtmlParse{
 	
 	
 	function CHtmlParse($data){
+		if(isset($this->ATE)) unset($this->ATE);
+		if(isset($this->EBT)) unset($this->EBT);
+		if(isset($this->ECE)) unset($this->ECE);
 		$this->len = strlen($data);
 		$this->data = $data;
 		$this->pos = 0;
@@ -179,14 +182,12 @@ class CHtmlParse{
 		
 		$this->map_all();
 		$this->end_map();
-//		var_dump($this);
 	}
 	
 	function map_all(){
-		
 		$this->move_to_next_notrim();
 		while($this->pos < $this->len){
-//debuginfo("pos is: ". $this->pos. ", character is: " .$this->data{$this->pos});
+//echo "\npos is: {$this->pos} character is: ".$this->data{$this->pos};
 			if($this->data{$this->pos} != "<"){
 				if ($x = $this->plaintext()) $this->map($x);
 			}else if(++$this->pos < $this->len){
@@ -195,12 +196,14 @@ class CHtmlParse{
 					$this->parse_decl();
 					//$this->map($this->parse_decl());
 				}else if($p == "/"){
+//echo "\nEnd\n";
 					$this->map($this->parse_end());
 					$this->pos++;
 				}else if($p == "?"){
+//echo "\nProccess\n";
 					$this->map($this->parse_process());
 				}else{
-//debuginfo("opening");
+//echo "\nElse\n";
 					$this->map($this->parse_start($endfl),$endfl);
 					$this->pos++;
 				}
@@ -210,12 +213,20 @@ class CHtmlParse{
 	}
 	
 	function parse_start(&$endfl){
-		global $HEType;
+		global $HEType,$EHType;
 		
 		//fining the <html> tag type:
 		$last = $this->pos;
 		$this->move_to_prop_end();
-		$return["w4htype"] = $HEType[strtolower(substr($this->data,$last,$this->pos-$last))];
+		$rt = strtolower(substr($this->data,$last,$this->pos-$last));
+		if(isset($HEType[$rt])) {
+			$return["w4htype"] = $HEType[$rt];
+		} else {
+			$tm  = time();
+			$HEType[$rt] = $tm;
+			$EHType[$tm] = $rt;
+			$return["w4htype"] = $HEType[$rt];
+		}
 		// looping till getting all the elements:
 		while(1){
 //debuginfo("pos is: ". $this->pos. ", character is: " .$this->data{$this->pos});
@@ -388,21 +399,14 @@ class CHtmlParse{
 		
 	function map(&$element,$endfl=0){
 		$type = $element["w4htype"];
-//debuginfo("<font color=blue>type: $type</font>");
-//debuginfo($element);
 		$this->NOE++;
 		$this->ATE[$this->NOE] = $element;
 		if($type>0) $this->EBT[$type][] = $this->NOE;
 		if($endfl){
-//echo "<font color=blue>type: $type</font>";
 			$this->ECE[$this->NOE] = $this->NOE;
 		}else if($type >= 10){
-//echo "<font color=blue>type: $type</font>";
 			$this->maptmp[$type][] = $this->NOE;
-//debuginfo($this->maptmp[$type]);
 		}else if($type <= -10){
-//mysyslog($type);
-//print_r($this->maptmp[-$type]);
 
 			if($id = @array_pop($this->maptmp[-$type])){
 				$this->ECE[$id] = $this->NOE;
@@ -411,7 +415,6 @@ class CHtmlParse{
 				$this->add_error("more  close tag (code $type) then open");
 			}
 		}
-//echo "<font color=green>";var_dump($this->maptmp);echo "</font>";
 	}
 	
 	function end_map(){
@@ -420,10 +423,6 @@ class CHtmlParse{
 		}
 		unset($this->maptmp);
 	}
-	
-	
-	
-	
 	
 	function add_error($msg,$level=0){
 		$this->errors[] = array("msg"=>$msg,"level"=>$level);
@@ -440,11 +439,6 @@ class CHtmlParse{
 			echo $this->errors[$a]["msg"]."\r\n<br>";
 		}
 	}
-	
-	
-	
-	
-	
 	
 	
 	// ----------------------------------------------------------
@@ -468,7 +462,6 @@ class CHtmlParse{
 			if (!is_html_trim($this->data{$this->pos})){
 //debuginfo($this->data{$this->pos});
 				if($this->data{$this->pos}==">"){
-//debuginfo("ahe be chigale me");
 					return -1; // standard html tag.
 				}else if($this->data{$this->pos} == "/"){
 					if (($this->pos+1 < $this->len) && ($this->data{$this->pos+1} == ">")){
