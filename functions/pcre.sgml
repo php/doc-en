@@ -1,0 +1,475 @@
+<reference id="ref.pcre">
+  <title>PCRE functions</title>
+  <titleabbrev>PCRE</titleabbrev>   
+
+  <partintro>
+   <para>
+    These functions are intended for work with Perl Compatible
+    Regular Expressions.
+
+   <para>
+    The syntax for patterns used in these functions  closely resembles
+    Perl. The expression should be enclosed in the delimiters, a
+    forward slash (/),  for example.  Any character can be used for
+    delimiter as long as it's not alphanumeric or backslash (\). If
+    the delimiter character has to be used in the expression itself,
+    it needs to be escaped by backslash.
+
+   <para>
+    The ending delimiter may be followed by various options that
+    affect the matching. 
+    See <link linkend="pattern.options">Pattern Options</link>.
+
+   <para>
+    <example>
+     <title>Examples of valid patterns</title>
+     <itemizedlist>
+      <listitem><simpara>/<\/\w+>/</listitem>
+      <listitem><simpara>|(\d{3})-\d+|Sm</listitem>
+      <listitem><simpara>/^(?i)php[34]/</listitem>
+     </itemizedlist>
+    </example>
+   
+   <para>
+    <example>
+     <title>Examples of invalid patterns</title>
+     <itemizedlist>
+      <listitem><simpara>/href='(.*)' - missing ending delimiter</listitem>
+      <listitem><simpara>/\w+\s*\w+/J - unknown option 'J'</listitem>
+      <listitem><simpara>1-\d3-\d3-\d4| - missing starting delimiter
+      </listitem>
+     </itemizedlist>
+    </example>
+  </partintro>
+  
+  <refentry id="function.preg-match">
+   <refnamediv>
+    <refname>preg_match</refname>
+    <refpurpose>Perform a regular expression match</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>preg_match</function></funcdef>
+     <paramdef>string <parameter>pattern</parameter></paramdef>
+     <paramdef>string <parameter>subject</parameter></paramdef>
+     <paramdef>array <parameter><optional>matches</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Searches <parameter>subject</parameter> for a match to the regular
+     expression given in <parameter>pattern</parameter>.
+
+    <para>
+     If <parameter>matches</parameter> is provided, then it is filled
+     with the results of search.  $matches[0] will contain the text that
+     match the full pattern, $matches[1] will have the text that matched
+     the first captured parenthesized subpattern, and so on.
+
+    <para>
+     Returns true if a match for <parameter>pattern</parameter> was
+     found in the subject string, or false if not match was found
+     or an error occurred.
+
+    <para>
+     <example>
+      <title>Getting the page number out of a string</title>
+      <programlisting>
+if (preg_match("/page\s+#(\d+)/i", "Go to page #9.", $parts))
+    print "Next page is $parts[1]";
+else
+    print "Page not found.";
+      </programlisting>
+     </example>
+
+     See also <function>preg_match_all</function>, 
+     <function>preg_replace</function>, and
+     <function>preg_split</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.preg-match-all">
+   <refnamediv>
+    <refname>preg_match_all</refname>
+    <refpurpose>Perform a global regular expression match</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>preg_match_all</function></funcdef>
+     <paramdef>string <parameter>pattern</parameter></paramdef>
+     <paramdef>string <parameter>subject</parameter></paramdef>
+     <paramdef>array <parameter>matches</parameter></paramdef>
+     <paramdef>int <parameter><optional>order</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Searches <parameter>subject</parameter> for all matches to the regular
+     expression given in <parameter>pattern</parameter> and puts them in
+     <parameter>matches</parameter> in the order specified by
+     <parameter>order</parameter>.
+
+    <para>
+     After the first match is found, the subsequent searches  are continued
+     on from end of the last match.
+
+    <para>
+     <parameter>order</parameter> can be one of two things:
+     <variablelist>
+      <varlistentry>
+       <term>PREG_PATTERN_ORDER</term>
+       <listitem>
+	<para>
+	 Orders results so that $matches[0] is an array of full
+	 pattern matches, $matches[1] is an array of strings matched by
+	 the first parenthesized subpattern, and so on.
+
+	 <informalexample>
+	  <programlisting>
+preg_match_all("|&lt;[^>]+>(.*)&lt;/[^>]+>|U", "&lt;div align=left>a test&lt;/div>", $out, PREG_PATTERN_ORDER);
+print $out[0][0].", ".$out[0][1]."\n";
+print $out[1][0].", ".$out[1][1]."\n"
+	  </programlisting>
+	 </informalexample>
+
+	 This example will produce:
+	 <informalexample>
+	  <programlisting>
+&lt;b>example: &lt/b>, &lt;div align=left>this is a test&lt;/div>
+example: , this is a test
+	  </programlisting>
+	 </informalexample>
+
+	 So, $out[0] contains array of strings that matched full pattern,
+	 and $out[1] contains array of strings enclosed by tags.
+       </listitem>
+      </varlistentry>
+      <varlistentry>
+       <term>PREG_SET_ORDER</term>
+       <listitem>
+	<para>
+	 Orders results so that $matches[0] is an array of first set
+	 of matches, $matches[1] is an array of second set of matches,
+	 and so on.
+
+	 <informalexample>
+	  <programlisting>
+preg_match_all("|&lt;[^>]+>(.*)&lt;/[^>]+>|U", "&lt;div align=left>a test&lt;/div>", $out, PREG_SET_ORDER);
+print $out[0][0].", ".$out[0][1]."\n";
+print $out[1][0].", ".$out[1][1]."\n"
+	  </programlisting>
+	 </informalexample>
+
+	 This example will produce:
+	 <informalexample>
+	  <programlisting>
+&lt;b>example: &lt;/b>, example: 
+&lt;div align=left>this is a test&lt;/div>, this is a test
+	  </programlisting>
+	 </informalexample>
+
+	 In this case, $matches[0] is the first set of matches, and
+	 $matches[0][0] has text matched by full pattern, $matches[0][1]
+	 has text matched by first subpattern and so on.  Similarly,
+	 $matches[1] is the second set of matches, etc.
+       </listitem>
+      </varlistentry>
+     </variablelist>
+
+    <para>
+     If <parameter>order</parameter> is not specified, it is assumed
+     to be PREG_PATTERN_ORDER.
+
+    <para>
+     Returns the number of full pattern matches, or false if
+     no match is found or an error occurred.
+
+    <para>
+     <example>
+      <title>Getting all phone numbers out of some text.</title>
+      <programlisting>
+preg_match_all("/\(?  (\d{3})?  \)?  (?(1)  [\-\s] ) \d{3}-\d{4}/x",
+               "Call 555-1212 or 1-800-555-1212", $phones);
+      </programlisting>
+     </example>
+
+    <simpara>
+     See also <function>preg_match</function>,
+     <function>preg_replace</function>,
+     and <function>preg_split</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.preg-replace">
+   <refnamediv>
+    <refname>preg_replace</refname>
+    <refpurpose>Perform a regular expression search and replace</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>mixed <function>preg_replace</function></funcdef>
+     <paramdef>mixed <parameter>pattern</parameter></paramdef>
+     <paramdef>mixed <parameter>replacement</parameter></paramdef>
+     <paramdef>mixed <parameter>subject</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Searches <parameter>subject</parameter> for matches to <parameter>
+     pattern</parameter> and replaces them with <parameter>replacement
+     </parameter>.
+
+    <para>
+     <parameter>replacement</parameter> may contain references of the form
+     <literal>\\<replaceable>n</replaceable></literal>.  Every such
+     reference will be replaced by the text captured by the
+     <replaceable>n</replaceable>'th parenthesized pattern.  <replaceable>n
+     </replaceable>can be from 0 to 99, and <literal>\\0</literal> refers to
+     the text matched by the whole pattern. Opening parentheses are
+     counted from left to right (starting from 1) to obtain the number
+     of the capturing subpattern.
+
+    <para>
+     If no matches are found in <parameter>subject</parameter>, then
+     it will be returned unchanged.
+    
+    <para>
+     Every parameter to <function>preg_replace</function> can be an array.
+
+    <para>
+     If <parameter>subject</parameter> is an array, then the search and
+     replace is performed on every entry of <parameter>subject</parameter>,
+     and the return value is an array as well.
+
+    <para>
+     If <parameter>pattern</parameter> and <parameter>replacement</parameter>
+     are arrays, then <function>preg_replace</function> takes a value from
+     each array and uses them to do search and replace on
+     <parameter>subject</parameter>.  If <parameter>replacement</parameter>
+     has fewer values than <parameter>pattern</parameter>, then empty string
+     is used for the rest of replacement values.  If <parameter>pattern
+     </parameter> is an array and <parameter>replacement</parameter> is a
+     string; then this replacement string is used for every value of
+     <parameter>pattern</parameter>.  The converse would not make sense,
+     though.
+
+    <para>
+     <example>
+      <title>Replacing several values</title>
+      <programlisting>
+$patterns = array("/(19|20\d{2})-(\d{1,2})-(\d{1,2})/", "/^\s*{(\w+)}\s*=/");
+$replace = array("\\3/\\4/\\1", "$\\1 =");
+print preg_replace($patterns, $replace, "{startDate} = 1999-5-27");
+      </programlisting>
+     </example>
+
+     This example will produce:
+
+     <programlisting>
+      $startDate = 5/27/1999
+     </programlisting>
+
+     See also <function>preg_match</function>,
+     <function>preg_match_all</function>, and
+     <function>preg_split</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.preg-split">
+   <refnamediv>
+    <refname>preg_split</refname>
+    <refpurpose>Split string by a regular expression</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array preg_split</funcdef>
+     <paramdef>string <parameter>pattern</parameter></paramdef>
+     <paramdef>string <parameter>subject</parameter></paramdef>
+     <paramdef>int <parameter><optional>limit</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an array containing substrings of <parameter>subject</parameter>
+     split along boundaries matched by <parameter>pattern</parameter>.
+
+    <para>
+     If <parameter>limit</parameter> is specified, then only substrings
+     up to <parameter>limit</parameter> are returned.
+
+    <para>
+     <example>
+      <title>Getting parts of search string</title>
+      <programlisting>
+$keywords = preg_split("/[\s,]+/", "hypertext language, programming");
+      </programlisting>
+     </example>
+
+     See also <function>preg_match</function>,
+     <function>preg_match_all</function>, and
+     <function>preg_replace</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="pattern.options">
+   <refnamediv>
+    <refname>Pattern Options</refname>
+    <refpurpose>describes possible options in regex
+     patterns</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <para>
+     The current possible PCRE options are listed below.  The names in
+     parentheses refer internal PCRE names for these options.
+
+    <para>
+     <blockquote>
+      <variablelist>
+       <varlistentry>
+	<term><emphasis>i</emphasis> (PCRE_CASELESS)</term>
+	<listitem>
+	 <simpara>
+	  If this option is set, letters in the pattern match both
+	  upper and lower case letters.
+	</listitem>
+       </varlistentry>
+       
+       <varlistentry>
+	<term><emphasis>m</emphasis> (PCRE_MULTILINE)</term>
+	<listitem>
+	 <simpara>
+	  By default, PCRE treats the subject string as consisting of a
+	  single "line" of characters (even if it actually contains
+	  several newlines). The "start of line" metacharacter (^)
+	  matches only at the start of the string, while the "end of
+	  line" metacharacter ($) matches only at the end of the
+	  string, or before a terminating newline (unless
+	  <emphasis>E</emphasis> option is set). This is the same as
+	  Perl.
+	  
+	 <simpara>
+	  When this option is set, the "start of line" and "end of
+	  line" constructs match immediately following or immediately
+	  before any newline in the subject string, respectively, as
+	  well as at the very start and end. This is equivalent to
+	  Perl's /m option. If there are no "\n" characters in a
+	  subject string, or no occurrences of ^ or $ in a pattern,
+	  setting this option has no effect.
+	</listitem>
+       </varlistentry>
+       
+       <varlistentry>
+	<term><emphasis>s</emphasis> (PCRE_DOTALL)</term>
+	<listitem>
+	 <simpara>
+	  If this option is set, a dot metacharater in the pattern
+	  matches all characters, including newlines. Without it,
+	  newlines are excluded. This option is equivalent to Perl's
+	  /s option.  A negative class such as [^a] always matches a
+	  newline character, independent of the setting of this
+	  option.
+	</listitem>
+       </varlistentry>
+      
+       <varlistentry>
+	<term><emphasis>x</emphasis> (PCRE_EXTENDED)</term>
+	<listitem>
+	 <simpara>
+	  If this option is set, whitespace data characters in the
+	  pattern are totally ignored except when escaped or inside a
+	  character class, and characters between an unescaped #
+	  outside a character class and the next newline character,
+	  inclusive, are also ignored. This is equivalent to Perl's /x
+	  option, and makes it possible to include comments inside
+	  complicated patterns. Note, however, that this applies only
+	  to data characters. Whitespace characters may never appear
+	  within special character sequences in a pattern, for example
+	  within the sequence (?( which introduces a conditional
+	  subpattern.
+	</listitem>
+       </varlistentry>
+
+       <varlistentry>
+	<term><emphasis>A</emphasis> (PCRE_ANCHORED)</term>
+	<listitem>
+	 <simpara>
+	  If this option is set, the pattern is forced to be
+	  "anchored", that is, it is constrained to match only at the
+	  start of the string which is being searched (the "subject
+	  string").  This effect can also be achieved by appropriate
+	  constructs in the pattern itself, which is the only way to
+	  do it in Perl.
+	</listitem>
+       </varlistentry>
+
+       <varlistentry>
+	<term><emphasis>E</emphasis> (PCRE_DOLLAR_ENDONLY)</term>
+	<listitem>
+	 <simpara>
+	  If this option is set, a dollar metacharacter in the pattern
+	  matches only at the end of the subject string. Without this
+	  option, a dollar also matches immediately before the final
+	  character if it is a newline (but not before any other
+	  newlines).  This option is ignored if <emphasis>m</emphasis>
+	  option is set. There is no equivalent to this option in
+	  Perl.
+	</listitem>
+       </varlistentry>
+
+       <varlistentry>
+	<term><emphasis>S</emphasis></term>
+	<listitem>
+	 <simpara>
+	  When a pattern is going to be used several times, it is
+	  worth spending more time analyzing it in order to speed up
+	  the time taken for matching. If this option is set, then
+	  this extra analysis is performed. At present, studying a
+	  pattern is useful only for non-anchored patterns that do not
+	  have a single fixed starting character.
+	</listitem>
+       </varlistentry>
+
+       <varlistentry>
+	<term><emphasis>U</emphasis> (PCRE_UNGREEDY)</term>
+	<listitem>
+	 <simpara>
+	  This option inverts the "greediness" of the quantifiers so
+	  that they are not greedy by default, but become greedy if
+	  followed by "?". It is not compatible with Perl. It can also
+	  be set by a (?U) option setting within the pattern.
+	</listitem>
+       </varlistentry>
+
+       <varlistentry>
+	<term><emphasis>X</emphasis> (PCRE_EXTRA)</term>
+	<listitem>
+	 <simpara>
+	  This option turns on additional functionality of PCRE that
+	  is incompatible with Perl. Any backslash in a pattern that
+	  is followed by a letter that has no special meaning causes
+	  an error, thus reserving these combinations for future
+	  expansion. By default, as in Perl, a backslash followed by a
+	  letter with no special meaning is treated as a literal.
+	  There are at present no other features controlled by this
+	  option.
+	</listitem>
+       </varlistentry>
+      </variablelist>
+     </blockquote>
+   </refsect1>
+  </refentry>
+</reference>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->

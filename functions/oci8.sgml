@@ -1,0 +1,447 @@
+
+ <reference id="ref.oci8">
+  <title>Oracle 8 functions</title>
+  <titleabbrev>OCI8</titleabbrev>
+  <partintro>
+   <simpara>
+	These functions allow you to access Oracle8 and Oracle7 databases. It
+	uses the Oracle8 Call-Interface (OCI8). You will need the Oracle8 client
+	libraries to use this driver.
+   <simpara>
+	This driver is more flexible that the normal PHP3 Ora_ driver. It supports
+	binding of global and local PHP3 variables to Oracle placeholders, has 
+	full LOB, FILE and ROWID support and allows you to use user-supplied define 
+	variables.
+  </partintro>
+	
+<!--
+
+OCIBindByName
+OCIDefineByName
+OCIColumnIsNULL
+OCIColumnName
+OCIColumnSize
+OCIColumnType
+OCIExecute
+OCIFetch
+OCIFetchInto
+OCIInternalDebug
+OCILogoff
+OCILogon
+OCIError
+OCICommit
+OCIRollback
+OCINewDescriptor
+OCIRowCount
+OCINumCols
+OCIParse
+OCIResult
+OCIServerVersion
+OCIStatementType
+-->
+
+  <refentry id="function.ocidefinebyname">
+   <refnamediv>
+    <refname>OCIDefineByName</refname>
+    <refpurpose>Use a PHP variable for the define-step during a SELECT</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIDefineByName</function></funcdef>
+     <paramdef>int <parameter>stmt</parameter></paramdef>
+     <paramdef>string <parameter>Column-Name</parameter></paramdef>
+     <paramdef>mixed &<parameter>variable</parameter></paramdef>
+     <paramdef>int <parameter><optional>type</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIDefineByName</function> uses fetches SQL-Columns
+     into user-defined PHP-Variables. Be careful that Oracle user
+     ALL-UPPERCASE column-names, whereby in your select you can also
+     write lower-case. <function>OCIDefineByName</function> expects
+     the <parameter>Column-Name</parameter> to be in uppercase. If you
+     define a variable that doesn't exists in you select statement, no
+     error will be given!
+    </para>
+    <para>
+     If you need to define an abstract Datatype (LOB/ROWID/BFILE) you
+     need to allocate it first using
+     <function>OCINewDescriptor</function> function. See also the
+     <function>OCIBindByName</function> function.
+    </para>
+     <example>
+      <title>OCIDefineByName</title>
+      <programlisting>
+&lt;?php
+/* OCIDefineByPos example thies@digicol.de (980219) */
+
+$conn = OCILogon("scott","tiger");
+
+$stmt = OCIParse($conn,"select empno, ename from emp");
+
+/* the define MUST be done BEFORE ociexecute! */
+
+OCIDefineByName($stmt,"EMPNO",&$empno);
+OCIDefineByName($stmt,"ENAME",&$ename);
+
+OCIExecute($stmt);
+
+while (OCIFetch($stmt)) {
+    echo "empno:".$empno."\n";
+    echo "ename:".$ename."\n";
+}
+
+OCIFreeStatement($stmt);
+OCILogoff($conn);
+?></programlisting></example>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocibindbyname">
+   <refnamediv>
+    <refname>OCIBindByName</refname>
+    <refpurpose>Bind a PHP variable to an Oracle Placeholder</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIBindByName</function></funcdef>
+     <paramdef>int <parameter>stmt</parameter></paramdef>
+     <paramdef>string <parameter>ph_name</parameter></paramdef>
+     <paramdef>mixed &<parameter>variable</parameter></paramdef>
+     <paramdef>int<parameter>length</parameter></paramdef>
+     <paramdef>int <parameter><optional>type</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIBindByName</function> binds the PHP variable
+     <parameter>variable</parameter> to the Oracle placeholder
+     <parameter>ph_name</parameter>.  Whether it will be used for
+     input or output will be determined run-time, and the necessary
+     storage space will be allocated. The
+     <parameter>length</parameter> paramter sets the maximum length
+     for the bind. If you set <parameter>length</parameter> to -1
+     <function>OCIBindByName</function> will use the current length of
+     <parameter>variable</parameter> to set the maximum length.
+    </para>
+    <para>
+     If you need to bind an abstract Datatype (LOB/ROWID/BFILE) you
+     need to allocate it first using
+     <function>OCINewDescriptor</function> function. The
+     <parameter>length</parameter> is not used for abstract Datatypes
+     and should be set to -1. The <parameter>type</parameter> variable
+     tells oracle, what kind of descriptor we want to use. Possible
+     values are: OCI_B_FILE (Binary-File), OCI_B_CFILE
+     (Character-File), OCI_B_CLOB (Character-LOB), OCI_B_BLOB
+     (Binary-LOB) and OCI_B_ROWID (ROWID).
+    </para>
+     <example>
+      <title>OCIDefineByName</title>
+      <programlisting>
+&lt;?php
+/* OCIBindByPos example thies@digicol.de (980221)
+
+  inserts 3 resords into emp, and uses the ROWID for updating the 
+  records just after the insert.
+*/
+
+$conn = OCILogon("scott","tiger");
+
+$stmt = OCIParse($conn,"insert into emp (empno, ename) ".
+					   "values (:empno,:ename) ".
+					   "returning ROWID into :rid");
+
+$data = array(1111 => "Larry", 2222 => "Bill", 3333 => "Jim");
+
+$rowid = OCINewDescriptor($conn,OCI_D_ROWID);
+
+OCIBindByName($stmt,":empno",&$empno,32);
+OCIBindByName($stmt,":ename",&$ename,32);
+OCIBindByName($stmt,":rid",&$rowid,-1,OCI_B_ROWID);
+
+$update = OCIParse($conn,"update emp set sal = :sal where ROWID = :rid");
+OCIBindByName($update,":rid",&$rowid,-1,OCI_B_ROWID);
+OCIBindByName($update,":sal",&$sal,32);
+
+$sal = 10000;
+
+while (list($empno,$ename) = each($data)) {
+	OCIExecute($stmt);
+	OCIExecute($update);
+} 
+
+$rowid->free();
+
+OCIFreeStatement($update);
+OCIFreeStatement($stmt);
+
+$stmt = OCIParse($conn,"select * from emp where empno in (1111,2222,3333)");
+OCIExecute($stmt);
+while (OCIFetchInto($stmt,&$arr,OCI_ASSOC)) {
+	var_dump($arr);
+}
+OCIFreeStatement($stmt);
+
+/* delete our "junk" from the emp table.... */
+$stmt = OCIParse($conn,"delete from emp where empno in (1111,2222,3333)");
+OCIExecute($stmt);
+OCIFreeStatement($stmt);
+
+OCILogoff($conn);
+?></programlisting></example>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocilogon">
+   <refnamediv>
+    <refname>OCILogon</refname>
+    <refpurpose>Establishes a connection to Oracle</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCILogon</function></funcdef>
+     <paramdef>string <parameter>username</parameter></paramdef>
+     <paramdef>string <parameter>password</parameter></paramdef>
+     <paramdef>string <parameter><optional>OCACLE_SID</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCILogon</function> returns an connection identified
+	 needed for most other OCI calls.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocilogoff">
+   <refnamediv>
+    <refname>OCILogOff</refname>
+    <refpurpose>Disconnects from Oracle</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCILogOff</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCILogOff</function> closes an Oracle connection.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ociexecute">
+   <refnamediv>
+    <refname>OCIExecute</refname>
+    <refpurpose>Execute a statement</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIExecute</function></funcdef>
+     <paramdef>int <parameter>statement</parameter></paramdef>
+     <paramdef>int <parameter><optional>mode</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIExecute</function> executes a previously parsed statement. 
+	 (see <function>OCIParse</function>). The optional <parameter>mode</parameter>
+	 allows you to specify the execution-mode (default is OCI_COMMIT_ON_SUCCESS). 
+	 If you don't want statements to be commited automaticly specify OCI_DEFAULT as 
+	 your mode.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocicommit">
+   <refnamediv>
+    <refname>OCICommit</refname>
+    <refpurpose>Commits outstanding transactions</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCICommit</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCICommit</function> commits all outstanding statements for
+	 Oracle connection <parameter>connection</parameter>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocirollback">
+   <refnamediv>
+    <refname>OCIRollback</refname>
+    <refpurpose>Rolls back outstanding transactions</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIRollback</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCICommit</function> rolls back all outstanding statements for
+	 Oracle connection <parameter>connection</parameter>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocinumrows">
+   <refnamediv>
+    <refname>OCINumRows</refname>
+    <refpurpose>Gets the number of affectend rows</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCINumRows</function></funcdef>
+     <paramdef>int <parameter>statement</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCINumRows</function> returns the number of rows affected
+	 for eg update-statements. This funtions will not tell you the number
+	 of rows that a select will return!
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ociresult">
+   <refnamediv>
+    <refname>OCIResult</refname>
+    <refpurpose>Returns coulumn value for fetched row</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIResult</function></funcdef>
+     <paramdef>int <parameter>statement</parameter></paramdef>
+     <paramdef>mixed <parameter>column</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIResult</function> returns the data for column 
+	 <parameter>column</parameter> in the current row (see 
+	 <function>OCIFetch</function>).<function>OCIResult</function> will
+	 return everything as strings except for abstract types (ROWIDs, LOBs and FILEs).
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocifetch">
+   <refnamediv>
+    <refname>OCIFetch</refname>
+    <refpurpose>Fetches the next row into result-buffer</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIFetch</function></funcdef>
+     <paramdef>int <parameter>statement</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIFetch</function> fetches the next row (for SELECT statements)
+	 into the internal result-buffer.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocifetchinto">
+   <refnamediv>
+    <refname>OCIFetchInto</refname>
+    <refpurpose>Fetches the next row into result-array</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIFetchInto</function></funcdef>
+     <paramdef>array &<parameter>result</parameter></paramdef>
+     <paramdef>int <parameter><optional>mode</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIFetchInto</function> fetches the next row (for SELECT statements)
+	 into the <parameter>result</parameter> array. <function>OCIFetchInto</function>
+	 will overwrite the previous content of <parameter>result</parameter>. By default 
+	 <parameter>result</parameter> will contain a one-based array of all columns 
+	 that are not NULL.
+    </para>
+	<para>
+	 The <parameter>mode</parameter> parameter allows you to change the default 
+	 behaviour. You can specify more than one flag by simply addig them up 
+	 (eg OCI_ASSOC+OCI_RETURN_NULLS). The known flags are:
+
+     <simplelist>
+      <member><literal>OCI_ASSOC</literal> Return an associative array.</member>
+      <member><literal>OCI_NUM</literal> Return an numbered array 
+	   starting with one. (DEFAULT)</member>
+      <member><literal>OCI_RETURN_NULLS</literal> Return empty columns.</member>
+      <member><literal>OCI_RETURN_LOBS</literal> Return the value of a LOB instead of the desxriptor.</member>
+     </simplelist>
+
+	</para>
+	<para>
+	</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocicolumnisnull">
+   <refnamediv>
+    <refname>OCIColumnIsNULL</refname>
+    <refpurpose>test whether a result column is NULL</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIColumnIsNULL</function></funcdef>
+     <paramdef>int <parameter>stmt</parameter></paramdef>
+     <paramdef>mixed <parameter>column</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIColumnIsNULL</function> returns true if the returned
+     column <parameter>col</parameter> in the result from the
+     statement <parameter>stmt</parameter> is NULL. You can either use
+	 the column-number (1-Based) or the column-name for the <parameter>col</parameter>
+	 parameter.
+    </para>
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ocicolumnsize">
+   <refnamediv>
+    <refname>OCIColumnSize</refname>
+    <refpurpose>return result column size</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIColumnSize</function></funcdef>
+     <paramdef>int <parameter>stmt</parameter></paramdef>
+     <paramdef>mixed <parameter>column</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIColumnSize</function> returns the size of the column
+     as given by Oracle. You can either use
+	 the column-number (1-Based) or the column-name for the <parameter>col</parameter>
+	 parameter.
+    </para>
+   </refsect1>
+  </refentry>
+
+ </reference>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->

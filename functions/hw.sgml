@@ -1,0 +1,1639 @@
+ <reference id="ref.hyperwave">
+  <title>Hyperwave functions</title>
+  <titleabbrev>Hyperwave</titleabbrev>
+
+  <partintro>
+
+   <sect1 id="hw-intro">
+    <title>Introduction</title>
+    <para>
+     <productname>Hyperwave</productname> has been developed at <ulink
+     url="http://www.iicm.edu">IICM</ulink> in Graz. It started with
+     the name <acronym>Hyper-G</acronym> and changed to Hyperwave when
+     it was commercialised (If I remember properly it was in 1996).
+    <para>
+     Hyperwave is not free software. The current version, 4.1, is
+     available at <ulink
+     url="http://www.hyperwave.com/">www.hyperwave.com</ulink>.  A
+     time limited version can be ordered for free (30 days).
+    <para>
+     Hyperwave is an information system similar to a database
+     (<acronym>HIS</acronym>, Hyperwave Information Server). Its focus
+     is the storage and management of documents. A document can be any
+     possible piece of data that may as well be stored in file. Each
+     document is accompanied by its object record. The object record
+     contains meta data for the document. The meta data is a list of
+     attributes which can be extended by the user. Certain attributes
+     are always set by the Hyperwave server, other may be modified by
+     the user. An attribute is a name/value pair of the form name=value.
+     The complete object record contains as many of those pairs as the
+     user likes. The name of an attribute does not have to be unique,
+     e.g. a title may appear several times within an object record.
+     This makes sense if you want to specify a title in several languages.
+     In such a case there is a convention, that each title value is
+     preceded by the two letter language abbreviation followed by a colon,
+     e.g. 'en:Title in English' or 'ge:Titel in deutsch'. Other attributes
+     like a description or keywords are potential candidates. You may
+     also replace the language abbreviation by any other string as long
+     as it separated by colon from the rest of the attribute value.
+    <para>
+     Each object record has native a string representation with each
+     name/value
+     pair separated by a newline. The PHP3 Hyperwave module also knows
+     a second representation which is an associated array with the
+     attribute name being the key. Multilingual attribute values itself
+     form another associated array with the key being the language
+     abbreviation. Actually any multiple attribute forms an associated
+     array with the string left to the colon in the attribute value
+     being the key. (This is not fully implemented. Only the attributes
+     Title, Description and Keyword are treated properly yet.)
+    <para>
+     Besides the documents, all hyper links contained in a document
+     are stored as object records as well. Hyper links which
+     are in a document will be removed from it and stored as individual
+     objects, when the document is inserted into the database.
+     The object record of the link contains information
+     about where it starts and where it ends.
+     In order to gain the original document you will have
+     to retrieve the plain document without the links and the list
+     of links and reinsert them (The functions
+     <function>hw_pipedocument</function> and <function>hw_gettext</function>
+     do this for you. The advantage of separating links
+     from the document is obvious. Once a document to which a link
+     is pointing to changes its name, the link can easily be modified
+     accordingly. The document containing the link is not affected
+     at all. You may even add a link to a document without modifying
+     the document itself.
+    <para>
+     Saying that <function>hw_pipedocument</function> and
+     <function>hw_gettext</function> do the link insertion automatically
+     is not as simple as it sounds. Inserting links implies a certain
+     hierarchy of the documents. On a web server this is given by the
+     file system, but Hyperwave has its own hierarchy and names do not
+     reflect the position of an object in that hierarchy. Therefore
+     creation of links first of all requires a mapping from the Hyperwave
+     hierarchy and namespace into a web hierarchy respective web namespace.
+     The fundamental difference between Hyperwave and the web is the clear
+     distinction between names and hierarchy in Hyperwave. The name does
+     not contain any information about the objects position in the hierarchy.
+     In the web the
+     name also contains the information on where the object is located
+     in the hierarchy. This leads to two possibles ways of mapping. Either
+     the Hyperwave hierarchy and name of the Hyperwave object is reflected
+     in the URL or the name only.
+     To make things simple the second approach is used.
+     Hyperwave object with name 'my_object' is mapped to
+     'http://host/my_object' disregarding where it resides in the
+     Hyperwave hierarchy.
+     An object with name 'parent/my_object' could be the child of
+     'my_object' in the Hyperwave hierarchy, though in a web namespace it
+     appears to be just the opposite and the user might get confused. 
+     This can only be prevented by selecting reasonable object names.
+    <para>
+     Having made this decision a second problem arises. How do you
+     involve php3? The URL http://host/my_object will not call any
+     php3 script unless you tell your web server to rewrite it to
+     e.g. 'http://host/php3_script/my_object' and the script 'php3_script'
+     evaluates the $PATH_INFO variable and retrieves the object with
+     name 'my_object' from the Hyperwave server. Their is just one little
+     drawback which can be fixed easily. Rewriting any URL would not allow
+     any access to other document on the web server. A php3 script for
+     searching in the Hyperwave server would be impossible. Therefore
+     you will need at least a second rewriting rule to exclude certain
+     URLS like all e.g. starting with http://host/Hyperwave. This is
+     basically sharing of a namespace by the web and Hyperwave server.
+    <para>
+     Based on the above mechanism links are insert into documents.
+    <para>
+     It gets more complicated if php3 is not run as a module/CGI script
+     but as a standalone application e.g. to dump the content of the
+     Hyperwave server on a CD-ROM. In such a case it makes sense to
+     retain the Hyperwave hierarchy and map in onto the file system. This
+     conflicts with the object names if they reflect its own hierarchy
+     (e.g. by choosing names including '/'). Therefore '/' has to be
+     replaced by another character, e.g. '_'. to be continued.
+    <para>
+     The network protocol to communicate with the Hyperwave server is
+     called <ulink
+     url="http://www.hyperwave.de/hg-csp-0xc31b08d4">HG-CSP</ulink>
+     (Hyper-G Client/Server Protocol). It is based on messages to
+     initiate certain actions, e.g. get object record.  In early
+     versions of the Hyperwave Server two native clients (Harmony,
+     Amadeus) were provided for communication with the server. Those
+     two disappeared when Hyperwave was commercialised.  As a
+     replacement a so called wavemaster was provided. The wavemaster
+     is like a protocol converter from <abbrev>HTTP</abbrev> to
+     <abbrev>HG-CSP</abbrev>.  The idea is to do all the
+     administration of the database and visualisation of documents by
+     a web interface.  The wavemaster implements a set of placeholders
+     for certain actions to customise the interface. This set of
+     placeholders is called the <abbrev>PLACE</abbrev> Language.
+     <abbrev>PLACE</abbrev> lacks a lot of features of a real
+     programming language and any extension to it only enlarges the
+     list of placeholders. This has led to the use of JavaScript which
+     IMO does not make life easier.
+
+    <para>
+     Adding Hyperwave support to PHP3 should fill in the gap of a
+     missing programming language for interface customisation.  It
+     implements all the messages as defined by the
+     <abbrev>HG-CSP</abbrev> but also provides more powerful commands
+     to e.g. retrieve complete documents.
+
+    <para>
+     Hyperwave has its own terminology to name certain pieces of
+     information. This has widely been taken over and extended.
+     Almost all functions operate on one of the following data types.
+
+     <itemizedlist>
+      <listitem><simpara>
+	object ID: An unique integer value for each object in the
+	Hyperwave server. It is also one of the attributes of the
+	object record (ObjectID). Object ids are often used as an
+	input parameter to specify an object.
+       </simpara></listitem>
+      <listitem><simpara>
+	object record: A string with attribute-value pairs of the form
+	attribute=value. The pairs are separated by a carriage return
+	from each other. An object record can easily be converted into
+	an object array with <function>hw_object2array</function>.
+	Several functions return object records.  The names of those
+	functions end with obj.
+       </simpara></listitem> 
+      <listitem><simpara>
+	object array: An associated array with all attributes of an
+	object. The key is the attribute name. If an attribute occurs
+	more than once in an object record it will result in another
+	indexed or associated array. Attributes which are language
+	depended (like the title, keyword, description) will form an
+	associated array with the key set to the language
+	abbreviation. All other multiple attributes will form an
+	indexed array. php3 functions never return object arrays.
+       </simpara></listitem>
+      <listitem><simpara>
+	hw_document: This is a complete new data type which holds the
+	actual document, e.g. HTML, PDF etc. It is somewhat optimised
+	for HTML documents but may be used for any format.
+       </simpara></listitem>
+     </itemizedlist>
+     
+    <para>
+     Several functions which return an array of object records do also
+     return an associated array with statistical information about
+     them. The array is the last element of the object record
+     array. The statistical array contains the following entries:
+     <variablelist>
+      <varlistentry>
+       <term>Hidden</term>
+       <listitem><simpara>
+	 Number of object records with attribute PresentationHints
+	 set to Hidden.
+      </varlistentry>
+      <varlistentry>
+       <term>CollectionHead</term>
+       <listitem><simpara>
+	 Number of object records with attribute
+	 PresentationHints set to CollectionHead.
+      </varlistentry>
+      <varlistentry>
+       <term>FullCollectionHead</term>
+       <listitem><simpara>
+	 Number of object records with attribute
+	 PresentationHints set to FullCollectionHead.
+      </varlistentry>
+      <varlistentry>
+       <term>CollectionHeadNr</term>
+       <listitem><simpara>
+	 Index in array of object records with
+	 attribute PresentationHints set to CollectionHead.
+      </varlistentry>
+      <varlistentry>
+       <term>FullCollectionHeadNr</term>
+       <listitem><simpara>
+	 Index in array of object records with
+	 attribute PresentationHints set to FullCollectionHead.
+      </varlistentry>
+      <varlistentry>
+       <term>Total</term>
+       <listitem><simpara>
+	 Total: Number of object records.
+      </varlistentry>
+     </variablelist>
+   </sect1>
+
+   <sect1 id="hw-apache">
+    <title>Integration with Apache</title>
+    <para>
+     The Hyperwave module is best used when PHP3 is compiled as an
+     apache module. In such a case the underlying Hyperwave server can
+     be hidden from users almost completely if apache uses its
+     rewriting engine. The following instructions will explain this.
+
+    <para>
+     Since PHP3 with Hyperwave support build into apache is intended
+     to replace the native Hyperwave solution based on wavemaster I
+     will assume that the apache server will only serve as a Hyperwave
+     web interface. This is not necessary but it simplifies the
+     configuration.  The concept is quite simple. First of all you
+     need a PHP3 script which evaluates the <envar>PATH_INFO</envar>
+     variable and treats its value as the name of a Hyperwave
+     object. Let's call this script 'Hyperwave'.  The URL <systemitem
+     role="url">http://your.hostname/Hyperwave/name_of_object</systemitem>
+     would than return the Hyperwave object with the name
+     'name_of_object'. Depending on the type of the object the script
+     has to react accordingly. If it is a collection, it will probably
+     return a list of children. If it is a document it will return the
+     mime type and the content. A slight improvement can be achieved
+     if the apache rewriting engine is used.  From the users point of
+     view it would be more straight forward if the URL <systemitem
+     role=url>http://your.hostname/name_of_object</systemitem> would
+     return the object.  The rewriting rule is quite easy:
+
+     <informalexample><programlisting role="apache-conf">
+RewriteRule ^/(.*) /usr/local/apache/htdocs/HyperWave/$1 [L]
+</programlisting></informalexample>
+
+     Now every URL relates to an object in the Hyperwave server. This
+     causes a simple to solve problem. There is no way to execute a
+     different script, e.g. for searching, than the 'Hyperwave'
+     script.  This can be fixed with another rewriting rule like the
+     following:
+
+     <informalexample><programlisting role="apache-conf">
+RewriteRule ^/hw/(.*) /usr/local/apache/htdocs/hw/$1 [L]
+</programlisting></informalexample>
+
+     This will reserve the directory <filename
+     class="directory">/usr/local/apache/htdocs/hw</filename> for
+     additional scripts and other files. Just make sure this rule is
+     evaluated before the one above. There is just a little drawback:
+     all Hyperwave objects whose name starts with 'hw/' will be
+     shadowed. So, make sure you don't use such names. If you need
+     more directories, e.g. for images just add more rules or place
+     them all in one directory.  Finally, don't forget to turn on the
+     rewriting engine with
+
+     <informalexample><programlisting role="apache-conf">
+RewriteEngine on
+</programlisting></informalexample>
+
+     My experiences have shown that you will need the following
+     scripts:
+
+     <itemizedlist>
+       <listitem><simpara>
+	to return the object itself
+       <listitem><simpara>
+	to allow searching
+       <listitem><simpara>
+	to identify yourself
+       <listitem><simpara>
+	to set your profile
+       <listitem><simpara>
+	one for each additional function like to show
+	the object attributes, to show information about users,
+	to show the status of the server, etc.
+     </itemizedlist>
+   </sect1>
+
+   <sect1 id="hw-todo">
+    <title>Todo</title>
+    <para>
+     There are still some things todo:
+     <itemizedlist>
+      <listitem><simpara>The hw_InsertDocument has to be split into
+	<function>hw_InsertObject</function> and
+	<function>hw_PutDocument</function>.</simpara></listitem>
+      <listitem><simpara>The names of several functions are not fixed, yet.
+       </simpara></listitem>
+      <listitem><simpara>Most functions require the current connection
+	as its first parameter. This leads to a lot of typing, which
+	is quite often not necessary if there is just one open
+	connection. A default connection will
+	improve this.</simpara></listitem>
+     </itemizedlist>
+   </sect1>
+  </partintro>
+
+  <refentry id="function.hw-modifyobject">
+   <refnamediv>
+    <refname>hw_Modifyobject</refname>
+    <refpurpose>modifies object record</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_modifyobject</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>object_to_change</parameter></paramdef>
+     <paramdef>array <parameter>remove</parameter></paramdef>
+     <paramdef>array <parameter>add</parameter></paramdef>
+
+    </funcsynopsis>
+    <para>
+     This command allows to remove, add, or modify individual attributes
+     of an object record.  The object is specified by the Object ID
+     <parameter>object_to_change</parameter>. The first array
+     <parameter>remove</parameter> is a list of attributes to remove.
+     The second array <parameter>add</parameter> is a list of attributes
+     to add. In order to modify an attribute one will have to remove
+     the old one and add a new one. <function>hw_modifyobject</function>
+     will always remove the attributes before it adds attributes unless
+     the value of the attribute to remove is not a string or array.
+
+    <para>
+     The keys of both arrays are the attributes name. The value of each
+     array element can either be an array, a string or anything else.
+     If it is an array
+     each attribute value is constructed by the key of each element plus
+     a colon and the value of each element. If it is a string it is taken
+     as the attribute value. An empty string will result in a complete
+     removal of that attribute. If the value is neither a string nor an
+     array but something else, e.g. an integer, no operation at all will
+     be performed on the attribute. This is neccessary if you want to
+     to add a completely new attribute not just a new value for an existing
+     attribute. If the remove array contained
+     an empty string for that attribute, the attribute would be tried to
+     removed which would fail since it doesn't exist. The following addition of
+     a new value for that attribute would also fail. Setting the value
+     for that attribute to e.g. 0 would not even try to remove it since
+     the addition will work.
+
+    <para>
+     If you would like to change the attribute 'Name' with the current
+     value 'books' into 'articles' you will have to create two arrays
+     and call <function>hw_modifyobject</function>.
+     <example>
+      <title>modifying an attribute</title>
+      <programlisting role="php">
+       // $connect is an existing connection to the Hyperwave server
+       // $objid is the ID of the object to modify
+       $remarr = array("Name" => "books");
+       $addarr = array("Name" => "articles");
+       $hw_modifyobject($connect, $objid, $remarr, $addarr);
+      </programlisting>
+     </example>
+     In order to delete/add a name=value pair from/to the object record just
+     pass the remove/add array and set the last/third parameter to an empty
+     array. If the attribute is the first one with that name to add, set
+     attribute value in the remove array to an integer.
+     <example>
+      <title>adding a completly new attribute</title>
+      <programlisting role="php">
+       // $connect is an existing connection to the Hyperwave server
+       // $objid is the ID of the object to modify
+       $remarr = array("Name" => 0);
+       $addarr = array("Name" => "articles");
+       $hw_modifyobject($connect, $objid, $remarr, $addarr);
+      </programlisting>
+     </example>
+    <para>
+     Note: Multilingual attributes, e.g. 'Title', can be modified in two
+     ways. Either by providing the attributes value in its  native form
+     'language':'title' or by providing an array with elements for each
+     language as described above. The above example would than be:
+     <example>
+      <title>modifying Title attribute</title>
+      <programlisting role="php">
+       $remarr = array("Title" => "en:Books");
+       $addarr = array("Title" => "en:Articles");
+       $hw_modifyobject($connect, $objid, $remarr, $addarr);
+      </programlisting>
+     </example>
+     or
+     <example>
+      <title>modifying Title attribute</title>
+      <programlisting role="php">
+       $remarr = array("Title" => array("en" => "Books"));
+       $addarr = array("Title" => array("en" => "Articles", "ge"=>"Artikel"));
+       $hw_modifyobject($connect, $objid, $remarr, $addarr);
+      </programlisting>
+     </example>
+     This removes the english title 'Books' and adds the english title
+     'Articles' and the german title 'Artikel'.
+     <example>
+      <title>removing attribute</title>
+      <programlisting role="php">
+       $remarr = array("Title" => "");
+       $addarr = array("Title" => "en:Articles");
+       $hw_modifyobject($connect, $objid, $remarr, $addarr);
+      </programlisting>
+     </example>
+     This will remove all attributes with the name 'Title' and adds a
+     new 'Title' attribute. This comes in handy if you want to remove
+     attributes recursively.
+    <para>
+     If you need to delete all attributes with a certain name you will have
+     to pass an empty string as the attribute value.
+    <para>
+     Note: Only the attributes 'Title', 'Description' and 'Keyword' will
+     properly handle the language prefix. If those attributes don't carry
+     a language prefix, the prefix 'xx' will be assigned.
+    <para>
+     Returns TRUE if no error occurs otherwise FALSE.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-children">
+   <refnamediv>
+    <refname>hw_Children</refname>
+    <refpurpose>object ids of children</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_children</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an array of object ids. Each id
+     belongs to a child of the collection with ID
+     <parameter>objectID</parameter>.
+     The array contains all children both documents and collections.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-childrenobj">
+   <refnamediv>
+    <refname>hw_ChildrenObj</refname>
+    <refpurpose>object records of children</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_childrenobj</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an array of object records. Each object record
+     belongs to a child of the collection with ID
+     <parameter>objectID</parameter>.
+     The array contains all children both documents and collections.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-close">
+   <refnamediv>
+    <refname>hw_Close</refname>
+    <refpurpose>closes the Hyperwave connection</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_close</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns false if connection is not a valid connection index,
+     otherwise true.  Closes down the connection to a Hyperwave server
+     with the given connection index.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-connect">
+   <refnamediv>
+    <refname>hw_Connect</refname>
+    <refpurpose>opens a connection</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_connect</function></funcdef>
+     <paramdef>string <parameter>host</parameter></paramdef>
+     <paramdef>int <parameter>port</parameter></paramdef>
+     <paramdef>string <parameter>username</parameter></paramdef>
+     <paramdef>string <parameter>password</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Opens a connection to a Hyperwave server and returns a connection
+     index on success, or false if the connection
+     could not be made. Each of the arguments should be a quoted string,
+     except for the port number. The <parameter>username</parameter> and
+     <parameter>password</parameter> arguments are
+     optional and can be left out. In such a case no identification with
+     the server will be done. It is similar to identify as user anonymous.
+     This function returns a connection
+     index that is needed by other Hyperwave functions. You can have
+     multiple connections open at once. Keep in mind, that the password
+     is not encrypted.
+    <para>
+     See also <function>hw_pConnect</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-cp">
+   <refnamediv>
+    <refname>hw_Cp</refname>
+    <refpurpose>copies objects</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_cp</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>array <parameter>object_id_array</parameter></paramdef>
+     <paramdef>int <parameter>destination id</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Copies the objects with object ids as specified in the second
+     parameter to the collection
+     with the id <parameter>destination id</parameter>.
+    <para>
+     The value return is the number of copied objects.
+    <para>
+     See also <function>hw_mv</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-deleteobject">
+   <refnamediv>
+    <refname>hw_Deleteobject</refname>
+    <refpurpose>deletes object</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_deleteobject</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>object_to_delete</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Deletes the object with the given object id in the second
+     parameter. It will delete all instances of the object.
+    <para>
+     Returns TRUE if no error occurs otherwise FALSE.
+    <para>
+     See also <function>hw_mv</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-docbyanchor">
+   <refnamediv>
+    <refname>hw_DocByAnchor</refname>
+    <refpurpose>object id object belonging to anchor</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_docbyanchor</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>anchorID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an th object id of the document to
+     which <parameter>anchorID</parameter> belongs.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-docbyanchorobj">
+   <refnamediv>
+    <refname>hw_DocByAnchorObj</refname>
+    <refpurpose>object record object belonging to anchor</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>hw_docbyanchorobj</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>anchorID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an th object record of the document to
+     which <parameter>anchorID</parameter> belongs.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-documentattributes">
+   <refnamediv>
+    <refname>hw_DocumentAttributes</refname>
+    <refpurpose>object record of hw_document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>hw_documentattributes</function></funcdef>
+     <paramdef>int <parameter>hw_document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the object record of the document.
+    <para>
+     See also <function>hw_DocumentBodyTag</function>,
+              <function>hw_DocumentSize</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-documentbodytag">
+   <refnamediv>
+    <refname>hw_DocumentBodyTag</refname>
+    <refpurpose>body tag of hw_document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>hw_documentbodytag</function></funcdef>
+     <paramdef>int <parameter>hw_document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the BODY tag of the document. If the document is an HTML
+     document the BODY tag should be printed before the document.
+    <para>
+     See also <function>hw_DocumentAttributes</function>,
+              <function>hw_DocumentSize</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-documentcontent">
+   <refnamediv>
+    <refname>hw_DocumentContent</refname>
+    <refpurpose>returns content of hw_document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>hw_documentcontent</function></funcdef>
+     <paramdef>int <parameter>hw_document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the content of the document. If the document is an HTML
+     document the content is everything after the BODY tag. Information
+     from the HEAD and BODY tag is in the stored in the object record.
+    <para>
+     See also <function>hw_DocumentAttributes</function>,
+              <function>hw_DocumentSize</function>,
+              <function>hw_DocumentSetContent</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-documentsetcontent">
+   <refnamediv>
+    <refname>hw_DocumentSetContent</refname>
+    <refpurpose>sets/replaces content of hw_document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>hw_documentsetcontent</function></funcdef>
+     <paramdef>int <parameter>hw_document</parameter></paramdef>
+     <paramdef>string <parameter>content</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Sets or replaces the content of the document. If the document is an HTML
+     document the content is everything after the BODY tag. Information
+     from the HEAD and BODY tag is in the stored in the object record.
+     If you provide this information in the content of the document too,
+     the Hyperwave server will change the object record accordingly when
+     the document is inserted. Probably not a very good idea.
+     If this functions fails the document will retain its old content.
+    <para>
+     See also <function>hw_DocumentAttributes</function>,
+              <function>hw_DocumentSize</function>,
+              <function>hw_DocumentContent</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-documentsize">
+   <refnamediv>
+    <refname>hw_DocumentSize</refname>
+    <refpurpose>size of hw_document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_documentsize</function></funcdef>
+     <paramdef>int <parameter>hw_document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the size in bytes of the document.
+    <para>
+     See also <function>hw_DocumentBodyTag</function>,
+              <function>hw_DocumentAttributes</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-errormsg">
+   <refnamediv>
+    <refname>hw_ErrorMsg</refname>
+    <refpurpose>returns error message</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>hw_errormsg</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns a string containing the last error message or 'No Error'. If false
+     is returned, this function failed.
+     The message relates to the last command.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-edittext">
+   <refnamediv>
+    <refname>hw_EditText</refname>
+    <refpurpose>retrieve text document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_edittext</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>hw_document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Uploads the text document to the server. The object record
+     of the document may not be modified while the document
+     is edited. 
+     This function will only works for pure text documents. It will
+     not open a special data connection and therefore blocks the
+     control connection during the transfer.
+    <para>
+     See also <function>hw_PipeDocument</function>,
+              <function>hw_FreeDocument</function>,
+              <function>hw_DocumentBodyTag</function>,
+              <function>hw_DocumentSize</function>,
+              <function>hw_OutputDocument</function>,
+              <function>hw_GetText</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-error">
+   <refnamediv>
+    <refname>hw_Error</refname>
+    <refpurpose>error number</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_error</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the last error number. If the return value is 0 no error has
+     occurred. The error relates to the last command.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-free-document">
+   <refnamediv>
+    <refname>hw_Free_Document</refname>
+    <refpurpose>frees hw_document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_free_document</function></funcdef>
+     <paramdef>int <parameter>hw_document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Frees the memory occupied by the Hyperwave document.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getparents">
+   <refnamediv>
+    <refname>hw_GetParents</refname>
+    <refpurpose>object ids of parents</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getparentsobj</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an indexed array of object ids. Each object id belongs to
+     a parent of the object with ID <parameter>objectID</parameter>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getparentsobj">
+   <refnamediv>
+    <refname>hw_GetParentsObj</refname>
+    <refpurpose>object records of parents</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getparentsobj</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an indexed array of object records plus an associated array with statistical
+     information about the object records. The associated array is the
+     last entry of the returned array. Each object record belongs to
+     a parent of the object with ID <parameter>objectID</parameter>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getchildcoll">
+   <refnamediv>
+    <refname>hw_GetChildColl</refname>
+    <refpurpose>object ids of child collections</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getchildcoll</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an array of object ids. Each object ID
+     belongs to a child collection of the collection with ID
+     <parameter>objectID</parameter>. The function will not
+     return child documents.
+    <para>
+     See also <function>hw_GetChildren</function>,
+              <function>hw_GetChildDocColl</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getchildcollobj">
+   <refnamediv>
+    <refname>hw_GetChildCollObj</refname>
+    <refpurpose>object records of child collections</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getchildcollobj</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an array of object records. Each object records
+     belongs to a child collection of the collection with ID
+     <parameter>objectID</parameter>. The function will not return
+     child documents.
+    <para>
+     See also <function>hw_ChildrenObj</function>,
+              <function>hw_GetChildDocCollObj</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getremote">
+   <refnamediv>
+    <refname>hw_GetRemote</refname>
+    <refpurpose>Gets a remote document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_getremote</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns a remote document. Remote documents in Hyperwave notation
+     are documents retrieved from an external source. Common remote
+     documents are for example external web pages or queries in a database.
+     In order to be able to access external sources throught remote documents
+     Hyperwave introduces the HGI (Hyperwave Gateway Interface) which
+     is similar to the CGI. Currently, only ftp, http-servers and some
+     databases can be accessed by the HGI.
+     Calling <function>hw_GetRemote</function> returns the document from
+     the external source.
+     If you want to use this function you should be very familiar with HGIs.
+     You should also consider to use php3 instead of Hyperwave to access
+     external
+     sources. Adding database support by a Hyperwave gateway should be more
+     difficult than doing it in php3. 
+    <para>
+     See also <function>hw_GetRemoteChildren</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getremotechildren">
+   <refnamediv>
+    <refname>hw_GetRemoteChildren</refname>
+    <refpurpose>Gets children of remote document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_getremotechildren</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>string <parameter>object record</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the children of a remote document. Children of a remote
+     document are remote documents itself.
+     This makes sense
+     if a database query has to be narrowed and is explained in
+     Hyperwave Programmers' Guide. If the number of children is 1 the
+     function will return the document itself formated by the Hyperwave
+     Gateway Interface (HGI). If the number of children
+     is greater than 1 it will return an array of object record with
+     each maybe the input value for another call to
+     <function>hw_GetRemoteChildren</function>. Those object records are
+     virtual and do not exist in the Hyperwave server, therefore they
+     do not have a valid object ID. How exactely such an object record
+     looks like is up to the HGI.
+     If you want to use this function you should be very familiar with HGIs.
+     You should also consider to use php3 instead of Hyperwave to access
+     external
+     sources. Adding database support by a Hyperwave gateway should be more
+     difficult than doing it in php3. 
+    <para>
+     See also <function>hw_GetRemote</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getsrcbydestobj">
+   <refnamediv>
+    <refname>hw_GetSrcByDestObj</refname>
+    <refpurpose>Returns anchors pointing at object</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getsrcbydestobj</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the object records of all anchors pointing to the object with ID
+     <parameter>objectID</parameter>. The object can either be a document
+     or an anchor of type destination.
+    <para>
+     See also <function>hw_GetAnchors</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getobject">
+   <refnamediv>
+    <refname>hw_GetObject</refname>
+    <refpurpose>object record</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getobject</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the object record for the object with ID
+     <parameter>objectID</parameter>.
+    <para>
+     See also <function>hw_GetAndLock</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getandlock">
+   <refnamediv>
+    <refname>hw_GetAndLock</refname>
+    <refpurpose>return bject record and lock object</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>hw_getandlock</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the object record for the object with ID
+     <parameter>objectID</parameter>.
+     It will also lock the object, so other users cannot access
+     it until it is unlocked.
+    <para>
+     See also <function>hw_Unlock</function>,
+              <function>hw_GetObject</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-gettext">
+   <refnamediv>
+    <refname>hw_GetText</refname>
+    <refpurpose>retrieve text document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_gettext</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+     <paramdef>int <parameter>rootID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the document with object ID
+     <parameter>objectID</parameter>. If the document
+     has anchors which can be inserted, they will be inserted already.
+     The optional parameter <parameter>rootID</parameter> determines
+     how links are inserted
+     into the document. The default is 0 and will result in links that
+     are constructed from the name of the link's destination object. This
+     is useful for web applications. If a link points to an object with
+     name 'internet_movie' the HTML link will be
+     &lt;A HREF="/internet_movie">. The actual location of the source and
+     destination object in the document hierachy is disregarded. You
+     will have to set up your web browser, to rewrite that URL to for
+     example '/my_script.php3/internet_movie'. 'my_script.php3' will
+     have to evaluate $PATH_INFO and retrieve the document.
+    <para>
+     If <parameter>rootID</parameter> is unequal to 0 the link is
+     constructed from all the names
+     starting at the object with the id <parameter>rootID</parameter>
+     separated by a slash relative to the current object.
+     If for example the above document 'internet_movie' is located
+     at 'a-b-c-internet_movie' with '-' being the seperator between
+     hierachy levels and the source document is located at
+     'a-b-d-source' the resulting HTML link would be:
+     &lt;A HREF="../c/internet_movie">. This is useful if you want
+     to download the whole server content onto disk and map
+     the document hierachy onto the file system.
+    <para>
+     This function will only work for pure text documents. It will
+     not open a special data connection and therefore blocks the
+     control connection during the transfer.
+    <para>
+     See also <function>hw_PipeDocument</function>,
+              <function>hw_FreeDocument</function>,
+              <function>hw_DocumentBodyTag</function>,
+              <function>hw_DocumentSize</function>,
+              <function>hw_OutputDocument</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getobjectbyquery">
+   <refnamediv>
+    <refname>hw_GetObjectByQuery</refname>
+    <refpurpose>search object</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getobjectbyquery</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>string <parameter>query</parameter></paramdef>
+     <paramdef>int <parameter>max_hits</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Searches for objects on the whole server and returns an array of
+     object ids. The maximum number of matches is limited to 
+     <parameter>max_hits</parameter>. If <parameter>max_hits</parameter>
+     is set to -1 the maximum number of matches is unlimited.
+    <para>
+     See also <function>hw_GetObjectByQueryObj</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getobjectbyqueryobj">
+   <refnamediv>
+    <refname>hw_GetObjectByQueryObj</refname>
+    <refpurpose>search object</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getobjectbyqueryobj</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>string <parameter>query</parameter></paramdef>
+     <paramdef>int <parameter>max_hits</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Searches for objects on the whole server and returns an array of
+     object records. The maximum number of matches is limited to
+     <parameter>max_hits</parameter>. If <parameter>max_hits</parameter>
+     is set to -1 the maximum number of matches is unlimited.
+    <para>
+     See also <function>hw_GetObjectByQuery</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getobjectbyquerycoll">
+   <refnamediv>
+    <refname>hw_GetObjectByQueryColl</refname>
+    <refpurpose>search object in collection</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getobjectbyquerycoll</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+     <paramdef>string <parameter>query</parameter></paramdef>
+     <paramdef>int <parameter>max_hits</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Searches for objects in collection with ID
+     <parameter>objectID</parameter> and returns an array of
+     object ids. The maximum number of matches is limited to
+     <parameter>max_hits</parameter>.
+     If <parameter>max_hits</parameter>
+     is set to -1 the maximum number of matches is unlimited.
+    <para>
+     See also <function>hw_GetObjectByQueryCollObj</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getobjectbyquerycollobj">
+   <refnamediv>
+    <refname>hw_GetObjectByQueryCollObj</refname>
+    <refpurpose>search object in collection</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getobjectbyquerycollobj</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+     <paramdef>string <parameter>query</parameter></paramdef>
+     <paramdef>int <parameter>max_hits</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Searches for objects in collection with ID
+     <parameter>objectID</parameter> and returns an array of
+     object records. The maximum number of matches is limited to
+     <parameter>max_hits</parameter>.
+     If <parameter>max_hits</parameter>
+     is set to -1 the maximum number of matches is unlimited.
+    <para>
+     See also <function>hw_GetObjectByQueryColl</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getchilddoccoll">
+   <refnamediv>
+    <refname>hw_GetChildDocColl</refname>
+    <refpurpose>object ids of child documents of collection</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getchilddoccoll</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns array of object ids for child documents of a collection.
+    <para>
+     See also <function>hw_GetChildren</function>,
+              <function>hw_GetChildColl</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getchilddoccollobj">
+   <refnamediv>
+    <refname>hw_GetChildDocCollObj</refname>
+    <refpurpose>object records of child documents of collection</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getchilddoccollobj</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an array of object records for child documents of a collection.
+    <para>
+     See also <function>hw_ChildrenObj</function>,
+              <function>hw_GetChildCollObj</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getanchors">
+   <refnamediv>
+    <refname>hw_GetAnchors</refname>
+    <refpurpose>object ids of anchors of document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getanchors</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an array of object ids with anchors of the document
+     with object ID <parameter>objectID</parameter>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getanchorsobj">
+   <refnamediv>
+    <refname>hw_GetAnchorsObj</refname>
+    <refpurpose>object records of anchors of document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_getanchorsobj</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an array of object records with anchors of the document
+     with object ID <parameter>objectID</parameter>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-mv">
+   <refnamediv>
+    <refname>hw_Mv</refname>
+    <refpurpose>moves objects</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_mv</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>array <parameter>object id array</parameter></paramdef>
+     <paramdef>int <parameter>source id</parameter></paramdef>
+     <paramdef>int <parameter>destination id</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Moves the objects with object ids as specified in the second
+     parameter from the collection with id <parameter>source id</parameter>
+     to the collection with the id <parameter>destination id</parameter>.
+     If the destination id is 0 the objects will
+     be unlinked from the source collection. If this is the last instance
+     of that object it will be deleted. If you want to delete all instances
+     at once, use <function>hw_deleteobject</function>.
+    <para>
+     The value return is the number of moved objects.
+    <para>
+     See also <function>hw_cp</function>,
+              <function>hw_deleteobject</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-identify">
+   <refnamediv>
+    <refname>hw_Identify</refname>
+    <refpurpose>identifies as user</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_identify</function></funcdef>
+     <paramdef>string <parameter>username</parameter></paramdef>
+     <paramdef>string <parameter>password</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Identifies as user with <parameter>username</parameter> and
+     <parameter>password</parameter>. Identification
+     is only valid for the current session. I do not thing this
+     function will be needed very often. In most cases it will
+     be easier to identify with the opening of the connection.
+    <para>
+     See also <function>hw_Connect</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-incollections">
+   <refnamediv>
+    <refname>hw_InCollections</refname>
+    <refpurpose>check if object ids in collections</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_incollections</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>array <parameter>object_id_array</parameter></paramdef>
+     <paramdef>array <parameter>collection_id_array</parameter></paramdef>
+     <paramdef>int <parameter>return_collections</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Checks whether a set of objects (documents or collections)
+     specified by the <parameter>object_id_array</parameter> is part of
+     the collections listed in <parameter>collection_id_array</parameter>.
+     When the fourth parameter <parameter>return_collections</parameter> is 0,
+     the subset of object ids that is part of the collections (i.e.,
+     the documents or collections that are children of one or more
+     collections of collection ids or their subcollections, recursively)
+     is returned as an array. When the fourth parameter is 1, however, the
+     set of collections that have one or more objects of this subset as
+     children are returned as an array. This option allows a client to,
+     e.g., highlight the part of the collection hierarchy that contains
+     the matches of a previous query, in a graphical overview.
+    <para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-info">
+   <refnamediv>
+    <refname>hw_Info</refname>
+    <refpurpose>info about connection</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>hw_info</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns information about the current connection. The returned string
+     has the following format: &lt;Serverstring&gt;, &lt;Host&gt;,
+     &lt;Port&gt;, &lt;Username&gt;, &lt;Port of Client&gt;,
+     &lt;Byte swapping&gt;
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-inscoll">
+   <refnamediv>
+    <refname>hw_InsColl</refname>
+    <refpurpose>insert collection</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_inscoll</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+     <paramdef>array <parameter>object_array</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Inserts a new collection with attributes as in
+     <parameter>object_array</parameter> into
+     collection with object ID <parameter>objectID</parameter>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-insdoc">
+   <refnamediv>
+    <refname>hw_InsDoc</refname>
+    <refpurpose>insert document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_insdoc</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>parentID</parameter></paramdef>
+     <paramdef>string <parameter>object_record</parameter></paramdef>
+     <paramdef>string <parameter>text</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Inserts a new document with attributes as in
+     <parameter>object_record</parameter> into collection with object ID
+     <parameter>parentID</parameter>. This function inserts either 
+     an object record only or an object record and a pure ascii text in
+     <parameter>text</parameter> if <parameter>text</parameter> is given.
+     If you want to insert a general document of any kind use
+     <function>hw_insertdocument</function> instead.
+    <para>
+     See also <function>hw_InsertDocument</function>,
+              <function>hw_InsColl</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-insertdocument">
+   <refnamediv>
+    <refname>hw_InsertDocument</refname>
+    <refpurpose>upload any document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_insertdocument</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>parent_id</parameter></paramdef>
+     <paramdef>int <parameter>hw_document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+      Uploads a document into the collection with
+      <parameter>parent_id</parameter>.
+      The document has to be created before with
+      <function>hw_NewDocument</function>. Make sure that
+      the object record of the new document contains at least
+      the attributes: Type, DocumentType, Title and Name. Possibly
+      you also want to set the MimeType. The functions returns the
+      object id of the new document or false.
+    <para>
+     See also <function>hw_PipeDocument</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-insertobject">
+   <refnamediv>
+    <refname>hw_InsertObject</refname>
+    <refpurpose>inserts an object record</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_insertobject</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>string <parameter>object rec</parameter></paramdef>
+     <paramdef>string <parameter>parameter</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+      Inserts an object into the server. The object can be
+      any valid hyperwave object. See the HG-CSP documentation
+      for a detailed information on how the parameters have to be.
+    <para>
+      Note: If you want to insert an Anchor, the attribute Position
+      has always been set either to a start/end value or to
+      'invisible'. Invisible positions are needed if the annotation
+      has no correspondig link in the annotation text. 
+    <para>
+     See also <function>hw_PipeDocument</function>,
+              <function>hw_InsertDocument</function>,
+              <function>hw_InsDoc</function>,
+              <function>hw_InsColl</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-new-document">
+   <refnamediv>
+    <refname>hw_New_Document</refname>
+    <refpurpose>create new document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_new_document</function></funcdef>
+     <paramdef>string <parameter>object_record</parameter></paramdef>
+     <paramdef>string <parameter>document_data</parameter></paramdef>
+     <paramdef>int <parameter>document_size</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns a new Hyperwave document with document data set to
+     <parameter>document_data</parameter> and object record set to
+     <parameter>object_record</parameter>. The length of the 
+     <parameter>document_data</parameter> has to passed in
+     <parameter>document_size</parameter>This function does not
+     insert the document into the Hyperwave server.
+    <para>
+     See also <function>hw_FreeDocument</function>,
+              <function>hw_DocumentSize</function>,
+              <function>hw_DocumentBodyTag</function>,
+              <function>hw_OutputDocument</function>,
+              <function>hw_InsertDocument</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-objrec2array">
+   <refnamediv>
+    <refname>hw_Objrec2Array</refname>
+    <refpurpose>convert attributes from object record to object array</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>hw_objrec2array</function></funcdef>
+     <paramdef>string <parameter>object_record</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Converts an <parameter>object_record</parameter> into an object array.
+     The keys of the resulting array are the attributes names.
+     Multiple attributes like 'Title' in different languages form its own
+     array. The keys of this array are the left part to the colon of the
+     attribute value. Currently only the attributes 'Title', 'Description'
+     and 'Keyword' are treated properly.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-outputdocument">
+   <refnamediv>
+    <refname>hw_OutputDocument</refname>
+    <refpurpose>prints hw_document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_outputdocument</function></funcdef>
+     <paramdef>int <parameter>hw_document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Prints the document without the BODY tag.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-pconnect">
+   <refnamediv>
+    <refname>hw_pConnect</refname>
+    <refpurpose>make a persistent database connection</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_pconnect</function></funcdef>
+     <paramdef>string <parameter>host</parameter></paramdef>
+     <paramdef>int <parameter>port</parameter></paramdef>
+     <paramdef>string <parameter>username</parameter></paramdef>
+     <paramdef>string <parameter>password</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns a connection index on success, or false if the connection
+     could not be made.  Opens a persistent connection to a Hyperwave
+     server. Each of the arguments should be a quoted string,
+     except for the port number. The <parameter>username</parameter>
+     and <parameter>password</parameter> arguments are
+     optional and can be left out. In such a case no identification with
+     the server will be done. It is similar to identify as user anonymous.
+     This function returns a connection
+     index that is needed by other Hyperwave functions. You can have
+     multiple persistent connections open at once.
+    <para>
+     See also <function>hw_Connect</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-pipedocument">
+   <refnamediv>
+    <refname>hw_PipeDocument</refname>
+    <refpurpose>retrieve any document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_pipedocument</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the Hyperwave document with object ID
+     <parameter>objectID</parameter>. If the document
+     has anchors which can be inserted, they will have been inserted already.
+     The document will be transfered via a special data connection which
+     does not block the control connection.
+    <para>
+     See also <function>hw_GetText</function> for more on link insertion,
+              <function>hw_FreeDocument</function>,
+              <function>hw_DocumentSize</function>,
+              <function>hw_DocumentBodyTag</function>,
+              <function>hw_OutputDocument</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-root">
+   <refnamediv>
+    <refname>hw_Root</refname>
+    <refpurpose>root object id</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_root</function></funcdef>
+     <paramdef><parameter></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the object ID of the hyperroot collection. Currently this
+     is always 0. The child collection of the hyperroot is the root
+     collection of the connected server.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-unlock">
+   <refnamediv>
+    <refname>hw_Unlock</refname>
+    <refpurpose>unlock object</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>hw_unlock</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter>objectID</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Unlocks a document, so other users regain access.
+    <para>
+     See also <function>hw_GetAndLock</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.hw-getusername">
+   <refnamediv>
+    <refname>hw_Username</refname>
+    <refpurpose>name of currently logged in user</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>hw_getusername</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the username of the connection.
+   </refsect1>
+  </refentry>
+
+ </reference>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->

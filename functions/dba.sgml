@@ -1,0 +1,565 @@
+ <reference id="ref.dba">
+  <title>DBA functions</title>
+  <titleabbrev>dba</titleabbrev>
+
+  <partintro>
+   <para>
+    These functions build the foundation for accessing Berkeley DB style
+    databases.
+
+   <para>
+    This is a general abstraction layer for several file-based databases. As
+    such, functionality is limited to a subset of features modern databases
+    such as <ulink url="&url.sleepycat;">Sleepycat Software's DB2</ulink>
+    support.
+
+   <para>
+    The behaviour of various aspects depend on the implementation of the
+    underlying database. Functions such as <function>dba_optimize</function>
+    and <function>dba_sync</function> will do what they promise for one
+    database and will do nothing for others.
+
+   <para>
+    The following handlers are supported:
+
+    <itemizedlist>
+     <listitem><simpara>
+      dbm is the oldest (original) type of Berkeley DB style databases. You
+      should avoid it, if possible. We do not support the compatibility
+      functions built into DB2, because they are only compatible on the source
+      code level, but cannot handle the original dbm format.
+
+     <listitem><simpara>
+      ndbm is a newer type and more flexible than dbm. It still has most of the
+      arbitrary limits of dbm.
+
+     <listitem><simpara>
+      gdbm is the <ulink url="&url.gdbm;">GNU database manager</ulink>. It
+      provides compatibility functions for dbm and ndbm.
+
+     <listitem><simpara>
+      db2 is <ulink url="&url.sleepycat;">Sleepycat Software's DB2</ulink>. It
+      is described as "a programmatic toolkit that provides high-performance
+      built-in database support for both standalone and client/server
+      applications."
+     
+     <listitem><simpara>
+      cdb is "a fast, reliable, lightweight package for creating and reading
+      constant databases." It is from the author of qmail and can be found
+      <ulink url="&url.cdb;">here</ulink>. Since it is constant, we support
+      only reading operations.
+
+    </itemizedlist>
+
+   <para>
+    <example>
+     <title>DBA example</title>
+     <programlisting>
+&lt;?php
+
+$id = dba_open("/tmp/test.db", "n", "db2");
+
+if(!$id) {
+    echo "dba_open failed\n";
+    exit;
+}
+
+dba_replace("key", "This is an example!", $id);
+
+if(dba_exists("key", $id)) {
+    echo dba_fetch("key", $id);
+    dba_delete("key", $id);
+}
+
+dba_close($id);
+?&gt;
+</programlisting></example>
+
+   <para>
+    DBA is binary safe and does not have any arbitrary limits. It inherits all
+    limits set by the underlying database implementation.
+
+   <para>
+    All file-based databases must provide a way of setting the file mode of a
+    new created database, if that is possible at all. The file mode is commonly
+    passed as the fourth argument to <function>dba_open</function> or
+    <function>dba_popen</function>.
+
+   <para>
+    You can access all entries of a database in a linear way by using the
+    <function>dba_firstkey</function> and <function>dba_nextkey</function>
+    functions. You may not change the database while traversing it. 
+    
+   <para>
+    <example>
+     <title>Traversing a database</title>
+     <programlisting>
+&lt;?php
+
+# ...open database...
+
+$key = dba_firstkey($id);
+
+while($key != false) {
+    if(...) { # remember the key to perform some action later
+        $handle_later[] = $key;
+    }
+    $key = dba_nextkey($id);
+}
+?&gt;
+</programlisting></example>
+
+  </partintro>
+
+  <refentry id="function.dba-close">
+   <refnamediv>
+    <refname>dba_close</refname>
+    <refpurpose>Close database</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>dba_close</function></funcdef>
+     <paramdef>int <parameter>handle</parameter></paramdef>
+    </funcsynopsis>
+
+    <para>
+     <function>dba_close</function> closes the established database and frees
+     all resources specified by <parameter>handle</parameter>.
+
+    <para>
+     <parameter>handle</parameter> is a database handle returned by
+     <function>dba_open</function>.
+
+    <para>
+     <function>dba_close</function> does not return any value.
+
+    <para>
+     See also:
+     <function>dba_open</function>
+     <function>dba_popen</function>
+     
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.dba-delete">
+   <refnamediv>
+    <refname>dba_delete</refname>
+    <refpurpose>Delete entry specified by key</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>dba_delete</function></funcdef>
+     <paramdef>string <parameter>key</parameter></paramdef>
+     <paramdef>int <parameter>handle</parameter></paramdef>
+    </funcsynopsis>
+
+    <para>
+     <function>dba_delete</function> deletes the entry specified by
+     <parameter>key</parameter> from the database specified with
+     <parameter>handle</parameter>.
+
+    <para>
+     <parameter>key</parameter> is the key of the entry which is deleted.
+
+    <para>
+     <parameter>handle</parameter> is a database handle returned by
+     <function>dba_open</function>.
+
+    <para>
+     <function>dba_delete</function> returns true or false, if the entry is
+     deleted or not deleted, respectively.
+
+    <para>
+     See also:
+     <function>dba_exists</function>
+     <function>dba_fetch</function>
+     <function>dba_insert</function>
+     <function>dba_replace</function>
+     
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.dba-exists">
+   <refnamediv>
+    <refname>dba_exists</refname>
+    <refpurpose>Check whether key exists</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>bool <function>dba_exists</function></funcdef>
+     <paramdef>string <parameter>key</parameter></paramdef>
+     <paramdef>int <parameter>handle</parameter></paramdef>
+    </funcsynopsis>
+
+    <para>
+     <function>dba_exists</function> checks whether the specified
+     <parameter>key</parameter> exists in the database specified by
+     <parameter>handle</parameter>.
+
+    <para>
+     <parameter>key</parameter> is the key the check is performed for.
+
+    <para>
+     <parameter>handle</parameter> is a database handle returned by
+     <function>dba_open</function>.
+
+    <para>
+     <function>dba_exists</function> returns true or false, if the key is found
+     or not found, respectively.
+
+    <para>
+     See also:
+     <function>dba_fetch</function>
+     <function>dba_delete</function>
+     <function>dba_insert</function>
+     <function>dba_replace</function>
+     
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.dba-fetch">
+   <refnamediv>
+    <refname>dba_fetch</refname>
+    <refpurpose>Fetch data specified by key</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>dba_fetch</function></funcdef>
+     <paramdef>string <parameter>key</parameter></paramdef>
+     <paramdef>int <parameter>handle</parameter></paramdef>
+    </funcsynopsis>
+
+    <para>
+     <function>dba_fetch</function> fetches the data specified by
+     <parameter>key</parameter> from the database specified with
+     <parameter>handle</parameter>.
+
+    <para>
+     <parameter>key</parameter> is the key the data is specified by.
+
+    <para>
+     <parameter>handle</parameter> is a database handle returned by
+     <function>dba_open</function>.
+
+    <para>
+     <function>dba_fetch</function> returns the associated string or false, if
+     the key/data pair is found or not found, respectively.
+
+    <para>
+     See also:
+     <function>dba_exists</function>
+     <function>dba_delete</function>
+     <function>dba_insert</function>
+     <function>dba_replace</function>
+     
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.dba-firstkey">
+   <refnamediv>
+    <refname>dba_firstkey</refname>
+    <refpurpose>Fetch first key</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>dba_firstkey</function></funcdef>
+     <paramdef>int <parameter>handle</parameter></paramdef>
+    </funcsynopsis>
+
+    <para>
+     <function>dba_firstkey</function> returns the first key of the database
+     specified by <parameter>handle</parameter> and resets the internal key
+     pointer. This permits a linear search through the whole database.
+
+    <para>
+     <parameter>handle</parameter> is a database handle returned by
+     <function>dba_open</function>.
+
+    <para>
+     <function>dba_firstkey</function> returns the key or false depending on
+     whether it succeeds or fails, respectively.
+
+    <para>
+     See also:
+     <function>dba_nextkey</function>
+     
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.dba-insert">
+   <refnamediv>
+    <refname>dba_insert</refname>
+    <refpurpose>Insert entry</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>bool <function>dba_insert</function></funcdef>
+     <paramdef>string <parameter>key</parameter></paramdef>
+     <paramdef>string <parameter>value</parameter></paramdef>
+     <paramdef>int <parameter>handle</parameter></paramdef>
+    </funcsynopsis>
+
+    <para>
+     <function>dba_insert</function> inserts the entry described with
+     <parameter>key</parameter> and <parameter>value</parameter> into the
+     database specified by <parameter>handle</parameter>. It fails, if an entry
+     with the same <parameter>key</parameter> already exists.
+
+    <para>
+     <parameter>key</parameter> is the key of the entry to be inserted.
+
+    <para>
+     <parameter>value</parameter> is the value to be inserted.
+
+    <para>
+     <parameter>handle</parameter> is a database handle returned by
+     <function>dba_open</function>.
+
+    <para>
+     <function>dba_insert</function> returns true or false, depending on
+     whether it succeeds of fails, respectively.
+
+    <para>
+     See also:
+     <function>dba_exists</function>
+     <function>dba_delete</function>
+     <function>dba_fetch</function>
+     <function>dba_replace</function>
+     
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.dba-nextkey">
+   <refnamediv>
+    <refname>dba_nextkey</refname>
+    <refpurpose>Fetch next key</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>dba_nextkey</function></funcdef>
+     <paramdef>int <parameter>handle</parameter></paramdef>
+    </funcsynopsis>
+
+    <para>
+     <function>dba_nextkey</function> returns the next key of the database
+     specified by <parameter>handle</parameter> and increments the internal
+     key pointer. 
+
+    <para>
+     <parameter>handle</parameter> is a database handle returned by
+     <function>dba_open</function>.
+
+    <para>
+     <function>dba_nextkey</function> returns the key or false depending on
+     whether it succeeds or fails, respectively.
+
+    <para>
+     See also:
+     <function>dba_firstkey</function>
+     
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.dba-popen">
+   <refnamediv>
+    <refname>dba_popen</refname>
+    <refpurpose>Open database persistently</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>dba_popen</function></funcdef>
+     <paramdef>string <parameter>path</parameter></paramdef>
+     <paramdef>string <parameter>mode</parameter></paramdef>
+     <paramdef>string <parameter>handler</parameter></paramdef>
+     <paramdef><parameter><optional>...</optional></parameter></paramdef>
+    </funcsynopsis>
+
+    <para>
+     <function>dba_popen</function> establishes a persistent database instance
+     for <parameter>path</parameter> with <parameter>mode</parameter> using
+     <parameter>handler</parameter>.
+
+    <para>
+     <parameter>path</parameter> is commonly a regular path in your filesystem.
+
+    <para>
+     <parameter>mode</parameter> is "r" for read access, "w" for read/write
+     access, and "n" for truncate and read/write access.
+
+    <para>
+     <parameter>handler</parameter> is the name of the handler which shall be
+     used for accessing <parameter>path</parameter>. It is passed all optional
+     parameters given to <function>dba_popen</function> and can act on behalf
+     of them.
+
+    <para>
+     <function>dba_popen</function> returns a positive handler id or false, in
+     the case the open is successful or fails, respectively.
+
+    <para>
+     See also:
+     <function>dba_open</function>
+     <function>dba_close</function>
+     
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.dba-open">
+   <refnamediv>
+    <refname>dba_open</refname>
+    <refpurpose>Open database</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>dba_open</function></funcdef>
+     <paramdef>string <parameter>path</parameter></paramdef>
+     <paramdef>string <parameter>mode</parameter></paramdef>
+     <paramdef>string <parameter>handler</parameter></paramdef>
+     <paramdef><parameter><optional>...</optional></parameter></paramdef>
+    </funcsynopsis>
+
+    <para>
+     <function>dba_open</function> establishes a database instance for
+     <parameter>path</parameter> with <parameter>mode</parameter> using
+     <parameter>handler</parameter>.
+
+    <para>
+     <parameter>path</parameter> is commonly a regular path in your filesystem.
+
+    <para>
+     <parameter>mode</parameter> is "r" for read access, "w" for read/write
+     access, and "n" for truncate and read/write access.
+
+    <para>
+     <parameter>handler</parameter> is the name of the handler which shall be
+     used for accessing <parameter>path</parameter>. It is passed all optional
+     parameters given to <function>dba_open</function> and can act on behalf of
+     them.
+
+    <para>
+     <function>dba_open</function> returns a positive handler id or false, in
+     the case the open is successful or fails, respectively.
+
+    <para>
+     See also:
+     <function>dba_popen</function>
+     <function>dba_close</function>
+     
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.dba-optimize">
+   <refnamediv>
+    <refname>dba_optimize</refname>
+    <refpurpose>Optimize database</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>bool <function>dba_optimize</function></funcdef>
+     <paramdef>int <parameter>handle</parameter></paramdef>
+    </funcsynopsis>
+
+    <para>
+     <function>dba_optimize</function> optimizes the underlying database
+     specified by <parameter>handle</parameter>.
+
+    <para>
+     <parameter>handle</parameter> is a database handle returned by
+     <function>dba_open</function>.
+
+    <para>
+     <function>dba_optimize</function> returns true or false, if the
+     optimization succeeds or fails, respectively.
+
+    <para>
+     See also:
+     <function>dba_sync</function>
+     
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.dba-replace">
+   <refnamediv>
+    <refname>dba_replace</refname>
+    <refpurpose>Replace or insert entry</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>bool <function>dba_replace</function></funcdef>
+     <paramdef>string <parameter>key</parameter></paramdef>
+     <paramdef>string <parameter>value</parameter></paramdef>
+     <paramdef>int <parameter>handle</parameter></paramdef>
+    </funcsynopsis>
+
+    <para>
+     <function>dba_replace</function> replaces or inserts the entry described
+     with <parameter>key</parameter> and <parameter>value</parameter> into the
+     database specified by <parameter>handle</parameter>. 
+
+    <para>
+     <parameter>key</parameter> is the key of the entry to be inserted.
+
+    <para>
+     <parameter>value</parameter> is the value to be inserted.
+
+    <para>
+     <parameter>handle</parameter> is a database handle returned by
+     <function>dba_open</function>.
+
+    <para>
+     <function>dba_replace</function> returns true or false, depending on
+     whether it succeeds of fails, respectively.
+
+    <para>
+     See also:
+     <function>dba_exists</function>
+     <function>dba_delete</function>
+     <function>dba_fetch</function>
+     <function>dba_insert</function>
+     
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.dba-sync">
+   <refnamediv>
+    <refname>dba_sync</refname>
+    <refpurpose>Synchronize database</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>bool <function>dba_sync</function></funcdef>
+     <paramdef>int <parameter>handle</parameter></paramdef>
+    </funcsynopsis>
+
+    <para>
+     <function>dba_sync</function> synchronizes the database specified by
+     <parameter>handle</parameter>. This will probably trigger a physical write
+     to disk, if supported.
+
+    <para>
+     <parameter>handle</parameter> is a database handle returned by
+     <function>dba_open</function>.
+
+    <para>
+     <function>dba_sync</function> returns true or false, if the
+     synchronization succeeds or fails, respectively.
+
+    <para>
+     See also:
+     <function>dba_optimize</function>
+     
+   </refsect1>
+  </refentry>
+ </reference>

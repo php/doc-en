@@ -1,0 +1,827 @@
+<appendix id="phpdevel">
+ <title>PHP development</title>
+
+ <simpara></simpara>
+
+ <sect1 id="phpdevel-addfunc">
+  <title>Adding functions to PHP3</title>
+  <sect2 id="phpdevel-addfunc-prototype">
+   <title>Function Prototype</title>
+   <para>
+    All functions look like this:
+    <programlisting>       
+void php3_foo(INTERNAL_FUNCTION_PARAMETERS) {
+     
+}
+    </programlisting>
+    Even if your function doesn't take any arguments, this is how it is
+    called.
+
+  <sect2 id="phpdevel-addfunc-args">
+   <title>Function Arguments</title>
+   <para>
+    Arguments are always of type pval.  This type contains a union
+    which has the actual type of the argument.  So, if your function
+    takes two arguments, you would do something like the following at
+    the top of your function:
+
+   <para>
+    <example>
+     <title>Fetching function arguments</title>
+     <programlisting>
+pval *arg1, *arg2;
+if (ARG_COUNT(ht) != 2 || getParameters(ht,2,&amp;arg1,&amp;arg2)==FAILURE) {
+   WRONG_PARAM_COUNT;
+}
+     </programlisting>
+    </example>
+    
+    NOTE: Arguments can be passed either by value or by reference. In
+    both cases you will need to pass &amp;(pval *) to getParameters. If
+    you want to check if the n'th parameter was sent to you by
+    reference or not, you can use the function,
+    ParameterPassedByReference(ht,n). It will return either 1 or 0.
+    
+   <simpara>
+    When you change any of the passed parameters, whether they are
+    sent by reference or by value, you can either start over with the
+    parameter by calling pval_destructor on it, or if it's an ARRAY
+    you want to add to, you can use functions similar to the ones in
+    internal_functions.h which manipulate return_value as an ARRAY.
+
+   <simpara>
+    Also if you change a parameter to IS_STRING make sure you first
+    assign the new estrdup()'ed string and the string length, and only
+    later change the type to IS_STRING. If you change the string of a
+    parameter which already IS_STRING or IS_ARRAY you should run
+    pval_destructor on it first.
+   
+  <sect2 id="phpdevel-addfunc-varargs">
+   <title>Variable Function Arguments</title>
+   <para>
+    A function can take a variable number of arguments.  If your function can
+    take either 2 or 3 arguments, use the following:
+    
+   <para>
+    <example>
+     <title>Variable function arguments</title>
+     <programlisting>
+pval *arg1, *arg2, *arg3;
+int arg_count = ARG_COUNT(ht);
+
+if (arg_count &lt; 2 || arg_count &gt; 3 ||
+    getParameters(ht,arg_count,&amp;arg1,&amp;arg2,&amp;arg3)==FAILURE) {
+    WRONG_PARAM_COUNT;
+}
+    </programlisting>
+    </example>
+     
+  <sect2 id="phpdevel-addfunc-using-args">
+   <title>Using the Function Arguments</title>
+   <para>
+    The type of each argument is stored in the pval type field. This
+    type can be any of the following:
+    
+    <table>
+     <title>PHP Internal Types</title>
+     <tgroup cols="2">
+      <tbody>
+       <row>
+        <entry>IS_STRING</entry>
+        <entry>String</entry>
+       </row>
+       <row>
+        <entry>IS_DOUBLE</entry>
+        <entry>Double-precision floating point</entry>
+       </row>
+       <row>
+        <entry>IS_LONG</entry>
+        <entry>Long integer</entry>
+       </row>
+       <row>
+        <entry>IS_ARRAY</entry>
+        <entry>Array</entry>
+       </row>
+       <row>
+        <entry>IS_EMPTY</entry>
+        <entry>None</entry>
+       </row>
+       <row>
+        <entry>IS_USER_FUNCTION</entry>
+        <entry>??</entry>
+       </row>
+       <row>
+        <entry>IS_INTERNAL_FUNCTION</entry>
+        <entry>?? (if some of these cannot be passed to a function - delete)</entry>
+       </row>
+       <row>
+        <entry>IS_CLASS</entry>
+        <entry>??</entry>
+       </row>
+       <row>
+        <entry>IS_OBJECT</entry>
+        <entry>??</entry>
+       </row>
+      </tbody>
+     </tgroup>
+    </table>
+
+   <para>
+    If you get an argument of one type and would like to use it as
+    another, or if you just want to force the argument to be of a
+    certain type, you can use one of the following conversion
+    functions:
+
+    <programlisting>
+convert_to_long(arg1);
+convert_to_double(arg1);
+convert_to_string(arg1); 
+convert_to_boolean_long(arg1); /* If the string is "" or "0" it becomes 0, 1 otherwise */
+convert_string_to_number(arg1);  /* Converts string to either LONG or DOUBLE depending on string */
+     </programlisting>
+    
+   <simpara>
+    These function all do in-place conversion.  They do not return anything.
+
+   <para>
+    The actual argument is stored in a union; the members are:
+    <itemizedlist>
+     <listitem><simpara>IS_STRING: arg1-&gt;value.str.val
+     <listitem><simpara>IS_LONG: arg1-&gt;value.lval
+     <listitem><simpara>IS_DOUBLE: arg1-&gt;value.dval
+    </itemizedlist>
+    
+  <sect2 id="phpdevel-addfunc-memmgmt">
+   <title>Memory Management in Functions</title>
+   <simpara>
+    Any memory needed by a function should be allocated with either
+    emalloc() or estrdup().  These are memory handling abstraction
+    functions that look and smell like the normal malloc() and
+    strdup() functions.  Memory should be freed with efree().
+
+   <simpara>
+    There are two kinds of memory in this program: memory which is
+    returned to the parser in a variable, and memory which you need for
+    temporary storage in your internal function.  When you assign a
+    string to a variable which is returned to the parser you need to
+    make sure you first allocate the memory with either emalloc() or
+    estrdup().  This memory should NEVER be freed by you, unless you
+    later in the same function overwrite your original assignment
+    (this kind of programming practice is not good though).
+
+   <simpara>
+    For any temporary/permanent memory you need in your
+    functions/library you should use the three emalloc(), estrdup(),
+    and efree() functions. They behave EXACTLY like their counterpart
+    functions. Anything you emalloc() or estrdup() you have to efree()
+    at some point or another, unless it's supposed to stick around
+    until the end of the program; otherwise, there will be a memory
+    leak. The meaning of "the functions behave exactly like their
+    counterparts" is: if you efree() something which was not
+    emalloc()'ed nor estrdup()'ed you might get a segmentation
+    fault. So please take care and free all of your wasted memory. 
+
+   <simpara>
+    If you compile with "-DDEBUG", PHP3 will print out a list of all
+    memory that was allocated using emalloc() and estrdup() but never
+    freed with efree() when it is done running the specified script.
+
+  <sect2 id="phpdevel-addfunc-symtab">
+   <title>Setting Variables in the Symbol Table</title>
+   <para>
+    A number of macros are available which make it easier to set a
+    variable in the symbol table:
+    
+    <itemizedlist>
+     <listitem><simpara>SET_VAR_STRING(name,value) <footnoteref linkend="symtab-1">
+     <listitem><simpara>SET_VAR_DOUBLE(name,value)
+     <listitem><simpara>SET_VAR_LONG(name,value)
+    </itemizedlist>
+
+   <para>
+    <footnote id="symtab-1">
+     <simpara>
+      Be careful here.  The value part must be malloc'ed manually because
+      the memory management code will try to free this pointer later.  Do
+      not pass statically allocated memory into a SET_VAR_STRING.
+    </footnote>
+    
+   <simpara>
+    Symbol tables in PHP 3.0 are implemented as hash tables.  At any
+    given time, &amp;symbol_table is a pointer to the 'main' symbol
+    table, and active_symbol_table points to the currently active
+    symbol table (these may be identical like in startup, or
+    different, if you're inside a function).
+  
+   <para>
+    The following examples use 'active_symbol_table'.  You should
+    replace it with &amp;symbol_table if you specifically want to work
+    with the 'main' symbol table.  Also, the same functions may be
+    applied to arrays, as explained below.
+  
+   <para>
+    <example>
+     <title>Checking whether $foo exists in a symbol table</title>
+     <programlisting>
+if (hash_exists(active_symbol_table,"foo",sizeof("foo"))) { exists... }
+else { doesn't exist }
+     </programlisting>
+    </example>
+
+    <example>
+     <title>Finding a variable's size in a symbol table</title>
+     <programlisting>
+hash_find(active_symbol_table,"foo",sizeof("foo"),&amp;pvalue);
+check(pvalue.type);
+     </programlisting>
+    </example>
+    
+    Arrays in PHP 3.0 are implemented using the same hashtables as
+    symbol tables.  This means the two above functions can also be
+    used to check variables inside arrays.
+    
+   <simpara>
+    If you want to define a new array in a symbol table, you should do
+    the following.
+
+   <simpara>
+    First, you may want to check whether it exists and abort
+    appropiately, using hash_exists() or hash_find().
+
+   <simpara>
+    Next, initialize the array:
+    
+   <para>
+    <example>
+     <title>Initializing a new array</title>
+     <programlisting>
+pval arr;
+  
+if (array_init(&amp;arr) == FAILURE) { failed... };
+hash_update(active_symbol_table,"foo",sizeof("foo"),&amp;arr,sizeof(pval),NULL);
+     </programlisting>
+    </example>
+    
+    This code declares a new array, named $foo, in the active symbol
+    table. This array is empty.
+    
+   <simpara>
+    Here's how to add new entries to it:
+  
+   <para>
+    <example>
+     <title>Adding entries to a new array</title>
+     <programlisting>
+pval entry;
+  
+entry.type = IS_LONG;
+entry.value.lval = 5;
+  
+/* defines $foo["bar"] = 5 */
+hash_update(arr.value.ht,"bar",sizeof("bar"),&amp;entry,sizeof(pval),NULL); 
+
+/* defines $foo[7] = 5 */
+hash_index_update(arr.value.ht,7,&amp;entry,sizeof(pval),NULL); 
+
+/* defines the next free place in $foo[],
+ * $foo[8], to be 5 (works like php2)
+ */
+hash_next_index_insert(arr.value.ht,&amp;entry,sizeof(pval),NULL); 
+     </programlisting>
+    </example>
+     
+    If you'd like to modify a value that you inserted to a hash, you
+    must first retrieve it from the hash.  To prevent that overhead,
+    you can supply a pval ** to the hash add function, and it'll be
+    updated with the pval * address of the inserted element inside the
+    hash.  If that value is NULL (like in all of the above examples) -
+    that parameter is ignored.
+
+   <simpara>
+    hash_next_index_insert() uses more or less the same logic as
+    "$foo[] = bar;" in PHP 2.0.
+
+   <simpara>
+    If you are building an array to return from a function, you can
+    initialize the array just like above by doing:
+
+   <programlisting>
+if (array_init(return_value) == FAILURE) { failed...; }
+   </programlisting>
+
+   <simpara>
+    ...and then adding values with the helper functions:
+
+   <programlisting>
+add_next_index_long(return_value,long_value);
+add_next_index_double(return_value,double_value);
+add_next_index_string(return_value,estrdup(string_value));
+   </programlisting>
+  
+   <para>
+    Of course, if the adding isn't done right after the array
+    initialization, you'd probably have to look for the array first:
+      
+    <programlisting>
+pval *arr;
+  
+if (hash_find(active_symbol_table,"foo",sizeof("foo"),(void **)&amp;arr)==FAILURE) { can't find... }
+else { use arr-&gt;value.ht... }
+    </programlisting>
+
+   <simpara>
+    Note that hash_find receives a pointer to a pval pointer, and not
+    a pval pointer.
+  
+   <simpara>
+    Just about any hash function returns SUCCESS or FAILURE (except
+    for hash_exists(), which returns a boolean truth value).
+      
+  <sect2 id="phpdevel-addfunc-retsimple">
+   <title>Returning simple values</title>
+   <simpara>
+    A number of macros are available to make returning values from a
+    function easier. 
+
+   <para>
+    The RETURN_* macros all set the return value and return from the
+    function:
+    <itemizedlist>
+     <listitem><simpara>RETURN
+     <listitem><simpara>RETURN_FALSE
+     <listitem><simpara>RETURN_TRUE
+     <listitem><simpara>RETURN_LONG(l)
+     <listitem><simpara>RETURN_STRING(s,dup)   If dup is true, duplicates the string
+     <listitem><simpara>RETURN_STRINGL(s,l,dup)   Return string (s) specifying length (l).
+     <listitem><simpara>RETURN_DOUBLE(d)
+    </itemizedlist>
+    
+   <para>
+    The RETVAL_* macros set the return value, but do not return.
+    <itemizedlist>
+     <listitem><simpara>RETVAL_FALSE
+     <listitem><simpara>RETVAL_TRUE
+     <listitem><simpara>RETVAL_LONG(l)
+     <listitem><simpara>RETVAL_STRING(s,dup)   If dup is true, duplicates the string
+     <listitem><simpara>RETVAL_STRINGL(s,l,dup)   Return string (s) specifying length (l).
+     <listitem><simpara>RETVAL_DOUBLE(d)
+    </itemizedlist>
+
+   <simpara>
+    The string macros above will all estrdup() the passed 's'
+    argument, so you can safely free the argument after calling the
+    macro, or alternatively use statically allocated memory.
+
+   <simpara>
+    If your function returns boolean success/error responses, always
+    use RETURN_TRUE and RETURN_FALSE respectively.
+    
+  <sect2 id="phpdevel-addfunc-retcomplex">
+   <title>Returning complex values</title>
+   <simpara>
+    Your function can also return a complex data type such as an
+    object or an array.
+
+   <para>
+    Returning an object:
+
+    <orderedlist numeration="arabic">
+     <listitem><simpara>Call object_init(return_value).
+     <listitem><para>Fill it up with values. The functions available
+       for this purpose are listed below.
+     <listitem><para> Possibly, register functions for this object.
+       In order to obtain values from the object, the function would
+       have to fetch "this" from the active_symbol_table.  Its type
+       should be IS_OBJECT, and it's basically a regular hash table
+       (i.e., you can use regular hash functions on .value.ht).  The
+       actual registration of the function can be done using:
+       <programlisting>
+add_method( return_value, function_name, function_ptr );
+       </programlisting>
+    </orderedlist>
+
+   <para>
+    The functions used to populate an object are:
+    <itemizedlist>
+     <listitem><simpara>add_property_long( return_value,
+       property_name, l ) - Add a property named 'property_name', of
+       type long, equal to 'l' 
+     <listitem><simpara>add_property_double( return_value,
+       property_name, d ) - Same, only adds a double
+     <listitem><simpara>add_property_string( return_value,
+       property_name, str ) - Same, only adds a string
+     <listitem><simpara>add_property_stringl( return_value,
+       property_name, str, l ) - Same, only adds a string of length 'l'
+    </itemizedlist>
+
+   <para>
+    Returning an array:
+    
+    <orderedlist numeration="arabic">
+     <listitem><simpara>Call array_init(return_value).
+     <listitem><simpara>Fill it up with values. The functions available
+     for this purpose are listed below.
+    </orderedlist>
+
+   <para>
+    The functions used to populate an array are:
+    <itemizedlist>
+     <listitem><simpara>add_assoc_long(return_value,key,l) - add
+     associative entry with key 'key' and long value 'l'
+     <listitem><simpara>add_assoc_double(return_value,key,d)
+     <listitem><simpara>add_assoc_string(return_value,key,str)
+     <listitem><simpara>add_assoc_stringl(return_value,key,str,length)
+     specify the string length
+     <listitem><simpara>add_index_long(return_value,index,l) - add
+     entry in index 'index' with long value 'l'
+     <listitem><simpara>add_index_double(return_value,index,d)
+     <listitem><simpara>add_index_string(return_value,index,str)
+     <listitem><simpara>add_index_stringl(return_value,index,str,length)
+     - specify the string length
+     <listitem><simpara>add_next_index_long(return_value,l) - add an
+     array entry in the next free offset with long value 'l'
+     <listitem><simpara>add_next_index_double(return_value,d)
+     <listitem><simpara>add_next_index_string(return_value,str)
+     <listitem><simpara>add_next_index_stringl(return_value,str,length)
+     - specify the string length
+    </itemizedlist>
+
+  <sect2 id="phpdevel-addfunc-reslist">
+   <title>Using the resource list</title>
+   <simpara>
+    PHP 3.0 has a standard way of dealing with various types of
+    resources. This replaces all of the local linked lists in PHP 2.0.
+
+   <para>
+    Available functions:
+
+    <itemizedlist>
+     <listitem><simpara>php3_list_insert(ptr, type) - returns the 'id'
+       of the newly inserted resource
+     <listitem><simpara>php3_list_delete(id) - delete the resource
+       with the specified id 
+     <listitem><simpara>php3_list_find(id,*type)
+       - returns the pointer of the resource with the specified id,
+       updates 'type' to the resource's type
+    </itemizedlist>
+
+    Typically, these functions are used for SQL drivers but they can
+    be used for anything else; for instance, maintaining file
+    descriptors.
+
+   <simpara>
+    Typical list code would look like this:
+    
+   <para>
+    <example>
+     <title>Adding a new resource</title>
+     <programlisting>
+RESOURCE *resource;
+
+/* ...allocate memory for resource and acquire resource... */
+/* add a new resource to the list */
+return_value-&gt;value.lval = php3_list_insert((void *) resource, LE_RESOURCE_TYPE);
+return_value-&gt;type = IS_LONG;
+     </programlisting>
+    </example>
+
+    <example>
+     <title>Using an existing resource</title>
+     <programlisting>
+pval *resource_id;
+RESOURCE *resource;
+int type;
+
+convert_to_long(resource_id);
+resource = php3_list_find(resource_id-&gt;value.lval, &amp;type);
+if (type != LE_RESOURCE_TYPE) {
+	php3_error(E_WARNING,"resource index %d has the wrong type",resource_id-&gt;value.lval);
+	RETURN_FALSE;
+}
+/* ...use resource... */
+     </programlisting>
+    </example>
+
+    <example>
+     <title>Deleting an existing resource</title>
+     <programlisting>
+pval *resource_id;
+RESOURCE *resource;
+int type;
+
+convert_to_long(resource_id);
+php3_list_delete(resource_id-&gt;value.lval);
+     </programlisting>
+    </example>
+   
+    The resource types should be registered in php3_list.h, in enum
+    list_entry_type.  In addition, one should add shutdown code for
+    any new resource type defined, in list.c's list_entry_destructor()
+    (even if you don't have anything to do on shutdown, you must add
+    an empty case).
+
+  <sect2 id="phpdevel-addfunc-prestable">
+   <title>Using the persistent resource table</title>
+   <para>
+    PHP 3.0 has a standard way of storing persistent resources (i.e.,
+    resources that are kept in between hits).  The first module to use
+    this feature was the MySQL module, and mSQL followed it, so one
+    can get the general impression of how a persistent resource should
+    be used by reading mysql.c.  The functions you should look at are:
+
+    <simplelist>
+     <member>php3_mysql_do_connect</member>
+     <member>php3_mysql_connect()</member>
+     <member>php3_mysql_pconnect()</member>
+    </simplelist>
+
+   <para>
+    The general idea of persistence modules is this:
+    <orderedlist numeration="arabic">
+     <listitem><simpara>Code all of your module to work with the
+       regular resource list mentioned in section (9).
+     <listitem><simpara>Code extra connect functions that check if the
+       resource already exists in the persistent resource list.  If it
+       does, register it as in the regular resource list as a pointer to
+       the persistent resource list (because of 1., the rest of the code
+       should work immediately).  If it doesn't, then create it, add it
+       to the persistent resource list AND add a pointer to it from the
+       regular resource list, so all of the code would work since it's
+       in the regular resource list, but on the next connect, the
+       resource would be found in the persistent resource list and be
+       used without having to recreate it.  You should register these
+       resources with a different type (e.g.  LE_MYSQL_LINK for
+       non-persistent link and LE_MYSQL_PLINK for a persistent link).
+    </orderedlist>
+
+   <simpara>
+    If you read mysql.c, you'll notice that except for the more
+    complex connect function, nothing in the rest of the module has to
+    be changed.
+   
+   <simpara>
+    The very same interface exists for the regular resource list and
+    the persistent resource list, only 'list' is replaced with
+    'plist':
+
+    <itemizedlist>
+     <listitem><simpara>php3_plist_insert(ptr, type) - returns the 'id'
+       of the newly inserted resource
+     <listitem><simpara>php3_plist_delete(id) - delete the resource
+       with the specified id 
+     <listitem><simpara>php3_plist_find(id,*type)
+       - returns the pointer of the resource with the specified id,
+       updates 'type' to the resource's type
+    </itemizedlist>
+
+   <simpara>
+    However, it's more than likely that these functions would prove to
+    be useless for you when trying to implement a persistent module.
+    Typically, one would want to use the fact that the persistent
+    resource list is really a hash table.  For instance, in the
+    MySQL/mSQL modules, when there's a pconnect() call (persistent
+    connect), the function builds a string out of the host/user/passwd
+    that were passed to the function, and hashes the SQL link with
+    this string as a key.  The next time someone calls a pconnect()
+    with the same host/user/passwd, the same key would be generated,
+    and the function would find the SQL link in the persistent list.
+
+   <simpara>
+    Until further documented, you should look at mysql.c or msql.c to
+    see how one should use the plist's hash table abilities.
+
+   <simpara>
+    One important thing to note: resources going into the persistent
+    resource list must *NOT* be allocated with PHP's memory manager,
+    i.e., they should NOT be created with emalloc(), estrdup(), etc.
+    Rather, one should use the regular malloc(), strdup(), etc.  The
+    reason for this is simple - at the end of the request (end of the
+    hit), every memory chunk that was allocated using PHP's memory
+    manager is deleted.  Since the persistent list isn't supposed to
+    be erased at the end of a request, one mustn't use PHP's memory
+    manager for allocating resources that go to it.
+
+   <simpara>
+    When you register a resource that's going to be in the persistent
+    list, you should add destructors to it both in the non-persistent
+    list and in the persistent list.  The destructor in the
+    non-persistent list destructor shouldn't do anything.  The one in
+    the persistent list destructor should properly free any resources
+    obtained by that type (e.g. memory, SQL links, etc).  Just like
+    with the non-persistent resources, you *MUST* add destructors for
+    every resource, even it requires no destructotion and the
+    destructor would be empty.  Remember, since emalloc() and friends
+    aren't to be used in conjunction with the persistent list, you
+    mustn't use efree() here either.
+
+
+  <sect2 id="phpdevel-addfunc-addcfg">
+   <title>Adding runtime configuration directives</title>
+   <para>
+    Many of the features of PHP3 can be configured at runtime.  These
+    configuration directives can appear in either the designated
+    php3.ini file, or in the case of the Apache module version in the
+    Apache .conf files.  The advantage of having them in the Apache
+    .conf files is that they can be configured on a per-directory
+    basis.  This means that one directory may have a certain
+    safemodeexecdir for example, while another directory may have
+    another.  This configuration granularity is especially handy when
+    a server supports multiple virtual hosts.
+
+   <para>
+    The steps required to add a new directive:
+
+    <orderedlist>
+     <listitem><simpara>Add directive to php3_ini_structure struct in mod_php3.h. 
+    
+     <listitem><simpara>In main.c, edit the php3_module_startup
+       function and add the appropriate cfg_get_string() or
+       cfg_get_long() call.
+
+     <listitem><simpara>Add the directive, restrictions and a comment
+       to the php3_commands structure in mod_php3.c.  Note the
+       restrictions part.  RSRC_CONF are directives that can only be
+       present in the actual Apache .conf files.  Any OR_OPTIONS
+       directives can be present anywhere, include normal .htaccess
+       files.
+
+     <listitem><simpara>In either php3take1handler() or
+       php3flaghandler() add the appropriate entry for your directive.
+
+     <listitem><simpara>In the configuration section of the
+       _php3_info() function in functions/info.c you need to add your
+       new directive.
+
+     <listitem><simpara>And last, you of course have to use your new
+       directive somewhere.  It will be addressable as
+       php3_ini.directive.
+    </orderedlist>
+
+
+ <sect1 id="calling-user-functions">
+  <title>Calling User Functions</title>
+
+  <simpara>
+   To call user functions from an internal function, you should use
+   the <function>call_user_function</function> function.
+  </simpara>
+
+  <simpara>
+   <function>call_user_function</function> returns SUCCESS on success,
+   and FAILURE in case the function cannot be found.  You should check
+   that return value!  If it returns SUCCESS, you are responsible for
+   destroying the retval pval yourself (or return it as the return value
+   of your function). If it returns FAILURE, the value of retval is
+   undefined, and you mustn't touch it.
+  </simpara>
+
+  <simpara>
+   All internal functions that call user functions
+   <emphasis>must</emphasis> be reentrant.  Among other things, this
+   means they must not use globals or static variables.
+  </simpara>
+
+  <simpara>
+   <function>call_user_function</function> takes six arguments:
+  </simpara>
+
+  <sect2 id="calling-user-functions.function-table">
+   <title>HashTable *function_table</title>
+   <simpara>
+    This is the hash table in which the function is to be looked up.
+   </simpara>
+
+  <sect2 id="calling-user-functions.object">
+   <title>pval *object</title>
+   <simpara>
+    This is a pointer to an object on which the function is invoked.
+    This should be NULL if a global function is called.  If it's not
+    NULL (i.e.  it points to an object), the function_table argument is
+    ignored, and instead taken from the object's hash.  The object *may*
+    be modified by the function that is invoked on it (that function
+    will have access to it via $this).  If for some reason you don't
+    want that to happen, send a copy of the object instead.
+   </simpara>
+
+  <sect2 id="calling-user-functions.function-name">
+   <title>pval *function_name</title>
+   <simpara>
+    The name of the function to call.  Must be a pval of type
+    IS_STRING with function_name.str.val and function_name.str.len
+    set to the appropriate values.  The function_name is modified by
+    call_user_function() - it's converted to lowercase.  If you need to
+    preserve the case, send a copy of the function name instead.
+   </simpara>
+
+  <sect2 id="calling-user-functions.retval">
+   <title>pval *retval</title>
+   <simpara>
+    A pointer to a pval structure, into which the return value of
+    the invoked function is saved.  The structure must be previously
+    allocated - <function>call_user_function</function> does NOT allocate
+    it by itself.
+   </simpara>
+
+  <sect2 id="calling-user-functions.param-count">
+   <title>int param_count</title>
+   <simpara>
+    The number of parameters being passed to the function.
+   </simpara>
+
+  <sect2 id="calling-user-functions.params">
+   <title>pval *params[]</title>
+   <simpara>
+    An array of pointers to values that will be passed as arguments to the
+    function, the first argument being in offset 0, the second in offset
+    1, etc.  The array is an array of pointers to pval's;  The pointers
+    are sent as-is to the function, which means if the function modifies
+    its arguments, the original values are changed (passing by reference).
+    If you don't want that behavior, pass a copy instead.
+   </simpara>
+
+ <sect1 id="phpdevel-errors">
+  <title>Reporting Errors</title>
+
+  <simpara>
+   To report errors from an internal function, you should call the
+   <function>php3_error</function> function. This takes at least two
+   parameters -- the first is the level of the error, the second is
+   the format string for the error message (as in a standard
+   <function>printf</function> call), and any following arguments
+   are the parameters for the format string. The error levels are:
+  </simpara>
+
+  <sect2 id="internal.e-notice">
+   <title>E_NOTICE</title>
+   <simpara>
+    Notices are not printed by default, and indicate that the script
+    encountered something that could indicate an error, but could also
+    happen in the normal course of running a script. For example,
+    trying to access the value of a variable which has not been set,
+    or calling <function>stat</function> on a file that doesn't exist.
+   </simpara>
+  </sect2>
+
+  <sect2 id="internal.e-warning">
+   <title>E_WARNING</title>
+   <simpara>
+    Warnings are printed by default, but do not interrupt script
+    execution.  These indicate a problem that should have been trapped
+    by the script before the call was made. For example, calling 
+	<function>ereg</function> with an invalid regular expression.
+   </simpara>
+  </sect2>
+
+  <sect2 id="internal.e-error">
+   <title>E_ERROR</title>
+   <simpara>
+    Errors are also printed by default, and execution of the script is
+    halted after the function returns. These indicate errors that can
+    not be recovered from, such as a memory allocation problem.
+   </simpara>
+  </sect2>
+
+  <sect2 id="internal.e-parse">
+   <title>E_PARSE</title>
+   <simpara>
+    Parse errors should only be generated by the parser. The code is
+    listed here only for the sake of completeness.
+   </simpara>
+  </sect2>
+
+  <sect2 id="internal.e-core-error">
+   <title>E_CORE_ERROR</title>
+   <simpara>
+    This is like an E_ERROR, except it is generated by the core
+    of PHP. Functions should not generate this type of error.
+   </simpara>
+  </sect2>
+
+  <sect2 id="internal.e-core-warning">
+   <title>E_CORE_WARNING</title>
+   <simpara>
+    This is like an E_WARNING, except it is generated by the core
+    of PHP. Functions should not generate this type of error.
+   </simpara>
+  </sect2>
+
+ <sect1 id="phpdevel-hhgtpi">
+  <title>Hitchhiker's guide to PHP internals</title>
+  <simpara></simpara>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->

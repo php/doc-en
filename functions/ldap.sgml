@@ -1,0 +1,1076 @@
+ <reference id="ref.ldap">
+  <title>LDAP Functions</title>
+  <titleabbrev>LDAP</titleabbrev>
+
+  <partintro>
+   <title>Introduction to LDAP</title>
+    <para>
+     LDAP is the Lightweight Directory Access Protocol, and is a
+     protocol used to access "Directory Servers".  The Directory is a
+     special kind of database that holds information in a tree
+     structure.  
+    </para><para> 
+     The concept is similar to your hard disk directory structure,
+     except that in this context, the root directory is "The world"
+     and the first level subdirectories are "countries".  Lower levels
+     of the directory structure contain entries for companies,
+     organisations or places, while yet lower still we find directory
+     entries for people, and perhaps equipment or documents.
+    </para><para>
+     To refer to a file in a subdirectory on your hard disk, you might
+     use something like
+    </para>
+<literallayout>
+    /usr/local/myapp/docs
+</literallayout>
+    <para>
+     The forwards slash marks each division in the reference, and the
+     sequence is read from left to right.
+    </para><para> 
+     The equivalent to the fully qualified file reference in LDAP is
+     the "distinguished name", referred to simply as "dn".  An example
+     dn might be.
+    </para>
+<literallayout>
+    cn=John Smith,ou=Accounts,o=My Company,c=US
+</literallayout>
+    <para>
+     The comma marks each division in the reference, and the sequence
+     is read from right to left.  You would read this dn as ..
+    </para>
+<literallayout>
+    country = US
+    organization = My Company
+    organizationalUnit = Accounts
+    commonName = John Smith
+</literallayout>
+    <para>
+     In the same way as there are no hard rules about how you organise
+     the directory structure of a hard disk, a directory server
+     manager can set up any structure that is meaningful for the
+     purpose.  However, there are some conventions that are used.  The
+     message is that you can not write code to access a directory
+     server unless you know something about its structure, any more
+     than you can use a database without some knowledge of what is
+     available.
+    </para>
+
+   <sect1 id="ldap-example">
+    <title>Complete code example</title>
+     <para>
+      Retrieve information for all entries where the surname starts
+      with "S" from a directory server, displaying an extract with
+      name and email address.
+     </para>
+
+    <example>
+     <title>LDAP search example</title>
+<programlisting role=php>
+&lt;?php
+// basic sequence with LDAP is connect, bind, search, interpret search
+// result, close connection
+
+echo "&lt;h3>LDAP query test&lt;/h3>";
+echo "Connecting ...";
+$ds=ldap_connect("localhost");  // must be a valid LDAP server!
+echo "connect result is ".$ds."&lt;p>";
+
+if ($ds) { 
+    echo "Binding ..."; 
+    $r=ldap_bind($ds);     // this is an "anonymous" bind, typically
+                           // read-only access echo "Bind result is
+    echo "Bind result is ".$r."&lt;p>";
+
+    echo "Searching for (sn=S*) ...";
+    // Search surname entry
+    $sr=ldap_search($ds,"o=My Company, c=US", "sn=S*");  
+    echo "Search result is ".$sr."&lt;p>";
+
+    echo "Number of entires returned is ".ldap_count_entries($ds,$sr)."&lt;p>";
+
+    echo "Getting entries ...&lt;p>";
+    $info = ldap_get_entries($ds, $sr);
+    echo "Data for ".$info["count"]." items returned:&lt;p>";
+
+    for ($i=0; $i<$info["count"]; $i++) {
+        echo "dn is: ". $info[$i]["dn"] ."&lt;br>";
+        echo "first cn entry is: ". $info[$i]["cn"][0] ."&lt;br>";
+        echo "first email entry is: ". $info[$i]["mail"][0] ."&lt;p>";
+    }
+
+    echo "Closing connection";
+    ldap_close($ds);
+
+} else {
+    echo "&lt;h4>Unable to connect to LDAP server&lt;/h4>";
+}
+?>
+</programlisting>
+    </example>
+
+   <sect2>
+    <title>Using the PHP LDAP calls</title>
+     <para>
+      You will need to get and compile LDAP client libraries from
+      either the University of Michigan ldap-3.3 package or the
+      Netscape Directory SDK.  You will also need to recompile PHP
+      with LDAP support enabled before PHP's LDAP calls will work.
+     </para><para>
+      Before you can use the LDAP calls you will need to know ..
+
+    <itemizedlist>
+     <listitem>
+      <para>
+       The name or address of the directory server you will use
+      </para>
+     </listitem>
+     <listitem>
+      <para>
+       The "base dn" of the server (the part of the world directory
+       that is held on this server, which could be "o=My
+       Company,c=US")
+      </para>
+     </listitem>
+     <listitem>
+      <para>
+       Whether you need a password to access the server (many servers
+       will provide read access for an "anonymous bind" but require a
+       password for anything else)
+      </para>
+     </listitem>
+    </itemizedlist>
+
+     <para>
+      The typical sequence of LDAP calls you will make in an
+      application will follow this pattern:
+<literallayout>
+  ldap_connect()    // establish connection to server
+     |
+  ldap_bind()       // anonymous or authenticated "login"
+     |
+  do something like search or update the directory
+  and display the results
+     |
+  ldap_close()      // "logout"
+</literallayout>
+   </sect2>
+
+
+   <sect2>
+    <title>More Information</title>
+     <para>
+      Lots of information about LDAP can be found at
+     </para>
+
+    <itemizedlist>
+     <listitem>
+      <para>
+       <ulink url="&url.ldap.netscape;">Netscape</ulink>
+      </para>
+     </listitem>
+     <listitem>
+      <para>
+       <ulink url="&url.ldap.michigan;">University of Michigan</ulink>
+      </para>
+     </listitem>
+     <listitem>
+      <para>
+       <ulink url="&url.ldap.openldap;">OpenLDAP Project</ulink>
+      </para>
+     </listitem>
+     <listitem>
+      <para>
+       <ulink url="&url.ldap.ldapworld;">LDAP World</ulink>
+      </para>
+     </listitem>
+    </itemizedlist>
+
+     <para>    
+      The Netscape SDK contains a helpful Programmer's Guide in .html
+      format.
+     </para>
+   </sect2>
+  </sect1>
+
+  </partintro>
+
+
+  <refentry id="function.ldap-add">
+   <refnamediv>
+    <refname>ldap_add</refname>
+    <refpurpose>Add entries to LDAP directory</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_add</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>string <parameter>dn</parameter></paramdef>
+     <paramdef>array <parameter>entry</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     returns true on success and false on error.  
+    </para><para> 
+     The <function>ldap_add</function> function is used to add entries
+     in the LDAP directory. The DN of the entry to be added is
+     specified by dn. Array entry specifies the information about the
+     entry. The values in the entries are indexed by individual
+     attributes. In case of multiple values for an attribute, they are
+     indexed using integers starting with 0.
+    </para>
+	<informalexample>
+<literallayout>
+    entry["attribute1"] = value
+    entry["attribute2"][0] = value1
+    entry["attribute2"][1] = value2
+</literallayout>
+     </informalexample>
+     <example>
+      <title>Complete example with authenticated bind</title>
+<programlisting role=php>
+&lt;?php
+$ds=ldap_connect("localhost");  // assuming the LDAP server is on this host
+
+if ($ds) {
+    // bind with appropriate dn to give update access
+    $r=ldap_bind($ds,"cn=root, o=My Company, c=US", "secret");
+
+    // prepare data
+    $info["cn"]="John Jones";
+    $info["sn"]="Jones";
+    $info["mail"]="jonj@here.and.now";
+    $info["objectclass"]="person";
+
+    // add data to directory
+    $r=ldap_add($ds, "cn=John Jones, o=My Company, c=US", $info);
+
+    ldap_close($ds);
+} else {
+    echo "Unable to connect to LDAP server"; 
+}
+?>
+</programlisting>
+     </example>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ldap-mod-add">
+   <refnamediv>
+    <refname>ldap_mod_add</refname>
+    <refpurpose>Add attribute values to current attributes</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_mod_add</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>string <parameter>dn</parameter></paramdef>
+     <paramdef>array <parameter>entry</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     returns true on success and false on error.  
+	<para>
+	 This function adds attribute(s) to the specified dn.  It
+	 performs the modification at the attribute level as opposed to the 
+	 object level.  Object-level additions are done by the 
+	<function>ldap_add</function> function.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ldap-mod-del">
+   <refnamediv>
+    <refname>ldap_mod_del</refname>
+    <refpurpose>Delete attribute values from current attributes</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_mod_del</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>string <parameter>dn</parameter></paramdef>
+     <paramdef>array <parameter>entry</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     returns true on success and false on error.  
+	<para>
+	 This function removes attribute(s) from the specified dn.  It
+	 performs the modification at the attribute level as opposed to the 
+	 object level.  Object-level deletions are done by the 
+	<function>ldap_del</function> function.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ldap-mod-replace">
+   <refnamediv>
+    <refname>ldap_mod_replace</refname>
+    <refpurpose>Replace attribute values with new ones</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_mod_replace</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>string <parameter>dn</parameter></paramdef>
+     <paramdef>array <parameter>entry</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     returns true on success and false on error.  
+	<para>
+	 This function replaces attribute(s) from the specified dn.  It
+	 performs the modification at the attribute level as opposed to the 
+	 object level.  Object-level modifications are done by the 
+	<function>ldap_modify</function> function.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ldap-bind">
+   <refnamediv>
+    <refname>ldap_bind</refname>
+    <refpurpose>Bind to LDAP directory</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_bind</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>string <parameter><optional>bind_rdn</optional></parameter></paramdef>
+     <paramdef>string <parameter><optional>bind_password</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Binds to the LDAP directory with specified RDN and
+     password. Returns true on success and false on error.
+    <para>  
+     <function>ldap_bind</function> does a bind operation on the
+     directory. bind_rdn and bind_password are optional. If not
+     specified, anonymous bind is attempted.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-close">
+   <refnamediv>
+    <refname>ldap_close</refname>
+    <refpurpose>Close link to LDAP server</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_close</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns true on success, false on error. 
+    <para>
+     <function>ldap_close</function> closes the link to the LDAP
+     server that's associated with the specified
+     <parameter>link_identifier</parameter>.
+    <para>
+     This call is internally identical to
+     <function>ldap_unbind</function>. The LDAP API uses the call
+     <function>ldap_unbind</function>, so perhaps you should use this
+     in preference to <function>ldap_close</function>.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-connect">
+   <refnamediv>
+    <refname>ldap_connect</refname>
+    <refpurpose>Connect to an LDAP server</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_connect</function></funcdef>
+     <paramdef>string <parameter><optional>hostname</optional></parameter></paramdef>
+     <paramdef>int <parameter><optional>port</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns a positive LDAP link identifier on success, or false on
+     error.  
+    <para> 
+     <function>ldap_connect</function> establishes a connection to a
+     LDAP server on a specified <parameter>hostname</parameter> and
+     <parameter>port</parameter>.  Both the arguments are optional. If
+     no arguments are specified then the link identifier of the
+     already opened link will be returned. If only
+     <parameter>hostname</parameter> is specified, then the port
+     defaults to 389.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-count-entries">
+   <refnamediv>
+    <refname>ldap_count_entries</refname>
+    <refpurpose>Count the number of entries in a search</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_count_entries</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>int <parameter>result_identifier</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns number of entries in the result or false on error.
+    <para>  
+     <function>ldap_count_entries</function> returns the number of
+     entries stored in the result of previous search
+     operations. <parameter>result_identifier</parameter> identifies
+     the internal ldap result.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-delete">
+   <refnamediv>
+    <refname>ldap_delete</refname>
+    <refpurpose>Delete an entry from a directory</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_delete</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>string <parameter>dn</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns true on success and false on error.  
+    <para>
+     <function>ldap_delete</function> function delete a particular
+     entry in LDAP directory specified by dn.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-dn2ufn">
+   <refnamediv>
+    <refname>ldap_dn2ufn</refname>
+    <refpurpose>Convert DN to User Friendly Naming format</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>ldap_dn2ufn</function></funcdef>
+     <paramdef>string <parameter>dn</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>ldap_dn2ufn</function> function is used to turn a DN
+     into a more user-friendly form, stripping off type names.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-explode-dn">
+   <refnamediv>
+    <refname>ldap_explode_dn</refname>
+    <refpurpose>Splits DN into its component parts</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>ldap_explode_dn</function></funcdef>
+     <paramdef>string <parameter>dn</parameter></paramdef>
+     <paramdef>int <parameter>with_attrib</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>ldap_explode_dn</function> function is used to split
+     the a DN returned by <function>ldap_get_dn</function> and breaks
+     it up into its component parts. Each part is known as Relative
+     Distinguished Name, or RDN.  <function>ldap_explode_dn</function>
+     returns an array of all those components.
+     <parameter>with_attrib</parameter> is used to request if the RDNs
+     are returned with only values or their attributes as well.  To
+     get RDNs with the attributes (i.e. in attribute=value format) set
+     <parameter>with_attrib</parameter> to 0 and to get only values
+     set it to 1.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-first-attribute">
+   <refnamediv>
+    <refname>ldap_first_attribute</refname>
+    <refpurpose>Return first attribute</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>ldap_first_attribute</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>int <parameter>result_entry_identifier</parameter></paramdef>
+     <paramdef>int <parameter>ber_identifier</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the first attribute in the entry on success and false on
+     error.
+    <para>  
+     Similar to reading entries, attributes are also read one by one
+     from a particular entry.
+     <function>ldap_first_attribute</function> returns the first
+     attribute in the entry pointed by the entry identifier.
+     Remaining attributes are retrieved by calling
+     <function>ldap_next_attribute</function> successively.
+     <parameter>ber_identifier</parameter> is the identifier to
+     internal memory location pointer. It is passed by reference. The
+     same <parameter>ber_identifier</parameter> is passed to the
+     ldap_next_attribute() function, which modifies that pointer.
+    <para>
+     see also <function>ldap_get_attributes</function>
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-first-entry">
+   <refnamediv>
+    <refname>ldap_first_entry</refname>
+    <refpurpose>Return first result id</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_first_entry</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>int <parameter>result_identifier</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the result entry identifier for the first entry on
+     success and false on error.
+    <para>  
+     Entries in the LDAP result are read sequentially using the
+     <function>ldap_first_entry</function> and
+     <function>ldap_next_entry</function>
+     functions. <function>ldap_first_entry</function> returns the
+     entry identifier for first entry in the result. This entry
+     identifier is then supplied to
+     <function>lap_next_entry</function> routine to get successive
+     entries from the result.
+    <para>
+     see also <function>ldap_get_entries</function>.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-free-result">
+   <refnamediv>
+    <refname>ldap_free_result</refname>
+    <refpurpose>Free result memory</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_free_result</function></funcdef>
+     <paramdef>int <parameter>result_identifier</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns true on success and false on error.
+    <para>  
+     <function>ldap_free_result</function> frees up the memory
+     allocated internally to store the result and pointed by the
+     <parameter>result_identifier</parameter>. All result memory will
+     be automatically freed when the script terminates.
+    <para>
+     Typically all the memory allocated for the ldap result gets freed
+     at the end of the script. In case the script is making successive
+     searches which return large result sets,
+     <function>ldap_free_result</function> could be called to keep the
+     runtime memory usage by the script low.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-get-attributes">
+   <refnamediv>
+    <refname>ldap_get_attributes</refname>
+    <refpurpose>Get attributes from a search result entry</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>ldap_get_attributes</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>int
+     <parameter>result_entry_identifier</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns a complete entry information in a multi-dimensional array
+     on success and false on error.  
+    <para>
+     <function>ldap_get_attributes</function> function is used to
+     simplify reading the attributes and values from an entry in the
+     search result. The return value is a multi-dimensional array of
+     attributes and values.
+    <para>
+     Having located a specific entry in the directory, you can find
+     out what information is held for that entry by using this
+     call. You would use this call for an application which "browses"
+     directory entries and/or where you do not know the structure of
+     the directory entries. In many applications you will be searching
+     for a specific attribute such as an email address or a surname,
+     and won't care what other data is held.
+    <para>
+     <informalexample><literallayout>
+return_value["count"] = number of attributes in the entry
+return_value[0] = first attribute
+return_value[n] = nth attribute
+
+return_value["attribute"]["count"] = number of values for attribute
+return_value["attribute"][0] = first value of the attribute
+return_value["attribute"][i] = ith value of the attribute
+</literallayout></informalexample>
+
+    <example>
+     <title>Show the list of attributes held for a particular directory
+     entry </title>
+<programlisting role=php>
+// $ds is the link identifier for the directory
+
+// $sr is a valid search result from a prior call to
+// one of the ldap directory search calls
+
+$entry = ldap_first_entry($ds, $sr);
+
+$attrs = ldap_get_attributes($ds, $entry);
+
+echo $attrs["count"]." attributes held for this entry:&lt;p>";
+
+for ($i=0; $i<$attrs["count"]; $i++)
+    echo $attrs[$i]."&lt;br>";
+</programlisting>
+</example>
+
+     <para>
+      see also <function>ldap_first_attribute</function> and
+      <function>ldap_next_attribute</function>
+
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-get-dn">
+   <refnamediv>
+    <refname>ldap_get_dn</refname>
+    <refpurpose>Get the DN of a result entry</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>ldap_get_dn</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>int <parameter>result_entry_identifier</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the DN of the result entry and false on error.  
+    <para>
+     <function>ldap_get_dn</function> function is used to find out the
+     DN of an entry in the result.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-get-entries">
+   <refnamediv>
+    <refname>ldap_get_entries</refname>
+    <refpurpose>Get all result entries</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>ldap_get_entries</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>int <parameter>result_identifier</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns a complete result information in a multi-dimenasional
+     array on success and false on error.
+    <para>  
+     <function>ldap_get_entries</function> function is used to
+     simplify reading multiple entries from the result and then
+     reading the attributes and multiple values. The entire
+     information is returned by one function call in a
+     multi-dimensional array. The structure of the array is as
+     follows.
+    <para>
+     The attribute index is converted to lowercase. (Attributes are
+     case-insensitive for directory servers, but not when used as
+     array indices)
+
+    <informalexample>
+<literallayout>
+return_value["count"] = number of entries in the result
+return_value[0] : refers to the details of first entry
+
+return_value[i]["dn"] =  DN of the ith entry in the result
+
+return_value[i]["count"] = number of attributes in ith entry
+return_value[i][j] = jth attribute in the ith entry in the result
+
+return_value[i]["attribute"]["count"] = number of values for 
+    attribute in ith entry
+return_value[i]["attribute"][j] = jth value of attribute in ith entry
+</literallayout>
+    </informalexample>
+	
+     <para>
+      see also <function>ldap_first_entry</function> and
+      <function>ldap_next_entry</function>
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-get-values">
+   <refnamediv>
+    <refname>ldap_get_values</refname>
+    <refpurpose>Get all values from a result entry</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>ldap_get_values</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>int <parameter>result_entry_identifier</parameter></paramdef>
+     <paramdef>string <parameter>attribute</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an array of values for the attribute on success and false
+     on error.
+    <para>  
+     <function>ldap_get_values</function> function is used to read all
+     the values of the attribute in the entry in the result. entry is
+     specified by the
+     <parameter>result_entry_identifier</parameter>. The number of
+     values can be found by indexing "count" in the resultant
+     array. Individual values are accessed by integer index in the
+     array.  The first index is 0.  
+    <para>
+     This call needs a <parameter>result_entry_identifier</parameter>,
+     so needs to be preceded by one of the ldap search calls and one
+     of the calls to get an individual entry.
+    <para>
+     You application will either be hard coded to look for certain
+     attributes (such as "surname" or "mail") or you will have to use
+     the <function>ldap_get_attributes</function> call to work out
+     what attributes exist for a given entry.
+    <para>
+     LDAP allows more than one entry for an attribute, so it can, for
+     example, store a number of email addresses for one person's
+     directory entry all labeled with the attribute "mail"
+
+    <informalexample>
+<literallayout>
+return_value["count"] = number of values for attribute
+return_value[0] = first value of attribute
+return_value[i] = ith value of attribute
+</literallayout>
+    </informalexample>
+
+     <example>
+      <title>List all values of the "mail" attribute for a 
+       directory entry </title>
+<programlisting role=php>
+// $ds is a valid link identifier for a directory server
+
+// $sr is a valid search result from a prior call to
+//     one of the ldap directory search calls
+
+// $entry is a valid entry identifier from a prior call to
+//        one of the calls that returns a directory entry
+
+$values = ldap_get_values($ds, $entry,"mail");
+
+echo $values["count"]." email addresses for this entry.&lt;p>";
+
+for ($i=0; $i &lt; $values["count"]; $i++)
+    echo $values[$i]."&lt;br>";
+</programlisting>
+     </example>
+
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-list">
+   <refnamediv>
+    <refname>ldap_list</refname>
+    <refpurpose>Single-level search</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_list</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>string <parameter>base_dn</parameter></paramdef>
+     <paramdef>string <parameter>filter</parameter></paramdef>
+     <paramdef>array
+      <parameter><optional>attributes</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns a search result identifier or false on error.  
+    <para>
+     <function>ldap_list</function> performs the search for a specified
+     filter on the directory with the scope LDAP_SCOPE_ONELEVEL.
+    <para>
+     LDAP_SCOPE_ONELEVEL means that the search should only return
+     information that is at the level immediately below the base dn
+     given in the call. (Equivalent to typing "ls" and getting a list
+     of files and folders in the current working directory.)
+    <para>
+     This call takes an optional fourth parameter which is an array of
+     the attributes required. See <function>ldap_search</function>
+     notes.
+
+    <example>
+      <title>Produce a list of all organizational units of an organization 
+       </title>
+<programlisting role=php3>
+// $ds is a valid link identifier for a directory server
+
+$basedn = "o=My Company, c=US";
+$justthese = array("ou");
+
+$sr=ldap_list($ds, $basedn, "ou=*", $justthese);
+
+$info = ldap_get_entries($ds, $sr);
+
+for ($i=0; $i<$info["count"]; $i++)
+    echo $info[$i]["ou"][0] ;
+</programlisting>
+</example>
+  </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-modify">
+   <refnamediv>
+    <refname>ldap_modify</refname>
+    <refpurpose>Modify an LDAP entry</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_modify</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>string <parameter>dn</parameter></paramdef>
+     <paramdef>array <parameter>entry</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns true on success and false on error.  
+    <para>
+     <function>ldap_modify</function> function is used to modify the
+     existing entries in the LDAP directory. The structure of the
+     entry is same as in <function>ldap_add</function>.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-next-attribute">
+   <refnamediv>
+    <refname>ldap_next_attribute</refname>
+    <refpurpose>Get the next attribute in result</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>ldap_next_attribute</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>int <parameter>result_entry_identifier</parameter></paramdef>
+     <paramdef>int <parameter>ber_identifier</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the next attribute in an entry on success and false on
+     error.
+    <para>  
+     <function>ldap_next_attribute</function> is called to retrieve
+     the attributes in an entry.  The internal state of the pointer is
+     maintained by the <parameter>ber_identifier</parameter>.  It is
+     passed by reference to the function. The first call to
+     <function>ldap_next_attribute</function> is made with the
+     <parameter>result_entry_identifier</parameter> returned from
+     <function>ldap_first_attribute</function>.
+    <para>
+     see also <function>ldap_get_attributes</function>
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-next-entry">
+   <refnamediv>
+    <refname>ldap_next_entry</refname>
+    <refpurpose>Get next result entry</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_next_entry</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>int <parameter>result_entry_identifier</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns entry identifier for the next entry in the result whose
+     entries are being read starting with
+     <function>ldap_first_entry</function>. If there are no more
+     entries in the result then it returns false.
+    <para>  
+     <function>ldap_next_entry</function> function is used to retrieve
+     the entries stored in the result. Successive calls to the
+     <function>ldap_next_entry</function> return entries one by one
+     till there are no more entries. The first call to
+     <function>ldap_next_entry</function> is made after the call to
+     <function>ldap_first_entry</function> with the result_identifier
+     as returned from the <function>ldap_first_entry</function>.
+    <para>
+     see also <function>ldap_get_entries</function>
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-read">
+   <refnamediv>
+    <refname>ldap_read</refname>
+    <refpurpose>Read an entry</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_read</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>string <parameter>base_dn</parameter></paramdef>
+     <paramdef>string <parameter>filter</parameter></paramdef>
+     <paramdef>array 
+      <parameter><optional>attributes</optional</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns a search result identifier or false on error.
+    <para>  
+     <function>ldap_read</function> performs the search for a
+     specified filter on the directory with the scope
+     LDAP_SCOPE_BASE. So it is equivalent to reading an entry from the
+     directory.
+    <para>
+     An empty filter is not allowed. If you want to retrieve
+     absolutely all information for this entry, use a filter of
+     "objectClass=*". If you know which entry types are used on the
+     directory server, you might use an appropriate filter such as
+     "objectClass=inetOrgPerson".
+    <para>
+     This call takes an optional fourth parameter which is an array of
+     the attributes required. See <function>ldap_search</function>
+     notes.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-search">
+   <refnamediv>
+    <refname>ldap_search</refname>
+    <refpurpose>Search LDAP tree</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_search</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+     <paramdef>string <parameter>base_dn</parameter></paramdef>
+     <paramdef>string <parameter>filter</parameter></paramdef>
+     <paramdef>array 
+      <parameter><optional>attributes</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns a search result identifier or false on error.
+    <para>  
+     <function>ldap_search</function> performs the search for a
+     specified filter on the directory with the scope of
+     LDAP_SCOPE_SUBTREE. This is equivalent to searching the entire
+     directory. <parameter>base_dn</parameter> specifies the base DN
+     for the directory.
+    <para>
+     There is a optional fourth parameter, that can be added to
+     restrict the attributes and values returned by the server to just
+     those required. This is much more efficient than the default
+     action (which is to return all attributes and their associated
+     values). The use of the fourth parameter should therefore be
+     considered good practice.
+    <para>
+     The fourth parameter is a standard PHP string array of the
+     required attributes, eg array("mail","sn","cn") Note that the
+     "dn" is always returned irrespective of which attributes types
+     are requested.
+    <para>
+     Note too that some directory server hosts will be configured to
+     return no more than a preset number of entries. If this occurs,
+     the server will indicate that it has only returned a partial
+     results set. 
+    <para>
+     The search filter can be simple or advanced, using boolean
+     operators in the format described in the LDAP doumentation (see
+     the <ulink url="&url.ldap.netscape;">Netscape Directory SDK</ulink>
+     for full information on filters).
+    <para>
+     The example below retrieves the organizational unit, surname,
+     given name and email address for all people in "My Company" where
+     the surname or given name contains the substring $person. This
+     example uses a boolean filter to tell the server to look for
+     information in more than one attribute.
+
+     <example>
+      <title>LDAP search</title>
+<programlisting role=php>
+// $ds is a valid link identifier for a directory server
+
+// $person is all or part of a person's name, eg "Jo"
+
+$dn = "o=My Company, c=US";
+$filter="(|(sn=$person*)(givenname=$person*))";
+$justthese = array( "ou", "sn", "givenname", "mail");
+
+$sr=ldap_search($ds, $dn, $filter, $justthese);
+
+$info = ldap_get_entries($ds, $sr);
+
+print $info["count"]." entries returned&lt;p>";
+</programlisting>
+      </example>
+
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.ldap-unbind">
+   <refnamediv>
+    <refname>ldap_unbind</refname>
+    <refpurpose>Unbind from LDAP directory</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>ldap_unbind</function></funcdef>
+     <paramdef>int <parameter>link_identifier</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns true on success and false on error.  
+    <para>
+     <function>ldap_unbind</function> function unbinds from the LDAP
+     directory.
+   </refsect1>
+  </refentry>
+
+
+ </reference>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->
