@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+   <sect1 id="install.unix.sun">
+    <title>Sun, iPlanet and Netscape servers on Sun Solaris</title>
+    <para>
+     This section contains notes and hints specific to Sun Java System Web Server,
+     Sun ONE Web Server, iPlanet and Netscape server installs of PHP on Sun Solaris.
+    </para>
+    <para>
+     From PHP 4.3.3 on you can use PHP scripts with the
+     <link linkend="ref.nsapi">NSAPI module</link> to 
+     <link linkend="install.unix.sun.specialpages">generate custom directory
+     listings and error pages</link>. Additional functions for Apache
+     compatibility are also available. For support in current webservers read
+     the <link linkend="install.unix.sun.notes">note about subrequests</link>.
+    </para>
+    <para>
+     You can find more information about setting up PHP for the Netscape
+     Enterprise Server (NES) here:
+     <ulink url="&url.netscape.nsapi;">&url.netscape.nsapi;</ulink>
+    </para>
+    
+    <para>
+     To build PHP with Sun JSWS/Sun ONE WS/iPlanet/Netscape webservers,
+     enter the proper install directory for the
+     <link linkend="install.configure.with-nsapi">--with-nsapi=[DIR]</link>
+     option. The default directory is usually
+     <filename class="directory">/opt/netscape/suitespot/</filename>.
+     Please also read <filename>/php-xxx-version/sapi/nsapi/nsapi-readme.txt</filename>.
+    </para>
+    <para>
+     <orderedlist>
+      <listitem>
+       <para>
+        Install the following packages from <ulink url="&url.sun.freeware;">
+        &url.sun.freeware;</ulink> or another download site:
+        <simplelist>
+         <member><filename>autoconf-2.13</filename></member>
+         <member><filename>automake-1.4</filename></member>
+         <member><filename>bison-1_25-sol26-sparc-local</filename></member>
+         <member><filename>flex-2_5_4a-sol26-sparc-local</filename></member>
+         <member><filename>gcc-2_95_2-sol26-sparc-local</filename></member>
+         <member><filename>gzip-1.2.4-sol26-sparc-local</filename></member>
+         <member><filename>m4-1_4-sol26-sparc-local</filename></member>
+         <member><filename>make-3_76_1-sol26-sparc-local</filename></member>
+         <member>
+          <filename>mysql-3.23.24-beta</filename> (if you want mysql support)
+         </member>
+         <member><filename>perl-5_005_03-sol26-sparc-local</filename></member>
+         <member><filename>tar-1.13</filename> (GNU tar)</member>
+        </simplelist>
+       </para>
+      </listitem>
+      <listitem>
+       <simpara>
+        Make sure your path includes the proper directories
+        <literal>PATH=.:/usr/local/bin:/usr/sbin:/usr/bin:/usr/ccs/bin</literal>
+        and make it available to your system <userinput>export PATH</userinput>.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <userinput>gunzip php-x.x.x.tar.gz</userinput> (if you have a .gz dist,
+        otherwise go to 4).
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <userinput>tar xvf php-x.x.x.tar</userinput>
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        Change to your extracted PHP directory:
+        <userinput>cd ../php-x.x.x </userinput>
+       </simpara>
+      </listitem>
+      <listitem>
+       <para>
+        For the following step, make sure
+        <filename class="directory">/opt/netscape/suitespot/</filename> is
+        where your netscape server is installed. Otherwise, change to the
+        correct path and run:
+        <programlisting role="shell">
+<![CDATA[
+./configure --with-mysql=/usr/local/mysql \
+--with-nsapi=/opt/netscape/suitespot/ \
+--enable-libgcc
+]]>
+        </programlisting>
+       </para>
+      </listitem>
+      <listitem>
+       <simpara>
+        Run <command>make</command> followed by <command>make install</command>.
+       </simpara>
+      </listitem>
+     </orderedlist>
+    </para>
+    <para>
+     After performing the base install and reading the appropriate readme file,
+     you may need to perform some additional configuration steps.
+    </para>
+    <formalpara>
+     <title>Configuration Instructions for Sun/iPlanet/Netscape</title>
+     <para>
+      Firstly you may need to add some paths to the <varname>LD_LIBRARY_PATH</varname>
+      environment for the server to find all the shared libs. This can best done
+      in the start script for your webserver. The start script is often located
+      in: <filename class="directory">/path/to/server/https-servername/start</filename>.
+      You may also need to edit the configuration files that are
+      located in: <filename
+      class="directory">/path/to/server/https-servername/config/</filename>.
+      <orderedlist>
+       <listitem>
+        <para>
+         Add the following line to <filename>mime.types</filename> (you can do
+         that by the administration server):
+         <screen>
+<![CDATA[
+type=magnus-internal/x-httpd-php exts=php
+]]>
+         </screen>
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         Edit <filename>magnus.conf</filename> (for servers &gt;= 6) or
+         <filename>obj.conf</filename> (for servers &lt; 6) and add the following,
+         shlib will vary depending on your system, it will be something like
+         <filename>/opt/netscape/suitespot/bin/libphp4.so</filename>. You should
+         place the following lines after <literal>mime types init</literal>.
+         <programlisting>
+<![CDATA[
+Init fn="load-modules" funcs="php4_init,php4_execute,php4_auth_trans" shlib="/opt/netscape/suitespot/bin/libphp4.so"
+Init fn="php4_init" LateInit="yes" errorString="Failed to initialize PHP!" [php_ini="/path/to/php.ini"]
+]]>
+         </programlisting>
+         (PHP &gt;= 4.3.3) The <literal>php_ini</literal> parameter is
+         optional but with it you can place your &php.ini; in your
+         webserver config directory.
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         Configure the default object in <filename>obj.conf</filename>
+         (for virtual server classes [version 6.0+] in
+         their <filename>vserver.obj.conf</filename>):
+         <programlisting>
+<![CDATA[
+<Object name="default">
+.
+.
+.
+.#NOTE this next line should happen after all 'ObjectType' and before all 'AddLog' lines
+Service fn="php4_execute" type="magnus-internal/x-httpd-php" [inikey=value inikey=value ...]
+.
+.
+</Object>
+]]>
+         </programlisting>
+         (PHP &gt;= 4.3.3) As additional parameters you can add some special
+         &php.ini;-values, for example you can set a
+         <literal>docroot=&quot;/path/to/docroot&quot;</literal> specific
+         to the context <literal>php4_execute</literal> is called. For boolean
+         ini-keys please use 0/1 as value, not
+         <literal>&quot;On&quot;,&quot;Off&quot;,...</literal>
+         (this will not work correctly), e.g.
+         <literal>zlib.output_compression=1</literal> instead of
+         <literal>zlib.output_compression=&quot;On&quot;</literal>
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         This is only needed if you want to configure a directory that only consists of
+         PHP scripts (same like a <filename class="directory">cgi-bin</filename> directory):
+         <programlisting>
+<![CDATA[
+<Object name="x-httpd-php">
+ObjectType fn="force-type" type="magnus-internal/x-httpd-php"
+Service fn=php4_execute [inikey=value inikey=value ...]
+</Object>
+]]>
+         </programlisting>
+         After that you can configure a directory in the Administration server and assign it
+         the style <literal>x-httpd-php</literal>. All files in it will get executed as PHP.
+         This is nice to hide PHP usage by renaming files to <filename>.html</filename>.
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         Setup of authentication: PHP authentication cannot be used with any
+         other authentication. ALL AUTHENTICATION IS PASSED TO YOUR PHP SCRIPT.
+         To configure PHP Authentication for the entire server, add the
+         following line to your default object:
+         <programlisting>
+<![CDATA[
+<Object name="default">
+AuthTrans fn=php4_auth_trans
+.
+.
+.
+</Object>
+]]>
+         </programlisting>
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         To use PHP Authentication on a single directory, add the following:
+         <programlisting>
+<![CDATA[
+<Object ppath="d:\path\to\authenticated\dir\*">
+AuthTrans fn=php4_auth_trans
+</Object>
+]]>
+         </programlisting>
+        </para>
+       </listitem>
+      </orderedlist>
+     </para>
+    </formalpara>
+    <note>
+     <para>
+      The stacksize that PHP uses depends on the configuration of the webserver. If you get
+      crashes with very large PHP scripts, it is recommended to raise it with the Admin Server
+      (in the section &quot;MAGNUS EDITOR&quot;).
+     </para>
+    </note>
+   
+   <sect2 id="install.unix.sun.phpini">
+    <title>CGI environment and recommended modifications in php.ini</title>
+    <para>
+     Important when writing PHP scripts is the fact that Sun JSWS/Sun ONE
+     WS/iPlanet/Netscape is a multithreaded web server. Because of that all
+     requests are running in the same process space (the space of the webserver
+     itself) and this space has only one environment. If you want to get CGI
+     variables like <literal>PATH_INFO</literal>, <literal>HTTP_HOST</literal>
+     etc. it is not the correct way to try this in the old PHP 3.x way with
+     <function>getenv</function> or a similar way (register globals to
+     environment, <literal>$_ENV</literal>). You would only get the environment
+     of the running webserver without any valid CGI variables!
+    </para>
+    <note>
+     <para>
+      Why are there (invalid) CGI variables in the environment?
+     </para>
+     <para>
+      Answer: This is because you started the webserver process from the admin server
+      which runs the startup script of the webserver, you wanted to start, as a CGI script
+      (a CGI script inside of the admin server!). This is why the environment of
+      the started webserver has some CGI environment variables in it. You can test
+      this by starting the webserver not from the administration server. Use
+      the command line as root user and start it manually - you will see
+      there are no CGI-like environment variables.
+     </para>
+    </note>
+    <para>
+     Simply change your scripts to get CGI variables in the correct way for
+     PHP 4.x by using the superglobal <literal>$_SERVER</literal>. If you have
+     older scripts which use <literal>$HTTP_HOST</literal>, etc., you should turn
+     on <literal>register_globals</literal> in &php.ini; and change the variable
+     order too (important: remove <literal>&quot;E&quot;</literal> from it,
+     because you do not need the environment here):
+     <programlisting>
+<![CDATA[
+variables_order = "GPCS"
+register_globals = On
+]]>
+     </programlisting>
+    </para>
+   </sect2>
+   
+   <sect2 id="install.unix.sun.specialpages">
+    <title>Special use for error pages or self-made directory listings (PHP &gt;= 4.3.3)</title>
+    <para>
+     You can use PHP to generate the error pages for <literal>"404 Not Found"</literal>
+     or similar. Add the following line to the object in <filename>obj.conf</filename> for
+     every error page you want to overwrite:
+     <programlisting>
+<![CDATA[
+Error fn="php4_execute" code=XXX script="/path/to/script.php" [inikey=value inikey=value...]
+]]>
+     </programlisting>
+     where <literal>XXX</literal> is the HTTP error code. Please delete
+     any other <literal>Error</literal> directives which could interfere with yours.
+     If you want to place a page for all errors that could exist, leave
+     the <literal>code</literal> parameter out. Your script can get the HTTP status code
+     with <literal>$_SERVER['ERROR_TYPE']</literal>.
+    </para>
+    <para>
+     Another possibility is to generate self-made directory listings.
+     Just create a PHP script which displays a directory listing and
+     replace the corresponding default Service line for
+     <literal>type=&quot;magnus-internal/directory&quot;</literal>
+     in <filename>obj.conf</filename> with the following:
+     <programlisting>
+<![CDATA[
+Service fn="php4_execute" type="magnus-internal/directory" script="/path/to/script.php" [inikey=value inikey=value...]
+]]>
+     </programlisting>
+     For both error and directory listing pages the original URI and
+     translated URI are in the variables <literal>$_SERVER['PATH_INFO']</literal> and
+     <literal>$_SERVER['PATH_TRANSLATED']</literal>.
+    </para>
+   </sect2>
+   
+   <sect2 id="install.unix.sun.notes">
+    <title>Note about <function>nsapi_virtual</function> and subrequests (PHP &gt;= 4.3.3)</title>
+    <para>
+     The NSAPI module now supports the <function>nsapi_virtual</function> function
+     (alias: <function>virtual</function>)
+     to make subrequests on the webserver and insert the result in the webpage.
+     This function uses some undocumented features from the NSAPI library.
+     On Unix the module automatically looks for the needed functions and uses
+     them if available. If not, <function>nsapi_virtual</function> is disabled.
+    </para>
+    <note>
+     <para>
+      But be warned: Support for <function>nsapi_virtual</function> is EXPERIMENTAL!!!
+     </para>
+    </note>
+   </sect2>   
+  </sect1>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
