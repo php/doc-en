@@ -237,6 +237,34 @@ $dbconn3 = pg_Connect ("user=lamb passwd=baaaa dbname=mary ");
    </refsect1>
   </refentry>
 
+  <refentry id="function.pg-end-copy">
+   <refnamediv>
+    <refname>pg_end_copy</refname>
+    <refpurpose>Sync with PostgreSQL backend</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>pg_end_copy</function></funcdef>
+      <paramdef>resource
+       <parameter><optional>connection</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>pg_end_copy</function> syncs PostgreSQL frontend with
+     the backend after doing a copy operation. It must be issued or
+     the backend may get "out of sync" with the frontend. Returns
+     TRUE if successfull, FALSE otherwise.
+    </para>
+    <para>
+     For further details and an example, see also
+     <function>pg_put_line</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
   <refentry id="function.pg-errormessage">
    <refnamediv>
     <refname>pg_errormessage</refname>
@@ -1052,6 +1080,57 @@ for ($i=0; $i&lt;$num; $i++) {
     <para>
      <function>Pg_port</function> will return the port number that the
      given PostgreSQL connection identifier is connected to.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pg-put-line">
+   <refnamediv>
+    <refname>pg_put_line</refname>
+    <refpurpose>Send a NULL-terminated string to PostgreSQL backend</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>pg_put_line</function></funcdef>
+      <paramdef>resource
+       <parameter><optional>connection_id</optional></parameter>
+      </paramdef>
+      <paramdef>string <parameter>data</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>pg_put_line</function> sends a NULL-terminated string
+     to the PostgreSQL backend server. This is useful for example for
+     very high-speed inserting of data into a table, initiated by
+     starting a PostgreSQL copy-operation. That final NULL-character
+     is added automatically. Returns TRUE if successfull, FALSE
+     otherwise.
+    </para>
+    <note>
+     <para> 
+      Note the application must explicitly send the two characters "\."
+      on a final line to indicate to the backend that it has finished
+      sending its data.
+     </para>
+    </note>
+    <para>
+     See also <function>pg_end_copy</function>.
+     <example>
+      <title>High-speed insertion of data into a table</title>
+      <programlisting role="php">
+&lt;?php 
+    $conn = pg_pconnect ("dbname=foo");
+    pg_exec($conn, "create table bar (a int4, b char(16), d float8)");
+    pg_exec($conn, "copy bar from stdin");
+    pg_put_line($conn, "3\thello world\t4.5\n");
+    pg_put_line($conn, "4\tgoodbye world\t7.11\n");
+    pg_put_line($conn, "\\.\n");
+    pg_end_copy($conn);
+?>
+      </programlisting>
+     </example>
     </para>
    </refsect1>
   </refentry>
