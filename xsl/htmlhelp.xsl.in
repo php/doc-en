@@ -7,6 +7,8 @@
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:stbl="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.Table"
+                xmlns:xtbl="com.nwalsh.xalan.Table"
                 version="1.0">
 
 <xsl:import href="htmlhelp-db.xsl"/>
@@ -209,6 +211,219 @@ Usage: string date (string format, int [timestamp])<br></h2>
 <!-- do not enclose <methodname> in a <tt> -->
 <xsl:template match="methodname">
   <xsl:call-template name="inline.charseq"/>
+</xsl:template>
+
+<!-- Use simple bold text for admonitions -->
+<xsl:template name="nongraphical.admonition">
+  <div class="{name(.)}">
+    <xsl:if test="$admon.style">
+      <xsl:attribute name="style">
+        <xsl:value-of select="$admon.style"/>
+      </xsl:attribute>
+    </xsl:if>
+
+    <b>
+      <xsl:call-template name="anchor"/>
+      <xsl:apply-templates select="." mode="object.title.markup"/>
+      <xsl:text>: </xsl:text>
+    </b>
+
+    <xsl:apply-templates/>
+  </div>
+</xsl:template>
+
+<!-- Different table formatting for default simplelist -->
+<xsl:template match="simplelist">
+  <!-- with no type specified, the default is 'vert' -->
+  <xsl:call-template name="anchor"/>
+  <table border="0" cellspacing="1" cellpadding="2" class="datatable">
+    <xsl:call-template name="simplelist.vert">
+      <xsl:with-param name="cols">
+	<xsl:choose>
+	  <xsl:when test="@columns">
+	    <xsl:value-of select="@columns"/>
+	  </xsl:when>
+	  <xsl:otherwise>1</xsl:otherwise>
+	</xsl:choose>
+      </xsl:with-param>
+    </xsl:call-template>
+  </table>
+</xsl:template>
+
+<!-- This is a copy from tables.xsl, except that we have different
+     attributes for table than the default style sheets, provided
+     here in the second line literally, and as a default 0 border -->
+<xsl:template match="tgroup">
+  <table cellspacing="1" cellpadding="2" class="datatable">
+    <xsl:choose>
+      <!-- If there's a <?dbhtml table-summary="foo"?> PI, use it for
+           the HTML table summary attribute -->
+      <xsl:when test="processing-instruction('dbhtml')">
+        <xsl:variable name="summary">
+          <xsl:call-template name="dbhtml-attribute">
+            <xsl:with-param name="pis"
+                            select="processing-instruction('dbhtml')[1]"/>
+            <xsl:with-param name="attribute" select="'table-summary'"/>
+          </xsl:call-template>
+        </xsl:variable>
+        <xsl:if test="$summary != ''">
+          <xsl:attribute name="summary">
+            <xsl:value-of select="$summary"/>
+          </xsl:attribute>
+        </xsl:if>
+      </xsl:when>
+      <!-- Otherwise, if there's a title, use that -->
+      <xsl:when test="../title">
+        <xsl:attribute name="summary">
+          <xsl:value-of select="string(../title)"/>
+        </xsl:attribute>
+      </xsl:when>
+      <!-- Otherwise, forget the whole idea -->
+      <xsl:otherwise><!-- nevermind --></xsl:otherwise>
+    </xsl:choose>
+
+    <xsl:if test="../@pgwide=1">
+      <xsl:attribute name="width">100%</xsl:attribute>
+    </xsl:if>
+
+    <xsl:choose>
+      <xsl:when test="../@frame='none'">
+        <xsl:attribute name="border">0</xsl:attribute>
+      </xsl:when>
+      <xsl:when test="$table.borders.with.css != 0">
+        <xsl:attribute name="border">0</xsl:attribute>
+        <xsl:choose>
+          <xsl:when test="../@frame='topbot' or ../@frame='top'">
+            <xsl:attribute name="style">
+              <xsl:call-template name="border">
+                <xsl:with-param name="side" select="'top'"/>
+              </xsl:call-template>
+            </xsl:attribute>
+          </xsl:when>
+          <xsl:when test="../@frame='sides'">
+            <xsl:attribute name="style">
+              <xsl:call-template name="border">
+                <xsl:with-param name="side" select="'left'"/>
+              </xsl:call-template>
+              <xsl:call-template name="border">
+                <xsl:with-param name="side" select="'right'"/>
+              </xsl:call-template>
+            </xsl:attribute>
+          </xsl:when>
+        </xsl:choose>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:attribute name="border">0</xsl:attribute>
+      </xsl:otherwise>
+    </xsl:choose>
+
+    <xsl:variable name="colgroup">
+      <colgroup>
+        <xsl:call-template name="generate.colgroup">
+          <xsl:with-param name="cols" select="@cols"/>
+        </xsl:call-template>
+      </colgroup>
+    </xsl:variable>
+
+    <xsl:variable name="explicit.table.width">
+      <xsl:call-template name="dbhtml-attribute">
+        <xsl:with-param name="pis"
+                        select="../processing-instruction('dbhtml')[1]"/>
+        <xsl:with-param name="attribute" select="'table-width'"/>
+      </xsl:call-template>
+    </xsl:variable>
+
+    <xsl:variable name="table.width">
+      <xsl:choose>
+        <xsl:when test="$explicit.table.width != ''">
+          <xsl:value-of select="$explicit.table.width"/>
+        </xsl:when>
+        <xsl:when test="$default.table.width = ''">
+          <xsl:text>100%</xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="$default.table.width"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+
+    <xsl:if test="$default.table.width != ''
+                  or $explicit.table.width != ''">
+      <xsl:attribute name="width">
+        <xsl:choose>
+          <xsl:when test="contains($table.width, '%')">
+            <xsl:value-of select="$table.width"/>
+          </xsl:when>
+          <xsl:when test="$use.extensions != 0
+                          and $tablecolumns.extension != 0">
+            <xsl:choose>
+              <xsl:when test="function-available('stbl:convertLength')">
+                <xsl:value-of select="stbl:convertLength($table.width)"/>
+              </xsl:when>
+              <xsl:when test="function-available('xtbl:convertLength')">
+                <xsl:value-of select="xtbl:convertLength($table.width)"/>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:message terminate="yes">
+                  <xsl:text>No convertLength function available.</xsl:text>
+                </xsl:message>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="$table.width"/>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:attribute>
+    </xsl:if>
+
+    <xsl:choose>
+      <xsl:when test="$use.extensions != 0
+                      and $tablecolumns.extension != 0">
+        <xsl:choose>
+          <xsl:when test="function-available('stbl:adjustColumnWidths')">
+            <xsl:copy-of select="stbl:adjustColumnWidths($colgroup)"/>
+          </xsl:when>
+          <xsl:when test="function-available('xtbl:adjustColumnWidths')">
+            <xsl:copy-of select="xtbl:adjustColumnWidths($colgroup)"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:message terminate="yes">
+              <xsl:text>No adjustColumnWidths function available.</xsl:text>
+            </xsl:message>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:copy-of select="$colgroup"/>
+      </xsl:otherwise>
+    </xsl:choose>
+
+    <xsl:apply-templates select="thead"/>
+    <xsl:apply-templates select="tbody"/>
+    <xsl:apply-templates select="tfoot"/>
+
+    <xsl:if test=".//footnote">
+      <tbody class="footnotes">
+        <tr>
+          <td colspan="{@cols}">
+            <xsl:apply-templates select=".//footnote" 
+                                 mode="table.footnote.mode"/>
+          </td>
+        </tr>
+      </tbody>
+    </xsl:if>
+  </table>
+</xsl:template>
+
+<!-- output formal object titles enclosed in <h3> tags -->
+<xsl:template name="formal.object.heading">
+  <h3>
+    <xsl:call-template name="anchor"/>
+    <xsl:apply-templates select="." mode="object.title.markup">
+      <xsl:with-param name="allow-anchors" select="1"/>
+    </xsl:apply-templates>
+  </h3>
 </xsl:template>
 
 </xsl:stylesheet>
