@@ -1,0 +1,234 @@
+ <chapter id="features.file-upload">
+  <title>Handling file uploads</title>
+
+  <sect1 id="features.file-upload.post-method">
+   <title>POST method uploads</title>
+
+   <simpara>
+    PHP is capable of receiving file uploads from any RFC-1867
+    compliant browser (which includes Netscape Navigator 3 or later,
+    Microsoft Internet Explorer 3 with a patch from Microsoft, or
+    later without a patch).  This feature lets people upload both text
+    and binary files.  With PHP's authentication and file manipulation
+    functions, you have full control over who is allowed to upload and
+    what is to be done with the file once it has been uploaded.
+   </simpara>
+
+   <para>
+    Note that PHP also supports PUT-method file uploads as used by 
+    Netscape Composer and W3C's Amaya clients.  See the
+    <link linkend="features.file-upload.put-method">PUT Method Support</link> for more 
+    details.
+   </para>
+
+   <para>
+    A file upload screen can be built by creating a special form which
+    looks something like this:
+
+    <example>
+     <title>File Upload Form</title>
+     <programlisting>
+&lt;FORM ENCTYPE=&quot;multipart/form-data&quot; ACTION=&quot;_URL_&quot; METHOD=POST&gt;
+&lt;INPUT TYPE=&quot;hidden&quot; name=&quot;MAX_FILE_SIZE&quot; value=&quot;1000&quot;&gt;
+Send this file: &lt;INPUT NAME=&quot;userfile&quot; TYPE=&quot;file&quot;&gt;
+&lt;INPUT TYPE=&quot;submit&quot; VALUE=&quot;Send File&quot;&gt;
+&lt;/FORM&gt;
+    </programlisting>
+    </example>
+    
+    The _URL_ should point to a php html file.  The MAX_FILE_SIZE
+    hidden field must precede the file input field and its value is
+    the maximum filesize accepted.  The value is in bytes.  In this
+    destination file, the following variables will be defined upon a
+    successful upload:
+
+   <para>
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       $userfile - The temporary filename in which the uploaded file
+       was stored on the server machine.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       $userfile_name - The original name of the file on the sender's
+       system.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       $userfile_size - The size of the uploaded file in bytes.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       $userfile_type - The mime type of the file if the browser
+       provided this information.  An example would be
+       &quot;image/gif&quot;.
+      </simpara>
+     </listitem>
+    </itemizedlist>
+    
+    Note that the &quot;$userfile&quot; part of the above variables is
+    whatever the name of the INPUT field of TYPE=file is in the upload
+    form.  In the above upload form example, we chose to call it
+    &quot;userfile&quot;.
+
+   <simpara>
+    Files will by default be stored in the server's default temporary
+    directory.  This can be changed by setting the environment variable
+    TMPDIR in the environment in which PHP runs.  Setting it using
+    <function>putenv</function> from within a PHP script will
+    not work.
+
+   <simpara>
+    The PHP script which receives the uploaded file should implement
+    whatever logic is necessary for determining what should be done
+    with the uploaded file.  You can for example use the $file_size
+    variable to throw away any files that are either too small or too
+    big.  You could use the $file_type variable to throw away any
+    files that didn't match a certain type criteria.  Whatever the
+    logic, you should either delete the file from the temporary
+    directory or move it elsewhere.
+
+   <simpara>
+    The file will be deleted from the temporary directory at the end
+    of the request if it has not been moved away or renamed.
+ 
+  <sect1 id="features.file-upload.common-pitfalls">
+   <title>Common Pitfalls</title>
+   <simpara>
+    The MAX_FILE_SIZE item cannot specify a file size greater than the file 
+    size that has been set in the upload_max_filesize in the PHP3.ini file
+    or the corresponding php3_upload_max_filesize Apache .conf directive. 
+    The default is 2 Megabytes.
+   <simpara>
+    Please note that the CERN httpd seems to strip off everything
+    starting at the first whitespace in the content-type mime header
+    it gets from the client.  As long as this is the case, CERN httpd
+    will not support the file upload feature.
+  </sect1>
+
+  <sect1 id="feature-fileupload.multiple">
+   <title>Uploading multiple files</title>
+   <simpara>
+    It is possible to upload multiple files simultaneously and have
+    the information organized automatically in arrays for you. To
+    do so, you need to use the same array submission syntax in the
+    HTML form as you do with multiple selects and checkboxes:
+   <note>
+    <para>
+     Support for multiple file uploads was added in version 3.0.10.
+    </note>
+
+   <para>
+    <example>
+     <title>Uploading multiple forms</title>
+     <programlisting>
+&lt;form action=&quot;file-upload.html&quot; method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;
+  Send these files:&lt;br&gt;
+  &lt;input name=&quot;userfile[]&quot; type=&quot;file&quot;&gt;&lt;br&gt;
+  &lt;input name=&quot;userfile[]&quot; type=&quot;file&quot;&gt;&lt;br&gt;
+  &lt;input type=&quot;submit&quot; value=&quot;Send files&quot;&gt;
+&lt;/form&gt;
+     </programlisting>
+    </example>
+
+   <simpara>
+    When the above form is submitted, the arrays <computeroutput>$userfile</computeroutput>,
+    <computeroutput>$userfile_name</computeroutput>, and
+    <computeroutput>$userfile_size</computeroutput> will be formed in the global
+    scope (as well as in $HTTP_POST_VARS). Each of these will be a
+    numerically indexed array of the appropriate values for the
+    submitted files. 
+ 
+   <simpara>
+    For instance, assume that the filenames
+    <filename>/home/test/review.html</filename> and
+    <filename>/home/test/xwp.out</filename> are submitted.  In this
+    case, <computeroutput>$userfile_name[0]</computeroutput> would contain
+    the value <computeroutput>review.html</computeroutput>, and
+    <computeroutput>$userfile_name[1]</computeroutput> would contain the
+    value <computeroutput>xwp.out</computeroutput>. Similarly,
+    <computeroutput>$userfile_size[0]</computeroutput> would contain
+    <filename>review.html</filename>'s filesize, and so forth.
+
+  <sect1 id="features.file-upload.put-method">
+   <title>PUT method support</title>
+
+   <para>
+    PHP provides support for the HTTP PUT method used by clients such
+    as Netscape Composer and W3C Amaya.  PUT requests are much simpler
+    than a file upload and they look something like this:
+
+    <informalexample><programlisting>
+PUT /path/filename.html HTTP/1.1
+    </programlisting></informalexample>
+   </para>
+
+   <para>
+    This would normally mean that the remote client would like to save
+    the content that follows as: /path/filename.html in your web tree.
+    It is obviously not a good idea for Apache or PHP to automatically
+    let everybody overwrite any files in your web tree.  So, to handle
+    such a request you have to first tell your web server that you
+    want a certain PHP script to handle the request.  In Apache you do
+    this with the <emphasis>Script</emphasis> directive.  It can be
+    placed almost anywhere in your Apache configuration file.  A
+    common place is inside a &lt;Directory&gt; block or perhaps inside
+    a &lt;Virtualhost&gt; block.  A line like this would do the trick:
+
+    <informalexample><programlisting>
+Script PUT /put.php3
+    </programlisting></informalexample>
+   </para>
+
+   <simpara>
+    This tells Apache to send all PUT requests for URIs that match the
+    context in which you put this line to the put.php3 script.  This
+    assumes, of course, that you have PHP enabled for the .php3
+    extension and PHP is active.
+   </simpara>
+   <simpara>
+    Inside your put.php3 file you would then do something like this:
+   </simpara>
+   <para>
+    <informalexample><programlisting>
+&lt;? copy($PHP_UPLOADED_FILE_NAME,$DOCUMENT_ROOT.$REQUEST_URI); ?&gt;
+    </programlisting></informalexample>
+   </para>
+   <simpara>
+    This would copy the file to the location requested by the remote
+    client.  You would probably want to perform some checks and/or
+    authenticate the user before performing this file copy.  The only
+    trick here is that when PHP sees a PUT-method request it stores
+    the uploaded file in a temporary file just like those handled bu the
+    <link linkend="features.file-upload.post-method">POST-method</link>.
+    When the request ends, this temporary file is deleted.  So, your PUT
+    handling PHP script has to copy that file somewhere.  The filename
+    of this temporary file is in the $PHP_PUT_FILENAME variable, and
+    you can see the suggested destination filename in the $REQUEST_URI
+    (may vary on non-Apache web servers).  This destination filename is
+    the one that the remote client specified.  You do not have to listen
+    to this client.  You could, for example, copy all uploaded files to
+    a special uploads directory.
+
+ </chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->
