@@ -109,7 +109,7 @@ function write_xml_files()
     $functype=$funclist[$i]["function_type"];
 
     fwrite($fp, "<?xml version='1.0' encoding='iso-8859-1'?>\n" .
-               "<!-- $Revision$ -->\n" .
+               '<!-- $' . "Revision: 1.1 $ -->\n" .
                "  <refentry id=\"function." . $fixname . "\">\n" .
                "   <refnamediv>\n" .
                "    <refname>$funcname</refname>\n" .
