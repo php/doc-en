@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- splitted from ./en/functions/http.xml, last change in rev 1.2 -->
+  <refentry id="function.header">
+   <refnamediv>
+    <refname>header</refname>
+    <refpurpose>Send a raw HTTP header</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>int</type><methodname>header</methodname>
+      <methodparam><type>string</type><parameter>string</parameter></methodparam>
+      <methodparam choice="opt"><type>bool</type><parameter>replace</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     <function>header</function> is used to send raw
+     <acronym>HTTP</acronym> headers.  See the <ulink
+     url="&spec.http1.1;">HTTP/1.1 specification</ulink> for more
+     information on <acronym>HTTP</acronym> headers.
+    </para>
+    <para>
+     The optional <parameter>replace</parameter> parameter indicates
+     whether the header should replace a previous similar header, or
+     add a second header of the same type.  By default it will replace,
+     but if you pass in &false; as the second argument you can force
+     multiple headers of the same type.  For example:
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+header('WWW-Authenticate: Negotiate');
+header('WWW-Authenticate: NTLM',false);
+]]>
+      </programlisting>
+     </informalexample>
+    </para>
+    <para>
+     There are two special-case header calls.  The first is a header 
+     that starts with the string "<literal>HTTP/</literal>" (case is not
+     significant), which will be used to figure out the HTTP status
+     code to send. For example, if you have configured Apache to
+     use a PHP script to handle requests for missing files (using
+     the <literal>ErrorDocument</literal> directive), you may want to
+     make sure that your script generates the proper status code.
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+<?php
+  header("HTTP/1.0 404 Not Found");
+?>
+]]>
+      </programlisting>
+     </informalexample>
+     <note>
+      <para>
+       The HTTP status header line will always be the first sent
+       to the client, regardless of the actual <function>header</function> 
+       call beeing the first or not. The status may be overridden 
+       by calling <function>header</function> with a new status line
+       at any time unless the HTTP headers have already been sent.
+      </para>
+     </note>
+     <note>
+      <para>
+       In PHP 3, this only works when PHP is compiled as an Apache
+       module. You can achieve the same effect using the
+       <literal>Status</literal> header.
+       <informalexample>
+        <programlisting role="php">
+<![CDATA[
+header("Status: 404 Not Found");
+]]>
+        </programlisting>
+       </informalexample>
+      </para>
+     </note>
+    </para>
+    <para>
+     The second special case is the "Location:" header.  Not only does 
+     it send this header back to the browser, but it also returns a 
+     <literal>REDIRECT</literal> (302) status code to the browser unless 
+     some <literal>3xx</literal> status code has already been set.
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+header("Location: http://www.example.com/"); /* Redirect browser */
+exit;                 /* Make sure that code below does 
+                         not get executed when we redirect. */
+]]>
+      </programlisting>
+     </informalexample>
+    </para>
+    <note>
+     <para>
+      HTTP/1.1 requires an absolute <acronym>URI</acronym> as argument to
+      <ulink url="&spec.http1.1;-sec14.html#sec14.30">Location:</ulink>
+      including the scheme, hostname and absolute path, but
+      some clients accept relative URIs. You can usually use
+      <literal>$_SERVER['HTTP_HOST']</literal>, <literal>$_SERVER['PHP_SELF']</literal>
+      and <function>dirname</function> to make an absolute URI from a
+      relative one yourself:
+      <informalexample>
+       <programlisting>
+<![CDATA[
+header("Location: http://".$_SERVER['HTTP_HOST']
+                      .dirname($_SERVER['PHP_SELF'])
+                      ."/".$relative_url);
+]]>
+       </programlisting>
+      </informalexample>
+     </para>
+    </note>
+    <para>
+     PHP scripts often generate dynamic content that must not be cached
+     by the client browser or any proxy caches between the server and the
+     client browser. Many proxies and clients can be forced to disable
+     caching with
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");    // Date in the past
+header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT"); 
+                                                     // always modified
+header("Cache-Control: no-store, no-cache, must-revalidate");  // HTTP/1.1
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");                          // HTTP/1.0
+]]>
+      </programlisting>
+     </informalexample>
+     <note>
+      <para>
+       You may find that your pages aren't cached even if you don't
+       output all of the headers above. There are a number of options
+       that users may be able to set for their browser that change its
+       default caching behavior. By sending the headers above, you should
+       override any settings that may otherwise cause the output of your
+       script to be cached.
+      </para>
+      <para>
+       Additionally, <function>session_cache_limiter</function> and
+       the <literal>session.cache_limiter</literal> configuration
+       setting can be used to automatically generate the correct
+       caching-related headers when sessions are being used.
+      </para>
+     </note>
+    </para>
+    <para>
+     Remember that <function>header</function> must be
+     called before any actual output is sent, either by normal HTML
+     tags, blank lines in a file, or from PHP. It is a very common
+     error to read code with <function>include</function>, or
+     <function>require</function>, functions, or another file access
+     function, and have spaces or empty lines that are output before
+     <function>header</function> is called. The same problem exists
+     when using a single PHP/HTML file.
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+
+<?php header ("Content-type: audio/x-pn-realaudio"); ?>
+// Broken, note the blank line above
+]]>
+      </programlisting>
+     </informalexample>
+     <note>
+      <para>
+       In PHP 4, you can use output buffering to get around this problem,
+       with the overhead of all of your output to the browser being buffered
+       in the server until you send it. You can do this by calling
+       <function>ob_start</function> and <function>ob_end_flush</function>
+       in your script, or setting the <literal>output_buffering</literal>
+       configuration directive on in your &php.ini; or
+       server configuration files.
+      </para>
+     </note>
+    </para>    
+    <para>
+     If you want the user to be prompted to save the data you are
+     sending, such as a generated PDF file, you can use the <ulink
+     url="&url.rfc2183;">Content-Disposition</ulink> header to
+     supply a recommended filename and force the browser to display the
+     save dialog.
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+<?php
+header("Content-type: application/pdf");
+header("Content-Disposition: attachment; filename=downloaded.pdf");
+
+/* ... output pdf file ... */
+]]>
+      </programlisting>
+     </informalexample>
+     <note>
+      <para>
+       There is a bug in Microsoft Internet Explorer 4.01 that prevents
+       this from working. There is no workaround. There is also a bug
+       in Microsoft Internet Explorer 5.5 that interferes with this,
+       which can be resolved by upgrading to Service Pack 2 or later.
+      </para>
+     </note>
+    </para>
+    <para>
+     See also <function>headers_sent</function>,
+     <function>setcookie</function>, and the section on 
+     <link linkend="features.http-auth">HTTP authentication</link>.
+    </para>
+   </refsect1>
+  </refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

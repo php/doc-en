@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- splitted from ./en/functions/errorfunc.xml, last change in rev 1.1 -->
+  <refentry id="function.set-error-handler">
+   <refnamediv>
+    <refname>set_error_handler</refname>
+    <refpurpose>
+     Sets a user-defined error handler function.  
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>string</type><methodname>set_error_handler</methodname>
+      <methodparam><type>string</type><parameter>error_handler</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     Sets a user function (<parameter>error_handler</parameter>) to handle
+     errors in a script.  Returns the previously defined error handler (if
+     any), or &false; on error.  This function can be used for defining your own
+     way of handling errors during runtime, for example in applications in
+     which you need to do cleanup of data/files when a critical error happens,
+     or when you need to trigger an error under certain conditions (using
+     <function>trigger_error</function>)
+    </para>
+    <para>
+     The user function needs to accept 2 parameters: the error code, and a
+     string describing the error. From PHP 4.0.2, an additional 3 optional
+     parameters are supplied: the filename in which the error occurred, the
+     line number in which the error occurred, and the context in which the
+     error occurred (an array that points to the active symbol table at the
+     point the error occurred).
+    </para>
+    <para>
+     The example below shows the handling of 
+     internal exceptions by triggering errors and handling them with a user
+     defined function:
+     <example>
+      <title>
+       Error handling with <function>set_error_handler</function> and
+       <function>trigger_error</function>
+      </title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+// redefine the user error constants - PHP 4 only
+define (FATAL,E_USER_ERROR);
+define (ERROR,E_USER_WARNING);
+define (WARNING,E_USER_NOTICE);
+
+// set the error reporting level for this script
+error_reporting (FATAL | ERROR | WARNING);
+
+// error handler function
+function myErrorHandler ($errno, $errstr, $errfile, $errline) {
+  switch ($errno) {
+  case FATAL:
+    echo "<b>FATAL</b> [$errno] $errstr<br>\n";
+    echo "  Fatal error in line ".$errline." of file ".$errfile;
+    echo ", PHP ".PHP_VERSION." (".PHP_OS.")<br>\n";
+    echo "Aborting...<br>\n";
+    exit 1;
+    break;
+  case ERROR:
+    echo "<b>ERROR</b> [$errno] $errstr<br>\n";
+    break;
+  case WARNING:
+    echo "<b>WARNING</b> [$errno] $errstr<br>\n";
+    break;
+    default:
+    echo "Unkown error type: [$errno] $errstr<br>\n";
+    break;
+  }
+}
+
+// function to test the error handling
+function scale_by_log ($vect, $scale) {
+  if ( !is_numeric($scale) || $scale <= 0 )
+    trigger_error("log(x) for x <= 0 is undefined, you used: scale = $scale",
+      FATAL);
+  if (!is_array($vect)) {
+    trigger_error("Incorrect input vector, array of values expected", ERROR);
+    return null;
+  }
+  for ($i=0; $i<count($vect); $i++) {
+    if (!is_numeric($vect[$i]))
+      trigger_error("Value at position $i is not a number, using 0 (zero)", 
+        WARNING);
+    $temp[$i] = log($scale) * $vect[$i];
+  }
+  return $temp;
+}
+
+// set to the user defined error handler
+$old_error_handler = set_error_handler("myErrorHandler");
+
+// trigger some errors, first define a mixed array with a non-numeric item
+echo "vector a\n";
+$a = array(2,3,"foo",5.5,43.3,21.11);
+print_r($a);
+
+// now generate second array, generating a warning
+echo "----\nvector b - a warning (b = log(PI) * a)\n";
+$b = scale_by_log($a, M_PI);
+print_r($b);
+
+// this is trouble, we pass a string instead of an array
+echo "----\nvector c - an error\n";
+$c = scale_by_log("not array",2.3);
+var_dump($c);
+
+// this is a critical error, log of zero or negative number is undefined
+echo "----\nvector d - fatal error\n";
+$d = scale_by_log($a, -2.5);
+
+?>
+]]>
+      </programlisting>
+     </example>
+     And when you run this sample script, the output will be
+     <informalexample>
+      <programlisting>
+<![CDATA[
+vector a
+Array
+(
+    [0] => 2
+    [1] => 3
+    [2] => foo
+    [3] => 5.5
+    [4] => 43.3
+    [5] => 21.11
+)
+----
+vector b - a warning (b = log(PI) * a)
+<b>WARNING</b> [1024] Value at position 2 is not a number, using 0 (zero)<br>
+Array
+(
+    [0] => 2.2894597716988
+    [1] => 3.4341896575482
+    [2] => 0
+    [3] => 6.2960143721717
+    [4] => 49.566804057279
+    [5] => 24.165247890281
+)
+----
+vector c - an error
+<b>ERROR</b> [512] Incorrect input vector, array of values expected<br>
+NULL
+----
+vector d - fatal error
+<b>FATAL</b> [256] log(x) for x <= 0 is undefined, you used: scale = -2.5<br>
+  Fatal error in line 36 of file trigger_error.php, PHP 4.0.2 (Linux)<br>
+Aborting...<br>
+]]>
+      </programlisting>
+     </informalexample>
+    </para>
+    <para>
+     It is important to remember that the standard PHP error handler is completely
+     bypassed. <function>error_reporting</function> settings will have no effect
+     and your error handler will be called regardless - however you are still
+     able to read the current value of <function>error_reporting</function> and
+     act appropriately. Of particular note is that this value will be 0 if the
+     statement that caused the error was prepended by the
+     <link linkend="language.operators.errorcontrol">@ error-control
+     operator</link>.
+    </para>
+    <para>
+     Also note that it is your responsibility to <function>die</function> if
+     necessary. If the error-handler function returns, script execution
+     will continue with the next statement after the one that caused an error.
+    </para>
+    <para>
+     See also <function>error_reporting</function>,
+     <function>restore_error_handler</function>,
+     <function>trigger_error</function>, <function>user_error</function>
+    </para>
+   </refsect1>
+  </refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

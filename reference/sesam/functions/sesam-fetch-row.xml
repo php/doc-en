@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- splitted from ./en/functions/sesam.xml, last change in rev 1.1 -->
+  <refentry id="function.sesam-fetch-row">
+   <refnamediv>
+    <refname>sesam_fetch_row</refname>
+    <refpurpose>Fetch one row as an array</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>array</type><methodname>sesam_fetch_row</methodname>
+      <methodparam><type>string</type><parameter>result_id</parameter></methodparam>
+      <methodparam choice="opt"><type>int</type><parameter>whence</parameter></methodparam>
+      <methodparam choice="opt"><type>int</type><parameter>offset</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     Returns an array that corresponds to the fetched row, or
+     &false; if there are no more rows.
+    </para>
+    <para>
+     The number of columns in the result set is returned in an
+     associative array element $array["count"]. Because some of the
+     result columns may be empty, the <function>count</function>
+     function can not be used on the result row returned by
+     <function>sesam_fetch_row</function>.
+    </para>
+    <para>
+     <parameter>result_id</parameter> is a valid result id returned by
+     <function>sesam_query</function> (select type queries only!).
+    </para>
+    <para>
+     <parameter>whence</parameter> is an optional
+     parameter for a fetch operation on "scrollable" cursors, which
+     can be set to the following predefined constants:
+     <table>
+      <title>Valid values for <parameter>"whence"</parameter> parameter</title>
+      <tgroup cols="3">
+       <thead>
+        <row>
+	 <entry>Value</entry>
+	 <entry>Constant</entry>
+	 <entry>Meaning</entry>
+        </row>
+       </thead>
+       <tbody>
+        <row>
+	 <entry>0</entry>
+	 <entry><literal>SESAM_SEEK_NEXT</literal></entry>
+	 <entry>
+	  read sequentially (after fetch, the internal default is set
+	  to <literal>SESAM_SEEK_NEXT</literal>)
+	 </entry>
+        </row>
+        <row>
+	 <entry>1</entry>
+	 <entry><literal>SESAM_SEEK_PRIOR</literal></entry>
+	 <entry>
+	  read sequentially backwards (after fetch, the internal
+	  default is set to <literal>SESAM_SEEK_PRIOR</literal>)
+	 </entry>
+        </row>
+        <row>
+	 <entry>2</entry>
+	 <entry><literal>SESAM_SEEK_FIRST</literal></entry>
+	 <entry>
+	  rewind to first row (after fetch, the default is set to
+	  <literal>SESAM_SEEK_NEXT</literal>)
+	 </entry>
+        </row>
+        <row>
+	 <entry>3</entry>
+	 <entry><literal>SESAM_SEEK_LAST</literal></entry>
+	 <entry>
+	  seek to last row (after fetch, the default is set to
+	  <literal>SESAM_SEEK_PRIOR</literal>)
+	 </entry>
+        </row>
+        <row>
+	 <entry>4</entry>
+	 <entry><literal>SESAM_SEEK_ABSOLUTE</literal></entry>
+	 <entry>
+	  seek to absolute row number given as
+	  <parameter>offset</parameter> (Zero-based. After fetch, the
+	  internal default is set to
+	  <literal>SESAM_SEEK_ABSOLUTE</literal>, and the internal
+	  offset value is auto-incremented)
+	 </entry>
+        </row>
+        <row>
+	 <entry>5</entry>
+	 <entry><literal>SESAM_SEEK_RELATIVE</literal></entry>
+ 	<entry>
+	  seek relative to current scroll position, where
+	  <parameter>offset</parameter> can be a positive or negative
+	  offset value.
+	 </entry>
+        </row>
+       </tbody>
+      </tgroup>
+     </table>
+     This parameter is only valid for "scrollable" cursors.
+    </para>
+    <para>
+     When using "scrollable" cursors, the cursor can be freely
+     positioned on the result set. If the
+     <parameter>whence</parameter> parameter is
+     omitted, the global default values for the scrolling type
+     (initialized to: <literal>SESAM_SEEK_NEXT</literal>, and settable
+     by <function>sesam_seek_row</function>) are used. If
+     <parameter>whence</parameter> is supplied,
+     its value replaces the global default.
+    </para>
+    <para>
+     <parameter>offset</parameter> is an optional
+     parameter which is only evaluated (and required) if
+     <parameter>whence</parameter> is either
+     <literal>SESAM_SEEK_RELATIVE</literal> or
+     <literal>SESAM_SEEK_ABSOLUTE</literal>. This parameter is only
+     valid for "scrollable" cursors.
+    </para>
+    <para>
+     <function>sesam_fetch_row</function> fetches one row of data from
+     the result associated with the specified result identifier.  The
+     row is returned as an array (indexed by values between
+     <literal>0</literal> and <literal>$array["count"]-1</literal>).
+     Fields may be empty, so you must check for the existence of a
+     field by using the php <function>isset</function> function. The
+     type of the returned fields depend on the respective SQL type
+     declared for its column (see <link linkend="ref.sesam">SESAM
+     overview</link> for the conversions applied). SESAM "multiple
+     fields" are "inlined" and treated like a sequence of columns.
+    </para>
+    <para>
+     Subsequent calls to <function>sesam_fetch_row</function> would
+     return the next (or prior, or n'th next/prior, depending on the
+     scroll attributes) row in the result set, or
+     &false; if there are no more rows.
+    </para>
+    <example>
+     <title>SESAM fetch rows</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$result = sesam_query ("SELECT * FROM phone\n".
+                       "  WHERE LASTNAME='".strtoupper($name)."'\n".
+                       "  ORDER BY FIRSTNAME", 1);
+if (!$result) {
+    ... error ...
+}
+// print the table in backward order
+print "<TABLE BORDER>\n";
+$row = sesam_fetch_row ($result, SESAM_SEEK_LAST);
+while (is_array ($row)) {
+    print " <TR>\n";
+    for ($col = 0; $col < $row["count"]; ++$col) {
+        print "  <TD>".htmlspecialchars ($row[$col])."</TD>\n";
+    }
+    print " </TR>\n";
+    // use implied SESAM_SEEK_PRIOR
+    $row = sesam_fetch_row ($result);
+}
+print "</TABLE>\n";
+sesam_free_result ($result);
+?>
+]]>
+     </programlisting>
+    </example>
+    <para>
+     See also: <function>sesam_fetch_array</function> which returns an
+     associative array, and <function>sesam_fetch_result</function>
+     which returns many rows per invocation.
+    </para>
+   </refsect1>
+  </refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- splitted from ./en/functions/mnogosearch.xml, last change in rev 1.18 -->
+ <refentry id="function.udm-load-ispell-data">
+  <refnamediv>
+   <refname>udm_load_ispell_data</refname>
+   <refpurpose>Load ispell data</refpurpose>
+  </refnamediv>
+  
+  <refsect1>
+   <title>Description</title>
+    <methodsynopsis>
+     <type>int</type><methodname>udm_load_ispell_data</methodname>
+     <methodparam><type>int</type><parameter>agent</parameter></methodparam>
+     <methodparam><type>int</type><parameter>var</parameter></methodparam>
+     <methodparam><type>string</type><parameter>val1</parameter></methodparam>
+     <methodparam><type>string</type><parameter>val2</parameter></methodparam>
+     <methodparam><type>int</type><parameter>flag</parameter></methodparam>
+    </methodsynopsis>
+   
+   <para>
+    <function>udm_load_ispell_data</function> loads ispell data. Returns &true; 
+    on success, &false; on error.
+   </para>
+   
+   <para>
+    <parameter>agent</parameter> - agent link identifier, received after call 
+    to <function>udm_alloc_agent</function>.
+   </para>
+   
+   <para>
+    <parameter>var</parameter> - parameter, indicating the source for ispell 
+    data. May have the following values:
+   </para>
+   
+   <para>
+    After using this function to free memory allocated for ispell data, please 
+    use <function>udm_free_ispell_data</function>, even if you use UDM_ISPELL_TYPE_SERVER mode.
+   </para>
+   
+   <para>
+    The fastest mode is UDM_ISPELL_TYPE_SERVER. UDM_ISPELL_TYPE_TEXT is slower
+    and UDM_ISPELL_TYPE_DB is the slowest. The above pattern is &true; for 
+    mnoGoSearch 3.1.10 - 3.1.11. It is planned to speed up DB mode in future 
+    versions and it is going to be faster than TEXT mode.
+   </para>
+   
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      UDM_ISPELL_TYPE_DB - indicates that ispell data should be loaded from SQL. 
+      In this case, parameters <parameter>val1</parameter> and <parameter>val2</parameter>
+      are ignored and should be left blank. <parameter>flag</parameter> 
+      should be equal to <literal>1</literal>.
+     </simpara>
+     
+     <note>
+      <para>
+       <parameter>flag</parameter> indicates that after loading ispell data 
+       from defined source it sould be sorted (it is necessary for correct 
+       functioning of ispell). In case of loading ispell data from files 
+       there may be several calls to <function>udm_load_ispell_data</function>, 
+       and there is no sense to sort data after every call, but only after 
+       the last one. Since in db mode all the data is loaded by one call, 
+       this parameter should have the value <literal>1</literal>. In this mode 
+       in case of error, e.g. if ispell tables are absent, the function will 
+       return &false; and code and error message will be accessible through 
+       <function>udm_error</function> and <function>udm_errno</function>.
+      </para>
+     </note>
+     
+     <simpara>Example:</simpara>
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+if (! udm_load_ispell_data($udm,UDM_ISPELL_TYPE_DB,'','',1)) {
+  printf("Error #%d: '%s'\n", udm_errno($udm), udm_error($udm));
+  exit;
+}
+]]>
+      </programlisting>
+     </informalexample>
+    </listitem>
+    <listitem>
+     <para>
+      UDM_ISPELL_TYPE_AFFIX - indicates that ispell data should be loaded from 
+      file and initiates loading affixes file. In this case <parameter>val1</parameter>
+      defines double letter language code for which affixes are loaded,
+      and <parameter>val2</parameter> - file path. Please note, that if 
+      a relative path entered, the module looks for the file not in UDM_CONF_DIR, 
+      but in relation to current path, i.e. to the path where the script is executed.
+      In case of error in this mode, e.g. if file is absent, the function will return 
+      &false;, and an error message will be displayed. Error message text cannot be 
+      accessed through <function>udm_error</function> and <function>udm_errno</function>, 
+      since those functions can only return messages associated with SQL. Please, 
+      see <parameter>flag</parameter> parameter description in UDM_ISPELL_TYPE_DB.
+     </para>
+     
+     <simpara>Example:</simpara>
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+     if ((! udm_load_ispell_data($udm,UDM_ISPELL_TYPE_AFFIX,'en','/opt/ispell/en.aff',0)) ||
+        (! udm_load_ispell_data($udm,UDM_ISPELL_TYPE_AFFIX,'ru','/opt/ispell/ru.aff',0)) ||
+        (! udm_load_ispell_data($udm,UDM_ISPELL_TYPE_SPELL,'en','/opt/ispell/en.dict',0)) ||
+        (! udm_load_ispell_data($udm,UDM_ISPELL_TYPE_SPELL,'ru','/opt/ispell/ru.dict',1))) {
+     exit;
+     }
+]]>
+      </programlisting>
+     </informalexample>
+     <note>
+      <para>
+       <parameter>flag</parameter> is equal to <literal>1</literal> only in the last call.
+      </para>
+     </note>
+    </listitem>
+    <listitem>
+     <para>
+      UDM_ISPELL_TYPE_SPELL - indicates that ispell data should be loaded from 
+      file and initiates loading of ispell dictionary file. In this case 
+      <parameter>val1</parameter> defines double letter language code for which 
+      affixes are loaded,
+      and <parameter>val2</parameter> - file path. Please note, that if a relative 
+      path entered, the module looks for the file not in UDM_CONF_DIR, but in 
+      relation to current path, i.e. to the path where the script is executed.
+      In case of error in this mode, e.g. if file is absent, the function will 
+      return &false;, and an error message will be displayed. Error message text 
+      cannot be accessed through <function>udm_error</function> and 
+      <function>udm_errno</function>, since those functions can only return messages 
+      associated with SQL. Please, see <parameter>flag</parameter> parameter 
+      description in UDM_ISPELL_TYPE_DB.
+     </para>
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+     if ((! Udm_Load_Ispell_Data($udm,UDM_ISPELL_TYPE_AFFIX,'en','/opt/ispell/en.aff',0)) ||
+        (! Udm_Load_Ispell_Data($udm,UDM_ISPELL_TYPE_AFFIX,'ru','/opt/ispell/ru.aff',0)) ||
+        (! Udm_Load_Ispell_Data($udm,UDM_ISPELL_TYPE_SPELL,'en','/opt/ispell/en.dict',0)) ||
+        (! Udm_Load_Ispell_Data($udm,UDM_ISPELL_TYPE_SPELL,'ru','/opt/ispell/ru.dict',1))) {
+      exit;
+      }
+]]>
+      </programlisting>
+     </informalexample>
+     
+     <note>
+      <para>
+       <parameter>flag</parameter> is equal to <literal>1</literal> only in the last call.
+      </para>
+     </note>
+    </listitem>
+    <listitem>
+     <para>
+      UDM_ISPELL_TYPE_SERVER - enables spell server support. 
+      <parameter>val1</parameter> parameter indicates
+      address of the host running spell server. <parameter>val2</parameter> `
+      is not used yet, but in future releases it is going to indicate number 
+      of port used by spell server. <parameter>flag</parameter> parameter in 
+      this case is not needed since ispell data is stored
+      on spellserver already sorted.
+     </para>
+     <para>
+      Spelld server reads spell-data from a separate configuration file
+      (/usr/local/mnogosearch/etc/spelld.conf by default), sorts it and stores in
+      memory. With clients server communicates in two ways: to indexer all the
+      data is transferred (so that indexer starts faster), from search.cgi server
+      receives word to normalize and then passes over to client (search.cgi) list
+      of normalized word forms. This allows fastest, compared to db and text modes
+      processing of search queries (by omitting loading and sorting all the spell data).
+     </para>
+     <para>
+      <function>udm_load_ispell_data</function> function in UDM_ISPELL_TYPE_SERVER 
+      mode does not actually load ispell data, but only defines server address. 
+      In fact, server is automatically used by <function>udm_find</function> 
+      function when performing search. In case of errors, e.g. if spellserver
+      is not running or invalid host indicated, there are no messages returned 
+      and ispell conversion does not work.
+     </para>
+     
+     <note>
+      <para>
+       This function is available in mnoGoSearch 3.1.12 or later.
+      </para>
+     </note>
+     
+     <simpara>Example:</simpara>
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+if (!udm_load_ispell_data($udm,UDM_ISPELL_TYPE_SERVER,'','',1)) {
+    printf("Error loading ispell data from server<br>\n");
+    exit;
+}
+]]>
+      </programlisting>
+     </informalexample>
+    </listitem>
+   </itemizedlist>
+  </refsect1>
+ </refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
