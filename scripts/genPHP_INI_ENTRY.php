@@ -7,8 +7,13 @@
  * $Id$
  */
 
+$phpsrc_dir = '';
+// use command line parameter is available
+if ($argc == 2 && $argv[1] != '') {
+    $phpsrc_dir = $argv[1];
+}
+//$phpsrc_dir = '/cvs/php5';
 // figure out the php4 source dir
-$phpsrc_dir = '/cvs/php5';
 if ($phpsrc_dir == '') {
     if (file_exists('../php4')) {
         $phpsrc_dir = realpath('../php4');
@@ -142,8 +147,9 @@ TABLE_FOOTER;
 
 function gentree($path, $remove_empty = false, $fileproc_cb = null) {/*{{{*/
     $excludeitems = array ('CVS', 'tests', 'skeleton.c');
-    if (!file_exists($path))
+    if (!file_exists($path)) {
         die("BAD PATH $path\n");
+    }
     $tree = array();
     chdir($path);
     $all = glob('*');
@@ -183,17 +189,21 @@ function findINI($fname) {/*{{{*/
     //$re = '/PHP_INI_ENTRY\("([^"]+)",\s+"([^"]+)",\s+([A-Z_]),/';
     $re = '/(PHP_INI_ENTRY|PHP_INI_ENTRY_EX|PHP_INI_BOOLEAN)\(([^)]+)/';
     preg_match_all($re, $data, &$matches);
+    $re2 = '/"([^"]+)",\s*"([^"]+)",\s*([A-Z_]+)/';
+
     foreach ($matches[2] as $match) {
-        $match = str_replace('"','',$match);
-        $entry = preg_split('/,\s*/', $match);
+        if(preg_match($re2, $match, $entry)) {
+        //$match = str_replace('"','',$match);
+        //$entry = preg_split('/,\s*/', $match);
         // dummy settings seem to always have these values (ex. ncurses.c)
-        if ($entry[1] == 42 || $entry[1] == 'foobar') {
-            continue;
-        }
-        $found['INI'][$entry[0]] = array(
-                            'def' => $entry[1], 
-                            'mod' => str_replace(array(' ', "\n","\r","\t"),'',$entry[2])
-                            );
+            if ($entry[1] == 42 || $entry[1] == 'foobar') {
+                continue;
+            }
+            $found['INI'][$entry[1]] = array(
+                                'def' => $entry[2], 
+                                'mod' => str_replace(array(' ', "\n","\r","\t"),'',$entry[3])
+                                );
+            }
     }
     if (!empty($found)) {
         return $found;
@@ -215,6 +225,7 @@ function flatentree($tree, $section) {
 }
 
 $dtree = gentree($phpsrc_dir, true, 'findINI');
+print_r($dtree);
 /*
 $ser = serialize($dtree);
 
