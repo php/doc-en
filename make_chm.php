@@ -10,12 +10,13 @@
   $fancydir = getenv("PHP_HELP_COMPILE_FANCYDIR");
   if (empty($fancydir)) { $fancydir = getenv("PHP_HELP_COMPILE_DIR"); }
   $language = getenv("PHP_HELP_COMPILE_LANG");
+  $original_index = getenv("PHP_HELP_COMPILE_INDEX");
 
   MakeProjectFile();
 
   function MakeProjectFile () {
 
-    global $fancydir, $language, $manual_title, $fancyindex, $indexfile;
+    global $fancydir, $language, $manual_title, $fancyindex, $indexfile, $original_index;
 
     // define language array (manual code -> HTML Help Code)
     // Japanese is not on my list, I don't know why...
@@ -35,18 +36,18 @@
     
     );
 
-    if (file_exists("$fancydir/index.html")) { 
+    if (file_exists("$fancydir/fancy-index.html")) { 
       $fancyindex = TRUE;
-      $indexfile = "index.html";
-    } else { $indexfile = "manual.html"; }
+      $indexfile = "fancy-index.html";
+    } else { $indexfile = $original_index; }
     
     // Start writing the project file
-    $f = fopen ("manual_$language.hhp", "w");
+    $f = fopen ("manual-$language.hhp", "w");
     fputs ($f, "[OPTIONS]\n");
     fputs ($f, "Auto Index=Yes\n");
     fputs ($f, "Compatibility=1.1 or later\n");
-    fputs ($f, "Compiled file=manual_$language.chm\n");
-    fputs ($f, "Contents file=manual_$language.hhc\n");
+    fputs ($f, "Compiled file=manual-$language-" . date("Ymd") . ".chm\n");
+    fputs ($f, "Contents file=manual-$language.hhc\n");
     fputs ($f, "Default Font=Arial,10,0\n");
     fputs ($f, "Default Window=phpdoc\n");
     fputs ($f, "Default topic=$fancydir\\$indexfile\n");
@@ -58,7 +59,7 @@
     
     // now try to find out how the manual named in the actual language
     // this must be in the manual.html file as the title (DSSSL generated)
-    $content = join("", file("$fancydir/manual.html"));
+    $content = join("", file("$fancydir/$original_index"));
     if (preg_match("|>(.*)</TITLE|U", $content, $found)) {
       $manual_title = $found[1];
     } else { $manual_title = "PHP Manual"; }
@@ -66,7 +67,7 @@
     fputs ($f, "Title=$manual_title\n");
     
     // define the phpdoc window style (adds more functionality)
-    fputs($f, "\n[WINDOWS]\nphpdoc=\"$manual_title\",\"manual_$language.hhc\",," .
+    fputs($f, "\n[WINDOWS]\nphpdoc=\"$manual_title\",\"manual-$language.hhc\",," .
     "\"$fancydir\\$indexfile\",\"$fancydir\\$indexfile\",,,,,0x23520,,0x386e,,,,,,,,0\n");
 
     // write out all the filenames as in $fancydir    
@@ -85,6 +86,8 @@
   function SiteMapObj ($name, $local, $tabs, $imgnum = 'auto') {
 
     global $fancydir;
+    $name = htmlentities($name);
+
     echo "\n$tabs<LI> <OBJECT type=\"text/sitemap\">
 $tabs  <param name=\"Name\" value=\"$name\">
 $tabs  <param name=\"Local\" value=\"$fancydir\\$local\">";
@@ -141,7 +144,7 @@ $tabs  <param name=\"Local\" value=\"$fancydir\\$local\">";
 <UL>
 <?php
   
-  $index_a = file ("$fancydir/manual.html");
+  $index_a = file ("$fancydir/$original_index");
   $ijoin = join("", $index_a);
   $ijoin = preg_replace("/[\r|\n]/", " ", $ijoin);
   
@@ -152,7 +155,7 @@ $tabs  <param name=\"Local\" value=\"$fancydir\\$local\">";
 
   if ($fancyindex) {
     preg_match('|CLASS=\"title\" ><A NAME=\"manual\" >(.*)</A|U', $ijoin, $match);
-    SiteMapObj($match[1], "manual.html", "  ", 21);
+    SiteMapObj($match[1], "$original_index", "  ", 21);
   }
 
   preg_match('|<A HREF="preface.html" >(.*)</A >|U', $ijoin, $match);
@@ -221,7 +224,7 @@ $tabs  <param name=\"Local\" value=\"$fancydir\\$local\">";
   // grab all the output at this point and
   // write out to the proper language .hcc file
   $writeout = ob_get_contents();
-  $fp = fopen("manual_$language.hhc", "w");
+  $fp = fopen("manual-$language.hhc", "w");
   fputs($fp, $writeout);
   fclose($fp);
   

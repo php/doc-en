@@ -3,10 +3,22 @@
 rem !! Please read the make_chm.README file for information
 rem !! about how to build a manual_lang.chm file.
 
-set PHP_PATH=D:\progra~1\php402\php.exe
+rem Path of the PHP CGI executable
+set PHP_PATH=D:\progra~1\php404\php.exe
+
+rem Path of the Help Compiler command line tool
 set PHP_HELP_COMPILER=D:\progra~1\helpwo~1\hhc.exe
-set PHP_HELP_COMPILE_LANG=hu
+
+rem The language of the manual to compile
+set PHP_HELP_COMPILE_LANG=en
+
+rem The source directory with the original DSSSL made HTML
 set PHP_HELP_COMPILE_DIR=html
+
+rem The index file in this directory (manual.html or idex.html)
+set PHP_HELP_COMPILE_INDEX=index.html
+
+rem The directory, where the fancy files need to be copied
 set PHP_HELP_COMPILE_FANCYDIR=fancy
 
 rem ==========================================================
@@ -31,8 +43,8 @@ echo Skipping fancy manual generation...
 echo Now running the toc and project file generator script...
 %PHP_PATH% -q make_chm.php
 
-echo Compiling the actual helpfile (manual_%PHP_HELP_COMPILE_LANG%.chm)...
-%PHP_HELP_COMPILER% manual_%PHP_HELP_COMPILE_LANG%.chm
+echo Compiling the actual helpfile (manual-%PHP_HELP_COMPILE_LANG%-date.chm)...
+%PHP_HELP_COMPILER% manual-%PHP_HELP_COMPILE_LANG%.hhp
 
 echo Done!
 echo.
