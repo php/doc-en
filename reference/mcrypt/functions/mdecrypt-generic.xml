@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
 <!-- splitted from ./en/functions/mcrypt.xml, last change in rev 1.7 -->
   <refentry id="function.mdecrypt-generic">
    <refnamediv>
@@ -14,9 +14,9 @@
       <methodparam><type>string</type><parameter>data</parameter></methodparam>
      </methodsynopsis>
     <para>
-     This function decrypts data. Note that the length of the
-     returned string can in fact be longer then the unencrypted
-     string, due to the padding of the data.
+     This function decrypts data. Note that the length of the returned string
+     can in fact be longer then the unencrypted string, due to the padding of
+     the data.
     </para>
     <para>
      <example>
@@ -24,27 +24,60 @@
       <programlisting role="php">
 <![CDATA[
 <?php
-$iv_size = mcrypt_enc_get_iv_size ($td));
-$iv = @mcrypt_create_iv ($iv_size, MCRYPT_RAND);
+    /* Data */
+    $key = 'this is a very long key, even too long for the cipher';
+    $plain_text = 'very important data';
+   
+    /* Open module, and create IV */ 
+    $td = mcrypt_module_open ('des', '', 'ecb', '');
+    $key = substr ($key, 0, mcrypt_enc_get_key_size ($td));
+    $iv_size = mcrypt_enc_get_iv_size ($td);
+    $iv = mcrypt_create_iv ($iv_size, MCRYPT_RAND);
 
-if (@mcrypt_generic_init ($td, $key, $iv) != -1)
-{
-    $c_t = mcrypt_generic ($td, $plain_text);
-    @mcrypt_generic_init ($td, $key, $iv);
-    $p_t = mdecrypt_generic ($td, $c_t);
-}
-if (strncmp ($p_t, $plain_text, strlen($plain_text)) == 0)
-    echo "ok";
-else
-    echo "error";
+    /* Initialize encryption handle */
+    if (mcrypt_generic_init ($td, $key, $iv) != -1) {
+
+        /* Encrypt data */
+        $c_t = mcrypt_generic ($td, $plain_text);
+        mcrypt_generic_deinit ($td);
+
+        /* Reinitialize buffers for decryption */
+        mcrypt_generic_init ($td, $key, $iv);
+        $p_t = mdecrypt_generic ($td, $c_t);
+
+        /* Clean up */
+        mcrypt_generic_deinit ($td);
+        mcrypt_module_close ($td);
+    }
+
+    if (strncmp ($p_t, $plain_text, strlen($plain_text)) == 0) {
+        echo "ok\n";
+    } else {
+        echo "error\n";
+    }
 ?>
 ]]>
       </programlisting>
-      <para>
-       The above example shows how to check if the data before the
-       encryption is the same as the data after the decryption.
-      </para>
      </example>
+    </para>
+    <para>
+     The above example shows how to check if the data before the encryption is
+     the same as the data after the decryption. It is very important to
+     reinitialize the encryption buffer with
+     <function>mcrypt_generic_init</function> before you try to decrypt the
+     data.
+    </para>
+    <para>
+     The decryption handle should alwayws be initialized with
+     <function>mcrypt_generic_init</function> with a key and an IV before
+     calling this function. Where the encryption is done, you should free the
+     encryption buffers by calling <function>mcrypt_generic_deinit</function>.
+     See <function>mcrypt_module_open</function> for an example.
+    </para>
+    <para>
+     See also <function>mcrypt_generic</function>,
+     <function>mcrypt_generic_init</function> and
+     <function>mcrypt_generic_deinit</function>.
     </para>
    </refsect1>
   </refentry>
