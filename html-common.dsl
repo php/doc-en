@@ -333,7 +333,19 @@
               attributes: (list (list "CLASS" (gi)))
               (literal author-name))
         (process-node-list author-affil))))
-    )
+
+  (element editor
+    (let ((editor-name (author-string)))
+      (make sequence
+        (if (first-sibling?)
+            (make element gi: "H2"
+                  attributes: (list (list "CLASS" "EDITEDBY"))
+                  (literal (gentext-edited-by)))
+            (empty-sosofo))
+        (make element gi: "DIV"
+              attributes: (list (list "CLASS" (gi)))
+              (literal editor-name)))))
+)
 
 
 ;; Put version info where the refname part in the refnamediv is
