@@ -101,5 +101,89 @@
   <xsl:apply-templates/>
 </xsl:template>
 
+<!-- Remove whitespace before and after the contents of
+     programlisting and screen tags used for PHP code and
+     output examples
+     
+     Thanks to Peter Kullman for the initial version of this code
+-->
+<xsl:template match="screen/text()|programlisting/text()">
+ <xsl:variable name="before" select="preceding-sibling::node()"/>
+ <xsl:variable name="after" select="following-sibling::node()"/>
+
+ <xsl:variable name="conts" select="."/>
+
+ <xsl:variable name="contsl">
+  <xsl:choose>
+   <xsl:when test="count($before) = 0">
+    <xsl:call-template name="remove-ws-left">
+     <xsl:with-param name="astr" select="$conts"/>
+    </xsl:call-template>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of select="$conts"/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
+
+ <xsl:variable name="contslr">
+  <xsl:choose>
+   <xsl:when test="count($after) = 0">
+    <xsl:call-template name="remove-ws-right">
+     <xsl:with-param name="astr" select="$contsl"/>
+    </xsl:call-template>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of select="$contsl"/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
+
+ <xsl:value-of select="$contslr"/>
+
+</xsl:template>
+
+<!-- Remove whitespace from the left of a string -->
+<xsl:template name="remove-ws-left">
+ <xsl:param name="astr"/>
+
+ <xsl:choose>
+  <xsl:when test="starts-with($astr,'&#xA;') or
+                  starts-with($astr,'&#xD;') or
+                  starts-with($astr,'&#x20;') or
+                  starts-with($astr,'&#x9;')">
+   <xsl:call-template name="remove-ws-left">
+    <xsl:with-param name="astr" select="substring($astr, 2)"/>
+   </xsl:call-template>
+  </xsl:when>
+  <xsl:otherwise>
+   <xsl:value-of select="$astr"/>
+  </xsl:otherwise>
+ </xsl:choose>
+</xsl:template>
+
+<!-- Remove whitespace from the right of a string -->
+<xsl:template name="remove-ws-right">
+ <xsl:param name="astr"/>
+
+ <xsl:variable name="last-char">
+  <xsl:value-of select="substring($astr, string-length($astr), 1)"/>
+ </xsl:variable>
+
+ <xsl:choose>
+  <xsl:when test="($last-char = '&#xA;') or
+                  ($last-char = '&#xD;') or
+                  ($last-char = '&#x20;') or
+                  ($last-char = '&#x9;')">
+   <xsl:call-template name="remove-ws-right">
+    <xsl:with-param name="astr"
+     select="substring($astr, 1, string-length($astr) - 1)"/>
+   </xsl:call-template>
+  </xsl:when>
+  <xsl:otherwise>
+   <xsl:value-of select="$astr"/>
+  </xsl:otherwise>
+ </xsl:choose>
+</xsl:template>
 
 </xsl:stylesheet>
