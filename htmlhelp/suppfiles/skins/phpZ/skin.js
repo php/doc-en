@@ -9,7 +9,7 @@
 // Get style sheet file
 document.write(
 	// Get our style file
-	'<link rel="stylesheet" type="text/css" href="' + chmfile_path + 'skins/phpZSR1/style.css">'
+	'<link rel="stylesheet" type="text/css" href="' + chmfile_path + 'skins/phpZ/style.css">'
 );
 
 // sets global variables
