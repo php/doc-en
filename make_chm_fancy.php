@@ -27,7 +27,7 @@
 
   $counter += 3;
   
-  echo "Converting ready...\n";
+  echo "\nConverting ready...\n";
   echo "Total number of files written in $fancydir directory: $counter\n\n";
   
   function fancy_design($fname) {
@@ -63,7 +63,7 @@
     // fix copyright page fault...
     if ($fname == "copyright.html") {
       $content = preg_replace("/&#38;copy;/", "&copy;", $content);
-      $content = preg_replace("/<A\\s+HREF=\"manual.html(.*)\"/U", "<A HREF=\"index.html\"", $content);
+      $content = preg_replace("/<A\\s+HREF=\"manual.html#(authors|translators)\"/U", "<A HREF=\"index.html\"", $content);
       $content = preg_replace("|(</TH\\s+></TR\\s+>)|", "\\1<TR><TH COLSPAN=\"3\" ALIGN=\"center\">&nbsp;</TH></TR>", $content);
       $content = preg_replace("|(&nbsp;</TD\\s+></TR\\s+>)|", "\\1<TR><TD COLSPAN=\"3\" ALIGN=\"center\">&nbsp;</TD></TR>", $content);
     }
