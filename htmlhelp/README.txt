@@ -2,19 +2,39 @@ Build system of the new CHMs
 ============================
 
 [See latest "official" output package online at
- http://weblabor.hu/php-doc-chm]
+ http://php.net/docs-echm]
 
 How to build a CHM manual with this system?
 
+ 0. Ensure that you have the latest phpdoc checkout,
+    but that your XSL folder is dated 2002.12.31 23:00:00,
+    since if you use XSL sheets from after this timestamp,
+    the customizations will not work. Use the cvs date tag
+    to get this version.
+
+    {Volunteer to fix the customizations if you are willing
+     to, but otherwise you cannot do much more but use the old
+     sheets}
+
+    Ensure however that the xsl/version.xml file is up to date,
+    so you will build the latest function version information
+    into the CHM.
+
  1. run "autoconf" in the phpdoc directory
 
- 2. run "./configure --with-chm=yes --with-xsl=yes"
+ 2. run "./configure --with-chm=yes"
 
     Optionally you may need to specify the
     "--with-xsltproc=path" option to explicitly
     provide the XSLTProc path.    
 
- 3. Run "make chm_xsl"
+ 3. Replace @DOCBOOKXSL_HTML@ with ./docbook/html/chunk.xsl in
+    xsl/htmlhelp-db.xsl (do this after any configure runs). This
+    is needed, since the new XSL sheets require no configuration,
+    and since you are using old sheets, you need to do configuration
+    yourself.
+
+ 4. Run "make chm_xsl"
 
     If xsltproc encounters errors in the XML files,
     correct the errors, commit them to phpdoc, and
@@ -24,7 +44,7 @@ How to build a CHM manual with this system?
     After this step the HTML files to start are in
     phpdoc/htmlhelp/html
 
- 4. Get the actual mirrors.inc file from
+ 5. Get the actual mirrors.inc file from
     http://ANY_MIRROR.php.net/include/mirrors.inc
     and save into the directory where the
     make_chm.bat resides (overwrite old one if
