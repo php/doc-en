@@ -29,10 +29,10 @@ while (false !== ($filename = readdir($handle))) {
 closedir($handle);
 
 // Look for CHM index file (snap-downloader, cvs-usr with/without lang-support) 
-if (false == ($content = oneLiner("make_chm_index_$LANGUAGE.html"))) {
-    if (false == ($content = oneLiner("$LANGUAGE/make_chm_index_$LANGUAGE.html"))) {
-        if (false == ($content = oneLiner("$HTML_PATH/../$LANGUAGE/make_chm_index_$LANGUAGE.html"))) {
-            $content = oneLiner("en/make_chm_index_en.html");
+if (false == ($content = oneLiner("make_chm_index_$LANGUAGE.html", true))) {
+    if (false == ($content = oneLiner("$LANGUAGE/make_chm_index_$LANGUAGE.html", true))) {
+        if (false == ($content = oneLiner("$HTML_PATH/../$LANGUAGE/make_chm_index_$LANGUAGE.html", true))) {
+            $content = oneLiner("en/make_chm_index_en.html", true);
         }
     }
 }
@@ -64,7 +64,7 @@ function fancy_design($fname)
     global $HTML_PATH, $FANCY_PATH, $LANGUAGE, $LANGUAGES, $counter, $original_index, $publication_date;
 
     // Get the contents of the file from $HTML_PATH
-    $content = oneLiner("$HTML_PATH/$fname");
+    $content = oneLiner("$HTML_PATH/$fname", true);
 
     // CSS file linking
     $content = preg_replace("|</HEAD|", '<LINK REL="stylesheet" HREF="style.css"></HEAD', $content);
@@ -82,41 +82,41 @@ function fancy_design($fname)
     $space = '<IMG SRC="spacer.gif" WIDTH="10" HEIGHT="1">';
 
     // Navheader backgound
-    $content = preg_replace("/<DIV\\s+CLASS=\"NAVHEADER\"\\s+><TABLE(.*)CELLPADDING=\"0\"(.*)<\\/TABLE\\s+><\\/DIV\\s+>/Us",
+    $content = preg_replace("/<DIV\\s+CLASS=\"NAVHEADER\"\\s*><TABLE(.*)CELLPADDING=\"0\"(.*)<\\/TABLE\\s*><\\/DIV\\s*>/Us",
         $wpbegin . '<DIV CLASS="NAVHEADER">' . $bnavt . '<TR><TD><TABLE\\1CELLPADDING="3"\\2</TABLE></TD></TR>' . $lnavt . '</TABLE></DIV></TD></TR><TR><TD>' . $space . '</TD><TD HEIGHT="100%" VALIGN="TOP" WIDTH="100%"><BR>', $content);
 
     // Navfooter backgound
-    $content = preg_replace("/<DIV\\s+CLASS=\"NAVFOOTER\"\\s+><TABLE(.*)CELLPADDING=\"0\"(.*)<\\/TABLE\\s+><\\/DIV\\s+>/Us",
+    $content = preg_replace("/<DIV\\s+CLASS=\"NAVFOOTER\"\\s*><TABLE(.*)CELLPADDING=\"0\"(.*)<\\/TABLE\\s*><\\/DIV\\s*>/Us",
         '<BR></TD><TD>' . $space . '</TD></TR><TR><TD COLSPAN="3"><DIV CLASS="NAVFOOTER">' . $bnavt . $lnavt . '<TR><TD><TABLE\\1CELLPADDING="3"\\2</TABLE></TD></TR></TABLE></DIV></TD></TR></TABLE>', $content);
 
     // Fix copyright page fault...
     if ($fname == "copyright.html") {
         $content = preg_replace("/&#38;copy;/", "&copy;", $content);
         $content = preg_replace("/<A\\s+HREF=\"$original_index#(authors|translators)\"/U", "<A HREF=\"fancy-index.html\"", $content);
-        $content = preg_replace("|(</TH\\s+></TR\\s+>)|", "\\1<TR><TH COLSPAN=\"3\" ALIGN=\"center\">&nbsp;</TH></TR>", $content);
-        $content = preg_replace("|(&nbsp;</TD\\s+></TR\\s+>)|", "\\1<TR><TD COLSPAN=\"3\" ALIGN=\"center\">&nbsp;</TD></TR>", $content);
+        $content = preg_replace("|(</TH\\s*></TR\\s*>)|", "\\1<TR><TH COLSPAN=\"3\" ALIGN=\"center\">&nbsp;</TH></TR>", $content);
+        $content = preg_replace("|(&nbsp;</TD\\s*></TR\\s*>)|", "\\1<TR><TD COLSPAN=\"3\" ALIGN=\"center\">&nbsp;</TD></TR>", $content);
     }
 
     // Fix the original manual index to look far better...
     elseif ($fname == "$original_index") {
 
         // Find out manual generation date
-        if (preg_match('|<P\s+CLASS="pubdate"\s+>([\\d-]+)<BR></P\s+>|U', $content, $match)) {
+        if (preg_match('|<P\s+CLASS="pubdate"\s*>([\\d-]+)<BR></P\s*>|U', $content, $match)) {
             $publication_date = $match[1];
         } else { 
             $publication_date = 'n/a';
         }
 
         // Modify the index file to meet our needs
-        preg_match('|CLASS=\"title\"\\s+><A\\s+NAME=\"manual\"\\s+>(.*)</A\\s+>(.*)</H1|U', $content, $match);
+        preg_match('|CLASS=\"title\"\\s*><A\\s+NAME=\"manual\"\\s*>(.*)</A\\s*>(.*)</H1|U', $content, $match);
         $indexchange = '<TABLE BORDER="0" WIDTH="100%" HEIGHT="100%" CELLSPACING="0" CELLPADDING="0"><TR><TD COLSPAN="3"><DIV CLASS="NAVHEADER"><TABLE BGCOLOR="#CCCCFF" BORDER="0" CELLPADDING="0" CELLSPACING="0" WIDTH="100%"><TR><TD><TABLE
         WIDTH="100%" BORDER="0" CELLPADDING="3" CELLSPACING="0"><TR><TH COLSPAN="3">'.$match[2].'</TH></TR><TR><TD COLSPAN="3" ALIGN="center">&nbsp;</TD></TR></TABLE></TD></TR><TR BGCOLOR="#333366"><TD><IMG SRC="spacer.gif" BORDER="0" WIDTH="1" HEIGHT="1"><BR></TD></TR></TABLE>
         </DIV></TD></TR><TR><TD><IMG SRC="spacer.gif" WIDTH="10" HEIGHT="1"></TD><TD HEIGHT="100%" VALIGN="TOP" WIDTH="100%"><BR>';
         $content = preg_replace("/(<DIV\\s+CLASS=\"BOOK\")/", "$indexchange\\1", $content);
         $content = preg_replace("/(<DIV\\s+CLASS=\"author\").*<HR>/Us", "", $content);
-        preg_match('|<DIV\\s+CLASS="TOC"\\s+><DL\\s+><DT\\s+><B\\s+>(.*)</B\\s+>|U', $content, $match);
-        $content = preg_replace("|(CLASS=\"title\"\\s+><A\\s+NAME=\"manual\"\\s+>).*(</A\\s+>).*(</H1)|U", "\\1$match[1]\\2\\3", $content);
-        $content = preg_replace("|<DT\\s+><B\\s+>(.*)</B\\s+></DT\\s+>|U", "", $content);
+        preg_match('|<DIV\\s+CLASS="TOC"\\s*><DL\\s*><DT\\s*><B\\s*>(.*)</B\\s*>|U', $content, $match);
+        $content = preg_replace("|(CLASS=\"title\"\\s+><A\\s+NAME=\"manual\"\\s*>).*(</A\\s*>).*(</H1)|U", "\\1$match[1]\\2\\3", $content);
+        $content = preg_replace("|<DT\\s*><B\\s*>(.*)</B\\s*></DT\\s*>|U", "", $content);
 
     }
 

@@ -18,11 +18,15 @@ if (!function_exists("file_get_contents")) {
 }
 
 // Return a file joined on one line
-function oneLiner($filename)
+function oneLiner($filename, $only_tags = false)
 {
     global $INTERNAL_CHARSET;
 
-    $buf = preg_replace("/[\r|\n]{1,2}/U", " ", file_get_contents($filename));
+    if ($only_tags) {
+        $buf = preg_replace("/<([a-zA-Z]+)(>|[^>]*>)>/Ue", "preg_replace('/[\r\n]{1,2}/U', ' ', \"<\$1 \$2\")", file_get_contents($filename));
+    } else {
+        $buf = preg_replace("/[\r|\n]{1,2}/U", " ", file_get_contents($filename));
+    }
     $charset = detectDocumentCharset($buf);
 
     if ($charset === false) $charset = "UTF-8";
