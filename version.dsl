@@ -1487,6 +1487,7 @@
    ((equal-ci? (data nl) "domxml_test") (literal "PHP4 >= 4.0RC1"))
    ((equal-ci? (data nl) "dtd") (literal "PHP4 >= 4.0b4"))
    ((equal-ci? (data nl) "dumpmem") (literal "PHP4 >= 4.0b4"))
+   ((equal-ci? (data nl) "escapeshellarg") (literal "PHP4 CVS only"))
    ((equal-ci? (data nl) "fdf_set_flags") (literal "PHP4 >= 4.0.2"))
    ((equal-ci? (data nl) "fdf_set_javascript_action") (literal "PHP4 >= 4.0.2"))
    ((equal-ci? (data nl) "fdf_set_opt") (literal "PHP4 >= 4.0.2"))
