@@ -3,11 +3,10 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.23 2004-11-14 13:28:52 techtonik Exp $
+  $Id: common.xsl,v 1.24 2004-11-14 16:18:42 techtonik Exp $
 
--->
-<!-- 
   What is done in this stylesheet as common to all HTML output formats:
+
   - shade programlistings and screens
   - function page title generated from function name
   - display PHP version information from version.xml
@@ -18,6 +17,7 @@
   - style admonitions and collab names
   - output "parameter" enclosed in vars like in DSSSL
   - link <function> blocks to appropriate function references
+  - &raquo; HTML entity before the external ulink and CSS class for it
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0">
@@ -425,5 +425,34 @@
   <xsl:apply-templates/>
 </xsl:template>
 
+
+<!-- EXTERNAL LINKS are the same as in DocBook XSL, except that we print out 
+     a &raquo; HTML entity before the link and add a CSS class to it -->
+<xsl:template match="ulink" name="ulink">
+    <a class="ulink">
+      <xsl:if test="@id">
+        <xsl:attribute name="name">
+          <xsl:value-of select="@id"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:attribute name="href"><xsl:value-of select="@url"/></xsl:attribute>
+      <xsl:if test="$ulink.target != ''">
+        <xsl:attribute name="target">
+          <xsl:value-of select="$ulink.target"/>
+        </xsl:attribute>
+      </xsl:if>
+
+      <xsl:text disable-output-escaping="yes">&amp;raquo; </xsl:text>
+ 
+      <xsl:choose>
+        <xsl:when test="count(child::node())=0">
+          <xsl:value-of select="@url"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:apply-templates/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </a>
+</xsl:template>
 
 </xsl:stylesheet>
