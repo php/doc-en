@@ -3,7 +3,7 @@
 
   quickref.xsl: Stylesheet for generating quick-reference
 
-  $Id: quickref.xsl,v 1.1 2004-11-13 17:49:41 techtonik Exp $
+  $Id: quickref.xsl,v 1.2 2004-11-14 17:34:27 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
