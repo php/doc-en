@@ -115,12 +115,10 @@ function check_file ($filename, $entity)
     global $usage;
 
     // Read in file contents
-    $contents = preg_replace("/[\r\n]/", "", join("", file($filename)));
+    $contents = file_get_contents($filename);
     
     // Find all entity usage in this file
-    preg_match_all("/$entity;/U", $contents, $entities_found);
-
-    if (count($entities_found[0]) != 0) {
+    if (preg_match("/&$entity;/U", $contents) == 1) {
         echo $filename . "\n";
         $usage++;
     }
