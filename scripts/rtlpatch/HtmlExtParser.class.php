@@ -63,7 +63,14 @@ class CHtmlExtParse extends CHtmlParse{
 				$this->ATE[$tmp-1]["dir"] = "ltr";
 			}
 		} while($tmp);
-		
+
+        //fix systemitem:
+        do{
+            if($tmp = $this->get_element_id_by_rule(array("tag"=>"span","properties"=>array("class","systemitem"),"offset"=>($tmp+1)))){
+                $this->ATE[$tmp-1]["dir"] = "ltr";
+            }
+        } while($tmp);
+
 		//ltr literals:
 		$tmp=0;
 		do{
@@ -88,7 +95,7 @@ class CHtmlExtParse extends CHtmlParse{
 		do{
 			if($tmp = $this->get_element_id_by_rule(array("tag"=>"tt","properties"=>array("class","filename"),"offset"=>($tmp+1)))){
 				$this->ATE[$tmp]["dir"] = "ltr";
-				//if varname not before punctuation marks, add &nbsp; to eliminate the align issue came with dir=rtl:
+				//if filename not before punctuation marks, add &nbsp; to eliminate the align issue came with dir=rtl:
 				if(isset($this->ATE[$tmp+3]["data"]{0})){
 					$ord = ord($this->ATE[$tmp+3]["data"]{0});
 					if($ord>65||$ord==32||$ord==40||$ord==41){//without (all the punctuation marks whitout space, and brackets).
