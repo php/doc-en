@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.140 $ -->
+<!-- $Revision: 1.141 $ -->
  <reference id="ref.filesystem">
   <title>Filesystem functions</title>
   <titleabbrev>Filesystem</titleabbrev>
@@ -669,6 +669,89 @@ fclose ($fd);
    </refsect1>
   </refentry>
 
+  <refentry id="function.file-register-wrapper">
+   <refnamediv>
+    <refname>file_register_wrapper</refname>
+    <refpurpose>Register a URL wrapper implemented as a PHP class</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <methodsynopsis>
+     <type>boolean</type><methodname>file_register_wrapper</methodname>
+     <methodparam><type>string</type><parameter>protocol</parameter></methodparam>
+     <methodparam><type>string</type><parameter>classname</parameter></methodparam>
+    </methodsynopsis>
+    <para>
+     This function is currently only documented by the example below:
+     <example> 
+      <title>Implementing a base64 encoding protocol</title>
+      <programlisting role="php">
+<![CDATA[
+class Base64EncodingStream {
+    var $fp = null;
+
+    function stream_open($path, $mode, $options, &$opened_path)
+    {
+        $this->fp = fopen($path, $mode);
+        return is_resource($this->fp);
+    }
+    function stream_close()
+    {
+        fclose($this->fp);
+    }
+    function stream_read($count)
+    {
+        return false; // We only allow writing
+    }
+    function stream_write($data)
+    {
+        return fwrite($this->fp, base64_encode($data));
+    }
+    function stream_flush()
+    {
+        fflush($this->fp);
+        return true;
+    }
+    function stream_seek($offset, $whence)
+    {
+        return false;
+    }
+    function stream_gets()
+    {
+        return false;
+    }
+    function stream_tell()
+    {
+        return false;
+    }
+    function stream_eof()
+    {
+        return false;
+    }
+}
+file_register_wrapper("base64", "Base64EncodingStream")
+    or die("Failed to register protocol");
+
+copy("/tmp/inputfile.txt", "base64:///tmp/outputfile.txt");
+readfile("/tmp/outputfile");
+]]>
+      </programlisting>
+     </example>
+
+    </para>
+    <para>
+     <function>file_register_wrapper</function> will return false if the
+     <parameter>protocol</parameter> already has a handler, or if "fopen
+     wrappers" are disabled.
+    </para>
+    <note>
+     <para>
+      This function was introduced in PHP 4.3.0.
+     </para>
+    </note>
+   </refsect1>
+  </refentry>
+  
   <refentry id="function.file-get-contents">
    <refnamediv>
     <refname>file_get_contents</refname> 
@@ -685,6 +768,11 @@ fclose ($fd);
      Identical to <function>readfile</function>, except that
      <function>file_get_contents</function> returns the file in a string.
     </para>
+    <note>
+     <para>
+      This function was introduced in PHP 4.3.0.
+     </para>
+    </note>
     &note.bin-safe;
     &tip.fopen-wrapper;
    </refsect1>
@@ -1157,15 +1245,15 @@ $fcontents = implode ('', file ('http://www.example.com/'));
    </refsect1>
   </refentry>
 
-  <refentry id="function.fgetwrapperdata">
+  <refentry id="function.file_get_wrapper_data">
    <refnamediv>
-    <refname>fgetwrapperdata</refname>
+    <refname>file_get_wrapper_data</refname>
     <refpurpose>Retrieves header/meta data from "wrapped" file pointers</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>mixed</type><methodname>fgetwrapperdata</methodname>
+      <type>mixed</type><methodname>file_get_wrapper_data</methodname>
       <methodparam><type>int</type><parameter>fp</parameter></methodparam>
      </methodsynopsis>
     <simpara>
@@ -1176,7 +1264,7 @@ $fcontents = implode ('', file ('http://www.example.com/'));
     </simpara>
     <simpara>
      The format of the returned data is deliberately undocumented at this
-     time.
+     time, and depends on which wrapper(s) were used to open the file.
     </simpara>
     <note>
      <para>
@@ -1218,7 +1306,7 @@ $fcontents = implode ('', file ('http://www.example.com/'));
      response header you need to be using PHP 4.0.5 or later;
      The headers will be stored in the $http_response_header variable.
      As of PHP 4.3.0 (not yet released), the header information can
-     be retrieved using the <function>fgetwrapperdata</function>.
+     be retrieved using the <function>file_get_wrapper_data</function>.
     </simpara>
     <simpara>
      HTTP connections are read-only; you cannot write data or copy
