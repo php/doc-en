@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
 <!-- splitted from ./en/functions/xslt.xml, last change in rev 1.29 -->
   <refentry id='function.xslt-set-sax-handlers'>
    <refnamediv>
@@ -16,7 +16,316 @@
       <methodparam><type>array</type><parameter>handlers</parameter></methodparam>
      </methodsynopsis>
     <para>
-     &warn.undocumented.func;
+     <function>xslt_set_sax_handlers</function> registers the SAX 
+     <parameter>handlers</parameter> for the document, given a XSLT 
+     <parameter>processor</parameter> resource.
+    </para>
+    <para>
+     <parameter>handlers</parameter> should be an array in the following format:
+      <informalexample>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+$handlers = array(
+
+  "document" => array(
+    "start_doc",
+    "end_doc"),
+
+  "element"  => array(
+    "start_element",
+    "end_element"),
+
+  "namespace" => array(
+    "start_namespace",
+    "end_namespace"),
+
+  "comment"   => "comment",
+
+  "pi"        => "pi",
+
+  "character" => "characters"
+
+);
+?>
+]]>
+      </programlisting>
+     </informalexample>
+     Where the functions follow the syntax described for the scheme handler 
+     functions.
+    </para>
+    <note>
+     <para>
+      The given array does not need to contain all of the different sax
+      handler elements (although it can), but it only needs to conform to 
+      "handler" => "function" format described above.
+     </para>
+    </note>
+    <para>
+     Each of the individual SAX handler functions are in the format below:
+     <itemizedlist>
+      <listitem>
+       <simpara>
+        <methodsynopsis>
+         <methodname><replaceable>start_doc</replaceable></methodname>
+         <methodparam><type>resource</type><parameter>processor</parameter></methodparam>
+        </methodsynopsis>
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <methodsynopsis>
+         <methodname><replaceable>end_doc</replaceable></methodname>
+         <methodparam><type>resource</type><parameter>processor</parameter></methodparam>
+        </methodsynopsis>
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <methodsynopsis>
+         <methodname><replaceable>start_element</replaceable></methodname>
+         <methodparam><type>resource</type><parameter>processor</parameter></methodparam>
+         <methodparam><type>string</type><parameter>name</parameter></methodparam>
+         <methodparam><type>array</type><parameter>attributes</parameter></methodparam>
+        </methodsynopsis>
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <methodsynopsis>
+         <methodname><replaceable>end_element</replaceable></methodname>
+         <methodparam><type>resource</type><parameter>processor</parameter></methodparam>
+         <methodparam><type>string</type><parameter>name</parameter></methodparam>
+        </methodsynopsis>
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <methodsynopsis>
+         <methodname><replaceable>start_namespace</replaceable></methodname>
+         <methodparam><type>resource</type><parameter>processor</parameter></methodparam>
+         <methodparam><type>string</type><parameter>prefix</parameter></methodparam>
+         <methodparam><type>string</type><parameter>uri</parameter></methodparam>
+        </methodsynopsis>
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <methodsynopsis>
+         <methodname><replaceable>end_namespace</replaceable></methodname>
+         <methodparam><type>resource</type><parameter>processor</parameter></methodparam>
+         <methodparam><type>string</type><parameter>prefix</parameter></methodparam>
+        </methodsynopsis>
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <methodsynopsis>
+         <methodname><replaceable>comment</replaceable></methodname>
+         <methodparam><type>resource</type><parameter>processor</parameter></methodparam>
+         <methodparam><type>string</type><parameter>contents</parameter></methodparam>
+        </methodsynopsis>
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <methodsynopsis>
+         <methodname><replaceable>pi</replaceable></methodname>
+         <methodparam><type>resource</type><parameter>processor</parameter></methodparam>
+         <methodparam><type>string</type><parameter>target</parameter></methodparam>
+         <methodparam><type>string</type><parameter>contents</parameter></methodparam>
+        </methodsynopsis>
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <methodsynopsis>
+         <methodname><replaceable>characters</replaceable></methodname>
+         <methodparam><type>resource</type><parameter>processor</parameter></methodparam>
+         <methodparam><type>string</type><parameter>contents</parameter></methodparam>
+        </methodsynopsis>
+       </simpara>
+      </listitem>
+     </itemizedlist>
+    </para>
+    <para>
+     Using <function>xslt_set_sax_handlers</function> doesn't look very different than
+     running a SAX parser like <function>xml_parse</function> on the result of an 
+     <function>xslt_process</function> transformation.
+    </para>
+    <para>
+     <example>
+      <title><function>xslt_set_sax_handlers</function> Example</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+// From ohlesbeauxjours at yahoo dot fr
+// Here's a simple example that applies strtoupper() on 
+// the content of every <auteur> tag and then displays the 
+// resulting XML tree:
+
+$xml='<?xml version="1.0"?>
+<books>
+ <book>
+  <title>Mme Bovary</title>
+  <author>Gustave Flaubert</author>
+ </book>
+ <book>
+  <title>Mrs Dalloway</title>
+  <author>Virginia Woolf</author>
+ </book>
+</books>';
+
+$xsl='<?xml version="1.0"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="html" encoding="ISO-8859-1" indent="no" omit-xml-declaration="yes"/>
+<xsl:template match="/">
+ <xsl:for-each select="books/book">
+  <livre>
+   <auteur><xsl:value-of select="author/text()"/></auteur>
+  </livre>
+ </xsl:for-each>
+</xsl:template>
+</xsl:stylesheet>';
+
+// Handlers :
+function start_document() 
+{
+  // start reading the document
+}
+
+function end_document() 
+{
+  // end reading the document
+}
+
+function start_element($parser, $name, $attributes) 
+{
+  global $result,$tag;
+  $result .= "<".$name.">";
+  $tag = $name;
+}
+
+function end_element($parser, $name) 
+{
+  global $result;
+  $result .= "</".$name.">";
+}
+
+function characters($parser, $data) 
+{
+  global $result,$tag;
+  if($tag=="auteur") {
+    $data=strtoupper($data);
+  }
+  $result .= $data;
+}
+
+// Transformation :
+$xh = xslt_create();
+$handlers = array("document" => array("start_document","end_document"),
+   "element" => array("start_element","end_element"),
+   "character" => "characters");
+
+xslt_set_sax_handlers($xh, $handlers);
+xslt_process($xh, 'arg:/_xml', 'arg:/_xsl', NULL, array("/_xml"=>$xml, "/_xsl"=>$xsl));
+xslt_free($xh);
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     Every values of the <parameter>handlers</parameter> array is either a
+     string containing the function name, or an array in the following format:
+     <command>array(&$obj, "method")</command>.
+    </para>
+    <para>
+     <example>
+      <title>Object oriented handler</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+// This is the object oriented version of the previous example
+class data_sax_handler {
+
+  var $buffer, $tag, $attrs;
+
+  function start_document() 
+  {
+        // start reading the document
+  }
+
+  function end_document() {
+        // complete reading the document
+  }
+
+  function start_element($parser, $tagname, $attributes) {
+        $this->tag = $tagname;
+        $this->attrs = $attributes;
+  }
+
+  function end_element($parser, $tagname)
+  {
+        $this->tag = '';
+  }
+
+  function characters($parser, $data)
+  {
+    // Are we calling a PHP function ?
+    if ($this->tag == 'php') {
+          $function = $this->attrs['function'];
+          $data = $function($data);
+    }
+    $this->buffer .= $data;
+  }
+  
+  function get_buffer() {
+    return $this->buffer;
+  }
+
+}
+
+// our xsl handle
+$xh = xslt_create();
+
+$handler = new data_sax_handler();
+// configure sax handlers
+$handlers = array(
+  "document" => array(
+    array(&$handler, 'start_document'),
+    array(&$handler, 'end_document')
+),
+  "element" => array(
+    array(&$handler, 'start_element'),
+    array(&$handler, 'end_element')
+),
+  "character" => array(&$handler, 'characters')
+);
+
+xslt_set_sax_handlers($xh, $handlers);
+    
+xslt_process($xh, 'arg:/_xml', 'arg:/_xsl', NULL, array("/_xml"=>$xml, "/_xsl"=>$xsl));
+xslt_free($xh);
+
+?>
+]]>
+      </programlisting>
+      <para>
+       Both examples will output:
+      </para>
+      <screen role="xml">
+<![CDATA[
+<livre>
+   <auteur>GUSTAVE FLAUBERT</auteur>
+</livre>
+<livre>
+   <auteur>VIRGINIA WOOLF</auteur>
+</livre>
+]]>
+      </screen>
+     </example> 
     </para>
    </refsect1>
   </refentry>
