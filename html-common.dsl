@@ -343,5 +343,20 @@
     )
   )
 
+(element question
+  (let* ((chlist   (children (current-node)))
+         (firstch  (node-list-first chlist))
+         (restch   (node-list-rest chlist)))
+    (make element gi: "B"
+    (make element gi: "DIV"
+          attributes: (list (list "CLASS" (gi)))
+          (make element gi: "P"
+                (make element gi: "A"
+                      attributes: (list (list "NAME" (element-id)))
+                      (empty-sosofo))
+                (make element gi: "B"
+                      (literal (question-answer-label (current-node)) " "))
+                (process-node-list (children firstch)))
+          (process-node-list restch))))   )          
 
 ;; vim: ts=2 sw=2 et
