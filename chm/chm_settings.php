@@ -57,6 +57,12 @@ $LANGUAGES = array(
                    "mime_charset_name" => "Windows-1252",
                    "preferred_font" => $DEFAULT_FONT
                ),
+    "he"    => array(
+                   "langcode" => "0x40d Hebrew",
+                   "preferred_charset" => "Windows-1255",
+                   "mime_charset_name" => "Windows-1255",
+                   "preferred_font" => $DEFAULT_FONT
+               ),
     "hu"    => array(
                    "langcode" => "0x40e Hungarian",
                    "preferred_charset" => "Windows-1250",
@@ -103,6 +109,12 @@ $LANGUAGES = array(
                    "langcode" => "0x418 Romanian",
                    "preferred_charset" => "Windows-1250",
                    "mime_charset_name" => "Windows-1250",
+                   "preferred_font" => $DEFAULT_FONT
+               ),
+    "ru"    => array(
+                   "langcode" => "0x419 Russian",
+                   "preferred_charset" => "Windows-1251",
+                   "mime_charset_name" => "Windows-1251",
                    "preferred_font" => $DEFAULT_FONT
                ),
     "sk"    => array(
