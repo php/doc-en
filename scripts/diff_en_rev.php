@@ -57,7 +57,7 @@ foreach ($files as $lang_filename) {
 	$revision = $regs[2];
 	
 	// compare with local version
-	$same_revision = (file_exists($en_filename) && eregi('<!-- \\$Revision$en_filename), $regs) && $regs[1] == $revision);
+	$same_revision = (file_exists($en_filename) && eregi('<!-- *\\$'.'Revision: +([0-9.])', head($en_filename), $regs) && $regs[1] == $revision); // '.' due to storing to CVS repository
 	if (is_dir($filename)) {
 		// for directories just print the list of modified files
 		if (!$same_revision) {
