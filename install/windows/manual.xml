@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+   <sect1 id="install.windows.manual">
+    <title>Manual Installation Steps</title>
+    <simpara>
+     This install guide will help you manually install and configure PHP on your
+     Windows webserver. The original version of this guide was compiled by
+     &link.bob;, and can be found at
+     <ulink url="&url.win32install;">&url.win32install;</ulink>.
+     You need to download the zip binary distribution from the downloads page at 
+     <ulink url="&url.php.downloads;">&url.php.downloads;</ulink>. 
+    </simpara>
+
+    <para>
+     PHP 4 for Windows comes in three flavours - a CGI executable (php.exe), a
+     CLI executable (sapi/php.exe) and some other SAPI modules:
+     <simplelist>
+      <member>
+       <filename>php4apache.dll</filename> - Apache 1.3.x module
+      </member>
+      <member>
+       <filename>php4apache2.dll</filename> - Apache 2.0.x module
+      </member>
+      <member>
+       <filename>php4isapi.dll</filename> - ISAPI Module for ISAPI compliant
+       webservers like IIS 4.0/PWS 4.0 or newer.
+      </member>
+      <member>
+       <filename>php4nsapi.dll</filename> - Netscape/iPlanet module
+      </member>
+     </simplelist>
+     The latter form is new to PHP 4, and provides significantly improved
+     performance and some new functionality. The CLI version is designed to use
+     PHP for command line scripting. More information about CLI is available in
+     the chapter about
+     <link linkend="features.commandline">using PHP from the command line</link>
+    </para>
+    <warning>
+     <simpara>
+      The SAPI modules have been significantly improved in the 4.1 release, 
+      however, you may find that you encounter possible server errors or 
+      other server modules such as ASP failing, in older systems.
+     </simpara>
+    </warning>
+    <note>
+     <title>DCOM and MDAC requirements</title>
+      <para>
+       If you choose one of the SAPI modules and use
+       <emphasis>Windows 95</emphasis>, be sure to download and install the DCOM
+       update from the <ulink url="&url.dcom.update;">Microsoft DCOM pages</ulink>.
+       If you use Microsoft <emphasis>Windows 9x/NT4</emphasis> download the
+       latest version of the Microsoft Data Access Components (MDAC) for your
+       platform. MDAC is available at <ulink url="&url.mdac;">&url.mdac;</ulink>.
+     </para>
+    </note>    
+    <para>
+     The following steps should be performed on all installations before any
+     server specific instructions.
+     <itemizedlist>
+      <listitem>
+       <simpara>
+        Extract the distribution file to a directory of your choice,
+        <filename class="directory">c:\</filename> is a good start. The zip package expands to a
+        foldername like <filename>php-4.3.1-Win32</filename> which is assumed to
+        be renamed to <filename>php</filename>. For the sake of convenience and
+        to be version independent the following steps assume your extracted
+        version of PHP lives in <filename class="directory">c:\php</filename>. You might choose
+        any other location but you probably do not want to use a path in which
+        spaces are included (for example:
+        <filename class="directory">C:\Program Files\PHP</filename> is not a good idea). Some web
+        servers will crash if you do. The structure of your directory you
+        extracted the zip file will look like:
+       </simpara>
+      </listitem>
+     </itemizedlist>
+     <informalexample>
+      <programlisting>
+<![CDATA[
+
+c:\php
+   |
+   +--cli
+   |  |
+   |  |-php.exe           -- CLI executable - ONLY for commandline scripting
+   |
+   |
+   +--dlls                -- support dlls for extensions --> Windows system directory
+   |  |
+   |  |-expat.dll
+   |  |
+   |  |-fdftk.dll
+   |  |
+   |  |-...
+   |
+   +--extensions          -- extension dlls for PHP
+   |  |
+   |  |-php_bz2.dll
+   |  |
+   |  |-php_cpdf.dll
+   |  |
+   |  |-..
+   |
+   +--mibs                -- support files for SNMP
+   |
+   |
+   +--openssl             -- support files for Openssl
+   |
+   |
+   +--pdf-related         -- support files for PDF
+   |
+   |
+   +--sapi                -- SAPI dlls
+   |  |
+   |  |-php4apache.dll
+   |  |
+   |  |-php4apache2.dll
+   |  |
+   |  |-php4isapi.dll
+   |  |
+   |  |-..
+   |
+   |-install.txt
+   |
+   |-..
+   |
+   |-php.exe              -- CGI executable
+   |
+   |-..
+   |
+   |-php.ini-dist
+   |
+   |-php.ini-recommended
+   | 
+   |-php4ts.dll           -- main dll --> Windows system directory
+   | 
+   |-...
+
+
+]]>
+      </programlisting>
+     </informalexample> 
+    </para>
+    <para>
+     The  CGI binary - <filename>c:\php\php.exe</filename> -, the CLI binary
+     - <filename>c:\php\cli\php.exe</filename> -, and the SAPI modules
+     - <filename>c:\php\sapi\*.dll</filename> -  rely on the main dll
+     <filename>c:\php\php4ts.dll</filename>. You have to make sure, that this
+     dll can be found by your PHP installation. The search order for this dll
+     is as follows:
+     <simplelist>
+      <member>
+       The same directory from where <filename>php.exe</filename> is called.
+       In case you use a SAPI module the same directory from where your 
+       webserver loads the dll (e.g. <filename>php4apache.dll</filename>).
+      </member>
+      <member>
+       Any directory in your Windows <varname>PATH</varname> environment variable.
+      </member>
+     </simplelist>
+     <itemizedlist>
+      <listitem> 
+       <para>
+        The best bet is to make <filename>php4ts.dll</filename> available,
+        regardless which interface (CGI or SAPI module) you plan to use. To do so,
+        you have to copy this dll to a directory on your Windows path. The best
+        place is your Windows system directory:
+        <simplelist>
+         <member>
+          <filename class="directory">C:\Windows\System</filename> for Windows 9x/ME
+         </member>
+         <member>
+          <filename class="directory">C:\WINNT\System32</filename> for Windows NT/2000 or
+          <filename class="directory">C:\WINNT40\System32</filename> for NT/2000 server
+         </member>
+         <member>
+          <filename class="directory">C:\Windows\System32</filename> for Windows XP
+         </member>
+        </simplelist>
+        If you plan to use a SAPI module from <filename class="directory">c:\php\sapi</filename>
+        and do not like to copy dlls to your Windows system directory, you have
+        the alternative choice to simply copy <filename>php4ts.dll</filename> to
+        the sapi folder of your extracted zip package,
+        <filename class="directory">c:\php\sapi</filename>.
+       </para>
+      </listitem>
+      <listitem>
+       <para>
+        The next step is to set up a valid configuration file for PHP, &php.ini;.
+        There are two ini files distributed in the zip file,
+        <filename>php.ini-dist</filename> and
+        <filename>php.ini-recommended</filename>. We advise you to use
+        <filename>php.ini-recommended</filename>, because we optimized the
+        default settings in this file for performance, and security. Read this
+        well documented file carefully and in addition study the
+        <link linkend="configuration.file">ini settings</link> and set every
+        element manually yourself. If you would like to achieve the best
+        security, then this is the way for you, although PHP works fine with
+        these default ini files. Copy your chosen ini-file to a directory where
+        PHP is able to find and rename it to &php.ini;. By default PHP searches
+        &php.ini; in your Windows directory:
+        <simplelist>
+         <member>
+          On Windows 9x/ME/XP copy your chosen ini file to your
+         <filename> %WINDIR%</filename>, which is typically
+         <filename class="directory">C:\Windows</filename>.
+         </member>
+         <member>
+          On Windows NT/2000 copy your chosen ini file to your
+          <filename>%WINDIR%</filename> or <filename>%SYSTEMROOT%</filename>,
+          which is typically <filename class="directory">C:\WINNT</filename> or
+         <filename class="directory">C:\WINNT40</filename> for NT/2000 servers.
+         </member>
+        </simplelist>   
+       </para>
+      </listitem>
+      <listitem>
+       <simpara>
+        If you're using NTFS on Windows NT, 2000 or XP, make sure that
+        the user running the webserver has read permissions to your
+        &php.ini; (e.g. make it readable by Everyone).
+       </simpara>
+      </listitem>     
+     </itemizedlist>
+    </para>
+    <para>
+     The following steps are optional.
+     <itemizedlist>      
+      <listitem>
+       <para>
+        Edit your new &php.ini; file.       
+        If you plan to use <link linkend="install.omnihttpd">OmniHTTPd</link>,
+        do not follow the next step. Set the
+        <link linkend="ini.doc-root">doc_root</link> to point to your webservers
+        document_root. For example:
+        <informalexample>
+          <programlisting role="ini">
+<![CDATA[
+doc_root = c:\inetpub        // for IIS/PWS
+
+doc_root = c:\apache\htdocs // for Apache
+]]>
+         </programlisting>
+        </informalexample>
+       </para>
+      </listitem>
+      <listitem>
+       <simpara>
+        Choose which extensions you would like to load when PHP starts. See
+        the section about
+        <link linkend="install.windows.extensions">Windows extensions</link>,
+        about how to set up one, and what is already built in. Note that on
+        a new installation it is advisable to first get PHP working and tested
+        without any extensions before enabling them in &php.ini;.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        On PWS and IIS, you can set the
+        <link linkend="ini.browscap">browscap</link> configuration setting
+        to point to:
+        <filename>c:\windows\system\inetsrv\browscap.ini</filename> on
+        Windows 9x/Me,
+        <filename>c:\winnt\system32\inetsrv\browscap.ini</filename> on
+        NT/2000, and
+        <filename>c:\windows\system32\inetsrv\browscap.ini</filename>
+        on XP.
+       </simpara>
+      </listitem>
+     </itemizedlist>
+    </para> 
+    <para>
+     Following this instructions you are done with the basic steps to setup PHP
+     on Windows. The next step is to choose a webserver and enable it to run
+     PHP. Installation instructions for the following webservers are available:
+     <itemizedlist>
+      <listitem>
+       <simpara>
+        .. the <link linkend="install.iis">Windows server family</link>, Personal
+        Web server (PWS) 3 and 4 or newer;  Internet Information Server (IIS) 3
+        and 4 or newer.
+       </simpara> 
+      </listitem>
+      <listitem>
+       <simpara>
+        .. the Apache servers
+        <link linkend="install.apache.windows">Apache 1.3.x</link>, and
+        <link linkend="install.apache2.windows">Apache 2.x</link>.        
+       </simpara>
+      </listitem>
+      
+      <listitem>
+       <simpara>
+        .. the
+        <link linkend="install.netscape.windows">Netscape/iPlanet</link> servers.      
+       </simpara>
+      </listitem>
+      
+      <listitem>
+       <simpara>
+        .. the <link linkend="install.omnihttpd">OmniHTTPd</link> server.
+       </simpara>
+      </listitem>
+
+      <listitem>
+       <simpara>
+        .. the <link linkend="install.oreilly">Oreilly Website Pro</link> server.
+       </simpara>
+      </listitem>
+      
+      <listitem>
+       <simpara>
+        .. the <link linkend="install.sambar">Sambar</link> server.
+       </simpara>
+      </listitem>
+      
+      <listitem>
+       <simpara>
+        .. the <link linkend="install.xitami">Xitami</link> server.
+       </simpara>
+      </listitem>     
+     </itemizedlist>
+    </para>
+   </sect1>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
