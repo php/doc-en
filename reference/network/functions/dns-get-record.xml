@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.5 $ -->
+<!-- $Revision: 1.6 $ -->
   <refentry id="function.dns-get-record">
     <refnamediv>
      <refname>dns_get_record</refname>
@@ -24,23 +24,49 @@
       </note>
      </para>
      <para>
-      Returns an array of associative arrays.  Each associative array contains 
-      <emphasis>at minimum</emphasis> the following keys: host, type, class, ttl.
-      <note>
-       <para>
-        'class' key will always be "IN" indicating an IPv4 resource record.
-       </para>
-      </note>
-      <note>
-       <para>
-        'ttl' key will contain the TTL <emphasis>remaining</emphasis> since
-        the last time the local nameserver queried the authoritative name
-        server.
-       </para>
-      </note>
-      Depending on the value of type, the associate array will also contain one or
-      more of the following keys: ip, pri, target, cpu, os, mname, rname, serial, refresh,
-      retry, expire, minimum-ttl, txt.
+      This function returns an array of associative arrays.  Each associative array contains 
+      <emphasis>at minimum</emphasis> the following keys:
+      <table>
+       <title>Basic DNS attributes</title>
+       <tgroup cols="2">
+        <thead>
+         <row>
+          <entry>Attribute</entry>
+          <entry>Meaning</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry>host</entry>
+          <entry>
+           The record in the DNS namespace to which the rest of the associated data refers.
+          </entry>
+         </row>
+         <row>
+          <entry>class</entry>
+          <entry>
+           Currently <function>dns_get_record</function> only returns IPv4 records and as
+           such this parameter will always return <literal>IN</literal>.
+          </entry>
+         </row>
+         <row>
+          <entry>type</entry>
+          <entry>
+           String containing the record type.  Additional attributes will also be contained 
+           in the resulting array dependant on the value of type. See table below.
+          </entry>
+         </row>
+         <row>
+          <entry>ttl</entry>
+          <entry>
+           Time To Live remaining for this record.  This will <emphasis>not</emphasis> equal
+           the record's original ttl, but will rather equal the original ttl minus whatever
+           length of time has passed since the authoritative name server was queried.
+          </entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </table>
      </para>
      <simpara>
       <parameter>hostname</parameter> should be a valid DNS hostname such 
@@ -77,11 +103,96 @@
        See the example below.
      </simpara>
      <para>
-      SOA records are the largest of the returned types. 'mname' contains
-      the name of the machine from which the resource records originated.
-      'rname' is the email address of the administrative contact for this
-      zone. 'serial', 'refresh', 'retry', 'expire', and 'minimum-ttl' give
-      the traditional SOA zone values one would expect.
+      <table>
+       <title>Other keys in associative arrays dependant on 'type'</title>
+       <tgroup cols="2">
+        <thead>
+         <row>
+          <entry>Type</entry>
+          <entry>Extra Columns</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry>A</entry>
+          <entry>
+           <literal>ip</literal>: An IPv4 addresses in dotted decimal notation.
+          </entry>
+         </row>
+         <row>
+          <entry>MX</entry>
+          <entry>
+           <literal>pri</literal>: Priority of mail exchanger.  
+           Lower numbers indicate greater priority.
+           <literal>target</literal>: FQDN of the mail exchanger.  
+           See also <function>dns_get_mx</function>.
+          </entry>
+         </row>
+         <row>
+          <entry>CNAME</entry>
+          <entry>
+           <literal>target</literal>: FQDN of location in DNS namespace to which 
+           the record is aliased.
+          </entry>
+         </row>
+         <row>
+          <entry>NS</entry>
+          <entry>
+           <literal>target</literal>: FQDN of the name server which is authoritative 
+           for this hostname.
+          </entry>
+         </row>
+         <row>
+          <entry>PTR</entry>
+          <entry>
+           <literal>target</literal>: Location within the DNS namespace to which 
+           this record points.
+          </entry>
+         </row>
+          <row>
+          <entry>TXT</entry>
+          <entry>
+           <literal>txt</literal>: Arbitrary string data associated with this record.
+          </entry>
+         </row>
+         <row>
+          <entry>HINFO</entry>
+          <entry>
+           <literal>cpu</literal>: IANA number designating the CPU of the machine 
+           referenced by this record.
+           <literal>os</literal>: IANA number designating the Operating System on 
+           the machine referenced by this record.
+           See <ulink url="&url.rfc1010;">RFC 1010</ulink> for the meaning of these 
+           values.
+          </entry>
+         </row>
+         <row> 
+          <entry>SOA</entry>
+          <entry>
+           <literal>mname</literal>: FQDN of the machine from which the resource 
+           records orignated.
+           <literal>rname</literal>: Email address of the administrative contain 
+           for this domain.
+           <literal>serial</literal>: Serial # of this revision of the requested 
+           domain.
+           <literal>refresh</literal>: Refresh interval (seconds) secondary name 
+           servers should use when updating remote copies of this domain.
+           <literal>retry</literal>: Length of time (seconds) to wait after a 
+           failed refresh before making a second attempt.
+           <literal>expire</literal>: Maximum length of time (seconds) a secondary 
+           DNS server should retain remote copies of the zone data without a 
+           successful refresh before discarding.
+           <literal>minimum-ttl</literal>: Minimum length of time (seconds) a 
+           client can continue to use a DNS resolution before it should request 
+           a new resolution from the server.  Can be overridden by individual 
+           resource records.          
+          </entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </table>
+     </para>
+     <para>
       <note>
        <para>
         Per DNS standards, email addresses are given in user.host format (for
@@ -91,28 +202,6 @@
        </para>
       </note>
      </para>
-     <simpara>
-      A records will contain an 'ip' key providing their IPv4 address.
-     </simpara>
-     <simpara>
-      MX records will conatin a 'pri' key indicating priority (preference).  It will also 
-      have a 'target' key which lists the FQDN of the mail exchanger.  See also 
-      <function>dns_get_mx</function>.
-     </simpara>
-     <simpara>
-      CNAME, NS, and PTR records will each contain a 'target' key giving the 
-      particular location in the DNS namespace which they refer to.
-     </simpara>
-     <simpara>
-      TXT records will have a 'txt' key containing the text data associated 
-      with the named resource record.
-     </simpara>
-     <simpara>
-      HINFO records have two parameters: 'cpu' and 'os' which describe the 
-      opperating environment of the specified host. The values are given as
-      integers, see <ulink url="&url.rfc1010;">RFC 1010</ulink> for the 
-      meaning of these values.
-     </simpara>
      <example>
       <title>Using <function>dns_get_record</function></title>
       <programlisting role="php">
