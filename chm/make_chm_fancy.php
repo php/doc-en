@@ -44,8 +44,8 @@ $fp = fopen("$fancydir/fancy-index.html", "w");
 fputs($fp, $content);
 fclose($fp);
 
-copy("make_chm_style.css", "$fancydir/style.css");
-copy("make_chm_spc.gif", "$fancydir/spacer.gif");
+copy("chm/make_chm_style.css", "$fancydir/style.css");
+copy("chm/make_chm_spc.gif", "$fancydir/spacer.gif");
 
 // Three files added (fancy-index.html, style.css and spacer.gif)
 $counter += 3;
