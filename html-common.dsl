@@ -71,3 +71,18 @@
       (make element gi: "TR"
 	(make element gi: "TD"
 	  ($formal-object$))))))
+
+(mode book-titlepage-recto-mode
+  (element AUTHORGROUP
+    (process-children))
+
+  (element AUTHOR
+    (let ((author-name  (author-string))
+          (author-affil (select-elements (children (current-node)) 
+                                         (normalize "affiliation"))))
+      (make sequence      
+        (make element gi: "DIV"
+              attributes: (list (list "CLASS" (gi)))
+              (literal author-name))
+        (process-node-list author-affil))))
+)
