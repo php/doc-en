@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.10 $ -->
+<!-- $Revision: 1.11 $ -->
 <!-- splitted from ./index.xml, last change in rev 1.66 -->
   <chapter id="security.database">
    <title>Database Security</title>
@@ -158,6 +158,47 @@ if (pg_num_rows($result) > 0) {
      combining it with static parameters to build a SQL query. The following
      examples are based on true stories, unfortunately.
     </simpara>
+    <para>
+     Owing to the lack of input validation and connecting to the database on
+     behalf of a superuser or the one who can create users, the attacker
+     may create a superuser in your database.
+     <example>
+      <title>
+       Splitting the result set into pages ... and making superusers
+       (PostgreSQL)
+      </title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+$offset = $argv[0]; // beware, no input validation!
+$query  = "SELECT id, name FROM products ORDER BY name LIMIT 20 OFFSET $offset;";
+$result = pg_query($conn, $query);
+
+?>
+]]>
+      </programlisting>
+     </example>
+      Normal users click on the 'next', 'prev' links where the <varname>$offset</varname>
+      is encoded into the URL. The script expects that the incoming
+      <varname>$offset</varname> is a decimal number. However, what if someone tries to
+      break in by appending a <function>urlencode</function>'d form of the
+      following to the URL
+      <informalexample>
+       <programlisting role="sql">
+<![CDATA[
+0;
+insert into pg_shadow(usename,usesysid,usesuper,usecatupd,passwd)
+    select 'crack', usesysid, 't','t','crack'
+    from pg_shadow where usename='postgres';
+--
+]]>
+       </programlisting>
+      </informalexample>
+      If it happened, then the script would present a superuser access to him.
+      Note that <literal>0;</literal> is to supply a valid offset to the
+      original query and to terminate it.
+    </para>
     <note>
      <para>
       It is common technique to force the SQL parser to ignore the rest of the
