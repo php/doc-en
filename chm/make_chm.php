@@ -84,7 +84,7 @@ function makeContentFiles()
     if ($FIRST_PAGE != $INDEX_IN_HTML) {
 
         // Find the name of the Table of Contents
-        preg_match('|CLASS=\"title\" ><A NAME=\"manual\" >(.+)</A|U', $indexline, $match);
+        preg_match('|CLASS=\"TOC\" ><DL ><DT ><B >(.*)</B|U', $indexline, $match);
         if (empty($match[1])) { // Fallback
             $match[1] = "Table of Contents";
         }

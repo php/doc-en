@@ -44,8 +44,8 @@ $fp = fopen("$fancydir/fancy-index.html", "w");
 fputs($fp, $content);
 fclose($fp);
 
-copy("chm/make_chm_style.css", "$fancydir/style.css");
-copy("chm/make_chm_spc.gif", "$fancydir/spacer.gif");
+copy("make_chm_style.css", "$fancydir/style.css");
+copy("make_chm_spc.gif", "$fancydir/spacer.gif");
 
 // Three files added (fancy-index.html, style.css and spacer.gif)
 $counter += 3;
@@ -107,14 +107,14 @@ function fancy_design($fname)
         }
 
         // Modify the index file to meet our needs
-        preg_match('|CLASS=\"title\"\\s+><A\\s+NAME=\"manual\"\\s+>(.*)</A\\s+></H1|U', $content, $match);
+        preg_match('|CLASS=\"title\"\\s+><A\\s+NAME=\"manual\"\\s+>(.*)</A\\s+>(.*)</H1|U', $content, $match);
         $indexchange = '<TABLE BORDER="0" WIDTH="100%" HEIGHT="100%" CELLSPACING="0" CELLPADDING="0"><TR><TD COLSPAN="3"><DIV CLASS="NAVHEADER"><TABLE BGCOLOR="#CCCCFF" BORDER="0" CELLPADDING="0" CELLSPACING="0" WIDTH="100%"><TR><TD><TABLE
-        WIDTH="100%" BORDER="0" CELLPADDING="3" CELLSPACING="0"><TR><TH COLSPAN="3">'.$match[1].'</TH></TR><TR><TD COLSPAN="3" ALIGN="center">&nbsp;</TD></TR></TABLE></TD></TR><TR BGCOLOR="#333366"><TD><IMG SRC="spacer.gif" BORDER="0" WIDTH="1" HEIGHT="1"><BR></TD></TR></TABLE>
+        WIDTH="100%" BORDER="0" CELLPADDING="3" CELLSPACING="0"><TR><TH COLSPAN="3">'.$match[2].'</TH></TR><TR><TD COLSPAN="3" ALIGN="center">&nbsp;</TD></TR></TABLE></TD></TR><TR BGCOLOR="#333366"><TD><IMG SRC="spacer.gif" BORDER="0" WIDTH="1" HEIGHT="1"><BR></TD></TR></TABLE>
         </DIV></TD></TR><TR><TD><IMG SRC="spacer.gif" WIDTH="10" HEIGHT="1"></TD><TD HEIGHT="100%" VALIGN="TOP" WIDTH="100%"><BR>';
         $content = preg_replace("/(<DIV\\s+CLASS=\"BOOK\")/", "$indexchange\\1", $content);
         $content = preg_replace("/(<DIV\\s+CLASS=\"author\").*<HR>/Us", "", $content);
         preg_match('|<DIV\\s+CLASS="TOC"\\s+><DL\\s+><DT\\s+><B\\s+>(.*)</B\\s+>|U', $content, $match);
-        $content = preg_replace("|(CLASS=\"title\"\\s+><A\\s+NAME=\"manual\"\\s+>).*(</A)|U", "\\1$match[1]\\2", $content);
+        $content = preg_replace("|(CLASS=\"title\"\\s+><A\\s+NAME=\"manual\"\\s+>).*(</A\\s+>).*(</H1)|U", "\\1$match[1]\\2\\3", $content);
         $content = preg_replace("|<DT\\s+><B\\s+>(.*)</B\\s+></DT\\s+>|U", "", $content);
 
     }
