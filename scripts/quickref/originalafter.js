@@ -229,7 +229,7 @@ function fh_EKeyDown(ev)
     ev=ev||event||null;
     if (f_s.value=="quickref"&&ev) {
         var cc=ev.charCode||ev.keyCode||ev.which;
-        if (cc==38||cc==57385) { // up
+        if ((cc==38||cc==57385)&&fh_matches.length>0) { // up
             if (fh_inmenu) {
                 if (--fh_menupos<0) fh_menupos=fh_matches.length-1;
             } else {
@@ -239,7 +239,7 @@ function fh_EKeyDown(ev)
             fh_UpdateMenu();
             return false;
         }
-        if (cc==40||cc==57386) { // down
+        if ((cc==40||cc==57386)&&fh_matches.length>0) { // down
             if (fh_inmenu) {
                 if (++fh_menupos>=fh_matches.length) fh_menupos=0;
             } else {
