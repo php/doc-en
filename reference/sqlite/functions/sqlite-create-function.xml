@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.5 $ -->
+<!-- $Revision: 1.6 $ -->
 <refentry id="function.sqlite-create-function">
  <refnamediv>
   <refname>sqlite_create_function</refname>
@@ -11,7 +11,7 @@
   <title>Description</title>
   <methodsynopsis>
    <type>bool</type><methodname>sqlite_create_function</methodname>
-   <methodparam><type>resource</type><parameter>db</parameter></methodparam>
+   <methodparam><type>resource</type><parameter>dbhandle</parameter></methodparam>
    <methodparam><type>string</type><parameter>function_name</parameter></methodparam>
    <methodparam><type>mixed</type><parameter>callback</parameter></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>num_args</parameter></methodparam>
@@ -23,9 +23,9 @@
    statements.
   </para>
   <para>
-   <parameter>db</parameter> specifies the database handle that you wish to
-   extend, <parameter>function_name</parameter> specifies the name of the
-   function that you will use in your SQL statements,
+   <parameter>dbhandle</parameter> specifies the database handle that you
+   wish to extend, <parameter>function_name</parameter> specifies the name
+   of the function that you will use in your SQL statements,
    <parameter>callback</parameter> is any valid PHP callback to specify a
    PHP function that should be called to handle the SQL function.
    The optional parameter <parameter>num_args</parameter> is used as a hint
@@ -47,9 +47,16 @@ function md5_and_reverse($string) {
     return strrev(md5($string));
 }
 
-sqlite_create_function($db, 'md5rev', 'md5_and_reverse', 1);
-
-$rows = sqlite_array_query($db, 'SELECT md5rev(filename) from files');
+if ($dbhandle = sqlite_open('mysqlitedb', 0666, $sqliteerror)) {
+    
+    sqlite_create_function($dbhandle, 'md5rev', 'md5_and_reverse', 1);
+    
+    $sql  = 'SELECT md5rev(filename) FROM files';
+    $rows = sqlite_array_query($dbhandle, $sql);
+} else {
+    echo 'Error opening sqlite db: ' . $sqliteerror;
+    exit;
+}
 ?>
 ]]>
     </programlisting>
@@ -76,7 +83,7 @@ $rows = sqlite_array_query($db, 'SELECT md5rev(filename) from files');
     <programlisting role="php">
 <![CDATA[
 <?php
-$rows = sqlite_array_query($db, "SELECT php('md5', filename) from files");
+$rows = sqlite_array_query($dbhandle, "SELECT php('md5', filename) from files");
 ?>
 ]]>
     </programlisting>
