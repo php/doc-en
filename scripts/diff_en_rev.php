@@ -5,7 +5,7 @@ There are no restrictions on this file.
 Author: Jakub Vrána <jakub@vrana.cz>
 
 This script should stay in phpdoc-lang/scripts/ directory.
-The local cvs-root is determined by it's location.
+The local cvs-root is determined by its location.
 */
 
 function exit1($status) {
@@ -36,21 +36,40 @@ $filename = str_replace('\\', '/', realpath($_SERVER["argv"][1]));
 if (!file_exists($filename)) {
 	exit1("Error: File ". $_SERVER["argv"][1] ." not found.\n");
 }
-if (!ereg('^'. quotemeta($root) ."/([^/]*)/(.*)", $filename, $regs)) {
+if (!ereg('^'. quotemeta($root) ."/([^/]*/.*)", $filename, $regs)) {
 	exit1("Error: File ". $_SERVER["argv"][1] ." is outside CVS root.\n");
 }
-$lang = $regs[1];
-$filename = $regs[2];
+$filename = $regs[1];
 
-// find EN-Revision tag
 chdir($root);
-if (!eregi("<!-- *EN-Revision: +([^ ]*)", head("$lang/$filename"), $regs)) {
-	exit1("Error: Can't find EN-Revision tag in first 500 bytes.\n");
+$files = (is_dir($filename) ? glob("$filename/*") : array($filename));
+foreach ($files as $lang_filename) {
+	if (!is_file($lang_filename)) { // do not recurse
+		continue;
+	}
+	$en_filename = ereg_replace('^[^/]*', 'en', $lang_filename);
+	
+	// find EN-Revision tag
+	if (!eregi("(.*)<!-- *EN-Revision: +([^ ]*)", head($lang_filename), $regs)) {
+		fwrite(STDERR, "Error: Can't find EN-Revision tag in first 500 bytes of $lang_filename.\n");
+	}
+	$line_no = substr_count($regs[1], "\n") + 1;
+	$revision = $regs[2];
+	
+	// compare with local version
+	$same_revision = (file_exists($en_filename) && eregi('<!-- \\$Revision$en_filename), $regs) && $regs[1] == $revision);
+	if (is_dir($filename)) {
+		// for directories just print the list of modified files
+		if (!$same_revision) {
+			echo "Change in ". realpath($lang_filename) ." on line $line_no\n";
+		}
+	} elseif ($same_revision) {
+		echo "No change in local file $en_filename.\n";
+	} else {
+		// execute diff
+		$command = "$cvs_executable diff -u -r $revision $en_filename";
+		fwrite(STDERR, "$command\n");
+		passthru($command);
+	}
 }
-$revision = $regs[1];
-
-// execute diff
-$command = "$cvs_executable diff -u -r $revision en/$filename";
-fwrite(STDERR, "$command\n");
-passthru($command);
 ?>
