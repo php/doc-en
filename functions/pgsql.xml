@@ -35,17 +35,17 @@
       <tbody>
        <row>
 	<entry>postmaster &amp;</entry>
-	<entry>pg_connect("", "", "", "", "dbname");</entry>
+	<entry>pg_connect("dbname=MyDbName");</entry>
 	<entry>OK</entry>
        </row>
        <row>
 	<entry>postmaster -i &amp;</entry>
-	<entry>pg_connect("", "", "", "", "dbname");</entry>
+	<entry>pg_connect("dbname=MyDbName";</entry>
 	<entry>OK</entry>
        </row>
        <row>
 	<entry>postmaster &amp;</entry>
-	<entry>pg_connect("localhost", "", "", "", "dbname");</entry>
+	<entry>pg_connect("host=localhost dbname=MyDbName");</entry>
 	<entry>
 	 Unable to connect to PostgreSQL server: connectDB() failed:
 	 Is the postmaster running and accepting TCP/IP (with -i)
@@ -55,7 +55,7 @@
        </row>
        <row>
 	<entry>postmaster -i &amp;</entry>
-	<entry>pg_connect("localhost", "", "", "", "dbname");</entry>
+	<entry>pg_connect("host=localhost dbname=MyDbName");</entry>
 	<entry>OK</entry>
        </row>
       </tbody>
@@ -63,9 +63,18 @@
     </table>
    </para>
    <para>
-    One can also establish a connection with the following command:
-    <command>$conn = pg_Connect("host=localhost port=5432
-    dbname=chris");</command>
+    One can establish a connection with the following value pairs
+    set in the command string:
+    <command>$conn = pg_Connect("host=myHost port=myPort tty=myTTY
+    options=myOptions user=myUser password=myPassword dbname=myDB");
+    </command>
+   </para>
+   <para>
+    The previous syntax of:
+    <command>$conn = pg_connect ("host", "port", "options", "tty",
+    "dbname")
+    </command>
+    Has been depreciated.
    </para>
    <para>
     To use the large object (lo) interface, it is necessary to enclose
@@ -78,7 +87,7 @@
      <title>Using Large Objects</title>
      <programlisting role="php">
 &lt;?php
-    $database = pg_Connect ("", "", "", "", "jacarta");
+    $database = pg_Connect ("dbname=jacarta");
     pg_exec ($database, "begin");
     $oid = pg_locreate ($database);
     echo ("$oid\n");
@@ -164,29 +173,42 @@ echo $cmdtuples . " &lt;- cmdtuples affected.";
     <funcsynopsis>
      <funcprototype>
       <funcdef>int <function>pg_connect</function></funcdef>
-      <paramdef>string <parameter>host</parameter></paramdef>
-      <paramdef>string <parameter>port</parameter></paramdef>
-      <paramdef>string <parameter>options</parameter></paramdef>
-      <paramdef>string <parameter>tty</parameter></paramdef>
-      <paramdef>string <parameter>dbname</parameter></paramdef>
+      <paramdef>string <parameter>conn_string</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
      Returns a connection index on success, or false if the connection
-     could not be made.  Opens a connection to a PostgreSQL
-     database. Each of the arguments should be a quoted string,
-     including the port number. The options and tty arguments are
-     optional and can be left out. This function returns a connection
-     index that is needed by other PostgreSQL functions. You can have
-     multiple connections open at once.
+     could not be made.  Opens a connection to a PostgreSQL database.
+     The arguments should be within a quoted string.
+     <example>
+     <title>Using pg_connect arguments</title>
+     <programlisting role="php">
+&lt;?php
+$dbconn = pg_Connect ("dbname=mary");
+//connect to a database named "mary"
+$dbconn2 = pg_Connect ("host=localhost port=5432 dbname=mary");
+//connect to a database named "mary" on "localhost" at port "5432"
+$dbconn3 = pg_Connect ("user=lamb passwd=baaaa dbname=mary ");
+//connect to a database named "mary" with a username and password
+?>
+     </programlisting>
+     </example>
+     The arguments available include <parameter>dbname</parameter> 
+     <parameter>port</parameter>, <parameter>host</parameter>, 
+     <parameter>tty</parameter>, <parameter>options</parameter>,
+     <parameter>user</parameter>, and <parameter>password</parameter>
     </para>
     <para>
-     A connection can also established with the following command:
-     <command>$conn = pg_connect("dbname=marliese port=5432");</command>
-     Other parameters besides <parameter>dbname</parameter> and
-     <parameter>port</parameter> are <parameter>host</parameter>, 
-     <parameter>tty</parameter>, <parameter>options</parameter>,
-     <parameter>user</parameter>, and <parameter>password</parameter>.
+     This function returns a connection index that is needed by other
+     PostgreSQL functions. You can have multiple connections open at
+     once.
+    </para>
+    <para>
+     The previous syntax of:
+     <command>$conn = pg_connect ("host", "port", "options", "tty",
+    "dbname")
+     </command>
+     Has been depreciated.
     </para>
     <para>
      See also <function>pg_pconnect</function>.
@@ -326,7 +348,7 @@ echo $cmdtuples . " &lt;- cmdtuples affected.";
      <title>PostgreSQL fetch array</title>
      <programlisting role="php">
 &lt;?php 
-$conn = pg_pconnect ("", "", "", "", "publisher");
+$conn = pg_pconnect ("dbname=publisher");
 if (!$conn) {
     echo "An error occured.\n";
     exit;
@@ -401,7 +423,7 @@ echo $arr["author"] . " &lt;- array\n";
       <programlisting role="php">
 &lt;?php 
 $database = "verlag";
-$db_conn = pg_connect ("localhost", "5432", "", "", $database);
+$db_conn = pg_connect ("host=localhost port=5432 dbname=$database");
 if (!$db_conn): ?>
     &lt;H1>Failed connecting to postgres database &lt;? echo $database ?>&lt;/H1> &lt;?
     exit;
@@ -474,7 +496,7 @@ pg_close ($db_conn);
       <title>Postgres fetch row</title>
       <programlisting role="php">
 &lt;?php 
-$conn = pg_pconnect ("", "", "", "", "publisher");
+$conn = pg_pconnect ("dbname=publisher");
 if (!$conn) {
     echo "An error occured.\n";
     exit;
@@ -1012,42 +1034,41 @@ for ($i=0; $i&lt;$num; $i++) {
    </refsect1>
   </refentry>
 
-  <refentry id="function.pg-pconnect">
+  <refentry id="function.pg-connect">
    <refnamediv>
-    <refname>pg_pconnect</refname>
-    <refpurpose>
-     Open a persistent PostgreSQL connection
-    </refpurpose>
+    <refname>pg_connect</refname>
+    <refpurpose>Open a PostgreSQL connection</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>int <function>pg_pconnect</function></funcdef>
-      <paramdef>string <parameter>host</parameter></paramdef>
-      <paramdef>string <parameter>port</parameter></paramdef>
-      <paramdef>string <parameter>options</parameter></paramdef>
-      <paramdef>string <parameter>tty</parameter></paramdef>
-      <paramdef>string <parameter>dbname</parameter></paramdef>
+      <funcdef>int <function>pg_connect</function></funcdef>
+      <paramdef>string <parameter>conn_string</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
      Returns a connection index on success, or false if the connection
-     could not be made.  Opens a persistent connection to a PostgreSQL
-     database. Each of the arguments should be a quoted string,
-     including the port number. The options and tty arguments are
-     optional and can be left out. This function returns a connection
-     index that is needed by other PostgreSQL functions. You can have
-     multiple persistent connections open at once. See also
-     <function>pg_connect</function>.
+     could not be made.  Opens a connection to a PostgreSQL database.
+     The <parameter>conn_string</parameter> should be a quoted string.
+     The arguments available include <parameter>dbname</parameter> 
+     <parameter>port</parameter>, <parameter>host</parameter>, 
+     <parameter>tty</parameter>, <parameter>options</parameter>,
+     <parameter>user</parameter>, and <parameter>password</parameter>
     </para>
     <para>
-     A connection can also established with the following command:
-     <command>$conn = pg_pconnect("dbname=marliese port=5432");</command>
-     Other parameters besides <parameter>dbname</parameter> and
-     <parameter>port</parameter> are <parameter>host</parameter>, 
-     <parameter>tty</parameter>, <parameter>options</parameter>,
-     <parameter>user</parameter> and <parameter>password</parameter>.
+     This function returns a connection index that is needed by other
+     PostgreSQL functions. You can have multiple connections open at once.
+    </para>
+    <para>
+     The previous syntax of:
+     <command>$conn = pg_pconnect ("host", "port", "options", "tty",
+    "dbname")
+     </command>
+     Has been depreciated.
+    </para>
+    <para>
+     See also <function>pg_connect</function>.
     </para>
    </refsect1>
   </refentry>
