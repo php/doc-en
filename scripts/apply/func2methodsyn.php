@@ -91,15 +91,16 @@ $conversion_xsl='
 </xsl:stylesheet>
 ';
 
+$xslt_processor = false;
+
 function apply($input) {
-	global $conversion_xsl;
+	global $conversion_xsl, $xslt_processor;
 	$output="";
+	$flag=false;
 
 	if(!function_exists("xslt_create")) {
 		die("this conversion requires a PHP executable with XSLT extension");
 	}
-
-	$xslt = xslt_create();
 
 	$xmlhead="<?xml version='1.0' encoding='iso-8859-1' ?>\n";
 
@@ -108,7 +109,8 @@ function apply($input) {
 		$line = $lines[$nr]."\n";
 
 		if(strstr($line,("<funcsynopsis>"))) {
-			$funcsyn = str_replace("&","&amp;",$line);
+			$flag=true;
+			$funcsyn = $xmlhead."\n".str_replace("&","&amp;",$line);
 			do {
 				$line=$lines[++$nr]."\n";;
 				$funcsyn .= str_replace("&","&amp;",$line);
@@ -116,22 +118,30 @@ function apply($input) {
 			$arguments = array('/_xml' => $funcsyn,
 												 '/_xsl' => $conversion_xsl
 												 );
-			$result = xslt_process($xslt, 'arg:/_xml', 'arg:/_xsl', NULL, $arguments);
-			$result = str_replace("&amp;","&",$result);
-			$result = explode("\n",$result);
-			unset($result[0]);
-			$output .= rtrim(join("\n",$result))."\n";
+			if(!is_resource($xslt_processor)) {
+				$xslt_processor = xslt_create();
+			}
+			$result = xslt_process($xslt_processor, 'arg:/_xml', 'arg:/_xsl', NULL, $arguments);
+			
+			if(is_string($result)) {
+				$result = str_replace("&amp;","&",$result);
+				$result = explode("\n",$result);
+				unset($result[0]);
+				$output .= rtrim(join("\n",$result))."\n";
+			} else {
+				echo "line $nr\n";
+				echo $funcsyn;
+				return fasle;
+			}
 		} else if (strstr($line,("<?xml"))&&($nr==1)) {
 			$xmlhead=$line;
 			$output .= $line;
-		} else{
+		} else {
 			$output .= $line;
 		}
 	}
 
-	xslt_free($xslt);
-
-	return $output;
+	return $flag ? $output : false;
 }
 
 ?>
