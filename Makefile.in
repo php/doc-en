@@ -50,6 +50,11 @@ PHP_STYLESHEET=$(srcdir)/php.dsl
 HOWTO_STYLESHEET=$(srcdir)/howto.dsl
 PRINT_STYLESHEET=@DOCBOOK_PRINT@
 
+HTML_DEPS=$(HTML_STYLESHEET) $(srcdir)/html-common.dsl $(srcdir)/common.dsl
+PRINT_DEPS=$(HTML_STYLESHEET) $(srcdir)/html-common.dsl $(srcdir)/common.dsl
+PHPWEB_DEPS=$(PHPWEB_STYLESHEET) $(srcdir)/html-common.dsl $(srcdir)/common.dsl
+PHP_DEPS=$(PHP_STYLESHEET) $(srcdir)/html-common.dsl $(srcdir)/common.dsl
+
 all: html
 
 PREFACE=$(LANG)/preface.xml \
@@ -63,7 +68,8 @@ APPENDICES=$(LANG)/appendices/migration.xml \
            $(LANG)/appendices/debugger.xml \
            $(LANG)/appendices/phpdevel.xml
 
-CHAPTERS=$(LANG)/chapters/copyright.xml \
+CHAPTERS=$(LANG)/chapters.ent \
+         $(LANG)/chapters/copyright.xml \
          $(LANG)/chapters/intro.xml \
          $(LANG)/chapters/config.xml \
          $(LANG)/chapters/install.xml \
@@ -131,7 +137,7 @@ FUNCREF= \
 	$(LANG)/functions/wddx.xml \
 	$(LANG)/functions/zlib.xml
 
-FILES=$(PREFACE) $(APPENDICES) $(CHAPTERS) $(FUNCREF) global.ent chapters.ent
+FILES=$(PREFACE) $(APPENDICES) $(CHAPTERS) $(FUNCREF) global.ent
 DIST_FILES=manual.zip manual.tar.gz manual.rtf.gz bigmanual.html.gz \
 	manual.prc manual.txt.gz
 MIRROR_TARGETS=php/manual.php $(DIST_FILES) html/manual.html
@@ -143,6 +149,9 @@ print.dsl: print.dsl.in ./config.status
 	CONFIG_FILES=$@ CONFIG_HEADERS= ./config.status
 
 phpweb.dsl: phpweb.dsl.in ./config.status
+	CONFIG_FILES=$@ CONFIG_HEADERS= ./config.status
+
+common.dsl: common.dsl.in ./config.status
 	CONFIG_FILES=$@ CONFIG_HEADERS= ./config.status
 
 manual.xml: manual.xml.in .manual.xml
@@ -195,7 +204,7 @@ summary: ./funcsummary.txt
 makedoc: makedoc.cc
 	g++ -o makedoc makedoc.cc
 
-bigmanual.html: $(srcdir)/manual.xml $(HTML_STYLESHEET)
+bigmanual.html: $(srcdir)/manual.xml $(HTML_DEPS)
 	$(JADE) $(CATALOG) -i lang-$(LANG) -V nochunks -d $(HTML_STYLESHEET) -t sgml $(srcdir)/phpdocxml.dcl $(srcdir)/manual.xml > $@
 
 bigmanual.html.gz: bigmanual.html
@@ -207,15 +216,15 @@ manual.rtf.gz: manual.rtf
 manual.txt.gz: manual.txt
 	gzip -c $< > $@
 
-html/manual.html: $(srcdir)/manual.xml $(HTML_STYLESHEET)
+html/manual.html: $(srcdir)/manual.xml $(HTML_DEPS)
 	@test -d html || mkdir html
 	$(JADE) $(CATALOG) -i lang-$(LANG) -d $(HTML_STYLESHEET) -V use-output-dir -t sgml $(srcdir)/phpdocxml.dcl $(srcdir)/manual.xml
 
-php/index.php: $(srcdir)/manual.xml $(PHPWEB_STYLESHEET)
+php/index.php: $(srcdir)/manual.xml $(PHPWEB_DEPS)
 	@test -d php || mkdir php
 	-$(JADE) $(CATALOG) -i lang-$(LANG) -d $(PHP_STYLESHEET) -V use-output-dir -t sgml $(srcdir)/phpdocxml.dcl $(srcdir)/manual.xml
 
-php/manual.php: $(srcdir)/manual.xml $(PHPWEB_STYLESHEET)
+php/manual.php: $(srcdir)/manual.xml $(PHPWEB_DEPS)
 	@test -d php || mkdir php
 	-$(JADE) $(CATALOG) -i lang-$(LANG) -d $(PHPWEB_STYLESHEET) -V use-output-dir -t sgml $(srcdir)/phpdocxml.dcl $(srcdir)/manual.xml
 
@@ -231,7 +240,7 @@ manual.zip: $(srcdir)/html/manual.html
 manual.tar.gz: $(srcdir)/html/manual.html
 	-rm -f $@ && (cd html; tar -cf - *.html) | gzip > manual.tar.gz
 
-howto.html: $(srcdir)/howto.xml $(HOWTO_STYLESHEET) global.ent
+howto.html: $(srcdir)/howto.xml $(HOWTO_DEPS) global.ent
 	$(JADE) $(CATALOG) -i lang-$(LANG) -d $(HOWTO_STYLESHEET) -t sgml $(srcdir)/phpdocxml.dcl $(srcdir)/howto.xml
 
 tex latex: $(srcdir)/manual.tex
