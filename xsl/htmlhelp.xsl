@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.13 2004-11-04 04:27:20 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.14 2004-11-04 07:41:11 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -493,8 +493,8 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
 <xsl:param name="html.cellpadding" select="'2'"/>
 <!-- Tune table borders -->
 <xsl:param name="table.borders.with.css" select="1"/>
-<xsl:param name="table.cell.border.thickness" select=""/>
-<xsl:param name="table.cell.border.style" select=""/>
+<xsl:param name="table.cell.border.thickness" select="''"/>
+<xsl:param name="table.cell.border.style" select="''"/>
 
 
 
