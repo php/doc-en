@@ -313,7 +313,6 @@ $map = array (/*{{{*/
 	'en/reference/ctype' => '',
 	'en/reference/curl' => '',
 	'en/reference/cybercash' => '',
-	'en/reference/cybermut' => '',
 	'en/reference/cyrus' => '',
 	'en/reference/datetime' => '',
 	'en/reference/dba' => 'dba.c',
