@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.73 $ -->
+<!-- $Revision: 1.74 $ -->
  <reference id="ref.pgsql">
   <title>PostgreSQL functions</title>
   <titleabbrev>PostgreSQL</titleabbrev>
@@ -27,7 +27,7 @@
 <![CDATA[
 OLD NAME           NEW NAME
 pg_exec            pg_query
-getlastoid         pg_last_oid
+pg_getlastoid      pg_last_oid
 pg_cmdtuples       pg_affected_rows
 pg_errormessage    pg_last_error
 pg_numrows         pg_num_rows
@@ -184,14 +184,14 @@ pg_loexport        pg_lo_export
 <![CDATA[
 <?php
     $database = pg_connect ("dbname=jacarta");
-    pg_exec ($database, "begin");
-    $oid = pg_locreate ($database);
+    pg_query ($database, "begin");
+    $oid = pg_lo_create ($database);
     echo ("$oid\n");
-    $handle = pg_loopen ($database, $oid, "w");
+    $handle = pg_lo_open ($database, $oid, "w");
     echo ("$handle\n");
-    pg_lowrite ($handle, "large object data");
-    pg_loclose ($handle);
-    pg_exec ($database, "commit");
+    pg_lo_write ($handle, "large object data");
+    pg_lo_close ($handle);
+    pg_query ($database, "commit");
 ?>
 ]]>
      </programlisting>
@@ -239,38 +239,43 @@ pg_loexport        pg_lo_export
 
 
 
-  <refentry id="function.pg-cmdtuples">
+  <refentry id="function.pg-affected-rows">
    <refnamediv>
-    <refname>pg_cmdtuples</refname>
+    <refname>pg_affected_rows</refname>
     <refpurpose>Returns number of affected records(tuples)</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>int</type><methodname>pg_cmdtuples</methodname>
+      <type>int</type><methodname>pg_affected_rows</methodname>
       <methodparam><type>resource</type><parameter>result</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_cmdtuples</function> returns the number of tuples
+     <function>pg_affected_rows</function> returns the number of tuples
      (instances/records/rows) affected by INSERT, UPDATE, and DELETE
-     queries executed by <function>pg_exec</function>. If no tuple is
+     queries executed by <function>pg_query</function>. If no tuple is
      affected by this function, it will return 0.
      <example>
-      <title><function>pg_cmdtuples</function></title>
+      <title><function>pg_affected_rows</function></title>
       <programlisting role="php">
 <![CDATA[
 <?php
-$result = pg_exec ($conn, "INSERT INTO publisher VALUES ('Author')");
-$cmdtuples = pg_cmdtuples ($result);
+$result = pg_query ($conn, "INSERT INTO publisher VALUES ('Author')");
+$cmdtuples = pg_affected_rows ($result);
 echo $cmdtuples . " tuples are affected.";
 ?>
 ]]>
       </programlisting>
      </example>
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_cmdtuples()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_exec</function> and
-     <function>pg_numrows</function>.
+     See also <function>pg_query</function> and
+     <function>pg_num_rows</function>.
     </para>
    </refsect1>
   </refentry>
@@ -400,54 +405,59 @@ $dbconn4 = pg_connect ($conn_string);
 
 
 
-  <refentry id="function.pg-errormessage">
+  <refentry id="function.pg-last-error">
    <refnamediv>
-    <refname>pg_errormessage</refname>
+    <refname>pg_last_error</refname>
     <refpurpose>Get the last error message string of a connection</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>string</type><methodname>pg_errormessage</methodname>
+      <type>string</type><methodname>pg_last_error</methodname>
       <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_errormessage</function> returns a string containing
+     <function>pg_last_error</function> returns a string containing
      the last error message for given
      <parameter>connection</parameter>. It returns &false; on failure.
     </para>
     <para>
-     <function>pg_errormessage</function> returns the last error
+     <function>pg_last_error</function> returns the last error
      message for given <parameter>connection</parameter> and error
      message may be overwritten if other libpq functions are called on
      the connection. PostgreSQL functions calls libpq functions
      internally. Therefore, details about the error may not be
-     retrieved using the <function>pg_errormessage</function>
+     retrieved using the <function>pg_last_error</function>
      function.  pg_result_error_message() will be added from 4.2.0 to
      get last error for the result resource.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_errormessage()</literal>.
+     </para>
+    </note>
    </refsect1>
   </refentry>
 
-  <refentry id="function.pg-exec">
+  <refentry id="function.pg-query">
    <refnamediv>
-    <refname>pg_exec</refname>
+    <refname>pg_query</refname>
     <refpurpose>Execute a query</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>resource</type><methodname>pg_exec</methodname>
+      <type>resource</type><methodname>pg_query</methodname>
       <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
       <methodparam><type>string</type><parameter>query</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_exec</function> returns a query result resource if
+     <function>pg_query</function> returns a query result resource if
      query could be executed.  It returns &false; on failure or if
      connection is not a valid connection. Details about the error can
-     be retrieved using the <function>pg_errormessage</function>
+     be retrieved using the <function>pg_last_error</function>
      function if connection is valid.
-     <function>pg_errormessage</function> sends an SQL statement to
+     <function>pg_last_error</function> sends an SQL statement to
      the PostgreSQL database specified by the
      <parameter>connection</parameter> resource. The
      <parameter>connection</parameter> must be a valid connection that
@@ -459,7 +469,7 @@ $dbconn4 = pg_connect ($conn_string);
      <note>
       <simpara>
        <parameter>connection</parameter> is a optional parameter for
-       <function>pg_exec</function>. If
+       <function>pg_query</function>. If
        <parameter>connection</parameter> is not used, default
        connection is used. Default connection is the last connection
        made by <function>pg_connect</function> or
@@ -472,13 +482,18 @@ $dbconn4 = pg_connect ($conn_string);
       </simpara>
      </note>
     </para>
+      <note>
+     <para>
+      This function used called <literal>pg_exec()</literal>.
+     </para>
+    </note>
     <para>
      See also <function>pg_connect</function>,
      <function>pg_pconnect</function>,
      <function>pg_fetch_array</function>,
      <function>pg_fetch_object</function>,
-     <function>pg_numrows</function>,
-     and <function>pg_cmdtuples</function>.
+     <function>pg_num_rows</function>,
+     and <function>pg_affected_rows</function>.
     </para>
    </refsect1>
   </refentry>
@@ -537,7 +552,7 @@ $dbconn4 = pg_connect ($conn_string);
     <para>
      See also <function>pg_fetch_row</function> and
     <function>pg_fetch_object</function> and
-    <function>pg_result</function>.
+    <function>pg_fetch_result</function>.
     </para>
     <para>
      <example>
@@ -551,7 +566,7 @@ if (!$conn) {
     exit;
 }
 
-$result = pg_exec ($conn, "SELECT * FROM authors");
+$result = pg_query ($conn, "SELECT * FROM authors");
 if (!$result) {
     echo "An error occured.\n";
     exit;
@@ -626,8 +641,8 @@ echo $arr["author"] . " <- array\n";
      insignificant).
     </para>
     <para> 
-     See also <function>pg_exec</function>, <function>pg_fetch_array</function>,
-     <function>pg_fetch_row</function> and <function>pg_result</function>.
+     See also <function>pg_query</function>, <function>pg_fetch_array</function>,
+     <function>pg_fetch_row</function> and <function>pg_fetch_result</function>.
     </para>
     <para>
      <example>
@@ -642,7 +657,7 @@ if (!$db_conn): ?>
     exit;
 endif;
 
-$qu = pg_exec ($db_conn, "SELECT * FROM verlag ORDER BY autor");
+$qu = pg_query ($db_conn, "SELECT * FROM verlag ORDER BY autor");
 $row = 0; // postgres needs a row counter other dbs might not 
 
 while ($data = pg_fetch_object ($qu, $row)) {
@@ -671,7 +686,7 @@ echo "----------\n";
 ?>
 </PRE> 
 <?php
-pg_freeresult ($qu);
+pg_free_result ($qu);
 pg_close ($db_conn);
 ?>
 ]]>
@@ -712,10 +727,10 @@ pg_close ($db_conn);
      if there are no more rows.
     </para>
     <para>
-     See also: <function>pg_exec</function>,
+     See also: <function>pg_query</function>,
      <function>pg_fetch_array</function>,
      <function>pg_fetch_object</function> and
-     <function>pg_result</function>.
+     <function>pg_fetch_result</function>.
     </para>
     <para>
      <example>
@@ -729,13 +744,13 @@ if (!$conn) {
     exit;
 }
 
-$result = pg_Exec ($conn, "SELECT * FROM authors");
+$result = pg_query ($conn, "SELECT * FROM authors");
 if (!$result) {
     echo "An error occured.\n";
     exit;
 }
 
-$num = pg_numrows($result); 
+$num = pg_num_rows($result); 
 
 for ($i=0; $i < $num; $i++) {
   $r = pg_fetch_row($result, $i);
@@ -763,114 +778,134 @@ for ($i=0; $i < $num; $i++) {
 
 
 
-  <refentry id="function.pg-fieldisnull">
+  <refentry id="function.pg-field-is-null">
    <refnamediv>
-    <refname>pg_fieldisnull</refname>
+    <refname>pg_field_is_null</refname>
     <refpurpose>Test if a field is &null;</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>int</type><methodname>pg_fieldisnull</methodname>
+      <type>int</type><methodname>pg_field_is_null</methodname>
       <methodparam><type>resource</type><parameter>result</parameter></methodparam>
       <methodparam><type>int</type><parameter>row</parameter></methodparam>
       <methodparam><type>mixed</type><parameter>field</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_fieldisnull</function> test if a field is &null; or
+     <function>pg_field_is_null</function> test if a field is &null; or
      not. It returns 1 if the field in the given row is &null;. It
      returns 0 if the field in the given row is NOT &null;. Field can
      be specified as column index (number) or fieldname (string). Row
      numbering starts at 0.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_fieldisnull()</literal>.
+     </para>
+    </note>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-fieldname">
+  <refentry id="function.pg-field-name">
    <refnamediv>
-    <refname>pg_fieldname</refname>
+    <refname>pg_field_name</refname>
     <refpurpose>Returns the name of a field</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>string</type><methodname>pg_fieldname</methodname>
+      <type>string</type><methodname>pg_field_name</methodname>
       <methodparam><type>resource</type><parameter>result</parameter></methodparam>
       <methodparam><type>int</type><parameter>field_number</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_fieldname</function> returns the name of the field
+     <function>pg_field_name</function> returns the name of the field
      occupying the given <parameter>field_number</parameter> in the
      given PostgreSQL <parameter>result</parameter> resource.  Field
      numbering starts from 0.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_fieldname()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_fieldnum</function>.
+     See also <function>pg_field_num</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-fieldnum">
+  <refentry id="function.pg-field-num">
    <refnamediv>
-    <refname>pg_fieldnum</refname>
+    <refname>pg_field_num</refname>
     <refpurpose>Returns the field number of the named field</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>int</type><methodname>pg_fieldnum</methodname>
+      <type>int</type><methodname>pg_field_num</methodname>
       <methodparam><type>resource</type><parameter>result</parameter></methodparam>
       <methodparam><type>string</type><parameter>field_name</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_fieldnum</function> will return the number of the
+     <function>pg_field_num</function> will return the number of the
      column (field) slot that corresponds to the
      <parameter>field_name</parameter> in the given PostgreSQL
      <parameter>result</parameter> resource.  Field numbering starts
      at 0.  This function will return -1 on error.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_fieldnum()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_fieldname</function>.
+     See also <function>pg_field_name</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-fieldprtlen">
+  <refentry id="function.pg-field-prtlen">
    <refnamediv>
-    <refname>pg_fieldprtlen</refname>
+    <refname>pg_field_prtlen</refname>
     <refpurpose>Returns the printed length</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>int</type><methodname>pg_fieldprtlen</methodname>
+      <type>int</type><methodname>pg_field_prtlen</methodname>
       <methodparam><type>resource</type><parameter>result</parameter></methodparam>
       <methodparam><type>int</type><parameter>row_number</parameter></methodparam>
       <methodparam><type>string</type><parameter>field_name</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_fieldprtlen</function> returns the actual printed
+     <function>pg_field_prtlen</function> returns the actual printed
      length (number of characters) of a specific value in a PostgreSQL
      <parameter>result</parameter>.  Row numbering starts at 0.  This
      function will return -1 on an error.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_field_prtlen()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_fieldsize</function>.
+     See also <function>pg_field_size</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-fieldsize">
+  <refentry id="function.pg-field-size">
    <refnamediv>
-    <refname>pg_fieldsize</refname> 
+    <refname>pg_field_size</refname> 
     <refpurpose>
      Returns the internal storage size of the named field
     </refpurpose>
@@ -878,28 +913,33 @@ for ($i=0; $i < $num; $i++) {
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>int</type><methodname>pg_fieldsize</methodname>
+      <type>int</type><methodname>pg_field_size</methodname>
       <methodparam><type>resource</type><parameter>result</parameter></methodparam>
       <methodparam><type>int</type><parameter>field_number</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_fieldsize</function> returns the internal storage
+     <function>pg_field_size</function> returns the internal storage
      size (in bytes) of the field number in the given PostgreSQL
      <parameter>result</parameter>. Field numbering starts at 0. A
      field size of -1 indicates a variable length field. This function
      will return &false; on error.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_fieldsize()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_fieldlen</function> and <function>pg_fieldtype</function>.
+     See also <function>pg_field_len</function> and <function>pg_field_type</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-fieldtype">
+  <refentry id="function.pg-field-type">
    <refnamediv>
-    <refname>pg_fieldtype</refname> 
+    <refname>pg_field_type</refname> 
     <refpurpose>
      Returns the type name for the corresponding field number
     </refpurpose>
@@ -907,77 +947,92 @@ for ($i=0; $i < $num; $i++) {
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>string</type><methodname>pg_fieldtype</methodname>
+      <type>string</type><methodname>pg_field_type</methodname>
       <methodparam><type>resource</type><parameter>result</parameter></methodparam>
       <methodparam><type>int</type><parameter>field_number</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_fieldtype</function> returns a string containing the
+     <function>pg_field_type</function> returns a string containing the
      type name of the given <parameter>field_number</parameter> in the
      given PostgreSQL <parameter>result</parameter> resource.  Field
      numbering starts at 0.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_field_type()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_fieldlen</function> and <function>pg_fieldname</function>.
+     See also <function>pg_field_len</function> and <function>pg_field_name</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-freeresult">
+  <refentry id="function.pg-free-result">
    <refnamediv>
-    <refname>pg_freeresult</refname> 
+    <refname>pg_free_result</refname> 
     <refpurpose>Free result memory</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>bool</type><methodname>pg_freeresult</methodname>
+      <type>bool</type><methodname>pg_free_result</methodname>
       <methodparam><type>resource</type><parameter>result</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_freeresult</function> only needs to be called if you
+     <function>pg_free_result</function> only needs to be called if you
      are worried about using too much memory while your script is
      running. All result memory will automatically be freed when the
      script is finished. But, if you are sure you are not going to
      need the result data anymore in a script, you may call
-     <function>pg_freeresult</function> with the
+     <function>pg_free_result</function> with the
      <parameter>result</parameter> resource as an argument and the
      associated result memory will be freed. It returns true on success
      and false if an error occurs.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_field_len()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_exec</function>.
+     See also <function>pg_query</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-getlastoid">
+  <refentry id="function.pg-last-oid">
    <refnamediv>
-    <refname>pg_getlastoid</refname> 
+    <refname>pg_last_oid</refname> 
     <refpurpose>Returns the last object's oid</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>int</type><methodname>pg_getlastoid</methodname>
+      <type>int</type><methodname>pg_last_oid</methodname>
       <methodparam><type>resource</type><parameter>result</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_getlastoid</function> is used to retrieve the
+     <function>pg_last_oid</function> is used to retrieve the
      <varname>oid</varname> assigned to an inserted tuple (record) if
      the result resource is used from the last command sent via
-     <function>pg_exec</function> and was an SQL INSERT.  Returns a
+     <function>pg_query</function> and was an SQL INSERT.  Returns a
      positive integer if there was a valid <varname>oid</varname>.  It
      returns &false; if an error occurs or the last command sent via
-     <function>pg_exec</function> was not an INSERT or INSERT is
+     <function>pg_query</function> was not an INSERT or INSERT is
      failed.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_getlastoid()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_exec</function>.
+     See also <function>pg_query</function>.
     </para>
    </refsect1>
   </refentry>
@@ -1044,56 +1099,61 @@ for ($i=0; $i < $num; $i++) {
      </para>
     </warning>
     <para>
-     See also <function>pg_exec</function> and <function>pg_errormessage</function>.
+     See also <function>pg_query</function> and <function>pg_last_error</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-loclose">
+  <refentry id="function.pg-lo-close">
    <refnamediv>
-    <refname>pg_loclose</refname>
+    <refname>pg_lo_close</refname>
     <refpurpose>Close a large object</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>bool</type><methodname>pg_loclose</methodname>
+      <type>bool</type><methodname>pg_lo_close</methodname>
       <methodparam><type>resource</type><parameter>large_object</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_loclose</function> closes a Large
+     <function>pg_lo_close</function> closes a Large
      Object. <parameter>large_object</parameter> is a resource for the
-     large object from <function>pg_loopen</function>.
+     large object from <function>pg_lo_open</function>.
     </para>
     <para>
      To use the large object (lo) interface, it is necessary to
      enclose it within a transaction block.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_loclose()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_loopen</function>,
-     <function>pg_locreate</function> and
-     <function>pg_loimport</function>.
+     See also <function>pg_lo_open</function>,
+     <function>pg_lo_create</function> and
+     <function>pg_lo_import</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-locreate">
+  <refentry id="function.pg-lo-create">
    <refnamediv>
-    <refname>pg_locreate</refname>
+    <refname>pg_lo_create</refname>
     <refpurpose>Create a large object</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>int</type><methodname>pg_locreate</methodname>
+      <type>int</type><methodname>pg_lo_create</methodname>
       <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_locreate</function> creates a Large
+     <function>pg_lo_create</function> creates a Large
      Object and returns the <varname>oid</varname> of the large
      object.  <parameter>connection</parameter> specifies a valid
      database connection opened by <function>pg_connect</function> or
@@ -1109,20 +1169,25 @@ for ($i=0; $i < $num; $i++) {
      To use the large object (lo) interface, it is necessary to
      enclose it within a transaction block.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_locreate()</literal>.
+     </para>
+    </note>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-loexport">
+  <refentry id="function.pg-lo-export">
    <refnamediv>
-    <refname>pg_loexport</refname>
+    <refname>pg_lo_export</refname>
     <refpurpose>Export a large object to file</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>bool</type><methodname>pg_loexport</methodname>
+      <type>bool</type><methodname>pg_lo_export</methodname>
       <methodparam><type>int</type><parameter>oid</parameter></methodparam>
       <methodparam><type>string</type><parameter>pathname</parameter></methodparam>
       <methodparam choice="opt"><type>resource</type><parameter>connection</parameter></methodparam>
@@ -1137,23 +1202,28 @@ for ($i=0; $i < $num; $i++) {
      To use the large object (lo) interface, it is necessary to
      enclose it within a transaction block.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_loexport()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_loimport</function>.
+     See also <function>pg_lo_import</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-loimport">
+  <refentry id="function.pg-lo-import">
    <refnamediv>
-    <refname>pg_loimport</refname>
+    <refname>pg_lo_import</refname>
     <refpurpose>Import a large object from file</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>int</type><methodname>pg_loimport</methodname>
+      <type>int</type><methodname>pg_lo_import</methodname>
       <methodparam><type>string</type><parameter>pathname</parameter></methodparam>
       <methodparam choice="opt"><type>resource</type><parameter>connection</parameter></methodparam>
      </methodsynopsis>
@@ -1168,30 +1238,35 @@ for ($i=0; $i < $num; $i++) {
      enclose it within a transaction block.
     </para>
     &note.sm.uidcheck;
+    <note>
+     <para>
+      This function used called <literal>pg_loimport()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_loexport</function> and
-     <function>pg_loopen</function>.
+     See also <function>pg_lo_export</function> and
+     <function>pg_lo_open</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-loopen">
+  <refentry id="function.pg-lo-open">
    <refnamediv>
-    <refname>pg_loopen</refname>
+    <refname>pg_lo_open</refname>
     <refpurpose>Open a large object</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>resource</type><methodname>pg_loopen</methodname>
+      <type>resource</type><methodname>pg_lo_open</methodname>
       <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
       <methodparam><type>int</type><parameter>oid</parameter></methodparam>
       <methodparam><type>string</type><parameter>mode</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_loopen</function> open a Large Object and
+     <function>pg_lo_open</function> open a Large Object and
      returns large object resource. The resource encapsulates
      information about the connection. 
      <parameter>oid</parameter> specifies a valid large object oid and
@@ -1208,29 +1283,34 @@ for ($i=0; $i < $num; $i++) {
      To use the large object (lo) interface, it is necessary to
      enclose it within a transaction block.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_loopen()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_loclose</function> and
-     <function>pg_locreate</function>.
+     See also <function>pg_lo_close</function> and
+     <function>pg_lo_create</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-loread">
+  <refentry id="function.pg-lo-read">
    <refnamediv>
-    <refname>pg_loread</refname>
+    <refname>pg_lo_read</refname>
     <refpurpose>Read a large object</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>string</type><methodname>pg_loread</methodname>
+      <type>string</type><methodname>pg_lo_read</methodname>
       <methodparam><type>resource</type><parameter>large_object</parameter></methodparam>
       <methodparam><type>int</type><parameter>len</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_loread</function> reads at most
+     <function>pg_lo_read</function> reads at most
      <parameter>len</parameter> bytes from a large object and returns
      it as a string.  <parameter>large_object</parameter> specifies a
      valid large object resource and<parameter>len</parameter>
@@ -1241,17 +1321,75 @@ for ($i=0; $i < $num; $i++) {
      To use the large object (lo) interface, it is necessary to
      enclose it within a transaction block.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_loraed()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_loreadall</function>.
+     See also <function>pg_lo_read_all</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-loreadall">
+  <refentry id='function.pg-lo-seek'>
    <refnamediv>
-    <refname>pg_loreadall</refname>
+    <refname>pg_lo_seek</refname>
+    <refpurpose>
+     Seeks position of large object
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>bool</type><methodname>pg_lo_seek</methodname>
+      <methodparam><type>resource</type><parameter>large_object</parameter></methodparam>
+      <methodparam><type>int</type><parameter>offset</parameter></methodparam>
+      <methodparam choice="opt"><type>int</type><parameter>whence</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     <function>pg_lo_seek</function> seeks position of large object
+     resource. <parameter>whence</parameter> is PGSQL_SEEK_SET,
+     PGSQL_SEEK_CUR or PGSQL_SEEK_END.
+    </para>
+    <para>
+     See also <function>pg_lo_tell</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+
+
+  <refentry id='function.pg-lo-tell'>
+   <refnamediv>
+    <refname>pg_lo_tell</refname>
+    <refpurpose>
+     Returns current position of large object
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>int</type><methodname>pg_lo_tell</methodname>
+      <methodparam><type>resource</type><parameter>large_object</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     <function>pg_lo_tell</function> returns current position (offset
+     from the beginning of large object).
+    </para>
+    <para>
+     See also <function>pg_lo_seek</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+
+
+  <refentry id="function.pg-lo-read-all">
+   <refnamediv>
+    <refname>pg_lo_read_all</refname>
     <refpurpose>
      Read a entire large object and send straight to browser
     </refpurpose>
@@ -1259,11 +1397,11 @@ for ($i=0; $i < $num; $i++) {
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>int</type><methodname>pg_loreadall</methodname>
+      <type>int</type><methodname>pg_lo_read_all</methodname>
       <methodparam><type>resource</type><parameter>large_object</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_loreadall</function> reads a large object and passes
+     <function>pg_lo_read_all</function> reads a large object and passes
      it straight through to the browser after sending all pending
      headers. Mainly intended for sending binary data like images or
      sound. It returns number of bytes read. It returns &false;, if an
@@ -1273,28 +1411,33 @@ for ($i=0; $i < $num; $i++) {
      To use the large object (lo) interface, it is necessary to
      enclose it within a transaction block.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_loreadall()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_loread</function>.
+     See also <function>pg_lo_read</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-lounlink">
+  <refentry id="function.pg-lo-unlink">
    <refnamediv>
-    <refname>pg_lounlink</refname>
+    <refname>pg_lo_unlink</refname>
     <refpurpose>Delete a large object</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>bool</type><methodname>pg_lounlink</methodname>
+      <type>bool</type><methodname>pg_lo_unlink</methodname>
       <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
       <methodparam><type>int</type><parameter>oid</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_lounlink</function> deletes a large object with the
+     <function>pg_lo_unlink</function> deletes a large object with the
      <parameter>oid</parameter>. It returns &true; on success,
      otherwise returns &false;.
     </para>
@@ -1302,101 +1445,121 @@ for ($i=0; $i < $num; $i++) {
      To use the large object (lo) interface, it is necessary to
      enclose it within a transaction block.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_lo_unlink()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_locreate</function> and
-     <function>pg_loimport</function>.
+     See also <function>pg_lo_create</function> and
+     <function>pg_lo_import</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-lowrite">
+  <refentry id="function.pg-lo-write">
    <refnamediv>
-    <refname>pg_lowrite</refname>
+    <refname>pg_lo_write</refname>
     <refpurpose>Write a large object</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>int</type><methodname>pg_lowrite</methodname>
+      <type>int</type><methodname>pg_lo_write</methodname>
       <methodparam><type>resource</type><parameter>large_object</parameter></methodparam>
       <methodparam><type>string</type><parameter>data</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_lowrite</function> writes at most to a large object
+     <function>pg_lo_write</function> writes at most to a large object
      from a variable <parameter>data</parameter> and returns the number
      of bytes actually written, or &false; in the case of an error.
      <parameter>large_object</parameter> is a large object resource
-     from <function>pg_loopen</function>. 
+     from <function>pg_lo_open</function>. 
     </para>
     <para>
      To use the large object (lo) interface, it is necessary to
      enclose it within a transaction block.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_lo_write()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_locreate</function> and
-     <function>pg_loopen</function>.
+     See also <function>pg_lo_create</function> and
+     <function>pg_lo_open</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-numfields">
+  <refentry id="function.pg-num-fields">
    <refnamediv>
-    <refname>pg_numfields</refname> 
+    <refname>pg_num_fields</refname> 
     <refpurpose>Returns the number of fields</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>int</type><methodname>pg_numfields</methodname>
+      <type>int</type><methodname>pg_num_fields</methodname>
       <methodparam><type>resource</type><parameter>result</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_numfields</function> returns the number of fields
+     <function>pg_num_fields</function> returns the number of fields
      (columns) in a PostgreSQL <parameter>result</parameter>. The
      argument is a result resource returned by
-     <function>pg_exec</function>. This function will return -1 on
+     <function>pg_query</function>. This function will return -1 on
      error.
     </para>
+    <note>
+     <para>
+      This function used called <literal>pg_numfields()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_numrows</function> and
-     <function>pg_cmdtuples</function>.
+     See also <function>pg_num_rows</function> and
+     <function>pg_affected_rows</function>.
     </para>
    </refsect1>
   </refentry>
 
 
 
-  <refentry id="function.pg-numrows">
+  <refentry id="function.pg-num-rows">
    <refnamediv>
-    <refname>pg_numrows</refname> 
+    <refname>pg_num_rows</refname> 
     <refpurpose>Returns the number of rows</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>int</type><methodname>pg_numrows</methodname>
+      <type>int</type><methodname>pg_num_rows</methodname>
       <methodparam><type>resource</type><parameter>result</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_numrows</function> will return the number of rows in
+     <function>pg_num_rows</function> will return the number of rows in
      a PostgreSQL <parameter>result</parameter> resource.
      <parameter>result</parameter> is a query result resource returned
-     by <function>pg_exec</function>. This function will return -1 on
+     by <function>pg_query</function>. This function will return -1 on
      error.
     </para>
     <note>
      <para>
-      Use <function>pg_cmdtuples</function> to get number of rows
+      Use <function>pg_affected_rows</function> to get number of rows
       affected by INSERT, UPDATE and DELETE query.
      </para>
     </note>
+    <note>
+     <para>
+      This function used called <literal>pg_num_rows()</literal>.
+     </para>
+    </note>
     <para>
-     See also <function>pg_numfields</function> and
-     <function>pg_cmdtuples</function>.
+     See also <function>pg_num_fields</function> and
+     <function>pg_affected_rows</function>.
     </para>
    </refsect1>
   </refentry>
@@ -1560,8 +1723,8 @@ $dbconn4 = pg_connect ($conn_string);
 <![CDATA[
 <?php 
     $conn = pg_pconnect ("dbname=foo");
-    pg_exec($conn, "create table bar (a int4, b char(16), d float8)");
-    pg_exec($conn, "copy bar from stdin");
+    pg_query($conn, "create table bar (a int4, b char(16), d float8)");
+    pg_query($conn, "copy bar from stdin");
     pg_put_line($conn, "3\thello world\t4.5\n");
     pg_put_line($conn, "4\tgoodbye world\t7.11\n");
     pg_put_line($conn, "\\.\n");
@@ -1576,23 +1739,23 @@ $dbconn4 = pg_connect ($conn_string);
 
 
 
-  <refentry id="function.pg-result">
+  <refentry id="function.pg-fetch-result">
    <refnamediv>
-    <refname>pg_result</refname>
+    <refname>pg_fetch_result</refname>
     <refpurpose>Returns values from a result resource</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>mixed</type><methodname>pg_result</methodname>
+      <type>mixed</type><methodname>pg_fetch_result</methodname>
       <methodparam><type>resource</type><parameter>result</parameter></methodparam>
       <methodparam><type>int</type><parameter>row_number</parameter></methodparam>
       <methodparam><type>mixed</type><parameter>field</parameter></methodparam>
      </methodsynopsis>
     <para>
-     <function>pg_result</function> returns values from a
+     <function>pg_fetch_result</function> returns values from a
      <parameter>result</parameter> resource returned by
-     <function>pg_exec</function>. <parameter>row_number</parameter>
+     <function>pg_query</function>. <parameter>row_number</parameter>
      is integer.  <parameter>field</parameter> is field name(string)
      or field index (integer). The <parameter>row_number</parameter>
      and <parameter>field</parameter> specify what cell in the table
@@ -2127,59 +2290,6 @@ $dbconn4 = pg_connect ($conn_string);
     </note>
     <para>
      See also <function>pg_escape_bytea</function>
-    </para>
-   </refsect1>
-  </refentry>
-
-
-
-  <refentry id='function.pg-lo-seek'>
-   <refnamediv>
-    <refname>pg_lo_seek</refname>
-    <refpurpose>
-     Seeks position of large object
-    </refpurpose>
-   </refnamediv>
-   <refsect1>
-    <title>Description</title>
-     <methodsynopsis>
-      <type>bool</type><methodname>pg_lo_seek</methodname>
-      <methodparam><type>resource</type><parameter>large_object</parameter></methodparam>
-      <methodparam><type>int</type><parameter>offset</parameter></methodparam>
-      <methodparam choice="opt"><type>int</type><parameter>whence</parameter></methodparam>
-     </methodsynopsis>
-    <para>
-     <function>pg_lo_seek</function> seeks position of large object
-     resource. <parameter>whence</parameter> is PGSQL_SEEK_SET,
-     PGSQL_SEEK_CUR or PGSQL_SEEK_END.
-    </para>
-    <para>
-     See also <function>pg_lo_tell</function>.
-    </para>
-   </refsect1>
-  </refentry>
-
-
-
-  <refentry id='function.pg-lo-tell'>
-   <refnamediv>
-    <refname>pg_lo_tell</refname>
-    <refpurpose>
-     Returns current position of large object
-    </refpurpose>
-   </refnamediv>
-   <refsect1>
-    <title>Description</title>
-     <methodsynopsis>
-      <type>int</type><methodname>pg_lo_tell</methodname>
-      <methodparam><type>resource</type><parameter>large_object</parameter></methodparam>
-     </methodsynopsis>
-    <para>
-     <function>pg_lo_tell</function> returns current position (offset
-     from the beginning of large object).
-    </para>
-    <para>
-     See also <function>pg_lo_seek</function>.
     </para>
    </refsect1>
   </refentry>
