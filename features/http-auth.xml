@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.26 $ -->
+<!-- $Revision: 1.27 $ -->
  <chapter id="features.http-auth">
   <title>HTTP authentication with PHP</title>
 
@@ -10,25 +10,41 @@
    <function>header</function> function to send an "Authentication Required" 
    message to the client browser causing it to pop up a Username/Password 
    input window.  Once the user has filled in a username and a password, 
-   the URL containing the PHP script will be called again with the variables,
-   $PHP_AUTH_USER, $PHP_AUTH_PW and $PHP_AUTH_TYPE set to the user
-   name, password and authentication type respectively.  Only "Basic"
-   authentication is supported at this point. See the <function>header</function>
-   function for more information.</simpara>
-   
+   the URL containing the PHP script will be called again with the 
+   <link linkend="reserved.variables">predefined variables</link> 
+   <varname>PHP_AUTH_USER</varname>, <varname>PHP_AUTH_PW</varname>, 
+   and <varname>PHP_AUTH_TYPE</varname> set to the user name, password and 
+   authentication type respectively.  These predefined variables are found 
+   in the <link linkend="reserved.variables.server">$_SERVER</link> and 
+   <varname>$HTTP_SERVER_VARS</varname> arrays.  Only "Basic" authentication 
+   is supported. See the <function>header</function> function for more 
+   information.
+  </simpara>
+
+  <note>
+   <title>PHP Version Note</title>
+   <para>
+    <link linkend="language.variables.superglobals">Autoglobals</link>, 
+    such as <link linkend="reserved.variables.server">$_SERVER</link>, became 
+    available in PHP version <ulink url="&url.php.release4.1.0;">4.1.0</ulink>. 
+    <varname>$HTTP_SERVER_VARS</varname> has been available since PHP 3.
+   </para>
+  </note>
+
   <para>
    An example script fragment which would force client authentication
-   on a page would be the following:
-
+   on a page is as follows:
+  </para>
+  <para>
    <example>
     <title>HTTP Authentication example</title>
     <programlisting role="php">
 <![CDATA[
 <?php
   if (!isset($_SERVER['PHP_AUTH_USER'])) {
-    header("WWW-Authenticate: Basic realm=\"My Realm\"");
-    header("HTTP/1.0 401 Unauthorized");
-    echo "Text to send if user hits Cancel button\n";
+    header('WWW-Authenticate: Basic realm="My Realm"');
+    header('HTTP/1.0 401 Unauthorized');
+    echo 'Text to send if user hits Cancel button\n';
     exit;
   } else {
     echo "<p>Hello {$_SERVER['PHP_AUTH_USER']}.</p>";
@@ -37,38 +53,45 @@
 ?>
 ]]>
     </programlisting>
-   </example></para>
+   </example>
+  </para>
 
   <note>
-   <title>Note</title>
+   <title>Compatibility Note</title>
    <para>
     Please be careful when coding the HTTP header lines. In order to guarantee maximum
     compatibility with all clients, the keyword "Basic" should be written with an
     uppercase "B", the realm string must be enclosed in double (not single) quotes,
-    and exactly one space should precede the "401" code in the "HTTP/1.0 401" header line.
+    and exactly one space should precede the <emphasis>401</emphasis> code in the 
+    <emphasis>HTTP/1.0 401</emphasis> header line.
    </para>
   </note>
 
   <para>
-   Instead of simply printing out the $PHP_AUTH_USER and
-   $PHP_AUTH_PW, you would probably want to check the username and
-   password for validity.  Perhaps by sending a query to a database,
-   or by looking up the user in a dbm file.</para>
+   Instead of simply printing out <varname>PHP_AUTH_USER</varname> 
+   and <varname>PHP_AUTH_PW</varname>, as done in the above example, 
+   you may want to check the username and password for validity.  
+   Perhaps by sending a query to a database, or by looking up the 
+   user in a dbm file.
+  </para>
 
   <para>
    Watch out for buggy Internet Explorer browsers out there.  They
    seem very picky about the order of the headers.  Sending the
    <emphasis>WWW-Authenticate</emphasis> header before the
    <literal>HTTP/1.0 401</literal> header seems to do the trick
-   for now.</para>
+   for now.
+  </para>
 
   <simpara>
    In order to prevent someone from writing a script which reveals
    the password for a page that was authenticated through a
    traditional external mechanism, the PHP_AUTH variables will not be
    set if external authentication is enabled for that particular
-   page. In this case, the $REMOTE_USER variable can be used to
-   identify the externally-authenticated user.</simpara>
+   page. In this case, <varname>REMOTE_USER</varname> can be used 
+   to identify the externally-authenticated user.  So, 
+   <varname>$_SERVER['REMOTE_USER']</varname>.
+  </simpara>
 
   <note>
    <title>Configuration Note</title>
@@ -84,27 +107,29 @@
   <simpara>
    Note, however, that the above does not prevent someone who
    controls a non-authenticated URL from stealing passwords from
-   authenticated URLs on the same server.</simpara>
+   authenticated URLs on the same server.
+  </simpara>
   <simpara>
    Both Netscape Navigator and Internet Explorer will clear the local browser
    window's authentication cache for the realm upon receiving a
    server response of 401. This can effectively "log out" a user,
    forcing them to re-enter their username and password. Some people
-   use this to "time out" logins, or provide a "log-out" button.</simpara>
-  <simpara></simpara>
+   use this to "time out" logins, or provide a "log-out" button.
+  </simpara>
+  <para>
    <example>
      <title>HTTP Authentication example forcing a new name/password</title>
      <programlisting role="php">
 <![CDATA[
 <?php
   function authenticate() {
-    header( "WWW-Authenticate: Basic realm=\"Test Authentication System\"");
-    header( "HTTP/1.0 401 Unauthorized");
+    header('WWW-Authenticate: Basic realm="Test Authentication System"');
+    header('HTTP/1.0 401 Unauthorized');
     echo "You must enter a valid login ID and password to access this resource\n";
     exit;
   }
  
-  if (!isset($_SERVER['PHP_AUTH_USER']) || ($SeenBefore == 1 && $OldAuth == $_SERVER['PHP_AUTH_USER']))) {
+  if (!isset($_SERVER['PHP_AUTH_USER']) || ($_POST['SeenBefore'] == 1 && $_POST['OldAuth'] == $_SERVER['PHP_AUTH_USER'])) {
    authenticate();
   } 
   else {
@@ -118,8 +143,9 @@
   }
 ?>
 ]]>
-   </programlisting>
-  </example>
+    </programlisting>
+   </example>
+  </para>
   <simpara>
    This behavior is not required by the HTTP Basic authentication
    standard, so you should never depend on this. Testing with Lynx
@@ -136,7 +162,7 @@
 
   <note>
    <para>
-    If <link linkend="ini.safe-mode">safe mode</link> is enabled the
+    If <link linkend="ini.safe-mode">safe mode</link> is enabled, the
     uid of the script is added to the <literal>realm</literal> part of
     the <literal>WWW-Authenticate</literal> header.
    </para>
