@@ -188,9 +188,9 @@
      (linkend 
       (string-append
        "function." 
-       (string-replace
-        (string-replace function-name "_" "-")
-        "::" ".")))
+       (case-fold-down (string-replace
+                        (string-replace function-name "_" "-")
+                        "::" "."))))
      (target (element-with-id linkend))
      (parent-gi (gi (parent))))
     (cond
