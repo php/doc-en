@@ -174,14 +174,22 @@ set       toc,title
   </fo:page-sequence>
 </xsl:template>
 
-<!-- Correct page numbers for APPENDICES in main-TOC -->
+<!-- Correct page numbers for APPENDICES in main-TOC,
+     and make appendix 'Resources' landscape pages   -->
 <xsl:template match="appendix">
   <xsl:variable name="id">
     <xsl:call-template name="object.id"/>
   </xsl:variable>
 
   <xsl:variable name="master-reference">
-    <xsl:call-template name="select.pagemaster"/>
+    <xsl:choose>
+      <xsl:when test="@id='resource'">
+        <xsl:value-of select="'landscape-first'"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="select.pagemaster"/>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:variable>
 
   <fo:page-sequence id="{$id}"
@@ -440,7 +448,7 @@ set       toc,title
           <xsl:copy-of select="$label"/>
           <xsl:value-of select="$autotoc.label.separator"/>
         </xsl:if>
-        <xsl:apply-templates select="question/*"/>
+        <xsl:value-of select="question/*[text()]"/>
       </fo:basic-link>
     </fo:inline>
     <fo:inline keep-together.within-line="always">
@@ -732,6 +740,31 @@ set       toc,title
 
 <!-- ===========================   F A Q  ================================= -->
 
+<!-- Increase space for labels (for e.g. '10.10.') -->
+<xsl:template match="qandaset">
+  <xsl:variable name="id"><xsl:call-template name="object.id"/></xsl:variable>
+
+  <fo:block id="{$id}">
+    <xsl:if test="title">
+      <xsl:apply-templates select="title"/>
+    </xsl:if>
+
+    <xsl:apply-templates select="*[name(.) != 'title'
+                                 and name(.) != 'qandadiv'
+                                 and name(.) != 'qandaentry']"/>
+    <xsl:apply-templates select="qandadiv"/>
+
+    <xsl:if test="qandaentry">
+      <fo:list-block xsl:use-attribute-sets="list.block.spacing"
+                     provisional-distance-between-starts="2.8em"
+                     provisional-label-separation="0.2em">
+        <xsl:apply-templates select="qandaentry"/>
+      </fo:list-block>
+    </xsl:if>
+  </fo:block>
+</xsl:template>
+
+
 <!-- Let FAQ-questions and answers look similar to the html-dsssl-version -->
 <xsl:template match="question/para|question/simpara">
   <xsl:apply-templates/>
@@ -774,10 +807,75 @@ set       toc,title
 <!-- =========================  END  F A Q  =============================== -->
 
 
+<!-- ========================= APPENDIX RESOURCES ========================= -->
 
-<!-- Some EXAMPLES need MORE SPACE -->
-<xsl:param name="page.margin.inner" select="'0.8in'"/>
-<xsl:param name="page.margin.outer" select="'0.8in'"/>
+<!-- Create page-master for landscape-pages,
+     is needed by the template 'appendix' above -->
+<xsl:template name="user.pagemasters">
+    <fo:simple-page-master master-name="landscape-first"
+                           page-width="{$page.height.portrait}"
+                           page-height="{$page.width.portrait}"
+                           margin-top="{$page.margin.inner}"
+                           margin-bottom="0.3in"
+                           margin-left="{$page.margin.bottom}"
+                           margin-right="{$page.margin.top}">
+      <fo:region-body margin-bottom="{$body.margin.bottom}"
+                      margin-top="{$body.margin.top}"
+                      column-count="{$column.count.body}">
+      </fo:region-body>
+      <fo:region-before region-name="xsl-region-before-first"
+                        extent="{$region.before.extent}"
+                        display-align="before"/>
+      <fo:region-after region-name="xsl-region-after-first"
+                       extent="{$region.after.extent}"
+                       display-align="after"/>
+    </fo:simple-page-master>
+</xsl:template>
+
+<!-- Don't hyphenate function-names in Appendix 'Resources' -->
+<xsl:template match="row[ancestor::appendix[@id='resource']]">
+  <xsl:param name="spans"/>
+
+  <fo:table-row hyphenate="false">
+    <xsl:call-template name="anchor"/>
+
+    <xsl:apply-templates select="(entry|entrytbl)[1]">
+      <xsl:with-param name="spans" select="$spans"/>
+    </xsl:apply-templates>
+  </fo:table-row>
+
+  <xsl:if test="following-sibling::row">
+    <xsl:variable name="nextspans">
+      <xsl:apply-templates select="(entry|entrytbl)[1]" mode="span">
+        <xsl:with-param name="spans" select="$spans"/>
+      </xsl:apply-templates>
+    </xsl:variable>
+
+    <xsl:apply-templates select="following-sibling::row[1]">
+      <xsl:with-param name="spans" select="$nextspans"/>
+    </xsl:apply-templates>
+  </xsl:if>
+</xsl:template>
+
+<!-- ======================= END APPENDIX RESOURCES ======================= -->
+
+
+
+<!-- Some EXAMPLES need MORE SPACE, unify the
+     inner width of the several page-formats -->
+<xsl:param name="page.margin.inner">
+  <xsl:choose>
+    <xsl:when test="$paper.type = 'A4'">18mm</xsl:when>
+    <xsl:otherwise>20mm</xsl:otherwise>
+  </xsl:choose>
+</xsl:param>
+<xsl:param name="page.margin.outer">
+  <xsl:choose>
+    <xsl:when test="$paper.type = 'A4'">16mm</xsl:when>
+    <xsl:otherwise>19.9mm</xsl:otherwise>
+  </xsl:choose>
+</xsl:param>
+
 
 <xsl:attribute-set name="section.title.level1.properties">
   <xsl:attribute name="font-size">20pt</xsl:attribute>
