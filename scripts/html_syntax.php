@@ -1,12 +1,16 @@
 #!/usr/bin/php -q
 <?php
+/*
+There are no restrictions on this file.
+Author: Jakub Vrána <jakub@vrana.cz>
+*/
 if ($_SERVER["argc"] < 3) {
 	exit("Purpose: Syntax highlight PHP examples in DSSSL generated HTML manual.\n"
 		.'Usage: html_syntax.php [ "html" | "php" ] [ filename.ext | dir | wildcard ] ...' ."\n"
-		.'"html" - highlight_string() is used, "php" - highlight_php() is called' ."\n"
+		.'"html" - highlight_string() is applied, "php" - highlight_php() is added' ."\n"
 	);
 }
-set_time_limit(60*60); // can run long, but not more than 1 hour
+set_time_limit(5*60); // can run long, but not more than 5 minutes
 
 function callback_html_number_entities_decode($matches) {
 	return chr($matches[1]);
@@ -28,19 +32,23 @@ while (($file = array_shift($files)) !== null) {
 	if (is_file($file)) {
 		$process = array($file);
 	} elseif (is_dir($file)) {
-		$process = glob(realpath($file) ."/*"); // realpath only for stripping slash from the end
+		$lastchar = substr($file, -1);
+		$process = glob($file . ($lastchar == "/" || $lastchar == "\\" ? "*" : "/*"));
 	} else { // should be wildcard
 		$process = glob($file);
 	}
-	foreach ($process as $val) {
-        echo "$val\n";
-		$original = file_get_contents($val);
+	foreach ($process as $filename) {
+		if (!is_file($filename)) { // do not recurse
+			continue;
+		}
+		//~ echo "$filename\n";
+		$original = file_get_contents($filename);
 		$highlighted = preg_replace_callback("!<PRE\r?\nCLASS=\"php\"\r?\n>(.*)</PRE\r?\n>!sU", "callback_highlight_php", $original);
 		if ($original != $highlighted) {
-            // file_put_contents is in PHP >= 5
-            $fp = fopen($val, "wb");
-            fwrite($fp, $highlighted);
-            fclose($fp);
+			// file_put_contents is only in PHP >= 5
+			$fp = fopen($filename, "wb");
+			fwrite($fp, $highlighted);
+			fclose($fp);
 		}
 	}
 }
