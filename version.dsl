@@ -689,6 +689,7 @@
    ((equal? (data nl) "levenshtein") (literal "PHP3 CVS only, PHP4 >= 4.0.1"))
    ((equal? (data nl) "link") (literal "PHP3 , PHP4 "))
    ((equal? (data nl) "linkinfo") (literal "PHP3 , PHP4 "))
+   ((equal? (data nl) "list") (literal "PHP3 , PHP4 "))
    ((equal? (data nl) "log") (literal "PHP3 , PHP4 "))
    ((equal? (data nl) "log10") (literal "PHP3 , PHP4 "))
    ((equal? (data nl) "logas") (literal "PHP3 , PHP4 <= 4.0.0"))
