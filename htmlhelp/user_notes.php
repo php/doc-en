@@ -90,6 +90,10 @@ fwrite($nproject, "_index.html\n");
 copy("suppfiles/notes/_style.css", "$NOTES_TARGET/_style.css");
 fwrite($nproject, "_style.css\n");
 
+// RAQ : Wednesday, 16 March 2005 01:54 pm : Allow all note pages to have a global JavaScript file.
+copy('suppfiles/notes/_notes_script.js', "$NOTES_TARGET/_notes_script.js");
+fwrite($nproject, "_notes_script.js\n");
+
 // Write out a list of files to work around an IE6 bug
 $jsfile = fopen("$NOTES_TARGET/_filelist.js", "w");
 fwrite($jsfile, "note_file_list = ' " . join(" ", $NOTE_FILE_LIST) . " ';\n\n");
@@ -165,13 +169,15 @@ function manualUserNotes($title, $id)
     }
     
     // start HTML output
+    // RAQ : Wednesday, 16 March 2005 01:54 pm : Allow all note pages to have a global JavaScript file and use new notesLoading() function for body's onLoad.
     $notehtml = <<<END_OF_MULTI
 <html>
 <head>
   <title>N: $title</title>
   <link rel="stylesheet" href="_style.css">
+  <script language="JavaScript1.2" src="_notes_script.js"></script>
 </head>
-<body onLoad="if(parent.nbuff) {parent.displayNotes()}">
+<body onLoad="if(parent.nbuff) {parent.displayNotes();} else {loadWithNotes();}">
 
 <h3>User contributed notes:</h3>
 END_OF_MULTI;

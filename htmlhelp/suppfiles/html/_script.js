@@ -74,8 +74,27 @@ function getCHMFile()
         chmfile_page = unescape(location.href.substring(Y+3));
     }
 
-    //alert(location.href+"\n\n"+"fullname="+chmfile_fullname+"\n"+"path="+
-    //chmfile_path+"\n"+"name="+chmfile_name+"\n"+"page="+chmfile_page);
+    // RAQ : Wednesday, 16 March 2005 01:56 pm : If this page has been loaded because the notes were selected from the search results, then remove the hash.
+    if (location.hash == '#userNotes')
+        chmfile_page = chmfile_page.substring(0, chmfile_page.lastIndexOf('#'));
+
+    //alert(
+    // "_script\n\n" +
+    // "location\n"+
+    // "location.hash = '" + location.hash + "'\n" +
+    // "location.host = '" + location.host + "'\n" +
+    // "location.hostname = '" + location.hostname + "'\n" +
+    // "location.href = '" + location.href + "'\n" +
+    // "location.pathname = '" + location.pathname + "'\n" +
+    // "location.port = '" + location.port + "'\n" +
+    // "location.protocol = '" + location.protocol + "'\n" +
+    // "location.search = '" + location.search + "'\n\n" +
+    // "chmfile\n"+
+    // "chmfile_name = '" + chmfile_name + "'\n" +
+    // "chmfile_path = '" + chmfile_path + "'\n" +
+    // "chmfile_page = '" + chmfile_page + "'\n"
+    // );
+ 
 }
 
 // =============================================================================
@@ -125,6 +144,11 @@ function _displayNotes()
     // If we have that element, copy notes here [4+]
     if (element) {
         element.innerHTML = parent.nbuff.document.body.innerHTML;
+        // RAQ : Wednesday, 16 March 2005 01:58 pm : Bring the notes into view if the hash has been supplied
+        if (location.hash == '#userNotes')
+            {
+            setTimeout('element.scrollIntoView(true);',200);
+            }
     } else {
         alert("Error in user note inclusion");
     }
