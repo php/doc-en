@@ -2,7 +2,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.2 2002-01-20 22:53:09 hholzgra Exp $
+  $Id: html-common.xsl,v 1.3 2002-01-20 23:13:44 hholzgra Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -28,6 +28,51 @@
     <xsl:when test="following-sibling::paramdef">
       <xsl:choose>
         <xsl:when test="following-sibling::paramdef[position()=1]/child::parameter/child::optional">
+          <xsl:text> [, </xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:text>, </xsl:text>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:for-each select="preceding-sibling::paramdef/child::parameter/child::optional">
+        <xsl:text>]</xsl:text>
+      </xsl:for-each>
+      <xsl:if test="child::parameter/child::optional">
+        <xsl:text>]</xsl:text>
+      </xsl:if>
+      <xsl:text>)</xsl:text>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- same for docbook 4 style protos -->
+<xsl:template match="methodsynopsis">
+  <xsl:apply-templates />
+</xsl:template>
+
+<xsl:template match="methodsynopsis/type">
+  <xsl:apply-templates />
+  <xsl:text> </xsl:text>
+</xsl:template>
+
+<xsl:template match="methodparam/type">
+  <xsl:apply-templates />
+  <xsl:text> </xsl:text>
+</xsl:template>
+
+<xsl:template match="methodparam/parameter">
+  <xsl:apply-templates />
+</xsl:template>
+
+<xsl:template match="methodparam">
+  <xsl:if test="preceding-sibling::methodparam=false()">(</xsl:if>
+  <xsl:apply-templates />
+  <xsl:choose>
+    <xsl:when test="following-sibling::methodparam">
+      <xsl:choose>
+        <xsl:when test="following-sibling::methodparam[position()=1]/attribute::choice[.='opt']">
           <xsl:text> [, </xsl:text>
         </xsl:when>
         <xsl:otherwise>
