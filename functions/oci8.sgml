@@ -15,29 +15,33 @@
   </partintro>
 	
 <!--
-
-OCIBindByName
-OCIDefineByName
-OCIColumnIsNULL
-OCIColumnName
-OCIColumnSize
-OCIColumnType
-OCIExecute
-OCIFetch
-OCIFetchInto
-OCIInternalDebug
-OCILogoff
-OCILogon
-OCIError
-OCICommit
-OCIRollback
-OCINewDescriptor
-OCIRowCount
-OCINumCols
-OCIParse
-OCIResult
-OCIServerVersion
-OCIStatementType
+OCIBindByName       - done
+OCIDefineByName     - done
+OCIColumnIsNULL     - done
+OCIColumnName       - done
+OCIColumnSize       - done
+OCIColumnType       - done
+OCIExecute          - done
+OCIFetch            - done
+OCIFetchInto        - done
+OCIFetchStatement   - done
+OCIInternalDebug    - done 
+OCILogoff           - done
+OCILogon            - done
+OCIPLogon           - done
+OCIError            - done
+OCICommit           - done
+OCIRollback         - done
+OCINewCursor        - done
+OCINewDescriptor    - done
+OCIRowCount         - done
+OCINumCols          - done
+OCIParse            - done
+OCIResult           - done
+OCIServerVersion    - done
+OCIStatementType    - done
+OCIFreeStatement    - done
+OCIFreeCursor       - done
 -->
 
   <refentry id="function.ocidefinebyname">
@@ -287,25 +291,138 @@ OCILogoff($conn);
    </refsect1>
   </refentry>
 
-  <refentry id="function.ocinumrows">
+  <refentry id="function.ocinewdescriptor">
    <refnamediv>
-    <refname>OCINumRows</refname>
-    <refpurpose>Gets the number of affectend rows</refpurpose>
+    <refname>OCINewDescriptor</refname>
+    <refpurpose>Initialize a new empty descriptor LOB/FILE (LOB is default)</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
-     <funcdef>int <function>OCINumRows</function></funcdef>
+     <funcdef>string <function>OCINewDescriptor</function></funcdef>
+     <paramdef>int <parameter>connection</parameter></paramdef>
+     <paramdef>int <parameter><optional>type</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCINewDescriptor</function> Allocates storage to hold descriptors or LOB locators.   
+      Valid values for the valid <parameter>type</parameter> are OCI_D_FILE, OCI_D_LOB, OCI_D_ROWID.
+
+    </para>
+     <example>
+      <title>OCINewDescriptor</title>
+      <programlisting>
+&lt;?php   
+    /* This script is designed to be called from a HTML form.
+     * It expects $user, $password, $table, $where, and $commitsize
+     * to be passed in from the form.  The script then deletes
+     * the selected rows using the ROWID and commits after each
+     * set of $commitsize rows. (Use with care, there is no rollback)
+     */
+    $conn = OCILogon($user, $password);
+    $stmt = OCIParse($conn,"select rowid from $table $where");
+    $rowid = OCINewDescriptor($conn,OCI_D_ROWID);
+    OCIDefineByName($stmt,"ROWID",&$rowid);   
+    OCIExecute($stmt);
+    while ( OCIFetch($stmt) ) {      
+       $nrows = OCIRowCount($stmt);
+       $delete = OCIParse($conn,"delete from $table where ROWID = :rid");
+       OCIBindByName($delete,":rid",&$rowid,-1,OCI_B_ROWID);
+       OCIExecute($delete);      
+       print "$nrows\n";
+       if ( ($nrows % $commitsize) == 0 ) {
+           OCICommit($conn);      
+       }   
+    }
+    $nrows = OCIRowCount($stmt);   
+    print "$nrows deleted...\n";
+    OCIFreeStatement($stmt);  
+    OCILogoff($conn);
+?>  
+   </programlisting></example>
+
+   </refsect1>
+  </refentry>
+  <refentry id="function.ocirowcount">
+   <refnamediv>
+    <refname>OCIRowCount</refname>
+    <refpurpose>Gets the number of affected rows</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIRowCount</function></funcdef>
      <paramdef>int <parameter>statement</parameter></paramdef>
     </funcsynopsis>
     <para>
-     <function>OCINumRows</function> returns the number of rows affected
+     <function>OCIRowCounts</function> returns the number of rows affected
 	 for eg update-statements. This funtions will not tell you the number
 	 of rows that a select will return!
-    </para>
+    <para>
+     <example>
+      <title>OCIRowCount</title>
+      <programlisting>
+&lt;?php
+    print "&lt;HTML>&lt;PRE>";
+    $conn = OCILogon("scott","tiger");
+    $stmt = OCIParse($conn,"create table emp2 as select * from emp");
+    OCIExecute($stmt);
+    print OCIRowCount($stmt) . " rows inserted.&lt;BR>";
+    OCIFreeStatement($stmt);
+    $stmt = OCIParse($conn,"delete from emp2");
+    OCIExecute($stmt);
+    print OCIRowCount($stmt) . " rows deleted.&lt;BR>";
+    OCICommit($conn);
+    OCIFreeStatement($stmt);
+    $stmt = OCIParse($conn,"drop table emp2");
+    OCIExecute($stmt);
+    OCIFreeStatement($stmt);
+    OCILogOff($conn);
+    print "&lt;/PRE>&lt;/HTML>";
+?> </programlisting></example>
+ 
    </refsect1>
   </refentry>
 
+  <refentry id="function.ocinumcols">
+   <refnamediv>
+    <refname>OCINumCols</refname>
+    <refpurpose>Return the number of result columns in a statement</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCINumCols</function></funcdef>
+     <paramdef>int <parameter>stmt</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCINumCols</function> returns the number of columns in a statement</para>
+     <example>
+      <title>OCINumCols</title>
+      <programlisting>
+&lt;?php   
+    print "&lt;HTML>&lt;PRE>\n";   
+    $conn = OCILogon("scott", "tiger");
+    $stmt = OCIParse($conn,"select * from emp");
+    OCIExecute($stmt);
+    while ( OCIFetch($stmt) ) {
+        print "\n";   
+        $ncols = OCINumCols($stmt);
+        for ( $i = 1; $i <= $ncols; $i++ ) {
+            $column_name  = OCIColumnName($stmt,$i);
+            $column_value = OCIResult($stmt,$i);
+            print $column_name . ': ' . $column_value . "\n";
+        }
+        print "\n";
+    }
+    OCIFreeStatement($stmt);  
+    OCILogoff($conn);   
+    print "&lt;/PRE>";
+    print "&lt;/HTML>\n"; 
+?>   </programlisting></example>
+
+   </refsect1>
+  </refentry>
+ 
   <refentry id="function.ociresult">
    <refnamediv>
     <refname>OCIResult</refname>
@@ -383,6 +500,66 @@ OCILogoff($conn);
    </refsect1>
   </refentry>
 
+  <refentry id="function.ocifetchstatement">
+   <refnamediv>
+    <refname>OCIFetchStatement</refname>
+    <refpurpose>Fetch all rows of result data into an array.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIFetchStatement</function></funcdef>
+     <paramdef>int <parameter>stmt</parameter></paramdef>
+     <paramdef>array &<parameter>variable</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIFetchStatement</function> fetches all the rows from a 
+     result into a user-defined array. <function>OCIFetchStatement</function> 
+     returns the number of rows fetched. 
+    </para>
+     <example>
+      <title>OCIFetchStatement</title>
+      <programlisting>
+&lt;?php
+/* OCIFetchStatement example mbritton@verinet.com (990624) */
+
+$conn = OCILogon("scott","tiger");
+
+$stmt = OCIParse($conn,"select * from emp");
+
+OCIExecute($stmt);
+
+$nrows = OCIFetchStatement($stmt,$results);
+if ( $nrows > 0 ) {
+   print "&lt;TABLE BORDER=\"1\">\n";
+   print "&lt;TR>\n";
+   while ( list( $key, $val ) = each( $results ) ) {
+      print "&lt;TH>$key&lt;/TH>\n";
+   }
+   print "&lt;/TR>\n";
+   
+   for ( $i = 0; $i &lt; $nrows; $i++ ) {
+      reset($results);
+      print "&lt;TR>\n";
+      while ( $column = each($results) ) {   
+         $data = $column['value'];
+         print "&lt;TD>$data[$i]&lt;/TD>\n";
+      }
+      print "&lt;/TR>\n";
+   }
+   print "&lt;/TABLE>\n";
+} else {
+   echo "No data found&lt;BR>\n";
+}      
+print "$nrows Records Selected&lt;BR>\n";
+ 
+OCIFreeStatement($stmt);
+OCILogoff($conn);
+
+?></programlisting></example>
+
+   </refsect1>
+  </refentry>
   <refentry id="function.ocicolumnisnull">
    <refnamediv>
     <refname>OCIColumnIsNULL</refname>
@@ -424,9 +601,409 @@ OCILogoff($conn);
 	 the column-number (1-Based) or the column-name for the <parameter>col</parameter>
 	 parameter.
     </para>
+    <para>
+     <example>
+      <title>OCIColumnSize</title>
+      <programlisting>
+&lt;?php   
+    print "&lt;HTML>&lt;PRE>\n";   
+    $conn = OCILogon("scott", "tiger");
+    $stmt = OCIParse($conn,"select * from emp");
+    OCIExecute($stmt);
+    print "&lt;TABLE BORDER=\"1\">";
+    print "&lt;TR>";
+    print "&lt;TH>Name&lt;/TH>";
+    print "&lt;TH>Type&lt;/TH>";
+    print "&lt;TH>Length&lt;/TH>";
+    print "&lt;/TR>";
+    $ncols = OCINumCols($stmt);
+    for ( $i = 1; $i <= $ncols; $i++ ) {
+        $column_name  = OCIColumnName($stmt,$i);
+        $column_type  = OCIColumnType($stmt,$i);
+        $column_size  = OCIColumnSize($stmt,$i);
+        print "&lt;TR>";
+        print "&lt;TD>$column_name&lt;/TD>";
+        print "&lt;TD>$column_type&lt;/TD>";
+        print "&lt;TD>$column_size&lt;/TD>";
+        print "&lt;/TR>";
+    }
+    OCIFreeStatement($stmt);  
+    OCILogoff($conn);   
+    print "&lt;/PRE>";
+    print "&lt;/HTML>\n"; 
+?>   </programlisting></example>
+    <simpara>
+     See also <function>OCINumCols</function>, <function>OCIColumnName</function>, 
+     and <function>OCIColumnSize</function>.
    </refsect1>
   </refentry>
 
+  <refentry id="function.ociserverversion">
+   <refnamediv>
+    <refname>OCIServerVersion</refname>
+    <refpurpose>Return a string containing server version information.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>OCIServerVersion</function></funcdef>
+     <paramdef>int <parameter>conn</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <example>
+      <title>OCIServerVersion</title>
+      <programlisting>
+&lt;?php
+   $conn = OCILogon("scott","tiger");
+   print "Server Version: " . OCIServerVersion($conn);
+   OCILogOff($conn);
+?></programlisting></example>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocistatementtype">
+   <refnamediv>
+    <refname>OCIStatementType</refname>
+    <refpurpose>Return the type of an OCI statement.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>OCIStatementType</function></funcdef>
+     <paramdef>int <parameter>stmt</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIStatementType</function> returns on of the following values:
+     <orderedlist>
+      <listitem><simpara>			"SELECT"
+      <listitem><simpara>			"UPDATE"
+      <listitem><simpara>			"DELETE"
+      <listitem><simpara>			"INSERT"
+      <listitem><simpara>			"CREATE"
+      <listitem><simpara>			"DROP"
+      <listitem><simpara>			"ALTER"
+      <listitem><simpara>			"BEGIN"
+      <listitem><simpara>			"DECLARE"
+      <listitem><simpara>			"UNKNOWN"
+     </orderedlist>
+    <para>
+     <example>
+      <title>Code examples</title>
+      <programlisting>
+&lt;?php
+    print "&lt;HTML>&lt;PRE>";
+    $conn = OCILogon("scott","tiger");
+    $sql  = "delete from emp where deptno = 10";
+   
+    $stmt = OCIParse($conn,$sql);
+    if ( OCIStatementType($stmt) == "DELETE" ) {
+        die "You are not allowed to delete from this table&lt;BR>";
+    }
+   
+    OCILogoff($conn);
+    print "&lt;/PRE>&lt;/HTML>";
+?>
+</programlisting></example>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocinewcursor">
+   <refnamediv>
+    <refname>OCINewCursor</refname>
+    <refpurpose>return a new cursor (Statement-Handle) - use this to bind ref-cursors!</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCINewCursor</function></funcdef>
+     <paramdef>int <parameter>conn</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCINewCursor</function> allocates a new statement handle on the specified
+     connection.
+    </para>
+    <para>
+     <example>
+      <title>Using a REF CURSOR from a stored procedure</title>
+      <programlisting>
+&lt;?php   
+// suppose your stored procedure info.output returns a ref cursor in :data
+
+$conn = OCILogon("scott","tiger");
+$curs = OCINewCursor($conn);
+$stmt = OCIParse($conn,"begin info.output(:data); end;");
+
+ocibindbyname($stmt,"data",&$curs,-1,OCI_B_CURSOR);
+ociexecute($stmt);
+ociexecute($curs);
+
+while (OCIFetchInto($curs,&$data)) {
+    var_dump($data);
+}
+ 
+OCIFreeCursor($stmt);
+OCIFreeStatement($curs);
+OCILogoff($conn);
+?></programlisting></example>
+
+    <para>
+     <example>
+      <title>Using a REF CURSOR in a select statement</title>
+      <programlisting>
+&lt;?php   
+print "&lt;HTML>&lt;BODY>";
+$conn = OCILogon("scott","tiger");
+$count_cursor = "CURSOR(select count(empno) num_emps from emp " .
+                "where emp.deptno = dept.deptno) as EMPCNT from dept";
+$stmt = OCIParse($conn,"select deptno,dname,$count_cursor");
+
+ociexecute($stmt);
+print "&lt;TABLE BORDER=\"1\">";
+print "&lt;TR>";
+print "&lt;TH>DEPT NAME&lt;/TH>";
+print "&lt;TH>DEPT #&lt;/TH>";
+print "&lt;TH># EMPLOYEES&lt;/TH>";
+print "&lt;/TR>";
+
+while (OCIFetchInto($stmt,&$data,OCI_ASSOC)) {
+    print "&lt;TR>";
+    $dname  = $data["DNAME"];
+    $deptno = $data["DEPTNO"];
+    print "&lt;TD>$dname&lt;/TD>";
+    print "&lt;TD>$deptno&lt;/TD>";
+    ociexecute($data[ "EMPCNT" ]);
+    while (OCIFetchInto($data[ "EMPCNT" ],&$subdata,OCI_ASSOC)) {
+        $num_emps = $subdata["NUM_EMPS"];
+        print  "&lt;TD>$num_emps&lt;/TD>";
+    }
+    print "&lt;/TR>";
+}
+print "&lt;/TABLE>";
+print "&lt;/BODY>&lt;/HTML>";
+OCIFreeStatement($stmt);
+OCILogoff($conn);
+?></programlisting></example>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocifreestatement">
+   <refnamediv>
+    <refname>OCIFreeStatement</refname>
+    <refpurpose>Free all resources associated with a statement.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIFreeStatement</function></funcdef>
+     <paramdef>int <parameter>stmt</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIFreeStatement</function> returns true if successful, or false if
+     unsuccessful.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocifreecursor">
+   <refnamediv>
+    <refname>OCIFreeCursor</refname>
+    <refpurpose>Free all resources associated with a cursor.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIFreeCursor</function></funcdef>
+     <paramdef>int <parameter>stmt</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIFreeCursor</function> returns true if successful, or false if
+     unsuccessful.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ociplogon">
+   <refnamediv>
+    <refname>OCIPLogon</refname>
+    <refpurpose>Connect to an Oracle database and log on using a persistant connection. 
+    Returns a new session.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIPLogon</function></funcdef>
+     <paramdef>int <parameter>conn</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIPLogin</function> Creates a persistent connection to an Oracle 8 database 
+     and logs on.  If the optional third parameter is not specified, PHP uses the environment
+     variable ORACLE_SID to determine which database to connect to.
+    </para>
+   </refsect1>
+
+  <refentry id="function.ocicolumnname">
+   <refnamediv>
+    <refname>OCIColumnName</refname>
+    <refpurpose>Returns the name of a column.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>OCIColumnName</function></funcdef>
+     <paramdef>int <parameter>stmt</parameter></paramdef>
+     <paramdef>int <parameter>col</parameter></paramdef>
+    </funcsynopsis>
+    <simpara>
+     <function>OCIColumnName</function> returns the name of the column 
+      corresponding to the column number (1-based) that is passed in.
+
+    <para>
+     <example>
+      <title>OCIColumnName</title>
+      <programlisting>
+&lt;?php   
+    print "&lt;HTML>&lt;PRE>\n";   
+    $conn = OCILogon("scott", "tiger");
+    $stmt = OCIParse($conn,"select * from emp");
+    OCIExecute($stmt);
+    print "&lt;TABLE BORDER=\"1\">";
+    print "&lt;TR>";
+    print "&lt;TH>Name&lt;/TH>";
+    print "&lt;TH>Type&lt;/TH>";
+    print "&lt;TH>Length&lt;/TH>";
+    print "&lt;/TR>";
+    $ncols = OCINumCols($stmt);
+    for ( $i = 1; $i <= $ncols; $i++ ) {
+        $column_name  = OCIColumnName($stmt,$i);
+        $column_type  = OCIColumnType($stmt,$i);
+        $column_size  = OCIColumnSize($stmt,$i);
+        print "&lt;TR>";
+        print "&lt;TD>$column_name&lt;/TD>";
+        print "&lt;TD>$column_type&lt;/TD>";
+        print "&lt;TD>$column_size&lt;/TD>";
+        print "&lt;/TR>";
+    }
+    OCIFreeStatement($stmt);  
+    OCILogoff($conn);   
+    print "&lt;/PRE>";
+    print "&lt;/HTML>\n"; 
+?>   </programlisting></example>
+    <simpara>
+     See also <function>OCINumCols</function>, <function>OCIColumnType</function>, 
+     and <function>OCIColumnSize</function>.
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocicolumntype">
+   <refnamediv>
+    <refname>OCIColumnType</refname>
+    <refpurpose>Returns the data type of a column.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>mixed <function>OCIColumnName</function></funcdef>
+     <paramdef>int <parameter>stmt</parameter></paramdef>
+     <paramdef>int <parameter>col</parameter></paramdef>
+    </funcsynopsis>
+    <simpara>
+     <function>OCIColumnType</function> returns the data type of the column 
+      corresponding to the column number (1-based) that is passed in.
+
+    <para>
+     <example>
+      <title>OCIColumnType</title>
+      <programlisting>
+&lt;?php   
+    print "&lt;HTML>&lt;PRE>\n";   
+    $conn = OCILogon("scott", "tiger");
+    $stmt = OCIParse($conn,"select * from emp");
+    OCIExecute($stmt);
+    print "&lt;TABLE BORDER=\"1\">";
+    print "&lt;TR>";
+    print "&lt;TH>Name&lt;/TH>";
+    print "&lt;TH>Type&lt;/TH>";
+    print "&lt;TH>Length&lt;/TH>";
+    print "&lt;/TR>";
+    $ncols = OCINumCols($stmt);
+    for ( $i = 1; $i <= $ncols; $i++ ) {
+        $column_name  = OCIColumnName($stmt,$i);
+        $column_type  = OCIColumnType($stmt,$i);
+        $column_size  = OCIColumnSize($stmt,$i);
+        print "&lt;TR>";
+        print "&lt;TD>$column_name&lt;/TD>";
+        print "&lt;TD>$column_type&lt;/TD>";
+        print "&lt;TD>$column_size&lt;/TD>";
+        print "&lt;/TR>";
+    }
+    OCIFreeStatement($stmt);  
+    OCILogoff($conn);   
+    print "&lt;/PRE>";
+    print "&lt;/HTML>\n"; 
+?>   </programlisting></example>
+    <simpara>
+     See also <function>OCINumCols</function>, <function>OCIColumnName</function>, 
+     and <function>OCIColumnSize</function>.
+
+   </refsect1>
+  </refentry>
+  <refentry id="function.ociparse">
+   <refnamediv>
+    <refname>OCIParse</refname>
+    <refpurpose>Parse a query and return a statement</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIParse</function></funcdef>
+     <paramdef>int <parameter>conn</parameter></paramdef>
+     <paramdef>strint <parameter>query</parameter></paramdef>
+    </funcsynopsis>
+    <simpara>
+     <function>OCIParse</function> parses the <parameter>query</parameter> 
+     using  <parameter>conn</parameter>.  It returns true if the query is 
+     valid, false if not. The <parameter>query</parameter> can be any valid 
+     SQL statement.
+   </refsect1>
+  </refentry>
+  <refentry id="function.ocierror">
+   <refnamediv>
+    <refname>OCIError</refname>
+    <refpurpose>Return the last error of stmt|conn|global. 
+     If no error happened returns false.
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIError</function></funcdef>
+     <paramdef>int <parameter><optional>stmt|conn</optional></parameter></paramdef>
+    </funcsynopsis>
+    <simpara>
+     <function>OCIError</function> returns the last error found.  If the optional
+      <parameter>stmt|conn</parameter> is not provided, the last error encountered
+      is returned.  If no error is found, <function>OCIError</function> returns false.
+   </refsect1>
+  </refentry>
+  <refentry id="function.ociinternaldebug">
+   <refnamediv>
+    <refname>OCIInternalDebug</refname>
+    <refpurpose>Enables or disables internal debug output.  By default it is disabled</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>OCIInternalDebug</function></funcdef>
+     <paramdef>int <parameter>onoff</parameter></paramdef>
+    </funcsynopsis>
+    <simpara>
+     <function>OCIInternalDebug</function> enables internal debug output.  Set <parameter>onoff</parameter>
+     to 0 to turn debug output off, 1 to turn it on.
+   </refsect1>
+  </refentry>
  </reference>
 
 <!-- Keep this comment at the end of the file
