@@ -1,4 +1,4 @@
-<?php
+<?php // vim: ts=4 sw=4
 
 // For use in process.php
 
@@ -17,9 +17,8 @@ function apply($input)
 	{
 		$active = $active && !ereg('<programlisting',$line);
 		$active = $active ||  ereg('</programlisting',$line);
-		if ($active)
-			$lines[$nr] = preg_replace( $from , $to , $line );
-		
+        if ($active)
+			$lines[$nr] = substr(preg_replace( $from , $to , $line.' ' ),0,-1);
 	}
 
 	$output = implode("\n",$lines);
