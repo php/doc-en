@@ -40,6 +40,8 @@ function MakeContentFiles()
     $toc = fopen("php_manual_$language.hhc", "w");
     $index = fopen("php_manual_$language.hhk", "w");
 
+	$index_entries = array();
+    
     // Write out file headers
     fputs($toc, $header);
     fputs($index, $header);
@@ -51,7 +53,7 @@ function MakeContentFiles()
 
     // Print out the objects, autoparsing won't find
     SiteMapObj($manual_title, $indexfile, "    ", $toc, 21);
-    IndexObj($manual_title, $indexfile, $index);
+    $index_entries[$indexfile] = $manual_title;
 
     // Find the name of the Table of Contents
     if ($fancyindex) {
@@ -60,7 +62,7 @@ function MakeContentFiles()
             $match[1] = "Table of Contents";
         }
         SiteMapObj($match[1], $original_index, "    ", $toc, 21);
-        IndexObj($match[1], $original_index, $index);
+        $index_entries[$original_index] = $match[1];
     }
 
     // Find the name of the Preface
@@ -69,7 +71,7 @@ function MakeContentFiles()
         $match[1] = "Preface";
     }
     SiteMapObj($match[1], "preface.html", "    ", $toc);
-    IndexObj($match[1], "preface.html", $index);
+    $index_entries["preface.html"] = $match[1];
 
     // Find the name of the Preface/About this Manual
     fputs($toc, "\n    <ul>");
@@ -78,7 +80,7 @@ function MakeContentFiles()
         $match[1]="About this Manual";
     }
     SiteMapObj($match[1], "preface.html#about", "      ", $toc);
-    IndexObj($match[1], "preface.html#about", $index);
+    $index_entries["preface.html#about"] = $match[1];
     fputs($toc, "    </ul>\n");
 
     // Now autofind the chapters/subchapters
@@ -101,11 +103,11 @@ function MakeContentFiles()
             preg_match("/>([^<]+)/", $index_a[$i+2], $matches);
             $chapter["title"] = $matches[1];
             SiteMapObj($chapter["title"], $chapter["html"], "    ", $toc);
-            IndexObj($chapter["title"], $chapter["html"], $index);
+            $index_entries[$chapter["html"]] = $chapter["title"];
         }
 
         /* Sub chapters */
-        elseif (ereg(">([0-9]+|[IVXLC]+|[A-Z])\.\ <A", $index_a[$i])) {
+        else if (ereg(">([0-9]+|[IVXLC]+|[A-Z])\.\ <A", $index_a[$i])) {
 
             if ($new_list == 1) {
                 $new_list = 0;
@@ -120,9 +122,9 @@ function MakeContentFiles()
             preg_match("/>([^<]+)/", $index_a[$i+2], $matches);
             $schapter["title"] = $matches[1];
             SiteMapObj($schapter["title"], $schapter["html"], "      ", $toc);
-            IndexObj($chapter["title"], $schapter["html"], $index);
+            $index_entries[$chapter["html"]] = $schapter["title"];
 
-            DoFile($schapter["html"], $toc, $index);
+            DoFile($schapter["html"], $index_entries, $toc);
         }
     }
 
@@ -136,7 +138,20 @@ function MakeContentFiles()
         $match[1] = "Copyright";
     }
     SiteMapObj($match[1], "copyright.html", "    ", $toc, 17);
-    IndexObj($match[1], "copyright.html", $index);
+    $index_entries["copyright.html"] = $match[1];
+
+	$index_entries = array_unique($index_entries);
+	natcasesort($index_entries);
+	
+	foreach ($index_entries as $local => $name) {
+	    $name = str_replace('"', '&quot;', $name);
+	    
+	    fputs($index, "
+	    <li><object type=\"text/sitemap\">
+	      <param name=\"Local\" value=\"$fancydir\\$local\">
+	      <param name=\"Name\" value=\"$name\">
+	    </object></li>");
+	}
 
     // Write out closing line, and end files
     fputs($index, "  </ul>\n</body>\n</html>");
@@ -235,22 +250,8 @@ $tabs  <param name=\"Local\" value=\"$fancydir\\$local\">
     fputs($toc, "$tabs  </object>\n");
 } // SiteMapObj() function end
 
-// Print out an object for an Index file
-function IndexObj($name, $local, $index)
-{
-    global $fancydir;
-    $name = str_replace('"', '&quot;', $name);
-
-    fputs($index, "
-    <li><object type=\"text/sitemap\">
-      <param name=\"Local\" value=\"$fancydir\\$local\">
-      <param name=\"Name\" value=\"$name\">
-    </object></li>
-");
-}
-
 // Process a file, and find any links need to be presented in tree
-function DoFile ($filename, $toc, $index)
+function DoFile ($filename, &$index_entries, $toc)
 {
     global $fancydir;
     $content = file ("$fancydir/$filename");
@@ -268,7 +269,7 @@ function DoFile ($filename, $toc, $index)
             }
             $param["title"] = strip_tags($onematch[4]);
             SiteMapObj($param["title"], $param["html"], "      ", $toc);
-            IndexObj($param["title"], $param["html"], $index);
+            $index_entries[$param["html"]] = $param["title"];
         }
         fputs($toc, "    </ul>\n");
 
