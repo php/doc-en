@@ -15,5 +15,8 @@ prefixcompressed.txt: funclist.txt
 funclist.txt:
 	php makefunclist.php
 
-funclist.zip: Makefile after.js before.js compkey.txt compressed.txt funclist.txt functions.js index.html makefunclist.php manual_en_contents.txt middle.js originalafter.js prefixcompress.php prefixcompressed.txt processafter.php readme.txt unusedcompress.php
-	zip funclist.zip Makefile after.js before.js compkey.txt compressed.txt funclist.txt functions.js index.html makefunclist.php manual_en_contents.txt middle.js originalafter.js prefixcompress.php prefixcompressed.txt processafter.php readme.txt unusedcompress.php
+funclist.zip: Makefile after.js before.js compkey.txt compressed.txt funclist.txt functions.js test.html makefunclist.php middle.js originalafter.js prefixcompress.php prefixcompressed.txt processafter.php readme.txt unusedcompress.php
+	zip funclist.zip Makefile after.js before.js compkey.txt compressed.txt funclist.txt functions.js test.html makefunclist.php middle.js originalafter.js prefixcompress.php prefixcompressed.txt processafter.php readme.txt unusedcompress.php
+
+clean:
+	rm funclist.txt prefixcompressed.txt compressed.txt functions.js after.js compkey.txt

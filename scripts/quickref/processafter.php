@@ -1,11 +1,30 @@
-<?
+<?php
+/*
+# +----------------------------------------------------------------------+
+# | PHP Version 4                                                        |
+# +----------------------------------------------------------------------+
+# | Copyright (c) 1997-2003 The PHP Group                                |
+# +----------------------------------------------------------------------+
+# | This source file is subject to version 2.02 of the PHP licence,      |
+# | that is bundled with this package in the file LICENCE and is         |
+# | avalible through the world wide web at                               |
+# | http://www.php.net/license/2_02.txt.                                 |
+# | If you did not receive a copy of the PHP license and are unable to   |
+# | obtain it through the world wide web, please send a note to          |
+# | license@php.net so we can mail you a copy immediately.               |
+# +----------------------------------------------------------------------+
+# | Authors:    Mitja Slenc <mitja@php.net>                              |
+# +----------------------------------------------------------------------+
+# 
+# $Id$
+*/
 
 $lines=file("originalafter.js");
 foreach($lines as $key => $line) {
 	$lines[$key]=array_shift(explode("//", trim($line)));
 }
 
-$leave=array("cpd", "dcp", "for", "document", "forms", "break", "if", "continue", "var", "style", "innerHTML", "value", "getElementById", "autocomplete", "onblur", "onfocus", "onkeyup", "onkeydown", "onkeypress", "display", "pattern", "show", "left", "top", "event", "evt", "which", "length", "all", "navigator", "userAgent", "toLowerCase", "indexOf", "width", "else", "write", "split", "join", "charAt", "substring", "function", "return", "new", "Array", "switch", "case", "push", "pop", "default", "true", "false", "offsetLeft", "offsetParent", "while", "null", "tagName", "clientLeft", "parseInt", "border", "isNaN", "getAttribute", "charCode", "keyCode");
+$leave=array("cpd", "dcp", "for", "document", "forms", "break", "if", "continue", "var", "style", "innerHTML", "value", "getElementById", "autocomplete", "onblur", "onfocus", "onkeyup", "onkeydown", "onkeypress", "display", "pattern", "show", "left", "top", "event", "evt", "ev", "which", "length", "all", "navigator", "userAgent", "toLowerCase", "indexOf", "width", "else", "write", "split", "join", "charAt", "substring", "function", "return", "new", "Array", "switch", "case", "push", "pop", "default", "true", "false", "offsetLeft", "offsetParent", "while", "null", "tagName", "clientLeft", "parseInt", "border", "isNaN", "getAttribute", "charCode", "keyCode", "cc", "test", "u57385", "u57386");
 
 $text=implode(" ", $lines);
 
