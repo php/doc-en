@@ -7,46 +7,9 @@
  * $Id$
  */
 
-$phpsrc_dir = '';
-// use command line parameter is available
-if ($argc == 2 && $argv[1] != '') {
-    if (@is_dir($argv[1])) {
-        $phpsrc_dir = realpath($argv[1]);
-    } else {
-	die ("Invalid phpsrc_dir, {$argv[1]} is not a directory\n");
-    }
-}
-// figure out the php4 source dir
-if ($phpsrc_dir == '') {
-    if (file_exists('../php4')) {
-        $phpsrc_dir = realpath('../php4');
-    } else if (file_exists('../../php4')) {
-        $phpsrc_dir = realpath('../../php4');
-    } else {
-        die ("Cannot find PHP4 dir, set phpsrc_dir to the full path\n");
-    }
-}
+// Global vars for generating the ini.xml
 
-// figure out the phpdoc dir
-$phpdoc_dir = '';
-if ($phpdoc_dir == '') {
-    $current = getcwd();
-    if (preg_match('/\/phpdoc$/', $current)) {
-        $phpdoc_dir = $current;
-    } else {
-        $tmp = str_replace(strrchr($current,'/'),'',$current);
-        if (preg_match('/\/phpdoc$/', $tmp)) {
-            $phpdoc_dir = $tmp;
-        } else {
-            die ("Cannot find PHPDOC dir, set phpdoc_dir to the full path\n");
-        }
-    }
-}
-
-$master_ini_table = '';
-
-echo "Using:\nPHP4 SRC DIR: $phpsrc_dir\nPHPDOC DIR: $phpdoc_dir\n\n";
-
+/*{{{ $inixml_header */
 $inixml_header = <<<INIXML_HEADER
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!-- Automatically generated using gen_PHP_INI_ENTRY.php -->
@@ -56,7 +19,9 @@ $inixml_header = <<<INIXML_HEADER
  &reftitle.runtime;
  &extension.runtime;\n\n
 INIXML_HEADER;
+/*}}}*/
 
+/*{{{ $inixml_footer */
 $inixml_footer = <<<INIXML_FOOTER
 </section>
 <!-- Keep this comment at the end of the file
@@ -80,7 +45,9 @@ vim: et tw=78 syn=sgml
 vi: ts=1 sw=1
 -->
 INIXML_FOOTER;
- 
+/*}}}*/
+
+/*{{{ $legend */
 $legend = <<<LEGEND
  <para>
   Read the manual section on <link linkend="configuration">
@@ -124,7 +91,9 @@ $legend = <<<LEGEND
   </table>
  </para>\n
 LEGEND;
+/*}}}*/
 
+/*{{{ $table_header */
 $table_header = <<<TABLE_HEADER
  <para>
   <table>
@@ -139,14 +108,18 @@ $table_header = <<<TABLE_HEADER
    </thead>
    <tbody>\n
 TABLE_HEADER;
+/*}}}*/
 
+/*{{{ table_footer */
 $table_footer = <<<TABLE_FOOTER
    </tbody>
   </tgroup>
  </table>
 </para>\n
 TABLE_FOOTER;
+/*}}}*/
 
+// Auxiliary functions
 
 function gentree($path, $remove_empty = false, $fileproc_cb = null) {/*{{{*/
     $excludeitems = array ('CVS', 'tests', 'skeleton.c');
@@ -215,7 +188,7 @@ function findINI($fname) {/*{{{*/
     }
 }/*}}}*/
 
-function flatentree($tree, $section) {
+function flatentree($tree, $section) {/*{{{*/
     static $flat = array();
     foreach ($tree as $node=>$val) {
         if (array_key_exists($section, $val)) {
@@ -225,22 +198,14 @@ function flatentree($tree, $section) {
         }
     }
     return $flat;
-}
+}/*}}}*/
 
-$dtree = gentree($phpsrc_dir, true, 'findINI');
-print_r($dtree);
-/*
-$ser = serialize($dtree);
-
-$fp = fopen('/tmp/PHPINIDEFS.ser', 'w');
-fwrite($fp, $ser);
-fflush($fp);
-fclose($fp);
-*/
-
-function createINI($dir, $cfgs) {
+function createINI($dir, $cfgs) {/*{{{*/
     global $master_ini_table;
     
+    if (empty($cfgs)) {
+        return false;
+    }
     $rows = '';
     foreach ($cfgs as $name=>$vals) {
         $rows .= "     <row>\n";
@@ -290,9 +255,9 @@ function createINI($dir, $cfgs) {
     } else {
         echo "ERROR CREATING {$GLOBALS['phpdoc_dir']}/{$dir}/test_ini.xml\n";
     }
-}
+}/*}}}*/
 
-function createMasterINI ($dir, $rows) {
+function createMasterINI ($dir, $rows) {/*{{{*/
     $fp = fopen("{$GLOBALS['phpdoc_dir']}/{$dir}/config.master_test.xml", 'w');
     $out = str_replace('##ID##','master', $GLOBALS['inixml_header']);
     $out .= $GLOBALS['legend'];
@@ -304,19 +269,67 @@ function createMasterINI ($dir, $rows) {
 	fclose($fp);
 	echo "CREATED {$GLOBALS['phpdoc_dir']}/{$dir}/config.master_test.xml\n";
     }	
-}	
+}	/*}}}*/
+
+// Set the PHP4 and the PHPDOC source dirs
+
+// figure out the php4 source dir
+$phpsrc_dir = '';
+// use command line parameter is available
+if ($argc == 2 && $argv[1] != '') {
+    if (@is_dir($argv[1])) {
+        $phpsrc_dir = realpath($argv[1]);
+    } else {
+	die ("Invalid phpsrc_dir, {$argv[1]} is not a directory\n");
+    }
+}
+// otherwise try looking in the usual places
+if ($phpsrc_dir == '') {
+    if (file_exists('../php4')) {
+        $phpsrc_dir = realpath('../php4');
+    } else if (file_exists('../../php4')) {
+        $phpsrc_dir = realpath('../../php4');
+    } else {
+        die ("Cannot find PHP4 dir, set phpsrc_dir to the full path\n");
+    }
+}
+
+// figure out the phpdoc dir
+$phpdoc_dir = '';
+if ($phpdoc_dir == '') {
+    $current = getcwd();
+    if (preg_match('/\/phpdoc$/', $current)) {
+        $phpdoc_dir = $current;
+    } else {
+        $tmp = str_replace(strrchr($current,'/'),'',$current);
+        if (preg_match('/\/phpdoc$/', $tmp)) {
+            $phpdoc_dir = $tmp;
+        } else {
+            die ("Cannot find PHPDOC dir, set phpdoc_dir to the full path\n");
+        }
+    }
+}
+
+echo "Using:\nPHP4 SRC DIR: $phpsrc_dir\nPHPDOC DIR: $phpdoc_dir\n\n";
+
+$master_ini_table = '';
+
+// source tree
+$dtree = gentree($phpsrc_dir, true, 'findINI');
+//print_r($dtree);
 
 // flatten tree
 $flat = flatentree($dtree, 'INI');
-print_r($flat);
+//print_r($flat);
 
 // map doc dirs w/ the appropriate set of source files
-$map = array (/*{{{*/
+/*{{{ $map */
+$map = array (
     'en/chapters' => 'main.c,basic_functions.c',
 	'en/reference/apache' => 'php_apache.c',
 	'en/reference/array' => '',
 	'en/reference/aspell' => '',
-	'en/reference/bc' => '',
+	'en/reference/bc' => 'bcmath.c',
 	'en/reference/bzip2' => '',
 	'en/reference/calendar' => '',
 	'en/reference/ccvs' => '',
@@ -427,7 +440,9 @@ $map = array (/*{{{*/
 	'en/reference/yaz' => 'php_yaz.c',
 	'en/reference/zip' => '',
 	'en/reference/zlib' => 'zlib.c',
-	);/*}}}*/
+	);
+/*}}}*/
+
 // now walk through the map and generate the appropriate ini.xml files
 foreach ($map as $dir=>$srcfiles) {
     if ($srcfiles == '') {
@@ -445,4 +460,6 @@ foreach ($map as $dir=>$srcfiles) {
 
 createMasterINI('en/chapters', $master_ini_table);
 
+// vim: ts=4: sw=4: et:
+// vim6: fdm=marker: fdl=2:
 ?>
