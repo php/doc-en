@@ -90,12 +90,13 @@ if ($argc == 3) {
 
 // Main directory of the PHP documentation (depends on the
 // sapi used). We do need the trailing slash!
-$sapi_type = php_sapi_name();
-if ($sapi_type === "cli"){
-    $DOCDIR = "./";
- }else {
-    $DOCDIR = "../";
-}
+if ("cli" === php_sapi_name()) {
+	if (isset($PHPDOCDIR) && is_dir($PHPDOCDIR))
+		$DOCDIR = $PHPDOCDIR."/";
+	else
+		$DOCDIR = "./";
+} else
+	$DOCDIR = "../";
 
 // =========================================================================
 // Functions to get revision info and credits from a file
