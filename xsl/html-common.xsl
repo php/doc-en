@@ -3,7 +3,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.16 2002-07-26 12:17:47 goba Exp $
+  $Id: html-common.xsl,v 1.17 2002-08-04 11:50:14 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -201,6 +201,54 @@ set       toc
     <xsl:with-param name="allow-anchors" select="0"/>
     <xsl:with-param name="template" select="'%t'"/>
   </xsl:call-template>
+</xsl:template>
+
+<!-- Rendering of methodsynopsis. The output of this should look like:
+     
+     int preg_match_all ( string pattern, string subject, array matches [, int flags])
+     
+     working from a structure like this:
+     
+     <methodsynopsis>
+      <type>int</type><methodname>preg_match_all</methodname>
+      <methodparam><type>string</type><parameter>pattern</parameter></methodparam>
+      <methodparam><type>string</type><parameter>subject</parameter></methodparam>
+      <methodparam><type>array</type><parameter>matches</parameter></methodparam>
+      <methodparam choice="opt"><type>int</type><parameter>flags</parameter></methodparam>
+     </methodsynopsis>
+-->
+
+<!-- Override default [java] methodsynopsis rendering -->
+<xsl:template match="methodsynopsis">
+  <xsl:apply-templates mode="php"/>
+</xsl:template>
+
+<!-- Print out the return type, the method name, then the parameters.
+     Close all the optional signs opened and close the prentheses -->
+<xsl:template match="methodsynopsis" mode="php">
+  <xsl:value-of select="./type/text()"/>
+  <xsl:text> </xsl:text>
+  <xsl:value-of select="./methodname/text()"/>
+  <xsl:text> ( </xsl:text>
+  <xsl:apply-templates select="./methodparam" mode="php"/>
+  <xsl:for-each select="./methodparam[@choice = 'opt']">
+    <xsl:text>]</xsl:text>
+  </xsl:for-each>
+  <xsl:text> )</xsl:text>
+</xsl:template>
+
+<!-- Print out optional sign if needed, then a comma if this is
+     not the first param, then the type and the parameter name -->
+<xsl:template match="methodsynopsis/methodparam" mode="php">
+  <xsl:if test="@choice = 'opt'">
+    <xsl:text> [</xsl:text>
+  </xsl:if>
+  <xsl:if test="position() != 1">
+    <xsl:text>, </xsl:text>
+  </xsl:if>
+  <xsl:value-of select="./type/text()"/>
+  <xsl:text> </xsl:text>
+  <xsl:value-of select="./parameter/text()"/>
 </xsl:template>
 
 </xsl:stylesheet>
