@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.41 $ -->
+<!-- $Revision: 1.42 $ -->
  <chapter id="security">
   <title>Security</title>
 
@@ -498,8 +498,8 @@ if (!ereg('^[^./][^/]*$', $username))
    <simpara>
     To retrieve or to store any information you need to connect to the database,
     send a legitimate query, fetch the result, and close the connecion.
-    Nowadays, the commonly used interface in the interaction with databases is
-    the Structured Query Language (SQL). See how an attacker can <link
+    Nowadays, the commonly used query language in this interaction is the
+    Structured Query Language (SQL). See how an attacker can <link
     linkend="security.database.sql-injection">tamper with an SQL query</link>.
    </simpara>
    <simpara>
@@ -636,16 +636,13 @@ else {
      Direct SQL Command Injection is a technique where an attacker creates or
      alters existing SQL commands to expose hidden data, or to override valuable
      ones, or even to execute dangerous system level commands on the database
-     host.
-    </simpara>
-    <simpara>
-     This is accomplished by the application taking user input and combining
-     it with static parameters to build a SQL query. The following examples
-     are based on true stories, unfortunately.
+     host. This is accomplished by the application taking user input and
+     combining it with static parameters to build a SQL query. The following
+     examples are based on true stories, unfortunately.
     </simpara>
     <para>
      Owing to the lack of input validation and connecting to the database on
-     behalf of a superuser or the owner who can create users, the attacker
+     behalf of a superuser or the one who can create users, the attacker
      may create a superuser in your database.
      <example>
       <title>
@@ -657,6 +654,8 @@ else {
 $offset = argv[0]; // beware, no input validation!
 $query  = "SELECT id, name FROM products ORDER BY name LIMIT 20 OFFSET $offset;";
 $result = pg_exec($conn, $query);
+// with MySQL:
+$result = mysql_query($query);
 ]]>
       </programlisting>
      </example>
@@ -665,17 +664,6 @@ $result = pg_exec($conn, $query);
       <varname>$offset</varname> is decimal number. However, someone tries to
       break in with appending <function>urlencode</function>'d form of the
       following to the URL (PostgreSQL):
-      <informalexample>
-       <programlisting>
-<![CDATA[
-0;
-insert into pg_shadow(usename,usesysid,usesuper,usecatupd,passwd)
-    values ('crack', 31, 't','t','crack');
---
-]]>
-       </programlisting>
-      </informalexample>
-      or more precisely:
       <informalexample>
        <programlisting>
 <![CDATA[
@@ -709,14 +697,23 @@ FLUSH PRIVILEGES;
      </para>
     </note>
     <para>
-     A feasible way to gain passwords:
+     A feasible way to gain passwords is to circumvent your search result pages.
+     What the attacker has to do is only trying if there is a submitted filter
+     setting handled not properly. These filters are commonly set in a previous
+     form to customize <literal>WHERE, ORDER BY, LIMIT and OFFSET</literal>
+     clauses in <literal>SELECT</literal> statements. If your database supports
+     the <literal>UNION</literal> construct, the attacker may try to append an
+     entire query to the original one to list passwords from an arbitrary table.
+     Using encrypted password fields is strongly encouraged.
      <example>
       <title>
        Listing out articles ... and some passwords (any database server)
       </title>
       <programlisting role="php">
 <![CDATA[
-$query  = "SELECT id, name, inserted, size FROM products WHERE size = '$size';";
+$query  = "SELECT id, name, inserted, size FROM products
+                  WHERE size = '$size'
+                  ORDER BY $order LIMIT $limit, $offset;";
 ]]>
       </programlisting>
      </example>
@@ -725,15 +722,24 @@ $query  = "SELECT id, name, inserted, size FROM products WHERE size = '$size';";
      <informalexample>
       <programlisting>
 <![CDATA[
-union select '1', concat(uname||'-'||passwd) as name, '1971-01-01', '0' from usertable
+'
+union select '1', concat(uname||'-'||passwd) as name, '1971-01-01', '0' from usertable;
+--
 ]]>
       </programlisting>
      </informalexample>
-     If this query were assigned to <varname>$size</varname> (prepended with
-     <literal>'</literal>), the query beast awakened.
+     If this query (playing with the <literal>'</literal> and
+     <literal>--</literal>) were assigned to one of the variables used in
+     <varname>$query</varname>, the query beast awakened.
     </para>
     <para>
-     SQL UPDATEs are also subject to attacking your database.
+     SQL UPDATEs are also subject to attacking your database. These queries are
+     also threatened by chopping and appending an entirely new query to it. But
+     the attacker might fiddle with the <literal>SET</literal> clause. In this
+     case some schema information must be possessed to manipulate the query
+     successfully. This can be acquired by examing the form variable names, or
+     just simply brute forcing. There are not so many naming convention for
+     fields storing passwords or usernames.
      <example>
      <title>
       From resetting a password ... to gaining more privileges (any database server)
@@ -745,22 +751,16 @@ $query = "UPDATE usertable SET pwd='$pwd' WHERE uid='$uid';";
       </programlisting>
      </example>
      But a malicious user sumbits the value
-     <literal>' or uid like'%admin%'; --</literal> to <varname>$uid</varname>,
-     and the query will be twisted:
+     <literal>' or uid like'%admin%'; --</literal> to <varname>$uid</varname> to
+     change the admin's password, or simply sets <varname>$pwd</varname> to
+     <literal>"hehehe', admin='yes', trusted=100 "</literal> (with a trailing
+     space) to gain more privileges. Then, the query will be twisted:
      <informalexample>
       <programlisting role="php">
 <![CDATA[
-$query = "UPDATE usertable SET pwd='...' WHERE uid='' or like '%admin%'; --";
-]]>
-      </programlisting>
-     </informalexample>
-     Now, the admin user password has been changed. Alternatively, the attacker
-     simply sets <varname>$pwd</varname> to
-     <literal>"hehehe', admin='yes', trusted=100 </literal> (with a trailing
-     space) to gain more privileges:
-     <informalexample>
-      <programlisting role="php">
-<![CDATA[
+// $uid == ' or uid like'%admin%'; --
+$query = "UPDATE usertable SET pwd='...' WHERE uid='' or uid like '%admin%'; --";
+// $pwd == "hehehe', admin='yes', trusted=100 "
 $query = "UPDATE usertable SET pwd='hehehe', admin='yes', trusted=100 WHERE ...;"
 ]]>
       </programlisting>
@@ -818,19 +818,26 @@ $result = mssql_query($query);
      <simpara>
       These attacks are mainly based on exploiting the code not being written
       with security in mind. Never trust on any kind of input, especially
-      which comes from the client side. The first example shows that such a
+      which comes from the client side, even though it comes from a select box,
+      a hidden input field or a cookie. The first example shows that such a
       blameless query can cause disasters.
      </simpara>
 
      <itemizedlist>
       <listitem>
        <simpara>
-        First, check if the given input has the expected data type. PHP has
+        Never connect to the database as a superuser or as the database owner.
+        Use always customized users with very limited privileges.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        Check if the given input has the expected data type. PHP has
         a wide range of input validating functions, from the simplest ones
         found in <link linkend="ref.variables">Variable Functions</link> and
         in <link linkend="ref.ctype">Character Type Functions</link>
-        sections, (e.g. <function>is_numeric</function>,
-        <function>ctype_digit</function> respectively) onwards the
+        (e.g. <function>is_numeric</function>, <function>ctype_digit</function>
+        respectively) onwards the
         <link linkend="ref.pcre">Perl compatible Regular Expressions</link>
         support.
        </simpara>
@@ -839,7 +846,8 @@ $result = mssql_query($query);
        <para>
         If the application waits for numeric input, consider to verify data
         with <function>is_numeric</function>, or silently change its type
-        using <function>settype</function> or <function>sprintf()</function>.
+        using <function>settype</function>, or use its numeric representation
+        by <function>sprintf</function>.
         <example>
          <title>A more secure way to compose a query for paging</title>
          <programlisting role="php">
@@ -856,9 +864,9 @@ $query  = sprintf("SELECT id, name FROM products ORDER BY name LIMIT 20 OFFSET %
       </listitem>
       <listitem>
        <simpara>
-        Quote user input which is passed to the database with
+        Quote each non numeric user input which is passed to the database with
         <function>addslashes</function> or <function>addcslashes</function>.
-        See <link linkend="security.database.storage">this example</link>.
+        See <link linkend="security.database.storage">the first example</link>.
         As the examples shows, quotes burnt into the static part of the query
         is not enough, and can be easily hacked.
        </simpara>
