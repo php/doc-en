@@ -91,6 +91,15 @@ if ($argc == 3) {
 // Main directory of the PHP documentation (one dir up
 // in cvs). We do need the trailing slash!
 $DOCDIR = "../";
+
+$navbar = "<p class=c><a href=\"#intro\">Introduction</a> | " .
+          "<a href=\"#translators\">Translators</a> | " .
+          "<a href=\"#filesummary\">File summary by type</a> | " .
+          "<a href=\"#files\">Files</a> | " .
+          "<a href=\"#wip\">Work in progress</a> | " .
+          "<a href=\"#misstags\">Missing revision numbers</a> | " .
+          "<a href=\"#missfiles\">Untranslated files</a></p>\n";
+
   
 // =========================================================================
 // Functions to get revision info and credits from a file
@@ -653,15 +662,9 @@ body   { margin:0px 0px 0px 0px; background-color:#F0F0F0; }
 </table>
 </td></tr>
 </table>
-<p class=c><a href="#intro">Introduction</a> |
-<a href="#translators">Translators</a> |
-<a href="#filesummary">File summary by type</a> |
-<a href="#files">Files</a> |
-<a href="#wip">Work in progress</a> |
-<a href="#misstags">Missing revision numbers</a> |
-<a href="#missfiles">Untranslated files</a>
-</p>
 END_OF_MULTILINE;
+
+print ($navbar);
 
 // =========================================================================
 // Intro block goes here
@@ -822,17 +825,7 @@ END_OF_MULTILINE;
 
 }
 
-print <<<END_OF_MULTILINE
-<p class=c><a href="#intro">Introduction</a> |
-<a href="#translators">Translators</a> |
-<a href="#filesummary">File summary by type</a> |
-<a href="#files">Files</a> |
-<a href="#wip">Work in progress</a> |
-<a href="#misstags">Missing revision numbers</a> |
-<a href="#missfiles">Untranslated files</a>
-</p>
-<p>&nbsp;</p>
-END_OF_MULTILINE;
+print ($navbar."<p>&nbsp;</p>\n");
 
 
 // =========================================================================
@@ -925,19 +918,7 @@ foreach ($files_status as $num => $file) {
 
 }
 
-print("</table>\n<p>&nbsp;</p>\n");
-
-print <<<END_OF_MULTILINE
-<p class=c><a href="#intro">Introduction</a> |
-<a href="#translators">Translators</a> |
-<a href="#filesummary">File summary by type</a> |
-<a href="#files">Files</a> |
-<a href="#wip">Work in progress</a> |
-<a href="#misstags">Missing revision numbers</a> |
-<a href="#missfiles">Untranslated files</a>
-</p>
-<p>&nbsp;</p>
-END_OF_MULTILINE;
+print("</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n");
 
 
 // =========================================================================
@@ -1006,20 +987,8 @@ if (count($translation["files"]) != 0) {
         $wip_files[$finfo["name"]] = TRUE;
     } 
   
-    print "</table>\n<p>&nbsp;</p>\n";
+    print "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
     
-    print <<<END_OF_MULTILINE
-<p class=c><a href="#intro">Introduction</a> |
-<a href="#translators">Translators</a> |
-<a href="#filesummary">File summary by type</a> |
-<a href="#files">Files</a> |
-<a href="#wip">Work in progress</a> |
-<a href="#misstags">Missing revision numbers</a> |
-<a href="#missfiles">Untranslated files</a>
-</p>
-<p>&nbsp;</p>
-END_OF_MULTILINE;
-
 } 
 
 // Files translated, but without a revision comment
@@ -1046,19 +1015,7 @@ if ($count > 0) {
         }
         print "<tr><td class=miss>$short_file</td></tr>\n";
     }
-    print "</table>\n<p>&nbsp;</p>\n";
-
-    print <<<END_OF_MULTILINE
-<p class=c><a href="#intro">Introduction</a> |
-<a href="#translators">Translators</a> |
-<a href="#filesummary">File summary by type</a> |
-<a href="#files">Files</a> |
-<a href="#wip">Work in progress</a> |
-<a href="#misstags">Missing revision numbers</a> |
-<a href="#missfiles">Untranslated files</a>
-</p>
-<p>&nbsp;</p>
-END_OF_MULTILINE;
+    print "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
 
 }
 
@@ -1102,20 +1059,7 @@ if ($count > 0) {
         print "<tr class=miss><td>$short_file</td>" .
               "<td align=right>$info[0]</td></tr>\n";
     }
-    print "</table>\n<p>&nbsp;</p>\n";
-
-print <<<END_OF_MULTILINE
-<p class=c><a href="#intro">Introduction</a> |
-<a href="#translators">Translators</a> |
-<a href="#filesummary">File summary by type</a> |
-<a href="#files">Files</a> |
-<a href="#wip">Work in progress</a> |
-<a href="#misstags">Missing revision numbers</a> |
-<a href="#missfiles">Untranslated files</a>
-</p>
-<p>&nbsp;</p>
-END_OF_MULTILINE;
-
+    print "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
 
 }
 
