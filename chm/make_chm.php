@@ -29,7 +29,8 @@ $LANGUAGES = array(
     "ja"    => "0x411 Japanese",
     "kr"    => "0x412 Korean",
     "nl"    => "0x413 Dutch (Netherlands)",
-    "pt_BR" => "0x416 Portuguese (Brazil)"
+    "pt_BR" => "0x416 Portuguese (Brazil)",
+	"zh"    => "0x804 Simplified Chinese"
 );
 
 // Files on the top level of the TOC
