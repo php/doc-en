@@ -148,6 +148,23 @@
  (make sequence ( literal " (...)" )))
 
 
+(element type
+  (let* ((orig-name (data (current-node)))
+				 (type-name (cond 
+										 ((equal-ci? orig-name "float") "double")
+										 ((equal-ci? orig-name "int")   "integer")
+										 (else orig-name)))
+				 (linkend (string-append "language.types." type-name))
+				 (target (element-with-id linkend))
+				 )
+		(make element gi: "A"
+					attributes: (list (list "HREF" (href-to target)))
+					($bold-seq$ (make sequence (process-children) ) )
+					)
+		)
+	)
+
+
 (element function
   (let* ((function-name (data (current-node)))
 	 (linkend 
