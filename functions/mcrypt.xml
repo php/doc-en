@@ -15,19 +15,27 @@
     supports RC6 and IDEA which are considered "non-free".
    </para>
    <para>
+    If you linked against libmcrypt 2.4.x, the following additional
+    block algorithms are supported: CAST, LOKI97, RIJNDAEL, SAFERPLUS,
+    SERPENT and the following stream ciphers: ENIGMA (crypt), PANAMA,
+    RC4 and WAKE. With libmcrypt 2.4.x another cipher mode is also
+    available; nOFB.
+   </para>
+   <para>
     To use it, download libmcrypt-x.x.tar.gz from <ulink
     url="&url.mcrypt;">here</ulink> and follow the included
     installation instructions. You need to compile PHP with the
     <option role="configure">--with-mcrypt</option> parameter to
-    enable this extension.
+    enable this extension. Make sure you compile libmcrypt with the
+    option <option role="configure">--disable-posix-threads</option>.
    </para>
    <para>
     Mcrypt can be used to encrypt and decrypt using the above
-    mentioned ciphers. The four important mcrypt commands
-    (<function>mcrypt_cfb</function>, <function>mcrypt_cbc</function>,
-    <function>mcrypt_ecb</function>, and
-    <function>mcrypt_ofb</function>) can operate in both modes which
-    are named MCRYPT_ENCRYPT and MCRYPT_DECRYPT, respectively.
+    mentioned ciphers. If you linked against libmcrypt-2.2.x, the
+    four important mcrypt commands (<function>mcrypt_cfb</function>,
+    <function>mcrypt_cbc</function>, <function>mcrypt_ecb</function>,
+    and <function>mcrypt_ofb</function>) can operate in both modes
+    which are named MCRYPT_ENCRYPT and MCRYPT_DECRYPT, respectively.
     <example>
      <title>Encrypt an input value with TripleDES in ECB mode</title>
      <programlisting role="php">
@@ -43,9 +51,33 @@ $encrypted_data = mcrypt_ecb (MCRYPT_TripleDES, $key, $input, MCRYPT_ENCRYPT);
     <literal>$encrypted_data</literal>.
    </para>
    <para>
-    Mcrypt can operate in four cipher modes (CBC, OFB, CFB, and
-    ECB). We will outline the normal use for each of these modes. For
-    a more complete reference and discussion see
+    If you linked against libmcrypt 2.4.x, these functions are still
+    available, but it is recommended that you use the advanced functions.
+    <example>
+     <title>Encrypt an input value with TripleDES in ECB mode</title>
+     <programlisting role="php">
+&lt;?php
+$key = "this is a very secret key";
+$input = "Let us meet at 9 o'clock at the secret place.";
+
+$td = mcrypt_open_module (MCRYPT_TripleDES, "", MCRYPT_MODE_ECB);
+$iv = mcrypt_create_iv (mcrypt_enc_get_iv_size ($td), MCRYPT_RAND);
+mcrypt_generic_init ($td, $key, $iv);
+$encrypted_data = mcrypt_generic ($td, $input);
+mcrypt_generic_end ($td);
+?&gt;
+     </programlisting>
+    </example>
+    This example will give you the encrypted data as a string in
+    <literal>$encrypted_data</literal>.
+   </para>
+   <para>
+    Mcrypt can operate in four block cipher modes (CBC, OFB, CFB, and
+    ECB). If linked against libmcrypt-2.4.x mcrypt can also operate
+    in the block cipher mode nOFB and in STREAM mode. Then there are
+    also constants in the form MCRYPT_MODE_mode for use with several
+    functions. We will outline the normal use for each of these modes.
+    For a more complete reference and discussion see 
     &book.applied.cryptography;.
     <itemizedlist>
      <listitem>
@@ -71,9 +103,23 @@ $encrypted_data = mcrypt_ecb (MCRYPT_TripleDES, $key, $input, MCRYPT_ENCRYPT);
      </listitem>
      <listitem>
       <simpara>
-       OFB (output feedback) is comparable to CFB, but can be used in
-       applications where error propagation cannot be
-       tolerated.
+       OFB (output feedback, in 8bit) is comparable to CFB, but
+       can be used in applications where error propagation cannot
+       be tolerated. It's insecure (because it operates in 8bit
+       mode) so it is not recommended to use it.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       nOFB (output feedback, in nbit) is comparable to OFB, but
+       more secure because it operates on the block size of the
+       algorithm.
+      </simpara>
+     </listitem> 
+     <listitem>
+      <simpara>
+       STREAM is an extra mode to include some stream algorithms
+       like WAKE or RC4.
       </simpara>
      </listitem> 
     </itemizedlist>
@@ -84,8 +130,11 @@ $encrypted_data = mcrypt_ecb (MCRYPT_TripleDES, $key, $input, MCRYPT_ENCRYPT);
    </para>
    <para>
     For a complete list of supported ciphers, see the defines at the
-    end of <filename>mcrypt.h</filename>. The general rule is that you
-    can access the cipher from PHP with MCRYPT_ciphername.
+    end of <filename>mcrypt.h</filename>. The general rule with the
+    mcrypt-2.2.x API is that you can access the cipher from PHP with
+    MCRYPT_ciphername. With the mcrypt-2.4.x API these constants also
+    work, but it is possible to specify the name of the cipher as
+    a string with a call to <function>mcrypt_open_module</function>.
    </para>
    <para>
     Here is a short list of ciphers which are currently supported by
@@ -95,27 +144,27 @@ $encrypted_data = mcrypt_ecb (MCRYPT_TripleDES, $key, $input, MCRYPT_ENCRYPT);
     <itemizedlist>
      <listitem>
       <simpara>
+       MCRYPT_ARCFOUR_IV (libmcrypt 2.4.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_ARCFOUR (libmcrypt 2.4.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
        MCRYPT_BLOWFISH
       </simpara>
      </listitem>
      <listitem>
       <simpara>
-       MCRYPT_DES
+       MCRYPT_CAST_128
       </simpara>
      </listitem>
      <listitem>
       <simpara>
-       MCRYPT_TripleDES
-      </simpara>
-     </listitem>
-     <listitem>
-      <simpara>
-       MCRYPT_ThreeWAY
-      </simpara>
-     </listitem>
-     <listitem>
-      <simpara>
-       MCRYPT_GOST
+       MCRYPT_CAST_256
       </simpara>
      </listitem>
      <listitem>
@@ -125,7 +174,87 @@ $encrypted_data = mcrypt_ecb (MCRYPT_TripleDES, $key, $input, MCRYPT_ENCRYPT);
      </listitem>
      <listitem>
       <simpara>
-       MCRYPT_DES_COMPAT
+       MCRYPT_DES
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_DES_COMPAT (libmcrypt 2.2.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_ENIGMA (libmcrypt 2.4.x only, alias for MCRYPT_CRYPT)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_GOST
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_IDEA (non-free)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_LOKI97 (libmcrypt 2.4.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_MARS (libmcrypt 2.4.x only, non-free)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_PANAMA (libmcrypt 2.4.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_RIJNDAEL_128 (libmcrypt 2.4.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_RIJNDAEL_192 (libmcrypt 2.4.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_RIJNDAEL_256 (libmcrypt 2.4.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_RC2
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_RC4 (libmcrypt 2.2.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_RC6 (libmcrypt 2.4.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_RC6_128 (libmcrypt 2.2.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_RC6_192 (libmcrypt 2.2.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_RC6_256 (libmcrypt 2.2.x only)
       </simpara>
      </listitem>
      <listitem>
@@ -140,27 +269,57 @@ $encrypted_data = mcrypt_ecb (MCRYPT_TripleDES, $key, $input, MCRYPT_ENCRYPT);
      </listitem>
      <listitem>
       <simpara>
-       MCRYPT_CAST128
+       MCRYPT_SAFERPLUS (libmcrypt 2.4.x only)
       </simpara>
      </listitem>
      <listitem>
       <simpara>
-       MCRYPT_TEAN
+       MCRYPT_SERPENT (libmcrypt 2.4.x only)
       </simpara>
      </listitem>
      <listitem>
       <simpara>
-       MCRYPT_RC2
+       MCRYPT_SERPENT_128 (libmcrypt 2.2.x only)
       </simpara>
      </listitem>
      <listitem>
       <simpara>
-       MCRYPT_TWOFISH (for older mcrypt 2.x versions)
+       MCRYPT_SERPENT_192 (libmcrypt 2.2.x only)
       </simpara>
      </listitem>
      <listitem>
       <simpara>
-       MCRYPT_TWOFISH128 (TWOFISHxxx are available in newer 2.x versions)
+       MCRYPT_SERPENT_256 (libmcrypt 2.2.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_SKIPJACK (libmcrypt 2.4.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_TEAN (libmcrypt 2.2.x only)
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_THREEWAY
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_TRIPLEDES
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_TWOFISH (for older mcrypt 2.x versions, or mcrypt 2.4.x )
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       MCRYPT_TWOFISH128 (TWOFISHxxx are available in newer 2.x versions, but not in the 2.4.x versions)
       </simpara>
      </listitem>
      <listitem>
@@ -175,12 +334,12 @@ $encrypted_data = mcrypt_ecb (MCRYPT_TripleDES, $key, $input, MCRYPT_ENCRYPT);
      </listitem>
      <listitem>
       <simpara>
-       MCRYPT_RC6
+       MCRYPT_WAKE (libmcrypt 2.4.x only)
       </simpara>
      </listitem>
      <listitem>
       <simpara>
-       MCRYPT_IDEA
+       MCRYPT_XTEA (libmcrypt 2.4.x only)
       </simpara>
      </listitem>
     </itemizedlist>
@@ -211,14 +370,21 @@ $encrypted_data = mcrypt_ecb (MCRYPT_TripleDES, $key, $input, MCRYPT_ENCRYPT);
       <paramdef>int <parameter>cipher</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mcrypt_get_cipher_name</function></funcdef>
+      <paramdef>string <parameter>cipher</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
     <para>
      <function>Mcrypt_get_cipher_name</function> is used to get the
      name of the specified cipher.
     </para>
     <para>
      <function>Mcrypt_get_cipher_name</function> takes the cipher
-     number as an argument and returns the name of the cipher or
-     false, if the cipher does not exist.
+     number as an argument (libmcrypt 2.2.x) or takes the cipher name
+     as an argument (libmcrypt 2.4.x) and returns the name of the cipher
+     or false, if the cipher does not exist.
     </para>
     <para>
      <example>
@@ -361,6 +527,22 @@ $iv = mcrypt_create_iv ($block_size, MCRYPT_DEV_RANDOM);
       </paramdef>
      </funcprototype>
     </funcsynopsis>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mcrypt_cbc</function></funcdef>
+      <paramdef>string <parameter>cipher</parameter></paramdef>
+      <paramdef>string <parameter>key</parameter></paramdef>
+      <paramdef>string <parameter>data</parameter></paramdef>
+      <paramdef>int <parameter>mode</parameter></paramdef>
+      <paramdef>string 
+       <parameter><optional>iv</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     The first prototype is when linked against libmcrypt 2.2.x, the
+     second when linked against libmcrypt 2.4.x.
+    </para>
     <para>
      <function>Mcrypt_cbc</function> encrypts or decrypts (depending
      on <parameter>mode</parameter>) the <parameter>data</parameter>
@@ -410,6 +592,22 @@ $iv = mcrypt_create_iv ($block_size, MCRYPT_DEV_RANDOM);
       <paramdef>string <parameter>iv</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mcrypt_cfb</function></funcdef>
+      <paramdef>string <parameter>cipher</parameter></paramdef>
+      <paramdef>string <parameter>key</parameter></paramdef>
+      <paramdef>string <parameter>data</parameter></paramdef>
+      <paramdef>int <parameter>mode</parameter></paramdef>
+      <paramdef>string 
+       <parameter><optional>iv</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     The first prototype is when linked against libmcrypt 2.2.x, the
+     second when linked against libmcrypt 2.4.x.
+    </para>
     <para>
      <function>Mcrypt_cfb</function> encrypts or decrypts (depending
      on <parameter>mode</parameter>) the <parameter>data</parameter>
@@ -458,6 +656,22 @@ $iv = mcrypt_create_iv ($block_size, MCRYPT_DEV_RANDOM);
       <paramdef>int <parameter>mode</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mcrypt_ecb</function></funcdef>
+      <paramdef>string <parameter>cipher</parameter></paramdef>
+      <paramdef>string <parameter>key</parameter></paramdef>
+      <paramdef>string <parameter>data</parameter></paramdef>
+      <paramdef>int <parameter>mode</parameter></paramdef>
+      <paramdef>string 
+       <parameter><optional>iv</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     The first prototype is when linked against libmcrypt 2.2.x, the
+     second when linked against libmcrypt 2.4.x.
+    </para>
     <para>
      <function>Mcrypt_ecb</function> encrypts or decrypts (depending
      on <parameter>mode</parameter>) the <parameter>data</parameter>
@@ -504,6 +718,22 @@ $iv = mcrypt_create_iv ($block_size, MCRYPT_DEV_RANDOM);
       <paramdef>string <parameter>iv</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>	
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mcrypt_ofb</function></funcdef>
+      <paramdef>string <parameter>cipher</parameter></paramdef>
+      <paramdef>string <parameter>key</parameter></paramdef>
+      <paramdef>string <parameter>data</parameter></paramdef>
+      <paramdef>int <parameter>mode</parameter></paramdef>
+      <paramdef>string 
+       <parameter><optional>iv</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     The first prototype is when linked against libmcrypt 2.2.x, the
+     second when linked against libmcrypt 2.4.x.
+    </para>
     <para>
      <function>Mcrypt_ofb</function> encrypts or decrypts (depending
      on <parameter>mode</parameter>) the <parameter>data</parameter>
@@ -532,6 +762,816 @@ $iv = mcrypt_create_iv ($block_size, MCRYPT_DEV_RANDOM);
      See also: <function>mcrypt_cbc</function>,
      <function>mcrypt_cfb</function>, and
      <function>mcrypt_ecb</function>.
+    </para>
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.mcrypt-list-algorithms">
+   <refnamediv>
+    <refname>mcrypt_list_algorithms</refname>
+    <refpurpose>Get an array of all supported ciphers</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>array <function>mcrypt_list_algorithms</function></funcdef>
+      <paramdef>string
+	   <parameter>
+	    <optional>lib_dir</optional>
+	   </parameter>
+	  </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>Mcrypt_list_algorithms</function> is used to get an
+     array of all supported algorithms in the
+    </para>
+    <para>
+     <parameter>lib_dir</parameter>.
+     <function>Mcrypt_list_algorithms</function> takes as optional
+     parameter a directory which specifies the directory where all
+     algorithms are located. If not specifies, the value of the
+	 mcrypt.algorithms_dir php.ini directive is used.
+    </para>
+    <para>
+     <example>
+      <title><function>Mcrypt_list_algorithms</function> Example</title>
+      <programlisting role="php">
+&lt;?php
+$algorithms = mcrypt_list_algorithms ("/usr/local/lib/libmcrypt");
+
+foreach ($algorithms as $cipher) {
+	echo $cipher."/n";
+}
+?&gt;
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     The above example will produce a list with all supported
+	 algorithms in the "/usr/local/lib/libmcrypt" directory.
+    </para>
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.mcrypt-list-modes">
+   <refnamediv>
+    <refname>mcrypt_list_modes</refname>
+    <refpurpose>Get an array of all supported modes</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>array <function>mcrypt_list_modes</function></funcdef>
+      <paramdef>string
+	   <parameter>
+	    <optional>lib_dir</optional>
+	   </parameter>
+	  </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>Mcrypt_list_modes</function> is used to get an
+     array of all supported modes in the
+     <parameter>lib_dir</parameter>.
+    </para>
+    <para>
+     <function>Mcrypt_list_modes</function> takes as optional
+     parameter a directory which specifies the directory where all
+     modes are located. If not specifies, the value of the
+	 mcrypt.modes_dir php.ini directive is used.
+    </para>
+    <para>
+     <example>
+      <title><function>Mcrypt_list_modes</function> Example</title>
+      <programlisting role="php">
+&lt;?php
+$modes = mcrypt_list_modes ();
+
+foreach ($modes as $mode) {
+	echo $mode."/n";
+}
+?&gt;
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     The above example will produce a list with all supported
+	 algorithms in the default mode directory. If it is not set
+     with the ini directive mcrypt.modes_dir, the default directory
+     of mcrypt is used (which is /usr/local/lib/libmcrypt).
+    </para>
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.mcrypt-get-iv-size">
+   <refnamediv>
+    <refname>mcrypt_get_iv_size</refname>
+    <refpurpose>Returns the size of the IV belonging to a specific cipher/mode combination</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>mcrypt_get_iv_size</function></funcdef>
+      <paramdef>string <parameter>cipher</parameter></paramdef>
+      <paramdef>string <parameter>mode</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>Mcrypt_get_iv_size</function> returns the size of
+     the Initialisation Vector (IV). On error the function returns
+     FALSE. If the IV is ignored in the specified cipher/mode
+     combination zero is returned.
+    </para>
+    <para>
+     <parameter>Cipher</parameter> is one of the MCRYPT_ciphername
+     constants of the name of the algorithm as string.
+    </para>
+    <para>
+     <parameter>Mode</parameter> is one of the MCRYPT_MODE_modename
+     constants of one of "ecb", "cbc", "cfb", "ofb", "nofb" or 
+     "stream".
+    </para>
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.mcrypt-encrypt">
+   <refnamediv>
+    <refname>mcrypt_encrypt</refname>
+    <refpurpose>Encrypts plaintext with given parameters</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mcrypt_encrypt</function></funcdef>
+      <paramdef>string <parameter>cipher</parameter></paramdef>
+      <paramdef>string <parameter>key</parameter></paramdef>
+      <paramdef>string <parameter>data</parameter></paramdef>
+      <paramdef>string <parameter>mode</parameter></paramdef>
+      <paramdef>string 
+       <parameter>
+        <optional>iv</optional>
+       </parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>Mcrypt_encrypt</function> encrypts the data
+     and returns the encrypted data.
+    </para>
+    <para>
+     <parameter>Cipher</parameter> is one of the MCRYPT_ciphername
+     constants of the name of the algorithm as string.
+    </para>
+    <para>
+     <parameter>Key</parameter> is the key with which the data
+     will be encrypted. If it's smaller that the required keysize, it
+     is padded with '\0'.
+    </para>
+    <para>
+     <parameter>Data</parameter> is the data that will be encrypted
+     with the given cipher and mode. If the size of the data is not
+     n * blocksize, the data will be padded with '\0'. The returned
+     crypttext can be larger that the size of the data that is given
+     by <parameter>data</parameter>.
+    </para>
+    <para>
+     <parameter>Mode</parameter> is one of the MCRYPT_MODE_modename
+     constants of one of "ecb", "cbc", "cfb", "ofb", "nofb" or 
+     "stream".
+    </para>
+    <para>
+     The <parameter>IV</parameter> parameter is used for the
+     initialisation in CBC, CFB, OFB modes, and in some algorithms
+     in STREAM mode. If you do not supply an IV, while it is needed
+     for an algorithm, the function issues a warning and uses an
+     IV with all bytes set to '\0'.
+    </para>
+    <para>
+     <example>
+      <title><function>Mcrypt_encrypt</function> Example</title>
+      <programlisting role="php">
+&lt;?php
+$iv = mcrypt_create_iv (mcrypt_get_iv_size (MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND);
+$key = "This is a very secret key";
+$text = "Meet me at 11 o'clock behind the monument.";
+echo strlen ($text)."\n";
+
+$crypttext = mcrypt_encrypt (MCRYPT_RIJNDAEL_256, $key, $text, MCRYPT_MODE_ECB, $iv);
+echo strlen ($crypttext)."\n";
+?&gt;
+      </programlisting>
+     </example>
+     The above example will print out:
+     <programlisting>
+42
+64
+     </programlisting>
+    </para>
+   </refsect1>
+  </refentry>
+ 
+  <refentry id="function.mcrypt-decrypt">
+   <refnamediv>
+    <refname>mcrypt_decrypt</refname>
+    <refpurpose>Decrypts crypttext with given parameters</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mcrypt_decrypt</function></funcdef>
+      <paramdef>string <parameter>cipher</parameter></paramdef>
+      <paramdef>string <parameter>key</parameter></paramdef>
+      <paramdef>string <parameter>data</parameter></paramdef>
+      <paramdef>string <parameter>mode</parameter></paramdef>
+      <paramdef>string 
+       <parameter>
+        <optional>iv</optional>
+       </parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>Mcrypt_decrypt</function> decrypts the data
+     and returns the unencrypted data.
+    </para>
+    <para>
+     <parameter>Cipher</parameter> is one of the MCRYPT_ciphername
+     constants of the name of the algorithm as string.
+    </para>
+    <para>
+     <parameter>Key</parameter> is the key with which the data
+     is encrypted. If it's smaller that the required keysize, it
+     is padded with '\0'.
+    </para>
+    <para>
+     <parameter>Data</parameter> is the data that will be decrypted
+     with the given cipher and mode. If the size of the data is not
+     n * blocksize, the data will be padded with '\0'.
+    </para>
+    <para>
+     <parameter>Mode</parameter> is one of the MCRYPT_MODE_modename
+     constants of one of "ecb", "cbc", "cfb", "ofb", "nofb" or 
+     "stream".
+    </para>
+    <para>
+     The <parameter>IV</parameter> parameter is used for the
+     initialisation in CBC, CFB, OFB modes, and in some algorithms
+     in STREAM mode. If you do not supply an IV, while it is needed
+     for an algorithm, the function issues a warning and uses an
+     IV with all bytes set to '\0'.
+    </para>
+   </refsect1>
+  </refentry>
+ 
+  <refentry id="function.mcrypt-module-open">
+   <refnamediv>
+    <refname>mcrypt_module_open</refname>
+    <refpurpose>This function opens the module of the algorithm and the mode to be used</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>resource <function>mcrypt_module_open</function></funcdef>
+      <paramdef>string <parameter>algorithm</parameter></paramdef>
+      <paramdef>string <parameter>algorithm_directory</parameter></paramdef>
+      <paramdef>string <parameter>mode</parameter></paramdef>
+      <paramdef>string <parameter>mode_directory</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function opens the module of the algorithm and the mode
+     to be used. The name of the algorithm is specified in algorithm,
+     eg "twofish" or is one of the MCRYPT_ciphername constants.
+     The library is closed by calling 
+     <function>mcrypt_module_close</function>, but there is no need
+     to call that function if <function>mcrypt_generic_end</function>
+     is called. Normally it returns an encryption descriptor, or
+     FALSE on error.
+    </para>
+    <para>
+     The <parameter>algorithm_directory</parameter> and
+     <parameter>mode_directory</parameter> are used to locate the
+     encryption modules. When you supply a directory name, it is used.
+     When you set one of these to the empty string (""), the value set
+     by the <parameter>mcrypt.algorithms_dir</parameter> or
+     <parameter>mcrypt.modes_dir</parameter> ini-directive is used.
+     When these are not set, the default directory are used that are
+     compiled in into libmcrypt (usally /usr/local/lib/libmcrypt).
+    </para>
+    <para>
+     <example>
+      <title><function>Mcrypt_module_open</function> Example</title>
+      <programlisting role="php">
+&lt;?php
+$td = mcrypt_module_open (MCRYPT_DES, "", MCRYPT_MODE_ECB, "/usr/lib/mcrypt-modes");
+?&gt;
+      </programlisting>
+     </example>
+     The above example will try to open the DES cipher from the default
+     directory and the EBC mode from the directory /usr/lib/mcrypt-modes.
+    </para>
+   </refsect1>
+  </refentry>
+ 
+  <refentry id="function.mcrypt-generic-init">
+   <refnamediv>
+    <refname>mcrypt_generic_init</refname>
+    <refpurpose>This function initializes all buffers needed for encryption</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>mcrypt_generic_init</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+      <paramdef>string <parameter>key</parameter></paramdef>
+      <paramdef>string <parameter>iv</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     The maximum length of the key should be the one obtained by
+     calling <function>mcrypt_enc_get_key_size</function> and every
+     value smaller than this is legal. The IV should normally have
+     the size of the algorithms block size, but you must obtain the
+     size by calling <function>mcrypt_enc_get_iv_size</function>.
+     IV is ignored in ECB. IV MUST exist in CFB, CBC, STREAM, nOFB
+     and OFB modes. It needs to be random and unique (but not secret).
+     The same IV must be used for encryption/decryption. If you do not
+     want to use it you should set it to zeros, but this is not
+     recommended. The function returns (-1) on error.
+    </para>
+    <para>
+     You need to call this function before every
+     <function>mcrypt_generic</function> or
+     <function>mdecrypt_generic</function>.
+    </para>
+   </refsect1>
+  </refentry>
+ 
+  <refentry id="function.mcrypt-generic">
+   <refnamediv>
+    <refname>mcrypt_generic</refname>
+    <refpurpose>This function encrypts data</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mcrypt_generic</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+      <paramdef>string <parameter>data</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function encrypts data. The data is padded with "\0"
+     to make sure the length of the data is n * blocksize. This
+     function returns the encrypted data. Note that the length
+     of the returned string can in fact be longer then the input,
+     due to the padding of the data.
+    </para>
+   </refsect1>
+  </refentry>
+ 
+  <refentry id="function.mdecrypt-generic">
+   <refnamediv>
+    <refname>mdecrypt_generic</refname>
+    <refpurpose>This function decrypts data</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mdecrypt_generic</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+      <paramdef>string <parameter>data</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function decrypts data. Note that the length of the
+     returned string can in fact be longer then the unencrypted
+     string, due to the padding of the data.
+    </para>
+    <para>
+     <example>
+      <title><function>Mdecrypt_generic</function> Example</title>
+      <programlisting role="php">
+&lt;?php
+$iv_size = mcrypt_enc_get_iv_size ($td));
+$iv = @mcrypt_create_iv ($iv_size, MCRYPT_RAND);
+
+if (@mcrypt_generic_init ($td, $key, $iv) != -1)
+{
+    $c_t = mcrypt_generic ($td, $plain_text);
+    @mcrypt_generic_init ($td, $key, $iv);
+    $p_t = mdecrypt_generic ($td, $c_t);
+}
+if (strncmp ($p_t, $plain_text, strlen($plain_text)) == 0)
+    echo "ok";
+else
+    echo "error";
+?&gt;
+      </programlisting>
+     </example>
+     The above example shows how to check if the data before the
+     encryption is the same as the data after the decryption.
+    </para>
+   </refsect1>
+  </refentry>
+ 
+  <refentry id="function.mcrypt-generic-end">
+   <refnamediv>
+    <refname>mcrypt_generic_end</refname>
+    <refpurpose>This function terminates encryption</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>mcrypt_generic_end</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function terminates encryption specified by the encryption
+     descriptor (td). Actually it clears all buffers, and closes
+     all the modules used. Returns FALSE on error, or TRUE on succes.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-enc-self-test">
+   <refnamediv>
+    <refname>mcrypt_enc_self_test</refname>
+    <refpurpose>This function runs a self test on the opened module</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>mcrypt_enc_self_test</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function runs the self test on the algorithm specified by the
+     descriptor td. If the self test succeeds it returns zero. In case
+     of an error, it returns 1.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-enc-is-block-algorithm-mode">
+   <refnamediv>
+    <refname>mcrypt_enc_is_block_algorithm_mode</refname>
+    <refpurpose>Checks whether the encryption of the opened mode works on blocks</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>mcrypt_enc_is_block_algorithm_mode</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function returns 1 if the mode is for use with block algorithms,
+     otherwise it returns 0. (eg. 0 for stream, and 1 for cbc, cfb, ofb).
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-enc-is-block-algorithm">
+   <refnamediv>
+    <refname>mcrypt_enc_is_block_algorithm</refname>
+    <refpurpose>Checks whether the algorithm of the opened mode is a block algorithm</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>mcrypt_enc_is_block_algorithm</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function returns 1 if the algorithm is a block algorithm,
+     or 0 if it is a stream algorithm.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-enc-is-block-mode">
+   <refnamediv>
+    <refname>mcrypt_enc_is_block_mode</refname>
+    <refpurpose>Checks whether the opened mode outputs blocks</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>mcrypt_enc_is_block_mode</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function returns 1 if the mode outputs blocks of bytes or
+     0 if it outputs bytes. (eg. 1 for cbc and ecb, and 0 for cfb and
+     stream).
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-enc-get-block-size">
+   <refnamediv>
+    <refname>mcrypt_enc_get_block_size</refname>
+    <refpurpose>Returns the blocksize of the opened algorithm</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>mcrypt_enc_get_block_size</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function returns the block size of the algorithm specified by
+     the encryption descriptor td in bytes.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-enc-get-key-size">
+   <refnamediv>
+    <refname>mcrypt_enc_get_key_size</refname>
+    <refpurpose>Returns the maximum supported keysize of the opened mode</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>mcrypt_enc_get_key_size</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function returns the maximum supported key size of the
+     algorithm specified by the encryption descriptor td in bytes.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-enc-get-supported-key-sizes">
+   <refnamediv>
+    <refname>mcrypt_enc_get_supported_key_sizes</refname>
+    <refpurpose>Returns an array with the supported keysizes of the opened algorithm</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>array <function>mcrypt_enc_get_supported_key_sizes</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Returns an array with the key sizes supported by the algorithm
+     specified by the encryption descriptor. If it returns an empty
+     array then all key sizes between 1 and
+     <function>mcrypt_enc_get_key_size</function> are supported by the
+     algorithm.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-enc-get-iv-size">
+   <refnamediv>
+    <refname>mcrypt_enc_get_iv_size</refname>
+    <refpurpose>Returns the size of the IV of the opened algorithm</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>mcrypt_enc_get_iv_size</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function returns the size of the iv of the algorithm
+     specified by the encryption descriptor in bytes. If it returns
+     '0' then the IV is ignored in the algorithm. An IV is used in
+     cbc, cfb and ofb modes, and in some algorithms in stream mode.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-enc-get-algorithms-name">
+   <refnamediv>
+    <refname>mcrypt_enc_get_algorithms_name</refname>
+    <refpurpose>Returns the name of the opened algorithm</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mcrypt_enc_get_algorithms_name</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function returns the name of the algorithm.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-enc-get-modes-name">
+   <refnamediv>
+    <refname>mcrypt_enc_get_modes_name</refname>
+    <refpurpose>Returns the name of the opened mode</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>mcrypt_enc_get_modes_name</function></funcdef>
+      <paramdef>resource <parameter>td</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function returns the name of the mode.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-module-self-test">
+   <refnamediv>
+    <refname>mcrypt_module_self_test</refname>
+    <refpurpose>This function runs a self test on the specified module</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>mcrypt_module_self_test</function></funcdef>
+      <paramdef>string <parameter>algorithm</parameter></paramdef>
+      <paramdef>string <parameter><optional>lib_dir</optional></parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function runs the self test on the algorithm specified.
+     The optional <parameter>lib_dir</parameter> parameter can contain
+     the location of where the algorithm module is on the system.
+    </para>
+    <para>
+     The function returns TRUE if the self test succeeds, or FALSE when
+     if fails.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-module-is-block-algorithm-mode">
+   <refnamediv>
+    <refname>mcrypt_module_is_block_algorithm_mode</refname>
+    <refpurpose>This function returns if the the specified module is a block algorithm or not</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>mcrypt_module_is_block_algorithm_mode</function></funcdef>
+      <paramdef>string <parameter>mode</parameter></paramdef>
+      <paramdef>string <parameter><optional>lib_dir</optional></parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function returns TRUE if the mode is for use with block algorithms,
+     otherwise it returns 0. (eg. 0 for stream, and 1 for cbc, cfb, ofb).
+     The optional <parameter>lib_dir</parameter> parameter can contain
+     the location where the mode module is on the system.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-module-is-block-algorithm">
+   <refnamediv>
+    <refname>mcrypt_module_is_block_algorithm</refname>
+    <refpurpose>This function checks whether the specified algorithm is a block algorithm</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>mcrypt_module_is_block_algorithm</function></funcdef>
+      <paramdef>string <parameter>algorithm</parameter></paramdef>
+      <paramdef>string <parameter><optional>lib_dir</optional></parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function returns TRUE if the specified algorithm is a block
+     algorithm, or FALSE is it is a stream algorithm.
+     The optional <parameter>lib_dir</parameter> parameter can contain
+     the location where the algorithm module is on the system.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-module-is-block-mode">
+   <refnamediv>
+    <refname>mcrypt_module_is_block_mode</refname>
+    <refpurpose>This function returns if the the specified mode outputs blocks or not</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>mcrypt_module_is_block_mode</function></funcdef>
+      <paramdef>string <parameter>mode</parameter></paramdef>
+      <paramdef>string <parameter><optional>lib_dir</optional></parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function returns TRUE if the mode outputs blocks of bytes or
+     FALSE if it outputs just bytes. (eg. 1 for cbc and ecb, and 0 for cfb
+     and stream). The optional <parameter>lib_dir</parameter> parameter
+     can contain the location where the mode module is on the system.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-module-get-algo-block-size">
+   <refnamediv>
+    <refname>mcrypt_module_get_algo_block_size</refname>
+    <refpurpose>Returns the blocksize of the specified algorithm</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>mcrypt_module_get_algo_block_size</function></funcdef>
+      <paramdef>string <parameter>algorithm</parameter></paramdef>
+      <paramdef>string <parameter><optional>lib_dir</optional></parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function returns the block size of the algorithm specified in
+     bytes. The optional <parameter>lib_dir</parameter> parameter
+     can contain the location where the mode module is on the system.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-module-get-algo-key-size">
+   <refnamediv>
+    <refname>mcrypt_module_get_algo_key_size</refname>
+    <refpurpose>Returns the maximum supported keysize of the opened mode</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>mcrypt_module_get_algo_key_size</function></funcdef>
+      <paramdef>string <parameter>algorithm</parameter></paramdef>
+      <paramdef>string <parameter><optional>lib_dir</optional></parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function returns the maximum supported key size of the
+     algorithm specified in bytes. The optional
+     <parameter>lib_dir</parameter> parameter can contain the
+     location where the mode module is on the system.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.mcrypt-module-get-algo-supported-key-sizes">
+   <refnamediv>
+    <refname>mcrypt_module_get_algo_supported_key_sizes</refname>
+    <refpurpose>Returns an array with the supported keysizes of the opened algorithm</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>array <function>mcrypt_module_enc_get_algo_supported_key_sizes</function></funcdef>
+      <paramdef>string <parameter>algorithm</parameter></paramdef>
+      <paramdef>string <parameter><optional>lib_dir</optional></parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Returns an array with the key sizes supported by the specified
+     algorithm. If it returns an empty array then all key sizes
+     between 1 and <function>mcrypt_module_get_algo_key_size</function>
+     are supported by the algorithm. The optional
+     <parameter>lib_dir</parameter> parameter can contain the
+     location where the mode module is on the system.
     </para>
    </refsect1>
   </refentry>
