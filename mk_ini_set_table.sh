@@ -1,5 +1,10 @@
 #! /bin/sh
 
+# Quick hack to make a table of PHP options
+# and where they can be changed
+# Jesus M. Castagnetto
+# Mon Mar 19 04:57:02 PST 2001
+
 main_c="../php4/main/main.c"
 ini_set_table="en/functions/ini_set_table";
 
