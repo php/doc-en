@@ -737,7 +737,7 @@ main(int argc, char** argv)
 		buf.Compress();
 	    n = fwrite(buf.buf,1,buf.Len(),fout);
 
-	    printf("\rconverting record %d of %d",recNum+1,numRecs);
+	    //printf("\rconverting record %d of %d",recNum+1,numRecs);
 	    fflush(stdout);
 	    if (bReport && n && bCompress)
 		printf("\noriginal %d bytes, compressed to %d bytes, ratio: %f5.1\n",
