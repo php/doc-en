@@ -1,72 +1,92 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 <!-- splitted from ./en/functions/pgsql.xml, last change in rev 1.2 -->
 <refentry id="function.pg-prepare">
  <refnamediv>
   <refname>pg_prepare</refname>
-  <refpurpose>Prepares a query for future execution</refpurpose>
+  <refpurpose> Submits a request to create a prepared statement with the 
+  given parameters, and waits for completion.</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
    <type>resource</type><methodname>pg_prepare</methodname>
-   <methodparam><type>string</type><parameter>stmtname</parameter></methodparam>
-   <methodparam><type>string</type><parameter>query</parameter></methodparam>
-  </methodsynopsis>
-  <methodsynopsis>
-   <type>resource</type><methodname>pg_prepare</methodname>
-   <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
+   <methodparam choice="opt"><type>resource</type><parameter>connection</parameter></methodparam>
    <methodparam><type>string</type><parameter>stmtname</parameter></methodparam>
    <methodparam><type>string</type><parameter>query</parameter></methodparam>
   </methodsynopsis>
   <para>
-   <function>pg_prepare</function> returns a query result resource if
-   query could be prepared.  It returns &false; on failure or if
-   connection is not a valid connection. Details about the error can
-   be retrieved using the <function>pg_last_error</function>
-   function if connection is valid.
-   <function>pg_prepare</function> prepares an SQL statement for 
-   the PostgreSQL database connection specified by the
-   <parameter>connection</parameter> resource. The
-   <parameter>connection</parameter> must be a valid connection that
-   was returned by <function>pg_connect</function> or
-   <function>pg_pconnect</function>. The return value of this
-   function is an query result resource.  The <parameter>stmtname</parameter>
-   is the name of the prepared query, for future use with 
-   <function>pg_execute</function> or <function>pg_send_execute</function>.
-   <note>
-    <simpara>
-     <parameter>connection</parameter> is an optional parameter for
-     <function>pg_prepare</function>. If
-     <parameter>connection</parameter> is not set, default
-     connection is used. Default connection is the last connection
-     made by <function>pg_connect</function> or
-     <function>pg_pconnect</function>.
-    </simpara>
-    <simpara>
-     Although <parameter>connection</parameter> can be omitted, it
-     is not recommended, since it could be a cause of hard to find
-     bug in script.
-    </simpara>
-   </note>
+    <function>pg_prepare</function> creates a prepared statement for later execution with 
+    <function>pg_execute</function> or <function>pg_send_execute</function>. 
+    This feature allows commands that will be used repeatedly to 
+    be parsed and planned just once, rather than each time they are executed. 
+    <function>pg_prepare</function> is supported only against PostgreSQL 7.4 or
+    higher connections; it will fail when using earlier versions.
   </para>
   <para>
-   Parameters to <function>pg_prepare</function> are specified
-   using placeholders in the query.  It is not necessary to quote
-   parameters as quoting and escaping is done automatically.
-  Placeholders are indicated in the <parameter>query</parameter>
-   by $1, $2, $3 and so on.
+    The function creates a prepared statement named <param>stmtname</param> from the <param>query</param> 
+    string, which must contain a single SQL command. <param>stmtname</param> may be "" to 
+    create an unnamed statement, in which case any pre-existing unnamed 
+    statement is automatically replaced; otherwise it is an error if the 
+    statement name is already defined in the current session. If any parameters 
+    are used, they are referred to in the <param>query</param> as $1, $2, etc.
   </para>
-  <para>Using prepared queries means you can prepare one and
-  then execute many times, with different parameters.  PostgreSQL
-  will cache the query plan on the prepare, then re-use it for
-  each execute, resulting in speed improvements.  There is no
-  need to use a prepared query if it will only be executed once.
-  In this case, it is simpler to use <function>pg_query_params</function>.
+  <para>
+    Prepared statements for use with <function>pg_prepare</function> can also be created by 
+    executing SQL <literal>PREPARE</literal> statements. (But <function>pg_prepare</function> is more flexible since it 
+    does not require parameter types to be pre-specified.) Also, although there 
+    is no PHP function for deleting a prepared statement, the SQL <litearl>DEALLOCATE</literal>
+    statement can be used for that purpose.
   </para>
  </refsect1>
 
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>connection</parameter></term>
+     <listitem>
+      <para>
+       PostgreSQL database connection resource.  When 
+       <parameter>connection</parameter> is not present, the default connection 
+       is used. The default connection is the last connection made by 
+       <function>pg_connect</function> or <function>pg_pconnect</function>.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>stmtname</parameter></term>
+     <listitem>
+      <para>
+       The name to give the prepared statement.  Must be unique per-connection.  If
+       "" is specified, then an unnamed statement is created, overwriting any
+       previously defined unnamed statement.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>query</parameter></term>
+     <listitem>
+      <para>
+       The parameterised SQL statement.  Must contain only a single statement.
+       (multiple statements separated by semi-colons are not allowed.)  If any parameters 
+       are used, they are referred to as $1, $2, etc.
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   A query result resource on success, or &false; on failure.
+  </para>
+ </refsect1>
+ 
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
@@ -99,11 +119,8 @@ $result = pg_execute($dbconn, "my_query", array("Clothes Clothes Clothes"));
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>pg_connect</function></member>
-    <member><function>pg_pconnect</function></member>
     <member><function>pg_execute</function></member>
     <member><function>pg_send_execute</function></member>
-    <member><function>pg_query_params</function></member>
    </simplelist>
   </para>
  </refsect1>
