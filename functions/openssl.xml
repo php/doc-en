@@ -1,0 +1,341 @@
+ <reference id="ref.openssl">
+  <title>OpenSSL Functions</title>
+  <titleabbrev>OpenSSL</titleabbrev>
+  <partintro>
+  <para>
+   This module uses the functions of <ulink
+   url="&url.openssl;">OpenSSL</ulink> for generation and verification
+   of signatures and for sealing (encrypting) and opening (decrypting)
+   data. You need to use OpenSSL >= 0.9.6 with this module.
+  </para>
+  <para>
+   OpenSSL offers many features that this module currently doesn't support.
+   Some of these may be added in the future.
+  </para>
+  </partintro>
+
+  <refentry id="function.openssl-free-key">
+   <refnamediv>
+    <refname>openssl_free_key</refname>
+    <refpurpose>Free key resource</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>void <function>openssl_free_key</function></funcdef>
+      <paramdef>int <parameter>key_identifier</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>openssl_free_key</function> frees the key associated with
+     the specified <parameter>key_identifier</parameter> from memory.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.openssl-get-privatekey">
+   <refnamediv>
+    <refname>openssl_get_privatekey</refname>
+    <refpurpose>Prepare a PEM formatted private key for use</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>openssl_get_privatekey</function></funcdef>
+      <paramdef>string <parameter>key</parameter></paramdef>
+      <paramdef>string <parameter><optional>passphrase</optional></parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Returns a positive key identifier on success, or false on error.
+    </para>
+    <para>
+     <function>openssl_get_privatekey</function> parses the PEM
+     formatted private key specified by <parameter>key</parameter>
+     and prepares it for use by other functions.
+     The optional parameter <parameter>passphrase</parameter> must be used if
+     the specified key is encrypted (protected by a passphrase).
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.openssl-get-publickey">
+   <refnamediv>
+    <refname>openssl_get_publickey</refname> 
+    <refpurpose>Extract public key from certificate and prepare it for use</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>openssl_get_publickey</function></funcdef>
+      <paramdef>string <parameter>certificate</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Returns a positive key identifier on success, or false on error.
+    </para>
+    <para>
+     <function>openssl_get_publickey</function> extracts the
+     public key from a X.509 certificate specified by
+     <parameter>certificate</parameter> and prepares it for use by other
+     functions.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.openssl-open">
+   <refnamediv>
+    <refname>openssl_open</refname>
+    <refpurpose>Open sealed data</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>openssl_open</function></funcdef>
+      <paramdef>string <parameter>sealed_data</parameter></paramdef>
+      <paramdef>string <parameter>open_data</parameter></paramdef>
+      <paramdef>string <parameter>env_key</parameter></paramdef>
+      <paramdef>int <parameter>priv_key_id</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Returns true on success, or false on error. If successful the opened
+     data is returned in <parameter>open_data</parameter>.
+    </para>
+    <para>
+     <function>openssl_open</function> opens (decrypts)
+     <parameter>sealed_data</parameter> using the private key associtated with
+     the key identifier <parameter>priv_key_id</parameter> and the envelope key
+     <parameter>env_key</parameter>. The envelope key is generated when the
+     data are sealed and can only be used by one specific private key. See
+     <function>openssl_seal</function> for more information.
+    </para>
+    <para>
+     <example>
+      <title><function>openssl_open</function> example</title>
+      <programlisting role="php">
+// $sealed and $env_key are assumed to contain the sealed data
+// and our envelope key, both given to us by the sealer.
+
+// fetch private key from file and ready it
+$fp = fopen("/src/openssl-0.9.6/demos/sign/key.pem", "r");
+$priv_key = fread($fp, 8192);
+fclose($fp);
+$pkeyid = openssl_get_privatekey($priv_key);
+
+// decrypt the data and store it in $open
+if (openssl_open($sealed, $open, $env_key, $pkeyid))
+    echo "here is the opened data: ", $open;
+else
+    echo "failed to open data";
+
+// free the private key from memory
+openssl_free_key($pkeyid);
+      </programlisting>
+     </example>
+    </para>
+    <simpara>
+     See also <function>openssl_seal</function>.
+    </simpara>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.openssl-seal">
+   <refnamediv>
+    <refname>openssl_seal</refname>
+    <refpurpose>Seal data</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>openssl_seal</function></funcdef>
+      <paramdef>string <parameter>data</parameter></paramdef>
+      <paramdef>string <parameter>sealed_data</parameter></paramdef>
+      <paramdef>array <parameter>env_keys</parameter></paramdef>
+      <paramdef>array <parameter>pub_key_ids</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Returns the length of the sealed data on success, or false on error.
+     If successful the sealed data is returned in
+     <parameter>sealed_data</parameter>, and the envelope keys in
+     <parameter>env_keys</parameter>.
+
+    </para>
+    <para>
+     <function>openssl_seal</function> seals (encrypts)
+     <parameter>data</parameter> by using RC4 with a randomly generated
+     secret key. The key is encrypted with each of the public keys
+     associated with the identifiers in <parameter>pub_key_ids</parameter>
+     and each encrypted key is returned
+     in <parameter>env_keys</parameter>. This means that one can send
+     sealed data to multiple recipients (provided one has obtained their
+     public keys). Each recipient must receive both the sealed data and
+     the envelope key that was encrypted with the recipient's public key.
+    </para>
+    <para>
+     <example>
+      <title><function>openssl_seal</function> example</title>
+      <programlisting role="php">
+// $data is assumed to contain the data to be sealed
+
+// fetch public keys for our recipients, and ready them
+$fp = fopen("/src/openssl-0.9.6/demos/maurice/cert.pem", "r");
+$cert = fread($fp, 8192);
+fclose($fp);
+$pk1 = openssl_get_publickey($cert);
+// Repeat for second recipient
+$fp = fopen("/src/openssl-0.9.6/demos/sign/cert.pem", "r");
+$cert = fread($fp, 8192);
+fclose($fp);
+$pk2 = openssl_get_publickey($cert);
+
+// seal message, only owners of $pk1 and $pk2 can decrypt $sealed with keys
+// $ekeys[0] and $ekeys[1] respectively.
+openssl_seal($data, $sealed, $ekeys, array($pk1,$pk2));
+
+// free the keys from memory
+openssl_free_key($pk1);
+openssl_free_key($pk2);
+      </programlisting>
+     </example>
+    </para>
+    <simpara>
+     See also <function>openssl_open</function>.
+    </simpara>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.openssl-sign">
+   <refnamediv>
+    <refname>openssl_sign</refname>
+    <refpurpose>Sign data</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>openssl_sign</function></funcdef>
+      <paramdef>string <parameter>data</parameter></paramdef>
+      <paramdef>string <parameter>signature</parameter></paramdef>
+      <paramdef>int <parameter>priv_key_id</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Returns true on success, or false on failure.
+     If successful the signature is returned in
+     <parameter>signature</parameter>. 
+    </para>
+    <para>
+     <function>openssl_sign</function> computes a signature for the
+     specified <parameter>data</parameter> by using SHA1 for hashing
+     followed by encryption using the private key associated with
+     <parameter>priv_key_id</parameter>. Note that the data itself is
+     not encrypted.
+    </para>
+    <para>
+     <example>
+      <title><function>openssl_sign</function> example</title>
+      <programlisting role="php">
+// $data is assumed to contain the data to be signed
+
+// fetch private key from file and ready it
+$fp = fopen("/src/openssl-0.9.6/demos/sign/key.pem", "r");
+$priv_key = fread($fp, 8192);
+fclose($fp);
+$pkeyid = openssl_get_privatekey($priv_key);
+
+// compute signature
+openssl_sign($data, $signature, $pkeyid);
+
+// free the key from memory
+openssl_free_key($pkeyid);
+      </programlisting>
+     </example>
+    </para>
+    <simpara>
+     See also <function>openssl_verify</function>.
+    </simpara>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.openssl-verify">
+   <refnamediv>
+    <refname>openssl_verify</refname>
+    <refpurpose>Verify signature</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>openssl_verify</function></funcdef>
+      <paramdef>string <parameter>data</parameter></paramdef>
+      <paramdef>string <parameter>signature</parameter></paramdef>
+      <paramdef>int <parameter>pub_key_id</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Returns 1 if the signature is correct, 0 if it is incorrect, and
+     -1 on error.
+    </para>
+    <para>
+     <function>openssl_verify</function> verifies that the
+     <parameter>signature</parameter> is correct for the specified
+     <parameter>data</parameter> using the public key associated with
+     <parameter>pub_key_id</parameter>. This must be the public key
+     corresponding to the private key used for signing.
+    </para>
+    <para>
+     <example>
+      <title><function>openssl_verify</function> example</title>
+      <programlisting role="php">
+// $data and $signature are assumed to contain the data and the signature
+
+// fetch public key from certificate and ready it
+$fp = fopen("/src/openssl-0.9.6/demos/sign/cert.pem", "r");
+$cert = fread($fp, 8192);
+fclose($fp);
+$pubkeyid = openssl_get_publickey($cert);
+
+// state whether signature is okay or not
+$ok = openssl_verify($data, $signature, $pubkeyid);
+if ($ok == 1)
+    echo "good";
+elseif ($ok == 0)
+    echo "bad";
+else
+    echo "ugly, error checking signature";
+
+// free the key from memory
+openssl_free_key($pubkeyid);
+      </programlisting>
+     </example>
+    </para>
+    <simpara>
+     See also <function>openssl_sign</function>.
+    </simpara>
+   </refsect1>
+  </refentry>
+ </reference>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->
