@@ -474,6 +474,7 @@ function add_constant_to_list($name, $type)
   
   $constlist[$num_const]["name"]=$name;
   $constlist[$num_const]["type"]=$type;
+
   $num_const++;
   return(1);
 }
@@ -538,8 +539,8 @@ function scan_for_constants_byref($buffer, $string, $type)
 
 function scan_for_constants($buffer)
 {
-  scan_for_constants_byref($buffer, "REGISTER_LONG_CONSTANT", "long");
-  scan_for_constants_byref($buffer, "REGISTER_DOUBLE_CONSTANT", "double");
+  scan_for_constants_byref($buffer, "REGISTER_LONG_CONSTANT", "integer");
+  scan_for_constants_byref($buffer, "REGISTER_DOUBLE_CONSTANT", "float");
   scan_for_constants_byref($buffer, "REGISTER_STRING_CONSTANT", "string");
 }
 
@@ -572,17 +573,18 @@ function write_constants_xml()
                " <variablelist>\n");
   for ($i=0; $i<$num_const; $i++) {
     $type=$constlist[$i]["type"];
-    if (strcasecmp($type, "long") == 0) {
-      $linkend="language.types.integer";
-    } else if (strcasecmp($type, "double") == 0) {
-      $linkend="language.types.double";
+    if (strcasecmp($type, "integer") == 0) {
+      $linkend="<type>integer</type>";
     } else if (strcasecmp($type, "string") == 0) {
-      $linkend="language.types.string";
+      $linkend="<type>string</type>";
+    } else if (strcasecmp($type, "float") == 0) {
+      $linkend="<type>float</type>";
     }
+
     fwrite($fp, "  <varlistentry>\n" .
                  "   <term>\n" .
                  "    <constant>" . $constlist[$i]["name"] . "</constant>\n" .
-                 "    (<link linkend=\"" . $linkend . "\">" . $type . "</link>)\n" .
+                 "     ($linkend)\n" .
                  "   </term>\n" .
                  "   <listitem>\n" .
                  "    <simpara>\n" .
@@ -592,7 +594,8 @@ function write_constants_xml()
                  "  </varlistentry>\n");
   }
 
-  fwrite($fp, "\n" .
+  fwrite($fp,  " </variablelist>\n".
+               "</section>\n\n".
                "<!-- Keep this comment at the end of the file\n" .
                "Local variables:\n" .
                "mode: sgml\n" .
