@@ -212,7 +212,7 @@
                    (ancestor-member (parent) (list "refentry")))
                   "refnamediv")))
                "refname"))))
-          function-name))
+          (case-fold-down function-name)))
       ($bold-seq$
        (make sequence
      (process-children)
@@ -282,27 +282,12 @@
               (string-replace constant-name "_" "-"))))
      (target (element-with-id linkend))
      (parent-gi (gi (parent))))
+
     (cond
-;     ;; constant names should be plain in FUNCDEF
-;     ((equal? parent-gi "funcdef")
-;      (process-children))
-     
-     ;; If a valid ID for the target constant is not found, or if the
-     ;; CONSTANT tag is within the definition of the same constant,
+     ;; If a valid ID for the target constant is not found
      ;; make it bold, but don't make a link
-     ((or (node-list-empty? target)
-      (equal? (case-fold-down
-           (data (node-list-first
-              (select-elements
-               (node-list-first
-                (children
-                 (select-elements
-                  (children
-                   (ancestor-member (parent) (list "refentry")))
-                  "refnamediv")))
-               "refname"))))
-          constant-name))
-      ($bold-mono-seq$
+     ((or (node-list-empty? target)(attribute-string (normalize "id")(current-node)))
+			($bold-mono-seq$
        (process-children)))
      
      ;; Else make a link to the constant
