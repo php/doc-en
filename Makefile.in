@@ -28,6 +28,7 @@ VPATH=@srcdir@
 srcdir=@srcdir@
 scriptdir=@srcdir@/scripts
 PHP_SOURCE=@PHP_SOURCE@
+PECL_SOURCE=@PECL_SOURCE@
 LANGCODE=@LANG@
 LANGDIR=@LANGDIR@
 LANG=@LANG@ -D .
@@ -110,7 +111,21 @@ revcheck: revcheck.html
 FORCE:
 
 funclist.txt: FORCE
-	$(PHP) -q $(scriptdir)/genfunclist.php $(PHP_SOURCE) > funclist.txt
+	@if test "$(PHP_SOURCE)" = "no"; then \
+	    echo "WARNING: recreating the function list needs php sources" ;\
+	    echo "         which were not found by configure" ;\
+	    echo "         aborting " ;\
+	else \
+	    $(PHP) -q $(scriptdir)/genfunclist.php $(PHP_SOURCE) > funclist.txt ;\
+	fi; \
+        if test "$(PECL_SOURCE)" = "no" -a ! "$(PHP_SOURCE)" = "no"; then \
+            echo "WARNING: pecl sources not found - pecl functions" ;\
+            echo "         will not be present in funclist.txt" ;\
+        elif test ! "$(PHP_SOURCE)" = "no"; then \
+            echo ""  >> funclist.txt ;\
+            echo "# --------- PECL Stuff --------- " >> funclist.txt ;\
+            $(PHP) -q $(scriptdir)/genfunclist.php $(PECL_SOURCE) >> funclist.txt ;\
+        fi
 
 funcsummary.txt: FORCE
 	$(scriptdir)/genfuncsummary.sh $(PHP_SOURCE) > funcsummary.txt
