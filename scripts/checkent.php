@@ -1,86 +1,121 @@
 #!/usr/bin/php -q
 <?php
 
-	/*******************************************************
-	 * checkent.php
-	 *
-	 * this little script checks if entities in global.ent
-	 * are ok
-   *
-	 * PHP configuration options
-	 *  -enable-ftp
-	 *******************************************************
-	 * Authors:
-	 * Georg Richter <georg@php.net>
-	 *******************************************************/
+if ($argc > 1 || in_array($argv[1], array('--help', '-help', '-h', '-?'))) {
+?>
 
-	// like a good wine, this script needs some time
-	set_time_limit(0);
+Check entities in global.ent (HTTP and FTP schemes)
 
-	// schemes we had to check
-	$schemes = array("http", "https", "ftp");
+  Usage:
+  <?=$argv[0]?>
 
-	// Start this script only from script.dir
-	$filename = "../global.ent";
+  This script checks FTP and HTTP URLs listed
+  in global.ent. Grab the output, to put it in
+  a text file.
+  
+  Written by Georg Richter <georg@php.net>
+  Adapted to phpdoc by Gabor Hojtsy <goba@php.net>
+
+<?php
+  exit;
+}
+
+// CONFIG SECTION
+$docdir = "../"; // Main directory of the PHP documentation (one dir up in cvs)
+
+/*********************************************************************/
+/* Nothing to modify below this line                                 */
+/*********************************************************************/
+
+// Like a good wine, this script needs some time
+set_time_limit(0);
+
+// Schemes we had to check
+$schemes = array("http", "ftp");
+
+// Start this script only from the scripts dir
+$filename = "../global.ent";
+
+// Read in the file, or die
+$file_array = file ($filename);
+if (!$file_array) { die ("Cannot open entity file ($filename)."); }
+
+// Put the whole file in a string
+$file_string = preg_replace("/[\r\n]/", "", join ("", $file_array));
+
+echo "ENTITY CHECK
+
+=========================================================
+In the table below you can find the validity check
+errors of entites in $filename. Use this list to correct
+errors in $filename.
+=========================================================
+
+";
+
+// Find entity names and URLs
+$schemes_preg = "(" . join("|", $schemes) . ")";
+preg_match_all("/<!ENTITY\s+(\S+)\s+([\"'])(({$schemes_preg})[^\"]+)\\2\s*>/U",
+    $file_string, $entities_found);
+
+// These are the useful parts
+$entity_names = $entities_found[1];
+$entity_urls  = $entities_found[3];
+
+// Walk through entities found
+foreach ($entity_urls as $num => $entity_url) {
+
+    // Get the parts of the URL
+    $url = parse_url($entity_url);
+    $entity = $entity_names[$num];
+
+    // Try to find host
+    $ip = gethostbyname($url["host"]);
+    if ($ip == $url["host"]) {
+        errormsg ($entity, "unknown host: " . $url["host"]);
+    // Host found, check path
+    } else {
+
+        // Depending on URL scheme
+        switch ($url["scheme"]) {
+    
+            // Use URL fopen wrapper
+            case "http":
+                if ($fpurl = @fopen($link, "r")) {
+                    fclose ($fpurl);
+                }
+                else {
+                    errormsg ($entity, "Could not open document: " . $link);
+                }
+            break;
+    
+            // Use FTP functions
+            case "ftp":
+                if ($ftp = @ftp_connect($url["host"])) {
+                    if (@ftp_login($ftp, "anonymous", "georg@php.net")) {
+                        $flist = ftp_nlist($ftp, $url["path"]);
+                        if (!count($flist)) {
+                            errormsg($entity, "unknown path: " . $url["path"]);
+                        }
+                    } else {
+                        errormsg ($entity, "could not login as anonymous to " . $url["host"]);
+                        ftp_quit($ftp);
+                    }
+                } else {
+                    errormsg ($entity, "could not connect to " . $url["host"]);
+                }
+            break;
+        }
+    }
+}
 
 
-	function errormsg ($entity, $desc){
-		printf ("%30s: %s\n", $entity, $desc);
-		return;
-	}
+/*********************************************************************/
+/* Here starts the functions part                                    */
+/*********************************************************************/
+function errormsg ($entity, $desc)
+{
+    printf ("%30s: %s\n", $entity, $desc);
+}
 
-	if (!$fp = fopen($filename, "r")){
-		printf ("Error: can't open $filename\n");
-		exit(-1);
-	}
-
-	printf ("checkent.php\nPlease wait, this could take some time\n\n");
-
-	while (!feof($fp)){
-		// read line and remove unnecessary spaces
-		$line = ltrim(ereg_replace("  ", " ", fgets($fp, 255)));
-
-		// we only need entity lines
-		if (substr($line,0,8) == "<!ENTITY"){
-			$tmp = explode (" ", $line);
-			$entity = $tmp[1];
-			$link = substr($tmp[2], 1, strlen($tmp[2]) - 4);
-
-			// get parts of url
-			$url = parse_url($link);
-
-			// valid scheme ?!
-			if (in_array($url["scheme"], $schemes)){
-				$ip = gethostbyname($url["host"]);
-				if ($ip == $url["host"]){
-					errormsg ($entity, "unknown host: " .$url["host"]);
-				} else
-				switch ($url["scheme"]){
-					case "http":
-						if ($fpurl = @fopen($link, "r")){
-							fclose ($fpurl);
-						}
-						else
-							errormsg ($entity, "Could not open document: " . $link);
-					break;
-
-					case "ftp":
-						if ($ftp = @ftp_connect($url["host"])){
-							if (@ftp_login($ftp, "anonymous", "georg@php.net")){
-								$flist = ftp_nlist($ftp, $url["path"]);
-								if (!count($flist))
-									errormsg($entity, "unknown path: " . $url["path"]);
-							} else
-								errormsg ($entity, "could not login as anonymous to " . $url["host"]);
-							ftp_quit($ftp);
-						} else
-							errormsg ($entity, "could not connect to " . $url["host"]);
-
-					break;
-
-				}
-			}
-		}
-	}
-	fclose($fp);
 ?>
