@@ -18,7 +18,7 @@
     global $fancydir, $language, $manual_title, $fancyindex, $indexfile;
 
     // define language array (manual code -> HTML Help Code)
-		// Japanese is not on my list, I don't know why...
+    // Japanese is not on my list, I don't know why...
     $languages = Array (
     
       "de"    => "0x407 German (Germany)",
