@@ -1,0 +1,41 @@
+#!/bin/sh
+# generate files containing missing entities
+
+srcdir="@srcdir@"
+NSGMLS="@SP_OPTIONS@ @NSGMLS@"
+LANG="@LANG@ -D ."
+XMLDCL="$srcdir/dtds/dbxml-@DOCBOOK_VERSION@/phpdocxml.dcl"
+
+# extract and rewrite undefined entities error messages
+echo "<?xml version='1.0' encoding='iso-8859-1'?> " \
+> entities/missing-entities.ent
+$NSGMLS -i lang-$LANG -s $XMLDCL manual.xml 2>&1 \
+| grep "not defined" \
+| sed -e's/^.* "/<!ENTITY /g' \
+| sed -e's/".*/ "???">/g' \
+| sort \
+| uniq \
+>> entities/missing-entities.ent
+
+# extract and rewrite undefined id error messages
+echo "<?xml version='1.0' encoding='iso-8859-1'?> " \
+> entities/missing-ids.xml
+echo "<appendix><title>missing stuff</title>" \
+>> entities/missing-ids.xml
+$NSGMLS -i lang-$LANG -s $XMLDCL manual.xml	2>&1 \
+| grep non-existent \
+| sed -e"s/^.* ID /<para id=/g" \
+| sed -e"s/$/><\/para>/g" \
+| sort \
+| uniq \
+>> entities/missing-ids.xml 
+echo "</appendix>" \
+>> entities/missing-ids.xml 
+
+# make file empty if no missing ids found
+if ! grep -q para entities/missing-ids.xml
+then
+	rm entities/missing-ids.xml
+	echo "<?xml version='1.0' encoding='iso-8859-1'> " \
+	> entities/missing-ids.xml
+fi
