@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.5 $ -->
+<!-- $Revision: 1.6 $ -->
 <!-- splitted from ./en/functions/xslt.xml, last change in rev 1.29 -->
   <refentry id='function.xslt-set-sax-handlers'>
    <refnamediv>
@@ -237,9 +237,8 @@ xslt_free($xh);
      </example>
     </para>
     <para>
-     Every values of the <parameter>handlers</parameter> array is either a
-     string containing the function name, or an array in the following format:
-     <command>array(&amp;$obj, "method")</command>.
+     You can also use <function>xslt_set_object</function> if you want to
+     implement your handlers in an object.
     </para>
     <para>
      <example>
@@ -251,6 +250,30 @@ xslt_free($xh);
 class data_sax_handler {
 
   var $buffer, $tag, $attrs;
+
+  var $_xh;
+
+  function data_sax_handler($xml, $xsl)
+  {
+      // our xslt resource
+      $this->_xh = xslt_create();
+
+      xslt_set_object($this->_xs, $this);
+
+      // configure sax handlers
+      $handlers = array(
+        "document" => array('start_document', 'end_document'),
+        "element" => array('start_element', 'end_element'),
+        "character" => 'characters'
+      );
+
+      xslt_set_sax_handlers($this->_xh, $handlers);
+    
+      xslt_process($this->_xh, 'arg:/_xml', 'arg:/_xsl', NULL, array("/_xml"=>$xml, "/_xsl"=>$xsl));
+      xslt_free($this->_xh);
+
+
+  }
 
   function start_document() 
   {
@@ -287,27 +310,7 @@ class data_sax_handler {
 
 }
 
-// our xsl handle
-$xh = xslt_create();
-
-$handler = new data_sax_handler();
-// configure sax handlers
-$handlers = array(
-  "document" => array(
-    array(&$handler, 'start_document'),
-    array(&$handler, 'end_document')
-),
-  "element" => array(
-    array(&$handler, 'start_element'),
-    array(&$handler, 'end_element')
-),
-  "character" => array(&$handler, 'characters')
-);
-
-xslt_set_sax_handlers($xh, $handlers);
-    
-xslt_process($xh, 'arg:/_xml', 'arg:/_xsl', NULL, array("/_xml"=>$xml, "/_xsl"=>$xsl));
-xslt_free($xh);
+$exec = new data_sax_handler($xml, $xsl);
 
 ?>
 ]]>
