@@ -3,6 +3,8 @@
 
   html-common.xsl: Common HTML customizations
 
+  $Id: html-common.xsl,v 1.22 2003-04-23 17:32:51 goba Exp $
+
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0">
@@ -600,7 +602,5 @@ set       toc
     </tr>
   </table>
 </xsl:template>
-
-
 
 </xsl:stylesheet>

@@ -3,7 +3,7 @@
 
   PHP.net web site specific stylesheet
 
-  $Id: phpweb.xsl,v 1.5 2003-04-21 19:33:48 goba Exp $
+  $Id: phpweb.xsl,v 1.6 2003-04-23 17:32:51 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -11,15 +11,11 @@
 
 <xsl:import href="./docbook/html/chunkfast.xsl"/>
 <xsl:include href="html-common.xsl"/>
+<xsl:include href="html-chunk.xsl"/>
 
-<!-- Output files to the 'php' dir, use the '.php' extension
-     and name them using the IDs in documents -->
+<!-- Write files to the 'php' dir, use the '.php' extension -->
 <xsl:param name="base.dir" select="'php/'"/>
 <xsl:param name="html.ext" select="'.php'"/>
-<xsl:param name="use.id.as.filename" select="1"/>
-
-<!-- Speed up generation (no file name printouts) -->
-<xsl:param name="chunk.quietly">1</xsl:param>
 
 <!-- Special PHP code navigation for generated pages
      There are some xsl:text parts added for formatting!
@@ -131,9 +127,19 @@
 <xsl:template name="phpdoc.nav.array">
  <xsl:param name="node" select="/foo"/>  
  <xsl:text>array('</xsl:text>
- <xsl:call-template name="href.target">
-  <xsl:with-param name="object" select="$node"/>
- </xsl:call-template>
+ <xsl:choose>
+  <!-- special handling for copyright, as we have it
+       in it's own chunk, but the stylesheets don't
+       know about it -->
+  <xsl:when test="local-name($node) = 'legalnotice'">
+   <xsl:value-of select="concat('copyright',$html.ext)"/>
+  </xsl:when>
+  <xsl:otherwise>
+   <xsl:call-template name="href.target">
+    <xsl:with-param name="object" select="$node"/>
+   </xsl:call-template>
+  </xsl:otherwise>
+ </xsl:choose>
  <xsl:text>','</xsl:text>
  <xsl:apply-templates select="$node" mode="phpdoc.object.title"/>
  <xsl:text>')</xsl:text>
