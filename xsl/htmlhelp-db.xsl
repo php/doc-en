@@ -39,7 +39,7 @@
       HHC generator)
 -->
      
-<xsl:import href="@DOCBOOKXSL_HTML@"/>
+<xsl:import href="./docbook/html/chunkfast.xsl"/>
 
 <!-- ==================================================================== -->
 <!-- Customizations of standard HTML stylesheet parameters -->
