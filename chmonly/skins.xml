@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
  <chapter id="chm.skins">
   <title>Skin development</title>
 
@@ -25,14 +25,28 @@
    page contents to the viewer. Theoretically there are two kinds of skins:
    CSS skins and Full skins. CSS skins only modify the CSS and does not
    amend the page layout. Full skins also modify the page layout. We have
-   included sample skins for both the CSS skin type and the Full skin type.
+   included sample skins for both the CSS skin type and the Full skin type
+   (<literal>"greenlinks"</literal> and <literal>"headernostalgia"</literal>
+   respectively).
+  </para>
+  
+  <para>
+   <warning>
+    <para>
+     Note that though the current skin development methods are quite final,
+     there may be heavy changes in used CSS classes or page elements while
+     we refine the skin development ideas. As this edition is currently in
+     development stage, the information described herein is not to be
+     considered completely stable.
+    </para>
+   </warning>
   </para>
   
   <sect1 id="chm.skins.display">
    <title>Page Display Process</title>
 
    <para>
-    If you are going to develop your own skin, you should now how one
+    If you are going to develop your own skin, you should know how one
     page is loaded and displayed to the user, and how a skin fits in
     this process. For these paragraphs, we assume that you have put
     your CHM into <filename>c:\phpmanual</filename>, so it's accessible
@@ -45,14 +59,14 @@
      <listitem>
       <simpara>
        First of all the HTML content is loaded in from
-       <filename>function.echo.html</filename>.
+       <filename>function.echo.html</filename> from inside the CHM.
       </simpara>
      </listitem>
      <listitem>
       <simpara>
-       At the top of this file, there is a HTML &lt;script&gt; tag, which
-       loads in the <filename>_script.js</filename> file from the CHM. This
-       file contains all the JS code needed to move on with the process.
+       At the top of this file, there is a HTML <literal>&lt;script&gt;</literal>
+       tag, which loads in the <filename>_script.js</filename> file from the
+       CHM. This file contains all the JS code needed to move on with the process.
        Most importantly this JS defines many variables (like where the CHM
        is, or what is the actual page viewed) and many functions to print
        out the context menu or handle online functions.
@@ -105,11 +119,111 @@
    </para>
    <para>
     As you can see your skin JavaScript file is loaded in by
-    <filename>_script.js</filename> and it's <function>displayPage()</function>
+    <filename>_script.js</filename> and it's <literal>displayPage()</literal>
     function is called by the body onload event.
    </para>
   </sect1>
    
+  <sect1 id="chm.skins.elements">
+   <title>Page Elements</title>
+
+   <para>
+    The PHP Manual pages are all HTML files with several HTML tags in them
+    for both presentational and divisional purposes. The HTML pages contain
+    divisions to be used for skinning purposes and misc divisions added by
+    the DocBook XSL sheets.
+   </para>
+   
+   <para>
+    A HTML page can be either a function reference page or another kind
+    of page (like a feature description). Skins should get ready to skin
+    these two kinds of pages separately most of the time (depending on
+    the actual design).
+   </para>
+   
+   <para>
+    The pages are structured using <literal>&lt;div&gt;</literal> tags
+    with appropriate IDs to ease the skin writers work. A page consists
+    of these parts:
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       <literal>&lt;div id="pageContent"&gtr;&lt;/div&gt;<literal> contains
+       all the page contents. This begins right after <body> and ends just
+       before </body>. This division is hidden by default, you need to show
+       it after you are ready with the page rewriting process.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <literal>&lt;div id="pageHeaders"&gt;&lt;/div&gt;</literal> contains
+       the page header parts. This includes the text only main title
+       (in a <literal>&lt;span id="pageTitle"&gt;&lt;/span&gt;</literal>)
+       and function properties, in case this is a function page (contained
+       in <literal>&lt;span id="funcPurpose"&gt;&lt;/span&gt;</literal>,
+       <literal>&lt;span id="funcAvail"&gt;&lt;/span&gt;</literal> and
+       <literal>&lt;span id="funcUsage"&gt;&lt;/span&gt;</literal>).
+       In case one of these three is not available, the current page is not
+       a function page.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <literal>&lt;div id="pageText"&gt;&lt;/div&gt;</literal> contains the
+       majority of the page contents, including examples, manual notes,
+       warnings, etc. This also includes see also parts for now, as we
+       still cannot differentiate between see also and normal text parts
+       (may be a thing to change in the future).
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <literal>&lt;div id="pageNotes"&gt;&lt;/div&gt;</literal> contains the
+       user notes (itself loaded in from another HTML file by JS). It contains
+       a heading, and then a <literal>&lt;div&gt;</literal> without ID for
+       every user note and spans in that divs for every element of a user
+       note (with email, date and text IDs respectively).
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <literal>&lt;div id="pageNav"&gt;&lt;/div&gt;</literal> contains the
+       navigation table, which is further divided into spans (<literal>&lt;span
+       id="navPrev"&gt;&lt;/span&gt;</literal>, <literal>&lt;span
+       id="navPath"&gt;&lt;/span&gt;</literal>, <literal>&lt;span
+       id="navNext"&gt;&lt;/span&gt;</literal>, <literal>&lt;span
+       id="navOnline"&gt;&lt;/span&gt;</literal>, <literal>&lt;span
+       id="navThisOnline"&gt;&lt;/span&gt;</literal> and <literal>&lt;span
+       id="navReportBug"&gt;&lt;/span&gt;</literal>), where navThisOnline
+       and navReportBug is inside navOnline.
+      </simpara>
+     </listitem>
+    </itemizedlist>
+    If you would like to rewrite the page, you should first read in the
+    parts you need from the page to JS variables, then clear the contents
+    of pageContent (or just the part you would like to rewrite), write in
+    the new content and show the pageContent div for the user. If you would
+    not like to make any structural changes, you can simply display the
+    pageContent div and only specify a special style sheet in your skin JS
+    file (see the <literal>"greenlinks"</literal> skin for an example).
+   </para>
+   <para>
+    You can find a "Full skin" developed to show you how to make skins built
+    on top of this structure. The skin name is <literal>"headernostalgia"</literal>.
+    It rewrites the header part and removes the footer navigational table.
+   </para>
+  </sect1>
+
+  <sect1 id="chm.skins.css">
+   <title>CSS classes</title>
+   <para>
+    We cannot provide accurate documentation currently on useable CSS
+    classes, as some of the DocBook XSL sheets classes are not used and
+    some classes are added. Please see the sample CSS files included for
+    first time reference.
+   </para>
+  </sect1>
+
  </chapter>
 
 <!-- Keep this comment at the end of the file
