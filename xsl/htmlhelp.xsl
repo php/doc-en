@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.9 2004-11-02 19:12:48 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.10 2004-11-03 07:20:24 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -110,6 +110,11 @@ FIX: hhc.exe chokes on this link.. need additional redirection page -->
   <xsl:variable name="bookhref">
     <xsl:call-template name="href.target"/>
   </xsl:variable>
+  <xsl:variable name="toctitle">
+    <xsl:call-template name="gentext">
+      <xsl:with-param name="key" select="'TableofContents'"/>
+    </xsl:call-template>
+  </xsl:variable>
   <xsl:text>
   </xsl:text>
   <li><object type="text/sitemap">
@@ -119,7 +124,7 @@ FIX: hhc.exe chokes on this link.. need additional redirection page -->
   <xsl:text>
   </xsl:text>
   <li><object type="text/sitemap">
-    <param name="Name" value="{normalize-space($title)}"/>
+    <param name="Name" value="{normalize-space($toctitle)}"/>
     <param name="Local" value="{$bookhref}"/>
   </object></li>
   <xsl:apply-templates select="part|preface|chapter|appendix|article|reference|bibliography|colophon"
@@ -253,6 +258,12 @@ FIX: hhc.exe chokes on this link.. need additional redirection page -->
   <xsl:variable name="href">
     <xsl:call-template name="href.target"/>
   </xsl:variable>
+  <xsl:variable name="toctitle">
+    <xsl:call-template name="gentext">
+      <xsl:with-param name="key" select="'TableofContents'"/>
+    </xsl:call-template>
+  </xsl:variable>
+
   <xsl:text>
   </xsl:text>
   <li><object type="text/sitemap">
@@ -262,7 +273,7 @@ FIX: hhc.exe chokes on this link.. need additional redirection page -->
   <xsl:text>
   </xsl:text>
   <li><object type="text/sitemap">
-    <param name="Name" value="{normalize-space($title)}"/>
+    <param name="Name" value="{normalize-space($toctitle)}"/>
     <param name="Local" value="{$href}"/>
   </object></li>
   <xsl:text>
