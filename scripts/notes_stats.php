@@ -47,6 +47,9 @@ $new = explode(" ", $res);
 $first = 1;
 $last =  $new[0];
 
+//$first = 69000;
+//$last =  70000;
+
 $time_start = getmicrotime();
 
 $res = nntp_cmd($s,"XOVER $first-$last", 224)
@@ -60,8 +63,14 @@ for ($i = $first; $i < $last; $i++) {
 $line = fgets($s, 4096);
  list($n,$subj,$author,$odate,$messageid,$references,$bytes,$lines,$extra)= explode("\t", $line, 9);
 
+/*
+ * What should be matched:
+ * note ID deleted from SECTION by EDITOR
+ * note ID rejected from SECTION by EDITOR
+ * note ID modified in SECTION by EDITOR
+ * note ID moved from SECTION to SECTION by EDITOR (not matched yet)
+ */
 
-//$reg = '/^note (\d*) (.*) from ([^ ]*) by ([a-z]*)/';
 $reg = '/^note (\d*) (.*) (?:from|in) ([^ ]*) by ([a-z]*)/';
 
 if (preg_match($reg, $subj, $d)) {
@@ -96,11 +105,13 @@ if (preg_match($reg, $subj, $d)) {
    }
 }
 
+
 ksort($team);
-arsort($team['n']);
-arsort($team['o']);
 arsort($files);
 arsort($tmp);
+arsort($tmp['n']);
+arsort($tmp['o']);
+
 
 echo '<html>
 <head>
@@ -130,27 +141,25 @@ echo '
 <?php
 
 $bg = '#EBEBEB';
-
-foreach ($team as $user => $actions) {
+foreach ($tmp as $user => $total) {
     if($user == 'o' or $user =='n')
        continue;
-    
-    if($actions['total'] >= $minact) { 
+
+    if($total >= $minact) { 
         echo "<tr bgcolor=\"";
         $bg = ($bg == '#EBEBEB') ? '#BEBEBE' : '#EBEBEB';
         echo "$bg\">\n\t<td>$user</td>\n\t<td>";
-        echo isset($actions['deleted']) ? $actions['deleted'] : '0';
+        echo isset($team[$user]['deleted']) ? $team[$user]['deleted'] : '0';
         echo "</td>\n\t<td>";
-        echo isset($actions['rejected']) ? $actions['rejected'] : '0';
+        echo isset($team[$user]['rejected']) ? $team[$user]['rejected'] : '0';
         echo "</td>\n\t<td>";
-        echo isset($actions['modified']) ? $actions['modified'] : '0';
+        echo isset($team[$user]['modified']) ? $team[$user]['modified'] : '0';
         echo "</td>\n\t<td>";
-        echo $actions['total'];
+        echo $total;
         echo "</td>\n</tr>\n";
     }
     
 }
-
 
 ?>
 </table>
@@ -172,19 +181,19 @@ Last half year (with more then <?php echo $minact; ?> actions counted)
 <?php
 
 $bg = '#EBEBEB';
-foreach ($team['n'] as $user => $actions) {
+foreach ($tmp['n'] as $user => $total) {
 
-    if($actions['total'] >= $minact) {    
+    if($total >= $minact) {    
         echo "<tr bgcolor=\"";
         $bg = ($bg == '#EBEBEB') ? '#BEBEBE' : '#EBEBEB';
         echo "$bg\">\n\t<td>$user</td>\n\t<td>";
-        echo isset($actions['deleted']) ? $actions['deleted'] : '0';
+        echo isset($team['n'][$user]['deleted']) ? $team['n'][$user]['deleted'] : '0';
         echo "</td>\n\t<td>";
-        echo isset($actions['rejected']) ? $actions['rejected'] : '0';
+        echo isset($team['n'][$user]['rejected']) ? $team['n'][$user]['rejected'] : '0';
         echo "</td>\n\t<td>";
-        echo isset($actions['modified']) ? $actions['modified'] : '0';
+        echo isset($team['n'][$user]['modified']) ? $team['n'][$user]['modified'] : '0';
         echo "</td>\n\t<td>";
-        echo $actions['total'];
+        echo $total;
         echo "</td>\n</tr>\n";
     }
 
@@ -211,19 +220,19 @@ Before the last half year (with more then <?php echo $minact; ?> actions counted
 <?php
 
 $bg = '#EBEBEB';
-foreach ($team['o'] as $user => $actions) {
+foreach ($tmp['o'] as $user => $total) {
 
-    if($actions['total'] >= $minact) {
+    if($total >= $minact) {
         echo "<tr bgcolor=\"";
         $bg = ($bg == '#EBEBEB') ? '#BEBEBE' : '#EBEBEB';
         echo "$bg\">\n\t<td>$user</td>\n\t<td>";
-        echo isset($actions['deleted']) ? $actions['deleted'] : '0';
+        echo isset($team['o'][$user]['deleted']) ? $team['o'][$user]['deleted'] : '0';
         echo "</td>\n\t<td>";
-        echo isset($actions['rejected']) ? $actions['rejected'] : '0';
+        echo isset($team['o'][$user]['rejected']) ? $team['o'][$user]['rejected'] : '0';
         echo "</td>\n\t<td>";
-        echo isset($actions['modified']) ? $actions['modified'] : '0';
+        echo isset($team['o'][$user]['modified']) ? $team['o'][$user]['modified'] : '0';
         echo "</td>\n\t<td>";
-        echo $actions['total'];
+        echo $total;
         echo "</td>\n</tr>\n";
     }
 
@@ -255,7 +264,7 @@ foreach ($team['o'] as $user => $actions) {
 $bg = '#EBEBEB';
 
 foreach ($team as $user => $actions) {
-    if($user == 'o' or $user =='n')
+    if($user == 'o' or $user =='n' or $user == '')
        continue;
        
     echo "<tr bgcolor=\"";
