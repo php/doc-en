@@ -25,6 +25,12 @@ $LANGUAGES = array(
                    "mime_charset_name" => "Windows-1252",
                    "preferred_font" => $DEFAULT_FONT,
                ),
+    "el"    => array(
+                   "langcode" => "0x408 Greek",
+                   "preferred_charset" => "Windows-1253",
+                   "mime_charset_name" => "Windows-1253",
+                   "preferred_font" => $DEFAULT_FONT
+               ),
     "en"    => array(
                    "langcode" => "0x809 English (United Kingdom)",
                    "preferred_charset" => "Windows-1252",
