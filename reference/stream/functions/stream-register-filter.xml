@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.3 $ -->
+<!-- $Revision: 1.4 $ -->
   <refentry id="function.stream-register-filter">
    <refnamediv>
     <refname>stream_register_filter</refname>
@@ -34,75 +34,33 @@
     </para>
 
     <methodsynopsis>
-     <type>int</type><methodname>write</methodname>
-     <methodparam><type>string</type><parameter>data</parameter></methodparam>
+     <type>int</type><methodname>filter</methodname>
+     <methodparam><type>resource</type><parameter>in</parameter></methodparam>
+     <methodparam><type>resource</type><parameter>out</parameter></methodparam>
+     <methodparam><type>int</type><parameter>&amp;consumed</parameter></methodparam>
+     <methodparam><type>boolean</type><parameter>closing</parameter></methodparam>
     </methodsynopsis>
     <para>
-     This method is called whenever data is written to the attached 
-     stream (such as with <function>fwrite</function>).  After 
-     modifying <parameter>data</parameter> as needed your
-     filter should issue: <literal>return parent::write($data);</literal>
-     so that the next filter in the chain can perform its filter.
-     When no filters remain, the stream will write <parameter>data</parameter>
-     in its final form.
-     <note>
-      <para>
-       If your filter alters the length of <parameter>data</parameter>, for
-       example by removing the first character, before passing onto
-       <literal>parent::write($data);</literal> it must be certain to include
-       that stolen character in the return count.
-      </para>
-     </note>
-     <informalexample>
-      <programlisting role="php">
-<![CDATA[
-class myfilter extends php_user_filter {
-  function write($data) {
-    $data = substr($data,1);
-    $written_by_parent = parent::write($data);
-    return ($written_by_parent + 1);
-  }
-} 
-]]>
-      </programlisting>
-     </informalexample>
-    </para>
-
-    <methodsynopsis>
-     <type>string</type><methodname>read</methodname>
-     <methodparam><type>int</type><parameter>maxlength</parameter></methodparam>
-    </methodsynopsis>
-    <para>
-     This method is called whenever data is read from the attached 
-     stream (such as with <function>fread</function>).  A filter
-     should first call <literal>parent::read($maxlength);</literal> to
-     retrieve the data from the previous filter who, ultimately,
-     retrieved it from the stream.  Your filter may then modify the
-     data as needed and <literal>return</literal> it. 
-     Your filter should never return more than <parameter>maxlength</parameter>
-     bytes.  Since <literal>parent::read($maxlength);</literal> will also
-     not return more than <parameter>maxlength</parameter> bytes this
-     will ordinarily be a non-issue.  However, if your filter 
-     increases the size of the data being returned, you should either
-     call <literal>parent::read($maxlength-$x);</literal> where 
-     <parameter>x</parameter> is the most your filter will grow
-     the size of the data read.  Alternatively, you can build a 
-     read-buffer into your class.
-    </para>
-
-    <methodsynopsis>
-     <type>int</type><methodname>flush</methodname>
-     <methodparam><type>bool</type><parameter>closing</parameter></methodparam>
-    </methodsynopsis>
-    <para>
-     This method is called in response to a request to flush the
-     attached stream (such as with <function>fflush</function> or
-     <function>fclose</function>).  The <parameter>closing</parameter>
-     parameter tells you whether the stream is, in fact, in the
-     process of closing.  The default action is to simply call:
-     <literal>return parent::flush($closing);</literal> , your
-     filter may wish to perform additional writes and/or cleanup
-     calls prior to or directly after a successful flush.
+     This method is called whenever data is read from or written to 
+     the attached stream (such as with <function>fread</function> or <function>fwrite</function>).  
+     <parameter>in</parameter> is a resource pointing to a <literal>bucket brigade</literal>
+     which contains one or more <literal>bucket</literal> objects containing data to be filtered.
+     <parameter>out</parameter> is a resource pointing to a second <literal>bucket brigade</literal>
+     into which your modified buckets should be placed.
+     <parameter>consumed</parameter>, which must <emphasis>always</emphasis>
+     be declared by reference, should be incremented by the length of the data
+     which your filter reads in and alters.  In most cases this means you will
+     increment <parameter>consumed</parameter> by $bucket->datalen for each $bucket.
+     If the stream is in the process of closing (and therefore this is the last pass
+     through the filterchain), the <parameter>closing</parameter> parameter will be
+     set to &TRUE;  The <methodname>filter</methodname> method must return one of
+     three values upon completion.  <constant>PSFS_PASS_ON</constant> indicates
+     success with data available in the <parameter>out</parameter> <literal>bucket brigade</literal>.
+     <constant>PSFS_FEED_ME</constant> indicates that the filter has no data
+     available to return and requires additional data from the stream.
+     <constant>PSFS_ERR_FATAL</constant> indicates that the filter experienced an
+     unrecoverable error and cannot continue.  If no value is returned by this method,
+     <constant>PSFS_ERR_FATAL</constant> will be assumed.
     </para>
 
     <methodsynopsis>
@@ -128,47 +86,36 @@ class myfilter extends php_user_filter {
     </para>
 
     <para>
-     The example below implements a filter named <literal>rot13</literal>
-     on the <literal>foo-bar.txt</literal> stream which will perform
-     ROT-13 encryption on all letter characters written to/read from
-     that stream.
+     The example below implements a filter named <literal>strtoupper</literal>
+     on the <literal>foo-bar.txt</literal> stream which will capitalize
+     all letter characters written to/read from that stream.
 
      <example> 
-      <title>Filter for ROT13 encoding data on foo-bar.txt stream</title>
+      <title>Filter for capitalizing characters on foo-bar.txt stream</title>
       <programlisting role="php">
 <![CDATA[
 <?php
 
 /* Define our filter class */
-class rot13_filter extends php_user_filter {
-  function read($length) {
-    $tempstr = parent::read($length);
-    for($i = 0; $i < strlen($tempstr); $i++)
-      if (($tempstr[$i] >= 'A' AND $tempstr[$i] <= 'M') OR
-          ($tempstr[$i] >= 'a' AND $tempstr[$i] <= 'm')) $tempstr[$i] = chr(ord($tempstr[$i]) + 13);
-      else if (($tempstr[$i] >= 'N' AND $tempstr[$i] <= 'Z') OR
-               ($tempstr[$i] >= 'n' AND $tempstr[$i] <= 'z')) $tempstr[$i] = chr(ord($tempstr[$i]) - 13);
-    return $tempstr;
+class strtoupper_filter extends php_user_filter {
+  function filter($in, $out, &$consumed, $closing) {
+    while ($bucket = stream_bucket_make_writeable($in)) {
+      $bucket->data = strtoupper($bucket->data);
+      $consumed += $bucket->datalen;
+      stream_bucket_append($out, $bucket);
+    }
+    return PSFS_PASS_ON;
   }
-
-  function write($data) {
-    for($i = 0; $i < strlen($data); $i++)
-      if (($data[$i] >= 'A' AND $data[$i] <= 'M') OR
-          ($data[$i] >= 'a' AND $data[$i] <= 'm')) $data[$i] = chr(ord($data[$i]) + 13);
-      else if (($data[$i] >= 'N' AND $data[$i] <= 'Z') OR
-               ($data[$i] >= 'n' AND $data[$i] <= 'z')) $data[$i] = chr(ord($data[$i]) - 13);
-    return parent::write($data);
-  }
-}
+} 
 
 /* Register our filter with PHP */
-stream_register_filter("rot13", "rot13_filter")
+stream_register_filter("strtoupper", "strtoupper_filter")
     or die("Failed to register filter");
 
 $fp = fopen("foo-bar.txt", "w");
 
 /* Attach the registered filter to the stream just opened */
-stream_filter_append($fp, "rot13");
+stream_filter_append($fp, "strtoupper");
 
 fwrite($fp, "Line1\n");
 fwrite($fp, "Word - 2\n");
@@ -176,18 +123,16 @@ fwrite($fp, "Easy As 123\n");
 
 fclose($fp);
 
-/* The filter only applies to the $fp stream
- * so this readfile will read -without- applying
- * a second pass of rot13 encoding
+/* Read the contents back out
  */
 readfile("foo-bar.txt");
 
 /* Output
  * ------
 
-Yvar1
-Jbeq - 2
-Rnfl Nf 123
+LINE1
+WORD - 2
+EASY AS 123
 
  */
 ?>
