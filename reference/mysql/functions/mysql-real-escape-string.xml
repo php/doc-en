@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.12 $ -->
+<!-- $Revision: 1.13 $ -->
 <!-- splitted from ./en/functions/mysql.xml, last change in rev 1.100 -->
   <refentry id="function.mysql-real-escape-string">
    <refnamediv>
@@ -37,18 +37,37 @@
      you must use this function.
     </para>
     <para>
-     mysql_real_escape_string calls MySQL's library function of the
-     same name, which prepends slashes to the following characters:
+     mysql_real_escape_string calls MySQL's library function (mysql_escape_string),
+     which prepends slashes to the following characters:
      <literal>NULL</literal>, <literal>\x00</literal>, <literal>\n</literal>,
      <literal>\r</literal>, <literal>\</literal>, <literal>'</literal>,
      <literal>"</literal> and <literal>\x1a</literal>.
+    </para>
+    <para>
+     <example>
+      <title>Simple <function>mysql_real_escape_string</function> example</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+// Connect
+$link = mysql_connect('mysql_host', 'mysql_user', 'mysql_password')
+    OR die(mysql_error());
+
+// Query
+$query = sprintf("SELECT * FROM users WHERE user='%s' AND password='%s'",
+            mysql_real_escape_string($user),
+            mysql_real_escape_string($password));
+?>
+]]>
+      </programlisting>
+     </example>
     </para>
     <para>
      You must always (with few exceptions) use this function
      to make your data safe before inserting. If you have
      <link linkend="ini.magic-quotes-gpc">magic_quotes_gpc</link> enabled,
      you must first <function>stripslashes</function> your data. If you don't use
-     this, you'll leave yourself open to SQL Injection Attacks. Here's an example:
+     this, you leave yourself open to SQL Injection Attacks. Here's an example:
     </para>
     <para>
      <example>
@@ -74,7 +93,7 @@ echo $query;
        </para>
       <screen>
 <![CDATA[
-SELECT * FROM users WHERE name='fred' AND password='' OR 1=1
+SELECT * FROM users WHERE name='aidan' AND password='' OR 1=1
 ]]>
       </screen>
       <para>
@@ -86,25 +105,13 @@ SELECT * FROM users WHERE name='fred' AND password='' OR 1=1
 <![CDATA[
 <?php
 /**
- * Apply stripslashes recursively
- */
-function stripslashes_deep($value)
-{
-    $value = is_array($value) ?
-                array_map('stripslashes_deep', $value) :
-                stripslashes($value);
-
-    return $value;
-}
-
-/**
  * Quote a variable to make it safe for insertion
  */
 function quote_smart($value)
 {
     // Stripslashes if we need to
     if (get_magic_quotes_gpc()) {
-        $value = stripslashes_deep($value);
+        $value = stripslashes($value);
     }
 
     // Quote it if it's not an integer
@@ -116,8 +123,8 @@ function quote_smart($value)
 }
 
 // Connect
-$link = mysql_connect('localhost', 'mysql_user', 'mysql_password')
-    OR die('Could not connect: ' . mysql_error());
+$link = mysql_connect('mysql_host', 'mysql_user', 'mysql_password')
+    OR die(mysql_error());
 
 // Make a safe query
 $query = sprintf("SELECT * FROM users WHERE user=%s AND password=%s",
@@ -129,15 +136,15 @@ mysql_query($query);
 ]]>
       </programlisting>
       <para>
-       Our query is now safe no matter what the user submits!
+       The query will now execute correctly, and Injection attacks will no longer work.
       </para>
      </example>
     </para>
     <note>
      <simpara>
       <function>mysql_real_escape_string</function> does not escape
-      <literal>%</literal> and <literal>_</literal>. These are wildcards in MySQL
-      if not bounded by quotes.
+      <literal>%</literal> and <literal>_</literal>. These are wildcards in MySQL if
+      combined with <literal>LIKE</literal>.
      </simpara>
     </note>
     <para>
