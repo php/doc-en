@@ -10,7 +10,8 @@
    <simpara>
     These functions are only available if PHP was configured with
     <option role="configure">--with-dom=[DIR]</option>, using the
-    GNOME xml library. You will need at least libxml-2.2.7
+    <ulink url="http://www.xmlsoft.org">GNOME xml library</ulink>.
+    You will need at least libxml-2.2.7
     These functions have been added in PHP 4.
    </simpara>
    <simpara>
@@ -18,12 +19,11 @@
     It also provides a function <function>xmltree</function> to turn the
     complete XML document into a tree of php objects. Currently this
     tree is read only, which doesn't mean you cannot modify it, but it
-    would make any sense since <function>dumpmem</function> cannot be
+    would not make any sense since <function>dumpmem</function> cannot be
     applied to it. Therefore, if you want to read an XML file and write
     a modified version use the <function>add_node</function>,
     <function>set_attribute</function>, etc. and finaly
     <function>dumpmem</function> functions.
-
    </simpara>
    <simpara>
     This module defines the following constants:
@@ -113,6 +113,15 @@
     </tgroup>
    </table>
    <simpara>
+    Each function in this extension can be used in two ways. In a none object
+    oriented way by passing the object to apply the function to as a first
+    argument or in an object oriented way by calling the function as a method
+    of an object. This documentation describes the none object oriented
+    functions, though you get the object methods by skipping the prefix
+    "domxml_". The following table will list all classes, its attributes and
+    methods.
+   </simpara>
+   <simpara>
     This module defines a number of classes, which are listed &mdash;
     including their
     properties and method &mdash; in the following table.
@@ -123,35 +132,35 @@
     <tgroup cols="3">
      <thead>
       <row>
-       <entry>Name</entry>
-       <entry>PHP name</entry>
+       <entry>Method name</entry>
+       <entry>Function name</entry>
        <entry>Description</entry>
       </row>
      </thead>
      <tbody>
       <row>
        <entry>root</entry>
-       <entry>domxml_root</entry>
+       <entry><function>domxml_root</function></entry>
        <entry></entry>
       </row>
       <row>
        <entry>children</entry>
-       <entry>domxml_children</entry>
+       <entry><function>domxml_children</function></entry>
        <entry></entry>
       </row>
       <row>
        <entry>add_root</entry>
-       <entry>domxml_add_root</entry>
+       <entry><function>domxml_add_root</function></entry>
        <entry></entry>
       </row>
       <row>
        <entry>dtd</entry>
-       <entry>domxml_intdtd</entry>
+       <entry><function>domxml_intdtd</function></entry>
        <entry></entry>
       </row>
       <row>
        <entry>dumpmem</entry>
-       <entry>domxml</entry>
+       <entry><function>domxml</function></entry>
        <entry></entry>
       </row>
       <row>
@@ -486,7 +495,7 @@
    <refnamediv>
     <refname>domxml_root</refname>
     <refpurpose>
-     Returns array of root nodes
+     Returns root element node
     </refpurpose>
    </refnamediv>
    <refsect1>
@@ -498,7 +507,49 @@
      </funcprototype>
     </funcsynopsis>
     <para>
-     Returns an array of nodes located at the root of a an DOM document. 
+     Returns element node located at the root of a an DOM document.
+     There are actually other possible nodes like comments which currently
+     disregarded.
+    </para>
+    <para>
+     The following example returns just the element with name CHAPTER and
+     prints it. The other root node -- the comment -- is not returned.
+     <example>
+      <title>Retrieving root element</title>
+      <programlisting>
+&lt;?php
+$xmlstr = "&lt;?xml version='1.0' standalone='yes'?>
+&lt;!DOCTYPE chapter SYSTEM '/share/sgml/Norman_Walsh/db3xml10/db3xml10.dtd'
+[ &lt;!ENTITY sp \"spanish\">
+]>
+&lt;!-- lsfj  -->
+&lt;chapter language='en'>&lt;title language='en'>Title&lt;/title>
+ &lt;para language='ge'>
+  &amp;sp;
+  &lt;!-- comment -->
+  &lt;informaltable language='&amp;sp;'>
+   &lt;tgroup cols='3'>
+    &lt;tbody>
+     &lt;row>&lt;entry>a1&lt;/entry>&lt;entry
+morerows='1'>b1&lt;/entry>&lt;entry>c1&lt;/entry>&lt;/row>
+&lt;row>&lt;entry>a2&lt;/entry>&lt;entry>c2&lt;/entry>&lt;/row>
+     &lt;row>&lt;entry>a3&lt;/entry>&lt;entry>b3&lt;/entry>&lt;entry>c3&lt;/entry>&lt;/row>
+    &lt;/tbody>
+   &lt;/tgroup>
+  &lt;/informaltable>
+ &lt;/para>
+&lt;/chapter>";
+
+if(!$dom = xmldoc($xmlstr)) {
+  echo "Error while parsing the document\n";
+  exit;
+}
+
+$root = $dom->root();
+print_r($root);
+?>
+      </programlisting>
+     </example>
     </para>
    </refsect1>
   </refentry>
@@ -516,10 +567,26 @@
      <funcprototype>
       <funcdef>resource <function>domxml_add_root</function></funcdef>
       <paramdef>resource <parameter>doc</parameter></paramdef>
+      <paramdef>string <parameter>name</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
-     Adds a root node to a dom document and returns the new node.
+     Adds a root element node to a dom document and returns the new node.
+     The element name is given in the second parameter.
+    </para>
+    <para>
+     <example>
+      <title>Creating a simple HTML document header</title>
+      <programlisting>
+&lt;?php
+$doc = new_xmldoc("1.0");
+$root = $doc->add_root("HTML");
+$head = $root->new_child("HEAD", "");
+$head->new_child("TITLE", "Hier der Titel");
+echo $doc->dumpmem();
+?>
+      </programlisting>
+     </example>
     </para>
    </refsect1>
   </refentry>
@@ -540,7 +607,12 @@
      </funcprototype>
     </funcsynopsis>
     <para>
-     Creates an XML document from the dom representation.
+     Creates an XML document from the dom representation. This function
+     usually is called after a building a new dom document from scratch
+     as in the example of <function>domxml_add_root</function>.
+    </para>
+    <para>
+     See also <function>domxml_add_root</function>
     </para>
    </refsect1>
   </refentry>
@@ -587,6 +659,9 @@
      Returns the attribute with name <parameter>name</parameter> of the given
      node.
     </para>
+    <simpara>
+     See also <function>domxml_set_attribute</function>
+    </simpara>
    </refsect1>
   </refentry>
 
@@ -610,6 +685,24 @@
      Sets an attribute with name <parameter>name</parameter> of the given
      node on a value.
     </para>
+    <para>
+     If we take the example from <function>domxml_add_root</function> it
+     is simple to add an attribute to the HEAD element by the simply calling
+     the <function>set_attribute</function> function of the node class.
+     <example>
+      <title>Adding an attribute to an element</title>
+      <programlisting>
+&lt;?php
+$doc = new_xmldoc("1.0");
+$root = $doc->add_root("HTML");
+$head = $root->new_child("HEAD", "");
+$head->new_child("TITLE", "Hier der Titel");
+$head->set_attribute("Language", "ge");
+echo $doc->dumpmem();
+?>
+      </programlisting>
+     </example>
+    </para>
    </refsect1>
   </refentry>
 
@@ -631,6 +724,24 @@
     <para>
      Returns all children of a node as an array of nodes.
     </para>
+    <para>
+     In the following example the variable <varname>children</varname> will
+     contain an array with one node of type XML_ELEMENT. This node is
+     the TITLE element.
+     <example>
+      <title>Adding an attribute to an element</title>
+      <programlisting>
+&lt;?php
+$doc = new_xmldoc("1.0");
+$root = $doc->add_root("HTML");
+$head = $root->new_child("HEAD", "");
+$head->new_child("TITLE", "Hier der Titel");
+$head->set_attribute("Language", "ge");
+$children = $head->children()
+?>
+      </programlisting>
+     </example>
+    </para>
    </refsect1>
   </refentry>
 
@@ -646,11 +757,12 @@
     <funcsynopsis>
      <funcprototype>
       <funcdef>resource <function>domxml_new_child</function></funcdef>
-      <paramdef>resource <parameter>node</parameter></paramdef>
+      <paramdef>string <parameter>name</parameter></paramdef>
+      <paramdef>string <parameter>content</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
-     Adds a new child to a node and returns it.
+     Adds a new child of type element to a node and returns it.
     </para>
    </refsect1>
   </refentry>
@@ -673,26 +785,54 @@
     <para>
      Creates a new dom document from scratch and returns it.
     </para>
+    <para>
+     See also <function>domxml_add_root</function>
+    </para>
    </refsect1>
   </refentry>
 
-  <refentry id="function.domxml_node">
+  <refentry id="function.xpath_new_context">
    <refnamediv>
-    <refname>domxml_node</refname>
+    <refname>xpath_new_context</refname>
     <refpurpose>
-     Creates new node
+     Creates new xpath context
     </refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>resource <function>domxml_node</function></funcdef>
-      <paramdef>string <parameter>name</parameter></paramdef>
+      <funcdef>object <function>xpath_new_context</function></funcdef>
+      <paramdef>object <parameter>dom document</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
-     Create a new node.
+    </para>
+    <para>
+     See also <function></function>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.xpath_eval">
+   <refnamediv>
+    <refname>xpath_eval</refname>
+    <refpurpose>
+     Evaluates an xpath expression
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>array <function>xpath_eval</function></funcdef>
+      <paramdef>object <parameter>xpath context</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+    </para>
+    <para>
+     See also <function></function>
     </para>
    </refsect1>
   </refentry>
