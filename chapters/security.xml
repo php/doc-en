@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.39 $ -->
+<!-- $Revision: 1.40 $ -->
  <chapter id="security">
   <title>Security</title>
 
@@ -484,6 +484,394 @@ if (!ereg('^[^./][^/]*$', $username))
     reason, it's usually easier to create a policy where you forbid
     everything except for what you explicitly allow.
    </para>   
+  </sect1>
+
+  <sect1 id="security.database">
+   <title>Database Security</title>
+
+   <simpara>
+    Nowadays, databases are cardinal components of any web based application by
+    enabling websites to provide varying dynamic content. Since very sensitive
+    or secret informations  can be stored in such database, you should strongly
+    consider to protect them somehow.
+   </simpara>
+   <simpara>
+    PHP can be treated as a bridge between the database and client. Your script
+    processes the client's request, and propagates it in such manner that the
+    database can provide the appropriate response. After that, the script
+    generates its output from the supplied data, probably based on customizeable
+    user preferences stored in database, too.
+   </simpara>
+   <simpara>
+    To retrieve or to store any information you need to connect to the database,
+    send a legitimate query, fetch the result, and close the connecion.
+    Nowadays, the commonly used interface in the interaction with databases is
+    the Structured Query Language (SQL). See how an attacker can <link
+    linkend="security.database.sql-injection">tamper with an SQL query</link>.
+   </simpara>
+   <simpara>
+    As you can realize, PHP cannot protect your database by itself. The
+    following sections aim to be an introduction into the very basics of how to
+    access and manipulate databases within PHP scripts.
+   </simpara>
+   <simpara>
+    Keep in my mind this simple rule: defence in depth. In the more place you
+    take the more action to increase the protection of your database, the less
+    probability of that an attacker succeeds, and exposes or abuse any stored
+    secret information. Good design of the database schema and the application
+    deals with your greatest fears.
+   </simpara>
+
+   <sect2 id="security.database.design">
+    <title>Designing Databases</title>
+     <simpara>
+      The first step is always to create the database, unless you want to use
+      an existing third party's one. When a database is created, it is
+      assigned to an owner, who executed the creation statement. Usually, only
+      the owner (or a superuser) can do anything with the objects in that
+      database, and in order to allow other users to use it, privileges must be
+      granted.
+     </simpara>
+     <simpara>
+      Applications should never connect to the database as its owner or a
+      superuser, because these users can execute any query at will, for
+      example, modifying the schema (e.g. dropping tables) or deleting its
+      entire content.
+     </simpara>
+     <simpara>
+      You may create different database users for every aspect of your
+      application with very limited rights to database objects. The most
+      required privileges should be granted only, and avoid that the same user
+      can interact with the database in different use cases. This means that if
+      intruders gain access to your database using one of these credentials,
+      they can only effect as many changes as your application can.
+     </simpara>
+     <simpara>
+      You are encouraged not to implement all the business logic in the web
+      application (i.e. your script), instead to do it in the database schema
+      using views, triggers or rules. If the system evolves, new ports will be
+      intended to open to the database, and you have to reimplement the logic
+      in each separate database client. Over and above, triggers can be used
+      to transparently and automatically handle fields, which often provides
+      insight when debugging problems with your application or tracing back
+      transactions.
+     </simpara>
+   </sect2>
+
+   <sect2 id="security.database.connection">
+    <title>Connecting to Database</title>
+    <simpara>
+     You may want to estabilish the connections over SSL to encrypt
+     client/server communications for increased security, or you can use ssh
+     to encrypt the network connection between clients and the database server.
+     If either of them is done, then monitoring your traffic and gaining
+     informations in this way will be a hard work.
+    </simpara>
+    <!--simpara>
+     If your database server native SSL support, consider to use <link
+     linkend="ref.openssl">OpenSSL functions</link> in communication between
+     PHP and database via SSL.
+    </simpara-->
+   </sect2>
+
+   <sect2 id="security.database.storage">
+    <title>Encrypted Storage Model</title>
+    <simpara>
+     SSL/SSH protects data traveling from the client to the server, SSL/SSH
+     does not protect the persistent data stored in a database. SSL is an
+     on-the-wire protocol.
+    </simpara>
+    <simpara>
+     Once an attacker gains access to your database directly (bypassing the
+     webserver), the sensitive data stored in it may be exposed or misused,
+     unless the information is protected by the database itself. Encrypting
+     the data is a good way to mitigate this threat, but very few databases
+     offer this type of data encryption.
+    </simpara>
+    <simpara>
+     The easiest way to work around this problem is to first create your own
+     encryption package, and then use it from within your PHP scripts. PHP
+     can assist you in this case with its several extensions, such as <link
+     linkend="ref.mcrypt">Mcrypt</link> and <link
+     linkend="ref.mhash">Mhash</link>, covering a wide variety of encryption
+     algorithms. The script encrypts the data be stored first, and decrypts 
+     it when retrieving. See the references for further examples how 
+     encryption works.
+    </simpara>
+    <simpara>
+     In case of truly hidden data, if its raw representation is not needed 
+     (i.e. not be displayed), hashing may be also taken into consideration.
+     The well-known example for the hashing is storing the MD5 hash of a 
+     password in a database, instead of the password itself. See also 
+     <function>crypt</function> and <function>md5</function>.
+    </simpara>
+    <example>
+     <title>Using hashed password field</title>
+     <programlisting role="php">
+<![CDATA[
+// storing password hash
+$query  = sprintf("INSERT INTO users(name,pwd) VALUES('%s','%s');",
+            addslashes($username), md5($password));
+$result = pg_exec($connection, $query);
+
+// querying if user submitted the right password
+$query = sprintf("SELECT 1 FROM users WHERE name='%s' AND pwd='%s';",
+            addslashes($username), md5($password));
+$result = pg_exec($connection, $query);
+
+if (pg_numrows($result) > 0) {
+    echo "Wellcome, $username!";
+} 
+else {
+    echo "Authentication failed for $username.";
+}
+]]>
+     </programlisting>
+    </example>
+   </sect2>
+
+   <sect2 id="security.database.sql-injection">
+    <title>SQL Injection</title>
+    <simpara>
+     Many web applications are unaware of how SQL queries can be tampered with,
+     and assume that an SQL query is a trusted command. It means that SQL
+     queries are able to circumvent access controls, thereby bypassing standard
+     authentication and authorization checks, and sometimes SQL queries even
+     may allow access to host operating system level commands.
+    </simpara>
+    <simpara>
+     Direct SQL Command Injection is a technique where an attacker creates or
+     alters existing SQL commands to expose hidden data, or to override valuable
+     ones, or even to execute dangerous system level commands on the database
+     host.
+    </simpara>
+    <simpara>
+     This is accomplished by the application taking user input and combining
+     it with static parameters to build a SQL query. The following examples
+     are based on true stories, unfortunately.
+    </simpara>
+    <para>
+     Owing to the lack of input validation and connecting to the database on
+     behalf of a superuser or the owner who can create users, the attacker
+     may create a superuser in your database.
+     <example>
+     <title>Splitting the result set into pages - and making superusers</title>
+      <programlisting role="php">
+<![CDATA[
+$offset = argv[0]; // beware, no input validation!
+$query  = "SELECT id, name FROM products ORDER BY name LIMIT 20 OFFSET $offset;";
+$result = pg_exec($conn, $query);
+]]>
+      </programlisting>
+     </example>
+      Normal users click on the 'next', 'prev' links where the offset is
+      appended to the URL. The script expects that the incoming
+      <varname>$offset</varname> is  numeric. However, if someone tries to
+      break in with appending <function>urlencode</function>'d form of the
+      following to the URL:
+      <informalexample>
+       <programlisting>
+<![CDATA[
+0;
+insert into pg_shadow(usename,usesysid,usesuper,usecatupd,passwd)
+    values ('crack', 31, 't','t','crack');
+--
+]]>
+       </programlisting>
+      </informalexample>
+      or
+      <informalexample>
+       <programlisting>
+<![CDATA[
+0;
+insert into pg_shadow(usename,usesysid,usesuper,usecatupd,passwd)
+    select 'crack', usesysid, 't','t','crack'
+    from pg_shadow where usename='postgres';
+--
+]]>
+       </programlisting>
+      </informalexample>
+      then the script will present a superuser access to him. Note that
+      <literal>0;</literal> is to supply a valid offset to the original
+      query and to terminate it.
+    </para>
+    <note>
+     <para>
+      It is common technique to force the SQL parser to ignore the rest of the
+      query written by the developer with <literal>--</literal> which is the
+      comment sign in SQL.
+     </para>
+    </note>
+    <para>
+     A feasible way to gain passwords:
+     <example>
+     <title>Listing out articles - and some passwords</title>
+      <programlisting role="php">
+<![CDATA[
+$query  = "SELECT id, name, inserted, size FROM products WHERE size = '$size';";
+]]>
+      </programlisting>
+     </example>
+     The static part of the query can be combined with another
+     <literal>SELECT</literal> statement which reveals all passwords:
+     <informalexample>
+      <programlisting>
+<![CDATA[
+union select '1', concat(uname||'-'||passwd) as name, '1971-01-01', '0' from usertable
+]]>
+      </programlisting>
+     </informalexample>
+     If this query were assigned to <varname>$size</varname> (prepended with
+     <literal>'</literal>), the query beast awakened.
+    </para>
+    <para>
+     SQL updates are also subject to attacking your database.
+     <example>
+     <title>From resetting a password to gaining more privileges</title>
+      <programlisting role="php">
+<![CDATA[
+$query = "UPDATE usertable SET pwd='$pwd' WHERE uid='$uid';";
+]]>
+      </programlisting>
+     </example>
+     But a malicious user sumbits the value
+     <literal>' or uid like'%admin%'; --</literal> to <varname>$uid</varname>,
+     and the query will be twisted:
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+$query = "UPDATE usertable SET pwd='...' WHERE uid='' or like '%admin%'; --";
+]]>
+      </programlisting>
+     </informalexample>
+     Now, the admin user password has been changed. Alternatively, the attacker
+     simply sets <varname>$pwd</varname> to
+     <literal>"hehehe', admin='yes', trusted=100 </literal> (with a trailing
+     space) to gain more privileges:
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+$query = "UPDATE usertable SET pwd='hehehe', admin='yes', trusted=100 WHERE ...;"
+]]>
+      </programlisting>
+     </informalexample>
+    </para>
+    <para>
+     A frightening example how operating system level commands can be accessed
+     on some database hosts.
+     <example>
+     <title>Attacking the database host's operating system</title>
+      <programlisting role="php">
+<![CDATA[
+$query  = "SELECT * FROM products WHERE id LIKE '%$prod%'";
+$result = mssql_query($query);
+]]>
+      </programlisting>
+     </example>
+     If attacker submits the value
+     <literal>%' exec master..xp_cmdshell 'net user test testpass /ADD' --</literal>
+     to <varname>$prod</varname>, then the <varname>$query</varname> will be:
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+$query  = "SELECT * FROM products WHERE id LIKE '%%' exec master..xp_cmdshell 'net user test testpass /ADD'--";
+$result = mssql_query($query);
+]]>
+      </programlisting>
+     </informalexample>
+     MSSQL Server executes the SQL statements in the batch including a command
+     to add a new user to the local accounts database. If this application
+     were running as <literal>sa</literal> and the MSSQLSERVER service is
+     running with sufficient privileges, the attacker would now have an
+     account with which to access this machine.
+    </para>
+
+    <sect3 id="security.database.avoiding">
+     <title>Avoiding techniques</title>
+     <simpara>
+      You may plead that the attacker must possess a piece of information
+      about the database schema in most examples. You are right, but you
+      never know when and how it can be taken out, and if it happens,
+      your database may be exposed. If you are using an open source, or
+      publicly available database handling package, which may belong to a
+      content management system or forum, the intruders easily produce
+      a copy of a piece of your code. It may be also a security risk if it
+      is a poorly designed one.
+     </simpara>
+     <simpara>
+      These attacks are mainly based on exploiting the code not being written
+      with security in mind. Never trust on any kind of input, especially
+      which comes from the client side. The first example shows that such a
+      blameless query can cause disasters.
+     </simpara>
+
+     <itemizedlist>
+     <listitem>
+      <simpara>
+       First, check if the given input has the expected data type. PHP has
+       a wide range of input validating functions, from the simplest ones
+       found in <link linkend="ref.variables">Variable Functions</link> and
+       in <link linkend="ref.ctype">Character Type Functions</link>
+       sections, (e.g. <function>is_numeric</function>,
+       <function>ctype_digit</function> respectively) onwards the
+       <link linkend="ref.pcre">Perl compatible Regular Expressions</link>
+       support.
+      </simpara>
+     </listitem>
+     <listitem>
+      <para>
+       If the application waits for numeric input, consider to verify data
+       with <function>is_numeric</function>, or silently change its type
+       using <function>settype</function> or <function>sprintf()</function>.
+       <example>
+        <title>A more secure way to compose a query for paging</title>
+        <programlisting role="php">
+<![CDATA[
+settype($order, 'integer');
+$query  = "SELECT id, name FROM products ORDER BY name LIMIT 20 OFFSET $offset;";
+
+// please note %d in the format string, using %s would be meaningless
+$query  = sprintf("SELECT id, name FROM products ORDER BY name LIMIT 20 OFFSET %d;", $offset);
+]]>
+        </programlisting>
+       </example>
+      </para>
+     </listitem>
+     <listitem>
+      <simpara>
+       Quote user input which is passed to the database with
+       <function>addslashes</function> or <function>addcslashes</function>.
+       See <link linkend="security.database.storage">this example</link>.
+       As the examples shows, quotes burnt into the static part of the query
+       is not enough, and can be easily hacked.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Do not print out any database specific information, especially
+       about the schema, no matter what happens. See also <link
+       linkend="security.errors">Error Reporting</link> and <link
+       linkend="ref.errorfunc">Error Handling and Logging Functions</link>.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       You may use stored procedures and previously defined cursors to abstract
+       data access so that users do not directly access tables or views, but
+       this solution has another impacts.
+      </simpara>
+     </listitem>
+    </itemizedlist>
+
+    <simpara>
+     Besides these, you benefit from logging queries either within your script
+     or by the database itself, if it supports. Obviously, the logging is unable
+     to prevent any harmful attempt, but it can be helpful to trace back which
+     application has been circumvented. The log is not useful by itself, but
+     through the information it contains. The more detail is generally better.
+    </simpara>
+    </sect3>
+   </sect2>
   </sect1>
 
   <sect1 id="security.errors">
