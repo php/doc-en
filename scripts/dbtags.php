@@ -70,10 +70,10 @@ if ($argc == 2) {
 /* Here starts the functions part                                    */
 /*********************************************************************/
 
-// Checks a diretory of phpdoc XML files
+// Checks a directory of phpdoc XML files
 function check_dir($dir, &$used_tags)
 {
-    // Collect files and diretcories in these arrays
+    // Collect files and directories in these arrays
     $directories = array();
     $files = array();
 
@@ -125,7 +125,7 @@ function check_file ($filename, &$used_tags)
     // No entities found
     if (count($tags_found[1]) == 0) { return; }
     
-    // New occurances found, so increase the number
+    // New occurences found, so increase the number
     foreach ($tags_found[1] as $tag_name) {
         $used_tags[$tag_name]++;
     }
@@ -136,7 +136,7 @@ function check_file ($filename, &$used_tags)
 /* Here starts the program                                           */
 /*********************************************************************/
 
-// Chechking all languages
+// Checking all languages
 foreach ($langcodes as $langcode) {
 
     // Check for directory validity
@@ -158,7 +158,7 @@ foreach ($langcodes as $langcode) {
 echo "Generating tag_usage.txt ...\n";
     
 $fp = fopen("tag_usage.txt", "w");
-fwrite($fp, "TAG USAGE STATISCTICS
+fwrite($fp, "TAG USAGE STATISTICS
 
 =========================================================
 In this file you can find tag usage stats compiled
