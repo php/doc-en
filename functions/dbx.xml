@@ -89,10 +89,10 @@ dbx_close($link);
     </funcsynopsis>
     <para>
      Returns: a dbx_link_object on success, <literal>FALSE</literal>
-     on error.  If a connection can be made but the database could not
-     be selected, the function still returns a dbx_link_object. The
-     'persistent' parameter can be set to DBX_PERSISTENT so a
-     persistent connection will be created.
+     on error.  If a connection has been made but the database could not
+     be selected, the connection is closed and <literal>FALSE</literal>
+     is returned. The 'persistent' parameter can be set to 
+     DBX_PERSISTENT so a persistent connection will be created.
     </para>
     <para>
      The <parameter>module</parameter> parameter can be either a string
@@ -396,8 +396,8 @@ dbx_close($link);
      <programlisting role="php">
 &lt;?php
 function user_re_order ($a, $b) {
-    $rv = dbx_cmp_desc ($a, $b, "parentid");
-    if (!$rv) $rv = dbx_cmp_asc ($a, $b, "id");
+    $rv = dbx_compare ($a, $b, "parentid", DBX_CMP_DESC);
+    if (!$rv) $rv = dbx_compare ($a, $b, "id");
     return $rv;
 }
 
@@ -412,48 +412,53 @@ dbx_close ($link);
      </programlisting>
     </example>
     <para>
-     See also <function>dbx_cmp_asc</function> and
-     <function>dbx_cmp_desc</function>.
+     See also <function>dbx_compare</function>.
     </para>
    </refsect1>
   </refentry>
  
-  <refentry id="function.dbx-cmp-asc">
+  <refentry id="function.dbx-compare">
    <refnamediv>
-    <refname>dbx_cmp_asc</refname>
-    <refpurpose>Compare two rows for sorting in ascending order</refpurpose>
+    <refname>dbx_compare</refname>
+    <refpurpose>Compare two rows for sorting purposes</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>int <function>dbx_cmp_asc</function></funcdef>
+      <funcdef>int <function>dbx_compare</function></funcdef>
       <paramdef>array <parameter>row_a</parameter></paramdef>
       <paramdef>array <parameter>row_b</parameter></paramdef>
       <paramdef>string <parameter>columnname_or_index</parameter></paramdef>
       <paramdef>int 
-       <parameter><optional>comparison_type</optional></parameter>
+       <parameter><optional>flags</optional></parameter>
       </paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
      Returns 0 if row_a[$columnname_or_index] is equal to
      row_b[$columnname_or_index], 1 if it is greater and -1 if it is
-     smaller.
+     smaller (or vice versa if the DBX_CMP_DESC flag is set).
     </para>
     <para>
-     The <parameter>comparison_type</parameter> parameter can be used 
-     to force a numeric compare (by setting it to DBX_CMP_NUMBER). The default 
-     comparison is by text (e.g. "20" is greater than "100").
+     The <parameter>flags</parameter> can be set to specify comparison
+     direction (whether sorting is ascending or descending) and 
+     comparison type (force string or numeric compare by converting the
+     data). The constants for direction are DBX_CMP_ASC and DBX_CMP_DESC. 
+     The constants for comparison type are DBX_CMP_NATIVE (no 
+     conversion), DBX_CMP_TEXT and DBX_CMP_NUMBER. These constants can
+     be OR-ed together. The default value for the 
+     <parameter>flags</parameter> parameter is DBX_CMP_ASC | 
+     DBX_CMP_NATIVE.
     </para>
     <example>
-     <title><function>dbx_cmp_asc</function> example</title>
+     <title><function>dbx_compare</function> example</title>
      <programlisting role="php">
 &lt;?php
 function user_re_order ($a, $b) {
-    $rv = dbx_cmp_desc ($a, $b, "parentid");
+    $rv = dbx_compare ($a, $b, "parentid", DBX_CMP_DESC);
     if (!$rv) { 
-        $rv = dbx_cmp_asc ($a, $b, "id");
+        $rv = dbx_compare ($a, $b, "id");
         return $rv;
     }
 }
@@ -469,69 +474,11 @@ dbx_close ($link);
      </programlisting>
     </example>
     <para>
-     See also <function>dbx_sort</function> and
-     <function>dbx_cmp_desc</function>.
+     See also <function>dbx_sort</function>.
     </para>
    </refsect1>
   </refentry>
- 
-  <refentry id="function.dbx-cmp-desc">
-   <refnamediv>
-    <refname>dbx_cmp_desc</refname>
-    <refpurpose>Compare two rows for sorting in descending order</refpurpose>
-   </refnamediv>
-   <refsect1>
-    <title>Description</title>
-    <funcsynopsis>
-     <funcprototype>
-      <funcdef>int <function>dbx_cmp_desc</function></funcdef>
-      <paramdef>array <parameter>row_a</parameter></paramdef>
-      <paramdef>array <parameter>row_b</parameter></paramdef>
-      <paramdef>string <parameter>columnname_or_index</parameter></paramdef>
-      <paramdef>int 
-       <parameter><optional>comparison_type</optional></parameter>
-      </paramdef>
-     </funcprototype>
-    </funcsynopsis>
-    <para>
-     Returns 0 if row_a[$columnname_or_index] is equal to
-     row_b[$columnname_or_index], -1 if it is greater and 1 if it is
-     smaller.
-    </para>
-    <para>
-     The <parameter>comparison_type</parameter> parameter can be used 
-     to force a numeric compare (by setting it to DBX_CMP_NUMBER). The default 
-     comparison is by text (e.g. "20" is greater than "100").
-    </para>
-    <example>
-     <title><function>dbx_cmp_desc</function> example</title>
-     <programlisting role="php">
-&lt;?php
-function user_re_order ($a, $b) {
-    $rv = dbx_cmp_desc ($a, $b, "parentid");
-    if (!$rv) {
-        $rv = dbx_cmp_asc($a, $b, "id");
-        return $rv;
-    }
-}
 
-$link = dbx_connect ("odbc", "", "db", "username", "password")
-    or die ("Could not connect");
-$result = dbx_query ($link, "SELECT id, parentid, description FROM tbl ORDER BY id");
-echo "resulting data is now ordered by id&lt;br>";
-dbx_sort ($result, "user_re_order");
-echo "resulting data is now ordered by parentid (descending), then by id&lt;br>";
-dbx_close ($link);
-?&gt;
-     </programlisting>
-    </example>
-    <para>
-     See also <function>dbx_sort</function> and
-     <function>dbx_cmp_asc</function>.
-    </para>
-   </refsect1>
-  </refentry>
- 
  </reference>
 
 <!-- Keep this comment at the end of the file
