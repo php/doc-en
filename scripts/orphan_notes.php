@@ -59,12 +59,12 @@ function recurse_manual($dir) {
 
 /* Search for bogus notes IDs */
 function recurse_notes($dir) {
-  global $array, $total;
+  global $array, $files, $notes;
 
   if ($dh = opendir($dir)) {
     while (($file = readdir($dh)) !== false) {
 
-      if($file != '.' && $file != '..') {
+      if($file != '.' && $file != '..' && substr($file, -4) != '.bz2') {
         $path = $dir.'/'.$file;
 
         if(is_dir($path)) {
@@ -79,6 +79,7 @@ function recurse_notes($dir) {
               if ($line == "") { continue; }
 
               list($id, $sect, , , , ) = explode("|", $line);
+              ++$notes;
 
               if (!isset($done)) {
                 $done = 1;
@@ -89,7 +90,7 @@ function recurse_notes($dir) {
               }
             }
             echo "\n\n";
-            $total++;
+            ++$files;
           }
 
         unset($done);
@@ -102,11 +103,11 @@ function recurse_notes($dir) {
 
 $array = array();
 $len = strlen("$manual_dir/");
-$total = 0;
+$files = $notes = 0;
 
 recurse_manual($manual_dir);
 recurse_notes($notes_dir);
 
 
-echo "\nTotal: $total";
+echo "\nTotal files: $files\nTotal notes: $notes";
 ?>
