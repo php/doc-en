@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.23 2003-04-25 18:42:38 goba Exp $
+  $Id: html-common.xsl,v 1.24 2003-04-25 19:06:11 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -537,7 +537,36 @@ set       toc
   <xsl:apply-templates mode="titlepage.mode"/>
 </xsl:template>
 
-
+<!-- Make REFENTRY titles appear in H1 as in DSSSL sheets -->
+<xsl:template match="refnamediv">
+  <div class="{name(.)}">
+    <xsl:call-template name="anchor"/>
+    <xsl:choose>
+      <xsl:when test="$refentry.generate.name != 0">
+        <h2>
+          <xsl:call-template name="gentext">
+            <xsl:with-param name="key" select="'RefName'"/>
+          </xsl:call-template>
+        </h2>
+      </xsl:when>
+      <xsl:when test="$refentry.generate.title != 0">
+        <h1>
+          <xsl:choose>
+            <xsl:when test="../refmeta/refentrytitle">
+              <xsl:apply-templates select="../refmeta/refentrytitle"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:apply-templates select="refname[1]"/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </h1>
+      </xsl:when>
+    </xsl:choose>
+    <p>
+      <xsl:apply-templates/>
+    </p>
+  </div>
+</xsl:template>
 
 <!-- Just to DECREASE FILESIZE (since we have no css-styles) -->
 <xsl:template name="refentry.titlepage">
