@@ -14,6 +14,8 @@ VERSION.XML            - function to PHP version relation. Auto-generated from
                          the code to be found under the functable repository in
                          CVS or ask Hartmut =)  mailto:hartmut@php.net
 
+QUICKREF.XSL           - for building functions quick reference 
+
 All others are deprecated.
 
                          
