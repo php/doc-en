@@ -1,0 +1,331 @@
+<reference id="ref.shmop">
+  <title>Shared Memory Functions</title>
+  <titleabbrev>shmop</titleabbrev>
+  
+  <partintro>
+   <para>
+    Shmop is an easy to use set of functions that allows php to read,
+    write, create and delete UNIX shared memory segments. The functions
+    will not work on windows, as it does not support shared memory. To
+    use shmop you will need to compile php with the --enable-shmop parameter
+    in your configure line.
+   </para>
+   <para>
+    <example>
+     <title>Shared Memory Operations Overview</title> 
+     <programlisting role="php">
+&lt;?php
+   
+// Create 100 byte shared memory block with system id if 0xff3
+$shm_id = shm_open(0xff3, "c", 0644, 100);
+if(!$shm_id) {
+	echo "Couldn't create shared memory segment\n";
+}
+
+// Get shared memory block's size
+$shm_size = shm_size($shm_id);
+echo "SHM Block Size: ".$shm_size. " has been created.\n";
+
+// Lets write a test string into shared memory
+$shm_bytes_written = shm_write($shm_id, "my shared memory block", 0);
+if($shm_bytes_written != strlen("my shared memory block")) {
+	echo "Couldn't write the entire length of data\n";
+}
+
+// Now lets read the string back
+$my_string = shm_read($shm_id, 0, $shm_size);
+if(!$my_string) {
+	echo "Couldn't read from shared memory block\n";
+}
+echo "The data inside shared memory was: ".$my_string."\n";
+
+//Now lets delete the block and close the shared memory segment
+if(!shm_delete($shm_id)) {
+	echo "Couldn't mark shared memory block for deletion.
+}
+shm_close($shm_id);
+   
+?&gt;
+     </programlisting>
+    </example>
+   </para>
+  </partintro>  
+
+  <refentry id="function.shm_open">
+   <refnamediv>
+    <refname>shm_open</refname>
+    <refpurpose>Create or open shared memory block</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>shm_open</function></funcdef>
+      <paramdef>int <parameter>key</parameter></paramdef>
+      <paramdef>string <parameter>flags</parameter></paramdef>
+      <paramdef>int <parameter>mode</parameter></paramdef>
+      <paramdef>int <parameter>size</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>shm_open</function> can create or open a shared memory block.
+    </para>
+    <para>
+     <function>shm_open</function> takes 4 parameters: key, which is the
+     system's id for the shared memory block, this parameter can be passed
+     as a decimal or hex. The second parameter are the flags that you can use:
+     <itemizedlist>
+      <listitem>
+       <simpara>
+        "a" for access (sets IPC_EXCL)
+        use this flag when you need to open an existing shared memory segment
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        "c" for create (sets IPC_CREATE)
+        use this flag when you need to create a new shared memory segment.
+       </simpara>
+      </listitem>
+     </itemizedlist>
+     The third parameter is the mode, which are the permissions that you
+     wish to assign to your memory segment, those are the same as permission
+     for a file. Permissions need to be passed in octal form ex. 0644.
+     The last parameter is size of the shared memory block you wish to create
+     in bytes.
+     <note><simpara>
+      Note: the 3rd and 4th should be entered as 0 if you are opening an
+      existing memory segment. On success <function>shm_open</function> will
+      return an id that you can use to access the shared memory segment 
+      you've created.
+     </simpara></note>
+    </para> 
+    <para>
+     <example>
+      <title>Create a new shared memory block</title>
+      <programlisting role="php">
+&lt;?php
+$shm_id = shm_open(0x0fff, "c", 0644, 100);
+?&gt;
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     This example opened a shared memory block with a system id of 0x0fff.
+    </para>
+   </refsect1>
+  </refentry>  
+  
+  <refentry id="function.shm_read">
+   <refnamediv>
+    <refname>shm_read</refname>
+    <refpurpose>Read data from shared memory block</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>shm_read</function></funcdef>
+      <paramdef>int <parameter>shmid</parameter></paramdef>
+      <paramdef>int <parameter>start</parameter></paramdef>
+      <paramdef>int <parameter>count</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>shm_read</function> will read a string from shared memory block.
+    </para>
+    <para>
+     <function>shm_read</function> takes 3 parameters: shmid, which is the shared
+     memory block identifier created by <function>shm_open</function>, offset from
+     which to start reading and count on the number of bytes to read.
+    </para> 
+    <para>
+     <example>
+      <title>Reading shared memory block</title>
+      <programlisting role="php">
+&lt;?php
+$shm_data = shm_read($shm_id, 0, 50);
+?&gt;
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     This example will read 50 bytes from shared memory block and place the data
+     inside <literal>$shm_data</literal>.
+    </para>
+   </refsect1>
+  </refentry>
+ 
+  <refentry id="function.shm_write">
+   <refnamediv>
+    <refname>shm_write</refname>
+     <refpurpose>Write data into shared memory block</refpurpose>
+    </refnamediv>
+    <refsect1>
+     <title>Description</title>
+     <funcsynopsis>
+      <funcprototype>
+       <funcdef>int <function>shm_write</function></funcdef>
+       <paramdef>int <parameter>shmid</parameter></paramdef>
+       <paramdef>string <parameter>data</parameter></paramdef>
+       <paramdef>int <parameter>offset</parameter></paramdef>
+      </funcprototype>
+     </funcsynopsis>
+     <para>
+      <function>shm_write</function> will write a string into shared memory block.
+     </para>
+     <para>
+      <function>shm_write</function> takes 3 parameters: shmid, which is the
+      shared memory block identifier created by <function>shm_open</function>,
+      data, a string that you want to write into shared memory block and offset,
+      which specifies where to start writing data inside the shared memory segment.
+     </para> 
+     <para>
+      <example>
+      <title>Writing to shared memory block</title>
+      <programlisting role="php">
+&lt;?php
+$shm_bytes_written = shm_write($shm_id, $my_string, 0);
+?&gt;
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     This example will write data inside <literal>$my_string</literal> into
+     shared memory block, <literal>$shm_bytes_written</literal> will contain
+     the number of bytes written.
+    </para>
+   </refsect1>
+  </refentry>
+ 
+  <refentry id="function.size">
+  <refnamediv>
+   <refname>shm_size</refname>
+   <refpurpose>Get size of shared memory block</refpurpose>
+  </refnamediv>
+  <refsect1>
+   <title>Description</title>
+   <funcsynopsis>
+    <funcprototype>
+     <funcdef>int <function>shm_size</function></funcdef>
+     <paramdef>int <parameter>shmid</parameter></paramdef>
+    </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>shm_size</function> is used to get the size, in bytes of the
+     shared memory block.
+    </para>
+    <para>
+     <function>shm_size</function> takes the shmid, which is the shared memory
+     block identifier created by <function>shm_open</function>, the function
+     will return and int, which represents the number of bytes the shared memory
+     block occupies.
+    </para> 
+    <para>
+     <example>
+      <title>Getting the size of the shared memory block</title>
+      <programlisting role="php">
+&lt;?php
+$shm_size = shm_size($shm_id);
+?&gt;
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     This example will put the size of shared memory block identified by
+     <literal>$shm_id</literal> into <literal>$shm_size</literal>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.shm_delete">
+   <refnamediv>
+    <refname>shm_delete</refname>
+    <refpurpose>Delete shared memory block</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>shm_delete</function></funcdef>
+      <paramdef>int <parameter>shmid</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>shm_delete</function> is used to delete a shared memory block.
+    </para>
+    <para>
+     <function>shm_delete</function> takes the shmid, which is the shared memory
+     block identifier created by <function>shm_open</function>. On success 1 is
+     returned, on failure 0 is returned.
+    </para> 
+    <para>
+     <example>
+      <title>Deleting shared memory block</title>
+      <programlisting role="php">
+&lt;?php
+shm_delete($shm_id);
+?&gt;
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     This example will delete shared memory block identified by
+     <literal>$shm_id</literal>.
+    </para>
+   </refsect1>
+  </refentry>
+ 
+  <refentry id="function.shm_close">
+   <refnamediv>
+    <refname>shm_close</refname>
+    <refpurpose>Close shared memory block</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>shm_close</function></funcdef>
+      <paramdef>int <parameter>shmid</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>shm_close</function> is used to close a shared memory block.
+    </para>
+    <para>
+     <function>shm_close</function> takes the shmid, which is the shared memory
+     block identifier created by <function>shm_open</function>.
+    </para> 
+    <para>
+     <example>
+      <title>Closing shared memory block</title>
+      <programlisting role="php">
+&lt;?php
+shm_close($shm_id);
+?&gt;
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     This example will close shared memory block identified by <literal>$shm_id</literal>.
+    </para>
+   </refsect1>
+  </refentry>
+ </reference> 
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->
