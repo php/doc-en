@@ -37,14 +37,18 @@ if ($phpdoc_dir == '') {
 
 echo "Using:\nPHP4 SRC DIR: $phpsrc_dir\nPHPDOC DIR: $phpdoc_dir\n\n";
 
-$inixml_header = "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?>
-<!-- Do not edit. Automatically generated using gen_PHP_INI_ENTRY.php -->
+$inixml_header = <<<INIXML_HEADER
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- Automatically generated using gen_PHP_INI_ENTRY.php -->
+<!-- DO NOT EDIT. -->
 <!-- \$Revision$ -->
-<section id=\"##ID##.configuration\">
+<section id="##ID##.configuration">
  &reftitle.runtime;
- &extension.runtime;\n\n";
+ &extension.runtime;\n\n
+INIXML_HEADER;
 
-$inixml_footer = "</section>\n
+$inixml_footer = <<<INIXML_FOOTER
+</section>
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml
@@ -56,7 +60,7 @@ sgml-indent-step:1
 sgml-indent-data:t
 indent-tabs-mode:nil
 sgml-parent-document:nil
-sgml-default-dtd-file:\"../../../manual.ced\"
+sgml-default-dtd-file:"../../../manual.ced"
 sgml-exposed-tags:nil
 sgml-local-catalogs:nil
 sgml-local-ecat-files:nil
@@ -65,11 +69,17 @@ vim600: syn=xml fen fdm=syntax fdl=2 si
 vim: et tw=78 syn=sgml
 vi: ts=1 sw=1
 -->
-";
+INIXML_FOOTER;
  
-$legend = "<note>
+$legend = <<<LEGEND
  <para>
-  The PHP_INI_* constants usd in the table below are defined as follows:
+  Read the manual section on <link linkend="configuration">
+  Configurations</link> for more information in regards to setting 
+  PHP configurations.  The <literal>PHP_INI_*</literal> 
+  <link linkend="language.constants">constants</link> used in the 
+  table below are defined as follows:
+ </para>
+ <para>
   <table>
    <thead>
     <row>
@@ -80,52 +90,56 @@ $legend = "<note>
    </thead>
    <tbody>
     <row>
-     <entry>PHP_INI_USER</entry>
+     <entry><constant>PHP_INI_USER</constant></entry>
      <entry>1</entry>
      <entry>Entry can be set in user scripts</entry>
     </row>
     <row>
-     <entry>PHP_INI_PERDIR</entry>
+     <entry><constant>PHP_INI_PERDIR</constant></entry>
      <entry>2</entry>
      <entry>Entry can be set in <filename>.htaccess</filename></entry>
     </row>
     <row>
-     <entry>PHP_INI_SYSTEM</entry>
+     <entry><constant>PHP_INI_SYSTEM</constant></entry>
      <entry>4</entry>
      <entry>Entry can be set in <filename>php.ini</filename> or
       <filename>httpd.conf</filename></entry>
     </row>
     <row>
-     <entry>PHP_INI_ALL</entry>
+     <entry><constant>PHP_INI_ALL</constant></entry>
      <entry>7</entry>
      <entry>Entry can be set anywhere</entry>
     </row>
    </tbody>
   </table>
- </para>
-</note>\n";
+ </para>\n
+LEGEND;
 
-$table_header = "<para>
-<table>
- <title>Configuration options</title>
- <tgroup cols=\"3\">
-  <thead>
-   <row>
-    <entry>Name</entry>
-    <entry>Default</entry>
-    <entry>Changeable</entry>
-   </row>
-  </thead>
-  <tbody>\n";
+$table_header = <<<TABLE_HEADER
+ <para>
+  <table>
+   <title>Configuration options</title>
+   <tgroup cols="3">
+   <thead>
+    <row>
+     <entry>Name</entry>
+     <entry>Default</entry>
+     <entry>Changeable</entry>
+    </row>
+   </thead>
+   <tbody>\n
+TABLE_HEADER;
 
-$table_footer = "  </tbody>
- </tgroup>
-</table>
-</para>\n";
+$table_footer = <<<TABLE_FOOTER
+   </tbody>
+  </tgroup>
+ </table>
+</para>\n
+TABLE_FOOTER;
 
 
 function gentree($path, $remove_empty = false, $fileproc_cb = null) {/*{{{*/
-    $excludeitems = array ('CVS', 'tests');
+    $excludeitems = array ('CVS', 'tests', 'skeleton.c');
     if (!file_exists($path))
         die("BAD PATH $path\n");
     $tree = array();
@@ -170,9 +184,13 @@ function findINI($fname) {/*{{{*/
     foreach ($matches[2] as $match) {
         $match = str_replace('"','',$match);
         $entry = preg_split('/,\s*/', $match);
+        // dummy settings seem to always have these values (ex. ncurses.c)
+        if ($entry[1] == 42 || $entry[1] == 'foobar') {
+            continue;
+        }
         $found['INI'][$entry[0]] = array(
                             'def' => $entry[1], 
-                            'mod' => str_replace("\n",'',$entry[2])
+                            'mod' => str_replace(array(' ', "\n","\r","\t"),'',$entry[2])
                             );
     }
     if (!empty($found)) {
@@ -231,7 +249,7 @@ function createINI($dir, $cfgs) {
             }
         }
         $rows .= "      <entry>{$default}</entry>\n";
-        $rows .= "      <entry>{$vals['mod']}</entry>\n";
+        $rows .= "      <entry><constant>{$vals['mod']}</constant></entry>\n";
         $rows .= "     </row>\n";
     }
     if ($dir == 'en/chapters') {
