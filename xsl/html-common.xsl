@@ -3,7 +3,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.9 2002-02-10 11:01:57 goba Exp $
+  $Id: html-common.xsl,v 1.10 2002-02-10 12:14:16 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -59,7 +59,8 @@
   </xsl:choose>
 </xsl:template>
 
-<!-- Title abbreviations are not used in HTML output AFAIK -->
+<!-- Title abbreviations are not used in HTML output,
+     only in phpweb left menu generation -->
 <xsl:template match="titleabbrev"/>
 
 <!-- Add version information bellow function name -->
