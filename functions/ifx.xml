@@ -4,9 +4,9 @@
 
   <partintro>
    <para>
-    The Informix driver for Online (ODS) 7.x, SE 7.x and Universal
+    The Informix driver for Informix (IDS) 7.x, SE 7.x and Universal
     Server (IUS) 9.x is implemented in "functions/ifx.ec" and
-    "functions/php3_ifx.h".  ODS 7.x support is fairly complete, 
+    "functions/php3_ifx.h".  IDS 7.x support is fairly complete, 
     with full support for BYTE and TEXT columns. IUS 9.x support is
     partly finished: the new data types are there, but SLOB and CLOB support
     is still under construction.
@@ -15,7 +15,8 @@
    <title>Configuration notes</title>
    <para></para><para>
     Before you run the "configure" script, make sure that the
-    "INFORMIXDIR" variable has been set.
+    "INFORMIXDIR" variable has been set, and that $INFORMIXDIR/bin 
+    is in your PATH.
    </para><para> 
     The configure script will autodetect the libraries and include
     directories, if you run "configure --with_informix=yes".  You can
@@ -59,11 +60,11 @@
       ifx_byteasvarchar(0) : use blob id's for select queries with BYTE columns
   </para><para>
       ifx_textasvarchar(1) : return TEXT columns as if they were 
-                             VARCHAR columns, without the use of blob id's
-                             for select queries.
+                             VARCHAR columns, so that you don't need to use
+                             blob id's for select queries.
   </para><para>
       ifx_byteasvarchar(1) : return BYTE columns as if they were VARCHAR 
-                             columns, without the use of blob id's for 
+                             columns, so that you don't need to use blob id's for 
                              select queries.
   </para><para>
   </para><para>
@@ -102,7 +103,7 @@
     This can be set with the configuration variable
     </para><para>
     ifx.charasvarchar : if set to 1 trailing spaces will be automatically
-    trimmed.
+    trimmed, to save you some "chopping".
     </para>
    </note>
     <para></para>
@@ -159,7 +160,7 @@
      <example>
       <title>Connect to a Informix database</title>
       <programlisting role="php3">
-$conn_id = ifx_pconnect (mydb@ol_srv1, "imyself", "mypassword");
+$conn_id = ifx_pconnect ("mydb@ol_srv1", "imyself", "mypassword");
       </programlisting>
      </example></para>
    </refsect1>
@@ -239,7 +240,7 @@ $conn_id = ifx_pconnect (mydb@ol_srv1, "imyself", "mypassword");
      <example>
       <title>Closing a Informix connection</title>
       <programlisting role="php3">
-$conn_id = ifx_connect (mydb@ol_srv, "itsme", "mypassword");
+$conn_id = ifx_connect ("mydb@ol_srv", "itsme", "mypassword");
 ... some queries and stuff ...
 ifx_close($conn_id);
       </programlisting>
@@ -268,7 +269,7 @@ ifx_close($conn_id);
      Returns: A positive Informix result identifier on success, or
      false on error.  
     </para><para> 
-     An integer "result_id" used by other functions to retrieve the
+     A "result_id" resource used by other functions to retrieve the
      query results.  Sets "affected_rows" for retrieval by the
      <function>ifx_affected_rows</function> function.
     </para><para> 
@@ -283,8 +284,11 @@ ifx_close($conn_id);
      <parameter>conn_id</parameter>. For "select-type" queries a cursor
      is declared and opened. The optional <parameter>cursor_type</parameter>
      parameter allows you to make this a "scroll" and/or "hold"
-     cursor.  It's a mask and can be either IFX_SCROLL, IFX_HOLD, or both
+     cursor.  It's a bitmask and can be either IFX_SCROLL, IFX_HOLD, or both
      or'ed together. Non-select queries are "execute immediate".
+     IFX_SCROLL and IFX_HOLD are symbolic constants and as such shouldn't
+     be between quotes. I you omit this parameter the cursor is a normal
+     sequential cursor.
     </para><para>
      For either query type the number of (estimated or real) affected
      rows is saved for retrieval by <function>ifx_affected_rows</function>.
@@ -368,7 +372,7 @@ ifx_free_result($res_id);
      <parameter>conn_id</parameter>.  For "select-type" queries a
      cursor is declared and opened. The optional <parameter>cursor_type</parameter>
      parameter allows you to make this a "scroll" and/or "hold"
-     cursor.  It's a mask and can be either IFX_SCROLL, IFX_HOLD, or both
+     cursor.  It's a bitmask and can be either IFX_SCROLL, IFX_HOLD, or both
      or'ed together.
     </para><para> 
      For either query type the estimated number of affected rows is
@@ -512,7 +516,10 @@ printf("%s\n&lt;br>", ifx_errormsg(-201));
     </para><para> 
      For inserts, updates and deletes the number is the real number
      (sqlerrd[2]) of affected rows. For selects it is an estimate
-     (sqlerrd[0]). Don't rely on it.  
+     (sqlerrd[0]). Don't rely on it. The database server can never
+     return the actual number of rows that will be returned by a SELECT
+     because it has not even begun fetching them at this stage (just after
+     the "PREPARE" when the optimizer has determined the query plan).  
     </para><para> 
      Useful after <function>ifx_prepare</function> to limit queries to
      reasonable result sets.
@@ -552,13 +559,13 @@ if ($rowcount > 1000) {
      <function>ifx_query</function> or
      <function>ifx_prepare</function>. 
     </para><para> 
-     Returns a pseudo-row (assiociative arry) with sqlca.sqlerrd[0] to sqlca.sqlerrd[5] 
+     Returns a pseudo-row (assiociative array) with sqlca.sqlerrd[0] ... sqlca.sqlerrd[5] 
      after the query associated with <parameter>result_id</parameter>.  
     </para><para> 
      For inserts, updates and deletes the values returned are those as set by the server
      after executing the query. This gives access to the number of affected
-     rows and the serial insert value. For selects the values are those saved after
-     the prepare statement. This gives access to the estimated number of
+     rows and the serial insert value. For SELECTs the values are those saved after
+     the PREPARE statement. This gives access to the *estimated* number of
      affected rows. The use of this function saves the overhead of executing
      a "select dbinfo('sqlca.sqlerrdx')" query, as it retrieves the values
      that were saved by the ifx driver at the appropriate moment.  
@@ -609,14 +616,14 @@ echo "The serial value of the inserted row is : " . $serial_value&lt;br>\n";
      optional parameter for a "fetch" operation on "scroll" cursors:
      "NEXT", "PREVIOUS", "CURRENT", "FIRST", "LAST" or a number.  If
      you specify a number, an "absolute" row fetch is executed.  This
-     parameter is optional, and only valid for scrollcursors.
+     parameter is optional, and only valid for SCROLL cursors.
     </para><para>
      <function>ifx_fetch_row</function> fetches one row of data from
      the result associated with the specified result identifier.  The
      row is returned as an array.  Each result column is stored in an
-     array offset, starting at offset 0.
+     array offset, starting at offset 0, with the column name as key.
     </para><para>
-     Subsequent call to <function>ifx_fetch_row</function> would
+     Subsequent calls to <function>ifx_fetch_row</function> would
      return the next row in the result set, or false if there are no
      more rows.
     </para>
