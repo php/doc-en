@@ -6,16 +6,82 @@
 
    <simpara>
     Forms Data Format (FDF) is a format for handling
-    forms within PDF documents. You can read the documentation at <ulink
+    forms within PDF documents. You should read the documentation at <ulink
     url="http://partners.adobe.com/asn/developer/acrosdk/main.html">http://partners.adobe.com/asn/developer/acrosdk/main.html</ulink>
     for more information on what FDF is and how it is used in general.
+
+   <note><simpara>
+    Currently Adobe only provides a libc5 compatible version for Linux. Tests
+    with glibc2 resulted in a segmentation fault. If somebody is able to
+    make it work, please comment on this page.
+   </simpara></note>
+
+   <simpara>
+    The general idea of FDF is similar to HTML forms. The diffence is
+    basically the format how filled in data is transmitted to the server when
+    the submit button is pressed (this
+    is actually the Form Data Format) and the format of the form itself
+    (which is the Portable Document Format, PDF). Processing the FDF data is
+    one of the features provided by the fdf functions. But there is more.
+    One may as well take an existing PDF form and populated the input fields
+    with data without modifying the form itself. In such a case one would
+    create a FDF document (<function>fdf_create</function>) set the values
+    of each input field (<function>fdf_set_value</function>) and associate
+    it with a PDF form
+    (<function>fdf_set_file</function>). Finally it has to be sent to the
+    browser with
+    MimeType application/vnd.fdf. The Acrobat reader plugin of your
+    browser recognizes the MimeType,  reads the associated PDF form and
+    fills in the data from the FDF document.
+   
+   <simpara>
+    The following examples shows just the evaluation of form data.
+   <simpara>
+    <example>
+     <title>Evaluating a FDF document</title>
+     <programlisting>
+&lt;?php
+// Save the FDF data into a temp file
+$fdffp = fopen("test.fdf", "w");
+fwrite($fdffp, $HTTP_FDF_DATA, strlen($HTTP_FDF_DATA));
+fclose($fdffp);
+
+// Open temp file and evaluate data
+// The pdf form contained several input text fields with the names
+// volume, date, comment, publisher, preparer, and two checkboxes
+// show_publisher and show_preparer.
+$fdf = fdf_open("test.fdf");
+$volume = fdf_get_value($fdf, "volume");
+echo "The volume field has the value '&lt;B>$volume&lt;/B>'&lt;BR>";
+
+$date = fdf_get_value($fdf, "date");
+echo "The date field has the value '&lt;B>$date&lt;/B>'&lt;BR>";
+
+$comment = fdf_get_value($fdf, "comment");
+echo "The comment field has the value '&lt;B>$comment&lt;/B>'&lt;BR>";
+
+if(fdf_get_value($fdf, "show_publisher") == "On") {
+  $publisher = fdf_get_value($fdf, "publisher");
+  echo "The publisher field has the value '&lt;B>$publisher&lt;/B>'&lt;BR>";
+} else
+  echo "Publisher shall not be shown.&lt;BR>";
+
+if(fdf_get_value($fdf, "show_preparer") == "On") {
+  $preparer = fdf_get_value($fdf, "preparer");
+  echo "The preparer field has the value '&lt;B>$preparer&lt;/B>'&lt;BR>";
+} else
+  echo "Preparer shall not be shown.&lt;BR>";
+fdf_close($fdf);
+?>
+     </programlisting>
+    </example>
 
   </partintro>
 
   <refentry id="function.fdf-open">
    <refnamediv>
     <refname>fdf_open</refname>
-    <refpurpose>Open a new FDF document</refpurpose>
+    <refpurpose>Open a FDF document</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
@@ -25,8 +91,30 @@
     </funcsynopsis>
     <para>
      The <function>fdf_open</function> function opens
-     a new FDF document. If the parameter <parameter>filename</parameter>
-     is '.' the file is read from stdin.
+     a file with form data. This file must contain the data as returned
+     from a PDF form. Currently, the file has to be created 'manually'
+     by using <function>fopen</function> and writing the content
+     of HTTP_FDF_DATA with <function>fwrite</function> into it.
+     A mechanism like for HTML form data where for each input
+     field a variable is created does not exist.
+
+    <para>
+    <example>
+     <title>Accessing the form data</title>
+     <programlisting>
+&lt;?php
+// Save the FDF data into a temp file
+$fdffp = fopen("test.fdf", "w");
+fwrite($fdffp, $HTTP_FDF_DATA, strlen($HTTP_FDF_DATA));
+fclose($fdffp);
+
+// Open temp file and evaluate data
+$fdf = fdf_open("test.fdf");
+...
+fdf_close($fdf);
+?>
+     </programlisting>
+    </example>
 
     <para>
      See also <function>fdf_close</function>.
@@ -67,7 +155,27 @@
     </funcsynopsis>
     <para>
      The <function>fdf_create</function> creates a new
-     FDF document.
+     FDF document. This function is needed if one would like to
+     populate input fields in a PDF document with data.
+    <para>
+    <example>
+     <title>Populating a PDF document</title>
+     <programlisting>
+&lt;?php
+$outfdf = fdf_create();
+fdf_set_value($outfdf, "volume", $volume, 0);
+
+fdf_set_file($outfdf, "http:/testfdf/resultlabel.pdf");
+fdf_save($outfdf, "outtest.fdf");
+fdf_close($outfdf);
+Header("Content-type: application/vnd.fdf");
+$fp = fopen("outtest.fdf", "r");
+fpassthru($fp);
+unlink("outtest.fdf");
+?>
+     </programlisting>
+    </example>
+
     <para>
      See also <function>fdf_close</function>,
               <function>fdf_save</function>,
@@ -89,11 +197,16 @@
     </funcsynopsis>
     <para>
      The <function>fdf_save</function> function saves
-     a FDF document. If the parameter <parameter>filename</parameter>
-     is '.' the file is written to stdout.
+     a FDF document.
+     The FDF Toolkit provides a way to output the document to stdout if
+     the parameter <parameter>filename</parameter>
+     is '.'. This does not work if PHP is used as an apache module.
+     In such a case one will have to write to a file and use e.g.
+     <function>fpassthru</function>. to output it.
 
     <para>
-     See also <function>fdf_close</function>.
+     See also <function>fdf_close</function> and example for
+              <function>fdf_create</function>.
 
    </refsect1>
   </refentry>
@@ -122,13 +235,13 @@
 
   <refentry id="function.fdf-set-value">
    <refnamediv>
-    <refname>fdf_get_value</refname>
+    <refname>fdf_set_value</refname>
     <refpurpose>Set the value of a field</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
-     <funcdef>void <function>fdf_get_value</function></funcdef>
+     <funcdef>void <function>fdf_set_value</function></funcdef>
      <paramdef>int <parameter>fdf_document</parameter></paramdef>
      <paramdef>string <parameter>fieldname</parameter></paramdef>
      <paramdef>string <parameter>value</parameter></paramdef>
@@ -160,7 +273,7 @@
     </funcsynopsis>
     <para>
      The <function>fdf_next_field_name</function> function returns the
-     name of the field string after the field in parameter
+     name of the field after the field in
      <parameter>fieldname</parameter> or the field name of the first field
      if the second paramter is NULL.
 
@@ -252,10 +365,13 @@
     </funcsynopsis>
     <para>
      The <function>fdf_set_file</function> sets the value
-     of the /F key.
+     of the /F key. The /F key is just a reference to a PDF form
+     which is to be populated with data.
+     In a web environment it is a URL (e.g. http:/testfdf/resultlabel.pdf).
 
     <para>
-     See also <function>fdf_get_file</function>.
+     See also <function>fdf_get_file</function> and example for
+              <function>fdf_create</function>.
 
    </refsect1>
   </refentry>
