@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.10 2004-11-03 07:20:24 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.11 2004-11-03 20:53:40 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -21,6 +21,9 @@
 
 <!-- configure/able/ parameters -->
 <xsl:include href="htmlhelp-config.xsl"/>
+
+<!-- we use CSS styling to make verbatim sections look nicy -->
+<xsl:param name="shade.verbatim" select="0"/>
 
 <xsl:param name="chunker.output.doctype-system" select="'http://www.w3.org/TR/html4/loose.dtd'"/>
 <xsl:param name="chunker.output.doctype-public" select="'-//W3C//DTD HTML 4.01 Transitional//EN'"/>
@@ -50,6 +53,9 @@ sect5     toc
 section   toc
 set       toc
 </xsl:param>
+
+<!-- Target window for external ulinks -->
+<xsl:param name="ulink.target" select="'_blank'"/>
 
 
 <!-- *************** HTML HELP PROJECT PARAMETERS **************** -->
