@@ -97,15 +97,6 @@ function makeContentFiles()
     }
     mapAndIndex($match[1], "preface.html", "    ", $toc, $index);
 
-    // Find the name of the Preface/About this Manual
-    fputs($toc, "\n    <ul>");
-    preg_match('|<A HREF="preface.html#about" >(.*)</A >|U', $indexline, $match);
-    if (empty($match[1])) { // Fallback
-        $match[1]="About this Manual";
-    }
-    mapAndIndex($match[1], "preface.html#about", "      ", $toc, $index);
-    fputs($toc, "    </ul>\n");
-
     // Now autofind the main pages
     $MAIN_REGEXP = join("|", $MAIN_FILES);
     preg_match_all("![IVX]+\. <A HREF=\"($MAIN_REGEXP)\" >(.+)</A >(.+)(?=[IVX]+\. <A HREF=\"($MAIN_REGEXP)|</DT ></DL ></DD ></DL)!U", $indexline, $matches, PREG_SET_ORDER);
