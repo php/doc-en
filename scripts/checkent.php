@@ -81,7 +81,7 @@ foreach ($entity_urls as $num => $entity_url) {
     
             // Use URL fopen wrapper
             case "http":
-                if ($fpurl = @fopen($link, "r")) {
+                if ($fpurl = @fopen($entity_url, "r")) {
                     fclose ($fpurl);
                 }
                 else {
