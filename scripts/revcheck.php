@@ -329,6 +329,7 @@ function get_dir_status($dir)
           $file == "make_chm_index_en.html"
 	  || $file == "rsusi.txt"
 	  || $file == "README"
+	  || $file == "contributors.xml"
 	  || $file == "DO_NOT_TRANSLATE" 
 	  || ($file == "functions.xml" && strpos($dir, '/reference/')))
         continue;
