@@ -14,7 +14,7 @@ BEGIN { parse=0; FS="[\"(,]"; }
 /^[[:space:]]*PHP_FE/ { if(parse) { print $2; } }
 /^[[:space:]]*PHP_FALIAS/ { if(parse) { print $2; } }
 /^[[:space:]]*PHP_NAMED_FE/ { if(parse) { print $2; } }
-/^[[:space:]]*PHP_STATIC_FE/ { if(parse) { print $2; } }
+/^[[:space:]]*PHP_STATIC_FE/ { if(parse) { print $3; } }
 /^[[:space:]]*ZEND_FE/ { if(parse) { print $2; } }
 /^[[:space:]]*cybercash_functions/ { if (parse) { print $2; } }
 /^[[:space:]]*UODBC_FE/ { if(parse) { print "odbc_"$2; } }
