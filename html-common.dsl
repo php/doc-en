@@ -33,11 +33,20 @@
 
 (element optional ( process-children ))
 
-(
- element paramdef  
+(element paramdef  
 	(make sequence
 		(if (equal? (child-number (current-node)) 1)
-				(literal " (")
+				(make sequence
+					(literal " (")
+					( if (> 
+								(node-list-length (select-elements (descendants (current-node)) (normalize "optional")))
+								0
+								)
+							 (literal " [")	
+							 (empty-sosofo)
+							 )
+					(empty-sosofo)
+					)
 				(empty-sosofo)
 				)
 		(process-children)
