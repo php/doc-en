@@ -127,11 +127,11 @@ function apply($input) {
 				$result = str_replace("&amp;","&",$result);
 				$result = explode("\n",$result);
 				unset($result[0]);
-				$output .= rtrim(join("\n",$result))."\n";
+				$output .= rtrim(utf8_decode(join("\n",$result)))."\n";
 			} else {
 				echo "line $nr\n";
 				echo $funcsyn;
-				return fasle;
+				return false;
 			}
 		} else if (strstr($line,("<?xml"))&&($nr==1)) {
 			$xmlhead=$line;
