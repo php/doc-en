@@ -79,7 +79,7 @@ $LANGUAGES = array(
                    "langcode" => "0x411 Japanese",
                    "preferred_charset" => "CP932",
                    "mime_charset_name" => "csWindows31J",
-                   "preferred_font" => "‚l‚r ‚oƒSƒVƒbƒN,10,0"
+                   "preferred_font" => "MS PGothic,10,0"
                ),
     "kr"    => array(
                    "langcode" => "0x412 Korean",
