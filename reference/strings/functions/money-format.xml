@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
   <refentry id="function.money-format">
    <refnamediv>
     <refname>money_format</refname>
@@ -112,20 +112,116 @@
         <term><literal>#</literal><replaceable>n</replaceable></term>
         <listitem>
          <para>
-          
+          The maximum number of digits (<replaceable>n</replaceable>) expected
+          to the left of the decimal character (e.g. the decimal point). It is
+          used usually to keep formatted output aligned in the same columns,
+          using the fill character if the number of digits is less than
+          <replaceable>n</replaceable>. If the number of actual digits is
+          bigger than <replaceable>n</replaceable>, then this specification is
+          ignored.
+         </para>
+         <para>
+          If grouping has not been suppressed using the <literal>^</literal>
+          flag, grouping separators will be inserted before the fill
+          characters (if any) are added. Grouping separators will not be
+          applied to fill characters, even if the fill character is a digit.
+         </para>
+         <para>
+          To ensure alignment, any characters appearing before or after the
+          number in the formatted output such as currency or sign symbols are
+          padded as necessary with space characters to make their positive and
+          negative formats an equal length.
          </para>
         </listitem>
        </varlistentry>
       </variablelist>
      </para>
     </formalpara>
+    <formalpara>
+     <title>
+      Right Precision
+     </title>
+     <para>
+      <variablelist>
+       <varlistentry>
+        <term><literal>.</literal><replaceable>p</replaceable></term>
+        <listitem>
+         <para>
+          A period followed by the number of digits
+          (<replaceable>p</replaceable>) after the decimal character. If the
+          value of <replaceable>p</replaceable> is 0 (zero), the decimal
+          character and the digits to its right will be omitted. If no right
+          precision is included, the default will dictated by the current
+          local in use. The amount being formatted is rounded to the specified 
+          number of digits prior to formatting.
+         </para>
+        </listitem>
+       </varlistentry>
+      </variablelist>
+     </para>
+    </formalpara>
+    <formalpara>
+     <title>
+      Conversion Characters
+     </title>
+     <para>
+      <variablelist>
+       <varlistentry>
+        <term><literal>i</literal></term>
+        <listitem>
+         <para>
+          The number is formatted according to the locale's international
+          currency format (e.g. for the USA locale: USD 1,234.56).
+         </para>
+        </listitem>
+       </varlistentry>
+       <varlistentry>
+        <term><literal>n</literal></term>
+        <listitem>
+         <para>
+          The number is formatted according to the locale's national
+          currency format (e.g. for the en_US locale: $1,234.56).
+         </para>
+        </listitem>
+       </varlistentry>
+       <varlistentry>
+        <term><literal>n</literal></term>
+        <listitem>
+         <para>
+          The number is formatted according to the locale's national
+          currency format (e.g. for the de_DE locale: DM1.234,56).
+         </para>
+        </listitem>
+       </varlistentry>
+       <varlistentry>
+        <term><literal>%</literal></term>
+        <listitem>
+         <para>
+          Returns the the <literal>%</literal> character.
+         </para>
+        </listitem>
+       </varlistentry>
+      </variablelist>
+     </para>
+    </formalpara>
+    <note>
+     <para>
+      The <constant>LC_MONETARY</constant> category of the locale settings,
+      affects the behavior of this function. Use
+      <function>setlocale</function> to set to the appropriate default locale
+      before using this function.
+     </para>
+     <para>
+      Characters before and after the formatting string will be returned
+      unchanged.
+     </para>
+    </note>
     <para>
     <example>
-     <title><function>number_format</function> Example</title>
+     <title><function>money_format</function> Example</title>
      <para>
-      For instance, French notation usually use two decimals,
-      comma (',') as decimal separator, and space (' ') as
-      thousand separator. This is achieved with this line :
+      We will use different locales and format specifications to
+      illustrate the use of this function.
      </para>
       <programlisting role="php">
 <![CDATA[
@@ -133,19 +229,42 @@
 
     $number = 1234.56;
 
-    // english notation (default)
-    $english_format_number = number_format($number);
-    // 1,234
+    // let's print the international format for the en_US locale
+    setlocale(LC_MONETARY, 'en_US');
+    echo money_format('%i', $number)."\n";
+    // USD 1,234.56
 
-    // French notation
-    $nombre_format_francais = number_format($number, 2, ',', ' ');
-    // 1 234,56
+    // Italian national format with 2 decimals`
+    setlocale(LC_MONETARY, 'it_IT');
+    echo money_format('%.2n', $number)."\n";
+    // L. 1.234,56
 
-    $number = 1234.5678;
+    // Using a negative number
+    $number = -1234.5672;
 
-    // english notation without thousands seperator
-    $english_format_number = number_format($number, 2, '.', '');
-    // 1234.57
+    // US national format, using () for negative numbers
+    // and 10 digits for left precision
+    setlocale(LC_MONETARY, 'en_US');
+    echo money_format('%(#10n', $number)."\n";
+    // ($        1,234.57)
+
+    // Similar format as above, adding the use of 2 digits of right 
+    // precision and '*' as a fill character
+    echo money_format('%=*(#10.2n', $number)."\n";
+    // ($********1,234.57)
+    
+    // Let's justify to the left, with 14 positions of width, 8 digits of
+    // left precision, 2 of right precision, withouth grouping character
+    // and using the international format for the de_DE locale.
+    setlocale(LC_MONETARY, 'de_DE');
+    echo money_format('%=*^-14#8.2i', 1234.56)."\n";
+    // DEM 1234,56****
+
+    // Let's add some blurb before and after the conversion specification
+    setlocale(LC_MONETARY, 'en_GB');
+    $fmt = 'The final value is %i (after a 10%% discount)';
+    echo money_format($fmt, 1234.56)."\n";
+    // The final value is  GBP 1,234.56 (after a 10% discount)
 
 ?>
 ]]>
@@ -153,7 +272,8 @@
      </example>
     </para>
     <para>
-     See also: <function>number_format</function>,<function>sprintf</function>,
+     See also: <function>setlocale</function>,
+     <function>number_format</function>,<function>sprintf</function>,
      <function>printf</function> and <function>sscanf</function>.
     </para>
    </refsect1>
