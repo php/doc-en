@@ -532,6 +532,8 @@ print "&lt;/PRE>&lt;/HTML>";
     <para>
      <function>OCINewDescriptor</function> Allocates storage to hold descriptors or LOB locators.   
       Valid values for the valid <parameter>type</parameter> are OCI_D_FILE, OCI_D_LOB, OCI_D_ROWID.
+      For LOB desriptors, the methods load, save, and savefile are associated with the descriptor,
+      for BFILE only the load method exists. See the second example usage hints.
 
     </para>
      <example>
@@ -564,6 +566,39 @@ print "&lt;/PRE>&lt;/HTML>";
     OCIFreeStatement($stmt);  
     OCILogoff($conn);
 ?>  
+   </programlisting><programlisting>
+&lt;?php
+    /* This script demonstrates file upload to LOB columns
+     * The formfield used for this example looks like this
+     * &lt;form action="upload.php3" method="post" enctype="multipart/form-data">
+     * &lt;input type="file" name="lob_upload">
+     * ...
+     */
+  if(!isset($lob_upload) || $lob_upload == 'none'){
+?>
+&lt;form action="upload.php3" method="post" enctype="multipart/form-data">
+Upload file: &lt;input type="file" name="lob_upload">&lt;br>
+&lt;input type="submit" value="Upload"> - &lt;input type="reset">
+&lt;/form>
+&lt;?php
+  } else {
+     // $lob_upload contains the temporary filename of the uploaded file
+     $conn = OCILogon($user, $password);
+     $lob = OCINewDescriptor($conn, OCI_D_LOB);
+     $stmt = OCIParse($conn,"insert into $table (id, the_blob) values(my_seq.NEXTVAL, EMPTY_BLOB()) returning the_blob into :the_blob");
+     OCIBindByName($stmt, ':the_blob', &$lob, -1, OCI_B_BLOB);
+     OCIExecute($stmt);
+     if($lob->savefile($lob_upload)){
+        OCICommit($conn);
+        echo "Blob successfully uploaded\n";
+     }else{
+        echo "Couldn't upload Blob\n";
+     }
+     OCIFreeDescriptor($lob);
+     OCIFreeStatement($stmt);
+     OCILogoff($conn);
+  }
+?>
    </programlisting></example>
 
    </refsect1>
