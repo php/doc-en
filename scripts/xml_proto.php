@@ -164,7 +164,7 @@ function write_reference_xml()
        "    </para>\n" .
        "   </section>\n" .
        "  </partintro>\n" .
-       " &reference.mcve.functions;\n" .
+       " &reference." . $extension_name . ".functions;\n" .
        " </reference>\n" .
        "<!-- Keep this comment at the end of the file\n" .
        "Local variables:\n" .
