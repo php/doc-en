@@ -52,7 +52,7 @@ $argv = explode("#", $argv[$argc-1]);
 $argc = count($argv);
 
 // Test argument number
-if ($argc != 6) {
+if ($argc != 5) {
     die("ERROR: Missing argument[s], cannot generate file-entities.ent");
 }
 
