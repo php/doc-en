@@ -1,9 +1,9 @@
-<?xml vedsion="1.0" encoding="iso-8859-1"?>
+<?xml version="1.0" encoding="iso-8859-1"?>
 <!-- 
 
   Common customizations for all formats
 
-  $Id: common.xsl,v 1.2 2002-02-09 12:19:54 goba Exp $
+  $Id: common.xsl,v 1.3 2002-02-09 12:21:23 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
