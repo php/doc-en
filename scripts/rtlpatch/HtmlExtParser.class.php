@@ -83,6 +83,23 @@ class CHtmlExtParse extends CHtmlParse{
 			}
 		} while($tmp);
 		
+		
+		//fix filenames:
+		$tmp=0;
+		do{
+			if($tmp = $this->get_element_id_by_rule(array("tag"=>"tt","properties"=>array("class","filename"),"offset"=>($tmp+1)))){
+				$this->ATE[$tmp]["dir"] = "ltr";
+			}
+		} while($tmp);
+		
+		//fix varnames:
+		$tmp=0;
+		do{
+			if($tmp = $this->get_element_id_by_rule(array("tag"=>"tt","properties"=>array("class","varname"),"offset"=>($tmp+1)))){
+				$this->ATE[$tmp]["dir"] = "ltr";
+			}
+		} while($tmp);
+		
 		/*
 		//fix for TOC
 		$tmp=0;
