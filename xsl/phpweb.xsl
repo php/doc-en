@@ -3,7 +3,7 @@
 
   PHP.net web site specific stylesheet
 
-  $Id: phpweb.xsl,v 1.6 2003-04-23 17:32:51 goba Exp $
+  $Id: phpweb.xsl,v 1.7 2003-04-25 18:43:58 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -125,7 +125,10 @@
 
 <!-- Prints out one PHP array with page name and title -->
 <xsl:template name="phpdoc.nav.array">
- <xsl:param name="node" select="/foo"/>  
+ <xsl:param name="node" select="/foo"/>
+ <xsl:variable name="title">
+  <xsl:apply-templates select="$node" mode="phpdoc.object.title"/>
+ </xsl:variable>
  <xsl:text>array('</xsl:text>
  <xsl:choose>
   <!-- special handling for copyright, as we have it
@@ -141,7 +144,13 @@
   </xsl:otherwise>
  </xsl:choose>
  <xsl:text>','</xsl:text>
- <xsl:apply-templates select="$node" mode="phpdoc.object.title"/>
+ <!-- use the substring replace template defined in
+      Docbook XSL's lib to escape apostrophes -->
+ <xsl:call-template name="string.subst">
+  <xsl:with-param name="string" select="$title"/>
+  <xsl:with-param name="target" select='"&apos;"'/>
+  <xsl:with-param name="replacement" select='"\&apos;"'/>
+ </xsl:call-template>
  <xsl:text>')</xsl:text>
 </xsl:template>
 
