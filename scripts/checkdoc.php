@@ -1,5 +1,23 @@
 #!/usr/bin/php -q
 <?php
+/*
+  +----------------------------------------------------------------------+
+  | PHP Version 4                                                        |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 1997-2004 The PHP Group                                |
+  +----------------------------------------------------------------------+
+  | This source file is subject to version 3.0 of the PHP license,       |
+  | that is bundled with this package in the file LICENSE, and is        |
+  | available through the world-wide-web at the following url:           |
+  | http://www.php.net/license/3_0.txt.                                  |
+  | If you did not receive a copy of the PHP license and are unable to   |
+  | obtain it through the world-wide-web, please send a note to          |
+  | license@php.net so we can mail you a copy immediately.               |
+  +----------------------------------------------------------------------+
+  | Authors:    Stig Bakken <ssb@php.net> (originally in Perl)           |
+  |             Gabor Hojtsy <goba@php.net>                              |
+  +----------------------------------------------------------------------+
+*/
 
 if ($argc > 2 || in_array($argv[1], array('--help', '-help', '-h', '-?'))) {
 ?>
@@ -15,10 +33,6 @@ Check documented functions in phpdoc
   
   This program depends on ../funclist.txt as the
   list of functions compiled from the PHP source.
-  
-  Original Perl script written by Stig Bakken <ssb@fast.no>,
-  ported to PHP by Gabor Hojtsy <goba@php.net>, 2002-01-04
-
 <?php
   exit;
 }
