@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.13 $ -->
+<!-- $Revision: 1.14 $ -->
 <!-- splitted from ./en/functions/exec.xml, last change in rev 1.28 -->
   <refentry id='function.proc-open'>
    <refnamediv>
@@ -8,7 +8,7 @@
      Execute a command and open file pointers for input/output
     </refpurpose>
    </refnamediv>
-   <refsect1>
+   <refsect1 role="description">
     &reftitle.description;
      <methodsynopsis>
       <type>resource</type><methodname>proc_open</methodname>
@@ -22,54 +22,9 @@
     <para>
      <function>proc_open</function> is similar to <function>popen</function>
      but provides a much greater degree of control over the program execution.
-     <parameter>cmd</parameter> is the command to be executed by the shell.
-     <parameter>descriptorspec</parameter> is an indexed array where the
-     key represents the descriptor number and the value represents how PHP
-     will pass that descriptor to the child process.
-     <parameter>pipes</parameter> will be set to an indexed array of file
-     pointers that correspond to PHP's end of any pipes that are created.
-     The return value is a resource representing the process; you should
-     free it using <function>proc_close</function> when you are finished
-     with it.
-    </para>
-    <!-- TODO: Document cwd, env, other_options and when they appeared. -->
-    <para>
-     <informalexample>
-      <programlisting role="php">
-<![CDATA[
-<?php
-$descriptorspec = array(
-   0 => array("pipe", "r"),  // stdin is a pipe that the child will read from
-   1 => array("pipe", "w"),  // stdout is a pipe that the child will write to
-   2 => array("file", "/tmp/error-output.txt", "a") // stderr is a file to write to
-);
-$process = proc_open("php", $descriptorspec, $pipes);
-if (is_resource($process)) {
-    // $pipes now looks like this:
-    // 0 => writeable handle connected to child stdin
-    // 1 => readable handle connected to child stdout
-    // Any error output will be appended to /tmp/error-output.txt
-
-    fwrite($pipes[0], "<?php echo \"Hello World!\"; ?>");
-    fclose($pipes[0]);
-
-    while (!feof($pipes[1])) {
-        echo fgets($pipes[1], 1024);
-    }
-    fclose($pipes[1]);
-    // It is important that you close any pipes before calling
-    // proc_close in order to avoid a deadlock
-    $return_value = proc_close($process);
-
-    echo "command returned $return_value\n";
-}
-?>
-]]>
-      </programlisting>
-     </informalexample>
     </para>
     <para>
-     PHP 5RC2 introduces pty support for systems with Unix98 ptys. This allows
+     PHP 5 introduces pty support for systems with Unix98 ptys. This allows
      your script to interact with applications that expect to be talking to a
      terminal.  A pty works like a pipe, but is bi-directional, so there is no
      need to specify a read/write mode.  The example below shows how to use a
@@ -78,9 +33,180 @@ if (is_resource($process)) {
      times.  In a future version of PHP, it might be possible to do more than
      just read and write to the pty.
     </para>
-    <para>
-     <informalexample>
-      <programlisting role="php">
+   </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>cmd</parameter></term>
+     <listitem>
+      <para>
+       The command to execute
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>descriptorspec</parameter></term>
+     <listitem>
+      <para>
+       An indexed array where the key represents the descriptor number and the
+       value represents how PHP will pass that descriptor to the child
+       process. 0 is stdin, 1 is stdout, while 2 is stderr.
+      </para>
+      <para>
+       The currently supported pipe types are <literal>file</literal>,
+       <literal>pipe</literal> and <literal>pty</literal>.
+      </para>
+      <para>
+       The file descriptor numbers are not limited to 0, 1 and 2 - you may
+       specify any valid file descriptor number and it will be passed to the
+       child process. This allows your script to interoperate with other
+       scripts that run as "co-processes". In particular, this is useful for
+       passing passphrases to programs like PGP, GPG and openssl in a more
+       secure manner. It is also useful for reading status information
+       provided by those programs on auxiliary file descriptors.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>pipes</parameter></term>
+     <listitem>
+      <para>
+       Will be set to an indexed array of file pointers that correspond to
+       PHP's end of any pipes that are created.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>cwd</parameter></term>
+     <listitem>
+      <para>
+       The initial working dir for the command. This must be an
+       <emphasis role="strong">absolute</emphasis> directory path, or &null;
+       if you want to use the default value (the working dir of the current
+       PHP process)
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>env</parameter></term>
+     <listitem>
+      <para>
+       An array with the environment variables for the command that will be
+       run, or &null; to use the same environment as the current PHP process
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>other_options</parameter></term>
+     <listitem>
+      <para>
+       Allows you to specify additional options. Currently only
+       <literal>suppress_errors</literal> is supported, which suppresses
+       errors generated by this function when it's set to &true;
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   Returns a resource representing the process, which should be freed using
+   <function>proc_close</function> when you are finished with it. On failure
+   returns &false;.
+  </para>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>5.0.0.</entry>
+       <entry>
+        Added the <parameter>cwd</parameter>, <parameter>env</parameter> and
+        <parameter>other_options</parameter> parameters. Added support for
+        Unix98 ptys.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title>A <function>proc_open</function> example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$descriptorspec = array(
+   0 => array("pipe", "r"),  // stdin is a pipe that the child will read from
+   1 => array("pipe", "w"),  // stdout is a pipe that the child will write to
+   2 => array("file", "/tmp/error-output.txt", "a") // stderr is a file to write to
+);
+
+$cwd = '/tmp';
+$env = array('some_option' => 'aeiou');
+
+$process = proc_open('php', $descriptorspec, $pipes, $cwd, $env);
+
+if (is_resource($process)) {
+    // $pipes now looks like this:
+    // 0 => writeable handle connected to child stdin
+    // 1 => readable handle connected to child stdout
+    // Any error output will be appended to /tmp/error-output.txt
+
+    fwrite($pipes[0], '<?php print_r($_ENV); ?>');
+    fclose($pipes[0]);
+
+    echo stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+
+    // It is important that you close any pipes before calling
+    // proc_close in order to avoid a deadlock
+    $return_value = proc_close($process);
+
+    echo "command returned $return_value\n";
+}
+?>
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+Array
+(
+    [some_option] => aeiou
+    [PWD] => /tmp
+    [SHLVL] => 1
+    [_] => /usr/local/bin/php
+)
+command returned 0
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>ptys usage</title>
+    <programlisting role="php">
 <![CDATA[
 <?php
 // Create a pseudo terminal for the child process
@@ -95,45 +221,44 @@ if (is_resource($process)) {
 }
 ?>
 ]]>
-      </programlisting>
-     </informalexample>
-    </para>
-    <para>
-     The file descriptor numbers in <parameter>descriptorspec</parameter> are
-     not limited to 0, 1 and 2 - you may specify any valid file descriptor
-     number and it will be passed to the child process. This allows your
-     script to interoperate with other scripts that run as "co-processes".
-     In particular, this is useful for passing passphrases to programs like
-     PGP, GPG and openssl in a more secure manner.  It is also useful for
-     reading status information provided by those programs on auxiliary
-     file descriptors.
-    </para>
-    <note>
-     <para>
-      Windows compatibility: Descriptors beyond 2 (stderr) are made
-      available to the child process as inheritable handles, but since
-      the Windows architecture does not associate file descriptor numbers
-      with low-level handles, the child process does not (yet) have a means
-      of accessing those handles.  Stdin, stdout and stderr work as expected.
-     </para>
-    </note>
-    <note>
-     <para>
-      If you only need a uni-directional (one-way) process pipe, use
-      <function>popen</function> instead, as it is much easier to use.
-     </para>
-    </note>
+    </programlisting>
+   </example>
+  </para>
+ </refsect1>
 
-    <para>
-     See also <function>stream_select</function>, <function>exec</function>,
-     <function>system</function>,
-     <function>passthru</function>, <function>popen</function>,
-     <function>escapeshellcmd</function>, and the <link
-     linkend="language.operators.execution">backtick operator</link>.
-    </para>
-
-   </refsect1>
-  </refentry>
+ <refsect1 role="notes">
+  &reftitle.notes;
+  <note>
+   <para>
+    Windows compatibility: Descriptors beyond 2 (stderr) are made available to
+    the child process as inheritable handles, but since the Windows
+    architecture does not associate file descriptor numbers with low-level
+    handles, the child process does not (yet) have a means of accessing those
+    handles. Stdin, stdout and stderr work as expected.
+   </para>
+  </note>
+  <note>
+   <para>
+   If you only need a uni-directional (one-way) process pipe, use
+   <function>popen</function> instead, as it is much easier to use.
+   </para>
+  </note>
+ </refsect1>
+ 
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><function>popen</function></member>
+    <member><function>exec</function></member>
+    <member><function>system</function></member>
+    <member><function>passthru</function></member>
+    <member><function>stream_select</function></member>
+    <member>The <link linkend="language.operators.execution">backtick operator</link></member>
+   </simplelist>
+  </para>
+ </refsect1>
+</refentry>
 
 <!-- Keep this comment at the end of the file
 Local variables:
