@@ -116,7 +116,6 @@ $difficult_params = array(
 	"tcpwrap_check",
 	"get_headers",
 	"wddx_packet_end",
-	"pdf_add_bookmark", "pdf_findfont", "pdf_get_value", "pdf_open_file", "pdf_open_image_file", "pdf_setcolor", "pdf_show_boxed", "pdf_stringwidth",
 	"apd_echo",
 	"fdf_set_on_import_javascript",
 );
