@@ -296,6 +296,7 @@ the actual english xml files, and print statistics
   // Used regexps here for parsing to be compatible with
   // non XML compatible PHP setups
   $translation_xml = $docdir . $lang . "/translation.xml";
+  $output_charset = 'iso-8859-1';
   $translation = array();
   if (@file_exists($translation_xml)) {
     $txml = join("", file($translation_xml));
@@ -304,6 +305,11 @@ the actual english xml files, and print statistics
     // Get intro text
     preg_match("!<intro>(.+)</intro>!s", $txml, $match);
     $translation["intro"] = trim($match[1]);
+    
+    // Get encoding for the output
+    preg_match("!<\?xml(.+)\?>!U", $txml, $match);
+    $xmlinfo = get_attr_array($match);
+    $output_charset = $xmlinfo[1]["encoding"];
     
     // Get persons list
     preg_match_all("!<person(.+)/\\s?>!U", $txml, $matches);
@@ -321,7 +327,7 @@ the actual english xml files, and print statistics
   print("<html>
 <head>
 <title>PHPDOC Revision-check</title>
-<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\">
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=$output_charset\">
 <style type=\"text/css\"><!-- 
  h2 {font-family: arial,helvetica,sans-serif; color: #FFFFFF; font-size:28px; }
  td,a,p {font-family:arial,helvetica,sans-serif; color:#000000; font-size:14px; }
