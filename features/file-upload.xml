@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.30 $ -->
+<!-- $Revision: 1.31 $ -->
  <chapter id="features.file-upload">
   <title>Handling file uploads</title>
 
@@ -119,7 +119,9 @@ Send this file: <input name="userfile" type="file">
    </para>
    <note>
     <para>
-     PHP3 does not support $HTTP_POST_FILES.
+     PHP 4.1.0 or later supports short track var variable
+     <varname>$_FILES</varname>. PHP3 does not support
+     <varname>$HTTP_POST_FILES</varname>.
     </para>
    </note>
 
@@ -156,12 +158,17 @@ Send this file: <input name="userfile" type="file">
       </simpara>
      </listitem>
     </itemizedlist>
-    Note that the "$userfile" part of the above variables is
-    whatever the name of the INPUT field of TYPE=file is in the upload
-    form.  In the above upload form example, we chose to call it
-    "userfile"
+    Note that the "<varname>$userfile</varname>" part of the above
+    variables is whatever the name of the INPUT field of TYPE=file is
+    in the upload form.  In the above upload form example, we chose to
+    call it "userfile"
    </para>
-
+   <note>
+    <para>
+     <literal>register_globals = On</literal> is not recommended for
+     security and performance reason.
+    </para>
+   </note>
    <para>
     Files will by default be stored in the server's default temporary
     directory, unless another location has been given with the <link
@@ -176,55 +183,22 @@ Send this file: <input name="userfile" type="file">
     <example>
      <title>Validating file uploads</title>
      <para>
-      The following examples are for versions of PHP 3 greater than
-      3.0.16, and versions of PHP 4 greater than 4.0.2. See the
-      function entries for <function>is_uploaded_file</function> and
+      The following examples are for versions of PHP 4 greater than
+      4.0.2. See the function entries for
+      <function>is_uploaded_file</function> and
       <function>move_uploaded_file</function>.
      </para>
      <programlisting role="php">
 <![CDATA[
 <?php 
-// PHP 4.1.0 or later, $_FILES may be usedd instead of $HTTP_POST_FILES
+// PHP 4.1.0 or later, $_FILES may be used instead of $HTTP_POST_FILES
 if (is_uploaded_file($HTTP_POST_FILES['userfile'])) {
-    copy($HTTP_POST_FILES['userfile'], "/place/to/put/uploaded/file");
+    copy($HTTP_POST_FILES['userfile']['tmp_name'], "/place/to/put/uploaded/file");
 } else {
-    echo "Possible file upload attack: filename '".$HTTP_POST_FILES['userfile'".".";
+    echo "Possible file upload attack: filename '".$HTTP_POST_FILES['userfile']['name'].".";
 }
 /* ...or... */
 move_uploaded_file($HTTP_POST_FILES['userfile'], "/place/to/put/uploaded/file");
-?>
-]]>
-     </programlisting>
-     <para>
-      For earlier versions of PHP, you'll need to do something like
-      the following.
-      <note>
-       <para>
-        This will <emphasis>not</emphasis> work in versions of PHP 4
-        after 4.0.2. It depends on internal functionality of PHP which
-        changed after that version.
-       </para>
-      </note>
-     </para>
-     <programlisting role="php">
-<![CDATA[
-<?php
-// PHP 4.1.0 or later, $_FILES may be usedd instead of $HTTP_POST_FILES
-/* Userland test for uploaded file. */ 
-function is_uploaded_file($HTTP_POST_FILES['filename']) {
-    if (!$tmp_file = get_cfg_var('upload_tmp_dir')) {
-        $tmp_file = dirname(tempnam('', ''));
-    }
-    $tmp_file .= '/' . basename($HTTP_POST_FILES['filename']);
-    /* User might have trailing slash in php.ini... */
-    return (ereg_replace('/+', '/', $tmp_file) == $HTTP_POST_FILES['filename']);
-}
-
-if (is_uploaded_file($HTTP_POST_FILES['userfile'])) {
-    copy($HTTP_POST_FILES['userfile'], "/place/to/put/uploaded/file");
-} else {
-    echo "Possible file upload attack: filename '".$HTTP_POST_FILES['userfile']".".";
-}
 ?>
 ]]>
      </programlisting>
@@ -234,9 +208,10 @@ if (is_uploaded_file($HTTP_POST_FILES['userfile'])) {
     The PHP script which receives the uploaded file should implement
     whatever logic is necessary for determining what should be done
     with the uploaded file.  You can for example use the
-    <varname>$HTTP_POST_FILES['file_size']</varname> variable to throw
-    away any files that are either too small or too big.  You could
-    use the <varname>$HTTP_POST_FILES['file_type']</varname> variable
+    <varname>$HTTP_POST_FILES['userfile']['size']</varname> variable
+    to throw away any files that are either too small or too big.  You
+    could use the
+    <varname>$HTTP_POST_FILES['userfile']['type']</varname> variable
     to throw away any files that didn't match a certain type criteria.
     Whatever the logic, you should either delete the file from the
     temporary directory or move it elsewhere.
@@ -287,8 +262,12 @@ if (is_uploaded_file($HTTP_POST_FILES['userfile'])) {
   <sect1 id="features.file-upload.multiple">
    <title>Uploading multiple files</title>
    <simpara>
-    It is possible to upload multiple files simultaneously and have
-    the information organized automatically in arrays for you. To
+    Multiple files can be uploaded using different
+    <literal>name</literal> for <literal>input</literal>.
+   </simpara>
+   <simpara>
+    It is also possible to upload multiple files simultaneously and
+    have the information organized automatically in arrays for you. To
     do so, you need to use the same array submission syntax in the
     HTML form as you do with multiple selects and checkboxes:
    </simpara>
@@ -314,30 +293,32 @@ if (is_uploaded_file($HTTP_POST_FILES['userfile'])) {
    </para>
    <simpara>
     When the above form is submitted, the arrays
-    <varname>$userfile</varname>,
-    <varname>$userfile_name</varname>, and
-    <varname>$userfile_size</varname> will be formed in
-    the global scope (as well as in $HTTP_POST_FILES ($HTTP_POST_VARS
-    in PHP 3)). Each of these will be a numerically indexed array of
-    the appropriate values for the submitted files.
+    <varname>$HTTP_POST_FILES['userfile']</varname>,
+    <varname>$HTTP_POST_FILES['userfile']['name']</varname>, and
+    <varname>$HTTP_POST_FILES['userfile']['size']</varname> will be
+    initialized. (as well as in $_FILES for PHP 4.1.0 or
+    later. $HTTP_POST_VARS in PHP 3. When
+    <literal>register_globals</literal> is on, Globals for uploaded
+    files are also initialized). Each of these will be a numerically
+    indexed array of the appropriate values for the submitted files.
    </simpara>
    <simpara>
     For instance, assume that the filenames
     <filename>/home/test/review.html</filename> and
     <filename>/home/test/xwp.out</filename> are submitted.  In this
-    case, <varname>$userfile_name[0]</varname> would
-    contain the value <filename>review.html</filename>,
-    and <varname>$userfile_name[1]</varname> would
-    contain the value
-    <filename>xwp.out</filename>. Similarly,
-    <varname>$userfile_size[0]</varname> would contain
-    <filename>review.html</filename>'s filesize, and so forth.
+    case, <varname>$HTTP_POST_FILES['userfile']['name'][0]</varname>
+    would contain the value <filename>review.html</filename>, and
+    <varname>$HTTP_POST_FILES['userfile']['name'][1]</varname> would
+    contain the value <filename>xwp.out</filename>. Similarly,
+    <varname>$HTTP_POST_FILES['userfile']['size'][0]</varname> would
+    contain <filename>review.html</filename>'s filesize, and so forth.
    </simpara>
    <simpara>
-    <varname>$userfile['name'][0]</varname>,
-    <varname>$userfile['tmp_name'][0]</varname>,
-    <varname>$userfile['size'][0]</varname>, and
-    <varname>$userfile['type'][0]</varname> are also set.
+    <varname>$HTTP_POST_FILES['userfile']['name'][0]</varname>,
+    <varname>$HTTP_POST_FILES['userfile']['tmp_name'][0]</varname>,
+    <varname>$HTTP_POST_FILES['userfile']['size'][0]</varname>, and
+    <varname>$HTTP_POST_FILES['userfile']['type'][0]</varname> are
+    also set.
    </simpara>
   </sect1>
 
