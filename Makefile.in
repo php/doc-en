@@ -48,8 +48,9 @@ PALMDOCTITLE=@PALMDOCTITLE@
 
 all: html
 
-DIST_FILES=manual.zip manual.tar.gz bigmanual.html.gz \
-	manual_doc.pdb manual.txt.gz manual.tar.bz2
+DIST_FILES=@MANUAL@.zip @MANUAL@.tar.gz @MANUAL@.html.gz \
+	@MANUAL@.doc.pdb @MANUAL@.txt.gz @MANUAL@.tar.bz2 \
+	@MANUAL@.pdf.gz @MANUAL@.pdf.bz2 @MANUAL@.pdf.zip
 MIRROR_TARGETS=php/index.php html/index.html $(DIST_FILES)
 
 html.dsl: $(srcdir)/html.dsl.in ./config.status
@@ -71,11 +72,12 @@ manual.xml: $(srcdir)/manual.xml.in .manual.xml
 	touch .manual.xml
 
 html: html/index.html
-bightml: bigmanual.html
+bightml: @MANUAL@.html
 phpweb: php/index.php
-rtf: manual.rtf
-dvi: manual.dvi
-ps: manual.ps
+rtf: @MANUAL@.rtf
+tex latex: @MANUAL@.tex
+dvi: @MANUAL@.dvi
+ps: @MANUAL@.ps
 pdf: @MANUAL@.pdf
 howto: howto/html/index.html
 howtotgz: howto/howto.html.tar.gz
@@ -98,8 +100,8 @@ mirror-files: $(MIRROR_TARGETS)
 
 snapshot: manual-snapshot.tar.gz
 
-manual-snapshot.tar.gz: bigmanual.html html/index.html manual.rtf manual.txt
-	tar -cvzf $@ bigmanual.html html/*.html manual.rtf manual.txt
+manual-snapshot.tar.gz: @MANUAL@.html html/index.html @MANUAL@.rtf @MANUAL@.txt
+	tar -cvzf $@ @MANUAL@.html html/*.html @MANUAL@.rtf @MANUAL@.txt
 
 status: checkdoc ./funclist.txt
 	./checkdoc -s > status.txt
@@ -119,28 +121,33 @@ php.toc: manual.xml $(KDEVELOP_TOC_DEPS)
 makedoc: $(srcdir)/makedoc.cc
 	g++ -o makedoc $(srcdir)/makedoc.cc
 
-bigmanual.html: manual.xml $(HTML_DEPS)
+@MANUAL@.html: manual.xml $(HTML_DEPS)
 	$(JADE) $(CATALOG) -V nochunks -d $(HTML_STYLESHEET) -t sgml $(srcdir)/phpdocxml.dcl manual.xml > $@
 
-bigmanual.html.gz: bigmanual.html
+@MANUAL@.html.gz: @MANUAL@.html
 	gzip -9 -c $< > $@
 
-manual.rtf.gz: manual.rtf
+@MANUAL@.rtf.gz: @MANUAL@.rtf
 	gzip -9 -c $< > $@
 
-manual.txt.gz: manual.txt
+@MANUAL@.txt.gz: @MANUAL@.txt
 	gzip -9 -c $< > $@
 
-@MANUAL@.pdf: manual.tex
-	# a hack around bugs in jade/jadetex...
-	mv manual.tex manual.tex.tmp
-	sed -e '/HeadingText/,/endHeadPar/ s/_/\\137/g' manual.tex.tmp > manual.tex
-	rm manual.tex.tmp
+@MANUAL@.tex: manual.xml
+	$(JADE) $(CATALOG) -d $(PRINT_STYLESHEET) -t tex $(srcdir)/phpdocxml.dcl $<
+	mv manual.tex $@
 
-	-jadetex $<
-	-jadetex $<
-	-jadetex $<
-	dvipdfm -o @MANUAL@.pdf -p @PDF_PAPER_TYPE@ manual.dvi
+@MANUAL@.pdf: @MANUAL@.dvi
+	dvipdfm -o @MANUAL@.pdf -p @PDF_PAPER_TYPE@ @MANUAL@.dvi
+
+@MANUAL@.pdf.gz: @MANUAL@.pdf
+	gzip -9 -c $< > $@
+
+@MANUAL@.pdf.bz2: @MANUAL@.pdf
+	bzip2 -9 -c $< > $@
+
+@MANUAL@.pdf.zip: @MANUAL@.pdf
+	zip -9 $@ $<
 
 html/index.html: manual.xml $(HTML_DEPS)
 	@test -d html || mkdir html
@@ -150,24 +157,24 @@ php/index.php: manual.xml $(PHPWEB_DEPS)
 	@test -d php || mkdir php
 	-$(JADE) $(CATALOG) -d $(PHPWEB_STYLESHEET) -V use-output-dir -t sgml $(srcdir)/phpdocxml.dcl manual.xml
 
-manual.txt: bigmanual.html
-	lynx -nolist -dump file:`pwd`/bigmanual.html > manual.txt
+@MANUAL@.txt: @MANUAL@.html
+	lynx -nolist -dump file:`pwd`/$< > $@
 
-manual_doc.pdb: manual.txt makedoc
-	./makedoc -b manual.txt manual_doc.pdb $(PALMDOCTITLE)
+@MANUAL@.doc.pdb: @MANUAL@.txt makedoc
+	./makedoc -b @MANUAL@.txt @MANUAL@.doc.pdb $(PALMDOCTITLE)
 
 # Note: Isilo converter available only in binary from www.isilo.com
-manual_isilo.pdb: bigmanual.html
-	iSilo386 bigmanual.html manual_isilo.pdb
+@MANUAL@.isilo.pdb: @MANUAL@.html
+	iSilo386 @MANUAL@.html @MANUAL@.isilo.pdb
 
-manual.zip: html/index.html
+@MANUAL@.zip: html/index.html
 	-rm -f $@ && (cd html; zip -9 -q ../$@ *.html)
 
-manual.tar.gz: html/index.html
-	-rm -f $@ && (cd html; tar -cf - *.html) | gzip -9 > manual.tar.gz
+@MANUAL@.tar.gz: html/index.html
+	-rm -f $@ && (cd html; tar -cf - *.html) | gzip -9 > $@
 
-manual.tar.bz2: html/index.html
-	-rm -f $@ && (cd html; tar -cf - *.html) | bzip2 -9 > manual.tar.bz2
+@MANUAL@.tar.bz2: html/index.html
+	-rm -f $@ && (cd html; tar -cf - *.html) | bzip2 -9 > $@
 
 howto/html/index.html: howto/howto.xml $(HOWTO_DEPS)
 	@test -d howto/html || mkdir howto/html
@@ -176,15 +183,10 @@ howto/html/index.html: howto/howto.xml $(HOWTO_DEPS)
 howto/howto.html.tar.gz: howto/html/index.html $(HOWTO_DEPS)
 	tar -cvzf $@ howto/html/*.html  
   
-tex latex: $(srcdir)/manual.tex
-
 # File endings we are going to define general rules for:
 .SUFFIXES: .html .xml .sgml .tex .dvi .ps .rtf .pdf
 
 # General rules:
-.xml.tex:
-	$(JADE) $(CATALOG) -d $(PRINT_STYLESHEET) -t tex $(srcdir)/phpdocxml.dcl $<
-
 .xml.rtf:
 	$(JADE) $(CATALOG) -d $(PRINT_STYLESHEET) -t rtf $(srcdir)/phpdocxml.dcl $<
 
@@ -194,15 +196,13 @@ tex latex: $(srcdir)/manual.tex
 #    of the table of contents
 # 3. generates a dvi with all the right page numbers and such
 .tex.dvi:
-	jadetex $<
-	jadetex $<
-	jadetex $<
-
-.dvi.ps:
-	dvips -o $@ $<
-
-.ps.pdf:
-	ps2pdf -p $@ $<
+	# a hack around bugs in jade/jadetex...
+	mv $< $<.tmp
+	sed -e '/HeadingText/,/endHeadPar/ s/_/\\137/g' $<.tmp > $<
+	rm $<.tmp
+	-jadetex $<
+	-jadetex $<
+	-jadetex $<
 
 # test all possible errors
 test: manual.xml
@@ -214,8 +214,8 @@ test_man_gen: manual.xml
 
 clean:
 	rm -rf html php howto/html
-	rm -f manual.txt [a-z]*.html manual.rtf manual.info
-	rm -f manual.zip manual.tar.gz .manual.xml
+	rm -f @MANUAL@.txt [a-z]*.html @MANUAL@.rtf manual.info
+	rm -f @MANUAL@.zip @MANUAL@.tar.gz .manual.xml
 	rm -f manual_*.pdb makedoc *.manifest
 	rm -f *.aux *.tex *.log *.dvi *.toc *.ps *.gz
 	rm -f status.txt missing.txt checkdoc
