@@ -1,0 +1,935 @@
+ <reference id="ref.ingres">
+  <title>Ingres II functions</title>
+  <titleabbrev>Ingres II</titleabbrev>
+  <partintro>
+   <simpara>
+    These functions allow you to access Ingres II database servers.
+   </simpara>
+   <simpara>
+    In order to have these functions available, you must compile php
+    with Ingres support by using the
+    <option role="configure">--with-ingres</option> option.
+    You need the Open API library and header files included with
+    Ingres II. If the II_SYSTEM environment variable isn't correctly
+    set you may have to use
+    <option role="configure">--with-ingres=DIR</option>
+    to specify your Ingres installation directory.
+   </simpara>
+   <simpara>
+    When using this extension with Apache, if Apache does not start
+    and complains with "PHP Fatal error:  Unable to start
+    ingres_ii module in Unknown on line 0"
+    then make sure the environement variable II_SYSTEM is correctly
+    set. Adding "export II_SYSTEM="/home/ingres/II" in the script
+    that starts Apache, just before launching httpd, should be fine.
+   </simpara>
+   <note>
+    <para>
+     If you already used PHP extensions to access other database servers,
+     note that Ingres doesn't allow concurrent queries and/or transaction
+     over one connection, thus you won't find any result or transaction
+     handle in this extension. The result of a query must be treated
+     before sending another query, and a transaction must be commited or
+     rolled back before opening another transaction (which is automaticaly
+     done when sending the first query).
+    </para>
+   </note>
+  </partintro>
+
+  <refentry id="function.ingres-connect">
+   <refnamediv>
+    <refname>ingres_connect</refname>
+    <refpurpose>Open a connection to an Ingres II database.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>resource <function>ingres_connect</function></funcdef>
+      <paramdef>string
+       <parameter><optional>database</optional></parameter>
+      </paramdef>
+      <paramdef>string
+       <parameter><optional>username</optional></parameter>
+      </paramdef>
+      <paramdef>string
+       <parameter><optional>password</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Returns a Ingres II link resource on success, or false on failure.
+    </para>
+    <para>
+     <function>ingres_connect</function> opens a connection with the
+     Ingres database designated by <parameter>database</parameter>, which
+     follows the syntax <parameter>[node_id::]dbname[/svr_class]</parameter>.
+    </para>
+    <para>
+     If some parameters are missing, <function>ingres_connect</function>
+     uses the values in <filename>php.ini</filename> for
+     <parameter>ingres.default_database</parameter>,
+     <parameter>ingres.default_user</parameter> and
+     <parameter>ingres.default_password</parameter>.
+    </para>
+    <para>
+     The connection is closed when the script ends or when
+     <function>ingres_close</function> is called on this link.
+    </para>
+    <para>
+     All the other ingres functions use the last opened link as a
+     default, so you need to store the returned value only if you use
+     more than one link at a time.
+    </para>
+    <example>
+     <title><function>ingres_connect</function> example</title>
+     <programlisting>
+&lt;?php
+    $link = ingres_connect ("mydb", "user", "pass")
+        or die ("Could not connect");
+    print ("Connected successfully");
+    ingres_close ($link);
+?>
+     </programlisting>
+    </example>
+    <example>
+     <title><function>ingres_connect</function> example
+      using default link</title>
+     <programlisting>
+&lt;?php
+    ingres_connect ("mydb", "user", "pass")
+        or die ("Could not connect");
+    print ("Connected successfully");
+    ingres_close ();
+?>
+     </programlisting>
+    </example>
+    <para> See also
+     <function>ingres_pconnect</function>, and
+     <function>ingres_close</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-pconnect">
+   <refnamediv>
+    <refname>ingres_pconnect</refname>
+    <refpurpose>
+     Open a persistent connection to an Ingres II database.
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>resource <function>ingres_pconnect</function></funcdef>
+      <paramdef>string
+       <parameter><optional>database</optional></parameter>
+      </paramdef>
+      <paramdef>string
+       <parameter><optional>username</optional></parameter>
+      </paramdef>
+      <paramdef>string
+       <parameter><optional>password</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Returns a Ingres II link resource on success, or false on failure.
+    </para>
+    <para>
+     See <function>ingres_connect</function> for parameters details and
+     examples. There are only 2 differences between
+     <function>ingres_pconnect</function> and
+     <function>ingres_connect</function> : 
+     First, when connecting, the function will first try to find a
+     (persistent) link that's already opened with the same parameters.
+     If one is found, an identifier for it will be returned instead of
+     opening a new connection. Second, the connection to the Ingres
+     server will not be closed when the execution of the script ends.
+     Instead, the link will remain open for future use
+     (<function>ingres_close</function> will not close links established
+     by <function>ingres_pconnect</function>). This type of link is
+     therefore called 'persistent'.
+    </para>
+    <para> See also
+     <function>ingres_connect</function>, and
+     <function>ingres_close</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-close">
+   <refnamediv>
+    <refname>ingres_close</refname>
+    <refpurpose>Close an Ingres II database connection</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool<function>ingres_close</function></funcdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Returns true on success, or false on failure.
+    </para>
+    <para>
+     <function>ingres_close</function> closes the connection to
+     the Ingres server that's associated with the specified link.
+     If the <parameter>link</parameter> parameter isn't
+     specified, the last opened link is used.
+    </para>
+    <para>
+     <function>ingres_close</function> isn't usually necessary, as it
+     won't close persistent connections and all non-persistent connections
+     are automatically closed at the end of the script.
+    </para>
+    <para> See also
+     <function>ingres_connect</function>, and
+     <function>ingres_pconnect</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-query">
+   <refnamediv>
+    <refname>ingres_query</refname>
+    <refpurpose>Send a SQL query to Ingres II</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool<function>ingres_query</function></funcdef>
+      <paramdef>string
+       <parameter>query</parameter>
+      </paramdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Returns true on success, or false on failure.
+    </para>
+    <para>
+     <function>ingres_query</function> sends the given
+     <parameter>query</parameter> to the Ingres server. This query
+     must be a valid SQL query (see the Ingres SQL reference guide)
+    </para>
+    <para>
+     The query becomes part of the currently open transaction.
+     If there is no open transaction, <function>ingres_query</function>
+     opens a new transaction. To close the transaction, you can either
+     call <function>ingres_commit</function> to commit the changes made
+     to the database or <function>ingres_rollback</function> to cancel these
+     changes. When the script ends, any open transaction is rolled back
+     (by calling <function>ingres_rollback</function>). You can also
+     use <function>ingres_autocommit</function> before opening a new
+     transaction to have every SQL query immediatly commited.
+    </para>
+    <para>
+     Some types of SQL queries can't be sent with this function :
+     <itemizedlist>
+      <listitem>
+       <simpara>close (see <function>ingres_close</function>).</simpara>
+      </listitem>
+     <listitem>
+       <simpara>commit (see <function>ingres_commit</function>).</simpara>
+      </listitem>
+      <listitem>
+       <simpara>connect (see <function>ingres_connect</function>).</simpara>
+      </listitem>
+      <listitem>
+       <simpara>disconnect (see <function>ingres_close</function>).</simpara>
+      </listitem>
+      <listitem><simpara>get dbevent</simpara></listitem>
+      <listitem><simpara>prepare to commit</simpara></listitem>
+      <listitem>
+       <simpara>
+	rollback (see <function>ingres_rollback</function>).
+       </simpara>
+      </listitem>
+      <listitem><simpara>savepoint</simpara></listitem>
+      <listitem>
+       <simpara>
+	set autocommit (see <function>ingres_autocommit</function>).
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>all cursor related queries are unsupported</simpara>
+      </listitem>
+     </itemizedlist>
+    </para>
+    <para>
+     <example>
+      <title><function>ingres_query</function> example</title>
+      <programlisting role="php">
+&lt;?php 
+ingres_connect ($database, $user, $password);
+
+ingres_query ("select * from table");
+while ($row = ingres_fetch_row()) {
+    echo $row[1];
+    echo $row[2];
+}
+?>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also
+     <function>ingres_fetch_array</function>,
+     <function>ingres_fetch_object</function>,
+     <function>ingres_fetch_row</function>,
+     <function>ingres_commit</function>,
+     <function>ingres_rollback</function> and
+     <function>ingres_autocommit</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-num-rows">
+   <refnamediv>
+    <refname>ingres_num_rows</refname>
+    <refpurpose>
+     Get the number of rows affected or returned by the last query
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int<function>ingres_num_rows</function></funcdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     For delete, insert or update queries,
+     <function>ingres_num_rows</function> returns the number of rows
+     affected by the query. For other queries,
+     <function>ingres_num_rows</function> returns the number of rows
+     in the query's result.
+    </para>
+    <para>
+     <note>
+      <simpara>
+       This function is mainly meant to get the number of rows
+       modified in the database.
+       If this function is called before using
+       <function>ingres_fetch_array</function>,
+       <function>ingres_fetch_object</function> or
+       <function>ingres_fetch_row</function> the server will delete
+       the result's data and the script won't be able to get them.
+      </simpara>
+      <simpara>
+       You should instead retrieve the result's data using one of these
+       fetch functions in a loop until it returns false, indicating that
+       no more results are available.
+      </simpara>
+     </note>
+    </para>
+    <para>
+     See also
+     <function>ingres_query</function>,
+     <function>ingres_fetch_array</function>,
+     <function>ingres_fetch_object</function> and
+     <function>ingres_fetch_row</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-num-fields">
+   <refnamediv>
+    <refname>ingres_num_fields</refname>
+    <refpurpose>
+     Get the number of fields returned by the last query
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int<function>ingres_num_fields</function></funcdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ingres_num_fields</function> returns the number of fields
+     in the results returned by the Ingres server after a call to
+     <function>ingres_query</function>
+    </para>
+    <para>
+     See also
+     <function>ingres_query</function>,
+     <function>ingres_fetch_array</function>,
+     <function>ingres_fetch_object</function> and
+     <function>ingres_fetch_row</function>.     
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-field-name">
+   <refnamediv>
+    <refname>ingres_field_name</refname>
+    <refpurpose>Get the name of a field in a query result.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string<function>ingres_field_name</function></funcdef>
+      <paramdef>int
+       <parameter>index</parameter>
+      </paramdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ingres_field_name</function> returns the name of a field
+     in a query result, or false on failure.
+    </para>
+    <para>
+     <parameter>index</parameter> is the number of the field and must be
+     between 1 and the value given by
+     <function>ingres_num_fields</function>.
+    </para>
+    <para>
+     See also
+     <function>ingres_query</function>,
+     <function>ingres_fetch_array</function>,
+     <function>ingres_fetch_object</function> and
+     <function>ingres_fetch_row</function>.     
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-field-type">
+   <refnamediv>
+    <refname>ingres_field_type</refname>
+    <refpurpose>Get the type of a field in a query result.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string<function>ingres_field_type</function></funcdef>
+      <paramdef>int
+       <parameter>index</parameter>
+      </paramdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ingres_field_type</function> returns the type of a field
+     in a query result, or false on failure.
+     Examples of types returned are "IIAPI_BYTE_TYPE",
+     "IIAPI_CHA_TYPE", "IIAPI_DTE_TYPE", "IIAPI_FLT_TYPE",
+     "IIAPI_INT_TYPE", "IIAPI_VCH_TYPE". Some of these types can map
+     to more than one SQL type depending on the length of the field
+     (see <function>ingres_field_length</function>). For example
+     "IIAPI_FLT_TYPE" can be a float4 or a float8. For detailed
+     information, see the Ingres/OpenAPI User Guide - Appendix C.
+    </para>
+    <para>
+     <parameter>index</parameter> is the number of the field and must be
+     between 1 and the value given by
+     <function>ingres_num_fields</function>.
+    </para>
+    <para>
+     See also
+     <function>ingres_query</function>,
+     <function>ingres_fetch_array</function>,
+     <function>ingres_fetch_object</function> and
+     <function>ingres_fetch_row</function>.     
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-field-nullable">
+   <refnamediv>
+    <refname>ingres_field_nullable</refname>
+    <refpurpose>Test if a field is nullable.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool<function>ingres_field_nullable</function></funcdef>
+      <paramdef>int
+       <parameter>index</parameter>
+      </paramdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ingres_field_nullable</function> returns true if the field
+     can be set to the NULL value and false if it can't.
+    </para>
+    <para>
+     <parameter>index</parameter> is the number of the field and must be
+     between 1 and the value given by
+     <function>ingres_num_fields</function>.
+    </para>
+    <para>
+     See also
+     <function>ingres_query</function>,
+     <function>ingres_fetch_array</function>,
+     <function>ingres_fetch_object</function> and
+     <function>ingres_fetch_row</function>.     
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-field-length">
+   <refnamediv>
+    <refname>ingres_field_length</refname>
+    <refpurpose>Get the length of a field.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int<function>ingres_field_length</function></funcdef>
+      <paramdef>int
+       <parameter>index</parameter>
+      </paramdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ingres_field_length</function> returns the length of a field.
+     This is the number of bytes used by the server to store the field.
+     For detailed information, see the Ingres/OpenAPI User Guide - Appendix C.
+    </para>
+    <para>
+     <parameter>index</parameter> is the number of the field and must be
+     between 1 and the value given by
+     <function>ingres_num_fields</function>.     
+    </para>
+    <para>
+     See also
+     <function>ingres_query</function>,
+     <function>ingres_fetch_array</function>,
+     <function>ingres_fetch_object</function> and
+     <function>ingres_fetch_row</function>.     
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-field-precision">
+   <refnamediv>
+    <refname>ingres_field_precision</refname>
+    <refpurpose>Get the precision of a field.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int<function>ingres_field_precision</function></funcdef>
+      <paramdef>int
+       <parameter>index</parameter>
+      </paramdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ingres_field_precision</function> returns the precision of
+     a field. This value is used only for decimal, float and money SQL data
+     types. For detailed information, see the Ingres/OpenAPI User Guide -
+     Appendix C.
+    </para>
+    <para>
+     <parameter>index</parameter> is the number of the field and must be
+     between 1 and the value given by
+     <function>ingres_num_fields</function>.     
+    </para>
+    <para>
+     See also
+     <function>ingres_query</function>,
+     <function>ingres_fetch_array</function>,
+     <function>ingres_fetch_object</function> and
+     <function>ingres_fetch_row</function>.     
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-field-scale">
+   <refnamediv>
+    <refname>ingres_field_scale</refname>
+    <refpurpose>Get the scale of a field.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int<function>ingres_field_scale</function></funcdef>
+      <paramdef>int
+       <parameter>index</parameter>
+      </paramdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ingres_field_scale</function> returns the scale of a field.
+     This value is used only for the decimal SQL data type. For detailed
+     information, see the Ingres/OpenAPI User Guide - Appendix C.
+    </para>
+    <para>
+     <parameter>index</parameter> is the number of the field and must be
+     between 1 and the value given by
+     <function>ingres_num_fields</function>.     
+    </para>
+    <para>
+     See also
+     <function>ingres_query</function>,
+     <function>ingres_fetch_array</function>,
+     <function>ingres_fetch_object</function> and
+     <function>ingres_fetch_row</function>.     
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-fetch-array">
+   <refnamediv>
+    <refname>ingres_fetch_array</refname>
+    <refpurpose>Fetch a row of result into an array.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>array<function>ingres_fetch_array</function></funcdef>
+      <paramdef>int
+       <parameter><optional>result_type</optional></parameter>
+      </paramdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ingres_fetch_array</function> Returns an array that corresponds
+     to the fetched row, or false if there are no more rows.
+    </para>
+    <para>
+     This function is an extended version of
+     <function>ingres_fetch_row</function>.  In addition to storing the
+     data in the numeric indices of the result array, it also stores
+     the data in associative indices, using the field names as keys.
+    </para>
+    <para>
+     If two or more columns of the result have the same field names,
+     the last column will take precedence. To access the other column(s)
+     of the same name, you must use the numeric index of the column or
+     make an alias for the column.
+     <informalexample>
+      <programlisting>
+ingres_query(select t1.f1 as foo t2.f1 as bar from t1, t2);
+$result = ingres_fetch_array();
+$foo = $result["foo"];
+$bar = $result["bar"];
+      </programlisting>
+     </informalexample>
+    </para>
+    <para>
+     <parameter>result_type</parameter> can be II_NUM for enumerated array,
+     II_ASSOC for associative array, or II_BOTH (default).
+    </para>
+    <para>
+     Speed-wise, the function is identical to
+     <function>ingres_fetch_object</function>, and almost as quick as
+     <function>ingres_fetch_row</function> (the difference is
+     insignificant).
+    </para>
+    <para>
+     <example>
+      <title><function>ingres_fetch_array</function> example</title>
+      <programlisting role="php">
+&lt;?php 
+ingres_connect ($database, $user, $password);
+
+ingres_query ("select * from table");
+while ($row = ingres_fetch_array()) {
+    echo $row["user_id"];  # using associative array
+    echo $row["fullname"];
+    echo $row[1];          # using enumerated array
+    echo $row[2];
+}
+?>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also
+     <function>ingres_query</function>,
+     <function>ingres_num_fields</function>,
+     <function>ingres_field_name</function>,
+     <function>ingres_fetch_object</function> and
+     <function>ingres_fetch_row</function>.     
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-fetch-row">
+   <refnamediv>
+    <refname>ingres_fetch_row</refname>
+    <refpurpose>Fetch a row of result into an enumerated array.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>array<function>ingres_fetch_row</function></funcdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ingres_fetch_row</function> returns an array that corresponds
+     to the fetched row, or false if there are no more rows. Each result
+     column is stored in an array offset, starting at offset 1.
+    </para>
+    <para>
+     Subsequent call to <function>ingres_fetch_row</function> would
+     return the next row in the result set, or false if there are no
+     more rows.
+    </para>
+    <para>
+     <example>
+      <title><function>ingres_fetch_row</function> example</title>
+      <programlisting role="php">
+&lt;?php 
+ingres_connect ($database, $user, $password);
+
+ingres_query ("select * from table");
+while ($row = ingres_fetch_row()) {
+    echo $row[1];
+    echo $row[2];
+}
+?>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also
+     <function>ingres_num_fields</function>,
+     <function>ingres_query</function>,
+     <function>ingres_fetch_array</function> and
+     <function>ingres_fetch_object</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-fetch-object">
+   <refnamediv>
+    <refname>ingres_fetch_object</refname>
+    <refpurpose>Fetch a row of result into an object.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>object<function>ingres_fetch_object</function></funcdef>
+      <paramdef>int
+       <parameter><optional>result_type</optional></parameter>
+      </paramdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ingres_fetch_object</function> Returns an object that
+     corresponds to the fetched row, or false if there are no more rows.
+    </para>
+    <para> 
+     This function is similar to
+     <function>ingres_fetch_array</function>, with one difference - an
+     object is returned, instead of an array.  Indirectly, that means
+     that you can only access the data by the field names, and not by
+     their offsets (numbers are illegal property names).
+    </para>
+    <para>
+     The optional argument <parameter>result_type</parameter> is a
+     constant and can take the following values: II_ASSOC,
+     II_NUM, and II_BOTH.
+    </para>
+    <para>
+     Speed-wise, the function is identical to
+     <function>ingres_fetch_array</function>, and almost as quick as
+     <function>ingres_fetch_row</function> (the difference is
+     insignificant).
+    </para>
+    <para>
+     <example>
+      <title><function>ingres_fetch_object</function> example</title>
+      <programlisting role="php">
+&lt;?php 
+ingres_connect ($database, $user, $password);
+ingres_query ("select * from table");
+while ($row = ingres_fetch_object()) {
+    echo $row->user_id;
+    echo $row->fullname;
+}
+?>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also
+     <function>ingres_query</function>,
+     <function>ingres_num_fields</function>,
+     <function>ingres_field_name</function>,
+     <function>ingres_fetch_array</function> and
+     <function>ingres_fetch_row</function>.     
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-rollback">
+   <refnamediv>
+    <refname>ingres_rollback</refname>
+    <refpurpose>Roll back a transaction.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool<function>ingres_rollback</function></funcdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ingres_rollback</function> rolls back the currently open
+     transaction, actualy canceling all changes made to the database
+     during the transaction.
+    </para>
+    <para>
+     This closes the transaction. A new one can be open by sending a
+     query with <function>ingres_query</function>.
+    </para>
+    <para>
+     See also
+     <function>ingres_query</function>,
+     <function>ingres_commit</function> and
+     <function>ingres_autocommit</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-commit">
+   <refnamediv>
+    <refname>ingres_commit</refname>
+    <refpurpose>Commit a transaction.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool<function>ingres_commit</function></funcdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ingres_commit</function> commits the currently open
+     transaction, making all changes made to the database permanent.
+    </para>
+    <para>
+     This closes the transaction. A new one can be open by sending a
+     query with <function>ingres_query</function>.
+    </para>
+    <para>
+     You can also have the server commit automaticaly after every query
+     by calling <function>ingres_autocommit</function> before opening the
+     transaction.
+    </para>
+    <para>
+     See also
+     <function>ingres_query</function>,
+     <function>ingres_rollback</function> and
+     <function>ingres_autocommit</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ingres-autocommit">
+   <refnamediv>
+    <refname>ingres_autocommit</refname>
+    <refpurpose>Switch autocommit on or off.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool<function>ingres_autocommit</function></funcdef>
+      <paramdef>resource
+       <parameter><optional>link</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>ingres_autocommit</function> is called before opening a
+     transaction (before the first call to <function>ingres_query</function>
+     or just after a call to <function>ingres_rollback</function> or
+     <function>ingres_autocommit</function>) to switch the "autocommit" mode
+     of the server on or off (when the script begins the autocommit mode is
+     off).
+    </para>
+    <para>
+     When the autocommit mode is on, every query is automaticaly commited
+     by the server, as if <function>ingres_commit</function> was called
+     after every call to <function>ingres_query</function>.
+    </para>
+    <para>
+     See also
+     <function>ingres_query</function>,
+     <function>ingres_rollback</function> and
+     <function>ingres_commit</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+ </reference>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->
+
