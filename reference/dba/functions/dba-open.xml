@@ -1,228 +1,228 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.14 $ -->
-  <refentry id="function.dba-open">
-   <refnamediv>
-    <refname>dba_open</refname>
-    <refpurpose>Open database</refpurpose>
-   </refnamediv>
-   <refsect1 role="description">
-    &reftitle.description;
-     <methodsynopsis>
-      <type>resource</type><methodname>dba_open</methodname>
-      <methodparam><type>string</type><parameter>path</parameter></methodparam>
-      <methodparam><type>string</type><parameter>mode</parameter></methodparam>
-      <methodparam><type>string</type><parameter>handler</parameter></methodparam>
-      <methodparam choice="opt"><parameter>...</parameter></methodparam>
-     </methodsynopsis>
-    <para>
-     <function>dba_open</function> establishes a database instance for
-     <parameter>path</parameter> with <parameter>mode</parameter> using
-     <parameter>handler</parameter>.
-    </para>
-   </refsect1>
-   <refsect1 role="parameters">
-    &reftitle.parameters;
-    <para>
-     <variablelist>
-      <varlistentry>
-       <term><parameter>path</parameter></term>
-       <listitem>
-        <para>
-         Commonly a regular path in your filesystem.
-        </para>
-       </listitem>
-      </varlistentry>
-      <varlistentry>
-       <term><parameter>mode</parameter></term>
-       <listitem>
-        <para>
-         It is <literal>r</literal> for read access, <literal>w</literal> for
-         read/write access to an already existing database, <literal>c</literal>
-         for read/write access and database creation if it doesn't currently exist,
-         and <literal>n</literal> for create, truncate and read/write access.
-        </para>
-        <para>
-         Additionally you can set the database lock method with the next char. 
-         Use <literal>l</literal> to lock the database with a <filename>.lck</filename>
-         file or <literal>d</literal> to lock the databasefile itself. It is 
-         important that all of your applications do this consistently.
-        </para>
-        <para>
-         If you want to test the access and do not want to wait for the lock 
-         you can add <literal>t</literal> as third character. When you are 
-         absolutely sure that you do not require database locking you can do 
-         so by using <literal>-</literal> instead of <literal>l</literal> or
-         <literal>d</literal>. When none of <literal>d</literal>, 
-         <literal>l</literal> or <literal>-</literal> is used, dba will lock
-         on the database file as it would with <literal>d</literal>.
-        </para>
-        <note>
-         <para>
-          There can only be one writer for one database file. When you use dba on 
-          a webserver and more than one request requires write operations they can
-          only be done one after another. Also read during write is not allowed.
-          The dba extension uses locks to prevent this. See the following table:
-          <table>
-           <title>DBA locking</title>
-           <tgroup cols="9">
-            <thead>
-             <row>
-              <entry>already open</entry>
-              <entry><parameter>mode</parameter> = "rl"</entry>
-              <entry><parameter>mode</parameter> = "rlt"</entry>
-              <entry><parameter>mode</parameter> = "wl"</entry>
-              <entry><parameter>mode</parameter> = "wlt"</entry>
-              <entry><parameter>mode</parameter> = "rd"</entry>
-              <entry><parameter>mode</parameter> = "rdt"</entry>
-              <entry><parameter>mode</parameter> = "wd"</entry>
-              <entry><parameter>mode</parameter> = "wdt"</entry>
-             </row>
-            </thead>
-            <tbody>
-             <row>
-              <entry>not open</entry>
-              <entry>ok</entry>
-              <entry>ok</entry>
-              <entry>ok</entry>
-              <entry>ok</entry>
-              <entry>ok</entry>
-              <entry>ok</entry>
-              <entry>ok</entry>
-              <entry>ok</entry>
-             </row>
-             <row>
-              <entry><parameter>mode</parameter> = "rl"</entry>
-              <entry>ok</entry>
-              <entry>ok</entry>
-              <entry>wait</entry>
-              <entry>false</entry>
-              <entry>illegal</entry>
-              <entry>illegal</entry>
-              <entry>illegal</entry>
-              <entry>illegal</entry>
-             </row>
-             <row>
-              <entry><parameter>mode</parameter> = "wl"</entry>
-              <entry>wait</entry>
-              <entry>false</entry>
-              <entry>wait</entry>
-              <entry>false</entry>
-              <entry>illegal</entry>
-              <entry>illegal</entry>
-              <entry>illegal</entry>
-              <entry>illegal</entry>
-             </row>
-             <row>
-              <entry><parameter>mode</parameter> = "rd"</entry>
-              <entry>illegal</entry>
-              <entry>illegal</entry>
-              <entry>illegal</entry>
-              <entry>illegal</entry>
-              <entry>ok</entry>
-              <entry>ok</entry>
-              <entry>wait</entry>
-              <entry>false</entry>
-             </row>
-             <row>
-              <entry><parameter>mode</parameter> = "wd"</entry>
-              <entry>illegal</entry>
-              <entry>illegal</entry>
-              <entry>illegal</entry>
-              <entry>illegal</entry>
-              <entry>wait</entry>
-              <entry>false</entry>
-              <entry>wait</entry>
-              <entry>false</entry>
-             </row>
-            </tbody>
-           </tgroup>
-          </table>
-          <simplelist>
-           <member>ok: the second call will be successfull.</member>
-           <member>wait: the second call waits until <function>dba_close</function> is called for the first.</member>
-           <member>false: the second call returns false.</member>
-           <member>illegal: you must not mix "l" and "d" modifiers for <parameter>mode</parameter> parameter.</member>
-          </simplelist>
-         </para>
-        </note>
-       </listitem>
-      </varlistentry>
-      <varlistentry>
-       <term><parameter>handler</parameter></term>
-       <listitem>
-        <para>
-         The name of the <link linkend="dba.requirements">handler</link> which
-         shall be used for accessing <parameter>path</parameter>. It is passed 
-         all optional parameters given to <function>dba_popen</function> and 
-         can act on behalf of them.
-        </para>
-       </listitem>
-      </varlistentry>
-     </variablelist>
-    </para>
-   </refsect1>
-   <refsect1 role="returnvalues">
-    &reftitle.returnvalues;
-    <para>
-     Returns a positive handle on success, or &false; on failure.
-    </para>
-   </refsect1>
-   <refsect1 role="changelog">
-    &reftitle.changelog;
-    <para>
-     <informaltable>
-      <tgroup cols="2">
-       <thead>
-        <row>
-         <entry>&Version;</entry>
-         <entry>&Description;</entry>
-        </row>
-       </thead>
-       <tbody>
-        <row>
-         <entry>4.3.0</entry>
-         <entry>
-          It's possible to open database files over network connection. However
-          in cases a socket connection will be used (as with http or ftp) the
-          connection will be locked instead of the resource itself. This is important 
-          to know since in such cases locking is simply ignored on the resource 
-          and other solutions have to be found.
-         </entry>
-        </row>
-        <row>
-         <entry>4.3.0</entry>
-         <entry>
-          Locking and the <parameter>mode</parameter> modifiers "l", "d", "-"
-          and "t" were added.
-          In previous PHP versions, you must use semaphores to guard against
-          simultaneous database access for any database handler with the exception 
-          of GDBM. See <link linkend="ref.sem">System V semaphore support</link>.
-         </entry>
-        </row>
-        <row>
-         <entry>before 4.3.5</entry>
-         <entry>
-          open mode 'c' is broken for several internal handlers and truncates
-          the database instead of appending data to an existent database. 
-          Also dbm and ndbm fail on mode 'c' in typical configurations (this 
-          cannot be fixed).
-         </entry>
-        </row>
-       </tbody>
-      </tgroup>
-     </informaltable>
-    </para>
-   </refsect1>
-   <refsect1 role="seealso">
-    &reftitle.seealso;
-    <para>
-     <simplelist>
-      <member><function>dba_popen</function></member>
-      <member><function>dba_close</function></member>
-     </simplelist>
-    </para>
-   </refsect1>
-  </refentry>
+<!-- $Revision: 1.15 $ -->
+<refentry id="function.dba-open">
+ <refnamediv>
+  <refname>dba_open</refname>
+  <refpurpose>Open database</refpurpose>
+ </refnamediv>
+ <refsect1 role="description">
+  &reftitle.description;
+  <methodsynopsis>
+   <type>resource</type><methodname>dba_open</methodname>
+   <methodparam><type>string</type><parameter>path</parameter></methodparam>
+   <methodparam><type>string</type><parameter>mode</parameter></methodparam>
+   <methodparam><type>string</type><parameter>handler</parameter></methodparam>
+   <methodparam choice="opt"><parameter>...</parameter></methodparam>
+  </methodsynopsis>
+  <para>
+   <function>dba_open</function> establishes a database instance for
+   <parameter>path</parameter> with <parameter>mode</parameter> using
+   <parameter>handler</parameter>.
+  </para>
+ </refsect1>
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>path</parameter></term>
+     <listitem>
+      <para>
+       Commonly a regular path in your filesystem.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>mode</parameter></term>
+     <listitem>
+      <para>
+       It is <literal>r</literal> for read access, <literal>w</literal> for
+       read/write access to an already existing database, <literal>c</literal>
+       for read/write access and database creation if it doesn't currently exist,
+       and <literal>n</literal> for create, truncate and read/write access.
+      </para>
+      <para>
+       Additionally you can set the database lock method with the next char. 
+       Use <literal>l</literal> to lock the database with a <filename>.lck</filename>
+       file or <literal>d</literal> to lock the databasefile itself. It is 
+       important that all of your applications do this consistently.
+      </para>
+      <para>
+       If you want to test the access and do not want to wait for the lock 
+       you can add <literal>t</literal> as third character. When you are 
+       absolutely sure that you do not require database locking you can do 
+       so by using <literal>-</literal> instead of <literal>l</literal> or
+       <literal>d</literal>. When none of <literal>d</literal>, 
+       <literal>l</literal> or <literal>-</literal> is used, dba will lock
+       on the database file as it would with <literal>d</literal>.
+      </para>
+      <note>
+       <para>
+        There can only be one writer for one database file. When you use dba on 
+        a webserver and more than one request requires write operations they can
+        only be done one after another. Also read during write is not allowed.
+        The dba extension uses locks to prevent this. See the following table:
+        <table>
+         <title>DBA locking</title>
+         <tgroup cols="9">
+          <thead>
+           <row>
+            <entry>already open</entry>
+            <entry><parameter>mode</parameter> = "rl"</entry>
+            <entry><parameter>mode</parameter> = "rlt"</entry>
+            <entry><parameter>mode</parameter> = "wl"</entry>
+            <entry><parameter>mode</parameter> = "wlt"</entry>
+            <entry><parameter>mode</parameter> = "rd"</entry>
+            <entry><parameter>mode</parameter> = "rdt"</entry>
+            <entry><parameter>mode</parameter> = "wd"</entry>
+            <entry><parameter>mode</parameter> = "wdt"</entry>
+           </row>
+          </thead>
+          <tbody>
+           <row>
+            <entry>not open</entry>
+            <entry>ok</entry>
+            <entry>ok</entry>
+            <entry>ok</entry>
+            <entry>ok</entry>
+            <entry>ok</entry>
+            <entry>ok</entry>
+            <entry>ok</entry>
+            <entry>ok</entry>
+           </row>
+           <row>
+            <entry><parameter>mode</parameter> = "rl"</entry>
+            <entry>ok</entry>
+            <entry>ok</entry>
+            <entry>wait</entry>
+            <entry>false</entry>
+            <entry>illegal</entry>
+            <entry>illegal</entry>
+            <entry>illegal</entry>
+            <entry>illegal</entry>
+           </row>
+           <row>
+            <entry><parameter>mode</parameter> = "wl"</entry>
+            <entry>wait</entry>
+            <entry>false</entry>
+            <entry>wait</entry>
+            <entry>false</entry>
+            <entry>illegal</entry>
+            <entry>illegal</entry>
+            <entry>illegal</entry>
+            <entry>illegal</entry>
+           </row>
+           <row>
+            <entry><parameter>mode</parameter> = "rd"</entry>
+            <entry>illegal</entry>
+            <entry>illegal</entry>
+            <entry>illegal</entry>
+            <entry>illegal</entry>
+            <entry>ok</entry>
+            <entry>ok</entry>
+            <entry>wait</entry>
+            <entry>false</entry>
+           </row>
+           <row>
+            <entry><parameter>mode</parameter> = "wd"</entry>
+            <entry>illegal</entry>
+            <entry>illegal</entry>
+            <entry>illegal</entry>
+            <entry>illegal</entry>
+            <entry>wait</entry>
+            <entry>false</entry>
+            <entry>wait</entry>
+            <entry>false</entry>
+           </row>
+          </tbody>
+         </tgroup>
+        </table>
+        <simplelist>
+         <member>ok: the second call will be successfull.</member>
+         <member>wait: the second call waits until <function>dba_close</function> is called for the first.</member>
+         <member>false: the second call returns false.</member>
+         <member>illegal: you must not mix "l" and "d" modifiers for <parameter>mode</parameter> parameter.</member>
+        </simplelist>
+       </para>
+      </note>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>handler</parameter></term>
+     <listitem>
+      <para>
+       The name of the <link linkend="dba.requirements">handler</link> which
+       shall be used for accessing <parameter>path</parameter>. It is passed 
+       all optional parameters given to <function>dba_popen</function> and 
+       can act on behalf of them.
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+ </refsect1>
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   Returns a positive handle on success, or &false; on failure.
+  </para>
+ </refsect1>
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>4.3.0</entry>
+       <entry>
+        It's possible to open database files over network connection. However
+        in cases a socket connection will be used (as with http or ftp) the
+        connection will be locked instead of the resource itself. This is important 
+        to know since in such cases locking is simply ignored on the resource 
+        and other solutions have to be found.
+       </entry>
+      </row>
+      <row>
+       <entry>4.3.0</entry>
+       <entry>
+        Locking and the <parameter>mode</parameter> modifiers "l", "d", "-"
+        and "t" were added.
+        In previous PHP versions, you must use semaphores to guard against
+        simultaneous database access for any database handler with the exception 
+        of GDBM. See <link linkend="ref.sem">System V semaphore support</link>.
+       </entry>
+      </row>
+      <row>
+       <entry>before 4.3.5</entry>
+       <entry>
+        open mode 'c' is broken for several internal handlers and truncates
+        the database instead of appending data to an existent database. 
+        Also dbm and ndbm fail on mode 'c' in typical configurations (this 
+        cannot be fixed).
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
+  </para>
+ </refsect1>
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><function>dba_popen</function></member>
+    <member><function>dba_close</function></member>
+   </simplelist>
+  </para>
+ </refsect1>
+</refentry>
 
 <!-- Keep this comment at the end of the file
 Local variables:
