@@ -52,6 +52,11 @@ $LANGUAGES = array(
                    "preferred_charset" => "Windows-1252",
                    "preferred_font" => $DEFAULT_FONT
                ),
+    "fi"    => array(
+                   "langcode" => "0x40b Finnish",
+                   "preferred_charset" => "Windows-1252",
+                   "preferred_font" => $DEFAULT_FONT
+               ),
     "hu"    => array(
                    "langcode" => "0x40e Hungarian",
                    "preferred_charset" => "Windows-1250",
