@@ -957,7 +957,7 @@ if (count($translation["files"]) != 0) {
 
         // If we need the revision column, print it out
         if ($using_rev) {
-            print "<td>$finfo[revision]</td><td>1." .
+            print "<td>$finfo[revision]</td><td>" .
                   $missing_files[$finfo["name"]][1] .
                   "</td>";
         }
