@@ -35,7 +35,7 @@
 	script runing time on my box is about 15% then the build time, not so big deal, that'll force me rewrite the parser in C ;)
 
 */
-
+//die("\n\n!! remove me later (".__FILE__.":".__LINE__."\n\n");
 error_reporting(2047);
 // finding the real path of the needed files:
 $mypath = $_SERVER["SCRIPT_NAME"];
@@ -124,7 +124,7 @@ function savemyfile($file,$text){
 		mysyslog("$file doesn't exists or have no write permission");
 		return false;
 	}
-	fwrite($f,$text);
+	fwrite($f,trim($text));
 	fclose($f);
 //die("\n---".__LINE__."---".__FILE__);
 	return true;
