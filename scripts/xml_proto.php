@@ -160,9 +160,9 @@ function write_reference_xml()
        "   </para>\n" .
        "  </section>\n\n" .
        "  <!-- Information found in configure.xml -->\n" .
-       "  &reference.".$extension_name.".configure\n" .
+       "  &reference.".$extension_name.".configure;\n" .
        "  <!-- Information found in ini.xml -->\n" .
-       "  &reference.".$extension_name.".ini\n\n" .
+       "  &reference.".$extension_name.".ini;\n\n" .
        "  <section id=\"" . $extension_name . ".resources\">\n" .
        "   &reftitle.resources;\n" .
        "   <para>\n" .
@@ -273,9 +273,10 @@ function write_functions_xml()
             "      </listitem>\n" .
             "     </varlistentry>\n";
         }
-        $tmp .= "   </variablelist>\n  </para>\n </refsect1>\n";
+        $tmp .= "   </variablelist>\n";
         fwrite($fp, $tmp);
     }
+    fwrite ($fp, "  </para>\n </refsect1>\n");
     fwrite($fp, 
         " <refsect1 role=\"returnvalues\">\n" .
         "  &reftitle.returnvalues;\n" .
