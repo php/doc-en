@@ -1,29 +1,38 @@
  <reference id="ref.yaz">
-  <title>YAZ</title>
+  <title>YAZ functions</title>
   <titleabbrev>YAZ</titleabbrev>
-
   <partintro>
-   <simpara>
-    The <function>yaz</function> functions wrap the YAZ API.  The home
-    page of the project is <ulink url="&url.yaz;">&url.yaz;</ulink>.
-    Information about the phpyaz module can be found at <ulink
+   <sect1 id="yaz.intro">
+   <title>Introduction</title>
+   <para>
+    This extension offers a PHP interface to the
+    <productname>YAZ</productname> toolkit that implements the Z39.50
+    protocol for information retrieval. With this extension you can easily
+    implement a Z39.50 origin (client) that searches Z39.50 targets
+    (servers) in parallel.
+   </para>
+   <para>
+    <productname>YAZ</productname> is available at <ulink
+    url="&url.yaz;">&url.yaz;</ulink>. You can find news information,
+    example scripts, etc. for this extension at <ulink
     url="&url.yaz-phpyaz;">&url.yaz-phpyaz;</ulink>.
-   </simpara>
-   <simpara>
-    PHP/YAZ is much simpler to use than the C API for YAZ but less
-    flexible. The intent is to make it easy to build basic client
-    functions. It supports persistent stateless connections very
-    similar to those offered by the various SQL APIs that are
-    available for PHP. This means that sessions are stateless but
-    shared amongst users, thus saving the connect and INIT steps in
-    many cases.
-   </simpara>
-   <simpara>
-    Before compiling PHP with the PHP/YAZ module you'll need the YAZ
-    toolkit.  Build YAZ and install it. Build PHP with your favourite
+   </para>
+   <para>
+    The module hides most of the complexity of Z39.50 so it should be
+    fairly easy to use. It supports persistent stateless connections very
+    similar to those offered by the various SQL APIs that are available
+    for PHP. This means that sessions are stateless but shared amongst
+    users, thus saving the connect and initialize phase steps in most cases.
+   </para>
+   </sect1>
+   <sect1 id="yaz.install">
+   <title>Installation</title>
+   <para>
+    Compile YAZ and install it. Build PHP with your favourite
     modules and add option --with-yaz. Your task is roughly the
     following:
-   </simpara>
+   </para>
+   <para>
    <informalexample>
     <programlisting>
 gunzip -c yaz-1.6.tar.gz|tar xf -
@@ -38,17 +47,22 @@ make
 make install
     </programlisting>
    </informalexample>
-   <simpara>
+   </para>
+   </sect1>
+   <sect1 id="yaz.example">
+   <title>Example</title>
+   <para>
     PHP/YAZ keeps track of connections with targets
     (Z-Associations). A positive integer represents the ID of a
     particular association.
-   </simpara>
-   <simpara>
+   </para>
+   <para>
     The script below demonstrates the parallel searching feature of
-    the API.  When invoked it either prints a query form (if no
-    arguments are supplied) or if there are arguments (term and one or
-    more hosts) it searches the targets in array host.
-   </simpara>
+    the API. When invoked with no arguments it prints a query form; else
+    (arguments are supplied) it searches the targets as given in in array
+    host.
+   </para>
+   <para>
    <example>
     <title><function>YAZ</function></title>
     <programlisting role="php">
@@ -71,7 +85,7 @@ if (empty($term) || count($host) == 0) {
     ';        
 } else {
     echo 'You searced for ' . htmlspecialchars($term) . '&lt;br&gt;';
-    for ($i = 0; $i &gt; $num_hosts; $i++) {
+    for ($i = 0; $i &lt; $num_hosts; $i++) {
         $id[] = yaz_connect($host[$i]);
         yaz_syntax($id[$i],"sutrs");
         yaz_search($id[$i],"rpn",$term);
@@ -99,6 +113,8 @@ if (empty($term) || count($host) == 0) {
 }
     </programlisting>
    </example>
+   </para>
+   </sect1>
   </partintro>
 
   <refentry id="function.yaz-addinfo">
@@ -137,7 +153,7 @@ if (empty($term) || count($host) == 0) {
     </funcsynopsis>
     <para>
      Closes a connection to a target. The application can no longer
-     refer to the target with the given id.
+     refer to the target with the given ID.
     </para>
    </refsect1>
   </refentry>
@@ -322,13 +338,94 @@ if (empty($term) || count($host) == 0) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>Yaz_search</function> prepares for a search on the
+     <function>yaz_search</function> prepares for a search on the
      target with given id. The type represents the query type - only
-     "rpn" is supported now in which case the third argument is a
-     prefix notation query as used by YAZ. Like
-     <function>yaz_connect</function> this function is non-blocking
-     and only prepares for a search to be executed later when
-     <function>yaz_wait</function> is called.
+     "rpn" is supported now in which case the third argument specifies
+     a Type-1 query (RPN). Like <function>yaz_connect</function> this
+     function is non-blocking and only prepares for a search to be
+     executed later when <function>yaz_wait</function> is called.
+    </para>
+   </refsect1>
+   <refsect1>
+    <title>The RPN query</title>
+    <para>
+     The RPN query is a textual represenation of the Type-1 query as
+     defined by the Z39.50 standard. However, in the text representation
+     as used by YAZ a prefix notation is used, that is the operater
+     precedes the operands. The query string is a sequence of tokens where
+     white space is ignored is ignored unless surrounded by double
+     quotes. Tokens beginning with an at-character (<literal>@</literal>)
+     are considered operators, otherwise they are treated as search terms.
+    </para>
+    <table>
+     <title>RPN Operators</title>
+     <tgroup cols="2">
+      <thead>
+        <row>
+          <entry>Syntax</entry>
+          <entry>Description</entry>
+        </row>
+      </thead>
+      <tbody>
+        <row>
+         <entry><literal>@and query1 query2</literal></entry>
+         <entry>intersection of query1 and query2</entry>
+        </row>
+        <row>
+         <entry><literal>@or query1 query2</literal></entry>
+         <entry>union of query1 and query2</entry>
+        </row>
+        <row>
+         <entry><literal>@not query1 query2</literal></entry>
+         <entry>query1 and not query2</entry>
+        </row>
+        <row>
+         <entry><literal>@set name</literal></entry>
+         <entry>result set reference</entry>
+        </row>
+        <row>
+         <entry><literal>@attrset set query</literal></entry>
+         <entry>specifies attribute-set for query. This construction is only
+                allowed once - in the beginning of the whole query</entry>
+        </row>
+        <row>
+          <entry><literal>@attr set type=value query</literal></entry>
+          <entry>applies attribute to query. The type and value are
+                 integers specifying the attribute-type and attribute-value
+                 respectively. The set, if given, specifies the
+                 attribute-set.</entry>
+        </row>
+      </tbody>
+     </tgroup>
+    </table>     
+    <para>
+     The following illustrates valid query constructions:
+     <informalexample>
+      <screen>computer</screen>
+     </informalexample>
+      Matches documents where "computer" occur. No attributes are specified.
+    </para>
+    <para>
+     <informalexample>
+      <screen>"donald knuth"</screen>
+     </informalexample>
+     Matches documents where "donald knuth" occur.
+    </para>
+    <para>
+     <informalexample>
+      <screen>@attr 1=4 art</screen>
+     </informalexample>
+     Attribute type is 1 (Bib-1 use), attribute value is 4
+     Title), so this should match documents where "art" occur
+     in the title.
+    </para>
+    <para>
+     <informalexample>
+<screen>@attrset gils @and @attr 1=4 art @attr 1=1003 "donald knuth"</screen>
+     </informalexample>
+     The query as a whole uses the GILS attributeset. The query matches
+     documents where "art" occur in the title and in which "donald knuth"
+     occur in the author.
     </para>
    </refsect1>
   </refentry>
@@ -337,7 +434,8 @@ if (empty($term) || count($host) == 0) {
    <refnamediv>
     <refname>yaz_syntax</refname>
     <refpurpose>
-     Specifies the preferred record syntax for retrieval
+     Specifies the object identifier (OID) for the preferred record syntax
+     for retrieval.
     </refpurpose>
    </refnamediv>
    <refsect1>
@@ -350,6 +448,9 @@ if (empty($term) || count($host) == 0) {
      </funcprototype>
     </funcsynopsis>
     <para>
+     The syntax may be specified in a raw dot-notation (like
+     <literal>1.2.840.10003.5.10</literal>) or as one of the known
+     record syntaxes (sutrs, usmarc, grs1, xml, etc.).
      This function is used in conjunction with
      <function>yaz_search</function> to specify the preferred record
      syntax for retrieval.
