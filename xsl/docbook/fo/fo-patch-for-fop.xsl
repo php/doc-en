@@ -4,6 +4,16 @@
                 xmlns:fox="http://xml.apache.org/fop/extensions"
                 version="1.0">
 
+<!-- ********************************************************************
+     $Id: fo-patch-for-fop.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
+     ********************************************************************
+
+     This file is part of the DocBook XSL Stylesheet distribution.
+     See ../README or http://docbook.sf.net/ for copyright
+     and other information.
+
+     ******************************************************************** -->
+
 <xsl:output method="xml"/>
 
 <xsl:template match="*">

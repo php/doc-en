@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: biblio.xsl,v 1.1 2002-08-13 15:45:39 goba Exp $
+     $Id: biblio.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -32,8 +32,11 @@
         <xsl:attribute name="language">
           <xsl:call-template name="l10n.language"/>
         </xsl:attribute>
+        <xsl:attribute name="format">
+          <xsl:call-template name="page.number.format"/>
+        </xsl:attribute>
         <xsl:if test="$double.sided != 0">
-          <xsl:attribute name="force-page-count">end-on-even</xsl:attribute>
+          <xsl:attribute name="initial-page-number">auto-odd</xsl:attribute>
         </xsl:if>
 
         <xsl:apply-templates select="." mode="running.head.mode">
@@ -50,8 +53,10 @@
       </fo:page-sequence>
     </xsl:when>
     <xsl:otherwise>
-      <fo:block id="{$id}">
-        <xsl:call-template name="component.separator"/>
+      <fo:block id="{$id}"
+                space-before.minimum="1em"
+                space-before.optimum="1.5em"
+                space-before.maximum="2em">
         <xsl:call-template name="bibliography.titlepage"/>
         <xsl:apply-templates/>
       </fo:block>
@@ -64,37 +69,21 @@
 <xsl:template match="bibliography/subtitle"></xsl:template>
 <xsl:template match="bibliography/titleabbrev"></xsl:template>
 
-<xsl:template match="bibliography/title" mode="component.title.mode">
-  <fo:block xsl:use-attribute-sets="component.title.properties">
-    <xsl:apply-templates/>
-  </fo:block>
-</xsl:template>
-
-<xsl:template match="bibliography/subtitle" mode="component.title.mode">
-  <fo:block font-size="18pt" font-weight="bold" font-style="italic">
-    <xsl:apply-templates/>
-  </fo:block>
-</xsl:template>
-
 <!-- ==================================================================== -->
 
 <xsl:template match="bibliodiv">
   <fo:block>
+    <xsl:attribute name="id">
+      <xsl:call-template name="object.id"/>
+    </xsl:attribute>
+    <xsl:call-template name="bibliodiv.titlepage"/>
     <xsl:apply-templates/>
   </fo:block>
 </xsl:template>
 
-<xsl:template match="bibliodiv/title">
-  <xsl:variable name="id">
-    <xsl:call-template name="object.id">
-      <xsl:with-param name="object" select=".."/>
-    </xsl:call-template>
-  </xsl:variable>
-  <fo:block font-size="16pt" font-weight="bold"
-            font-family="{$title.font.family}">
-    <xsl:apply-templates/>
-  </fo:block>
-</xsl:template>
+<xsl:template match="bibliodiv/title"/>
+<xsl:template match="bibliodiv/subtitle"/>
+<xsl:template match="bibliodiv/titleabbrev"/>
 
 <!-- ==================================================================== -->
 
@@ -173,16 +162,30 @@
 <xsl:template name="biblioentry.label">
   <xsl:param name="node" select="."/>
 
-  <xsl:text>[</xsl:text>
   <xsl:choose>
-    <xsl:when test="local-name($node/child::*[1]) = 'abbrev'">
-      <xsl:apply-templates select="$node/abbrev[1]"/>
+    <xsl:when test="$bibliography.numbered != 0">
+      <xsl:text>[</xsl:text>
+      <xsl:number from="bibliography" count="biblioentry|bibliomixed"
+                  level="any" format="1"/>
+      <xsl:text>] </xsl:text>
     </xsl:when>
-    <xsl:otherwise>
+    <xsl:when test="local-name($node/child::*[1]) = 'abbrev'">
+      <xsl:text>[</xsl:text>
+      <xsl:apply-templates select="$node/abbrev[1]"/>
+      <xsl:text>] </xsl:text>
+    </xsl:when>
+    <xsl:when test="$node/@xreflabel">
+      <xsl:text>[</xsl:text>
+      <xsl:value-of select="$node/@xreflabel"/>
+      <xsl:text>] </xsl:text>
+    </xsl:when>
+    <xsl:when test="$node/@id">
+      <xsl:text>[</xsl:text>
       <xsl:value-of select="$node/@id"/>
-    </xsl:otherwise>
+      <xsl:text>] </xsl:text>
+    </xsl:when>
+    <xsl:otherwise><!-- nop --></xsl:otherwise>
   </xsl:choose>
-  <xsl:text>] </xsl:text>
 </xsl:template>
 
 <!-- ==================================================================== -->
@@ -200,10 +203,7 @@
 </xsl:template>
 
 <xsl:template match="abstract" mode="bibliography.mode">
-  <fo:inline>
-    <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
-  </fo:inline>
+  <!-- suppressed -->
 </xsl:template>
 
 <xsl:template match="address" mode="bibliography.mode">
@@ -595,10 +595,9 @@
 </xsl:template>
 
 <xsl:template match="revhistory" mode="bibliography.mode">
-  <fo:inline>
-    <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
-  </fo:inline>
+  <fo:block>
+    <xsl:apply-templates select="."/> <!-- use normal mode -->
+  </fo:block>
 </xsl:template>
 
 <xsl:template match="seriesinfo" mode="bibliography.mode">
@@ -693,6 +692,14 @@
   </fo:inline>
 </xsl:template>
 
+<xsl:template match="bibliocoverage|biblioid|bibliorelation|bibliosource"
+              mode="bibliography.mode">
+  <fo:inline>
+    <xsl:apply-templates mode="bibliography.mode"/>
+    <xsl:value-of select="$biblioentry.item.separator"/>
+  </fo:inline>
+</xsl:template>
+
 <!-- ==================================================================== -->
 
 <xsl:template match="*" mode="bibliomixed.mode">
@@ -702,15 +709,21 @@
 <xsl:template match="abbrev" mode="bibliomixed.mode">
   <xsl:if test="preceding-sibling::*">
     <fo:inline>
-      <xsl:apply-templates mode="bibliography.mode"/>
+      <xsl:apply-templates mode="bibliomixed.mode"/>
     </fo:inline>
   </xsl:if>
 </xsl:template>
 
 <xsl:template match="abstract" mode="bibliomixed.mode">
-  <fo:inline>
+  <fo:block start-indent="1in">
     <xsl:apply-templates mode="bibliomixed.mode"/>
-  </fo:inline>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="para" mode="bibliomixed.mode">
+  <fo:block>
+    <xsl:apply-templates mode="bibliomixed.mode"/>
+  </fo:block>
 </xsl:template>
 
 <xsl:template match="address" mode="bibliomixed.mode">
@@ -1050,6 +1063,13 @@
 </xsl:template>
 
 <xsl:template match="volumenum" mode="bibliomixed.mode">
+  <fo:inline>
+    <xsl:apply-templates mode="bibliomixed.mode"/>
+  </fo:inline>
+</xsl:template>
+
+<xsl:template match="bibliocoverage|biblioid|bibliorelation|bibliosource"
+              mode="bibliomixed.mode">
   <fo:inline>
     <xsl:apply-templates mode="bibliomixed.mode"/>
   </fo:inline>

@@ -1,7 +1,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
+                xmlns:exsl="http://exslt.org/common"
 		version="1.0"
-                exclude-result-prefixes="doc">
+                exclude-result-prefixes="exsl">
 
 <xsl:import href="docbook.xsl"/>
 <xsl:import href="chunk-common.xsl"/>
@@ -9,22 +9,102 @@
 
 <xsl:param name="onechunk" select="0"/>
 <xsl:param name="refentry.separator" select="0"/>
+<xsl:param name="chunk.fast" select="0"/>
+
+<xsl:key name="genid" match="*" use="generate-id()"/>
+
+<!-- ==================================================================== -->
+
+<xsl:variable name="chunk.hierarchy">
+  <xsl:if test="$chunk.fast != 0">
+    <xsl:choose>
+      <xsl:when test="function-available('exsl:node-set')">
+        <xsl:message>Computing chunks...</xsl:message>
+        <xsl:apply-templates select="/*" mode="find.chunks"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:message>
+          <xsl:text>Fast chunking requires exsl:node-set(). </xsl:text>
+          <xsl:text>Using "slow" chunking.</xsl:text>
+        </xsl:message>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:if>
+</xsl:variable>
+
+<xsl:template match="*" mode="find.chunks">
+  <xsl:variable name="chunk">
+    <xsl:call-template name="chunk"/>
+  </xsl:variable>
+
+  <xsl:choose>
+    <xsl:when test="$chunk != 0">
+      <div class="{local-name(.)}" id="{generate-id()}">
+        <xsl:apply-templates select="*" mode="find.chunks"/>
+      </div>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="*" mode="find.chunks"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
 
 <!-- ==================================================================== -->
 
 <xsl:template name="process-chunk-element">
+  <xsl:param name="content">
+    <xsl:apply-imports/>
+  </xsl:param>
+
   <xsl:choose>
-    <xsl:when test="$onechunk != 0 and not(parent::*)">
-      <xsl:call-template name="chunk-all-sections"/>
-    </xsl:when>
-    <xsl:when test="$onechunk != 0">
-      <xsl:apply-imports/>
-    </xsl:when>
-    <xsl:when test="$chunk.first.sections = 0">
-      <xsl:call-template name="chunk-first-section-with-parent"/>
+    <xsl:when test="$chunk.fast != 0 and function-available('exsl:node-set')">
+      <xsl:variable name="chunks" select="exsl:node-set($chunk.hierarchy)//div"/>
+      <xsl:variable name="genid" select="generate-id()"/>
+
+      <xsl:variable name="div" select="$chunks[@id=$genid]"/>
+
+      <xsl:variable name="prevdiv"
+                    select="($div/preceding-sibling::div|$div/preceding::div|$div/parent::div)[last()]"/>
+      <xsl:variable name="prev" select="key('genid', $prevdiv/@id)"/>
+
+      <xsl:variable name="nextdiv"
+                    select="($div/following-sibling::div|$div/following::div|$div/div)[1]"/>
+      <xsl:variable name="next" select="key('genid', $nextdiv/@id)"/>
+
+      <xsl:choose>
+        <xsl:when test="$onechunk != 0 and parent::*">
+          <xsl:copy-of select="$content"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:call-template name="process-chunk">
+            <xsl:with-param name="prev" select="$prev"/>
+            <xsl:with-param name="next" select="$next"/>
+            <xsl:with-param name="content" select="$content"/>
+          </xsl:call-template>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:call-template name="chunk-all-sections"/>
+      <xsl:choose>
+        <xsl:when test="$onechunk != 0 and not(parent::*)">
+          <xsl:call-template name="chunk-all-sections">
+            <xsl:with-param name="content" select="$content"/>
+          </xsl:call-template>
+        </xsl:when>
+        <xsl:when test="$onechunk != 0">
+          <xsl:copy-of select="$content"/>
+        </xsl:when>
+        <xsl:when test="$chunk.first.sections = 0">
+          <xsl:call-template name="chunk-first-section-with-parent">
+            <xsl:with-param name="content" select="$content"/>
+          </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:call-template name="chunk-all-sections">
+            <xsl:with-param name="content" select="$content"/>
+          </xsl:call-template>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -32,6 +112,9 @@
 <xsl:template name="process-chunk">
   <xsl:param name="prev" select="."/>
   <xsl:param name="next" select="."/>
+  <xsl:param name="content">
+    <xsl:apply-imports/>
+  </xsl:param>
 
   <xsl:variable name="ischunk">
     <xsl:call-template name="chunk"/>
@@ -64,6 +147,7 @@
       <xsl:call-template name="chunk-element-content">
         <xsl:with-param name="prev" select="$prev"/>
         <xsl:with-param name="next" select="$next"/>
+        <xsl:with-param name="content" select="$content"/>
       </xsl:call-template>
     </xsl:with-param>
     <xsl:with-param name="quiet" select="$chunk.quietly"/>
@@ -71,6 +155,10 @@
 </xsl:template>
 
 <xsl:template name="chunk-first-section-with-parent">
+  <xsl:param name="content">
+    <xsl:apply-imports/>
+  </xsl:param>
+
   <!-- These xpath expressions are really hairy. The trick is to pick sections -->
   <!-- that are not first children and are not the children of first children -->
 
@@ -254,10 +342,15 @@
   <xsl:call-template name="process-chunk">
     <xsl:with-param name="prev" select="$prev"/>
     <xsl:with-param name="next" select="$next"/>
+    <xsl:with-param name="content" select="$content"/>
   </xsl:call-template>
 </xsl:template>
 
 <xsl:template name="chunk-all-sections">
+  <xsl:param name="content">
+    <xsl:apply-imports/>
+  </xsl:param>
+
   <xsl:variable name="prev-v1"
     select="(preceding::sect1[$chunk.section.depth &gt; 0][1]
              |preceding::sect2[$chunk.section.depth &gt; 1][1]
@@ -349,6 +442,7 @@
   <xsl:call-template name="process-chunk">
     <xsl:with-param name="prev" select="$prev"/>
     <xsl:with-param name="next" select="$next"/>
+    <xsl:with-param name="content" select="$content"/>
   </xsl:call-template>
 </xsl:template>
 
@@ -366,25 +460,40 @@
           </xsl:message>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:apply-templates select="key('id',$rootid)"/>
-          <xsl:if test="$tex.math.in.alt != ''">
-            <xsl:apply-templates select="key('id',$rootid)" mode="collect.tex.math"/>
+          <xsl:if test="$collect.xref.targets = 'yes' or
+                        $collect.xref.targets = 'only'">
+            <xsl:apply-templates select="key('id', $rootid)"
+                        mode="collect.targets"/>
           </xsl:if>
-          <xsl:if test="$generate.manifest != 0">
-            <xsl:call-template name="generate.manifest">
-              <xsl:with-param name="node" select="key('id',$rootid)"/>
-            </xsl:call-template>
+          <xsl:if test="$collect.xref.targets != 'only'">
+            <xsl:apply-templates select="key('id',$rootid)"
+                        mode="process.root"/>
+            <xsl:if test="$tex.math.in.alt != ''">
+              <xsl:apply-templates select="key('id',$rootid)"
+                          mode="collect.tex.math"/>
+            </xsl:if>
+            <xsl:if test="$generate.manifest != 0">
+              <xsl:call-template name="generate.manifest">
+                <xsl:with-param name="node" select="key('id',$rootid)"/>
+              </xsl:call-template>
+            </xsl:if>
           </xsl:if>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:apply-templates select="/" mode="process.root"/>
-      <xsl:if test="$tex.math.in.alt != ''">
-        <xsl:apply-templates select="/" mode="collect.tex.math"/>
+      <xsl:if test="$collect.xref.targets = 'yes' or
+                    $collect.xref.targets = 'only'">
+        <xsl:apply-templates select="/" mode="collect.targets"/>
       </xsl:if>
-      <xsl:if test="$generate.manifest != 0">
-        <xsl:call-template name="generate.manifest"/>
+      <xsl:if test="$collect.xref.targets != 'only'">
+        <xsl:apply-templates select="/" mode="process.root"/>
+        <xsl:if test="$tex.math.in.alt != ''">
+          <xsl:apply-templates select="/" mode="collect.tex.math"/>
+        </xsl:if>
+        <xsl:if test="$generate.manifest != 0">
+          <xsl:call-template name="generate.manifest"/>
+        </xsl:if>
       </xsl:if>
     </xsl:otherwise>
   </xsl:choose>
@@ -393,6 +502,8 @@
 <xsl:template match="*" mode="process.root">
   <xsl:apply-templates select="."/>
 </xsl:template>
+
+<!-- ====================================================================== -->
 
 <xsl:template match="set|book|part|preface|chapter|appendix
                      |article
@@ -436,6 +547,84 @@
   <!-- if the index is completely empty, skip it. -->
   <xsl:if test="count(*)>0 or $generate.index != '0'">
     <xsl:call-template name="process-chunk-element"/>
+  </xsl:if>
+</xsl:template>
+
+<!-- ==================================================================== -->
+
+<xsl:template name="make.lots">
+  <xsl:param name="toc.params" select="''"/>
+  <xsl:param name="toc"/>
+
+  <xsl:variable name="lots">
+    <xsl:if test="contains($toc.params, 'toc')">
+      <xsl:copy-of select="$toc"/>
+    </xsl:if>
+
+    <xsl:if test="contains($toc.params, 'figure')">
+      <xsl:call-template name="list.of.titles">
+        <xsl:with-param name="titles" select="'figure'"/>
+        <xsl:with-param name="nodes" select=".//figure"/>
+      </xsl:call-template>
+    </xsl:if>
+
+    <xsl:if test="contains($toc.params, 'table')">
+      <xsl:call-template name="list.of.titles">
+        <xsl:with-param name="titles" select="'table'"/>
+        <xsl:with-param name="nodes" select=".//table"/>
+      </xsl:call-template>
+    </xsl:if>
+
+    <xsl:if test="contains($toc.params, 'example')">
+      <xsl:call-template name="list.of.titles">
+        <xsl:with-param name="titles" select="'example'"/>
+        <xsl:with-param name="nodes" select=".//example"/>
+      </xsl:call-template>
+    </xsl:if>
+
+    <xsl:if test="contains($toc.params, 'equation')">
+      <xsl:call-template name="list.of.titles">
+        <xsl:with-param name="titles" select="'equation'"/>
+        <xsl:with-param name="nodes" select=".//equation[title]"/>
+      </xsl:call-template>
+    </xsl:if>
+  </xsl:variable>
+
+  <xsl:if test="string($lots) != ''">
+    <xsl:choose>
+      <xsl:when test="$chunk.tocs.and.lots != 0 and not(parent::*)">
+        <xsl:call-template name="write.chunk">
+          <xsl:with-param name="filename">
+            <xsl:call-template name="make-relative-filename">
+              <xsl:with-param name="base.dir" select="$base.dir"/>
+              <xsl:with-param name="base.name">
+                <xsl:call-template name="dbhtml-dir"/>
+                <xsl:apply-templates select="." mode="recursive-chunk-filename"/>
+                <xsl:text>-toc</xsl:text>
+                <xsl:value-of select="$html.ext"/>
+              </xsl:with-param>
+            </xsl:call-template>
+          </xsl:with-param>
+          <xsl:with-param name="content">
+            <xsl:call-template name="chunk-element-content">
+              <xsl:with-param name="prev" select="/foo"/>
+              <xsl:with-param name="next" select="/foo"/>
+              <xsl:with-param name="nav.context" select="'toc'"/>
+              <xsl:with-param name="content">
+                <h1>
+                  <xsl:apply-templates select="." mode="object.title.markup"/>
+                </h1>
+                <xsl:copy-of select="$lots"/>
+              </xsl:with-param>
+            </xsl:call-template>
+          </xsl:with-param>
+          <xsl:with-param name="quiet" select="$chunk.quietly"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:copy-of select="$lots"/>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:if>
 </xsl:template>
 
@@ -620,5 +809,7 @@
     <xsl:call-template name="process.footnotes"/>
   </xsl:if>
 </xsl:template>
+
+<!-- ====================================================================== -->
 
 </xsl:stylesheet>

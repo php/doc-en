@@ -11,7 +11,7 @@
 <xsl:output method="xml" indent="no"/>
 
 <!-- ********************************************************************
-     $Id: docbook.xsl,v 1.1 2002-08-13 15:45:39 goba Exp $
+     $Id: docbook.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -80,7 +80,12 @@
 <xsl:template match="*">
   <xsl:message>
     <xsl:value-of select="name(.)"/>
-    <xsl:text> encountered, but no template matches.</xsl:text>
+    <xsl:text> encountered</xsl:text>
+    <xsl:if test="parent::*">
+      <xsl:text> in </xsl:text>
+      <xsl:value-of select="name(parent::*)"/>
+    </xsl:if>
+    <xsl:text>, but no template matches.</xsl:text>
   </xsl:message>
   <fo:block color="red">
     <xsl:text>&lt;</xsl:text>
@@ -94,19 +99,10 @@
 </xsl:template>
 
 <xsl:template match="/">
-  <xsl:message>
-    <xsl:text>Making </xsl:text>
-    <xsl:value-of select="$page.orientation"/>
-    <xsl:text> pages on </xsl:text>
-    <xsl:value-of select="$paper.type"/>
-    <xsl:text> paper (</xsl:text>
-    <xsl:value-of select="$page.width"/>
-    <xsl:text>x</xsl:text>
-    <xsl:value-of select="$page.height"/>
-    <xsl:text>)</xsl:text>
-  </xsl:message>
+  <xsl:call-template name="root.messages"/>
 
   <xsl:variable name="document.element" select="*[1]"/>
+
   <xsl:variable name="title">
     <xsl:choose>
       <xsl:when test="$document.element/title[1]">
@@ -177,6 +173,23 @@
     </xsl:choose>
 
   </fo:root>
+</xsl:template>
+
+
+<xsl:template name="root.messages">
+  <!-- redefine this any way you'd like to output messages -->
+  <!-- DO NOT OUTPUT ANYTHING FROM THIS TEMPLATE -->
+  <xsl:message>
+    <xsl:text>Making </xsl:text>
+    <xsl:value-of select="$page.orientation"/>
+    <xsl:text> pages on </xsl:text>
+    <xsl:value-of select="$paper.type"/>
+    <xsl:text> paper (</xsl:text>
+    <xsl:value-of select="$page.width"/>
+    <xsl:text>x</xsl:text>
+    <xsl:value-of select="$page.height"/>
+    <xsl:text>)</xsl:text>
+  </xsl:message>
 </xsl:template>
 
 <!-- ==================================================================== -->

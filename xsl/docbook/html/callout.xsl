@@ -7,7 +7,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: callout.xsl,v 1.1 2002-08-13 15:51:37 goba Exp $
+     $Id: callout.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -112,9 +112,6 @@
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
-
-
-
 
 <xsl:template match="co" mode="callout-bug">
   <xsl:call-template name="callout-bug">

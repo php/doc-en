@@ -6,7 +6,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: inline.xsl,v 1.1 2002-08-13 15:45:39 goba Exp $
+     $Id: inline.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -88,7 +88,7 @@
   <xsl:param name="content">
     <xsl:apply-templates/>
   </xsl:param>
-  <fo:inline font-family="{$monospace.font.family}">
+  <fo:inline xsl:use-attribute-sets="monospace.properties">
     <xsl:copy-of select="$content"/>
   </fo:inline>
 </xsl:template>
@@ -115,7 +115,7 @@
   <xsl:param name="content">
     <xsl:apply-templates/>
   </xsl:param>
-  <fo:inline font-weight="bold" font-family="{$monospace.font.family}">
+  <fo:inline font-weight="bold" xsl:use-attribute-sets="monospace.properties">
     <xsl:copy-of select="$content"/>
   </fo:inline>
 </xsl:template>
@@ -124,7 +124,7 @@
   <xsl:param name="content">
     <xsl:apply-templates/>
   </xsl:param>
-  <fo:inline font-style="italic" font-family="{$monospace.font.family}">
+  <fo:inline font-style="italic" xsl:use-attribute-sets="monospace.properties">
     <xsl:copy-of select="$content"/>
   </fo:inline>
 </xsl:template>
@@ -145,6 +145,25 @@
   <fo:inline baseline-shift="sub">
     <xsl:copy-of select="$content"/>
   </fo:inline>
+</xsl:template>
+
+<!-- ==================================================================== -->
+<!-- some special cases -->
+
+<xsl:template match="author">
+  <xsl:call-template name="person.name"/>
+</xsl:template>
+
+<xsl:template match="editor">
+  <xsl:call-template name="person.name"/>
+</xsl:template>
+
+<xsl:template match="othercredit">
+  <xsl:call-template name="person.name"/>
+</xsl:template>
+
+<xsl:template match="authorinitials">
+  <xsl:call-template name="inline.charseq"/>
 </xsl:template>
 
 <!-- ==================================================================== -->
@@ -202,6 +221,10 @@
 </xsl:template>
 
 <xsl:template match="errortype">
+  <xsl:call-template name="inline.charseq"/>
+</xsl:template>
+
+<xsl:template match="errortext">
   <xsl:call-template name="inline.charseq"/>
 </xsl:template>
 
@@ -469,7 +492,9 @@
 </xsl:template>
 
 <xsl:template match="lineannotation">
-  <xsl:call-template name="inline.charseq"/>
+  <fo:inline font-style="italic">
+    <xsl:call-template name="inline.charseq"/>
+  </fo:inline>
 </xsl:template>
 
 <xsl:template match="superscript">
@@ -591,7 +616,7 @@
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:call-template name="inline.charseq"/>
+      <xsl:call-template name="inline.italicseq"/>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -764,9 +789,11 @@
       <xsl:choose>
         <xsl:when test="name($node)='guimenuitem'
                         or name($node)='guisubmenu'">
-          <xsl:text>-&gt;</xsl:text>
+          <xsl:value-of select="$menuchoice.menu.separator"/>
         </xsl:when>
-        <xsl:otherwise>+</xsl:otherwise>
+        <xsl:otherwise>
+          <xsl:value-of select="$menuchoice.separator"/>
+        </xsl:otherwise>
       </xsl:choose>
       <xsl:apply-templates select="$node"/>
       <xsl:call-template name="process.menuchoice">

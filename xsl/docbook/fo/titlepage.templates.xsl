@@ -64,11 +64,15 @@
 </xsl:template>
 
 <xsl:template name="article.titlepage">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" font-family="{$title.font.family}">
+    <fo:block text-align="center">
     <xsl:call-template name="article.titlepage.before.recto"/>
     <xsl:call-template name="article.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="article.titlepage.before.verso"/>
     <xsl:call-template name="article.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="article.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -86,7 +90,7 @@
 </xsl:template>
 
 <xsl:template match="title" mode="article.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" text-align="center" keep-with-next="always" font-size="24.8832pt" font-weight="bold" font-family="{$title.font.family}">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" keep-with-next="always" font-size="24.8832pt" font-weight="bold">
 <xsl:call-template name="component.title">
 <xsl:with-param name="node" select="ancestor-or-self::article[1]"/>
 </xsl:call-template>
@@ -94,73 +98,73 @@
 </xsl:template>
 
 <xsl:template match="subtitle" mode="article.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" font-family="{$title.font.family}" text-align="center">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style">
 <xsl:apply-templates select="." mode="article.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="corpauthor" mode="article.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" text-align="center">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" space-before="0.5em" font-size="14.4pt">
 <xsl:apply-templates select="." mode="article.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="authorgroup" mode="article.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" text-align="center">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" space-before="0.5em" font-size="14.4pt">
 <xsl:apply-templates select="." mode="article.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="author" mode="article.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" text-align="center" font-size="14.4pt" font-weight="bold">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" space-before="0.5em" font-size="14.4pt">
 <xsl:apply-templates select="." mode="article.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="othercredit" mode="article.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" text-align="center">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" space-before="0.5em">
 <xsl:apply-templates select="." mode="article.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="releaseinfo" mode="article.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" text-align="center">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" space-before="0.5em">
 <xsl:apply-templates select="." mode="article.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="copyright" mode="article.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" text-align="center">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" space-before="0.5em">
 <xsl:apply-templates select="." mode="article.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="legalnotice" mode="article.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" text-align="start" margin-left="0.5in" margin-right="0.5in" font-family="{$body.font.family}">
 <xsl:apply-templates select="." mode="article.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="pubdate" mode="article.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" text-align="center">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" space-before="0.5em">
 <xsl:apply-templates select="." mode="article.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="revision" mode="article.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" text-align="center">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" space-before="0.5em">
 <xsl:apply-templates select="." mode="article.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="revhistory" mode="article.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" space-before="0.5em">
 <xsl:apply-templates select="." mode="article.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="abstract" mode="article.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="article.titlepage.recto.style" space-before="0.5em" text-align="start" margin-left="0.5in" margin-right="0.5in" font-family="{$body.font.family}">
 <xsl:apply-templates select="." mode="article.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
@@ -211,10 +215,14 @@
 
 <xsl:template name="set.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="set.titlepage.before.recto"/>
     <xsl:call-template name="set.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="set.titlepage.before.verso"/>
     <xsl:call-template name="set.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="set.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -366,10 +374,14 @@
 
 <xsl:template name="book.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="book.titlepage.before.recto"/>
     <xsl:call-template name="book.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="book.titlepage.before.verso"/>
     <xsl:call-template name="book.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="book.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -515,10 +527,14 @@
 
 <xsl:template name="part.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="part.titlepage.before.recto"/>
     <xsl:call-template name="part.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="part.titlepage.before.verso"/>
     <xsl:call-template name="part.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="part.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -612,10 +628,14 @@
 
 <xsl:template name="partintro.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="partintro.titlepage.before.recto"/>
     <xsl:call-template name="partintro.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="partintro.titlepage.before.verso"/>
     <xsl:call-template name="partintro.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="partintro.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -633,7 +653,7 @@
 </xsl:template>
 
 <xsl:template match="title" mode="partintro.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="partintro.titlepage.recto.style" text-align="center" font-size="17.28pt" font-weight="bold" space-before="1em" font-family="{$title.font.family}">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="partintro.titlepage.recto.style" text-align="center" font-size="24.8832pt" font-weight="bold" space-before="1em" font-family="{$title.font.family}">
 <xsl:apply-templates select="." mode="partintro.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
@@ -773,10 +793,14 @@
 
 <xsl:template name="reference.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="reference.titlepage.before.recto"/>
     <xsl:call-template name="reference.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="reference.titlepage.before.verso"/>
     <xsl:call-template name="reference.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="reference.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -873,8 +897,303 @@
 </fo:block>
 </xsl:template>
 
+<xsl:template name="refsynopsisdiv.titlepage.recto">
+  <xsl:choose>
+    <xsl:when test="refsynopsisdivinfo/title">
+      <xsl:apply-templates mode="refsynopsisdiv.titlepage.recto.auto.mode" select="refsynopsisdivinfo/title"/>
+    </xsl:when>
+    <xsl:when test="docinfo/title">
+      <xsl:apply-templates mode="refsynopsisdiv.titlepage.recto.auto.mode" select="docinfo/title"/>
+    </xsl:when>
+    <xsl:when test="title">
+      <xsl:apply-templates mode="refsynopsisdiv.titlepage.recto.auto.mode" select="title"/>
+    </xsl:when>
+  </xsl:choose>
+
+</xsl:template>
+
+<xsl:template name="refsynopsisdiv.titlepage.verso">
+</xsl:template>
+
+<xsl:template name="refsynopsisdiv.titlepage.separator">
+</xsl:template>
+
+<xsl:template name="refsynopsisdiv.titlepage.before.recto">
+</xsl:template>
+
+<xsl:template name="refsynopsisdiv.titlepage.before.verso">
+</xsl:template>
+
+<xsl:template name="refsynopsisdiv.titlepage">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
+    <xsl:call-template name="refsynopsisdiv.titlepage.before.recto"/>
+    <xsl:call-template name="refsynopsisdiv.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
+    <xsl:call-template name="refsynopsisdiv.titlepage.before.verso"/>
+    <xsl:call-template name="refsynopsisdiv.titlepage.verso"/>
+    </fo:block>
+    <xsl:call-template name="refsynopsisdiv.titlepage.separator"/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="*" mode="refsynopsisdiv.titlepage.recto.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="*" mode="refsynopsisdiv.titlepage.verso.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="title" mode="refsynopsisdiv.titlepage.recto.auto.mode">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="refsynopsisdiv.titlepage.recto.style" font-family="{$title.font.family}">
+<xsl:apply-templates select="." mode="refsynopsisdiv.titlepage.recto.mode"/>
+</fo:block>
+</xsl:template>
+
+<xsl:template name="refsection.titlepage.recto">
+  <xsl:choose>
+    <xsl:when test="refsectioninfo/title">
+      <xsl:apply-templates mode="refsection.titlepage.recto.auto.mode" select="refsectioninfo/title"/>
+    </xsl:when>
+    <xsl:when test="docinfo/title">
+      <xsl:apply-templates mode="refsection.titlepage.recto.auto.mode" select="docinfo/title"/>
+    </xsl:when>
+    <xsl:when test="title">
+      <xsl:apply-templates mode="refsection.titlepage.recto.auto.mode" select="title"/>
+    </xsl:when>
+  </xsl:choose>
+
+</xsl:template>
+
+<xsl:template name="refsection.titlepage.verso">
+</xsl:template>
+
+<xsl:template name="refsection.titlepage.separator">
+</xsl:template>
+
+<xsl:template name="refsection.titlepage.before.recto">
+</xsl:template>
+
+<xsl:template name="refsection.titlepage.before.verso">
+</xsl:template>
+
+<xsl:template name="refsection.titlepage">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
+    <xsl:call-template name="refsection.titlepage.before.recto"/>
+    <xsl:call-template name="refsection.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
+    <xsl:call-template name="refsection.titlepage.before.verso"/>
+    <xsl:call-template name="refsection.titlepage.verso"/>
+    </fo:block>
+    <xsl:call-template name="refsection.titlepage.separator"/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="*" mode="refsection.titlepage.recto.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="*" mode="refsection.titlepage.verso.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="title" mode="refsection.titlepage.recto.auto.mode">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="refsection.titlepage.recto.style" font-family="{$title.font.family}">
+<xsl:apply-templates select="." mode="refsection.titlepage.recto.mode"/>
+</fo:block>
+</xsl:template>
+
+<xsl:template name="refsect1.titlepage.recto">
+  <xsl:choose>
+    <xsl:when test="refsect1info/title">
+      <xsl:apply-templates mode="refsect1.titlepage.recto.auto.mode" select="refsect1info/title"/>
+    </xsl:when>
+    <xsl:when test="docinfo/title">
+      <xsl:apply-templates mode="refsect1.titlepage.recto.auto.mode" select="docinfo/title"/>
+    </xsl:when>
+    <xsl:when test="title">
+      <xsl:apply-templates mode="refsect1.titlepage.recto.auto.mode" select="title"/>
+    </xsl:when>
+  </xsl:choose>
+
+</xsl:template>
+
+<xsl:template name="refsect1.titlepage.verso">
+</xsl:template>
+
+<xsl:template name="refsect1.titlepage.separator">
+</xsl:template>
+
+<xsl:template name="refsect1.titlepage.before.recto">
+</xsl:template>
+
+<xsl:template name="refsect1.titlepage.before.verso">
+</xsl:template>
+
+<xsl:template name="refsect1.titlepage">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
+    <xsl:call-template name="refsect1.titlepage.before.recto"/>
+    <xsl:call-template name="refsect1.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
+    <xsl:call-template name="refsect1.titlepage.before.verso"/>
+    <xsl:call-template name="refsect1.titlepage.verso"/>
+    </fo:block>
+    <xsl:call-template name="refsect1.titlepage.separator"/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="*" mode="refsect1.titlepage.recto.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="*" mode="refsect1.titlepage.verso.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="title" mode="refsect1.titlepage.recto.auto.mode">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="refsect1.titlepage.recto.style" font-family="{$title.font.family}">
+<xsl:apply-templates select="." mode="refsect1.titlepage.recto.mode"/>
+</fo:block>
+</xsl:template>
+
+<xsl:template name="refsect2.titlepage.recto">
+  <xsl:choose>
+    <xsl:when test="refsect2info/title">
+      <xsl:apply-templates mode="refsect2.titlepage.recto.auto.mode" select="refsect2info/title"/>
+    </xsl:when>
+    <xsl:when test="docinfo/title">
+      <xsl:apply-templates mode="refsect2.titlepage.recto.auto.mode" select="docinfo/title"/>
+    </xsl:when>
+    <xsl:when test="title">
+      <xsl:apply-templates mode="refsect2.titlepage.recto.auto.mode" select="title"/>
+    </xsl:when>
+  </xsl:choose>
+
+</xsl:template>
+
+<xsl:template name="refsect2.titlepage.verso">
+</xsl:template>
+
+<xsl:template name="refsect2.titlepage.separator">
+</xsl:template>
+
+<xsl:template name="refsect2.titlepage.before.recto">
+</xsl:template>
+
+<xsl:template name="refsect2.titlepage.before.verso">
+</xsl:template>
+
+<xsl:template name="refsect2.titlepage">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
+    <xsl:call-template name="refsect2.titlepage.before.recto"/>
+    <xsl:call-template name="refsect2.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
+    <xsl:call-template name="refsect2.titlepage.before.verso"/>
+    <xsl:call-template name="refsect2.titlepage.verso"/>
+    </fo:block>
+    <xsl:call-template name="refsect2.titlepage.separator"/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="*" mode="refsect2.titlepage.recto.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="*" mode="refsect2.titlepage.verso.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="title" mode="refsect2.titlepage.recto.auto.mode">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="refsect2.titlepage.recto.style" font-family="{$title.font.family}">
+<xsl:apply-templates select="." mode="refsect2.titlepage.recto.mode"/>
+</fo:block>
+</xsl:template>
+
+<xsl:template name="refsect3.titlepage.recto">
+  <xsl:choose>
+    <xsl:when test="refsect3info/title">
+      <xsl:apply-templates mode="refsect3.titlepage.recto.auto.mode" select="refsect3info/title"/>
+    </xsl:when>
+    <xsl:when test="docinfo/title">
+      <xsl:apply-templates mode="refsect3.titlepage.recto.auto.mode" select="docinfo/title"/>
+    </xsl:when>
+    <xsl:when test="title">
+      <xsl:apply-templates mode="refsect3.titlepage.recto.auto.mode" select="title"/>
+    </xsl:when>
+  </xsl:choose>
+
+</xsl:template>
+
+<xsl:template name="refsect3.titlepage.verso">
+</xsl:template>
+
+<xsl:template name="refsect3.titlepage.separator">
+</xsl:template>
+
+<xsl:template name="refsect3.titlepage.before.recto">
+</xsl:template>
+
+<xsl:template name="refsect3.titlepage.before.verso">
+</xsl:template>
+
+<xsl:template name="refsect3.titlepage">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
+    <xsl:call-template name="refsect3.titlepage.before.recto"/>
+    <xsl:call-template name="refsect3.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
+    <xsl:call-template name="refsect3.titlepage.before.verso"/>
+    <xsl:call-template name="refsect3.titlepage.verso"/>
+    </fo:block>
+    <xsl:call-template name="refsect3.titlepage.separator"/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="*" mode="refsect3.titlepage.recto.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="*" mode="refsect3.titlepage.verso.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="title" mode="refsect3.titlepage.recto.auto.mode">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="refsect3.titlepage.recto.style" font-family="{$title.font.family}">
+<xsl:apply-templates select="." mode="refsect3.titlepage.recto.mode"/>
+</fo:block>
+</xsl:template>
+
 <xsl:template name="dedication.titlepage.recto">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="dedication.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="17.28pt" font-family="{$title.font.family}" font-weight="bold">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="dedication.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="24.8832pt" font-family="{$title.font.family}" font-weight="bold">
 <xsl:call-template name="component.title">
 <xsl:with-param name="node" select="ancestor-or-self::dedication[1]"/>
 </xsl:call-template></fo:block>
@@ -906,10 +1225,14 @@
 
 <xsl:template name="dedication.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="dedication.titlepage.before.recto"/>
     <xsl:call-template name="dedication.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="dedication.titlepage.before.verso"/>
     <xsl:call-template name="dedication.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="dedication.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -933,7 +1256,7 @@
 </xsl:template>
 
 <xsl:template name="preface.titlepage.recto">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="preface.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="17.28pt" font-family="{$title.font.family}" font-weight="bold">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="preface.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="24.8832pt" font-family="{$title.font.family}" font-weight="bold">
 <xsl:call-template name="component.title">
 <xsl:with-param name="node" select="ancestor-or-self::preface[1]"/>
 </xsl:call-template></fo:block>
@@ -987,10 +1310,14 @@
 
 <xsl:template name="preface.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="preface.titlepage.before.recto"/>
     <xsl:call-template name="preface.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="preface.titlepage.before.verso"/>
     <xsl:call-template name="preface.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="preface.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -1141,11 +1468,15 @@
 </xsl:template>
 
 <xsl:template name="chapter.titlepage">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" font-family="{$title.font.family}">
+    <fo:block margin-left="{$title.margin.left}">
     <xsl:call-template name="chapter.titlepage.before.recto"/>
     <xsl:call-template name="chapter.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="chapter.titlepage.before.verso"/>
     <xsl:call-template name="chapter.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="chapter.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -1163,7 +1494,7 @@
 </xsl:template>
 
 <xsl:template match="title" mode="chapter.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="chapter.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="chapter.titlepage.recto.style" font-size="24.8832pt" font-weight="bold">
 <xsl:call-template name="component.title">
 <xsl:with-param name="node" select="ancestor-or-self::chapter[1]"/>
 </xsl:call-template>
@@ -1171,25 +1502,25 @@
 </xsl:template>
 
 <xsl:template match="subtitle" mode="chapter.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="chapter.titlepage.recto.style" space-before="0.5em" margin-left="{$title.margin.left}" font-style="italic" font-size="14.4pt" font-weight="bold" font-family="{$title.font.family}">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="chapter.titlepage.recto.style" space-before="0.5em" font-style="italic" font-size="14.4pt" font-weight="bold">
 <xsl:apply-templates select="." mode="chapter.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="corpauthor" mode="chapter.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="chapter.titlepage.recto.style">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="chapter.titlepage.recto.style" space-before="0.5em" space-after="0.5em" font-size="14.4pt">
 <xsl:apply-templates select="." mode="chapter.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="authorgroup" mode="chapter.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="chapter.titlepage.recto.style">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="chapter.titlepage.recto.style" space-before="0.5em" space-after="0.5em" font-size="14.4pt">
 <xsl:apply-templates select="." mode="chapter.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
 
 <xsl:template match="author" mode="chapter.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="chapter.titlepage.recto.style">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="chapter.titlepage.recto.style" space-before="0.5em" space-after="0.5em" font-size="14.4pt">
 <xsl:apply-templates select="." mode="chapter.titlepage.recto.mode"/>
 </fo:block>
 </xsl:template>
@@ -1305,10 +1636,14 @@
 
 <xsl:template name="appendix.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="appendix.titlepage.before.recto"/>
     <xsl:call-template name="appendix.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="appendix.titlepage.before.verso"/>
     <xsl:call-template name="appendix.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="appendix.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -1326,7 +1661,7 @@
 </xsl:template>
 
 <xsl:template match="title" mode="appendix.titlepage.recto.auto.mode">
-<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="appendix.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="appendix.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="24.8832pt" font-weight="bold" font-family="{$title.font.family}">
 <xsl:call-template name="component.title">
 <xsl:with-param name="node" select="ancestor-or-self::appendix[1]"/>
 </xsl:call-template>
@@ -1451,10 +1786,14 @@
 
 <xsl:template name="section.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="section.titlepage.before.recto"/>
     <xsl:call-template name="section.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="section.titlepage.before.verso"/>
     <xsl:call-template name="section.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="section.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -1595,10 +1934,14 @@
 
 <xsl:template name="sect1.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="sect1.titlepage.before.recto"/>
     <xsl:call-template name="sect1.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="sect1.titlepage.before.verso"/>
     <xsl:call-template name="sect1.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="sect1.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -1739,10 +2082,14 @@
 
 <xsl:template name="sect2.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="sect2.titlepage.before.recto"/>
     <xsl:call-template name="sect2.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="sect2.titlepage.before.verso"/>
     <xsl:call-template name="sect2.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="sect2.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -1883,10 +2230,14 @@
 
 <xsl:template name="sect3.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="sect3.titlepage.before.recto"/>
     <xsl:call-template name="sect3.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="sect3.titlepage.before.verso"/>
     <xsl:call-template name="sect3.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="sect3.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -2027,10 +2378,14 @@
 
 <xsl:template name="sect4.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="sect4.titlepage.before.recto"/>
     <xsl:call-template name="sect4.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="sect4.titlepage.before.verso"/>
     <xsl:call-template name="sect4.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="sect4.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -2171,10 +2526,14 @@
 
 <xsl:template name="sect5.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="sect5.titlepage.before.recto"/>
     <xsl:call-template name="sect5.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="sect5.titlepage.before.verso"/>
     <xsl:call-template name="sect5.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="sect5.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -2332,10 +2691,14 @@
 
 <xsl:template name="simplesect.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="simplesect.titlepage.before.recto"/>
     <xsl:call-template name="simplesect.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="simplesect.titlepage.before.verso"/>
     <xsl:call-template name="simplesect.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="simplesect.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -2431,7 +2794,7 @@
 </xsl:template>
 
 <xsl:template name="bibliography.titlepage.recto">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="bibliography.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="17.28pt" font-family="{$title.font.family}" font-weight="bold">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="bibliography.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="24.8832pt" font-family="{$title.font.family}" font-weight="bold">
 <xsl:call-template name="component.title">
 <xsl:with-param name="node" select="ancestor-or-self::bibliography[1]"/>
 </xsl:call-template></fo:block>
@@ -2463,10 +2826,14 @@
 
 <xsl:template name="bibliography.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="bibliography.titlepage.before.recto"/>
     <xsl:call-template name="bibliography.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="bibliography.titlepage.before.verso"/>
     <xsl:call-template name="bibliography.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="bibliography.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -2489,8 +2856,87 @@
 </fo:block>
 </xsl:template>
 
+<xsl:template name="bibliodiv.titlepage.recto">
+  <xsl:choose>
+    <xsl:when test="bibliodivinfo/title">
+      <xsl:apply-templates mode="bibliodiv.titlepage.recto.auto.mode" select="bibliodivinfo/title"/>
+    </xsl:when>
+    <xsl:when test="docinfo/title">
+      <xsl:apply-templates mode="bibliodiv.titlepage.recto.auto.mode" select="docinfo/title"/>
+    </xsl:when>
+    <xsl:when test="title">
+      <xsl:apply-templates mode="bibliodiv.titlepage.recto.auto.mode" select="title"/>
+    </xsl:when>
+  </xsl:choose>
+
+  <xsl:choose>
+    <xsl:when test="bibliodivinfo/subtitle">
+      <xsl:apply-templates mode="bibliodiv.titlepage.recto.auto.mode" select="bibliodivinfo/subtitle"/>
+    </xsl:when>
+    <xsl:when test="docinfo/subtitle">
+      <xsl:apply-templates mode="bibliodiv.titlepage.recto.auto.mode" select="docinfo/subtitle"/>
+    </xsl:when>
+    <xsl:when test="subtitle">
+      <xsl:apply-templates mode="bibliodiv.titlepage.recto.auto.mode" select="subtitle"/>
+    </xsl:when>
+  </xsl:choose>
+
+</xsl:template>
+
+<xsl:template name="bibliodiv.titlepage.verso">
+</xsl:template>
+
+<xsl:template name="bibliodiv.titlepage.separator">
+</xsl:template>
+
+<xsl:template name="bibliodiv.titlepage.before.recto">
+</xsl:template>
+
+<xsl:template name="bibliodiv.titlepage.before.verso">
+</xsl:template>
+
+<xsl:template name="bibliodiv.titlepage">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
+    <xsl:call-template name="bibliodiv.titlepage.before.recto"/>
+    <xsl:call-template name="bibliodiv.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
+    <xsl:call-template name="bibliodiv.titlepage.before.verso"/>
+    <xsl:call-template name="bibliodiv.titlepage.verso"/>
+    </fo:block>
+    <xsl:call-template name="bibliodiv.titlepage.separator"/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="*" mode="bibliodiv.titlepage.recto.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="*" mode="bibliodiv.titlepage.verso.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="title" mode="bibliodiv.titlepage.recto.auto.mode">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="bibliodiv.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="20.736pt" font-family="{$title.font.family}" font-weight="bold">
+<xsl:call-template name="component.title">
+<xsl:with-param name="node" select="ancestor-or-self::bibliodiv[1]"/>
+</xsl:call-template>
+</fo:block>
+</xsl:template>
+
+<xsl:template match="subtitle" mode="bibliodiv.titlepage.recto.auto.mode">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="bibliodiv.titlepage.recto.style" font-family="{$title.font.family}">
+<xsl:apply-templates select="." mode="bibliodiv.titlepage.recto.mode"/>
+</fo:block>
+</xsl:template>
+
 <xsl:template name="glossary.titlepage.recto">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="glossary.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="17.28pt" font-family="{$title.font.family}" font-weight="bold">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="glossary.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="24.8832pt" font-family="{$title.font.family}" font-weight="bold">
 <xsl:call-template name="component.title">
 <xsl:with-param name="node" select="ancestor-or-self::glossary[1]"/>
 </xsl:call-template></fo:block>
@@ -2522,10 +2968,14 @@
 
 <xsl:template name="glossary.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="glossary.titlepage.before.recto"/>
     <xsl:call-template name="glossary.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="glossary.titlepage.before.verso"/>
     <xsl:call-template name="glossary.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="glossary.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -2548,8 +2998,87 @@
 </fo:block>
 </xsl:template>
 
+<xsl:template name="glossdiv.titlepage.recto">
+  <xsl:choose>
+    <xsl:when test="glossdivinfo/title">
+      <xsl:apply-templates mode="glossdiv.titlepage.recto.auto.mode" select="glossdivinfo/title"/>
+    </xsl:when>
+    <xsl:when test="docinfo/title">
+      <xsl:apply-templates mode="glossdiv.titlepage.recto.auto.mode" select="docinfo/title"/>
+    </xsl:when>
+    <xsl:when test="title">
+      <xsl:apply-templates mode="glossdiv.titlepage.recto.auto.mode" select="title"/>
+    </xsl:when>
+  </xsl:choose>
+
+  <xsl:choose>
+    <xsl:when test="glossdivinfo/subtitle">
+      <xsl:apply-templates mode="glossdiv.titlepage.recto.auto.mode" select="glossdivinfo/subtitle"/>
+    </xsl:when>
+    <xsl:when test="docinfo/subtitle">
+      <xsl:apply-templates mode="glossdiv.titlepage.recto.auto.mode" select="docinfo/subtitle"/>
+    </xsl:when>
+    <xsl:when test="subtitle">
+      <xsl:apply-templates mode="glossdiv.titlepage.recto.auto.mode" select="subtitle"/>
+    </xsl:when>
+  </xsl:choose>
+
+</xsl:template>
+
+<xsl:template name="glossdiv.titlepage.verso">
+</xsl:template>
+
+<xsl:template name="glossdiv.titlepage.separator">
+</xsl:template>
+
+<xsl:template name="glossdiv.titlepage.before.recto">
+</xsl:template>
+
+<xsl:template name="glossdiv.titlepage.before.verso">
+</xsl:template>
+
+<xsl:template name="glossdiv.titlepage">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
+    <xsl:call-template name="glossdiv.titlepage.before.recto"/>
+    <xsl:call-template name="glossdiv.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
+    <xsl:call-template name="glossdiv.titlepage.before.verso"/>
+    <xsl:call-template name="glossdiv.titlepage.verso"/>
+    </fo:block>
+    <xsl:call-template name="glossdiv.titlepage.separator"/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="*" mode="glossdiv.titlepage.recto.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="*" mode="glossdiv.titlepage.verso.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="title" mode="glossdiv.titlepage.recto.auto.mode">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="glossdiv.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="20.736pt" font-family="{$title.font.family}" font-weight="bold">
+<xsl:call-template name="component.title">
+<xsl:with-param name="node" select="ancestor-or-self::glossdiv[1]"/>
+</xsl:call-template>
+</fo:block>
+</xsl:template>
+
+<xsl:template match="subtitle" mode="glossdiv.titlepage.recto.auto.mode">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="glossdiv.titlepage.recto.style" font-family="{$title.font.family}">
+<xsl:apply-templates select="." mode="glossdiv.titlepage.recto.mode"/>
+</fo:block>
+</xsl:template>
+
 <xsl:template name="index.titlepage.recto">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="index.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="17.28pt" font-family="{$title.font.family}" font-weight="bold">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="index.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="24.8832pt" font-family="{$title.font.family}" font-weight="bold">
 <xsl:call-template name="component.title">
 <xsl:with-param name="node" select="ancestor-or-self::index[1]"/>
 <xsl:with-param name="pagewide" select="1"/>
@@ -2582,10 +3111,14 @@
 
 <xsl:template name="index.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="index.titlepage.before.recto"/>
     <xsl:call-template name="index.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="index.titlepage.before.verso"/>
     <xsl:call-template name="index.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="index.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -2608,8 +3141,135 @@
 </fo:block>
 </xsl:template>
 
+<xsl:template name="indexdiv.titlepage.recto">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="indexdiv.titlepage.recto.style">
+<xsl:call-template name="indexdiv.title">
+<xsl:with-param name="title" select="title"/>
+</xsl:call-template></fo:block>
+  <xsl:choose>
+    <xsl:when test="indexdivinfo/subtitle">
+      <xsl:apply-templates mode="indexdiv.titlepage.recto.auto.mode" select="indexdivinfo/subtitle"/>
+    </xsl:when>
+    <xsl:when test="docinfo/subtitle">
+      <xsl:apply-templates mode="indexdiv.titlepage.recto.auto.mode" select="docinfo/subtitle"/>
+    </xsl:when>
+    <xsl:when test="subtitle">
+      <xsl:apply-templates mode="indexdiv.titlepage.recto.auto.mode" select="subtitle"/>
+    </xsl:when>
+  </xsl:choose>
+
+</xsl:template>
+
+<xsl:template name="indexdiv.titlepage.verso">
+</xsl:template>
+
+<xsl:template name="indexdiv.titlepage.separator">
+</xsl:template>
+
+<xsl:template name="indexdiv.titlepage.before.recto">
+</xsl:template>
+
+<xsl:template name="indexdiv.titlepage.before.verso">
+</xsl:template>
+
+<xsl:template name="indexdiv.titlepage">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
+    <xsl:call-template name="indexdiv.titlepage.before.recto"/>
+    <xsl:call-template name="indexdiv.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
+    <xsl:call-template name="indexdiv.titlepage.before.verso"/>
+    <xsl:call-template name="indexdiv.titlepage.verso"/>
+    </fo:block>
+    <xsl:call-template name="indexdiv.titlepage.separator"/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="*" mode="indexdiv.titlepage.recto.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="*" mode="indexdiv.titlepage.verso.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="subtitle" mode="indexdiv.titlepage.recto.auto.mode">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="indexdiv.titlepage.recto.style" font-family="{$title.font.family}">
+<xsl:apply-templates select="." mode="indexdiv.titlepage.recto.mode"/>
+</fo:block>
+</xsl:template>
+
+<xsl:template name="setindex.titlepage.recto">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="setindex.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="24.8832pt" font-family="{$title.font.family}" font-weight="bold">
+<xsl:call-template name="component.title">
+<xsl:with-param name="node" select="ancestor-or-self::setindex[1]"/>
+<xsl:with-param name="pagewide" select="1"/>
+</xsl:call-template></fo:block>
+  <xsl:choose>
+    <xsl:when test="setindexinfo/subtitle">
+      <xsl:apply-templates mode="setindex.titlepage.recto.auto.mode" select="setindexinfo/subtitle"/>
+    </xsl:when>
+    <xsl:when test="docinfo/subtitle">
+      <xsl:apply-templates mode="setindex.titlepage.recto.auto.mode" select="docinfo/subtitle"/>
+    </xsl:when>
+    <xsl:when test="subtitle">
+      <xsl:apply-templates mode="setindex.titlepage.recto.auto.mode" select="subtitle"/>
+    </xsl:when>
+  </xsl:choose>
+
+</xsl:template>
+
+<xsl:template name="setindex.titlepage.verso">
+</xsl:template>
+
+<xsl:template name="setindex.titlepage.separator">
+</xsl:template>
+
+<xsl:template name="setindex.titlepage.before.recto">
+</xsl:template>
+
+<xsl:template name="setindex.titlepage.before.verso">
+</xsl:template>
+
+<xsl:template name="setindex.titlepage">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
+    <xsl:call-template name="setindex.titlepage.before.recto"/>
+    <xsl:call-template name="setindex.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
+    <xsl:call-template name="setindex.titlepage.before.verso"/>
+    <xsl:call-template name="setindex.titlepage.verso"/>
+    </fo:block>
+    <xsl:call-template name="setindex.titlepage.separator"/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="*" mode="setindex.titlepage.recto.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="*" mode="setindex.titlepage.verso.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="subtitle" mode="setindex.titlepage.recto.auto.mode">
+<fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="setindex.titlepage.recto.style" font-family="{$title.font.family}">
+<xsl:apply-templates select="." mode="setindex.titlepage.recto.mode"/>
+</fo:block>
+</xsl:template>
+
 <xsl:template name="colophon.titlepage.recto">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="colophon.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="17.28pt" font-family="{$title.font.family}" font-weight="bold">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="colophon.titlepage.recto.style" margin-left="{$title.margin.left}" font-size="24.8832pt" font-family="{$title.font.family}" font-weight="bold">
 <xsl:call-template name="component.title">
 <xsl:with-param name="node" select="ancestor-or-self::colophon[1]"/>
 </xsl:call-template></fo:block>
@@ -2641,10 +3301,14 @@
 
 <xsl:template name="colophon.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="colophon.titlepage.before.recto"/>
     <xsl:call-template name="colophon.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="colophon.titlepage.before.verso"/>
     <xsl:call-template name="colophon.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="colophon.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -2668,7 +3332,7 @@
 </xsl:template>
 
 <xsl:template name="table.of.contents.titlepage.recto">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="table.of.contents.titlepage.recto.style" space-after="1em" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="table.of.contents.titlepage.recto.style" space-before.minimum="1em" space-before.optimum="1.5em" space-before.maximum="2em" space-after="0.5em" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
 <xsl:call-template name="gentext">
 <xsl:with-param name="key" select="'TableofContents'"/>
 </xsl:call-template></fo:block>
@@ -2688,10 +3352,14 @@
 
 <xsl:template name="table.of.contents.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="table.of.contents.titlepage.before.recto"/>
     <xsl:call-template name="table.of.contents.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="table.of.contents.titlepage.before.verso"/>
     <xsl:call-template name="table.of.contents.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="table.of.contents.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -2709,7 +3377,7 @@
 </xsl:template>
 
 <xsl:template name="list.of.tables.titlepage.recto">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="list.of.tables.titlepage.recto.style" space-after="1em" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="list.of.tables.titlepage.recto.style" space-before.minimum="1em" space-before.optimum="1.5em" space-before.maximum="2em" space-after="0.5em" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
 <xsl:call-template name="gentext">
 <xsl:with-param name="key" select="'ListofTables'"/>
 </xsl:call-template></fo:block>
@@ -2729,10 +3397,14 @@
 
 <xsl:template name="list.of.tables.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="list.of.tables.titlepage.before.recto"/>
     <xsl:call-template name="list.of.tables.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="list.of.tables.titlepage.before.verso"/>
     <xsl:call-template name="list.of.tables.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="list.of.tables.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -2750,7 +3422,7 @@
 </xsl:template>
 
 <xsl:template name="list.of.figures.titlepage.recto">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="list.of.figures.titlepage.recto.style" space-after="1em" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="list.of.figures.titlepage.recto.style" space-before.minimum="1em" space-before.optimum="1.5em" space-before.maximum="2em" space-after="0.5em" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
 <xsl:call-template name="gentext">
 <xsl:with-param name="key" select="'ListofFigures'"/>
 </xsl:call-template></fo:block>
@@ -2770,10 +3442,14 @@
 
 <xsl:template name="list.of.figures.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="list.of.figures.titlepage.before.recto"/>
     <xsl:call-template name="list.of.figures.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="list.of.figures.titlepage.before.verso"/>
     <xsl:call-template name="list.of.figures.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="list.of.figures.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -2791,7 +3467,7 @@
 </xsl:template>
 
 <xsl:template name="list.of.examples.titlepage.recto">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="list.of.examples.titlepage.recto.style" space-after="1em" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="list.of.examples.titlepage.recto.style" space-before.minimum="1em" space-before.optimum="1.5em" space-before.maximum="2em" space-after="0.5em" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
 <xsl:call-template name="gentext">
 <xsl:with-param name="key" select="'ListofExamples'"/>
 </xsl:call-template></fo:block>
@@ -2811,10 +3487,14 @@
 
 <xsl:template name="list.of.examples.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="list.of.examples.titlepage.before.recto"/>
     <xsl:call-template name="list.of.examples.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="list.of.examples.titlepage.before.verso"/>
     <xsl:call-template name="list.of.examples.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="list.of.examples.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -2832,7 +3512,7 @@
 </xsl:template>
 
 <xsl:template name="list.of.equations.titlepage.recto">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="list.of.equations.titlepage.recto.style" space-after="1em" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="list.of.equations.titlepage.recto.style" space-before.minimum="1em" space-before.optimum="1.5em" space-before.maximum="2em" space-after="0.5em" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
 <xsl:call-template name="gentext">
 <xsl:with-param name="key" select="'ListofEquations'"/>
 </xsl:call-template></fo:block>
@@ -2852,10 +3532,14 @@
 
 <xsl:template name="list.of.equations.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="list.of.equations.titlepage.before.recto"/>
     <xsl:call-template name="list.of.equations.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="list.of.equations.titlepage.before.verso"/>
     <xsl:call-template name="list.of.equations.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="list.of.equations.titlepage.separator"/>
   </fo:block>
 </xsl:template>
@@ -2872,8 +3556,53 @@
   <xsl:apply-templates select="." mode="titlepage.mode"/>
 </xsl:template>
 
+<xsl:template name="list.of.procedures.titlepage.recto">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="list.of.procedures.titlepage.recto.style" space-before.minimum="1em" space-before.optimum="1.5em" space-before.maximum="2em" space-after="0.5em" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
+<xsl:call-template name="gentext">
+<xsl:with-param name="key" select="'ListofProcedures'"/>
+</xsl:call-template></fo:block>
+</xsl:template>
+
+<xsl:template name="list.of.procedures.titlepage.verso">
+</xsl:template>
+
+<xsl:template name="list.of.procedures.titlepage.separator">
+</xsl:template>
+
+<xsl:template name="list.of.procedures.titlepage.before.recto">
+</xsl:template>
+
+<xsl:template name="list.of.procedures.titlepage.before.verso">
+</xsl:template>
+
+<xsl:template name="list.of.procedures.titlepage">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
+    <xsl:call-template name="list.of.procedures.titlepage.before.recto"/>
+    <xsl:call-template name="list.of.procedures.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
+    <xsl:call-template name="list.of.procedures.titlepage.before.verso"/>
+    <xsl:call-template name="list.of.procedures.titlepage.verso"/>
+    </fo:block>
+    <xsl:call-template name="list.of.procedures.titlepage.separator"/>
+  </fo:block>
+</xsl:template>
+
+<xsl:template match="*" mode="list.of.procedures.titlepage.recto.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="*" mode="list.of.procedures.titlepage.verso.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
 <xsl:template name="list.of.unknowns.titlepage.recto">
-  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="list.of.unknowns.titlepage.recto.style" space-after="1em" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
+  <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format" xsl:use-attribute-sets="list.of.unknowns.titlepage.recto.style" space-before.minimum="1em" space-before.optimum="1.5em" space-before.maximum="2em" space-after="0.5em" margin-left="{$title.margin.left}" font-size="17.28pt" font-weight="bold" font-family="{$title.font.family}">
 <xsl:call-template name="gentext">
 <xsl:with-param name="key" select="'ListofUnknown'"/>
 </xsl:call-template></fo:block>
@@ -2893,10 +3622,14 @@
 
 <xsl:template name="list.of.unknowns.titlepage">
   <fo:block xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <fo:block>
     <xsl:call-template name="list.of.unknowns.titlepage.before.recto"/>
     <xsl:call-template name="list.of.unknowns.titlepage.recto"/>
+    </fo:block>
+    <fo:block>
     <xsl:call-template name="list.of.unknowns.titlepage.before.verso"/>
     <xsl:call-template name="list.of.unknowns.titlepage.verso"/>
+    </fo:block>
     <xsl:call-template name="list.of.unknowns.titlepage.separator"/>
   </fo:block>
 </xsl:template>

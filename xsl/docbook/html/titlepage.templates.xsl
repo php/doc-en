@@ -65,10 +65,14 @@
 
 <xsl:template name="article.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="article.titlepage.before.recto"/>
     <xsl:call-template name="article.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="article.titlepage.before.verso"/>
     <xsl:call-template name="article.titlepage.verso"/>
+    </div>
     <xsl:call-template name="article.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -209,10 +213,14 @@
 
 <xsl:template name="set.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="set.titlepage.before.recto"/>
     <xsl:call-template name="set.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="set.titlepage.before.verso"/>
     <xsl:call-template name="set.titlepage.verso"/>
+    </div>
     <xsl:call-template name="set.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -353,10 +361,14 @@
 
 <xsl:template name="book.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="book.titlepage.before.recto"/>
     <xsl:call-template name="book.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="book.titlepage.before.verso"/>
     <xsl:call-template name="book.titlepage.verso"/>
+    </div>
     <xsl:call-template name="book.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -514,10 +526,14 @@
 
 <xsl:template name="part.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="part.titlepage.before.recto"/>
     <xsl:call-template name="part.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="part.titlepage.before.verso"/>
     <xsl:call-template name="part.titlepage.verso"/>
+    </div>
     <xsl:call-template name="part.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -675,10 +691,14 @@
 
 <xsl:template name="partintro.titlepage">
   <div>
+    <div>
     <xsl:call-template name="partintro.titlepage.before.recto"/>
     <xsl:call-template name="partintro.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="partintro.titlepage.before.verso"/>
     <xsl:call-template name="partintro.titlepage.verso"/>
+    </div>
     <xsl:call-template name="partintro.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -836,10 +856,14 @@
 
 <xsl:template name="reference.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="reference.titlepage.before.recto"/>
     <xsl:call-template name="reference.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="reference.titlepage.before.verso"/>
     <xsl:call-template name="reference.titlepage.verso"/>
+    </div>
     <xsl:call-template name="reference.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -951,10 +975,14 @@
 
 <xsl:template name="refentry.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="refentry.titlepage.before.recto"/>
     <xsl:call-template name="refentry.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="refentry.titlepage.before.verso"/>
     <xsl:call-template name="refentry.titlepage.verso"/>
+    </div>
     <xsl:call-template name="refentry.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -1004,10 +1032,14 @@
 
 <xsl:template name="dedication.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="dedication.titlepage.before.recto"/>
     <xsl:call-template name="dedication.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="dedication.titlepage.before.verso"/>
     <xsl:call-template name="dedication.titlepage.verso"/>
+    </div>
     <xsl:call-template name="dedication.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -1093,10 +1125,14 @@
 
 <xsl:template name="preface.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="preface.titlepage.before.recto"/>
     <xsl:call-template name="preface.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="preface.titlepage.before.verso"/>
     <xsl:call-template name="preface.titlepage.verso"/>
+    </div>
     <xsl:call-template name="preface.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -1254,10 +1290,14 @@
 
 <xsl:template name="chapter.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="chapter.titlepage.before.recto"/>
     <xsl:call-template name="chapter.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="chapter.titlepage.before.verso"/>
     <xsl:call-template name="chapter.titlepage.verso"/>
+    </div>
     <xsl:call-template name="chapter.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -1415,10 +1455,14 @@
 
 <xsl:template name="appendix.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="appendix.titlepage.before.recto"/>
     <xsl:call-template name="appendix.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="appendix.titlepage.before.verso"/>
     <xsl:call-template name="appendix.titlepage.verso"/>
+    </div>
     <xsl:call-template name="appendix.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -1559,10 +1603,14 @@
 
 <xsl:template name="section.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="section.titlepage.before.recto"/>
     <xsl:call-template name="section.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="section.titlepage.before.verso"/>
     <xsl:call-template name="section.titlepage.verso"/>
+    </div>
     <xsl:call-template name="section.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -1703,10 +1751,14 @@
 
 <xsl:template name="sect1.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="sect1.titlepage.before.recto"/>
     <xsl:call-template name="sect1.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="sect1.titlepage.before.verso"/>
     <xsl:call-template name="sect1.titlepage.verso"/>
+    </div>
     <xsl:call-template name="sect1.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -1847,10 +1899,14 @@
 
 <xsl:template name="sect2.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="sect2.titlepage.before.recto"/>
     <xsl:call-template name="sect2.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="sect2.titlepage.before.verso"/>
     <xsl:call-template name="sect2.titlepage.verso"/>
+    </div>
     <xsl:call-template name="sect2.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -1991,10 +2047,14 @@
 
 <xsl:template name="sect3.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="sect3.titlepage.before.recto"/>
     <xsl:call-template name="sect3.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="sect3.titlepage.before.verso"/>
     <xsl:call-template name="sect3.titlepage.verso"/>
+    </div>
     <xsl:call-template name="sect3.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -2135,10 +2195,14 @@
 
 <xsl:template name="sect4.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="sect4.titlepage.before.recto"/>
     <xsl:call-template name="sect4.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="sect4.titlepage.before.verso"/>
     <xsl:call-template name="sect4.titlepage.verso"/>
+    </div>
     <xsl:call-template name="sect4.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -2279,10 +2343,14 @@
 
 <xsl:template name="sect5.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="sect5.titlepage.before.recto"/>
     <xsl:call-template name="sect5.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="sect5.titlepage.before.verso"/>
     <xsl:call-template name="sect5.titlepage.verso"/>
+    </div>
     <xsl:call-template name="sect5.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -2440,10 +2508,14 @@
 
 <xsl:template name="simplesect.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="simplesect.titlepage.before.recto"/>
     <xsl:call-template name="simplesect.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="simplesect.titlepage.before.verso"/>
     <xsl:call-template name="simplesect.titlepage.verso"/>
+    </div>
     <xsl:call-template name="simplesect.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -2571,10 +2643,14 @@
 
 <xsl:template name="bibliography.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="bibliography.titlepage.before.recto"/>
     <xsl:call-template name="bibliography.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="bibliography.titlepage.before.verso"/>
     <xsl:call-template name="bibliography.titlepage.verso"/>
+    </div>
     <xsl:call-template name="bibliography.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -2630,10 +2706,14 @@
 
 <xsl:template name="glossary.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="glossary.titlepage.before.recto"/>
     <xsl:call-template name="glossary.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="glossary.titlepage.before.verso"/>
     <xsl:call-template name="glossary.titlepage.verso"/>
+    </div>
     <xsl:call-template name="glossary.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -2689,10 +2769,14 @@
 
 <xsl:template name="index.titlepage">
   <div class="titlepage">
+    <div>
     <xsl:call-template name="index.titlepage.before.recto"/>
     <xsl:call-template name="index.titlepage.recto"/>
+    </div>
+    <div>
     <xsl:call-template name="index.titlepage.before.verso"/>
     <xsl:call-template name="index.titlepage.verso"/>
+    </div>
     <xsl:call-template name="index.titlepage.separator"/>
   </div>
 </xsl:template>
@@ -2712,6 +2796,69 @@
 <xsl:template match="subtitle" mode="index.titlepage.recto.auto.mode">
 <div xsl:use-attribute-sets="index.titlepage.recto.style">
 <xsl:apply-templates select="." mode="index.titlepage.recto.mode"/>
+</div>
+</xsl:template>
+
+<xsl:template name="setindex.titlepage.recto">
+  <div xsl:use-attribute-sets="setindex.titlepage.recto.style">
+<xsl:call-template name="component.title">
+<xsl:with-param name="node" select="ancestor-or-self::setindex[1]"/>
+</xsl:call-template></div>
+  <xsl:choose>
+    <xsl:when test="setindexinfo/subtitle">
+      <xsl:apply-templates mode="setindex.titlepage.recto.auto.mode" select="setindexinfo/subtitle"/>
+    </xsl:when>
+    <xsl:when test="docinfo/subtitle">
+      <xsl:apply-templates mode="setindex.titlepage.recto.auto.mode" select="docinfo/subtitle"/>
+    </xsl:when>
+    <xsl:when test="subtitle">
+      <xsl:apply-templates mode="setindex.titlepage.recto.auto.mode" select="subtitle"/>
+    </xsl:when>
+  </xsl:choose>
+
+</xsl:template>
+
+<xsl:template name="setindex.titlepage.verso">
+</xsl:template>
+
+<xsl:template name="setindex.titlepage.separator">
+</xsl:template>
+
+<xsl:template name="setindex.titlepage.before.recto">
+</xsl:template>
+
+<xsl:template name="setindex.titlepage.before.verso">
+</xsl:template>
+
+<xsl:template name="setindex.titlepage">
+  <div class="titlepage">
+    <div>
+    <xsl:call-template name="setindex.titlepage.before.recto"/>
+    <xsl:call-template name="setindex.titlepage.recto"/>
+    </div>
+    <div>
+    <xsl:call-template name="setindex.titlepage.before.verso"/>
+    <xsl:call-template name="setindex.titlepage.verso"/>
+    </div>
+    <xsl:call-template name="setindex.titlepage.separator"/>
+  </div>
+</xsl:template>
+
+<xsl:template match="*" mode="setindex.titlepage.recto.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="*" mode="setindex.titlepage.verso.mode">
+  <!-- if an element isn't found in this mode, -->
+  <!-- try the generic titlepage.mode -->
+  <xsl:apply-templates select="." mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="subtitle" mode="setindex.titlepage.recto.auto.mode">
+<div xsl:use-attribute-sets="setindex.titlepage.recto.style">
+<xsl:apply-templates select="." mode="setindex.titlepage.recto.mode"/>
 </div>
 </xsl:template>
 

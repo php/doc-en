@@ -6,7 +6,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: synop.xsl,v 1.1 2002-08-13 15:51:37 goba Exp $
+     $Id: synop.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -41,7 +41,7 @@
   <xsl:text> </xsl:text>
 </xsl:template>
 
-<xsl:template match="group|arg">
+<xsl:template match="group|arg" name="group-or-arg">
   <xsl:variable name="choice" select="@choice"/>
   <xsl:variable name="rep" select="@rep"/>
   <xsl:variable name="sepchar">
@@ -101,7 +101,7 @@
   <xsl:variable name="choice" select="@choice"/>
   <xsl:variable name="rep" select="@rep"/>
   <xsl:if test="position()>1"><xsl:value-of select="$arg.or.sep"/></xsl:if>
-  <xsl:apply-templates/>
+  <xsl:call-template name="group-or-arg"/>
 </xsl:template>
 
 <xsl:template match="sbr">
@@ -121,6 +121,8 @@
       <xsl:value-of select="$snum"/>
       <xsl:text>)</xsl:text>
     </a>
+    <xsl:text>&#160;</xsl:text>
+    <xsl:apply-templates/>
   </i>
 </xsl:template>
 
@@ -133,7 +135,7 @@
     <xsl:apply-templates select="." mode="synopfragment.number"/>
   </xsl:variable>
   <p>
-    <a name="#{@id}">
+    <a name="{@id}">
       <xsl:text>(</xsl:text>
       <xsl:value-of select="$snum"/>
       <xsl:text>)</xsl:text>
@@ -141,7 +143,7 @@
     <xsl:text> </xsl:text>
     <xsl:apply-templates/>
   </p>
-</xsl:template>   
+</xsl:template>
 
 <xsl:template match="funcsynopsis">
   <xsl:call-template name="informal.object"/>
@@ -151,101 +153,473 @@
   <pre class="{name(.)}"><xsl:apply-templates/></pre>
 </xsl:template>
 
+<!-- ====================================================================== -->
+<!-- funcprototype -->
+<!--
+
+funcprototype ::= (funcdef,
+                   (void|varargs|paramdef+))
+
+funcdef       ::= (#PCDATA|type|replaceable|function)*
+
+paramdef      ::= (#PCDATA|type|replaceable|parameter|funcparams)*
+-->
+
 <xsl:template match="funcprototype">
+  <xsl:variable name="html-style">
+    <xsl:call-template name="dbhtml-attribute">
+      <xsl:with-param name="pis"
+                      select="ancestor::funcsynopsis//processing-instruction('dbhtml')"/>
+      <xsl:with-param name="attribute" select="'funcsynopsis-style'"/>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:variable name="style">
+    <xsl:choose>
+      <xsl:when test="$html-style != ''">
+        <xsl:value-of select="$html-style"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$funcsynopsis.style"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable name="tabular-p"
+                select="$funcsynopsis.tabular.threshold &gt; 0
+                        and string-length(.) &gt; $funcsynopsis.tabular.threshold"/>
+
+  <xsl:choose>
+    <xsl:when test="$style = 'kr' and $tabular-p">
+      <xsl:apply-templates select="." mode="kr-tabular"/>
+    </xsl:when>
+    <xsl:when test="$style = 'kr'">
+      <xsl:apply-templates select="." mode="kr-nontabular"/>
+    </xsl:when>
+    <xsl:when test="$style = 'ansi' and $tabular-p">
+      <xsl:apply-templates select="." mode="ansi-tabular"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="." mode="ansi-nontabular"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- ====================================================================== -->
+<!-- funcprototype: kr, non-tabular -->
+
+<xsl:template match="funcprototype" mode="kr-nontabular">
   <p>
-    <code>
-      <xsl:apply-templates/>
-      <xsl:if test="$funcsynopsis.style='kr'">
-        <xsl:apply-templates select="./paramdef" mode="kr-funcsynopsis-mode"/>
-      </xsl:if>
-    </code>
+    <xsl:apply-templates mode="kr-nontabular"/>
+    <xsl:if test="paramdef">
+      <br/>
+      <xsl:apply-templates select="paramdef" mode="kr-funcsynopsis-mode"/>
+    </xsl:if>
   </p>
 </xsl:template>
 
-<xsl:template match="funcdef">
+<xsl:template match="funcdef" mode="kr-nontabular">
   <code class="{name(.)}">
-    <xsl:apply-templates/>
+    <xsl:apply-templates mode="kr-nontabular"/>
+    <xsl:text>(</xsl:text>
   </code>
 </xsl:template>
 
-<xsl:template match="funcdef/function">
+<xsl:template match="funcdef/function" mode="kr-nontabular">
   <xsl:choose>
     <xsl:when test="$funcsynopsis.decoration != 0">
-      <b class="fsfunc"><xsl:apply-templates/></b>
+      <b class="fsfunc"><xsl:apply-templates mode="kr-nontabular"/></b>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:apply-templates/>
+      <xsl:apply-templates mode="kr-nontabular"/>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
 
-<xsl:template match="void">
-  <xsl:choose>
-    <xsl:when test="$funcsynopsis.style='ansi'">
-      <xsl:text>(void);</xsl:text>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:text>();</xsl:text>
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
-<xsl:template match="varargs">
-  <xsl:text>(...);</xsl:text>
-</xsl:template>
-
-<xsl:template match="paramdef">
-  <xsl:variable name="paramnum">
-    <xsl:number count="paramdef" format="1"/>
-  </xsl:variable>
-  <xsl:if test="$paramnum=1">(</xsl:if>
-  <xsl:choose>
-    <xsl:when test="$funcsynopsis.style='ansi'">
-      <xsl:apply-templates/>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:apply-templates select="./parameter"/>
-    </xsl:otherwise>
-  </xsl:choose>
-  <xsl:choose>
-    <xsl:when test="following-sibling::paramdef">
-      <xsl:text>, </xsl:text>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:text>);</xsl:text>
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
-<xsl:template match="paramdef/parameter">
-  <xsl:choose>
-    <xsl:when test="$funcsynopsis.decoration != 0">
-      <var class="pdparam">
-        <xsl:apply-templates/>
-      </var>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:apply-templates/>
-    </xsl:otherwise>
-  </xsl:choose>
-  <xsl:if test="following-sibling::parameter">
-    <xsl:text>, </xsl:text>
-  </xsl:if>
-</xsl:template>
-
-<xsl:template match="paramdef" mode="kr-funcsynopsis-mode">
-  <br/>
-  <xsl:apply-templates/>
+<xsl:template match="void" mode="kr-nontabular">
+  <code>)</code>
   <xsl:text>;</xsl:text>
 </xsl:template>
 
-<xsl:template match="funcparams">
-  <xsl:text>(</xsl:text>
-  <xsl:apply-templates/>
-  <xsl:text>)</xsl:text>
+<xsl:template match="varargs" mode="kr-nontabular">
+  <xsl:text>...</xsl:text>
+  <code>)</code>
+  <xsl:text>;</xsl:text>
 </xsl:template>
 
-<!-- ==================================================================== -->
+<xsl:template match="paramdef" mode="kr-nontabular">
+  <xsl:apply-templates select="parameter" mode="kr-nontabular"/>
+  <xsl:choose>
+    <xsl:when test="following-sibling::*">
+      <xsl:text>, </xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+      <code>)</code>
+      <xsl:text>;</xsl:text>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="paramdef/parameter" mode="kr-nontabular">
+  <xsl:choose>
+    <xsl:when test="$funcsynopsis.decoration != 0">
+      <var class="pdparam">
+        <xsl:apply-templates mode="kr-nontabular"/>
+      </var>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates mode="kr-nontabular"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="paramdef" mode="kr-funcsynopsis-mode">
+  <xsl:if test="preceding-sibling::paramdef"><br/></xsl:if>
+  <xsl:apply-templates mode="kr-funcsynopsis-mode"/>
+  <xsl:text>;</xsl:text>
+</xsl:template>
+
+<xsl:template match="type|parameter|funcparams" mode="kr-funcsynopsis-mode">
+  <code>
+    <xsl:apply-templates mode="kr-funcsynopsis-mode"/>
+  </code>
+</xsl:template>
+
+<!-- ====================================================================== -->
+<!-- funcprototype: kr, tabular -->
+
+<xsl:template match="funcprototype" mode="kr-tabular">
+  <table border="0" summary="Function synopsis" cellspacing="0" cellpadding="0"
+         style="padding-bottom: 1em">
+    <tr>
+      <td>
+        <xsl:apply-templates select="funcdef" mode="kr-tabular"/>
+      </td>
+      <xsl:apply-templates select="(void|varargs|paramdef)[1]" mode="kr-tabular"/>
+    </tr>
+    <xsl:for-each select="(void|varargs|paramdef)[position() &gt; 1]">
+      <tr>
+        <td>&#160;</td>
+        <xsl:apply-templates select="." mode="kr-tabular"/>
+      </tr>
+    </xsl:for-each>
+  </table>
+  <xsl:if test="paramdef">
+    <table border="0" summary="Function argument synopsis"
+           cellspacing="0" cellpadding="0">
+      <xsl:if test="following-sibling::funcprototype">
+        <xsl:attribute name="style">padding-bottom: 1em</xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates select="paramdef" mode="kr-tabular-funcsynopsis-mode"/>
+    </table>
+  </xsl:if>
+</xsl:template>
+
+<xsl:template match="funcdef" mode="kr-tabular">
+  <code class="{name(.)}">
+    <xsl:apply-templates mode="kr-tabular"/>
+    <xsl:text>(</xsl:text>
+  </code>
+</xsl:template>
+
+<xsl:template match="funcdef/function" mode="kr-tabular">
+  <xsl:choose>
+    <xsl:when test="$funcsynopsis.decoration != 0">
+      <b class="fsfunc"><xsl:apply-templates mode="kr-nontabular"/></b>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates mode="kr-tabular"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="void" mode="kr-tabular">
+  <td>
+    <code>)</code>
+    <xsl:text>;</xsl:text>
+  </td>
+  <td>&#160;</td>
+</xsl:template>
+
+<xsl:template match="varargs" mode="kr-tabular">
+  <td>
+    <xsl:text>...</xsl:text>
+    <code>)</code>
+    <xsl:text>;</xsl:text>
+  </td>
+  <td>&#160;</td>
+</xsl:template>
+
+<xsl:template match="paramdef" mode="kr-tabular">
+  <td>
+    <xsl:apply-templates select="parameter" mode="kr-tabular"/>
+    <xsl:choose>
+      <xsl:when test="following-sibling::*">
+        <xsl:text>, </xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+        <code>)</code>
+        <xsl:text>;</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
+  </td>
+  <td>&#160;</td>
+</xsl:template>
+
+<xsl:template match="paramdef/parameter" mode="kr-tabular">
+  <xsl:choose>
+    <xsl:when test="$funcsynopsis.decoration != 0">
+      <var class="pdparam">
+        <xsl:apply-templates mode="kr-tabular"/>
+      </var>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates mode="kr-tabular"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="paramdef" mode="kr-tabular-funcsynopsis-mode">
+  <tr>
+    <xsl:choose>
+      <xsl:when test="type and funcparams">
+        <td>
+          <xsl:apply-templates select="type" mode="kr-tabular-funcsynopsis-mode"/>
+          <xsl:text>&#160;</xsl:text>
+        </td>
+        <td>
+          <xsl:apply-templates select="type/following-sibling::node()"
+                               mode="kr-tabular-funcsynopsis-mode"/>
+        </td>
+      </xsl:when>
+      <xsl:when test="funcparams">
+        <td colspan="2">
+          <xsl:apply-templates mode="kr-tabular-funcsynopsis-mode"/>
+        </td>
+      </xsl:when>
+      <xsl:otherwise>
+        <td>
+          <xsl:apply-templates select="parameter/preceding-sibling::node()"
+                               mode="kr-tabular-funcsynopsis-mode"/>
+          <xsl:text>&#160;</xsl:text>
+        </td>
+        <td>
+          <xsl:apply-templates select="parameter"
+                               mode="kr-tabular"/>
+          <xsl:apply-templates select="parameter/following-sibling::node()"
+                               mode="kr-tabular-funcsynopsis-mode"/>
+          <xsl:text>;</xsl:text>
+        </td>
+      </xsl:otherwise>
+    </xsl:choose>
+  </tr>
+</xsl:template>
+
+<xsl:template match="paramdef/parameter" mode="kr-tabular-funcsynopsis-mode">
+  <xsl:choose>
+    <xsl:when test="$funcsynopsis.decoration != 0">
+      <var class="pdparam">
+        <xsl:apply-templates mode="kr-tabular-funcsynopsis-mode"/>
+      </var>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates mode="kr-tabular-funcsynopsis-mode"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="funcparams" mode="kr-tabular-funcsynopsis-mode">
+  <code>(</code>
+  <xsl:apply-templates mode="kr-tabular-funcsynopsis-mode"/>
+  <code>)</code>
+  <xsl:text>;</xsl:text>
+</xsl:template>
+
+<!-- ====================================================================== -->
+<!-- funcprototype: ansi, non-tabular -->
+
+<xsl:template match="funcprototype" mode="ansi-nontabular">
+  <p>
+    <xsl:apply-templates mode="ansi-nontabular"/>
+  </p>
+</xsl:template>
+
+<xsl:template match="funcdef" mode="ansi-nontabular">
+  <code class="{name(.)}">
+    <xsl:apply-templates mode="ansi-nontabular"/>
+    <xsl:text>(</xsl:text>
+  </code>
+</xsl:template>
+
+<xsl:template match="funcdef/function" mode="ansi-nontabular">
+  <xsl:choose>
+    <xsl:when test="$funcsynopsis.decoration != 0">
+      <b class="fsfunc"><xsl:apply-templates mode="ansi-nontabular"/></b>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates mode="ansi-nontabular"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="void" mode="ansi-nontabular">
+  <code>void)</code>
+  <xsl:text>;</xsl:text>
+</xsl:template>
+
+<xsl:template match="varargs" mode="ansi-nontabular">
+  <xsl:text>...</xsl:text>
+  <code>)</code>
+  <xsl:text>;</xsl:text>
+</xsl:template>
+
+<xsl:template match="paramdef" mode="ansi-nontabular">
+  <xsl:apply-templates mode="ansi-nontabular"/>
+  <xsl:choose>
+    <xsl:when test="following-sibling::*">
+      <xsl:text>, </xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+      <code>)</code>
+      <xsl:text>;</xsl:text>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="paramdef/parameter" mode="ansi-nontabular">
+  <xsl:choose>
+    <xsl:when test="$funcsynopsis.decoration != 0">
+      <var class="pdparam">
+        <xsl:apply-templates mode="ansi-nontabular"/>
+      </var>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates mode="ansi-nontabular"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="funcparams" mode="ansi-nontabular">
+  <code>(</code>
+  <xsl:apply-templates mode="ansi-nontabular"/>
+  <code>)</code>
+</xsl:template>
+
+<!-- ====================================================================== -->
+<!-- funcprototype: ansi, tabular -->
+
+<xsl:template match="funcprototype" mode="ansi-tabular">
+  <table border="0" summary="Function synopsis" cellspacing="0" cellpadding="0">
+    <xsl:if test="following-sibling::funcprototype">
+      <xsl:attribute name="style">padding-bottom: 1em</xsl:attribute>
+    </xsl:if>
+    <tr>
+      <td>
+        <xsl:apply-templates select="funcdef" mode="ansi-tabular"/>
+      </td>
+      <xsl:apply-templates select="(void|varargs|paramdef)[1]" mode="ansi-tabular"/>
+    </tr>
+    <xsl:for-each select="(void|varargs|paramdef)[position() &gt; 1]">
+      <tr>
+        <td>&#160;</td>
+        <xsl:apply-templates select="." mode="ansi-tabular"/>
+      </tr>
+    </xsl:for-each>
+  </table>
+</xsl:template>
+
+<xsl:template match="funcdef" mode="ansi-tabular">
+  <code class="{name(.)}">
+    <xsl:apply-templates mode="ansi-tabular"/>
+    <xsl:text>(</xsl:text>
+  </code>
+</xsl:template>
+
+<xsl:template match="funcdef/function" mode="ansi-tabular">
+  <xsl:choose>
+    <xsl:when test="$funcsynopsis.decoration != 0">
+      <b class="fsfunc"><xsl:apply-templates mode="ansi-nontabular"/></b>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates mode="kr-tabular"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="void" mode="ansi-tabular">
+  <td>
+    <code>void)</code>
+    <xsl:text>;</xsl:text>
+  </td>
+  <td>&#160;</td>
+</xsl:template>
+
+<xsl:template match="varargs" mode="ansi-tabular">
+  <td>
+    <xsl:text>...</xsl:text>
+    <code>)</code>
+    <xsl:text>;</xsl:text>
+  </td>
+  <td>&#160;</td>
+</xsl:template>
+
+<xsl:template match="paramdef" mode="ansi-tabular">
+  <xsl:choose>
+    <xsl:when test="type and funcparams">
+      <td>
+        <xsl:apply-templates select="type" mode="kr-tabular-funcsynopsis-mode"/>
+        <xsl:text>&#160;</xsl:text>
+      </td>
+      <td>
+        <xsl:apply-templates select="type/following-sibling::node()"
+                             mode="kr-tabular-funcsynopsis-mode"/>
+      </td>
+    </xsl:when>
+    <xsl:otherwise>
+      <td>
+        <xsl:apply-templates select="parameter/preceding-sibling::node()"
+                             mode="ansi-tabular"/>
+        <xsl:text>&#160;</xsl:text>
+      </td>
+      <td>
+        <xsl:apply-templates select="parameter"
+                             mode="ansi-tabular"/>
+        <xsl:apply-templates select="parameter/following-sibling::node()"
+                             mode="ansi-tabular"/>
+        <xsl:choose>
+          <xsl:when test="following-sibling::*">
+            <xsl:text>, </xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+            <code>)</code>
+            <xsl:text>;</xsl:text>
+          </xsl:otherwise>
+        </xsl:choose>
+      </td>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="paramdef/parameter" mode="ansi-tabular">
+  <xsl:choose>
+    <xsl:when test="$funcsynopsis.decoration != 0">
+      <var class="pdparam">
+        <xsl:apply-templates mode="ansi-tabular"/>
+      </var>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates mode="ansi-tabular"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="funcparams" mode="ansi-tabular">
+  <code>(</code>
+  <xsl:apply-templates/>
+  <code>)</code>
+</xsl:template>
+
+<!-- ====================================================================== -->
 
 <xsl:variable name="default-classsynopsis-language">java</xsl:variable>
 

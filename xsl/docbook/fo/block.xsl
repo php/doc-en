@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: block.xsl,v 1.1 2002-08-13 15:45:39 goba Exp $
+     $Id: block.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -25,6 +25,7 @@
 
 <xsl:template match="para">
   <fo:block xsl:use-attribute-sets="normal.para.spacing">
+    <xsl:call-template name="anchor"/>
     <xsl:apply-templates/>
   </fo:block>
 </xsl:template>
@@ -92,7 +93,7 @@
 <xsl:template match="epigraph">
   <fo:block>
     <xsl:call-template name="anchor"/>
-    <xsl:apply-templates select="para"/>
+    <xsl:apply-templates select="para|simpara|formalpara|literallayout"/>
     <fo:inline>
       <xsl:text>--</xsl:text>
       <xsl:apply-templates select="attribution"/>
@@ -107,7 +108,7 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="sidebar">
-  <fo:block>
+  <fo:block xsl:use-attribute-sets="sidebar.properties">
     <xsl:if test="./title">
       <fo:block font-weight="bold"
                 keep-with-next.within-column="always"
@@ -153,6 +154,10 @@
 </xsl:template>
 
 <xsl:template match="msgentry">
+  <xsl:call-template name="block.object"/>
+</xsl:template>
+
+<xsl:template match="simplemsgentry">
   <xsl:call-template name="block.object"/>
 </xsl:template>
 
@@ -258,7 +263,7 @@
   <xsl:variable name="revnumber" select=".//revnumber"/>
   <xsl:variable name="revdate"   select=".//date"/>
   <xsl:variable name="revauthor" select=".//authorinitials"/>
-  <xsl:variable name="revremark" select=".//revremark"/>
+  <xsl:variable name="revremark" select=".//revremark|.//revdescription"/>
   <fo:table-row>
     <fo:table-cell>
       <fo:block>
@@ -306,6 +311,10 @@
 </xsl:template>
 
 <xsl:template match="revision/revremark">
+  <xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="revision/revdescription">
   <xsl:apply-templates/>
 </xsl:template>
 

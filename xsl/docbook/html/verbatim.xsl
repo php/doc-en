@@ -3,11 +3,12 @@
                 xmlns:sverb="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.Verbatim"
                 xmlns:xverb="com.nwalsh.xalan.Verbatim"
                 xmlns:lxslt="http://xml.apache.org/xslt"
-                exclude-result-prefixes="sverb xverb lxslt"
+                xmlns:exsl="http://exslt.org/common"
+                exclude-result-prefixes="sverb xverb lxslt exsl"
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: verbatim.xsl,v 1.1 2002-08-13 15:51:37 goba Exp $
+     $Id: verbatim.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -91,11 +92,7 @@
             <div class="{name(.)}">
               <p>
                 <xsl:call-template name="number.rtf.lines">
-                  <xsl:with-param name="rtf">
-                    <xsl:call-template name="make-verbatim">
-                      <xsl:with-param name="text" select="translate($rtf,' ','&#160;')"/>
-                    </xsl:call-template>
-                  </xsl:with-param>
+                  <xsl:with-param name="rtf" select="$rtf"/>
                 </xsl:call-template>
               </p>
             </div>
@@ -114,7 +111,7 @@
             <div class="{name(.)}">
               <p>
                 <xsl:call-template name="make-verbatim">
-                  <xsl:with-param name="text" select="translate($rtf,' ','&#160;')"/>
+                  <xsl:with-param name="rtf" select="$rtf"/>
                 </xsl:call-template>
               </p>
             </div>
@@ -138,13 +135,6 @@
       <xsl:copy-of select="$content"/>
     </xsl:otherwise>
   </xsl:choose>
-</xsl:template>
-
-<xsl:template match="literallayout[not(@class)
-                                   or @class != 'monospaced']//text()">
-  <xsl:call-template name="make-verbatim">
-    <xsl:with-param name="text" select="translate(.,' ','&#160;')"/>
-  </xsl:call-template>
 </xsl:template>
 
 <xsl:template match="address">
@@ -171,7 +161,9 @@
     <xsl:otherwise>
       <div class="{name(.)}">
         <p>
-          <xsl:apply-templates/>
+          <xsl:call-template name="make-verbatim">
+            <xsl:with-param name="rtf" select="$rtf"/>
+          </xsl:call-template>
         </p>
       </div>
     </xsl:otherwise>
@@ -266,47 +258,21 @@
   </xsl:choose>
 </xsl:template>
 
-<xsl:template match="address//text()">
-  <xsl:call-template name="make-verbatim">
-    <xsl:with-param name="text" select="translate(.,' ','&#160;')"/>
-  </xsl:call-template>
-</xsl:template>
-
 <xsl:template name="make-verbatim">
-  <xsl:param name="text" select="''"/>
+  <xsl:param name="rtf"/>
 
-  <xsl:call-template name="make-verbatim-recursive">
-    <xsl:with-param name="text" select="translate($text, ' ', '&#160;')"/>
-  </xsl:call-template>
-</xsl:template>
-
-<xsl:template name="make-verbatim-recursive">
-  <xsl:param name="text" select="''"/>
+  <!-- I want to make this RTF verbatim. There are two possibilities: either
+       I have access to the exsl:node-set extension function and I can "do it right"
+       or I have to rely on CSS. -->
 
   <xsl:choose>
-    <xsl:when test="not(contains($text, '&#xA;'))">
-      <xsl:value-of select="$text"/>
+    <xsl:when test="function-available('exsl:node-set')">
+      <xsl:apply-templates select="exsl:node-set($rtf)" mode="make.verbatim.mode"/>
     </xsl:when>
-
     <xsl:otherwise>
-      <xsl:variable name="len" select="string-length($text)"/>
-
-      <xsl:choose>
-        <xsl:when test="$len = 1">
-          <br/><xsl:text>&#xA;</xsl:text>
-        </xsl:when>
-
-        <xsl:otherwise>
-    	  <xsl:variable name="half" select="$len div 2"/>
-    	  <xsl:call-template name="make-verbatim-recursive">
-    	    <xsl:with-param name="text" select="substring($text, 1, $half)"/>
-    	  </xsl:call-template>
-    	  <xsl:call-template name="make-verbatim-recursive">
-    	    <xsl:with-param name="text"
-    			    select="substring($text, ($half + 1), $len)"/>
-    	  </xsl:call-template>
-    	</xsl:otherwise>
-      </xsl:choose>
+      <span style="white-space: pre;">
+        <xsl:copy-of select="$rtf"/>
+      </span>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>

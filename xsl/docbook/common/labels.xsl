@@ -23,10 +23,13 @@ element label.</para>
 </xsl:template>
 
 <xsl:template match="*" mode="label.markup">
-  <xsl:message>
-    <xsl:text>Request for label of unexpected element: </xsl:text>
-    <xsl:value-of select="name(.)"/>
-  </xsl:message>
+  <xsl:param name="verbose" select="1"/>
+  <xsl:if test="$verbose">
+    <xsl:message>
+      <xsl:text>Request for label of unexpected element: </xsl:text>
+      <xsl:value-of select="name(.)"/>
+    </xsl:message>
+  </xsl:if>
 </xsl:template>
 
 <xsl:template match="set|book" mode="label.markup">
@@ -252,6 +255,26 @@ element label.</para>
   </xsl:choose>
 </xsl:template>
 
+<xsl:template match="bridgehead" mode="label.markup">
+  <!-- FIXME: could we do a better job here? -->
+  <xsl:variable name="contsec"
+                select="(ancestor::section
+                         |ancestor::simplesect
+                         |ancestor::sect1
+                         |ancestor::sect2
+                         |ancestor::sect3
+                         |ancestor::sect4
+                         |ancestor::sect5
+                         |ancestor::refsect1
+                         |ancestor::refsect2
+                         |ancestor::refsect3
+                         |ancestor::chapter
+                         |ancestor::appendix
+                         |ancestor::preface)[last()]"/>
+
+  <xsl:apply-templates select="$contsec" mode="label.markup"/>
+</xsl:template>
+
 <xsl:template match="refsect1" mode="label.markup">
   <xsl:choose>
     <xsl:when test="@label">
@@ -459,14 +482,13 @@ element label.</para>
   </xsl:choose>
 </xsl:template>
 
-<xsl:template match="bibliography|glossary|index" mode="label.markup">
+<xsl:template match="bibliography|glossary|index|setindex" mode="label.markup">
   <xsl:if test="@label">
     <xsl:value-of select="@label"/>
   </xsl:if>
 </xsl:template>
 
-<xsl:template match="figure|table|example|equation|procedure"
-              mode="label.markup">
+<xsl:template match="figure|table|example|procedure" mode="label.markup">
   <xsl:variable name="pchap"
                 select="ancestor::chapter
                         |ancestor::appendix
@@ -493,6 +515,39 @@ element label.</para>
         </xsl:when>
         <xsl:otherwise>
           <xsl:number format="1" from="book|article" level="any"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="equation" mode="label.markup">
+  <xsl:variable name="pchap"
+                select="ancestor::chapter
+                        |ancestor::appendix
+                        |ancestor::article[ancestor::book]"/>
+
+  <xsl:variable name="prefix">
+    <xsl:if test="count($pchap) &gt; 0">
+      <xsl:apply-templates select="$pchap" mode="label.markup"/>
+    </xsl:if>
+  </xsl:variable>
+
+  <xsl:choose>
+    <xsl:when test="@label">
+      <xsl:value-of select="@label"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:choose>
+        <xsl:when test="count($pchap)>0">
+          <xsl:if test="$prefix != ''">
+            <xsl:apply-templates select="$pchap" mode="label.markup"/>
+            <xsl:apply-templates select="$pchap" mode="intralabel.punctuation"/>
+          </xsl:if>
+          <xsl:number format="1" count="equation[title]" from="chapter|appendix" level="any"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:number format="1" count="equation[title]" from="book|article" level="any"/>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:otherwise>

@@ -6,6 +6,16 @@
                 exclude-result-prefixes="exsl set"
                 version="1.0">
 
+<!-- ********************************************************************
+     $Id: fo-rtf.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
+     ********************************************************************
+
+     This file is part of the DocBook XSL Stylesheet distribution.
+     See ../README or http://docbook.sf.net/ for copyright
+     and other information.
+
+     ******************************************************************** -->
+
 <!-- This module contains templates that match against FO nodes. It is used
      to post-process result tree fragments for some sorts of cleanup.
      These templates can only ever be fired by a processor that supports

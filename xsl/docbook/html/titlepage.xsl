@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: titlepage.xsl,v 1.1 2002-08-13 15:51:37 goba Exp $
+     $Id: titlepage.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -55,6 +55,9 @@
 
 <xsl:attribute-set name="index.titlepage.recto.style"/>
 <xsl:attribute-set name="index.titlepage.verso.style"/>
+
+<xsl:attribute-set name="setindex.titlepage.recto.style"/>
+<xsl:attribute-set name="setindex.titlepage.verso.style"/>
 
 <xsl:attribute-set name="section.titlepage.recto.style"/>
 <xsl:attribute-set name="section.titlepage.verso.style"/>
@@ -149,19 +152,25 @@
                     and $use.extensions != '0'
                     and $linenumbering.extension != '0'">
       <div class="{name(.)}">
-        <p>
-          <xsl:call-template name="number.rtf.lines">
-            <xsl:with-param name="rtf" select="$rtf"/>
-          </xsl:call-template>
-        </p>
+        <xsl:call-template name="paragraph">
+          <xsl:with-param name="content">
+            <xsl:call-template name="number.rtf.lines">
+              <xsl:with-param name="rtf" select="$rtf"/>
+            </xsl:call-template>
+          </xsl:with-param>
+        </xsl:call-template>
       </div>
     </xsl:when>
 
     <xsl:otherwise>
       <div class="{name(.)}">
-        <p>
-          <xsl:apply-templates mode="titlepage.mode"/>
-        </p>
+        <xsl:call-template name="paragraph">
+          <xsl:with-param name="content">
+            <xsl:call-template name="make-verbatim">
+              <xsl:with-param name="rtf" select="$rtf"/>
+            </xsl:call-template>
+          </xsl:with-param>
+        </xsl:call-template>
       </div>
     </xsl:otherwise>
   </xsl:choose>
@@ -429,7 +438,7 @@
 <xsl:template match="keywordset" mode="titlepage.mode">
 </xsl:template>
 
-<xsl:template match="legalnotice " mode="titlepage.mode">
+<xsl:template match="legalnotice" mode="titlepage.mode">
   <xsl:variable name="id"><xsl:call-template name="object.id"/></xsl:variable>
   <xsl:choose>
     <xsl:when test="$generate.legalnotice.link != 0">
@@ -444,7 +453,7 @@
         <xsl:apply-templates select="." mode="title.markup"/>
       </xsl:variable>
 
-      <a href="{$filename}">
+      <a href="{concat('ln-',$id,$html.ext)}">
         <xsl:copy-of select="$title"/>
       </a>
 
@@ -454,7 +463,9 @@
         <xsl:with-param name="content">
           <html>
             <head>
-              <title><xsl:value-of select="$title"/></title>
+              <xsl:call-template name="system.head.content"/>
+              <xsl:call-template name="head.content"/>
+              <xsl:call-template name="user.head.content"/>
             </head>
             <body>
               <xsl:call-template name="body.attributes"/>
@@ -507,17 +518,25 @@
   <xsl:choose>
     <xsl:when test="contrib">
       <xsl:if test="not(preceding-sibling::othercredit[string(contrib)=$contrib])">
-        <p class="{name(.)}">
-          <xsl:apply-templates mode="titlepage.mode" select="contrib"/>
-          <xsl:text>: </xsl:text>
-          <xsl:call-template name="person.name"/>
-          <xsl:apply-templates mode="titlepage.mode" select="./affiliation"/>
-          <xsl:apply-templates select="following-sibling::othercredit[string(contrib)=$contrib]" mode="titlepage.othercredits"/>
-        </p>
+        <xsl:call-template name="paragraph">
+          <xsl:with-param name="class" select="name(.)"/>
+          <xsl:with-param name="content">
+            <xsl:apply-templates mode="titlepage.mode" select="contrib"/>
+            <xsl:text>: </xsl:text>
+            <xsl:call-template name="person.name"/>
+            <xsl:apply-templates mode="titlepage.mode" select="./affiliation"/>
+            <xsl:apply-templates select="following-sibling::othercredit[string(contrib)=$contrib]" mode="titlepage.othercredits"/>
+          </xsl:with-param>
+        </xsl:call-template>
       </xsl:if>
     </xsl:when>
     <xsl:otherwise>
-      <p class="{name(.)}"><xsl:call-template name="person.name"/></p>
+      <xsl:call-template name="paragraph">
+        <xsl:with-param name="class" select="name(.)"/>
+        <xsl:with-param name="content">
+          <xsl:call-template name="person.name"/>
+        </xsl:with-param>
+      </xsl:call-template>
       <xsl:apply-templates mode="titlepage.mode" select="./affiliation"/>
     </xsl:otherwise>
   </xsl:choose>
@@ -563,15 +582,21 @@
 </xsl:template>
 
 <xsl:template match="pubdate" mode="titlepage.mode">
-  <p class="{name(.)}">
-    <xsl:apply-templates mode="titlepage.mode"/>
-  </p>
+  <xsl:call-template name="paragraph">
+    <xsl:with-param name="class" select="name(.)"/>
+    <xsl:with-param name="content">
+      <xsl:apply-templates mode="titlepage.mode"/>
+    </xsl:with-param>
+  </xsl:call-template>
 </xsl:template>
 
 <xsl:template match="publisher" mode="titlepage.mode">
-  <p class="{name(.)}">
-    <xsl:apply-templates mode="titlepage.mode"/>
-  </p>
+  <xsl:call-template name="paragraph">
+    <xsl:with-param name="class" select="name(.)"/>
+    <xsl:with-param name="content">
+      <xsl:apply-templates mode="titlepage.mode"/>
+    </xsl:with-param>
+  </xsl:call-template>
 </xsl:template>
 
 <xsl:template match="publishername" mode="titlepage.mode">
@@ -589,9 +614,12 @@
 </xsl:template>
 
 <xsl:template match="releaseinfo" mode="titlepage.mode">
-  <p class="{name(.)}">
-    <xsl:apply-templates mode="titlepage.mode"/>
-  </p>
+  <xsl:call-template name="paragraph">
+    <xsl:with-param name="class" select="name(.)"/>
+    <xsl:with-param name="content">
+      <xsl:apply-templates mode="titlepage.mode"/>
+    </xsl:with-param>
+  </xsl:call-template>
 </xsl:template>
 
 <xsl:template match="revhistory" mode="titlepage.mode">

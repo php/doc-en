@@ -6,19 +6,19 @@
 
 <xsl:param name="show.revisionflag" select="'1'"/>
 
-<xsl:template name="user.head.content">
+<xsl:template name="system.head.content">
 <style type="text/css">
 <xsl:text>
-div.added    { background-color: yellow; }
+div.added    { background-color: #ffff99; }
 div.deleted  { text-decoration: line-through;
                background-color: #FF7F7F; }
-div.changed  { background-color: lime; }
+div.changed  { background-color: #99ff99; }
 div.off      {  }
 
-span.added   { background-color: yellow; }
+span.added   { background-color: #ffff99; }
 span.deleted { text-decoration: line-through;
                background-color: #FF7F7F; }
-span.changed { background-color: lime; }
+span.changed { background-color: #99ff99; }
 span.off     {  }
 </xsl:text>
 </style>

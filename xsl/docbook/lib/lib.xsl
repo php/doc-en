@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!-- ********************************************************************
-     $Id: lib.xsl,v 1.1 2002-08-13 15:42:05 goba Exp $
+     $Id: lib.xsl,v 1.2 2003-03-09 14:56:58 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -296,6 +296,40 @@
     <xsl:otherwise>
       <xsl:text>/</xsl:text>
       <xsl:value-of select="$next.path"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+
+<xsl:template name="comment-escape-string">
+  <xsl:param name="string" select="''"/>
+
+  <xsl:if test="starts-with($string, '-')">
+    <xsl:text> </xsl:text>
+  </xsl:if>
+
+  <xsl:call-template name="comment-escape-string.recursive">
+    <xsl:with-param name="string" select="$string"/>
+  </xsl:call-template>
+
+  <xsl:if test="substring($string, string-length($string), 1) = '-'">
+    <xsl:text> </xsl:text>
+  </xsl:if>
+</xsl:template>
+
+
+<xsl:template name="comment-escape-string.recursive">
+  <xsl:param name="string" select="''"/>
+  <xsl:choose>
+    <xsl:when test="contains($string, '--')">
+      <xsl:value-of select="substring-before($string, '--')"/>
+      <xsl:value-of select="'- -'"/>
+      <xsl:call-template name="comment-escape-string.recursive">
+        <xsl:with-param name="string" select="substring-after($string, '--')"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="$string"/>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>

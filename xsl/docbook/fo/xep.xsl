@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: xep.xsl,v 1.1 2002-08-13 15:45:40 goba Exp $
+     $Id: xep.xsl,v 1.2 2003-03-09 14:54:49 tom Exp $
      ********************************************************************
      (c) Stephane Bline Peregrine Systems 2001
      Implementation of xep extensions:

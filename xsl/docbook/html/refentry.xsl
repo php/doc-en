@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: refentry.xsl,v 1.1 2002-08-13 15:51:37 goba Exp $
+     $Id: refentry.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -16,6 +16,7 @@
 
 <xsl:template match="reference">
   <div class="{name(.)}">
+    <xsl:call-template name="language.attribute"/>
     <xsl:call-template name="anchor">
       <xsl:with-param name="conditional" select="0"/>
     </xsl:call-template>
@@ -70,6 +71,7 @@
 
 <xsl:template match="refentry">
   <div class="{name(.)}">
+    <xsl:call-template name="language.attribute"/>
     <xsl:if test="$refentry.separator != 0 and preceding-sibling::refentry">
       <div class="refentry.separator">
         <hr/>
@@ -199,8 +201,28 @@
   <xsl:apply-templates/>
 </xsl:template>
 
-<xsl:template match="refsect1|refsect2|refsect3">
-  <xsl:call-template name="block.object"/>
+<xsl:template match="refsection|refsect1|refsect2|refsect3">
+  <div class="{name(.)}">
+    <xsl:call-template name="language.attribute"/>
+    <xsl:call-template name="anchor"/>
+    <xsl:apply-templates/>
+  </div>
+</xsl:template>
+
+<xsl:template match="refsection/title">
+  <!-- the ID is output in the block.object call for refsect1 -->
+  <xsl:variable name="level" select="count(ancestor-or-self::refsection)"/>
+  <xsl:variable name="hlevel">
+    <xsl:choose>
+      <xsl:when test="$level &gt; 5">6</xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$level+1"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  <xsl:element name="h{$hlevel}">
+    <xsl:apply-templates/>
+  </xsl:element>
 </xsl:template>
 
 <xsl:template match="refsect1/title">

@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: block.xsl,v 1.1 2002-08-13 15:51:37 goba Exp $
+     $Id: block.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -24,8 +24,13 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="para">
-  <xsl:variable name="p">
-    <p>
+  <xsl:call-template name="paragraph">
+    <xsl:with-param name="class">
+      <xsl:if test="@role and $para.propagates.style != 0">
+        <xsl:value-of select="@role"/>
+      </xsl:if>
+    </xsl:with-param>
+    <xsl:with-param name="content">
       <xsl:if test="position() = 1 and parent::listitem">
         <xsl:call-template name="anchor">
           <xsl:with-param name="node" select="parent::listitem"/>
@@ -34,6 +39,22 @@
 
       <xsl:call-template name="anchor"/>
       <xsl:apply-templates/>
+    </xsl:with-param>
+  </xsl:call-template>
+</xsl:template>
+
+<xsl:template name="paragraph">
+  <xsl:param name="class" select="''"/>
+  <xsl:param name="content"/>
+
+  <xsl:variable name="p">
+    <p>
+      <xsl:if test="$class != ''">
+        <xsl:attribute name="class">
+          <xsl:value-of select="$class"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:copy-of select="$content"/>
     </p>
   </xsl:variable>
 
@@ -52,16 +73,29 @@
 <xsl:template match="simpara">
   <!-- see also listitem/simpara in lists.xsl -->
   <p>
+    <xsl:if test="@role and $para.propagates.style != 0">
+      <xsl:attribute name="class">
+        <xsl:value-of select="@role"/>
+      </xsl:attribute>
+    </xsl:if>
+
     <xsl:call-template name="anchor"/>
     <xsl:apply-templates/>
   </p>
 </xsl:template>
 
 <xsl:template match="formalpara">
-  <p>
-    <xsl:call-template name="anchor"/>
-    <xsl:apply-templates/>
-  </p>
+  <xsl:call-template name="paragraph">
+    <xsl:with-param name="class">
+      <xsl:if test="@role and $para.propagates.style != 0">
+        <xsl:value-of select="@role"/>
+      </xsl:if>
+    </xsl:with-param>
+    <xsl:with-param name="content">
+      <xsl:call-template name="anchor"/>
+      <xsl:apply-templates/>
+    </xsl:with-param>
+  </xsl:call-template>
 </xsl:template>
 
 <xsl:template match="formalpara/title">
@@ -89,35 +123,40 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="blockquote">
-  <xsl:call-template name="anchor"/>
-  <xsl:choose>
-    <xsl:when test="attribution">
-      <table border="0" width="100%"
-	     cellspacing="0" cellpadding="0" class="blockquote"
-             summary="Block quote">
-	<tr>
-	  <td width="10%" valign="top">&#160;</td>
-	  <td width="80%" valign="top">
-	    <xsl:apply-templates
-	      select="child::*[local-name(.)!='attribution']"/>
-	  </td>
-	  <td width="10%" valign="top">&#160;</td>
-	</tr>
-	<tr>
-	  <td colspan="2" align="right" valign="top">
-	    <xsl:text>--</xsl:text>
-	    <xsl:apply-templates select="attribution"/>
-	  </td>
-	  <td width="10%" valign="top">&#160;</td>
-	</tr>
-      </table>
-    </xsl:when>
-    <xsl:otherwise>
-      <blockquote class="blockquote">
-	<xsl:apply-templates/>
-      </blockquote>
-    </xsl:otherwise>
-  </xsl:choose>
+  <div class="{local-name(.)}">
+    <xsl:if test="@lang or @xml:lang">
+      <xsl:call-template name="language.attribute"/>
+    </xsl:if>
+    <xsl:call-template name="anchor"/>
+
+    <xsl:choose>
+      <xsl:when test="attribution">
+        <table border="0" width="100%"
+               cellspacing="0" cellpadding="0" class="blockquote"
+               summary="Block quote">
+          <tr>
+            <td width="10%" valign="top">&#160;</td>
+            <td width="80%" valign="top">
+              <xsl:apply-templates select="child::*[local-name(.)!='attribution']"/>
+            </td>
+            <td width="10%" valign="top">&#160;</td>
+          </tr>
+          <tr>
+            <td colspan="2" align="right" valign="top">
+              <xsl:text>--</xsl:text>
+              <xsl:apply-templates select="attribution"/>
+            </td>
+            <td width="10%" valign="top">&#160;</td>
+          </tr>
+        </table>
+      </xsl:when>
+      <xsl:otherwise>
+        <blockquote class="{local-name(.)}">
+          <xsl:apply-templates/>
+        </blockquote>
+      </xsl:otherwise>
+    </xsl:choose>
+  </div>
 </xsl:template>
 
 <xsl:template match="blockquote/title">
@@ -132,7 +171,7 @@
 
 <xsl:template match="epigraph">
   <div class="{name(.)}">
-    <xsl:apply-templates select="para"/>
+      <xsl:apply-templates select="para|simpara|formalpara|literallayout"/>
     <span>--<xsl:apply-templates select="attribution"/></span>
   </div>
 </xsl:template>
@@ -292,7 +331,7 @@
   <xsl:variable name="revnumber" select=".//revnumber"/>
   <xsl:variable name="revdate"   select=".//date"/>
   <xsl:variable name="revauthor" select=".//authorinitials"/>
-  <xsl:variable name="revremark" select=".//revremark|../revdescription"/>
+  <xsl:variable name="revremark" select=".//revremark|.//revdescription"/>
   <tr>
     <td align="left">
       <xsl:if test="$revnumber">

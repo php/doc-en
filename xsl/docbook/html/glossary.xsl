@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: glossary.xsl,v 1.1 2002-08-13 15:51:37 goba Exp $
+     $Id: glossary.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -44,7 +44,9 @@
       </xsl:otherwise>
     </xsl:choose>
 
-    <xsl:call-template name="process.footnotes"/>
+    <xsl:if test="not(parent::article)">
+      <xsl:call-template name="process.footnotes"/>
+    </xsl:if>
   </div>
 </xsl:template>
 
@@ -105,34 +107,83 @@ GlossEntry ::=
 -->
 
 <xsl:template match="glossentry">
-  <xsl:apply-templates/>
+  <xsl:choose>
+    <xsl:when test="$glossentry.show.acronym = 'primary'">
+      <dt>
+        <xsl:call-template name="anchor">
+          <xsl:with-param name="conditional">
+            <xsl:choose>
+              <xsl:when test="$glossterm.auto.link != 0">0</xsl:when>
+              <xsl:otherwise>1</xsl:otherwise>
+            </xsl:choose>
+          </xsl:with-param>
+        </xsl:call-template>
+
+        <xsl:choose>
+          <xsl:when test="acronym|abbrev">
+            <xsl:apply-templates select="acronym|abbrev"/>
+            <xsl:text> (</xsl:text>
+            <xsl:apply-templates select="glossterm"/>
+            <xsl:text>)</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:apply-templates select="glossterm"/>
+          </xsl:otherwise>
+        </xsl:choose>
+      </dt>
+    </xsl:when>
+    <xsl:when test="$glossentry.show.acronym = 'yes'">
+      <dt>
+        <xsl:call-template name="anchor">
+          <xsl:with-param name="conditional">
+            <xsl:choose>
+              <xsl:when test="$glossterm.auto.link != 0">0</xsl:when>
+              <xsl:otherwise>1</xsl:otherwise>
+            </xsl:choose>
+          </xsl:with-param>
+        </xsl:call-template>
+
+        <xsl:apply-templates select="glossterm"/>
+
+        <xsl:if test="acronym|abbrev">
+          <xsl:text> (</xsl:text>
+          <xsl:apply-templates select="acronym|abbrev"/>
+          <xsl:text>)</xsl:text>
+        </xsl:if>
+      </dt>
+    </xsl:when>
+    <xsl:otherwise>
+      <dt>
+        <xsl:call-template name="anchor">
+          <xsl:with-param name="conditional">
+            <xsl:choose>
+              <xsl:when test="$glossterm.auto.link != 0">0</xsl:when>
+              <xsl:otherwise>1</xsl:otherwise>
+            </xsl:choose>
+          </xsl:with-param>
+        </xsl:call-template>
+
+        <xsl:apply-templates select="glossterm"/>
+      </dt>
+    </xsl:otherwise>
+  </xsl:choose>
+
+  <xsl:apply-templates select="indexterm|revhistory|glosssee|glossdef"/>
 </xsl:template>
 
 <xsl:template match="glossentry/glossterm">
-  <dt>
-    <xsl:apply-templates/>
-  </dt>
-</xsl:template>
-
-<xsl:template match="glossentry/glossterm[1]" priority="2">
-  <dt>
-    <xsl:call-template name="anchor">
-      <xsl:with-param name="node" select=".."/>
-      <xsl:with-param name="conditional">
-        <xsl:choose>
-          <xsl:when test="$glossterm.auto.link != 0">0</xsl:when>
-          <xsl:otherwise>1</xsl:otherwise>
-        </xsl:choose>
-      </xsl:with-param>
-    </xsl:call-template>
-    <xsl:apply-templates/>
-  </dt>
+  <xsl:apply-templates/>
+  <xsl:if test="following-sibling::glossterm">, </xsl:if>
 </xsl:template>
 
 <xsl:template match="glossentry/acronym">
+  <xsl:apply-templates/>
+  <xsl:if test="following-sibling::acronym|following-sibling::abbrev">, </xsl:if>
 </xsl:template>
 
 <xsl:template match="glossentry/abbrev">
+  <xsl:apply-templates/>
+  <xsl:if test="following-sibling::acronym|following-sibling::abbrev">, </xsl:if>
 </xsl:template>
 
 <xsl:template match="glossentry/revhistory">
@@ -142,6 +193,7 @@ GlossEntry ::=
   <xsl:variable name="otherterm" select="@otherterm"/>
   <xsl:variable name="targets" select="//node()[@id=$otherterm]"/>
   <xsl:variable name="target" select="$targets[1]"/>
+
   <dd>
     <p>
       <xsl:call-template name="gentext.template">
@@ -149,10 +201,17 @@ GlossEntry ::=
         <xsl:with-param name="name" select="'see'"/>
       </xsl:call-template>
       <xsl:choose>
-        <xsl:when test="@otherterm">
+        <xsl:when test="$target">
           <a href="#{@otherterm}">
             <xsl:apply-templates select="$target" mode="xref"/>
           </a>
+        </xsl:when>
+        <xsl:when test="$otherterm != '' and not($target)">
+          <xsl:message>
+            <xsl:text>Warning: glosssee @otherterm reference not found: </xsl:text>
+            <xsl:value-of select="$otherterm"/>
+          </xsl:message>
+          <xsl:apply-templates/>
         </xsl:when>
         <xsl:otherwise>
           <xsl:apply-templates/>
@@ -184,10 +243,17 @@ GlossEntry ::=
   <xsl:variable name="target" select="$targets[1]"/>
 
   <xsl:choose>
-    <xsl:when test="@otherterm">
+    <xsl:when test="$target">
       <a href="#{@otherterm}">
         <xsl:apply-templates select="$target" mode="xref"/>
       </a>
+    </xsl:when>
+    <xsl:when test="$otherterm != '' and not($target)">
+      <xsl:message>
+        <xsl:text>Warning: glossseealso @otherterm reference not found: </xsl:text>
+        <xsl:value-of select="$otherterm"/>
+      </xsl:message>
+      <xsl:apply-templates/>
     </xsl:when>
     <xsl:otherwise>
       <xsl:apply-templates/>
@@ -202,16 +268,6 @@ GlossEntry ::=
       <xsl:text>, </xsl:text>
     </xsl:otherwise>
   </xsl:choose>
-</xsl:template>
-
-<!-- ==================================================================== -->
-
-<xsl:template match="glossentry" mode="xref">
-  <xsl:apply-templates select="./glossterm[1]" mode="xref"/>
-</xsl:template>
-
-<xsl:template match="glossterm" mode="xref">
-  <xsl:apply-templates/>
 </xsl:template>
 
 <!-- ==================================================================== -->
@@ -270,7 +326,9 @@ GlossEntry ::=
       </xsl:otherwise>
     </xsl:choose>
 
-    <xsl:call-template name="process.footnotes"/>
+    <xsl:if test="not(parent::article)">
+      <xsl:call-template name="process.footnotes"/>
+    </xsl:if>
   </div>
 </xsl:template>
 
@@ -294,24 +352,6 @@ GlossEntry ::=
       </xsl:for-each>
     </dl>
   </div>
-</xsl:template>
-
-<xsl:template match="glossentry" mode="auto-glossary">
-  <xsl:apply-templates mode="auto-glossary"/>
-</xsl:template>
-
-<xsl:template match="glossentry/glossterm[1]" priority="2" mode="auto-glossary">
-  <xsl:variable name="id">
-    <xsl:text>gl.</xsl:text>
-    <xsl:call-template name="object.id">
-      <xsl:with-param name="object" select=".."/>
-    </xsl:call-template>
-  </xsl:variable>
-
-  <dt>
-    <a name="{$id}"/>
-    <xsl:apply-templates/>
-  </dt>
 </xsl:template>
 
 <!-- ==================================================================== -->

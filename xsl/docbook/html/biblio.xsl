@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: biblio.xsl,v 1.1 2002-08-13 15:51:37 goba Exp $
+     $Id: biblio.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -26,7 +26,9 @@
 
     <xsl:apply-templates/>
 
-    <xsl:call-template name="process.footnotes"/>
+    <xsl:if test="not(parent::article)">
+      <xsl:call-template name="process.footnotes"/>
+    </xsl:if>
   </div>
 </xsl:template>
 
@@ -162,16 +164,30 @@
 <xsl:template name="biblioentry.label">
   <xsl:param name="node" select="."/>
 
-  <xsl:text>[</xsl:text>
   <xsl:choose>
-    <xsl:when test="local-name($node/child::*[1]) = 'abbrev'">
-      <xsl:apply-templates select="$node/abbrev[1]"/>
+    <xsl:when test="$bibliography.numbered != 0">
+      <xsl:text>[</xsl:text>
+      <xsl:number from="bibliography" count="biblioentry|bibliomixed"
+                  level="any" format="1"/>
+      <xsl:text>] </xsl:text>
     </xsl:when>
-    <xsl:otherwise>
+    <xsl:when test="local-name($node/child::*[1]) = 'abbrev'">
+      <xsl:text>[</xsl:text>
+      <xsl:apply-templates select="$node/abbrev[1]"/>
+      <xsl:text>] </xsl:text>
+    </xsl:when>
+    <xsl:when test="$node/@xreflabel">
+      <xsl:text>[</xsl:text>
+      <xsl:value-of select="$node/@xreflabel"/>
+      <xsl:text>] </xsl:text>
+    </xsl:when>
+    <xsl:when test="$node/@id">
+      <xsl:text>[</xsl:text>
       <xsl:value-of select="$node/@id"/>
-    </xsl:otherwise>
+      <xsl:text>] </xsl:text>
+    </xsl:when>
+    <xsl:otherwise><!-- nop --></xsl:otherwise>
   </xsl:choose>
-  <xsl:text>] </xsl:text>
 </xsl:template>
 
 <!-- ==================================================================== -->
@@ -662,6 +678,14 @@
   </span>
 </xsl:template>
 
+<xsl:template match="bibliocoverage|biblioid|bibliorelation|bibliosource"
+              mode="bibliography.mode">
+  <span class="{name(.)}">
+    <xsl:apply-templates mode="bibliography.mode"/>
+    <xsl:value-of select="$biblioentry.item.separator"/>
+  </span>
+</xsl:template>
+
 <!-- ==================================================================== -->
 
 <xsl:template match="*" mode="bibliomixed.mode">
@@ -1014,6 +1038,13 @@
 </xsl:template>
 
 <xsl:template match="volumenum" mode="bibliomixed.mode">
+  <span class="{name(.)}">
+    <xsl:apply-templates mode="bibliomixed.mode"/>
+  </span>
+</xsl:template>
+
+<xsl:template match="bibliocoverage|biblioid|bibliorelation|bibliosource"
+              mode="bibliomixed.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliomixed.mode"/>
   </span>

@@ -5,13 +5,14 @@
                 xmlns:stbl="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.Table"
                 xmlns:xtbl="com.nwalsh.xalan.Table"
                 xmlns:lxslt="http://xml.apache.org/xslt"
-                exclude-result-prefixes="doc stbl xtbl lxslt"
+                xmlns:ptbl="http://nwalsh.com/xslt/ext/xsltproc/python/Table"
+                exclude-result-prefixes="doc stbl xtbl lxslt ptbl"
                 version='1.0'>
 
 <xsl:include href="../common/table.xsl"/>
 
 <!-- ********************************************************************
-     $Id: table.xsl,v 1.1 2002-08-13 15:45:40 goba Exp $
+     $Id: table.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -23,7 +24,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: table.xsl,v 1.1 2002-08-13 15:45:40 goba Exp $
+$Id: table.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>
@@ -61,11 +62,10 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 <xsl:template name="empty.table.cell">
   <xsl:param name="colnum" select="0"/>
 
-  <xsl:variable name="frame" select="ancestor::tgroup/parent::*/@frame"/>
-
   <xsl:variable name="rowsep">
     <xsl:call-template name="inherited.table.attribute">
       <xsl:with-param name="entry" select="NOT-AN-ELEMENT-NAME"/>
+      <xsl:with-param name="row" select="ancestor-or-self::row[1]"/>
       <xsl:with-param name="colnum" select="$colnum"/>
       <xsl:with-param name="attribute" select="'rowsep'"/>
     </xsl:call-template>
@@ -74,6 +74,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   <xsl:variable name="colsep">
     <xsl:call-template name="inherited.table.attribute">
       <xsl:with-param name="entry" select="NOT-AN-ELEMENT-NAME"/>
+      <xsl:with-param name="row" select="ancestor-or-self::row[1]"/>
       <xsl:with-param name="colnum" select="$colnum"/>
       <xsl:with-param name="attribute" select="'colsep'"/>
     </xsl:call-template>
@@ -82,19 +83,24 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   <fo:table-cell text-align="center"
                  display-align="center"
                  xsl:use-attribute-sets="table.cell.padding">
+    <xsl:if test="$xep.extensions != 0">
+      <!-- Suggested by RenderX to workaround a bug in their implementation -->
+      <xsl:attribute name="keep-together.within-column">always</xsl:attribute>
+    </xsl:if>
     <xsl:if test="$rowsep &gt; 0">
       <xsl:call-template name="border">
         <xsl:with-param name="side" select="'bottom'"/>
       </xsl:call-template>
     </xsl:if>
 
-    <xsl:if test="$colsep &gt; 0">
+    <xsl:if test="$colsep &gt; 0 and $colnum &lt; ancestor::tgroup/@cols">
       <xsl:call-template name="border">
         <xsl:with-param name="side" select="'right'"/>
       </xsl:call-template>
     </xsl:if>
 
-    <fo:block/> <!-- fo:table-cell should not be empty -->
+    <!-- fo:table-cell should not be empty -->
+    <fo:block/>
   </fo:table-cell>
 </xsl:template>
 
@@ -104,19 +110,19 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   <xsl:param name="side" select="'left'"/>
 
   <xsl:attribute name="border-{$side}-width">
-    <xsl:value-of select="$table.border.thickness"/>
+    <xsl:value-of select="$table.cell.border.thickness"/>
   </xsl:attribute>
   <xsl:attribute name="border-{$side}-style">
-    <xsl:value-of select="$table.border.style"/>
+    <xsl:value-of select="$table.cell.border.style"/>
   </xsl:attribute>
   <xsl:attribute name="border-{$side}-color">
-    <xsl:value-of select="$table.border.color"/>
+    <xsl:value-of select="$table.cell.border.color"/>
   </xsl:attribute>
 </xsl:template>
 
 <!-- ==================================================================== -->
 
-<xsl:template match="tgroup">
+<xsl:template match="tgroup" name="tgroup">
   <xsl:variable name="explicit.table.width">
     <xsl:call-template name="dbfo-attribute">
       <xsl:with-param name="pis"
@@ -155,9 +161,14 @@ to be incomplete. Don't forget to read the source, too :-)</para>
     </xsl:choose>
   </xsl:variable>
 
-  <xsl:attribute name="width">
-    <xsl:value-of select="$table.width"/>
-  </xsl:attribute>
+  <xsl:if test="position() = 1">
+    <!-- If this is the first tgroup, output the width attribute for the -->
+    <!-- surrounding fo:table. (If this isn't the first tgroup, trying   -->
+    <!-- to output the attribute will cause an error.)                   -->
+    <xsl:attribute name="width">
+      <xsl:value-of select="$table.width"/>
+    </xsl:attribute>
+  </xsl:if>
 
   <xsl:choose>
     <xsl:when test="$use.extensions != 0
@@ -168,6 +179,9 @@ to be incomplete. Don't forget to read the source, too :-)</para>
         </xsl:when>
         <xsl:when test="function-available('xtbl:adjustColumnWidths')">
           <xsl:copy-of select="xtbl:adjustColumnWidths($colspecs)"/>
+        </xsl:when>
+        <xsl:when test="function-available('ptbl:adjustColumnWidths')">
+          <xsl:copy-of select="ptbl:adjustColumnWidths($colspecs)"/>
         </xsl:when>
         <xsl:otherwise>
           <xsl:message terminate="yes">
@@ -239,14 +253,14 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   <fo:table-row>
     <xsl:call-template name="anchor"/>
 
-    <xsl:apply-templates select="entry[1]">
+    <xsl:apply-templates select="(entry|entrytbl)[1]">
       <xsl:with-param name="spans" select="$spans"/>
     </xsl:apply-templates>
   </fo:table-row>
 
   <xsl:if test="following-sibling::row">
     <xsl:variable name="nextspans">
-      <xsl:apply-templates select="entry[1]" mode="span">
+      <xsl:apply-templates select="(entry|entrytbl)[1]" mode="span">
         <xsl:with-param name="spans" select="$spans"/>
       </xsl:apply-templates>
     </xsl:variable>
@@ -257,7 +271,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   </xsl:if>
 </xsl:template>
 
-<xsl:template match="entry" name="entry">
+<xsl:template match="entry|entrytbl" name="entry">
   <xsl:param name="col" select="1"/>
   <xsl:param name="spans"/>
 
@@ -369,7 +383,114 @@ to be incomplete. Don't forget to read the source, too :-)</para>
     </xsl:when>
 
     <xsl:otherwise>
+      <xsl:variable name="cell.content">
+        <fo:block>
+          <!-- highlight this entry? -->
+          <xsl:if test="ancestor::thead">
+            <xsl:attribute name="font-weight">bold</xsl:attribute>
+          </xsl:if>
+
+          <!-- are we missing any indexterms? -->
+          <xsl:if test="not(preceding-sibling::entry)
+                        and not(parent::row/preceding-sibling::row)">
+            <!-- this is the first entry of the first row -->
+            <xsl:if test="ancestor::thead or
+                          (ancestor::tbody
+                           and not(ancestor::tbody/preceding-sibling::thead
+                                   or ancestor::tbody/preceding-sibling::tbody))">
+              <!-- of the thead or the first tbody -->
+              <xsl:apply-templates select="ancestor::tgroup/preceding-sibling::indexterm"/>
+            </xsl:if>
+          </xsl:if>
+
+          <!--
+          <xsl:text>(</xsl:text>
+          <xsl:value-of select="$rowsep"/>
+          <xsl:text>,</xsl:text>
+          <xsl:value-of select="$colsep"/>
+          <xsl:text>)</xsl:text>
+          -->
+          <xsl:choose>
+            <xsl:when test="$empty.cell">
+              <xsl:text>&#160;</xsl:text>
+            </xsl:when>
+            <xsl:when test="self::entrytbl">
+              <xsl:variable name="prop-columns"
+                            select=".//colspec[contains(@colwidth, '*')]"/>
+              <fo:table border-collapse="collapse">
+                <xsl:if test="count($prop-columns) != 0">
+                  <xsl:attribute name="table-layout">fixed</xsl:attribute>
+                </xsl:if>
+                <xsl:call-template name="tgroup"/>
+              </fo:table>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:apply-templates/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </fo:block>
+      </xsl:variable>
+
+      <xsl:variable name="cell-orientation">
+        <xsl:call-template name="dbfo-attribute">
+          <xsl:with-param name="pis"
+                          select="ancestor-or-self::entry/processing-instruction('dbfo')"/>
+          <xsl:with-param name="attribute" select="'orientation'"/>
+        </xsl:call-template>
+      </xsl:variable>
+
+      <xsl:variable name="row-orientation">
+        <xsl:call-template name="dbfo-attribute">
+          <xsl:with-param name="pis"
+                          select="ancestor-or-self::row/processing-instruction('dbfo')"/>
+          <xsl:with-param name="attribute" select="'orientation'"/>
+        </xsl:call-template>
+      </xsl:variable>
+
+      <xsl:variable name="cell-width">
+        <xsl:call-template name="dbfo-attribute">
+          <xsl:with-param name="pis"
+                          select="ancestor-or-self::entry/processing-instruction('dbfo')"/>
+          <xsl:with-param name="attribute" select="'rotated-width'"/>
+        </xsl:call-template>
+      </xsl:variable>
+
+      <xsl:variable name="row-width">
+        <xsl:call-template name="dbfo-attribute">
+          <xsl:with-param name="pis"
+                          select="ancestor-or-self::row/processing-instruction('dbfo')"/>
+          <xsl:with-param name="attribute" select="'rotated-width'"/>
+        </xsl:call-template>
+      </xsl:variable>
+
+      <xsl:variable name="orientation">
+        <xsl:choose>
+          <xsl:when test="$cell-orientation != ''">
+            <xsl:value-of select="$cell-orientation"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="$row-orientation"/>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+
+      <xsl:variable name="rotated-width">
+        <xsl:choose>
+          <xsl:when test="$cell-width != ''">
+            <xsl:value-of select="$cell-width"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="$row-width"/>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+
       <fo:table-cell xsl:use-attribute-sets="table.cell.padding">
+        <xsl:if test="$xep.extensions != 0">
+          <!-- Suggested by RenderX to workaround a bug in their implementation -->
+          <xsl:attribute name="keep-together.within-column">always</xsl:attribute>
+        </xsl:if>
+
         <xsl:call-template name="anchor"/>
 
         <xsl:if test="$rowsep &gt; 0">
@@ -378,7 +499,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
           </xsl:call-template>
         </xsl:if>
 
-        <xsl:if test="$colsep &gt; 0">
+        <xsl:if test="$colsep &gt; 0 and $col &lt; ancestor::tgroup/@cols">
           <xsl:call-template name="border">
             <xsl:with-param name="side" select="'right'"/>
           </xsl:call-template>
@@ -434,41 +555,27 @@ to be incomplete. Don't forget to read the source, too :-)</para>
         </xsl:if>
 -->
 
-        <fo:block>
-          <!-- are we missing any indexterms? -->
-          <xsl:if test="not(preceding-sibling::entry)
-                        and not(parent::row/preceding-sibling::row)">
-            <!-- this is the first entry of the first row -->
-            <xsl:if test="ancestor::thead or
-                          (ancestor::tbody
-                           and not(ancestor::tbody/preceding-sibling::thead
-                                   or ancestor::tbody/preceding-sibling::tbody))">
-              <!-- of the thead or the first tbody -->
-              <xsl:apply-templates select="ancestor::tgroup/preceding-sibling::indexterm"/>
-            </xsl:if>
-          </xsl:if>
-
-          <!--
-          <xsl:text>(</xsl:text>
-          <xsl:value-of select="$rowsep"/>
-          <xsl:text>,</xsl:text>
-          <xsl:value-of select="$colsep"/>
-          <xsl:text>)</xsl:text>
-          -->
-          <xsl:choose>
-            <xsl:when test="$empty.cell">
-              <xsl:text>&#160;</xsl:text>
-            </xsl:when>
-            <xsl:otherwise>
-              <xsl:apply-templates/>
-            </xsl:otherwise>
-          </xsl:choose>
-        </fo:block>
+        <xsl:choose>
+          <xsl:when test="$xep.extensions != 0 and $orientation != ''">
+            <fo:block-container reference-orientation="{$orientation}">
+              <xsl:if test="$rotated-width != ''">
+                <xsl:attribute name="width">
+                  <xsl:value-of select="$rotated-width"/>
+                </xsl:attribute>
+              </xsl:if>
+              <xsl:copy-of select="$cell.content"/>
+            </fo:block-container>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:copy-of select="$cell.content"/>
+          </xsl:otherwise>
+        </xsl:choose>
       </fo:table-cell>
 
       <xsl:choose>
-        <xsl:when test="following-sibling::entry">
-          <xsl:apply-templates select="following-sibling::entry[1]">
+        <xsl:when test="following-sibling::entry|following-sibling::entrytbl">
+          <xsl:apply-templates select="(following-sibling::entry
+                                       |following-sibling::entrytbl)[1]">
             <xsl:with-param name="col" select="$col+$entry.colspan"/>
             <xsl:with-param name="spans" select="$following.spans"/>
           </xsl:apply-templates>
@@ -484,7 +591,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   </xsl:choose>
 </xsl:template>
 
-<xsl:template match="entry" name="sentry" mode="span">
+<xsl:template match="entry|entrytbl" name="sentry" mode="span">
   <xsl:param name="col" select="1"/>
   <xsl:param name="spans"/>
 
@@ -541,8 +648,9 @@ to be incomplete. Don't forget to read the source, too :-)</para>
       </xsl:call-template>
 
       <xsl:choose>
-        <xsl:when test="following-sibling::entry">
-          <xsl:apply-templates select="following-sibling::entry[1]"
+        <xsl:when test="following-sibling::entry|following-sibling::entrytbl">
+          <xsl:apply-templates select="(following-sibling::entry
+                                       |following-sibling::entrytbl)[1]"
                                mode="span">
             <xsl:with-param name="col" select="$col+$entry.colspan"/>
             <xsl:with-param name="spans" select="$following.spans"/>

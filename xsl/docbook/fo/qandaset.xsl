@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: qandaset.xsl,v 1.1 2002-08-13 15:45:40 goba Exp $
+     $Id: qandaset.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -60,7 +60,8 @@
   </xsl:variable>
 
   <xsl:call-template name="section.heading">
-    <xsl:with-param name="level" select="$sectlvl"/>
+    <xsl:with-param name="level" select="$sectlvl + 1"/>
+    <xsl:with-param name="marker" select="0"/>
     <xsl:with-param name="title">
       <xsl:apply-templates/>
     </xsl:with-param>
@@ -107,8 +108,8 @@
   </xsl:variable>
 
   <xsl:call-template name="section.heading">
-    <xsl:with-param name="level"
-                    select="$sectlvl + count(ancestor::qandadiv)"/>
+    <xsl:with-param name="level"  select="$sectlvl + 1 + count(ancestor::qandadiv)"/>
+    <xsl:with-param name="marker" select="0"/>
     <xsl:with-param name="title">
       <xsl:apply-templates/>
     </xsl:with-param>

@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: division.xsl,v 1.1 2002-08-13 15:51:37 goba Exp $
+     $Id: division.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -16,6 +16,7 @@
 
 <xsl:template match="set">
   <div class="{name(.)}">
+    <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
         <xsl:call-template name="object.id"/>
@@ -24,14 +25,17 @@
 
     <xsl:call-template name="set.titlepage"/>
 
-    <xsl:variable name="toc.params">
-      <xsl:call-template name="find.path.params">
-        <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
-      </xsl:call-template>
-    </xsl:variable>
-    <xsl:if test="contains($toc.params, 'toc')">
-      <xsl:call-template name="set.toc"/>
-    </xsl:if>
+    <xsl:call-template name="make.lots">
+      <xsl:with-param name="toc.params">
+        <xsl:call-template name="find.path.params">
+          <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
+        </xsl:call-template>
+      </xsl:with-param>
+      <xsl:with-param name="toc">
+        <xsl:call-template name="set.toc"/>
+      </xsl:with-param>
+    </xsl:call-template>
+
     <xsl:apply-templates/>
   </div>
 </xsl:template>
@@ -45,6 +49,7 @@
 
 <xsl:template match="book">
   <div class="{name(.)}">
+    <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
         <xsl:call-template name="object.id"/>
@@ -52,45 +57,19 @@
     </xsl:if>
 
     <xsl:call-template name="book.titlepage"/>
+
     <xsl:apply-templates select="dedication" mode="dedication"/>
 
-    <xsl:variable name="toc.params">
-      <xsl:call-template name="find.path.params">
-        <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
-      </xsl:call-template>
-    </xsl:variable>
-
-    <xsl:if test="contains($toc.params, 'toc')">
-      <xsl:call-template name="division.toc"/>
-    </xsl:if>
-
-    <xsl:if test="contains($toc.params, 'figure')">
-      <xsl:call-template name="list.of.titles">
-        <xsl:with-param name="titles" select="'figure'"/>
-        <xsl:with-param name="nodes" select=".//figure"/>
-      </xsl:call-template>
-    </xsl:if>
-
-    <xsl:if test="contains($toc.params, 'table')">
-      <xsl:call-template name="list.of.titles">
-        <xsl:with-param name="titles" select="'table'"/>
-        <xsl:with-param name="nodes" select=".//table"/>
-      </xsl:call-template>
-    </xsl:if>
-
-    <xsl:if test="contains($toc.params, 'example')">
-      <xsl:call-template name="list.of.titles">
-        <xsl:with-param name="titles" select="'example'"/>
-        <xsl:with-param name="nodes" select=".//example"/>
-      </xsl:call-template>
-    </xsl:if>
-
-    <xsl:if test="contains($toc.params, 'equation')">
-      <xsl:call-template name="list.of.titles">
-        <xsl:with-param name="titles" select="'equation'"/>
-        <xsl:with-param name="nodes" select=".//equation[title]"/>
-      </xsl:call-template>
-    </xsl:if>
+    <xsl:call-template name="make.lots">
+      <xsl:with-param name="toc.params">
+        <xsl:call-template name="find.path.params">
+          <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
+        </xsl:call-template>
+      </xsl:with-param>
+      <xsl:with-param name="toc">
+        <xsl:call-template name="division.toc"/>
+      </xsl:with-param>
+    </xsl:call-template>
 
     <xsl:apply-templates/>
   </div>
@@ -105,6 +84,7 @@
 
 <xsl:template match="part">
   <div class="{name(.)}">
+    <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
         <xsl:call-template name="object.id"/>
@@ -141,6 +121,7 @@
 
 <xsl:template match="partintro">
   <div class="{name(.)}">
+    <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
         <xsl:call-template name="object.id"/>

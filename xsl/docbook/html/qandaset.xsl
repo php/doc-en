@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: qandaset.xsl,v 1.1 2002-08-13 15:51:37 goba Exp $
+     $Id: qandaset.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -74,7 +74,7 @@
       <xsl:call-template name="process.qanda.toc"/>
     </xsl:if>
     <xsl:apply-templates select="$preamble"/>
-    <table border="0">
+    <table border="0" summary="Q and A Set">
       <xsl:if test="$table-summary != ''">
         <xsl:attribute name="summary">
           <xsl:value-of select="$table-summary"/>

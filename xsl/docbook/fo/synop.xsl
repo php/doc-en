@@ -8,7 +8,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: synop.xsl,v 1.1 2002-08-13 15:45:40 goba Exp $
+     $Id: synop.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -39,7 +39,7 @@
   <xsl:text> </xsl:text>
 </xsl:template>
 
-<xsl:template match="group|arg">
+<xsl:template match="group|arg" name="group-or-arg">
   <xsl:variable name="choice" select="@choice"/>
   <xsl:variable name="rep" select="@rep"/>
   <xsl:variable name="sepchar">
@@ -99,11 +99,11 @@
   <xsl:variable name="choice" select="@choice"/>
   <xsl:variable name="rep" select="@rep"/>
   <xsl:if test="position()>1"><xsl:value-of select="$arg.or.sep"/></xsl:if>
-  <xsl:apply-templates/>
+  <xsl:call-template name="group-or-arg"/>
 </xsl:template>
 
 <xsl:template match="sbr">
-  <fo:inline linefeed-treatment="preserve">&#xA;</fo:inline>
+  <fo:block/>
 </xsl:template>
 
 <!-- ==================================================================== -->
@@ -114,9 +114,14 @@
     <xsl:apply-templates select="$target" mode="synopfragment.number"/>
   </xsl:variable>
   <fo:inline font-style="italic">
-    <xsl:text>(</xsl:text>
-    <xsl:value-of select="$snum"/>
-    <xsl:text>)</xsl:text>
+    <fo:basic-link internal-destination="{@linkend}"
+                   xsl:use-attribute-sets="xref.properties">
+      <xsl:text>(</xsl:text>
+      <xsl:value-of select="$snum"/>
+      <xsl:text>)</xsl:text>
+    </fo:basic-link>
+    <xsl:text>&#160;</xsl:text>
+    <xsl:apply-templates/>
   </fo:inline>
 </xsl:template>
 
@@ -135,7 +140,7 @@
     <xsl:text> </xsl:text>
     <xsl:apply-templates/>
   </fo:block>
-</xsl:template>   
+</xsl:template>
 
 <xsl:template match="funcsynopsis">
   <xsl:call-template name="informal.object"/>

@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: admon.xsl,v 1.1 2002-08-13 15:51:37 goba Exp $
+     $Id: admon.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -32,46 +32,65 @@
   <xsl:param name="node" select="."/>
   <xsl:value-of select="$admon.graphics.path"/>
   <xsl:choose>
-    <xsl:when test="name($node)='note'">note</xsl:when>
-    <xsl:when test="name($node)='warning'">warning</xsl:when>
-    <xsl:when test="name($node)='caution'">caution</xsl:when>
-    <xsl:when test="name($node)='tip'">tip</xsl:when>
-    <xsl:when test="name($node)='important'">important</xsl:when>
+    <xsl:when test="local-name($node)='note'">note</xsl:when>
+    <xsl:when test="local-name($node)='warning'">warning</xsl:when>
+    <xsl:when test="local-name($node)='caution'">caution</xsl:when>
+    <xsl:when test="local-name($node)='tip'">tip</xsl:when>
+    <xsl:when test="local-name($node)='important'">important</xsl:when>
     <xsl:otherwise>note</xsl:otherwise>
   </xsl:choose>
   <xsl:value-of select="$admon.graphics.extension"/>
 </xsl:template>
 
 <xsl:template name="graphical.admonition">
+  <xsl:variable name="admon.type">
+    <xsl:choose>
+      <xsl:when test="local-name(.)='note'">Note</xsl:when>
+      <xsl:when test="local-name(.)='warning'">Warning</xsl:when>
+      <xsl:when test="local-name(.)='caution'">Caution</xsl:when>
+      <xsl:when test="local-name(.)='tip'">Tip</xsl:when>
+      <xsl:when test="local-name(.)='important'">Important</xsl:when>
+      <xsl:otherwise>Note</xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
   <div class="{name(.)}">
-  <xsl:if test="$admon.style != ''">
-    <xsl:attribute name="style">
-      <xsl:value-of select="$admon.style"/>
-    </xsl:attribute>
-  </xsl:if>
-  <table border="0">
-    <tr>
-      <td rowspan="2" align="center" valign="top">
-        <xsl:attribute name="width">
-          <xsl:call-template name="admon.graphic.width"/>
-        </xsl:attribute>
-        <img>
-          <xsl:attribute name="src">
-            <xsl:call-template name="admon.graphic"/>
+    <xsl:if test="$admon.style != ''">
+      <xsl:attribute name="style">
+        <xsl:value-of select="$admon.style"/>
+      </xsl:attribute>
+    </xsl:if>
+
+    <table border="0">
+      <xsl:attribute name="summary">
+        <xsl:value-of select="$admon.type"/>
+        <xsl:if test="title">
+          <xsl:text>: </xsl:text>
+          <xsl:value-of select="title"/>
+        </xsl:if>
+      </xsl:attribute>
+      <tr>
+        <td rowspan="2" align="center" valign="top">
+          <xsl:attribute name="width">
+            <xsl:call-template name="admon.graphic.width"/>
           </xsl:attribute>
-        </img>
-      </td>
-      <th>
-        <xsl:call-template name="anchor"/>
-        <xsl:apply-templates select="." mode="object.title.markup"/>
-      </th>
-    </tr>
-    <tr>
-      <td colspan="2" align="left" valign="top">
-        <xsl:apply-templates/>
-      </td>
-    </tr>
-  </table>
+          <img alt="[{$admon.type}]">
+            <xsl:attribute name="src">
+              <xsl:call-template name="admon.graphic"/>
+            </xsl:attribute>
+          </img>
+        </td>
+        <th align="left">
+          <xsl:call-template name="anchor"/>
+          <xsl:apply-templates select="." mode="object.title.markup"/>
+        </th>
+      </tr>
+      <tr>
+        <td colspan="2" align="left" valign="top">
+          <xsl:apply-templates/>
+        </td>
+      </tr>
+    </table>
   </div>
 </xsl:template>
 

@@ -8,7 +8,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: verbatim.xsl,v 1.1 2002-08-13 15:45:40 goba Exp $
+     $Id: verbatim.xsl,v 1.2 2003-03-09 14:54:49 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -42,28 +42,31 @@
     </xsl:choose>
   </xsl:variable>
 
-  <fo:block wrap-option='no-wrap'
-            white-space-collapse='false'
-            linefeed-treatment="preserve"
-            xsl:use-attribute-sets="monospace.verbatim.properties">
-    <xsl:choose>
-      <xsl:when test="$shade.verbatim != 0">
-        <fo:block space-before="0pt" space-after="0pt"
-                  xsl:use-attribute-sets="shade.verbatim.style">
-          <xsl:copy-of select="$content"/>
-        </fo:block>
-      </xsl:when>
-      <xsl:otherwise>
+  <xsl:choose>
+    <xsl:when test="$shade.verbatim != 0">
+      <fo:block wrap-option='no-wrap'
+                white-space-collapse='false'
+                linefeed-treatment="preserve"
+                xsl:use-attribute-sets="monospace.verbatim.properties shade.verbatim.style">
+
         <xsl:copy-of select="$content"/>
-      </xsl:otherwise>
-    </xsl:choose>
-  </fo:block>
+      </fo:block>
+    </xsl:when>
+    <xsl:otherwise>
+      <fo:block wrap-option='no-wrap'
+                white-space-collapse='false'
+                linefeed-treatment="preserve"
+                xsl:use-attribute-sets="monospace.verbatim.properties">
+        <xsl:copy-of select="$content"/>
+      </fo:block>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 <xsl:template match="literallayout">
   <xsl:param name="suppress-numbers" select="'0'"/>
 
-  <xsl:variable name="raw.content">
+  <xsl:variable name="content">
     <xsl:choose>
       <xsl:when test="$suppress-numbers = '0'
                       and @linenumbering = 'numbered'
@@ -81,36 +84,48 @@
     </xsl:choose>
   </xsl:variable>
 
-  <xsl:variable name="content">
-    <xsl:choose>
-      <xsl:when test="@class='monospaced' and $shade.verbatim != 0">
-        <fo:block space-before="0pt" space-after="0pt"
-                  xsl:use-attribute-sets="shade.verbatim.style">
-          <xsl:copy-of select="$raw.content"/>
-        </fo:block>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:copy-of select="$raw.content"/>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:variable>
-
   <xsl:choose>
     <xsl:when test="@class='monospaced'">
-      <fo:block wrap-option='no-wrap'
-                linefeed-treatment="preserve"
-                white-space-collapse='false'
-                xsl:use-attribute-sets="monospace.verbatim.properties">
-        <xsl:copy-of select="$content"/>
-      </fo:block>
+      <xsl:choose>
+        <xsl:when test="$shade.verbatim != 0">
+          <fo:block wrap-option='no-wrap'
+                    white-space-collapse='false'
+                    linefeed-treatment="preserve"
+                    xsl:use-attribute-sets="monospace.verbatim.properties shade.verbatim.style">
+
+            <xsl:copy-of select="$content"/>
+          </fo:block>
+        </xsl:when>
+        <xsl:otherwise>
+          <fo:block wrap-option='no-wrap'
+                    white-space-collapse='false'
+                    linefeed-treatment="preserve"
+                    xsl:use-attribute-sets="monospace.verbatim.properties">
+            <xsl:copy-of select="$content"/>
+          </fo:block>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <fo:block wrap-option='no-wrap'
-                linefeed-treatment="preserve"
-                white-space-collapse='false'
-                xsl:use-attribute-sets="verbatim.properties">
-        <xsl:copy-of select="$content"/>
-      </fo:block>
+      <xsl:choose>
+        <xsl:when test="$shade.verbatim != 0">
+          <fo:block wrap-option='no-wrap'
+                    white-space-collapse='false'
+                    linefeed-treatment="preserve"
+                    xsl:use-attribute-sets="verbatim.properties shade.verbatim.style">
+
+            <xsl:copy-of select="$content"/>
+          </fo:block>
+        </xsl:when>
+        <xsl:otherwise>
+          <fo:block wrap-option='no-wrap'
+                    white-space-collapse='false'
+                    linefeed-treatment="preserve"
+                    xsl:use-attribute-sets="verbatim.properties">
+            <xsl:copy-of select="$content"/>
+          </fo:block>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>

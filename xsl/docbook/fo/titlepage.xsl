@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: titlepage.xsl,v 1.1 2002-08-13 15:45:40 goba Exp $
+     $Id: titlepage.xsl,v 1.2 2003-03-09 14:54:49 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -61,11 +61,23 @@
 <xsl:attribute-set name="bibliography.titlepage.recto.style"/>
 <xsl:attribute-set name="bibliography.titlepage.verso.style"/>
 
+<xsl:attribute-set name="bibliodiv.titlepage.recto.style"/>
+<xsl:attribute-set name="bibliodiv.titlepage.verso.style"/>
+
 <xsl:attribute-set name="glossary.titlepage.recto.style"/>
 <xsl:attribute-set name="glossary.titlepage.verso.style"/>
 
+<xsl:attribute-set name="glossdiv.titlepage.recto.style"/>
+<xsl:attribute-set name="glossdiv.titlepage.verso.style"/>
+
 <xsl:attribute-set name="index.titlepage.recto.style"/>
 <xsl:attribute-set name="index.titlepage.verso.style"/>
+
+<xsl:attribute-set name="setindex.titlepage.recto.style"/>
+<xsl:attribute-set name="setindex.titlepage.verso.style"/>
+
+<xsl:attribute-set name="indexdiv.titlepage.recto.style"/>
+<xsl:attribute-set name="indexdiv.titlepage.verso.style"/>
 
 <xsl:attribute-set name="colophon.titlepage.recto.style"/>
 <xsl:attribute-set name="colophon.titlepage.verso.style"/>
@@ -109,6 +121,31 @@
 <xsl:attribute-set name="simplesect.titlepage.verso.style"
                    use-attribute-sets="section.titlepage.verso.style"/>
 
+<xsl:attribute-set name="refsynopsisdiv.titlepage.recto.style"
+                   use-attribute-sets="section.titlepage.recto.style"/>
+<xsl:attribute-set name="refsynopsisdiv.titlepage.verso.style"
+                   use-attribute-sets="section.titlepage.verso.style"/>
+
+<xsl:attribute-set name="refsection.titlepage.recto.style"
+                   use-attribute-sets="section.titlepage.recto.style"/>
+<xsl:attribute-set name="refsection.titlepage.verso.style"
+                   use-attribute-sets="section.titlepage.verso.style"/>
+
+<xsl:attribute-set name="refsect1.titlepage.recto.style"
+                   use-attribute-sets="section.titlepage.recto.style"/>
+<xsl:attribute-set name="refsect1.titlepage.verso.style"
+                   use-attribute-sets="section.titlepage.verso.style"/>
+
+<xsl:attribute-set name="refsect2.titlepage.recto.style"
+                   use-attribute-sets="section.titlepage.recto.style"/>
+<xsl:attribute-set name="refsect2.titlepage.verso.style"
+                   use-attribute-sets="section.titlepage.verso.style"/>
+
+<xsl:attribute-set name="refsect3.titlepage.recto.style"
+                   use-attribute-sets="section.titlepage.recto.style"/>
+<xsl:attribute-set name="refsect3.titlepage.verso.style"
+                   use-attribute-sets="section.titlepage.verso.style"/>
+
 <xsl:attribute-set name="table.of.contents.titlepage.recto.style"/>
 <xsl:attribute-set name="table.of.contents.titlepage.verso.style"/>
 
@@ -123,6 +160,9 @@
 
 <xsl:attribute-set name="list.of.examples.titlepage.recto.style"/>
 <xsl:attribute-set name="list.of.examples.contents.titlepage.verso.style"/>
+
+<xsl:attribute-set name="list.of.procedures.titlepage.recto.style"/>
+<xsl:attribute-set name="list.of.procedures.contents.titlepage.verso.style"/>
 
 <xsl:attribute-set name="list.of.unknowns.titlepage.recto.style"/>
 <xsl:attribute-set name="list.of.unknowns.contents.titlepage.verso.style"/>
@@ -176,7 +216,14 @@
   <fo:block>
     <xsl:call-template name="anchor"/>
     <xsl:call-template name="person.name"/>
-    <xsl:apply-templates select="affiliation" mode="titlepage.mode"/>
+    <xsl:if test="affiliation/orgname">
+      <xsl:text>, </xsl:text>
+      <xsl:apply-templates select="affiliation/orgname" mode="titlepage.mode"/>
+    </xsl:if>
+    <xsl:if test="email|affiliation/address/email">
+      <xsl:text> </xsl:text>
+      <xsl:apply-templates select="(email|affiliation/address/email)[1]"/>
+    </xsl:if>
   </fo:block>
 </xsl:template>
 
@@ -262,12 +309,7 @@
   <xsl:apply-templates select="holder" mode="titlepage.mode"/>
 </xsl:template>
 
-
 <xsl:template match="year" mode="titlepage.mode">
-  <xsl:apply-templates/><xsl:text>, </xsl:text>
-</xsl:template>
-
-<xsl:template match="year[position()=last()]" mode="titlepage.mode">
   <xsl:apply-templates/>
 </xsl:template>
 
@@ -384,9 +426,7 @@
 </xsl:template>
 
 <xsl:template match="orgname" mode="titlepage.mode">
-  <fo:block>
-    <xsl:apply-templates mode="titlepage.mode"/>
-  </fo:block>
+  <xsl:apply-templates mode="titlepage.mode"/>
 </xsl:template>
 
 <xsl:template match="othercredit" mode="titlepage.mode">
@@ -481,7 +521,7 @@
   <xsl:variable name="revnumber" select=".//revnumber"/>
   <xsl:variable name="revdate"   select=".//date"/>
   <xsl:variable name="revauthor" select=".//authorinitials"/>
-  <xsl:variable name="revremark" select=".//revremark"/>
+  <xsl:variable name="revremark" select=".//revremark|.//revdescription"/>
   <fo:table-row>
     <fo:table-cell>
       <fo:block>
@@ -529,6 +569,10 @@
 </xsl:template>
 
 <xsl:template match="revision/revremark" mode="titlepage.mode">
+  <xsl:apply-templates mode="titlepage.mode"/>
+</xsl:template>
+
+<xsl:template match="revision/revdescription" mode="titlepage.mode">
   <xsl:apply-templates mode="titlepage.mode"/>
 </xsl:template>
 

@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: footnote.xsl,v 1.1 2002-08-13 15:51:37 goba Exp $
+     $Id: footnote.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -24,7 +24,7 @@
   </xsl:variable>
 
   <xsl:choose>
-    <xsl:when test="ancestor::table|ancestor::informaltable">
+    <xsl:when test="ancestor::tgroup">
       <sup>
         <xsl:text>[</xsl:text>
         <a name="{$name}" href="{$href}">
@@ -65,17 +65,34 @@
 
 <xsl:template match="footnote" mode="footnote.number">
   <xsl:choose>
-    <xsl:when test="ancestor::table or ancestor::informaltable">
-      <xsl:number level="any" from="table|informaltable" format="a"/>
-    </xsl:when>
-    <xsl:when test="ancestor::refentry">
-      <xsl:number level="any" from="refentry" format="1"/>
+    <xsl:when test="ancestor::tgroup">
+      <xsl:variable name="tfnum">
+        <xsl:number level="any" from="table|informaltable" format="1"/>
+      </xsl:variable>
+
+      <xsl:choose>
+        <xsl:when test="string-length($table.footnote.number.symbols) &gt;= $tfnum">
+          <xsl:value-of select="substring($table.footnote.number.symbols, $tfnum, 1)"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:number level="any" from="tgroup"
+                      format="{$table.footnote.number.format}"/>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
       <xsl:variable name="pfoot" select="preceding::footnote"/>
-      <xsl:variable name="ptfoot" select="preceding::table//footnote
-                                          |preceding::informaltable//footnote"/>
-      <xsl:number value="count($pfoot) - count($ptfoot) + 1" format="1"/>
+      <xsl:variable name="ptfoot" select="preceding::tgroup//footnote"/>
+      <xsl:variable name="fnum" select="count($pfoot) - count($ptfoot) + 1"/>
+
+      <xsl:choose>
+        <xsl:when test="string-length($footnote.number.symbols) &gt;= $fnum">
+          <xsl:value-of select="substring($footnote.number.symbols, $fnum, 1)"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:number value="$fnum" format="{$footnote.number.format}"/>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -140,18 +157,24 @@
     <xsl:apply-templates select="."/>
   </xsl:variable>
 
-  <xsl:variable name="html-nodes" select="exsl:node-set($html)"/>
-
   <xsl:choose>
-    <xsl:when test="$html-nodes//p">
-      <xsl:apply-templates select="$html-nodes" mode="insert.html.p">
-        <xsl:with-param name="mark" select="$footnote.mark"/>
-      </xsl:apply-templates>
+    <xsl:when test="function-available('exsl:node-set')">
+      <xsl:variable name="html-nodes" select="exsl:node-set($html)"/>
+      <xsl:choose>
+        <xsl:when test="$html-nodes//p">
+          <xsl:apply-templates select="$html-nodes" mode="insert.html.p">
+            <xsl:with-param name="mark" select="$footnote.mark"/>
+          </xsl:apply-templates>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:apply-templates select="$html-nodes" mode="insert.html.text">
+            <xsl:with-param name="mark" select="$footnote.mark"/>
+          </xsl:apply-templates>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:apply-templates select="$html-nodes" mode="insert.html.text">
-        <xsl:with-param name="mark" select="$footnote.mark"/>
-      </xsl:apply-templates>
+      <xsl:copy-of select="$html"/>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -184,7 +207,7 @@
 <xsl:template name="process.footnotes">
   <xsl:variable name="footnotes" select=".//footnote"/>
   <xsl:variable name="table.footnotes"
-                select=".//table//footnote|.//informaltable//footnote"/>
+                select=".//tgroup//footnote"/>
 
   <!-- Only bother to do this if there's at least one non-table footnote -->
   <xsl:if test="count($footnotes)>count($table.footnotes)">
@@ -229,7 +252,7 @@
   </xsl:choose>
 </xsl:template>
 
-<xsl:template match="informaltable//footnote|table//footnote"
+<xsl:template match="tgroup//footnote"
               mode="process.footnote.mode">
 </xsl:template>
 

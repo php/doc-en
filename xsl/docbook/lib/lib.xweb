@@ -443,8 +443,8 @@ for example), the template may silently return erroneous results.</para>
         <xsl:value-of select="$pis[$count]"/>
       </xsl:variable>
       <xsl:choose>
-        <xsl:when test="contains($pi,concat($attribute, '='))">
-          <xsl:variable name="rest" select="substring-after($pi,concat($attribute,'='))"/>
+        <xsl:when test="contains($pi,concat(' ', $attribute, '='))">
+          <xsl:variable name="rest" select="substring-after($pi,concat(' ', $attribute,'='))"/>
           <xsl:variable name="quote" select="substring($rest,1,1)"/>
           <xsl:value-of select="substring-before(substring($rest,2),$quote)"/>
         </xsl:when>
@@ -551,6 +551,73 @@ absolute path from the root of the tree to the current element node.
 </xsl:template>
 </src:fragment></programlisting>
 
+</refsect1>
+</refentry>
+
+<!-- ================================================================== -->
+
+<refentry id="comment-escape-string">
+<refnamediv>
+<refname>comment-escape-string</refname>
+<refpurpose>Prepare a string for inclusion in an XML comment</refpurpose>
+</refnamediv>
+
+<refsect1><title>Description</title>
+
+<para>The <function>comment-escape-string</function> template returns a string
+that has been transformed so that it can safely be output as an XML comment.
+Internal occurrences of "--" will be replaced with "- -" and a leading and/or
+trailing space will be added to the string, if necessary.</para>
+
+<programlisting><src:fragment id='comment-escape-string'>
+<xsl:template name="comment-escape-string">
+  <xsl:param name="string" select="''"/>
+
+  <xsl:if test="starts-with($string, '-')">
+    <xsl:text> </xsl:text>
+  </xsl:if>
+
+  <xsl:call-template name="comment-escape-string.recursive">
+    <xsl:with-param name="string" select="$string"/>
+  </xsl:call-template>
+
+  <xsl:if test="substring($string, string-length($string), 1) = '-'">
+    <xsl:text> </xsl:text>
+  </xsl:if>
+</xsl:template>
+</src:fragment></programlisting>
+
+</refsect1>
+</refentry>
+
+<refentry id="comment-escape-string.recursive">
+<refnamediv>
+<refname>comment-escape-string.recursive</refname>
+<refpurpose>Internal function used by comment-escape-string</refpurpose>
+</refnamediv>
+
+<refsect1><title>Description</title>
+
+<para>The <function>comment-escape-string.recursive</function> template is used
+by <function>comment-escape-string</function>.</para>
+
+<programlisting><src:fragment id="comment-escape-string.recursive">
+<xsl:template name="comment-escape-string.recursive">
+  <xsl:param name="string" select="''"/>
+  <xsl:choose>
+    <xsl:when test="contains($string, '--')">
+      <xsl:value-of select="substring-before($string, '--')"/>
+      <xsl:value-of select="'- -'"/>
+      <xsl:call-template name="comment-escape-string.recursive">
+        <xsl:with-param name="string" select="substring-after($string, '--')"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="$string"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+</src:fragment></programlisting>
 </refsect1>
 </refentry>
 
@@ -690,6 +757,8 @@ around these functions.</para>
 <src:fragref linkend="pi-attribute.frag"/>
 <src:fragref linkend="lookup.key.frag"/>
 <src:fragref linkend="xpath.location.frag"/>
+<src:fragref linkend="comment-escape-string"/>
+<src:fragref linkend="comment-escape-string.recursive"/>
 <src:fragref linkend="count.uri.path.depth.frag"/>
 <src:fragref linkend="trim.common.uri.paths.frag"/>
 

@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: fop.xsl,v 1.1 2002-08-13 15:45:39 goba Exp $
+     $Id: fop.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
      ********************************************************************
      (c) Stephane Bline Peregrine Systems 2001
      Driver file to allow pdf bookmarking (based on fop implementation).
@@ -45,7 +45,7 @@ translates characters with code>255 back to ASCII.
     <xsl:when test="parent::*">
       <fox:outline internal-destination="{$id}">
         <fox:label>
-          <xsl:value-of select="translate($bookmark-label, $a-dia, $a-asc)"/>
+          <xsl:value-of select="normalize-space(translate($bookmark-label, $a-dia, $a-asc))"/>
         </fox:label>
         <xsl:apply-templates select="*" mode="fop.outline"/>
       </fox:outline>
@@ -53,7 +53,7 @@ translates characters with code>255 back to ASCII.
     <xsl:otherwise>
       <fox:outline internal-destination="{$id}">
         <fox:label>
-          <xsl:value-of select="translate($bookmark-label, $a-dia, $a-asc)"/>
+          <xsl:value-of select="normalize-space(translate($bookmark-label, $a-dia, $a-asc))"/>
         </fox:label>
       </fox:outline>
 

@@ -9,7 +9,7 @@
             indent="no"/>
 
 <!-- ********************************************************************
-     $Id: docbook.xsl,v 1.1 2002-08-13 15:51:37 goba Exp $
+     $Id: docbook.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -29,6 +29,7 @@
 <xsl:include href="../common/titles.xsl"/>
 <xsl:include href="../common/subtitles.xsl"/>
 <xsl:include href="../common/gentext.xsl"/>
+<xsl:include href="../common/targets.xsl"/>
 <xsl:include href="autotoc.xsl"/>
 <xsl:include href="autoidx.xsl"/>
 <xsl:include href="lists.xsl"/>
@@ -75,6 +76,10 @@
   <xsl:message>
     <xsl:text>No template matches </xsl:text>
     <xsl:value-of select="name(.)"/>
+    <xsl:if test="parent::*">
+      <xsl:text> in </xsl:text>
+      <xsl:value-of select="name(parent::*)"/>
+    </xsl:if>
     <xsl:text>.</xsl:text>
   </xsl:message>
 
@@ -103,15 +108,18 @@
 
 <xsl:template name="head.content">
   <xsl:param name="node" select="."/>
+  <xsl:param name="title">
+    <xsl:apply-templates select="$node" mode="object.title.markup.textonly"/>
+  </xsl:param>
 
   <title>
-    <xsl:apply-templates select="$node" mode="object.title.markup.textonly"/>
+    <xsl:copy-of select="$title"/>
   </title>
 
-  <xsl:if test="$html.stylesheet">
-    <link rel="stylesheet"
-          href="{$html.stylesheet}"
-          type="{$html.stylesheet.type}"/>
+  <xsl:if test="$html.stylesheet != ''">
+    <xsl:call-template name="output.html.stylesheets">
+      <xsl:with-param name="stylesheets" select="normalize-space($html.stylesheet)"/>
+    </xsl:call-template>
   </xsl:if>
 
   <xsl:if test="$link.mailto.url != ''">
@@ -125,11 +133,41 @@
 
   <meta name="generator" content="DocBook XSL Stylesheets V{$VERSION}"/>
 
+  <xsl:if test="$generate.meta.abstract != 0">
+    <xsl:variable name="info" select="(articleinfo
+                                      |bookinfo
+                                      |prefaceinfo
+                                      |chapterinfo
+                                      |appendixinfo
+                                      |sectioninfo
+                                      |sect1info
+                                      |sect2info
+                                      |sect3info
+                                      |sect4info
+                                      |sect5info
+                                      |referenceinfo
+                                      |refentryinfo
+                                      |partinfo
+                                      |docinfo)[1]"/>
+    <xsl:if test="$info and $info/abstract">
+      <meta name="description">
+        <xsl:attribute name="content">
+          <xsl:for-each select="$info/abstract[1]/*">
+            <xsl:value-of select="."/>
+            <xsl:if test="position() &lt; last()">
+              <xsl:text> </xsl:text>
+            </xsl:if>
+          </xsl:for-each>
+        </xsl:attribute>
+      </meta>
+    </xsl:if>
+  </xsl:if>
+
   <xsl:if test="ancestor-or-self::*[@status][1]/@status = 'draft'
                 and $draft.watermark.image != ''">
     <style type="text/css"><xsl:text>
-body { background-image: url("</xsl:text>
-<xsl:value-of select="$draft.watermark.image"/><xsl:text>");
+body { background-image: url('</xsl:text>
+<xsl:value-of select="$draft.watermark.image"/><xsl:text>');
        background-repeat: no-repeat;
        background-position: top left;
        /* The following properties make the watermark "fixed" on the page. */
@@ -140,6 +178,34 @@ body { background-image: url("</xsl:text>
     </style>
   </xsl:if>
   <xsl:apply-templates select="." mode="head.keywords.content"/>
+</xsl:template>
+
+<xsl:template name="output.html.stylesheets">
+  <xsl:param name="stylesheets" select="''"/>
+
+  <xsl:choose>
+    <xsl:when test="contains($stylesheets, ' ')">
+      <link rel="stylesheet" href="{substring-before($stylesheets, ' ')}">
+        <xsl:if test="$html.stylesheet.type != ''">
+          <xsl:attribute name="type">
+            <xsl:value-of select="$html.stylesheet.type"/>
+          </xsl:attribute>
+        </xsl:if>
+      </link>
+      <xsl:call-template name="output.html.stylesheets">
+        <xsl:with-param name="stylesheets" select="substring-after($stylesheets, ' ')"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:when test="$stylesheets != ''">
+      <link rel="stylesheet" href="{$stylesheets}">
+        <xsl:if test="$html.stylesheet.type != ''">
+          <xsl:attribute name="type">
+            <xsl:value-of select="$html.stylesheet.type"/>
+          </xsl:attribute>
+        </xsl:if>
+      </link>
+    </xsl:when>
+  </xsl:choose>
 </xsl:template>
 
 <!-- ============================================================ -->
@@ -176,6 +242,17 @@ body { background-image: url("</xsl:text>
 
 <!-- ============================================================ -->
 
+<xsl:template name="system.head.content">
+  <xsl:param name="node" select="."/>
+
+  <!-- system.head.content is like user.head.content, except that
+       it is called before head.content. This is important because it
+       means, for example, that <style> elements output by system.head.content
+       have a lower CSS precedence than the users stylesheet. -->
+</xsl:template>
+
+<!-- ============================================================ -->
+
 <xsl:template name="user.head.content">
   <xsl:param name="node" select="."/>
 </xsl:template>
@@ -208,17 +285,32 @@ body { background-image: url("</xsl:text>
           </xsl:message>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:apply-templates select="key('id',$rootid)" mode="process.root"/>
-          <xsl:if test="$tex.math.in.alt != ''">
-            <xsl:apply-templates select="key('id',$rootid)" mode="collect.tex.math"/>
+          <xsl:if test="$collect.xref.targets = 'yes' or
+                        $collect.xref.targets = 'only'">
+            <xsl:apply-templates select="key('id', $rootid)"
+                        mode="collect.targets"/>
+          </xsl:if>
+          <xsl:if test="$collect.xref.targets != 'only'">
+            <xsl:apply-templates select="key('id',$rootid)"
+                        mode="process.root"/>
+            <xsl:if test="$tex.math.in.alt != ''">
+              <xsl:apply-templates select="key('id',$rootid)"
+                          mode="collect.tex.math"/>
+            </xsl:if>
           </xsl:if>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:apply-templates select="/" mode="process.root"/>
-      <xsl:if test="$tex.math.in.alt != ''">
-        <xsl:apply-templates select="/" mode="collect.tex.math"/>
+      <xsl:if test="$collect.xref.targets = 'yes' or
+                    $collect.xref.targets = 'only'">
+        <xsl:apply-templates select="/" mode="collect.targets"/>
+      </xsl:if>
+      <xsl:if test="$collect.xref.targets != 'only'">
+        <xsl:apply-templates select="/" mode="process.root"/>
+        <xsl:if test="$tex.math.in.alt != ''">
+          <xsl:apply-templates select="/" mode="collect.tex.math"/>
+        </xsl:if>
       </xsl:if>
     </xsl:otherwise>
   </xsl:choose>
@@ -226,26 +318,46 @@ body { background-image: url("</xsl:text>
 
 <xsl:template match="*" mode="process.root">
   <xsl:variable name="doc" select="self::*"/>
+
+  <xsl:call-template name="root.messages"/>
+
   <html>
-  <head>
-    <xsl:call-template name="head.content">
-      <xsl:with-param name="node" select="$doc"/>
-    </xsl:call-template>
-    <xsl:call-template name="user.head.content">
-      <xsl:with-param name="node" select="$doc"/>
-    </xsl:call-template>
-  </head>
-  <body>
-    <xsl:call-template name="body.attributes"/>
-    <xsl:call-template name="user.header.content">
-      <xsl:with-param name="node" select="$doc"/>
-    </xsl:call-template>
-    <xsl:apply-templates select="."/>
-    <xsl:call-template name="user.footer.content">
-      <xsl:with-param name="node" select="$doc"/>
-    </xsl:call-template>
-  </body>
+    <head>
+      <xsl:call-template name="system.head.content">
+        <xsl:with-param name="node" select="$doc"/>
+      </xsl:call-template>
+      <xsl:call-template name="head.content">
+        <xsl:with-param name="node" select="$doc"/>
+      </xsl:call-template>
+      <xsl:call-template name="user.head.content">
+        <xsl:with-param name="node" select="$doc"/>
+      </xsl:call-template>
+    </head>
+    <body>
+      <xsl:call-template name="body.attributes"/>
+      <xsl:call-template name="user.header.content">
+        <xsl:with-param name="node" select="$doc"/>
+      </xsl:call-template>
+      <xsl:apply-templates select="."/>
+      <xsl:call-template name="user.footer.content">
+        <xsl:with-param name="node" select="$doc"/>
+      </xsl:call-template>
+    </body>
   </html>
+</xsl:template>
+
+<xsl:template name="root.messages">
+  <!-- redefine this any way you'd like to output messages -->
+  <!-- DO NOT OUTPUT ANYTHING FROM THIS TEMPLATE -->
+</xsl:template>
+
+<!-- ==================================================================== -->
+
+<xsl:template name="chunk">
+  <xsl:param name="node" select="."/>
+
+  <!-- The default is that we are not chunking... -->
+  <xsl:text>0</xsl:text>
 </xsl:template>
 
 <!-- ==================================================================== -->

@@ -11,7 +11,7 @@
     <xsl:with-param name="content">
       <xsl:apply-templates select="$node" mode="enumerate-files"/>
     </xsl:with-param>
-    <xsl:with-param name="encoding" select="$default.encoding"/>
+    <xsl:with-param name="encoding" select="$chunker.output.encoding"/>
   </xsl:call-template>
 </xsl:template>
 
