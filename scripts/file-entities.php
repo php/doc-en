@@ -11,7 +11,8 @@ ob_implicit_flush();
 set_time_limit(0);
 
 $base_dir  = str_replace("\\","/",abs_path($argv[$argc-2]));
-if(php_sapi_name()!="cli") $base_dir=ereg_replace("/scripts$","",$base_dir);
+# if(php_sapi_name()!="cli") 
+	$base_dir=ereg_replace("/scripts$","",$base_dir);
 
 $orig_dir  = $base_dir."/en";
 $trans_dir = $base_dir."/".$argv[$argc-1];
