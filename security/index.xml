@@ -293,19 +293,20 @@ AddHandler php3-script .php3
   <sect1 id="security.filesystem">
    <title>Filesystem Security</title>
    <simpara>
-    PHP honors the security built into most server systems with respect
-    to permissions on a file and directory basis. This allows you to
-    control which files in the filesystem may be read. Care should be
-    taken with any files which are world readable to ensure that they
-    are safe for reading by all users who have access to that
+    PHP is subject to the security built into most server systems with
+    respect to permissions on a file and directory basis. This allows
+    you to control which files in the filesystem may be read. Care
+    should be taken with any files which are world readable to ensure
+    that they are safe for reading by all users who have access to that
     filesystem.
    </simpara>
    <simpara>
     Since PHP was designed to allow user level access to the filesystem,
     it's entirely possible to write a PHP script that will allow you
-    to read system files such as /etc/password. This has some obvious
-    implications, in that you need to ensure that the files that you
-    read and write are the appropriate ones.
+    to read system files such as /etc/password, modify your ethernet
+    connections, send massive printer jobs out, etc. This has some
+    obvious implications, in that you need to ensure that the files
+    that you read from and write to are the appropriate ones.
    </simpara>
    <simpara>
     Consider the following script, where a user indicates that they'd
@@ -347,7 +348,8 @@ echo "/home/../etc/passwd has been deleted!";
 ?>
      </programlisting>
     </example>   
-    There are two appropriate measures to prevent these issues.
+    There are two important measures you should take to prevent these
+    issues.
     <itemizedlist>
      <listitem>
       <simpara>
@@ -356,7 +358,7 @@ echo "/home/../etc/passwd has been deleted!";
      </listitem>
      <listitem>
       <simpara>
-       Check all file-related variables which are submitted.
+       Check all variables which are submitted.
       </simpara>
      </listitem>
     </itemizedlist>
@@ -382,7 +384,28 @@ fclose($fp);
 echo "$file_to_delete has been deleted!";
 ?>
      </programlisting>
-    </example>      
+    </example>
+    Alternately, you may prefer to write a more customized check:
+    <example>
+     <title>More secure file name checking</title>
+     <programlisting role="php">
+&lt;?php
+$username = $HTTP_REMOTE_USER;
+$homedir = "/home/$username";
+
+if (!ereg('^[^./][^/]*$', $userfile))
+    die('bad filename'); //die, do not process
+    
+//etc...
+?>
+     </programlisting>
+    </example> 
+    Dpending on your operating system, there are a wide variety of files
+    which you should be concerned about, including device entries (/dev/
+    or COM1), configuration files (/etc/ files and the .ini files),
+    well known file storage areas (/home/, My Documents), etc. For this
+    reason, it's usually easier to create a policy where you forbid
+    everything except for what you explicitly allow.
    </para>   
   </sect1>
 
@@ -497,6 +520,15 @@ exec ($evil_var);
     you won't guarantee the security of your system, but you can help
     improve it.
    </para>
+   <para>
+    You may also want to consider turning off register_globals,
+    magic_quotes, or other convenience settings which may confuse
+    you as to the validity, source, or value of a given variable.
+    Working with PHP in error_reporting(E_ALL) mode can also help warn
+    you about variables being used before they are checked or
+    initialized (so you can prevent unusual data from being
+    operated upon).
+   </para>
   </sect1>
 
   <sect1 id="security.general">
@@ -509,10 +541,14 @@ exec ($evil_var);
     fingerprint), you would have an extremely high level of
     accountability. It would also take half an hour to fill out a fairly
     complex form, which would tend to encourage users to find ways of
-    bypassing the security. The best security is often inobtrusive
-    enough to suit the requirements without the user being prevented
-    from accomplishing their work. Indeed, some security attacks are
-    merely exploits of this kind of overly built security.
+    bypassing the security.
+   </simpara>
+   <simpara>
+    The best security is often inobtrusive enough to suit the
+    requirements without the user being prevented from accomplishing
+    their work, or over-burdening the code author with excessive
+    complexity. Indeed, some security attacks are merely exploits of
+    this kind of overly built security, which tends to erode over time.
    </simpara>
    <simpara>
     A phrase worth remembering: A system is only as good as the weakest
