@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.3 $ -->
+<!-- $Revision: 1.4 $ -->
   <refentry id="function.stream-select">
    <refnamediv>
     <refname>stream_select</refname>
@@ -34,12 +34,56 @@
     </simpara>
     <simpara>
      The streams listed in the <parameter>except</parameter> array will be
-     watched for exceptions.
+     watched for high priority exceptional ("out-of-band") data arriving.
     </simpara>
+    <note>
+     <para>
+      When <function>stream_select</function> returns, the arrays
+      <parameter>read</parameter>, <parameter>write</parameter> and
+      <parameter>except</parameter> are modified to indicate which stream
+      resource(s) actually changed status.
+     </para>
+    </note>
+    <simpara>
+     The <parameter>tv_sec</parameter> and <parameter>tv_usec</parameter>
+     together form the <emphasis>timeout</emphasis> parameter,
+     <parameter>tv_sec</parameter> specifies the number of seconds while
+     <parameter>tv_usec</parameter> the number of microseconds.
+     The <emphasis>timeout</emphasis> is an upper bound on the amount of time
+     that <function>stream_select</function> will wait before it returns.
+     If <parameter>tv_sec</parameter> and <parameter>tv_usec</parameter> are
+     both set to <literal>0</literal>, <function>stream_select</function> will
+     not wait for data - instead it will return immediately, indicating the
+     current status of the streams.
+     If <parameter>tv_sec</parameter> is &null; <function>stream_select</function>
+     can block indefinitely, returning only when an event on one of the
+     watched streams occurs (or if a signal interrupts the system call).
+    </simpara>
+    <simpara>
+     On success <function>stream_select</function> returns the number of
+     stream resorces contained in the modified arrays, which may be zero if
+     the timeout expires before anything interesting happens. On error &false;
+     is returned and a warning raised (this can happen if the system call is
+     interrupted by an incoming signal).
+    </simpara>
+
     <warning>
      <para>
-      On exit, the arrays are modified to indicate which stream resource
-      actually changed status.
+      Using a timeout value of <literal>0</literal> allows you to
+      instantaneously poll the status of the streams, however, it is NOT a
+      good idea to use a <literal>0</literal> timeout value in a loop as it
+      will cause your script to consume too much CPU time.
+     </para>
+     <para>
+      It is much better to specify a timeout value of a few seconds, although
+      if you need to be checking and running other code concurrently, using a
+      timeout value of at least <literal>200000</literal> microseconds will
+      help reduce the CPU usage of your script.
+     </para>
+     <para>
+      Remember that the timeout value is the
+      maximum time that will elapse; <function>stream_select</function> will
+      return as soon as the requested streams are ready for use.
      </para>
     </warning>
     <simpara>
@@ -50,9 +94,13 @@
      <function>stream_select</function> returns.
     </simpara>
     <para>
-     Example:
+     This example checks to see if data has arrived for reading on either
+     <parameter>$stream1</parameter> or <parameter>$stream2</parameter>.
+     Since the timeout value is <literal>0</literal> it will return
+     immediately:
      <programlisting role="php">
 <![CDATA[
+<?php
 /* Prepare the read array */
 $read = array($stream1, $stream2);
 
@@ -61,6 +109,7 @@ if (false === ($num_changed_streams = stream_select($read, $write = NULL, $excep
 else if ($num_changed_streams > 0) {
     /* At least on one of the streams something interesting happened */
 }
+?>
 ]]>
      </programlisting>
     </para>
@@ -78,22 +127,6 @@ stream_select($r, $w, $e = NULL, 0);
      </programlisting>
      </para>
     </note>
-    <simpara>
-     The <parameter>tv_sec</parameter> and <parameter>tv_usec</parameter>
-     together form the <emphasis>timeout</emphasis> parameter. The
-     <emphasis>timeout</emphasis> is an upper bound on the amount of time
-     elapsed before <function>stream_select</function> returns.
-     <parameter>tv_sec</parameter> may be zero , causing
-     <function>stream_select</function> to return immediately. This is useful
-     for polling. If <parameter>tv_sec</parameter> is &null; (no timeout),
-     <function>stream_select</function> can block indefinitely.
-    </simpara>
-    <simpara>
-     On success <function>stream_select</function> returns the number of
-     stream resorces contained in the modified arrays, which may be zero if
-     the timeout expires before anything interesting happens. On error &false;
-     is returned.
-    </simpara>
     <note>
      <para>
      Be sure to use the <literal>===</literal> operator when checking for an
@@ -110,26 +143,10 @@ if (false === stream_select($r, $w, $e = NULL, 0)) {
     </note>
     <note>
      <para>
-      Be aware that some stream implementations need to be handled very
-      carefully. A few basic rules:
-      <itemizedlist>
-       <listitem>
-        <simpara>
-         You should always try to use <function>stream_select</function>
-         without timeout. Your program should have nothing to do if there is
-         no data available. Code that depends on timeouts is not usually
-         portable and difficult to debug.
-        </simpara>
-       </listitem>
-       <listitem>
-        <simpara>
-         If you read/write to a stream returned in the arrays be aware that
-         they do not necessarily read/write the full amount of data you have
-         requested. Be prepared to even only be able to read/write a single
-         byte.
-        </simpara>
-       </listitem>
-      </itemizedlist>
+      If you read/write to a stream returned in the arrays be aware that
+      they do not necessarily read/write the full amount of data you have
+      requested. Be prepared to even only be able to read/write a single
+      byte.
      </para>
     </note>
     <note>
