@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.16 2004-11-10 20:38:09 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.17 2004-11-10 20:40:03 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -489,6 +489,35 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
+
+<!-- Remove block in ./docbook/htmlhelp/htmlhelp-common.xsl for building 
+     functions index -->
+<xsl:template match="index">
+  <xsl:apply-templates/>
+</xsl:template>
+
+<!-- Do not generate ToC for index page : temporary FIX until a more appropriate
+     solution will come from dobook-apps -->
+<!-- Copy of native DocBook template with "if" inserted -->
+<xsl:template name="component.toc">
+  <xsl:param name="toc-context" select="."/>
+  <xsl:param name="toc.title.p" select="true()"/>
+
+  <xsl:if test="@id!='indexes'">
+  <xsl:call-template name="make.toc">
+    <xsl:with-param name="toc-context" select="$toc-context"/>
+    <xsl:with-param name="toc.title.p" select="$toc.title.p"/>
+    <xsl:with-param name="nodes" select="section|sect1|refentry
+                                         |article|bibliography|glossary
+                                         |appendix|index
+                                         |bridgehead[not(@renderas)
+                                                     and $bridgehead.in.toc != 0]
+                                         |.//bridgehead[@renderas='sect1'
+                                                        and $bridgehead.in.toc != 0]"/>
+  </xsl:call-template>
+  </xsl:if>
+</xsl:template>
+
 
 
 <!-- *************** HH HTML MARKUP CUSTOMIZATIONS **************** -->
