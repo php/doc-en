@@ -146,7 +146,7 @@ $tabs  <param name=\"Local\" value=\"$fancydir\\$local\">";
   
   $index_a = file ("$fancydir/$original_index");
   $ijoin = join("", $index_a);
-  $ijoin = preg_replace("/[\r|\n]/", " ", $ijoin);
+  $ijoin = preg_replace("/[\r|\n]{1,2}/", " ", $ijoin);
   
   // print out the objects, that autoparsing wont find
   // some automation may be there in the future
@@ -211,7 +211,7 @@ $tabs  <param name=\"Local\" value=\"$fancydir\\$local\">";
 
   // link in directly the copyright page
   $cjoin = join("", file ("$fancydir/copyright.html"));
-  $cjoin = preg_replace("/[\r|\n]/", " ", $cjoin);
+  $cjoin = preg_replace("/[\r|\n]{1,2}/", " ", $cjoin);
   preg_match('|<A NAME="copyright" ></A ><P ><B >(.*)</B|U', $cjoin, $match);
   SiteMapObj($match[1], "copyright.html", "  ", 17);
 
