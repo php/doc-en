@@ -23,7 +23,7 @@ How to build a CHM manual with this system?
     to get this version:
 
     From the phpdoc root directory:
-        cvs update -dP -D'December 31, 2002 11:00pm' xsl
+        cvs update -dP -D"December 31, 2002 11:00pm" xsl
 
         # ensure the version information is up-to-date and that
         # html doctypes are included
