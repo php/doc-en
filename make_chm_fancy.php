@@ -17,8 +17,13 @@
   }
   closedir($handle); 
   
+  // Look for chm-index-file (snap-downloader, cvs-usr with/without lang-support) 
+  if ( false == ($content = join("", file("make_chm_index_$language.html"))) )
+    if ( false == ($content = join("", file("$language/make_chm_index_$language.html"))) )
+      $content = join("", file("en/make_chm_index_en.html"));
+
+  
   // make GENTIME the actual date/time
-  $content = join("", file("make_chm_index_$language.html"));
   $content = preg_replace("/\\[GENTIME\\]/", date("D M d H:i:s Y"), $content);  
   $fp = fopen("$fancydir/fancy-index.html", "w");
   fputs($fp, $content);
