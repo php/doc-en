@@ -480,6 +480,9 @@ this_date = 'DATE_HERE';
 // Vars for online menu of this particular page
 this_page     = location.pathname.substring(location.pathname.lastIndexOf("/")+1);
 this_page_php = this_page.substring(0, this_page.lastIndexOf(".")) + '.php';
+if (this_page_php == '_index.php') {
+  this_page_php = 'index.php';
+}
 
 // Create the chmfile vars for this HTML page
 chmfile_fullname = "";
