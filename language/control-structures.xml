@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.50 $ -->
+<!-- $Revision: 1.51 $ -->
  <chapter id="control-structures">
   <title>Control Structures</title>
 
@@ -34,7 +34,7 @@ if (expr)
     As described in <link linkend="language.expressions">the section about
     expressions</link>, <replaceable>expr</replaceable> is evaluated to its
     Boolean value.  If <replaceable>expr</replaceable> evaluates to &true;,
-    PHP will execute <replaceable>statement</replaceable>, and if it evaluates
+   PHP will execute <replaceable>statement</replaceable>, and if it evaluates
     to &false; - it'll ignore it. More information about what values evaluate
     to &false; can be found in the <link
     linkend="language.types.boolean.casting">'Converting to boolean'</link>
@@ -1020,499 +1020,340 @@ print_r (profile (TRUE));
    </note>
   </sect1>
 
-  <sect1 id="function.require">
+
+ <sect1 id="function.require">
    <title><function>require</function></title>
+
    <simpara>
-    The <function>require</function> statement replaces itself with
-    the specified file, much like the C preprocessor's
-    <literal>#include</literal> works.
+    The <function>require</function> statement includes and evaluates
+    the specific file.
    </simpara>
    <simpara>
-    If "URL fopen wrappers" are enabled in PHP (which they are in the
-    default configuration), you can specify the file to be
-    <function>require</function>ed using an URL instead of a local
-    pathname. See <link linkend="features.remote-files">Remote
-    files</link> and <function>fopen</function> for more information.
+     <function>require</function> includes and evaluates a specific file.  
+     Detailed information on how this inclusion works is described in the 
+     documentation for <function>include</function>.
    </simpara>
    <simpara>
-    An important note about how this works is that when a file is
-    <function>include</function>ed or <function>require</function>ed,
-    parsing drops out of PHP mode and into HTML mode at the beginning
-    of the target file, and resumes PHP mode again at the end. For
-    this reason, any code inside the target file which should be
-    executed as PHP code must be enclosed within <link
-    linkend="language.basic-syntax.phpmode">valid PHP start and end
-    tags</link>.
-   </simpara>
-   <simpara>
-    <function>require</function> is not actually a function in PHP;
-    rather, it is a language construct. It is subject to some
-    different rules than functions are. For instance,
-    <function>require</function> is not subject to any containing
-    control structures. For another, it does not return any value;
-    attempting to read a return value from a
-    <function>require</function> call results in a parse error.
-   </simpara>
-   <simpara>
-    Unlike <function>include</function>, <function>require</function>
-    will <emphasis>always</emphasis> read in the target file,
-    <emphasis>even if the line it's on never executes</emphasis>. If
-    you want to conditionally include a file, use
-    <function>include</function>. The conditional statement won't
-    affect the <function>require</function>. However, if the line on
-    which the <function>require</function> occurs is not executed,
-    neither will any of the code in the target file be executed.
-   </simpara>
-   <simpara>
-    Similarly, looping structures do not affect the behaviour of
-    <function>require</function>. Although the code contained in the
-    target file is still subject to the loop, the
-    <function>require</function> itself happens only once.
+     <function>require</function> and <function>include</function> 
+     are identical in every way except how they handle failure.  
+     <function>include</function> produces a 
+     <link linkend="internal.e-warning">Warning</link> while 
+     <function>require</function> results in a <link linkend="internal.e-error">
+     Fatal Error</link>.  In other words, don't hesitate to use 
+     <function>require</function> if you want a missing file to halt processing 
+     of the page.  <function>include</function> does not behave this way, the
+     script will continue regardless.  Be sure to have an appropriate
+     <link linkend="ini.include-path">include_path</link> setting as well.
    </simpara>
    <para>
-    This means that you can't put a <function>require</function>
-    statement inside of a loop structure and expect it to include the
-    contents of a different file on each iteration. To do that, use an
-    <function>include</function> statement.
-    <informalexample>
+    <example>
+     <title>Basic <function>require</function> examples</title>
      <programlisting role="php">
-<![CDATA[
-require ('header.php');
-]]>
+<?php
+
+require 'prepend.php';
+
+require $somefile;
+
+require ('somefile.txt');
+
+?>
      </programlisting>
-    </informalexample>
+   </example>
    </para>
    <simpara>
-    When a file is <function>require</function>ed, the code it
-    contains inherits the variable scope of the line on which the
-    <function>require</function> occurs. Any variables available at
-    that line in the calling file will be available within the called
-    file. If the <function>require</function> occurs inside a
-    function within the calling file, then all of the code contained
-    in the called file will behave as though it had been defined
-    inside that function.
+    See the <function>include</function> documentation for more examples.
    </simpara>
-   <para>
-    If the <function>require</function>ed file is called via HTTP
-    using the fopen wrappers, and if the target server interprets the
-    target file as PHP code, variables may be passed to the
-    <function>require</function>ed file using an URL request string as
-    used with HTTP GET. This is not strictly speaking the same thing
-    as <function>require</function>ing the file and having it inherit
-    the parent file's variable scope; the script is actually being run
-    on the remote server and the result is then being included into
-    the local script.
-    <informalexample>
-     <programlisting role="php">
-<![CDATA[
-/* This example assumes that someserver is configured to parse .php
- * files and not .txt files. Also, 'works' here means that the variables
- * $varone and $vartwo are available within the require()ed file. */
-
-/* Won't work; file.txt wasn't handled by someserver. */
-require ("http://someserver/file.txt?varone=1&vartwo=2");
-
-/* Won't work; looks for a file named 'file.php?varone=1&amp;vartwo=2'
- * on the local filesystem. */
-require ("file.php?varone=1&vartwo=2");
-
-/* Works. */
-require ("http://someserver/file.php?varone=1&vartwo=2");
-
-$varone = 1;
-$vartwo = 2;
-require ("file.txt");  /* Works. */
-require ("file.php");  /* Works. */
-]]>
-     </programlisting>
-    </informalexample>
-   </para>
-   <simpara>
-    In PHP 3, it is possible to execute a <literal>return</literal>
-    statement inside a <function>require</function>ed file, as long as
-    that statement occurs in the global scope of the
-    <function>require</function>ed file. It may not occur within any
-    block (meaning inside braces ({}). In PHP 4, however, this ability
-    has been discontinued. If you need this functionality, see
-    <function>include</function>.
-   </simpara>
+   <note>
+    <simpara>
+     Prior to PHP 4.0.2, the following applies: <function>require</function> will 
+     always attempt to read the target file, even if the line it's on never executes.
+     The conditional statement won't affect <function>require</function>. However, 
+     if the line on which the <function>require</function> occurs is not executed, 
+     neither will any of the code in the target file be executed.  Similarly, looping 
+     structures do not affect the behaviour of <function>require</function>. Although 
+     the code contained in the target file is still subject to the loop, the 
+     <function>require</function> itself happens only once.
+    </simpara>
+   </note>
    <simpara>
     See also <function>include</function>, <function>require_once</function>,
-    <function>include_once</function>, <function>readfile</function>,
-    and <function>virtual</function>.
+    <function>include_once</function>, <function>eval</function>, 
+    <function>file</function>, <function>readfile</function>, 
+    <function>virtual</function> and <link linkend="ini.include-path">include_path</link>.
    </simpara>
   </sect1>
 
-  <sect1 id="function.include">
+ <sect1 id="function.include">
    <title><function>include</function></title>
    <simpara>
     The <function>include</function> statement includes and evaluates
     the specified file.
    </simpara>
    <simpara>
-    If "URL fopen wrappers" are enabled in PHP (which they are in the
-    default configuration), you can specify the file to be
-    <function>include</function>ed using an URL instead of a local
-    pathname. See <link linkend="features.remote-files">Remote
-    files</link> and <function>fopen</function> for more information.
+     The documentation below also applies to <function>require</function>.
+     The two constructs are identical in every way except how they handle
+     failure.  <function>include</function> produces a 
+     <link linkend="internal.e-warning">Warning</link> while <function>require</function>
+     results in a <link linkend="internal.e-error">Fatal Error</link>.
+     In other words, don't hesitate to use <function>require</function> if you want 
+     a missing file to halt processing of the page.  <function>include</function> does 
+     not behave this way, the script will continue regardless.  Be sure to have an 
+     appropriate <link linkend="ini.include-path">include_path</link> setting as well.
    </simpara>
    <simpara>
-    An important note about how this works is that when a file is
-    <function>include</function>ed or <function>require</function>ed,
-    parsing drops out of PHP mode and into HTML mode at the beginning
-    of the target file, and resumes again at the end. For this reason,
-    any code inside the target file which should be executed as PHP
-    code must be enclosed within <link
-    linkend="language.basic-syntax.phpmode">valid PHP start and end
-    tags</link>.
+     When a file is included, the code it contains inherits the
+     <link linkend="language.variables.scope">variable scope</link> of the
+     line on which the include occurs.  Any variables available at that line
+     in the calling file will be available within the called file, from that
+     point forward.
    </simpara>
    <para>
-    This happens each time the <function>include</function> statement
-    is encountered, so you can use an <function>include</function>
-    statement within a looping structure to include a number of
-    different files.
-    <informalexample>
-     <programlisting role="php">
+     <example>
+      <title>Basic <function>include</function> example</title>
+      <programlisting role="php">
 <![CDATA[
-$files = array ('first.php', 'second.php', 'third.php');
-for ($i = 0; $i < count($files); $i++) {
-    include $files[$i];
+vars.php
+<?php
+
+$color = 'green';
+$fruit = 'apple';
+
+?>
+
+test.php
+<?php
+
+echo "A $color $fruit"; // A
+
+include 'vars.php';
+
+echo "A $color $fruit"; // A green apple
+
+?>
+]]>
+      </programlisting>
+     </example>
+   </para>
+   <simpara>
+     If the include occurs inside a function within the calling file,
+     then all of the code contained in the called file will behave as
+     though it had been defined inside that function.  So, it will follow
+     the variable scope of that function.
+   </simpara>
+   <para>
+     <example>
+     <title>Including within functions</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+function foo()
+{
+global $color;
+
+    include 'vars.php';
+
+    echo "A $color $fruit";
 }
+
+/* vars.inc is in the scope of foo() so     *
+ * $fruit is NOT available outside of this  *
+ * scope.  $color is because we declared it *
+ * as global.                               */
+
+foo();                    // A green apple
+echo "A $color $fruit";   // A green
+
+?>
 ]]>
      </programlisting>
-    </informalexample>
+    </example>
    </para>
+   <simpara>
+     When a file is included, parsing drops out of PHP mode and
+     into HTML mode at the beginning of the target file, and resumes
+     again at the end.  For this reason, any code inside the target
+     file which should be executed as PHP code must be enclosed within
+     <link linkend="language.basic-syntax.phpmode">valid PHP start
+     and end tags</link>.
+   </simpara>
+   <simpara>
+     If "<link linkend="ini.allow-url-fopen">URL fopen wrappers</link>"
+     are enabled in PHP (which they are in the default configuration),
+     you can specify the file to be included using an URL (via HTTP)
+     instead of a local pathname.  If the target server interprets
+     the target file as PHP code, variables may be passed to the included
+     file using an URL request string as used with HTTP GET.  This is
+     not strictly speaking the same thing as including the file and having
+     it inherit the parent file's variable scope; the script is actually
+     being run on the remote server and the result is then being
+     included into the local script.
+   </simpara>
    <para>
-    <function>include</function> differs from
-    <function>require</function> in that the include statement is
-    re-evaluated each time it is encountered (and only when it is
-    being executed), whereas the <function>require</function>
-    statement is replaced by the required file when it is first
-    encountered, whether the contents of the file will be evaluated or
-    not (for example, if it is inside an <link
-    linkend="control-structures.if">if</link> statement whose
-    condition evaluated to &false;).
-   </para>
-   <para>
-    Because <function>include</function> is a special language
-    construct, you must enclose it within a statement block if it is
-    inside a conditional block.
-    <informalexample>
+    <example>
+     <title><function>include</function> through HTTP</title>
      <programlisting role="php">
 <![CDATA[
-/* This is WRONG and will not work as desired. */
+<?php
 
+/* This example assumes that www.example.com is configured to parse .php *
+ * files and not .txt files. Also, 'Works' here means that the variables *
+ * $foo and $bar are available within the included file.                 */
+
+// Won't work; file.txt wasn't handled by www.example.com as PHP
+include 'http://www.example.com/file.txt?foo=1&bar=2';
+
+// Won't work; looks for a file named 'file.php?foo=1&bar=2' on the
+// local filesystem.
+include 'file.php?foo=1&bar=2';
+
+// Works.
+include 'http://www.example.com/file.php?foo=1&bar=2';
+
+$foo = 1;
+$bar = 2;
+include 'file.txt';  // Works.
+include 'file.php';  // Works.
+
+?>
+]]>
+     </programlisting>
+    </example>
+     See also <link linkend="features.remote-files">Remote files</link>,
+     <function>fopen</function> and <function>file</function> for related 
+     information.
+   </para>
+   <para>
+     Because <function>include</function> and <function>require</function>
+     are special language constructs, you must enclose them within a statement
+     block if it's inside a conditional block.
+   </para>
+   <para>
+    <example>
+     <title>include() and conditional blocks</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+// This is WRONG and will not work as desired.
 if ($condition)
-    include($file);
+    include $file;
 else
-    include($other);
+    include $other;
 
-/* This is CORRECT. */
 
+// This is CORRECT.
 if ($condition) {
-    include($file);
+    include $file;
 } else {
-    include($other);
+    include $other;
 }
+
+?>
 ]]>
      </programlisting>
-    </informalexample>
+    </example>
    </para>
    <simpara>
-    In both PHP 3 and PHP 4, it is possible to execute a
-    <literal>return</literal> statement inside an
-    <function>include</function>ed file, in order to terminate
-    processing in that file and return to the script which called
-    it. Some differences in the way this works exist, however. The
-    first is that in PHP 3, the <literal>return</literal> may not
-    appear inside a block unless it's a function block, in which case
-    the <literal>return</literal> applies to that function and not the
-    whole file. In PHP 4, however, this restriction does not
-    exist. Also, PHP 4 allows you to return values from
-    <function>include</function>ed files. You can take the value of
-    the <function>include</function> call as you would a normal
-    function. This generates a parse error in PHP 3.
+    Handling Returns: It is possible to execute a <function>return</function> 
+    statement inside an included file in order to terminate processing in that 
+    file and return to the script which called it.  Also, it's possible to return 
+    values from included files.  You can take the value of the include call as 
+    you would a normal function.
    </simpara>
-   <example>
-    <title><function>include</function> in PHP 3 and PHP 4</title>
-    <para>
-     Assume the existence of the following file (named
-     <filename>test.php</filename>) in the same directory as the main
-     file:
-     <programlisting role="php">
-<![CDATA[
-<?php
-echo "Before the return <br>\n";
-if (1) {
-    return 27;
-}
-echo "After the return <br>\n";
-?>
-]]>
-     </programlisting>
-    </para>
-    <para>
-     Assume that the main file (<filename>main.html</filename>)
-     contains the following:
-     <programlisting role="php">
-<![CDATA[
-<?php
-$retval = include ('test.php');
-echo "File returned: '$retval'<br>\n";
-?>
-]]>
-     </programlisting>
-    </para>
-    <para>
-     When <filename>main.html</filename> is called in PHP 3, it will
-     generate a parse error on line 2; you can't take the value of an
-     <function>include</function> in PHP 3. In PHP 4, however, the
-     result will be:
-     <screen>
-Before the return
-File returned: '27'
-     </screen>
-    </para>
-    <para>
-     Now, assume that <filename>main.html</filename> has been altered
-     to contain the following:
-     <programlisting role="php">
-<![CDATA[
-<?php
-include ('test.php');
-echo "Back in main.html<br>\n";
-?>
-]]>
-     </programlisting>
-    </para>
-    <para>
-     In PHP 4, the output will be:
-     <screen>
-Before the return
-Back in main.html
-     </screen>
-     However, PHP 3 will give the following output:
-     <screen>
-Before the return
-27Back in main.html
-
-Parse error: parse error in /home/torben/public_html/phptest/main.html on line 5
-     </screen>
-    </para>
-    <para>
-     The above parse error is a result of the fact that the
-     <literal>return</literal> statement is enclosed in a non-function
-     block within <filename>test.php</filename>. When the return is
-     moved outside of the block, the output is:
-     <screen>
-Before the return
-27Back in main.html
-     </screen>
-    </para>
-    <para>
-     The spurious '27' is due to the fact that PHP 3 does not support
-     <literal>return</literal>ing values from files like that.
-    </para>
-   </example>
-   <simpara>
-    When a file is <function>include</function>ed, the code it
-    contains inherits the variable scope of the line on which the
-    <function>include</function> occurs. Any variables available at
-    that line in the calling file will be available within the called
-    file. If the <function>include</function> occurs inside a
-    function within the calling file, then all of the code contained
-    in the called file will behave as though it had been defined
-    inside that function.
-   </simpara>
+   <note>
+    <simpara>
+     In PHP 3, the return may not appear inside a block unless it's
+     a function block, in which case the <function>return</function> applies 
+     to that function and not the whole file.
+    </simpara>
+   </note>
    <para>
-    If the <function>include</function>ed file is called via HTTP
-    using the fopen wrappers, and if the target server interprets the
-    target file as PHP code, variables may be passed to the
-    <function>include</function>ed file using an URL request string as
-    used with HTTP GET. This is not strictly speaking the same thing
-    as <function>include</function>ing the file and having it inherit
-    the parent file's variable scope; the script is actually being run
-    on the remote server and the result is then being included into
-    the local script.
-    <informalexample>
-     <programlisting role="php">
+    <example>
+     <title><function>include</function> and the <function>return</function> statement</title>
+      <programlisting role="php">
 <![CDATA[
-/* This example assumes that someserver is configured to parse .php
- * files and not .txt files. Also, 'works' here means that the variables
- * $varone and $vartwo are available within the include()ed file. */
+return.php
+<?php
 
-/* Won't work; file.txt wasn't handled by someserver. */
-include ("http://someserver/file.txt?varone=1vartwo=2");
+$var = 'PHP';
 
-/* Won't work; looks for a file named 'file.php?varone=1&vartwo=2'
- * on the local filesystem. */
-include ("file.php?varone=1&amp;vartwo=2");
+return $var;
 
-/* Works. */
-include ("http://someserver/file.php?varone=1&vartwo=2");
+?>
 
-$varone = 1;
-$vartwo = 2;
-include ("file.txt");  /* Works. */
-include ("file.php");  /* Works. */
+noreturn.php
+<?php
+
+$var = 'PHP';
+
+?>
+
+getfoo.php
+<?php
+
+$foo = include 'return.php';
+
+echo $foo; // prints 'PHP'
+
+$bar = include 'noreturn.php';
+
+echo $bar; // prints 1
+
+?>
 ]]>
-     </programlisting>
-    </informalexample>
+      </programlisting>
+    </example>
    </para>
+   <simpara>
+    <literal>$bar</literal> is the value (1) because the include was successful.  
+    Notice the difference between the above examples.  The first uses 
+    <function>return</function> within the included file while the other does not.  
+    A few other ways to "include" files into variables are with 
+    <function>fopen</function>, <function>file</function> or by using 
+    <function>include</function> along with 
+    <link linkend="ref.outcontrol">Output Control Functions</link>.
+   </simpara>
+
    <simpara>
     See also <function>require</function>, <function>require_once</function>,
     <function>include_once</function>, <function>readfile</function>,
-    and <function>virtual</function>.
+    <function>virtual</function>, and
+    <link linkend="ini.include-path">include_path</link>.
    </simpara>
-  </sect1>
 
-  <sect1 id="function.require-once">
+</sect1>
+
+ <sect1 id="function.require-once">
    <title><function>require_once</function></title>
    <para>
-    The <function>require_once</function> statement replaces
-    itself with the specified file, much like the C preprocessor's
-    <literal>#include</literal> works, and in that respect is
-    similar to the <function>require</function> statement. The main
-    difference is that in an inclusion chain, the use of
-    <function>require_once</function> will assure that the code is
-    added to your script only once, and avoid clashes with variable
-    values or function names that can happen.
+    The <function>require_once</function> statement includes and evaluates
+    the specified file during the execution of the script.
+    This is a behavior similar to the <function>require</function> statement,
+    with the only difference being that if the code from a file has already
+    been included, it will not be included again.  See the documentation for
+    <function>require</function> for more information on how this statement 
+    works.
    </para>
    <para>
-     For example, if you create the following 2 include files
-     <literal>utils.php</literal> and <literal>foolib.php</literal>
-     <example>
-     <title>utils.php</title>
-     <programlisting role="php">
-<![CDATA[
-<?php
-define("PHPVERSION", floor(phpversion()));
-echo "GLOBALS ARE NICE\n";
-function goodTea()
-{
-    return "Oolong tea tastes good!";
-}
-?>
-]]>
-     </programlisting>
-     </example>
-     <example>
-     <title>foolib.php</title>
-     <programlisting role="php">
-<![CDATA[
-<?php
-require ("utils.php");
-function showVar($var)
-{
-    if (PHPVERSION == 4) {
-        print_r($var);
-    } else {
-        var_dump($var);
-    }
-}
-
-// bunch of other functions ...
-?>
-]]>
-     </programlisting>
-     </example>
-     And then you write a script <literal>cause_error_require.php</literal>
-     <example>
-     <title>cause_error_require.php</title>
-     <programlisting role="php">
-<![CDATA[
-<?php
-require("foolib.php");
-/* the following will generate an error */
-require("utils.php");
-$foo = array("1",array("complex","quaternion"));
-echo "this is requiring utils.php again which is also\n";
-echo "required in foolib.php\n";
-echo "Running goodTea: ".goodTea()."\n";
-echo "Printing foo: \n";
-showVar($foo);
-?>
-]]>
-     </programlisting>
-     </example>
-     When you try running the latter one, the resulting ouptut will be (using
-     PHP 4.01pl2):
-     <informalexample>
-     <screen>
-<![CDATA[
-GLOBALS ARE NICE
-GLOBALS ARE NICE
-
-Fatal error:  Cannot redeclare goodTea() in utils.php on line 5
-]]>
-     </screen>
-     </informalexample>
-     By modifying <literal>foolib.php</literal> and
-     <literal>cause_errror_require.php</literal>
-     to use <function>require_once</function>
-     instead of <function>require</function> and renaming the
-     last one to <literal>avoid_error_require_once.php</literal>, we have:
-     <example>
-     <title>foolib.php (fixed)</title>
-     <programlisting role="php">
-<![CDATA[
-...
-require_once("utils.php");
-function showVar($var)
-{
-...
-]]>
-     </programlisting>
-     </example>
-     <example>
-     <title>avoid_error_require_once.php</title>
-     <programlisting role="php">
-<![CDATA[
-...
-require_once("foolib.php");
-require_once("utils.php");
-$foo = array("1",array("complex","quaternion"));
-...
-]]>
-     </programlisting>
-     </example>
-     And when running the latter, the output will be (using PHP 4.0.1pl2):
-     <informalexample>
-     <screen>
-<![CDATA[
-GLOBALS ARE NICE
-this is requiring globals.php again which is also
-required in foolib.php
-Running goodTea: Oolong tea tastes good!
-Printing foo:
-Array
-(
-    [0] => 1
-    [1] => Array
-        (
-            [0] => complex
-            [1] => quaternion
-        )
-
-)
-]]>
-     </screen>
-     </informalexample>
+    <function>require_once</function> should be used in cases where
+    the same file might be included and evaluated more than once during a
+    particular execution of a script, and you want to be sure that it is
+    included exactly once to avoid problems with function redefinitions,
+    variable value reassignments, etc.
    </para>
    <para>
-     Also note that, analogous to the behavior of the
-     <literal>#include</literal> of the C preprocessor, this statement
-     acts at "compile time", e.g. when the script is parsed and before it
-     is executed, and should not be used for parts of the script that need
-     to be inserted dynamically during its execution. You should use
-     <function>include_once</function> or <function>include</function>
-     for that purpose.
+     For examples on using <function>require_once</function> and
+     <function>include_once</function>, look at the 
+     <ulink url="&url.php.pear;">PEAR</ulink> code included in the 
+     latest PHP source code distributions.
    </para>
-   <para>
-     For more examples on using <function>require_once</function> and
-     <function>include_once</function>, look at the PEAR code included in
-     the latest PHP source code distributions.
-   </para>
+   <note>
+    <para>
+     <function>require_once</function> was added in PHP 4.0.1pl2
+    </para>
+   </note>
    <para>
     See also: <function>require</function>,
     <function>include</function>, <function>include_once</function>,
@@ -1522,18 +1363,18 @@ Array
    </para>
   </sect1>
 
-  <sect1 id="function.include-once">
+ <sect1 id="function.include-once">
    <title><function>include_once</function></title>
    <para>
     The <function>include_once</function> statement includes and evaluates
     the specified file during the execution of the script.
     This is a behavior similar to the <function>include</function> statement,
-    with the important difference that if the code from a file has already
-    been included, it will not be included again.
+    with the only difference being that if the code from a file has already
+    been included, it will not be included again.  As the name suggests, 
+    it will be included just once.
    </para>
    <para>
-    As mentioned in the <function>require_once</function> description, the
-    <function>include_once</function> should be used in the cases in which
+    <function>include_once</function> should be used in cases where 
     the same file might be included and evaluated more than once during a
     particular execution of a script, and you want to be sure that it is
     included exactly once to avoid problems with function redefinitions,
@@ -1541,15 +1382,18 @@ Array
    </para>
    <para>
      For more examples on using <function>require_once</function> and
-     <function>include_once</function>, look at the PEAR code included in
-     the latest PHP source code distributions.
+     <function>include_once</function>, look at the
+     <ulink url="&url.php.pear;">PEAR</ulink> code included in the latest
+     PHP source code distributions.
    </para>
-   <para>
+   <note>
+    <para>
      <function>include_once</function> was added in PHP 4.0.1pl2
-   </para>
+    </para>
+   </note>
    <para>
-    See also: <function>require</function>,
-    <function>include</function>, <function>require_once</function>,
+    See also <function>include</function>,
+    <function>require</function>, <function>require_once</function>,
     <function>get_required_files</function>,
     <function>get_included_files</function>, <function>readfile</function>,
     and <function>virtual</function>.
