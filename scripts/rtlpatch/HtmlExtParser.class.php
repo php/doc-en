@@ -60,6 +60,17 @@ class CHtmlExtParse extends CHtmlParse{
 			}
 		} while($tmp);
 		
+		//ltr literals:
+		$tmp=0;
+		do{
+			if($tmp = $this->get_element_id_by_rule(array("tag"=>"tt","properties"=>array("class","literal"),"offset"=>($tmp+1)))){
+				$this->ATE[$tmp]["dir"] = "ltr";
+				if(isset($this->ATE[$tmp+1]["data"])){
+					$this->ATE[$tmp+1]["data"] = "&nbsp;".$this->ATE[$tmp+1]["data"];
+				}
+			}
+		} while($tmp);
+		
 		//fix configure options:
 		$tmp=0;
 		do{
