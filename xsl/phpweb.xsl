@@ -3,7 +3,7 @@
 
   PHP.net web site specific stylesheet
 
-  $Id: phpweb.xsl,v 1.7 2003-04-25 18:43:58 goba Exp $
+  $Id: phpweb.xsl,v 1.8 2003-04-25 20:05:01 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -77,6 +77,7 @@
       </xsl:text>
    <xsl:call-template name="phpdoc.nav.array">
     <xsl:with-param name="node" select="."/>
+    <xsl:with-param name="useabbrev" select="'1'"/>
    </xsl:call-template>
    <xsl:text>,</xsl:text>
   </xsl:if>
@@ -126,9 +127,21 @@
 <!-- Prints out one PHP array with page name and title -->
 <xsl:template name="phpdoc.nav.array">
  <xsl:param name="node" select="/foo"/>
+ <xsl:param name="useabbrev" select="'0'"/>
+ 
+ <!-- Get usual title -->
  <xsl:variable name="title">
   <xsl:apply-templates select="$node" mode="phpdoc.object.title"/>
  </xsl:variable>
+ 
+ <!-- Compute titleabbrev value -->
+ <xsl:variable name="titleabbrev">
+  <xsl:if test="$useabbrev = '1' and string($node/titleabbrev) != ''">
+    <xsl:value-of select="$node/titleabbrev" />
+  </xsl:if>
+ </xsl:variable>
+ 
+ <!-- Print out PHP array -->
  <xsl:text>array('</xsl:text>
  <xsl:choose>
   <!-- special handling for copyright, as we have it
@@ -147,7 +160,16 @@
  <!-- use the substring replace template defined in
       Docbook XSL's lib to escape apostrophes -->
  <xsl:call-template name="string.subst">
-  <xsl:with-param name="string" select="$title"/>
+  <xsl:with-param name="string">
+   <xsl:choose>
+    <xsl:when test="$titleabbrev != ''">
+     <xsl:value-of select="$titleabbrev"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of select="$title"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:with-param>
   <xsl:with-param name="target" select='"&apos;"'/>
   <xsl:with-param name="replacement" select='"\&apos;"'/>
  </xsl:call-template>
