@@ -707,6 +707,13 @@ set       toc,title
   <xsl:call-template name="inline.italicseq"/>
 </xsl:template>
 
+<!-- Make Methodparam's DEFAULT VALUES italic -->
+<xsl:template match="methodparam/initializer">
+  <xsl:text>=</xsl:text>
+  <xsl:call-template name="inline.italicseq"/>
+</xsl:template>
+
+
 
 <!-- Make FUNCTIONS bold, add parenthesis, and if target
      exists and it's no title, link them to their refentry  -->
