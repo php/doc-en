@@ -72,10 +72,25 @@ if ($argc != 2 ||
                 ? $argv[1]."/language-scanner.lex"
                 : NULL;
 
-    require_once "File/Find.php";
-//    $parsefiles = File_Find::search('/\.(c|cpp|h|ec)$/i', $argv[1], 'perl');
-    $ff = &new File_Find();
-    $parsefiles = $ff->search('/\.(c|cpp|h|ec)$/i', $argv[1], 'perl');
+    // find all source files recursively - returns array with filenames
+    function get_parsefiles($srcpath) {
+       $parsefiles = array();
+       $srcdir = dir($srcpath);
+       while (false !== ($file = $srcdir->read())) {
+           $filepath = $srcpath."/".$file;
+           if (is_dir($filepath) && $file !== "." && $file !== "..") {
+               $parsefiles = array_merge($parsefiles, get_parsefiles($filepath));
+               continue;
+           }
+           if (preg_match('/\.(c|cpp|h|ec)$/i', $file)) {
+               $parsefiles[] = $filepath;
+           }
+       }
+       $srcdir->close();
+       return $parsefiles;
+    }
+
+    $parsefiles = get_parsefiles($argv[1]);
 
     // make unified directory separator - /
     if (DIRECTORY_SEPARATOR == '\\') {
@@ -115,7 +130,7 @@ if ($argc != 2 ||
 
     foreach ($parsefiles as $key => $file) {
         // output source file name
-        echo str_replace($argv[1], "# php-src", $file)."\n";
+        echo preg_replace("|^[./]+|", "# ", $file)."\n";
         foreach ($blocks[$key] as $bk => $bv) {
             // output function block title
             if ($show_block_names) {
