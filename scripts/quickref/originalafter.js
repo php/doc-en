@@ -2,49 +2,59 @@
 
 // Initialisation --------------------------------------------------------------
 
-// how many matches to show at most (must be even!)
-fh_showmatches=29;
-
-var _d=document;
-var isnotopera=true;
-
-fh_matches=new Array();
-fh_inmenu=fh_menupos=0;
-fh_matchesjoined="";
-fh_currenttext="";
-
-// form shortcuts and autocomplete setting on input field
-var f_p=_d.forms[0].pattern;
-var f_s=_d.forms[0].show;
-fh_EDropDownChange();
-
-// Layer setup -----------------------------------------------------------------
-
-if (_d.all && (isnotopera=(navigator.userAgent.toLowerCase().indexOf("opera")==-1))) {
-    width="width:165px";
-} else {
-    isnotopera=true;
-    width="min-width:155px";
+searchenabled = true;
+if (myphpnet = getCookie('MYPHPNET')) {
+  myphpnet_parts = myphpnet.split(",");
+  if (myphpnet_parts.length > 3 && myphpnet_parts[3] == '0') {
+    searchenabled = false;
+  }
 }
-_d.write("<div id=\"funchelper\" style=\"background-color: white; border: 1px solid black; top: 90px;"+width+"; padding: 4px; font-size: 9px; display:none; position:absolute;\"></div>");
 
-// Decompression ---------------------------------------------------------------
+if (searchenabled) {
+  // how many matches to show at most (must be even!)
+  fh_showmatches=29;
 
-dcp=dcp.split("}");
-for(a=0; a<dcp.length; a++) {
-    cpd=cpd.split(dcp[a].charAt(0)).join(dcp[a].substring(1,9));
-}
-function l(a) { return a[a.length-1]; }
+  var _d=document;
+  var isnotopera=true;
 
-fcl=new Array(); pst=new Array(""); ac="";
-for (pos=0; pos<cpd.length; pos++) {
-    switch (ch=cpd.charAt(pos)) {
-        case ',': fcl[fcl.length]=l(pst)+ac; ac=""; break;
-        case '(': pst[pst.length]=l(pst)+ac; ac=""; break;
-        case ')': case ']': if(ac.length)fcl[fcl.length]=l(pst)+ac; ac=""; pst.length--; break;
-        case '[': fcl[fcl.length]=(a=l(pst)+ac); pst[pst.length]=a; ac=""; break;
-        default: ac=ac+ch;
-    }
+  fh_matches=new Array();
+  fh_inmenu=fh_menupos=0;
+  fh_matchesjoined="";
+  fh_currenttext="";
+
+  // form shortcuts and autocomplete setting on input field
+  var f_p=_d.forms[0].pattern;
+  var f_s=_d.forms[0].show;
+  fh_EDropDownChange();
+
+  // Layer setup -----------------------------------------------------------------
+
+  if (_d.all && (isnotopera=(navigator.userAgent.toLowerCase().indexOf("opera")==-1))) {
+      width="width:165px";
+  } else {
+      isnotopera=true;
+      width="min-width:155px";
+  }
+  _d.write("<div id=\"funchelper\" style=\"background-color: white; border: 1px solid black; top: 90px;"+width+"; padding: 4px; font-size: 9px; display:none; position:absolute;\"></div>");
+
+  // Decompression ---------------------------------------------------------------
+
+  dcp=dcp.split("}");
+  for(a=0; a<dcp.length; a++) {
+      cpd=cpd.split(dcp[a].charAt(0)).join(dcp[a].substring(1,9));
+  }
+  function l(a) { return a[a.length-1]; }
+
+  fcl=new Array(); pst=new Array(""); ac="";
+  for (pos=0; pos<cpd.length; pos++) {
+      switch (ch=cpd.charAt(pos)) {
+          case ',': fcl[fcl.length]=l(pst)+ac; ac=""; break;
+          case '(': pst[pst.length]=l(pst)+ac; ac=""; break;
+          case ')': case ']': if(ac.length)fcl[fcl.length]=l(pst)+ac; ac=""; pst.length--; break;
+          case '[': fcl[fcl.length]=(a=l(pst)+ac); pst[pst.length]=a; ac=""; break;
+          default: ac=ac+ch;
+      }
+  }
 }
 
 // Functions -------------------------------------------------------------------
@@ -282,9 +292,11 @@ function fh_EDropDownChange(ev)
 
 // Event listener setup --------------------------------------------------------
 
-f_p.onkeypress=fh_EKeyPress;
-f_p.onfocus=fh_EFocus;
-f_p.onblur=fh_EBlur;
-f_p.onkeydown=fh_EKeyDown;
-f_p.onkeyup=fh_EKeyUp;
-f_s.onchange=fh_EDropDownChange;
+if (searchenabled) {
+  f_p.onkeypress=fh_EKeyPress;
+  f_p.onfocus=fh_EFocus;
+  f_p.onblur=fh_EBlur;
+  f_p.onkeydown=fh_EKeyDown;
+  f_p.onkeyup=fh_EKeyUp;
+  f_s.onchange=fh_EDropDownChange;
+}
