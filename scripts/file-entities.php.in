@@ -50,22 +50,23 @@ $zendapi = ("@ZENDAPI@" == "not found" ? FALSE : "@ZENDAPI@");
 // XSL sheets are used or not (either "yes" or "no")
 $xsl_sheet_used = ("@DOCBOOKXSL_USED@" == "yes" ? TRUE : FALSE);
 
+
 // when php complied on cygwin, the working path have to be /cygdrive..
-// the below preg_replace have to be done only using binary php  complied on MSVC:
+// the below preg_replace have to be done only using binary php complied on MSVC.
+// let's find if php was complied by cygwin:
 ob_start();
 phpinfo(1);
 $tmp = ob_get_contents();
 ob_end_clean();
 $cygwin_complied = eregi("CYGWIN",$tmp) ? true : false;
-
-$ppath = (0&&$cygwin_complied)
-	? "@WORKDIR@"
-	: preg_replace("!^/cygdrive/(\\w)/!", "\\1:/", "@WORKDIR@");
-
+	
 // The output directory, which we need to parse for windows specific
 // things, and correct all problems is needed.
 // Also use absolute path to have meaningful error messages
-$out_dir = abs_path($ppath);
+$out_dir = abs_path(preg_replace("!^/cygdrive/(\\w)/!", "\\1:/", "@WORKDIR@"));
+
+// this path if used for saving the ent file:
+$script_out_dir = $cygwin_complied ? "@WORKDIR@" : $out_dir;
 
 // The source directory is passed in the 5th argument counting from backwards.
 $srcdir = abs_path("@SRCDIR@");
@@ -84,9 +85,9 @@ $entities = array();
 file_entities($orig_dir, $trans_dir, $orig_dir, $entities);
 
 // Open file for appending and write out all entitities
-$fp = fopen("$out_dir/entities/file-entities.ent", "w");
+$fp = fopen("$script_out_dir/entities/file-entities.ent", "w");
 if (!$fp) {
-    die("ERROR: Failed to open $out_dir/entities/file-entities.ent for writing\n");
+    die("ERROR: Failed to open $script_out_dir/entities/file-entities.ent for writing\n");
 }
 
 echo "\ncreating entities/file-entities.ent...\n";
