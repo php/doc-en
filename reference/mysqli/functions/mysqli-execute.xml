@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.8 $ -->
+<!-- $Revision: 1.9 $ -->
   <refentry id="function.mysqli-execute">
    <refnamediv>
     <refname>mysqli_execute</refname>
@@ -45,53 +45,101 @@
     <para>&return.success;</para>
    </refsect1>
    <refsect1>
-    <title>Example</title>
-    <para>
-     <example>
-      <title>Using the mysqli_execute function</title>
-      <programlisting role="php">
-<![CDATA[
-<?php
-    
-    /* Open a connection */
-    $link = mysqli_connect("localhost", "user", "pass");
-    mysqli_select_db("mydb");
-    
-    /* Turn on autocommit */
-    mysqli_autocommit($link, true);
-    
-    /* Prepare an insert statement */
-    $query = "INSERT INTO mytable VALUES(?, ?)";
-    $stmt = mysqli_prepare($link, $query);
-    
-    $value_one = "hello";
-    $value_two = "world";
-    
-    mysqli_bind_param($link, $value_one, $value_two);
-    
-    /* Execute the statement */
-    mysqli_execute($stmt);
-    
-    /* Return the affected rows for the statement */
-    $affected_rows = mysqli_stmt_affected_rows($stmt);
-    
-    /* Close the statement */
-    
-    mysqli_stmt_close($stmt);
-    
-    echo "The total affected rows was $affected_rows";
-    
-?>
-]]>
-      </programlisting>
-     </example>
-    </para>
-   </refsect1>
-   <refsect1>
     <title>See also</title>
     <para>
      <function>mysqli_prepare</function>
      <function>mysqli_bind_param</function>.
+    </para>
+   </refsect1>
+   <refsect1>
+    <title>Example</title>
+    <para>
+     <example>
+      <title>Object oriented style</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("localhost", "my_user", "my_password", "test");
+   
+$mysqli->query("DROP TABLE IF EXISTS friends"); 
+$mysqli->query("CREATE TABLE friends (id int, name varchar(20))"); 
+    
+/* Prepare an insert statement */
+$query = "INSERT INTO friends VALUES(?, ?)";
+$stmt = $mysqli->prepare($query);
+
+$stmt->bind_param("is", $val1, $val2);
+
+$val1 = 1;
+$val2 = 'Miller';
+    
+/* Execute the statement */
+$stmt->execute();
+
+$val1 = 2;
+$val2 = 'Wagner';
+    
+/* Execute the statement */
+$stmt->execute();
+    
+$stmt->close();
+
+/* Return the affected rows for the statement */
+if ($result = $mysqli->query("SELECT id,name FROM friends")) {
+    while ($row = $result->fetch_row()) {
+        printf("ID: %s  Name: %s\n", $row[0], $row[1]);
+    }
+    $result->close();
+}
+    
+$mysqli->close(); 
+?>
+]]>
+      </programlisting>
+     </example>
+     <example>
+      <title>Procedural style</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+$link = mysqli_connect("localhost", "my_user", "my_password", "test");
+   
+mysqli_query($link, "DROP TABLE IF EXISTS friends"); 
+mysqli_query($link, "CREATE TABLE friends (id int, name varchar(20))"); 
+
+/* Prepare an insert statement */
+$query = "INSERT INTO friends VALUES(?, ?)";
+$stmt = mysqli_prepare($link, $query);
+
+mysqli_bind_param($stmt, "is", $val1, $val2);
+
+$val1 = 1;
+$val2 = 'Miller';
+
+/* Execute the statement */
+mysqli_execute($stmt);
+
+$val1 = 2;
+$val2 = 'Wagner';
+    
+/* Execute the statement */
+mysqli_execute($stmt);
+    
+mysqli_stmt_close($stmt);
+
+/* Return the affected rows for the statement */
+if ($result = mysqli_query($link, "SELECT id,name FROM friends")) {
+    while ($row = mysqli_fetch_row($result)) {
+        printf("ID: %s  Name: %s\n", $row[0], $row[1]);
+    }
+    mysqli_free_result($result);
+}
+    
+mysqli_close($link); 
+?>
+]]>
+      </programlisting>
+     </example>
     </para>
    </refsect1>
   </refentry>
