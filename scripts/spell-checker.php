@@ -40,6 +40,7 @@ $check_tags = array(    'para',
 
 $element = '';
 $current_file = '';
+$word_count = 0;
 
 /* prompt a user and return the response */
 function read_line($prompt) {
@@ -76,7 +77,7 @@ function end_current_element($xml, $name)
 /* spell check a chunk of data */
 function check_data($xml, $data)
 {
-    global $element, $dict, $check_tags, $current_file;
+    global $element, $dict, $check_tags, $current_file, $word_count;
 
     if (!in_array($element, $check_tags))
         return;
@@ -90,6 +91,7 @@ function check_data($xml, $data)
             if (trim($word) == '' || is_numeric($word) || preg_match('/[^a-z]/', $word))
                 continue;
 
+            $word_count++;
             $word = strtolower($word);
 
             if (!pspell_check($dict, $word)) {
@@ -161,5 +163,5 @@ $dict = pspell_new_personal('custom.pws', 'en');
 globbetyglob("$phpdoc$lang", 'check_file');
 pspell_save_wordlist($dict);
 echo "Wordlist saved.\n";
-
+echo "Processed $word_count words.\n";
 ?>
