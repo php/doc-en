@@ -10,7 +10,7 @@
 		fputs ($f, "Compiled file=manual.chm\n");
 		fputs ($f, "Contents file=manual.hhc\n");
 		fputs ($f, "Default Font=Arial,10,0\n");
-		fputs ($f, "Default topic=manual\manual.html\n");
+		fputs ($f, "Default topic=html\manual.html\n");
 		fputs ($f, "Display compile progress=Yes\n");
 		fputs ($f, "Full-text search=Yes\n");
 		fputs ($f, "Index file=Index.hhk\n");
@@ -20,7 +20,7 @@
 		$handle=opendir('manual'); 
 		while (false!==($file = readdir($handle))) { 
 			if ($file != "." && $file != "..") { 
-				 fputs ($f, "manual\\$file\n"); 
+				 fputs ($f, "html\\$file\n"); 
 			} 
 		}
 		closedir($handle); 
@@ -45,21 +45,21 @@
 				$par["html"] = $matches[1];
 				if (ereg ("CLASS=\"literal\"", $ar[$i+4]))
 				{
-					preg_match ("/>([A-Za-zï0-9\/?\ _]+)/", $ar[$i+5], $matches);
+					preg_match ("/>([^<]+)/", $ar[$i+5], $matches);
 				}
 				else if ($ar[$i+2] == $ar[$i+4])
 				{
-					preg_match ("/>([A-Za-zï0-9()\/?\ _]+)/", $ar[$i+7], $matches);
+					preg_match ("/>([^<]+)/", $ar[$i+7], $matches);
 				}
 				else
 				{
-					preg_match ("/>([A-Za-zï0-9\/?\ _]+)/", $ar[$i+3], $matches);
+					preg_match ("/>([^<]+)/", $ar[$i+3], $matches);
 				}
 				$par["title"] = $matches[1];
 ?>
 			<LI> <OBJECT type="text/sitemap">
 				<param name="Name" value="<?php echo $par["title"]; ?>">
-				<param name="Local" value="manual\<?php echo $par["html"]; ?>">
+				<param name="Local" value="html\<?php echo $par["html"]; ?>">
 				</OBJECT>
 <?php
 			}
@@ -99,12 +99,12 @@
 			$chapter["nr"] = $matches[1];
 			preg_match ("/HREF=\"([a-z-]+\.html)(\#[a-z]+)?\"/", $index_a[$i+1], $matches);
 			$chapter["html"] = $matches[1];
-			preg_match ("/>([A-Za-z\ ]+)/", $index_a[$i+2], $matches);
+			preg_match ("/>([^<]+)/", $index_a[$i+2], $matches);
 			$chapter["title"] = $matches[1];
 ?>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="<?php echo $chapter["title"]; ?>">
-		<param name="Local" value="manual\<?php echo $chapter["html"]; ?>">
+		<param name="Local" value="html\<?php echo $chapter["html"]; ?>">
 		</OBJECT>
 <?php
 		}
@@ -124,12 +124,12 @@
 			$schapter["nr"] = $matches[1];
 			preg_match ("/HREF=\"([a-z-]+\.([a-z-]+\.)?html)(\#[a-z]+)?\"/", $index_a[$i+1], $matches);
 			$schapter["html"] = $matches[1];
-			preg_match ("/>([A-Za-z\ ]+)/", $index_a[$i+2], $matches);
+			preg_match ("/>([^<]+)/", $index_a[$i+2], $matches);
 			$schapter["title"] = $matches[1];
 ?>
 		<LI> <OBJECT type="text/sitemap">
 			<param name="Name" value="<?php echo $schapter["title"]; ?>">
-			<param name="Local" value="manual\<?php echo $schapter["html"]; ?>">
+			<param name="Local" value="html\<?php echo $schapter["html"]; ?>">
 			</OBJECT>
 <?php
 			DoFile ("html/".$schapter["html"]);
