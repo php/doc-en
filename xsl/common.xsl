@@ -3,7 +3,7 @@
 
   Common customizations for all formats
 
-  $Id: common.xsl,v 1.5 2002-02-10 12:13:23 goba Exp $
+  $Id: common.xsl,v 1.6 2002-02-10 12:57:56 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -17,6 +17,9 @@
 <!-- Turn off separators on reference and refentry pages -->
 <xsl:param name="refentry.separator" select="'0'"/>
 <xsl:template name="reference.titlepage.separator"/>
+
+<!-- Start numbering in every part, toc to 2 section depth -->
+<xsl:param name="label.from.part" select="'1'"/>
 
 <!-- Load version information into variable -->
 <xsl:param name="version" select="document('version.xml')/versions"/>
