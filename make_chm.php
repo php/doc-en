@@ -171,7 +171,7 @@ $tabs  <param name=\"Local\" value=\"$fancydir\\$local\">";
   for ($i = 0; $i < count ($index_a); $i++) {
 
     /* Chapters */
-    if (ereg (">[IVX]+\.\ <A", $index_a[$i]) && !ereg ("HREF=\"ref\.[a-z]+\.html", $index_a[$i+1])) {
+    if (ereg (">[IVX]+\.\ <A", $index_a[$i]) && !ereg ("HREF=\"ref\.[a-z0-9]+\.html", $index_a[$i+1])) {
 
       $new_list = 1;
       if ($not_closed == 1) { echo "\n  </UL>\n"; }
