@@ -14,7 +14,7 @@
 # | obtain it through the world wide web, please send a note to          |
 # | license@php.net so we can mail you a copy immediately                |
 # +----------------------------------------------------------------------+
-# | Authors:    ???                                                      |
+# | Authors:    Jeroen van Wolffelaar <jeroen@php.net>                   |
 # +----------------------------------------------------------------------+
 */
 if ($argc < 2 || $argc > 3) { ?>
@@ -73,7 +73,7 @@ foreach ($files as $file) {
     }
 
     $new = apply($old);
-    if ($new === FALSE) { echo "NO MODIFICATION: $file not modified"; }
+    if ($new === FALSE) { echo "NO MODIFICATION: $file not modified\n"; }
     else {
         $fp = fopen($file,'w');
         $res = fwrite($fp,$new);

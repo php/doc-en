@@ -14,7 +14,8 @@
 # | obtain it through the world wide web, please send a note to          |
 # | license@php.net so we can mail you a copy immediately                |
 # +----------------------------------------------------------------------+
-# | Authors:    ???                                                      |
+# | Authors:    Thomas Schöfbeck <tom@php.net>                           |
+# |             Gabor Hojtsy <goba@php.net>                              |
 # +----------------------------------------------------------------------+
 */
 if ($argc < 2 || $argc > 3) {
