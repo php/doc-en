@@ -923,5 +923,124 @@ set       toc,title
 </xsl:template>
 
 
+<xsl:attribute-set name="block.spacing.small">
+  <xsl:attribute name="space-before.optimum">0.4em</xsl:attribute>
+  <xsl:attribute name="space-before.minimum">0.2em</xsl:attribute>
+  <xsl:attribute name="space-before.maximum">0.6em</xsl:attribute>
+  <xsl:attribute name="space-after.optimum">0.4em</xsl:attribute>
+  <xsl:attribute name="space-after.minimum">0.2em</xsl:attribute>
+  <xsl:attribute name="space-after.maximum">0.6em</xsl:attribute>
+</xsl:attribute-set>
+
+<!-- add width to fo:table to prevent fop-error, and
+     make smaller spacing before and after the list  -->
+<xsl:template match="simplelist">
+  <fo:table xsl:use-attribute-sets="block.spacing.small" width="100%">
+    <xsl:call-template name="simplelist.table.columns">
+      <xsl:with-param name="cols">
+        <xsl:choose>
+          <xsl:when test="@columns">
+            <xsl:value-of select="@columns"/>
+          </xsl:when>
+          <xsl:otherwise>1</xsl:otherwise>
+        </xsl:choose>
+      </xsl:with-param>
+    </xsl:call-template>
+    <fo:table-body>
+      <xsl:call-template name="simplelist.vert">
+	<xsl:with-param name="cols">
+	  <xsl:choose>
+	    <xsl:when test="@columns">
+	      <xsl:value-of select="@columns"/>
+	    </xsl:when>
+	    <xsl:otherwise>1</xsl:otherwise>
+	  </xsl:choose>
+	</xsl:with-param>
+      </xsl:call-template>
+    </fo:table-body>
+  </fo:table>
+</xsl:template>
+
+
+<!-- Enable hyphenating URL's (for fop!) -->
+<xsl:param name="ulink.hyphenate" select="'&#x200B;'"/>
+
+<!-- Don't show the URL, if linked text=URL;  if
+     URL is shown, include it into the basic-link -->
+<xsl:template match="ulink" name="ulink">
+  <fo:basic-link xsl:use-attribute-sets="xref.properties">
+    <xsl:attribute name="external-destination">
+      <xsl:call-template name="fo-external-image">
+        <xsl:with-param name="filename" select="@url"/>
+      </xsl:call-template>
+    </xsl:attribute>
+
+    <xsl:choose>
+      <xsl:when test="count(child::node())=0 or
+                      normalize-space(string(.)) = @url">
+        <xsl:call-template name="hyphenate-url">
+          <xsl:with-param name="url" select="@url"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+	    <xsl:apply-templates/>
+      </xsl:otherwise>
+    </xsl:choose>
+
+    <xsl:if test="count(child::node()) != 0
+                  and normalize-space(string(.)) != @url
+                  and $ulink.show != 0">
+      <xsl:text> [</xsl:text>
+      <xsl:call-template name="hyphenate-url">
+        <xsl:with-param name="url" select="@url"/>
+      </xsl:call-template>
+      <xsl:text>]</xsl:text>
+    </xsl:if>
+  </fo:basic-link>
+</xsl:template>
+
+
+
+<!-- Align titles of chapters, appendices, etc. left
+     (to prevent the ugly spacing on long titles)   -->
+<xsl:template name="component.title">
+  <xsl:param name="node" select="."/>
+  <xsl:param name="pagewide" select="0"/>
+  <xsl:variable name="id">
+    <xsl:call-template name="object.id">
+      <xsl:with-param name="object" select="$node"/>
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="title">
+    <xsl:apply-templates select="$node" mode="object.title.markup">
+      <xsl:with-param name="allow-anchors" select="1"/>
+    </xsl:apply-templates>
+  </xsl:variable>
+  <xsl:variable name="titleabbrev">
+    <xsl:apply-templates select="$node" mode="titleabbrev.markup"/>
+  </xsl:variable>
+
+  <xsl:if test="$passivetex.extensions != 0">
+    <fotex:bookmark xmlns:fotex="http://www.tug.org/fotex"
+                    fotex-bookmark-level="2"
+                    fotex-bookmark-label="{$id}">
+      <xsl:value-of select="$titleabbrev"/>
+    </fotex:bookmark>
+  </xsl:if>
+
+  <fo:block keep-with-next.within-column="always"
+            space-before.optimum="{$body.font.master}pt"
+            space-before.minimum="{$body.font.master * 0.8}pt"
+            space-before.maximum="{$body.font.master * 1.2}pt"
+            text-align="left"
+            hyphenate="false">
+    <xsl:if test="$pagewide != 0">
+      <xsl:attribute name="span">all</xsl:attribute>
+    </xsl:if>
+    <xsl:copy-of select="$title"/>
+  </fo:block>
+</xsl:template>
+
+
 
 </xsl:stylesheet>
