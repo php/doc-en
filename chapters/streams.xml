@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
 <!-- Author: Wez Furlong <wez@thebrainroom.com>
   Please contact me before making any major amendments to the
   content of this section.  Splitting/Merging are fine if they are
@@ -179,6 +179,96 @@ if (stream) {
    
   </para>
  </sect1>
+
+ <sect1 id="streams.resources">
+  <title>Streams as Resources</title>
+  <para>
+   All streams are registered as resources when they are created.  This ensures
+   that they will be properly cleaned up even if there is some fatal error.
+   All of the filesystem functions in PHP operate on streams resources - that
+   means that your extensions can accept regular PHP file pointers as
+   parameters to, and return streams from their functions.
+   The streams API makes this process as painless as possible:
+  </para>
+  <para>
+     <example>
+      <title>How to accept a stream as a parameter</title>
+      <programlisting role="c">
+<![CDATA[
+PHP_FUNCTION(example_write_hello)
+{
+    zval *zstream;
+    php_stream *stream;
+    
+    if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r", &zstream))
+        return;
+    
+    php_stream_from_zval(stream, &zstream);
+
+    /* you can now use the stream.  However, you do not "own" the
+        stream, the script does.  That means you MUST NOT close the
+        stream, because it will cause PHP to crash! */
+
+    php_stream_write(stream, "hello\n");
+        
+    RETURN_TRUE();
+}
+]]>
+      </programlisting>
+     </example>
+  </para>
+  <para>
+     <example>
+      <title>How to return a stream from a function</title>
+      <programlisting role="c">
+<![CDATA[
+PHP_FUNCTION(example_open_php_home_page)
+{
+    php_stream *stream;
+    
+    stream = php_stream_open_wrapper("http://www.php.net", "rb", REPORT_ERRORS, NULL);
+    
+    php_stream_to_zval(stream, return_value);
+
+    /* after this point, the stream is "owned" by the script.
+        If you close it now, you will crash PHP! */
+}
+]]>
+      </programlisting>
+     </example>
+  </para>
+  <para>
+   Since streams are automatically cleaned up, it's tempting to think that we can get
+   away with being sloppy programmers and not bother to close the streams when we
+   are done with them.  Although such an approach might work, it is not a good idea
+   for a number of reasons: streams hold locks on system resources while they are
+   open, so leaving a file open after you have finished with it could prevent other
+   processes from accessing it.  If a script deals with a large number of files,
+   the accumulation of the resources used, both in terms of memory and the
+   sheer number of open files, can cause web server requests to fail.  Sounds
+   bad, doesn't it?  The streams API includes some magic that helps you to
+   keep your code clean - if a stream is not closed by your code when it should
+   be, you will find some helpful debugging information in you web server error
+   log.
+  </para>
+  <note>
+   <simpara>
+    Always use a debug build of PHP when developing an extension
+    (<option>--enable-debug</option> when running configure), as a lot of
+    effort has been made to warn you about memory and stream leaks.
+   </simpara>
+  </note>
+  <para>
+   In some cases, it is useful to keep a stream open for the duration of a request,
+   to act as a log or trace file for example.  Writing the code to safely clean up
+   such a stream is not difficult, but it's several lines of code that are not
+   strictly needed.  To save yourself the touble of writing the code, you
+   can mark a stream as being OK for auto cleanup.  What this means is
+   that the streams API will not emit a warning when it is time to auto-cleanup
+   a stream.  To do this, you can use <function>php_stream_auto_cleanup</function>.
+  </para>
+ </sect1>
+
  
 &chapters.streams.common;
 &chapters.streams.dir;
