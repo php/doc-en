@@ -124,8 +124,10 @@ $difficult_params = array(
 	"fdf_set_on_import_javascript",
 );
 $difficult_arg_count = array(
-	"getdate", "min", "max", "mysqli_stmt_bind_param", "pg_fetch_result", "implode", "strtok", "strtr", "sybase_fetch_object",
-	"cpdf_text", "muscat_setup", "pdf_get_parameter", "odbc_exec", "odbc_result_all", "yaz_set_option", "yaz_wait",
+	"getdate", "min", "max", "implode", "strtok", "sybase_fetch_object",
+	"cpdf_text", "pdf_get_parameter", "odbc_exec", "odbc_result_all", "yaz_wait",
+	// take account of multiple methodsynopsis:
+	"crack_check", "ibase_prepare", "mysqli_stmt_bind_param", "pg_fetch_result", "pg_put_line", "pg_query", "pg_set_client_encoding", "strtr", "yaz_set_option",
 );
 
 // read referenced parameters from sources
@@ -152,11 +154,12 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 	foreach ($matches as $val) {
 		$function_name = strtolower(trim($val[1][0]));
 		$lineno = substr_count(substr($file, 0, $val[2][1]), "\n") + 1;
+		$function_body = $val[2][0];
 		
 		// types and optional
 		if (!in_array($function_name, $difficult_params)
-		&& strpos($val[2][0], 'zend_parse_parameters_ex') === false // indicate difficulty
-		&& preg_match('~.*zend_parse_parameters\\([^,]*,\\s*"([^"]*)"~sS', $val[2][0], $matches2) // .* to catch last occurence
+		&& strpos($function_body, 'zend_parse_parameters_ex') === false // indicate difficulty
+		&& preg_match('~.*zend_parse_parameters\\([^,]*,\\s*"([^"]*)"~sS', $function_body, $matches2) // .* to catch last occurence
 		// zend_parse_method_parameters is not yet supported
 		) {
 			$source_types[$function_name] = array($matches2[1], $filename, $lineno);
@@ -164,12 +167,19 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 		
 			// arguments count
 			$zend_num_args = "ZEND_NUM_ARGS()";
-			if (preg_match('~([a-zA-Z0-9_.]+)\\s*=\\s*ZEND_NUM_ARGS()~', $val[2][0], $matches2)) { // int argc = ZEND_NUM_ARGS();
+			if (preg_match('~([a-zA-Z0-9_.]+)\\s*=\\s*ZEND_NUM_ARGS()~S', $function_body, $matches2)) { // int argc = ZEND_NUM_ARGS();
 				$zend_num_args = $matches2[1];
 			}
 			$zend_num_args = preg_quote($zend_num_args, "~");
-			//! should differentiate between || and &&
-			if (preg_match_all("~(?:([0-9]+)\\s*($operators)\\s*$zend_num_args|$zend_num_args\\s*($operators)\\s*([0-9]+))(?=[^{]+\\{[^}]+WRONG_PARAM_COUNT)~S", $val[2][0], $matches2, PREG_SET_ORDER)) {
+			if (preg_match("~^([ \t]+)switch\\s*\\(\\s*$zend_num_args\\s*\\)(.*)^\\1\\}~msSU", $function_body, $matches2) && preg_match('~\\bdefault\\s*:.*WRONG_PARAM_COUNT~sS', $matches2[2])) {
+				$source_arg_counts[$function_name] = array(array_fill(0, $max_args+1, true), $filename, $lineno);
+				$source_arg_count =& $source_arg_counts[$function_name][0];
+				$switch = $matches2[2];
+				preg_match_all('~\\bcase\\s+([0-9]+)\\s*:~S', $switch, $matches2);
+				foreach ($matches2[1] as $val) {
+					unset($source_arg_count[$val]);
+				}
+			} elseif (preg_match_all("~(?:([0-9]+)\\s*($operators)\\s*$zend_num_args|$zend_num_args\\s*($operators)\\s*([0-9]+))(?=[^{]+\\{[^}]+WRONG_PARAM_COUNT)~S", $function_body, $matches2, PREG_SET_ORDER)) { //! should differentiate between || and &&
 				$source_arg_counts[$function_name] = array(array(), $filename, $lineno);
 				$source_arg_count =& $source_arg_counts[$function_name][0];
 				foreach ($matches2 as $val) {
@@ -183,9 +193,11 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 						}
 						unset($source_arg_count[$number]);
 						break;
-					case "=": // old version
+					/* old version
+					case "=":
 						$source_arg_count[$number] = true;
 						break;
+					*/
 					case "<":
 						for ($i=0; $i < $number; $i++) {
 							$source_arg_count[$i] = true;
@@ -202,7 +214,6 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 					}
 				}
 			}
-			//TODO: switch($zend_num_args)
 		}
 	}
 }
