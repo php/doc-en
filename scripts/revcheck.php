@@ -84,13 +84,13 @@ the actual english xml files, and print statistics
     // Checking for the translations "revision tag"
     else {
       preg_match ("/<!--\s*EN-Revision:\s*\d+\.(\d+)\s*Maintainer:\s*(".$val.
-            ")\s*Status:\s*(\S+)\s*-->/", $line, $match);
+            ")\s*Status:\s*(.+)\s*-->/", $line, $match);
     }
     // The tag with revision number is not found so search
     // for n/a revision comment
     if (count($match) == 0) {
       preg_match ("'<!--\s*EN-Revision:\s*(n/a)\s*Maintainer:\s*(".$val.
-            ")\s*Status:\s*(\S+)\s*-->'", $line, $match);
+            ")\s*Status:\s*(.+)\s*-->'", $line, $match);
     }
     return ($match);
   } // get_tag() function end
