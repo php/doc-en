@@ -189,6 +189,17 @@ class CHtmlExtParse extends CHtmlParse{
 		return true;
 	}
 	
+	function change_tag_type($id,$newtag){
+		$this->ATE[$id]["w4htype"] = $newtag;
+		$this->ATE[$this->ECE[$id]]["w4htype"] = $newtag;
+		
+		if($newtag < __HTML_UNKNOWN__){
+			if(!isset($this->ATE[$id]["data"])) $this->ATE[$id]["data"] = "";
+		}
+		
+		//TODO: update the EBT
+	}
+	
 	//\/\/\/\/\/\/\/\/\/\
 	function unsetme(){
 		unset($this->data);
