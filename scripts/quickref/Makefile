@@ -12,7 +12,7 @@ compressed.txt: prefixcompressed.txt
 prefixcompressed.txt: funclist.txt
 	php prefixcompress.php
 
-funclist.txt: manual_en_contents.txt
+funclist.txt:
 	php makefunclist.php
 
 funclist.zip: Makefile after.js before.js compkey.txt compressed.txt funclist.txt functions.js index.html makefunclist.php manual_en_contents.txt middle.js originalafter.js prefixcompress.php prefixcompressed.txt processafter.php readme.txt unusedcompress.php
