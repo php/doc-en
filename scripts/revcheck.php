@@ -335,7 +335,7 @@ the actual english xml files, and print statistics
  <tr><td>
   <table width=100% border=0 cellspacing=1 bgcolor=#9999CC>
    <tr><td><h2 align=center>Status of the translated PHP Manual</h2>
-      <p align=center style=\"font-size:12px; color:#FFFFFF;\">Generated: ".date("Y-m-d, H:i:s T").
+      <p align=center style=\"font-size:12px; color:#FFFFFF;\">Generated: ".date("r").
       " &nbsp; / &nbsp; Language: $lang<br>&nbsp;</p>
    </td></tr>
   </table>
