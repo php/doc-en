@@ -36,7 +36,7 @@ $language = substr($realpath, $rootpos, strpos($realpath, '/', $rootpos) - $root
 $header = preg_replace('~.*(<!DOCTYPE.*)<book.*~s', '\\1', file_get_contents("$root/manual.xml.in"));
 $header = str_replace(array('@srcdir@', '@LANGDIR@', "\n"), array('.', $language, ''), $header); // \n to preserve line numbers
 
-$file = preg_replace('~(<?xml[^>]*>)(.*)~s', "\\1$header<book>" . (!preg_match("~<chapter|<reference~", $file) ? "<chapter id='example'><title>Example</title>\\2\n</chapter>" : "\\2") . "\n</book>\n", $file);
+$file = preg_replace('~(<?xml[^>]*>)(.*)~s', "\\1$header<book>" . (!preg_match("~<chapter|<reference|<appendix~", $file) ? "<chapter id='example'><title>Example</title>\\2\n</chapter>" : "\\2") . "\n</book>\n", $file);
 $fp = fopen($example_filename, "wb");
 fwrite($fp, $file);
 fclose($fp);
