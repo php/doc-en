@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.9 $ -->
+<!-- $Revision: 1.10 $ -->
 <sect1 id="install.windows.iis">
  <title>Microsoft IIS / PWS</title>
  <para>
@@ -20,9 +20,147 @@
  </note>
  &warn.install.cgi;
 
+ <sect2 id="install.windows.iis.iis4">
+  <title>Windows NT/2000/XP and IIS 4 or newer</title>
+
+  <simpara>
+   To install PHP on an NT/2000/XP Server running IIS 4 or newer,
+   follow these instructions. You have two options to set up
+   PHP, using the CGI binary (<filename>php.exe</filename> in PHP 4, or
+   <filename>php-cgi.exe</filename> in PHP 5) or with the ISAPI module.
+  </simpara>
+
+  <simpara>
+   In either case, you need to start the Microsoft Management
+   Console (may appear as 'Internet Services Manager', either
+   in your Windows NT 4.0 Option Pack branch or the Control
+   Panel=&gt;Administrative Tools under Windows 2000/XP). Then
+   right click on your Web server node (this will most probably
+   appear as 'Default Web Server'), and select 'Properties'.
+  </simpara>
+
+  <para>
+   If you want to use the CGI binary, do the following:
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      Under 'Home Directory', 'Virtual Directory', or
+      'Directory', click on the 'Configuration' button,
+      and then enter the App Mappings tab.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Click Add, and in the Executable box, type:
+      <literal>C:\php\php.exe</literal> for PHP 4 or
+      <literal>C:\php\php-cgi.exe</literal> for PHP 5 (assuming
+      that you have unziped PHP in <filename>c:\php\</filename>).
+      </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      In the Extension box, type the file name extension you want
+      associated with PHP scripts. Leave 'Method exclusions'
+      blank, and check the 'Script engine' checkbox. You may also
+      like to check the 'check that file exists' box - for a small
+      performance penalty, IIS (or PWS) will check that the script
+      file exists and sort out authentication before firing up PHP.
+      This means that you will get sensible 404 style error messages
+      instead of CGI errors complaining that PHP did not output any data.
+     </simpara>
+     <simpara>
+      You must start over from the previous step for each
+      extension you want associated with PHP scripts.
+      <literal>.php</literal> and <literal>.phtml</literal>
+      are common, although <literal>.php3</literal> may be
+      required for legacy applications.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Set up the appropriate security. (This is done in Internet
+      Service Manager), and if your NT Server uses NTFS file system,
+      add execute rights for I_USR_ to the directory that contains
+      <filename>php.exe</filename> / <filename>php-cgi.exe</filename>.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+
+  <para>
+   To use the ISAPI module, do the following:
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      If you don't want to perform HTTP Authentication using PHP,
+      you can (and should) skip this step. Under ISAPI Filters,
+      add a new ISAPI filter. Use PHP as the filter name, and
+      supply a path to the <filename>php4isapi.dll</filename> /
+      <filename>php5isapi.dll</filename>.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Under 'Home Directory', click on the 'Configuration' button.
+      Add a new entry to the Application Mappings. Use the path
+      to the <filename>php4isapi.dll</filename> /
+      <filename>php5isapi.dll</filename> as the Executable, supply
+      <literal>.php</literal> as the extension, leave 'Method exclusions'
+      blank, and check the 'Script engine' checkbox.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Stop IIS completely (NET STOP iisadmin)
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Start IIS again (NET START w3svc)
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <para>
+   If you experience 100% CPU usage after some time, turn off the IIS
+   setting <literal>Cache ISAPI Application</literal>.
+  </para>
+ </sect2>
+
+ <sect2 id="install.windows.iis.pws4">
+  <title>Windows and PWS 4</title>
+  <simpara>
+   PWS 4 does not support ISAPI, only PHP CGI should be used.
+  </simpara>
+  <para>
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      Edit the enclosed <filename>pws-php4cgi.reg</filename> /
+      <filename>pws-php5cgi.reg</filename> file (look into the SAPI folder
+      for PHP 4, or in the main folder for PHP 5) to reflect the location of
+      your <filename>php.exe</filename> / <filename>php-cgi.exe</filename>.
+      Backslashes should be escaped, for example:
+      <literal>[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\w3svc\parameters\Script
+       Map] ".php"="C:\\php\\php.exe"</literal> (change to
+      <literal>C:\\php\\php-cgi.exe</literal> if you are using PHP 5)
+      Now merge this registery file into your system; you may do
+      this by double-clicking it.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      In the PWS Manager, right click on a given directory you want
+      to add PHP support to, and select Properties. Check the 'Execute'
+      checkbox, and confirm.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+ </sect2>
+
  <sect2 id="install.windows.iis.iis3">
   <title>Windows and PWS/IIS 3</title>
-
   <simpara>
    The recommended method for configuring these servers is to use
    the REG file included with the distribution
@@ -182,177 +320,6 @@
    users can use a nifty <ulink url="&url.iiscfg;">tool</ulink>
    from Steven Genusa to configure their script maps.
   </simpara>
- </sect2>
-
- <sect2 id="install.windows.iis.pws4">
-  <title>Windows and PWS 4 or newer</title>
-
-  <simpara>
-   When installing PHP on Windows with PWS 4 or newer version,
-   you have two options. One to set up the PHP CGI binary,
-   the other is to use the ISAPI module DLL.
-  </simpara>
-
-  <para>
-   If you choose the CGI binary, do the following:
-   <itemizedlist>
-    <listitem>
-     <simpara>
-      Edit the enclosed <filename>pws-php4cgi.reg</filename> /
-      <filename>pws-php5cgi.reg</filename> file (look into the SAPI folder
-      for PHP 4, or in the main folder for PHP 5) to reflect the location of
-      your <filename>php.exe</filename> / <filename>php-cgi.exe</filename>.
-      Backslashes should be escaped, for example:
-      <literal>[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\w3svc\parameters\Script
-       Map] ".php"="C:\\php\\php.exe"</literal> (change to
-      <literal>C:\\php\\php-cgi.exe</literal> if you are using PHP 5)
-      Now merge this registery file into your system; you may do
-      this by double-clicking it.
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      In the PWS Manager, right click on a given directory you want
-      to add PHP support to, and select Properties. Check the 'Execute'
-      checkbox, and confirm.
-     </simpara>
-    </listitem>
-   </itemizedlist>
-  </para>
-
-  <para>
-   If you choose the ISAPI module, do the following:
-   <itemizedlist>
-    <listitem>
-     <simpara>
-      Edit the enclosed <filename>pws-php4isapi.reg</filename> /
-      <filename>pws-php5isapi.reg</filename> file (look into the SAPI folder
-      for PHP 4, or in the main folder for PHP 5) to reflect the location of
-      your <filename>php4isapi.dll</filename> /
-      <filename>php5isapi.dll</filename>. Backslashes should be escaped, for example:
-      <literal>[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\w3svc\parameters\Script
-       Map] ".php"="C:\\php\\sapi\\php4isapi.dll"</literal> (or
-      <literal>C:\\php\\php5isapi.dll</literal> for PHP 5)
-      Now merge this registery file into your system; you may do
-      this by double-clicking it.
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      In the PWS Manager, right click on a given directory you want to
-      add PHP support to, and select Properties. Check the 'Execute'
-      checkbox, and confirm.
-     </simpara>
-    </listitem>
-   </itemizedlist>
-  </para>
- </sect2>
-
- <sect2 id="install.windows.iis.iis4">
-  <title>Windows NT/2000/XP and IIS 4 or newer</title>
-
-  <simpara>
-   To install PHP on an NT/2000/XP Server running IIS 4 or newer,
-   follow these instructions. You have two options to set up
-   PHP, using the CGI binary (<filename>php.exe</filename> in PHP 4, or
-   <filename>php-cgi.exe</filename> in PHP 5) or with the ISAPI module.
-  </simpara>
-
-  <simpara>
-   In either case, you need to start the Microsoft Management
-   Console (may appear as 'Internet Services Manager', either
-   in your Windows NT 4.0 Option Pack branch or the Control
-   Panel=&gt;Administrative Tools under Windows 2000/XP). Then
-   right click on your Web server node (this will most probably
-   appear as 'Default Web Server'), and select 'Properties'.
-  </simpara>
-
-  <para>
-   If you want to use the CGI binary, do the following:
-   <itemizedlist>
-    <listitem>
-     <simpara>
-      Under 'Home Directory', 'Virtual Directory', or
-      'Directory', click on the 'Configuration' button,
-      and then enter the App Mappings tab.
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      Click Add, and in the Executable box, type:
-      <literal>C:\php\php.exe</literal> for PHP 4 or
-      <literal>C:\php\php-cgi.exe</literal> for PHP 5 (assuming
-      that you have unziped PHP in <filename>c:\php\</filename>).
-      </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      In the Extension box, type the file name extension you want
-      associated with PHP scripts. Leave 'Method exclusions'
-      blank, and check the 'Script engine' checkbox. You may also
-      like to check the 'check that file exists' box - for a small
-      performance penalty, IIS (or PWS) will check that the script
-      file exists and sort out authentication before firing up PHP.
-      This means that you will get sensible 404 style error messages
-      instead of CGI errors complaining that PHP did not output any data.
-     </simpara>
-     <simpara>
-      You must start over from the previous step for each
-      extension you want associated with PHP scripts.
-      <literal>.php</literal> and <literal>.phtml</literal>
-      are common, although <literal>.php3</literal> may be
-      required for legacy applications.
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      Set up the appropriate security. (This is done in Internet
-      Service Manager), and if your NT Server uses NTFS file system,
-      add execute rights for I_USR_ to the directory that contains
-      <filename>php.exe</filename> / <filename>php-cgi.exe</filename>.
-     </simpara>
-    </listitem>
-   </itemizedlist>
-  </para>
-
-  <para>
-   To use the ISAPI module, do the following:
-   <itemizedlist>
-    <listitem>
-     <simpara>
-      If you don't want to perform HTTP Authentication using PHP,
-      you can (and should) skip this step. Under ISAPI Filters,
-      add a new ISAPI filter. Use PHP as the filter name, and
-      supply a path to the <filename>php4isapi.dll</filename> /
-      <filename>php5isapi.dll</filename>.
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      Under 'Home Directory', click on the 'Configuration' button.
-      Add a new entry to the Application Mappings. Use the path
-      to the <filename>php4isapi.dll</filename> /
-      <filename>php5isapi.dll</filename> as the Executable, supply
-      <literal>.php</literal> as the extension, leave 'Method exclusions'
-      blank, and check the 'Script engine' checkbox.
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      Stop IIS completely (NET STOP iisadmin)
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      Start IIS again (NET START w3svc)
-     </simpara>
-    </listitem>
-   </itemizedlist>
-  </para>
-  <para>
-   If you experience 100% CPU usage after some time, turn off the IIS
-   setting <literal>Cache ISAPI Application</literal>.
-  </para>
  </sect2>
 </sect1>
 
