@@ -38,7 +38,7 @@ $MAIN_FILES = array(
     "langref.html",
     "features.html",
     "funcref.html",
-    "pear.html",
+    "zend.html",
     "faq.html",
     "appendixes.html"
 );
