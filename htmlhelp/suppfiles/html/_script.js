@@ -125,20 +125,13 @@ function _displayNotes()
     }
 }
 
-// Load the user notes HTML file [this is called from the HTML
-// file directly on every page] Depends on UA version
+// Load the user notes HTML file indirectly via a list
+// of available user note files [a workaround for a bug
+// affecting several IE 5.5 and IE 6 installations]
 function loadNotes()
 {
-    // Workaround for IE6 bug
-    if (ie_version_major == 6) {
-        document.write('<script src="mk:@MSITStore:' +
-        chmfile_path + 'php_manual_notes.chm::/_filelist.js"></script>');
-    }
-    
-    // Load notes in otherwise
-    else {
-        notesIframe();
-    }
+    document.write('<script src="mk:@MSITStore:' +
+    chmfile_path + 'php_manual_notes.chm::/_filelist.js"></script>');
 }
 
 // Prints out the inline frame for the notes HTML file
