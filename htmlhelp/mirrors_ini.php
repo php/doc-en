@@ -30,7 +30,7 @@ fwrite($fp,
 ");
 
 // Write out all active mirror sites
-foreach ($MIRRORS as $mirror => $mirrrorinfo) {
+foreach ($MIRRORS as $mirror => $mirrorinfo) {
     if ($mirrorinfo[7] == MIRROR_OK) {
 	    fwrite($fp, "mirror = \"$mirror\"\n");
     }
