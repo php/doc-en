@@ -1,11 +1,22 @@
  <reference id="ref.pear">
-  <title>PEAR: the PHP Extension and Application Repository</title>
+  <title>PEAR Reference Manual</title>
   <titleabbrev>PEAR</titleabbrev>
-  <refentry id="pear.class.pear">
+  <partintro>
+   <simpara>
+    This chapter contains reference documentation for PEAR components
+    that are distributed with PHP.  It is assumed that you are
+    already familiar with <link linkend="language.oop">objects and
+    classes</link>.
+   </simpara>
+  </partintro>
+  <refentry id="class.pear">
    <refnamediv>
     <refname>PEAR</refname>
     <refpurpose>PEAR base class</refpurpose>
    </refnamediv>
+   <refsynopsisdiv>
+    <synopsis>class <replaceable>classname</replaceable> extends <classname>PEAR</classname> { ... }</synopsis>
+   </refsynopsisdiv>
    <refsect1>
     <title>Description</title>
     <simpara>
@@ -24,6 +35,52 @@
       </listitem>
      </itemizedlist>
     </para>
+    <refsect2>
+     <title>PEAR "destructors"</title>
+     <simpara>
+      If you inherit <classname>PEAR</classname> in a class called
+      <replaceable>ClassName</replaceable>, you can define a method in
+      it called called _<replaceable>ClassName</replaceable> (the
+      class name with an underscore prepended) that will be invoked
+      when the request is over.  This is not a destructor in the sense
+      that you can "delete" an object and have the destructor called,
+      but in the sense that PHP gives you a callback in the object
+      when it is done executing.  See <link
+      linkend="example.pear.destructors">the example</link> below.
+     </simpara>
+    </refsect2>
+    <refsect2>
+     <title>PEAR Error Handling</title>
+     <simpara>
+      PEAR's base class also provides a way of passing around more
+      complex errors than a true/false value or a numeric code.  A
+      PEAR error is an object that is either an instance of the class
+      <classname>PEAR_Error</classname>, or some class inheriting
+      <classname>PEAR_Error</classname>.
+     </simpara>
+     <simpara>
+      One of the design criteria of PEAR's errors is that it should
+      not force a particular type of output on the user, it should be
+      possible to handle errors without any output at all if that is
+      desireable.  This makes it possible to handle errors gracefully,
+      also when your output format is different from HTML (for example
+      WML or some other XML format).
+     </simpara>
+     <simpara>
+      The error object can be configured to do a number of things when
+      it is created, such as printing an error message, printing the
+      message and exiting, raising an error with PHP's
+      <function>trigger_error</function> function, invoke a callback,
+      or none of the above.  This is typically specified in
+      <classname>PEAR_Error</classname>'s constructor, but all of the
+      parameters are optional, and you can set up defaults for errors
+      generated from each object based on the
+      <classname>PEAR</classname> class.  See the <link
+      linkend="example.pear.error1">PEAR error examples</link> for how
+      to use it and the <classname>PEAR_Error</classname> reference
+      for the full details.
+     </simpara>
+    </refsect2>
    </refsect1>
    <refsect1>
     <title>Examples</title>
@@ -32,7 +89,7 @@
      emulated destructors" to implement a simple class that holds the
      contents of a file, lets you append data to the object and
      flushes the data back to the file at the end of the request:
-     <example>
+     <example id="example.pear.destructors">
       <title>PEAR: emulated destructors</title>
       <programlisting role="php">
 require_once "PEAR.php";
@@ -95,16 +152,215 @@ $fileobj->append("this ends up at the end of the file\n");
       </simpara>
      </note>
     </para>
+    <simpara>
+     The next examples illustrate different ways of using PEAR's error
+     handling mechanism.
+    </simpara>
+    <para>
+     <example id="example.pear.error1">
+      <title>PEAR error example (1)</title>
+      <programlisting role="php">
+function mysockopen($host = "localhost", $port = 8090)
+{
+    $fp = fsockopen($host, $port, $errno, $errstr);
+    if (!is_resource($fp)) {
+        return new PEAR_Error($errstr, $errno);
+    }
+    return $fp;
+}
+
+$sock = mysockopen();
+if (PEAR::isError($sock)) {
+    print "mysockopen error: ".$sock->getMessage()."&lt;BR>\n"
+}
+</programlisting>
+     </example>
+    </para>
+    <simpara>
+     This example shows a wrapper to <function>fsockopen</function>
+     that delivers the error code and message (if any) returned by
+     fsockopen in a PEAR error object.  Notice that
+     <function>PEAR::isError</function> is used to detect whether a
+     value is a PEAR error.
+    </simpara>
+    <simpara>
+     PEAR_Error's mode of operation in this example is simply
+     returning the error object and leaving the rest to the user
+     (programmer).  This is the default error mode.
+    </simpara>
+    <simpara>
+     In the next example we're showing how to use default error modes:
+    </simpara>
+    <para>
+     <example id="example.pear.error2">
+      <title>PEAR error example (2)</title>
+      <programlisting role="php">
+class TCP_Socket extends PEAR
+{
+    var $sock;
+
+    function TCP_Socket()
+    {
+        $this->PEAR();
+    }
+
+    function connect($host, $port)
+    {
+        $sock = fsockopen($host, $port, $errno, $errstr);
+        if (!is_resource($sock)) {
+            return $this->raiseError($errstr, $errno);
+        }
+    }
+}
+
+$sock = new TCP_Socket;
+$sock->setErrorHandling(PEAR_ERROR_DIE);
+$sock->connect("localhost", 8090);
+print "still alive&lt;BR>\n";
+</programlisting>
+     </example>
+    </para>
+    <simpara>
+     Here, we set the default error mode to
+     <constant>PEAR_ERROR_DIE</constant>, and since we don't specify
+     any error mode in the raiseError call (that'd be the third
+     parameter), raiseError uses the default error mode and exits if
+     fsockopen fails.
+    </simpara>
    </refsect1>
   </refentry>
-  <refentry id="pear.class.pear-error">
+  <refentry id="class.pear-error">
    <refnamediv>
     <refname>PEAR_Error</refname>
     <refpurpose>PEAR error mechanism base class</refpurpose>
    </refnamediv>
+   <refsynopsisdiv>
+    <synopsis>$err = new <classname>PEAR_Error</classname>($msg);</synopsis>
+   </refsynopsisdiv>
    <refsect1>
-    <title>Description</title>
+    <title>Error Modes</title>
+    <para>
+     An error object has a mode of operation that can be set with one
+     of the following constants:
+     <variablelist id="pear.error-modes">
+      <varlistentry id="constant.pear-error-return">
+       <term>PEAR_ERROR_RETURN</term>
+       <listitem>
+	<simpara>
+	 Just return the object, don't do anything special in
+	 PEAR_Error's constructor.
+	</simpara>
+       </listitem>
+      </varlistentry>
+      <varlistentry id="constant.pear-error-print">
+       <term>PEAR_ERROR_PRINT</term>
+       <listitem>
+	<simpara>
+	 Print the error message in the constructor.  The execution is
+	 not interrupted.
+	</simpara>
+       </listitem>
+      </varlistentry>
+      <varlistentry id="constant.pear-error-trigger">
+       <term>PEAR_ERROR_TRIGGER</term>
+       <listitem>
+	<simpara>
+	 Use PHP's <function>trigger_error</function> function to
+	 raise an internal error in PHP.  The execution is aborted if
+	 you have defined your own PHP error handler or if you set the
+	 error severity to E_USER_ERROR.
+	</simpara>
+       </listitem>
+      </varlistentry>
+      <varlistentry id="constant.pear-error-die">
+       <term>PEAR_ERROR_DIE</term>
+       <listitem>
+	<simpara>
+	 Print the error message and exit.  Execution is of course
+	 aborted.
+	</simpara>
+       </listitem>
+      </varlistentry>
+      <varlistentry id="constant.pear-error-callback">
+       <term>PEAR_ERROR_CALLBACK</term>
+       <listitem>
+	<simpara>
+	 Use a callback function or method to handle errors.
+	 Execution is aborted.
+	</simpara>
+       </listitem>
+      </varlistentry>
+     </variablelist>
+    </para>
+   </refsect1>
+   <refsect1>
+    <title>Properties</title>
     <simpara></simpara>
+   </refsect1>
+   <refsect1>
+    <title>Methods</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef><function>PEAR_Error::PEAR_Error</function></funcdef>
+      <paramdef>
+       <parameter><optional>message</optional></parameter>
+       <parameter><optional>code</optional></parameter>
+       <parameter><optional>mode</optional></parameter>
+       <parameter><optional>options</optional></parameter>
+       <parameter><optional>userinfo</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <refsect2>
+     <title>Description</title>
+     <para>
+      PEAR_Error constructor.  Parameters:
+      <variablelist>
+       <varlistentry>
+	<term>message</term>
+	<listitem>
+	 <simpara>
+	  error message, defaults to "unknown error"
+	 </simpara>
+	</listitem>
+       </varlistentry>
+       <varlistentry>
+	<term>code</term>
+	<listitem>
+	 <simpara>
+	  error code (optional)
+	 </simpara>
+	</listitem>
+       </varlistentry>
+       <varlistentry>
+	<term>mode</term>
+	<listitem>
+	 <simpara>
+	  Mode of operation.  See the <link
+	  linkend="pear.error-modes">error modes</link> section for
+	  details.
+	 </simpara>
+	</listitem>
+       </varlistentry>
+       <varlistentry>
+	<term>options</term>
+	<listitem>
+	 <simpara>
+	  If the mode of can have any options specified, use this
+	  parameter.  Currently the "trigger" and "callback" modes are
+	  the only using the options parameter.  For trigger mode,
+	  this parameter is one of <constant>E_USER_NOTICE</constant>,
+	  <constant>E_USER_WARNING</constant> or
+	  <constant>E_USER_ERROR</constant>.  For callback mode, this
+	  parameter should contain either the callback function name
+	  (string), or a two-element (object, string) array
+	  representing an object and a method name.
+	 </simpara>
+	</listitem>
+       </varlistentry>
+      </variablelist>
+     </para>
+    </refsect2>
    </refsect1>
   </refentry>
  </reference>
