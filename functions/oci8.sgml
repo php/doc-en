@@ -29,6 +29,7 @@ OCIInternalDebug    - done
 OCILogoff           - done
 OCILogon            - done
 OCIPLogon           - done
+OCINLogon           - done
 OCIError            - done
 OCICommit           - done
 OCIRollback         - done
@@ -207,14 +208,239 @@ OCILogoff($conn);
      <funcdef>int <function>OCILogon</function></funcdef>
      <paramdef>string <parameter>username</parameter></paramdef>
      <paramdef>string <parameter>password</parameter></paramdef>
-     <paramdef>string <parameter><optional>OCACLE_SID</optional></parameter></paramdef>
+     <paramdef>string <parameter><optional>ORACLE_SID</optional></parameter></paramdef>
     </funcsynopsis>
     <para>
      <function>OCILogon</function> returns an connection identified
-	 needed for most other OCI calls.
+	 needed for most other OCI calls.  If the optional third parameter is not specified,
+	 PHP uses the environment variable ORACLE_SID to determine which database to connect 
+	 to.  Connections are shared at the page level when using <function>OCILogon</function>.  
+     This means that commits and rollbacks apply to all open transactions in the page, 
+     even if you have created multiple  connections.
     </para>
+    <para>
+     This example demonstrates how the connections are shared.
+     <example>
+      <title>OCILogon</title>
+      <programlisting>
+&lt;?php
+print "&lt;HTML>&lt;PRE>";
+$db = "";
+
+$c1 = ocilogon("scott","tiger",$db);
+$c2 = ocilogon("scott","tiger",$db);
+
+function create_table($conn)
+{ $stmt = ociparse($conn,"create table scott.hallo (test
+varchar2(32))");
+  ociexecute($stmt);
+  echo $conn." created table\n\n";
+}
+
+function drop_table($conn)
+{ $stmt = ociparse($conn,"drop table scott.hallo");
+  ociexecute($stmt);
+  echo $conn." dropped table\n\n";
+}
+
+function insert_data($conn)
+{ $stmt = ociparse($conn,"insert into scott.hallo values($conn || ' ' || to_char(sysdate,'DD-MON-YY HH24:MI:SS'))");
+  ociexecute($stmt,OCI_DEFAULT);
+  echo $conn." inserted hallo\n\n";
+}
+
+function delete_data($conn)
+{ $stmt = ociparse($conn,"delete from scott.hallo");
+  ociexecute($stmt,OCI_DEFAULT);
+  echo $conn." deleted hallo\n\n";
+}
+
+function commit($conn)
+{ ocicommit($conn);
+  echo $conn." commited\n\n";
+}
+
+function rollback($conn)
+{ ocirollback($conn);
+  echo $conn." rollback\n\n";
+}
+
+function select_data($conn)
+{ $stmt = ociparse($conn,"select * from scott.hallo");
+  ociexecute($stmt,OCI_DEFAULT);
+  echo $conn."----selecting\n\n";
+  while (ocifetch($stmt))
+    echo $conn." &lt;".ociresult($stmt,"TEST").">\n\n";
+  echo $conn."----done\n\n";
+}
+
+create_table($c1);
+insert_data($c1);   // Insert a row using c1
+insert_data($c2);   // Insert a row using c2
+
+select_data($c1);   // Results of both inserts are returned
+select_data($c2);   
+
+rollback($c1);      // Rollback using c1
+
+select_data($c1);   // Both inserts have been rolled back
+select_data($c2);   
+
+insert_data($c2);   // Insert a row using c2
+commit($c2);        // commit using c2
+
+select_data($c1);   // result of c2 insert is returned
+
+delete_data($c1);   // delete all rows in table using c1
+select_data($c1);   // no rows returned
+select_data($c2);   // no rows returned
+commit($c1);        // commit using c1
+
+select_data($c1);   // no rows returned
+select_data($c2);   // no rows returned
+
+
+drop_table($c1);
+print "&lt;/PRE>&lt;/HTML>";
+?></programlisting></example>
+    <simpara>
+     See also <function>OCIPLogon</function> and
+     <function>OCINLogon</function>.
    </refsect1>
   </refentry>
+
+  <refentry id="function.ociplogon">
+   <refnamediv>
+    <refname>OCIPLogon</refname>
+    <refpurpose>Connect to an Oracle database and log on using a persistant connection. 
+    Returns a new session.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCIPLogon</function></funcdef>
+     <paramdef>int <parameter>conn</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCIPLogin</function> Creates a persistent connection to an Oracle 8 database 
+     and logs on.  If the optional third parameter is not specified, PHP uses the environment
+     variable ORACLE_SID to determine which database to connect to.
+    </para>
+    <simpara>
+     See also <function>OCILogon</function> and
+     <function>OCINLogon</function>.
+   </refsect1>
+
+  <refentry id="function.ocinlogon">
+   <refnamediv>
+    <refname>OCINLogon</refname>
+    <refpurpose>Connect to an Oracle database and log on using a new connection. 
+    Returns a new session.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>OCINLogon</function></funcdef>
+     <paramdef>int <parameter>conn</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>OCINLogin</function> Creates a new connection to an Oracle 8 database 
+     and logs on.  If the optional third parameter is not specified, PHP uses the environment
+     variable ORACLE_SID to determine which database to connect to.  <function>OCINLogon</function> 
+     forces a new connection.  This is should be used if you need to isolate a set of transactions.
+     By default, connections are shared at the page level if using <function>OCILogon</function> 
+     or at the web server process level if using <function>OCIPLogon</function>.  If you have 
+     multiple connections open using <function>OCINLogon</function>, all commits and 
+     rollbacks apply to the specified connection only..
+    </para>
+    <para>
+     This example demonstrates how the connections are separated.
+     <example>
+      <title>OCINLogon</title>
+      <programlisting>
+&lt;?php
+print "&lt;HTML>&lt;PRE>";
+$db = "";
+
+$c1 = ocilogon("scott","tiger",$db);
+$c2 = ocinlogon("scott","tiger",$db);
+
+function create_table($conn)
+{ $stmt = ociparse($conn,"create table scott.hallo (test
+varchar2(32))");
+  ociexecute($stmt);
+  echo $conn." created table\n\n";
+}
+
+function drop_table($conn)
+{ $stmt = ociparse($conn,"drop table scott.hallo");
+  ociexecute($stmt);
+  echo $conn." dropped table\n\n";
+}
+
+function insert_data($conn)
+{ $stmt = ociparse($conn,"insert into scott.hallo values($conn || ' ' || to_char(sysdate,'DD-MON-YY HH24:MI:SS'))");
+  ociexecute($stmt,OCI_DEFAULT);
+  echo $conn." inserted hallo\n\n";
+}
+
+function delete_data($conn)
+{ $stmt = ociparse($conn,"delete from scott.hallo");
+  ociexecute($stmt,OCI_DEFAULT);
+  echo $conn." deleted hallo\n\n";
+}
+
+function commit($conn)
+{ ocicommit($conn);
+  echo $conn." commited\n\n";
+}
+
+function rollback($conn)
+{ ocirollback($conn);
+  echo $conn." rollback\n\n";
+}
+
+function select_data($conn)
+{ $stmt = ociparse($conn,"select * from scott.hallo");
+  ociexecute($stmt,OCI_DEFAULT);
+  echo $conn."----selecting\n\n";
+  while (ocifetch($stmt))
+    echo $conn." &lt;".ociresult($stmt,"TEST").">\n\n";
+  echo $conn."----done\n\n";
+}
+
+create_table($c1);
+insert_data($c1);
+
+select_data($c1);   
+select_data($c2);   
+
+rollback($c1);      
+
+select_data($c1);   
+select_data($c2);   
+
+insert_data($c2);   
+commit($c2);        
+
+select_data($c1);   
+
+delete_data($c1);   
+select_data($c1);   
+select_data($c2);   
+commit($c1);        
+
+select_data($c1);
+select_data($c2);
+
+
+drop_table($c1);
+print "&lt;/PRE>&lt;/HTML>";
+?></programlisting></example>
+    <simpara>
+     See also <function>OCILogon</function> and
+     <function>OCIPLogon</function>.
+   </refsect1>
 
   <refentry id="function.ocilogoff">
    <refnamediv>
@@ -824,25 +1050,6 @@ OCILogoff($conn);
     </para>
    </refsect1>
   </refentry>
-
-  <refentry id="function.ociplogon">
-   <refnamediv>
-    <refname>OCIPLogon</refname>
-    <refpurpose>Connect to an Oracle database and log on using a persistant connection. 
-    Returns a new session.</refpurpose>
-   </refnamediv>
-   <refsect1>
-    <title>Description</title>
-    <funcsynopsis>
-     <funcdef>int <function>OCIPLogon</function></funcdef>
-     <paramdef>int <parameter>conn</parameter></paramdef>
-    </funcsynopsis>
-    <para>
-     <function>OCIPLogin</function> Creates a persistent connection to an Oracle 8 database 
-     and logs on.  If the optional third parameter is not specified, PHP uses the environment
-     variable ORACLE_SID to determine which database to connect to.
-    </para>
-   </refsect1>
 
   <refentry id="function.ocicolumnname">
    <refnamediv>
