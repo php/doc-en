@@ -726,6 +726,10 @@ function parse_cli($progargc, $progargv)
 	  $source_files[$num+$j]=$temp_source_files[$j];
 	}
 	$total=count($source_files);
+	  
+        if ($total == 0) {
+            die("FATAL ERROR: Could not find any PHP source files to parse\n");
+        }
       }
       $unknown_arg++;
     }
@@ -756,17 +760,39 @@ if (!parse_cli($myargc, $myargv)) {
 
 /* Generating it all, create directory structure */
 if ($generate_constants && $generate_functions) {
-  mkdir("./" . $extension_name);
-  mkdir("./" . $extension_name . "/functions");
+  if (is_dir("./" . $extension_name)) {
+      echo "Warning: ./$extension_name already exists, continuing...\n";
+  } else {
+      mkdir("./" . $extension_name);
+  }
+  if (is_dir("./" . $extension_name . "/functions")) {
+      echo "Warning: ./$extension_name/functions already exists, continuing...\n";
+  } else {
+      mkdir("./" . $extension_name . "/functions");
+  }
 }
 
 create_xml_docs();
-  echo "\n";
-  echo "Note: If you are documenting a new extension, you will need to add a new line\n";
-  echo "      to the /manual.xml.in file under the <part id=\"funcref\"> section following\n";
-  echo "      the format \"&reference.<extension name>.reference;\", but please try\n";
-  echo "      to maintain the alphabetical order!\n\n";
 
+echo <<<NOTES
+
+Note: If you are documenting a new extension, you will need to add a new line
+      to the /manual.xml.in file under the <part id="funcref"> section following
+      the format "&reference.<extension name>.reference;", but please try
+      to maintain the alphabetical order!
+
+Note: Also be sure to double check the documentation before commit as this
+      script is still being tested.  Things to check:
+      
+      a) The parameter names in the prototype must be alphanumeric (no spaces 
+         or other characters).  Sometimes this isn't the case in the PHP sources.
+      b) Be sure optional parameters are listed as such, and vice versa.
+      c) The script defaults to --with-{ext} but it could be different, like
+         maybe --enable-{ext} OR a directory path is required or optional
+      d) If you're writing over files in CVS, be 100% sure to check unified
+         diffs before commit!
+      e) Report problems to phpdoc@lists.php.net
+NOTES;
 ?>
 
 
