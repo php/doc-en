@@ -64,8 +64,6 @@ define("REV_NOTRANS",  6); // file without translation
 define("REV_CREDIT",   7); // only used in translators list
 define("REV_WIP",      8); // only used in translators list
 
-define("NORMHEAD",     9); // only used in table outputs (css)
-
 // Colors used to mark files by status (colors for the above types)
 $CSS = array(
   REV_UPTODATE => "act",
@@ -76,7 +74,6 @@ $CSS = array(
   REV_NOTRANS  => "wip",
   REV_CREDIT   => "wip",
   REV_WIP      => "wip",
-  NORMHEAD     => "blue",
 );
 
 // Option for the link to cvs.php.net: normal: "&f=h"
@@ -415,6 +412,12 @@ function get_dir_status($dir, $DOCDIR, $LANG)
       if (preg_match("/^\.{1,2}/",$file) || $file == 'CVS')
         continue;
 
+      // JUST TEMPORARY TILL THE <TRANSLATION>/REFERENCE/FUNCTIONS.XML - ISSUE IS CLARIFIED
+      // If we found a file functions.xml in the
+      // <lang>/reference/ tree, skip the file
+      if ($file == "functions.xml" && preg_match("!/\w+/reference/\w+/!", $dir))
+        continue;
+
       // Collect files and directories
       if (is_dir($dir.$file)) { $directories[] = $file; }
       else { $files[] = $file; }
@@ -696,7 +699,7 @@ print <<<END_OF_MULTILINE
 <th class="{$CSS[REV_CRITICAL]}" style="color:#000000">critical</th>
 <th class="{$CSS[REV_NOREV]}" style="color:#000000">norev</th>
 <th class="{$CSS[REV_WIP]}" style="color:#000000">wip</th>
-<th class="{$CSS[NORMHEAD]}">sum</th>
+<th class="blue">sum</th>
 </tr>
 END_OF_MULTILINE;
 
@@ -819,6 +822,19 @@ END_OF_MULTILINE;
 
 }
 
+print <<<END_OF_MULTILINE
+<p class=c><a href="#intro">Introduction</a> |
+<a href="#translators">Translators</a> |
+<a href="#filesummary">File summary by type</a> |
+<a href="#files">Files</a> |
+<a href="#wip">Work in progress</a> |
+<a href="#misstags">Missing revision numbers</a> |
+<a href="#missfiles">Untranslated files</a>
+</p>
+<p>&nbsp;</p>
+END_OF_MULTILINE;
+
+
 // =========================================================================
 // Files table goes here
 // =========================================================================
@@ -893,11 +909,8 @@ foreach ($files_status as $num => $file) {
         $prev_dir = $new_dir;
     }
     
-    // Style attribute for all the cells
-    $style = 'class=' . $CSS[$file["mark"]];
-    
     // Write out the line for the current file (get file name shorter)
-    print "<tr $style><td>{$file['short_name']}</td>".
+    print "<tr class={$CSS[$file['mark']]}><td>{$file['short_name']}</td>".
           "<td> {$file['revision'][0]}</td>" .
           "<td> {$file['revision'][1]}</td>".
           "<td class=r><b>{$file['revision'][2]}</b> </td>".
@@ -913,6 +926,19 @@ foreach ($files_status as $num => $file) {
 }
 
 print("</table>\n<p>&nbsp;</p>\n");
+
+print <<<END_OF_MULTILINE
+<p class=c><a href="#intro">Introduction</a> |
+<a href="#translators">Translators</a> |
+<a href="#filesummary">File summary by type</a> |
+<a href="#files">Files</a> |
+<a href="#wip">Work in progress</a> |
+<a href="#misstags">Missing revision numbers</a> |
+<a href="#missfiles">Untranslated files</a>
+</p>
+<p>&nbsp;</p>
+END_OF_MULTILINE;
+
 
 // =========================================================================
 // Work in progress table goes here
@@ -981,18 +1007,59 @@ if (count($translation["files"]) != 0) {
     } 
   
     print "</table>\n<p>&nbsp;</p>\n";
+    
+    print <<<END_OF_MULTILINE
+<p class=c><a href="#intro">Introduction</a> |
+<a href="#translators">Translators</a> |
+<a href="#filesummary">File summary by type</a> |
+<a href="#files">Files</a> |
+<a href="#wip">Work in progress</a> |
+<a href="#misstags">Missing revision numbers</a> |
+<a href="#missfiles">Untranslated files</a>
+</p>
+<p>&nbsp;</p>
+END_OF_MULTILINE;
+
 } 
 
 // Files translated, but without a revision comment
 $count = count($missing_tags);
 if ($count > 0) {
     print "<a name=\"misstags\"></a>" .
-          "<table width=\"540\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n".
+          "<table width=\"400\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n".
           "<tr><th class=blue><b>Files without Revision-comment ($count files):</b></th></tr>\n";
     foreach($missing_tags as $val) {
-        print "<tr><td class=miss>$val</td></tr>\n";
+        // Shorten the filename (we have directory headers)
+        $short_file = basename($val);
+
+        // Guess the new directory from the full name of the file
+        $new_dir = substr($val, 0, strrpos($val, "/"));
+    
+        // If this is a new directory, put out dir headline
+        if ($new_dir != $prev_dir) {
+        
+            // Print out directory header
+            print "<tr class=blue><th>".dirname($val)."</th></tr>\n";
+        
+            // Store the new actual directory
+            $prev_dir = $new_dir;
+        }
+        print "<tr><td class=miss>$short_file</td></tr>\n";
     }
     print "</table>\n<p>&nbsp;</p>\n";
+
+    print <<<END_OF_MULTILINE
+<p class=c><a href="#intro">Introduction</a> |
+<a href="#translators">Translators</a> |
+<a href="#filesummary">File summary by type</a> |
+<a href="#files">Files</a> |
+<a href="#wip">Work in progress</a> |
+<a href="#misstags">Missing revision numbers</a> |
+<a href="#missfiles">Untranslated files</a>
+</p>
+<p>&nbsp;</p>
+END_OF_MULTILINE;
+
 }
 
 // Merge all work in progress files collected
@@ -1012,14 +1079,44 @@ foreach ($wip_files as $file) {
 $count = count($missing_files);
 if ($count > 0) {
     print "<a name=\"missfiles\"></a>" .
-          "<table width=\"540\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n" .
+          "<table width=\"400\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n" .
           "<tr><th class=blue><b><a name=\"avail\" class=\"ref\">" .
           " Available for translation</a> ($count files):</b></th><th class=blue><b>kB</b></th></tr>\n";
     foreach($missing_files as $file => $info) {
-        print "<tr class=miss><td>$file</td>" .
+        // Shorten the filename (we have directory headers)
+        $short_file = basename($file);
+
+        // Guess the new directory from the full name of the file
+        $new_dir = substr($file, 0, strrpos($file, "/"));
+    
+        // If this is a new directory, put out dir headline
+        if ($new_dir != $prev_dir) {
+        
+            // Print out directory header if not "."
+            print "<tr class=blue><th colspan=\"2\">".dirname($file)."</th></tr>\n";
+        
+            // Store the new actual directory
+            $prev_dir = $new_dir;
+        }
+
+        print "<tr class=miss><td>$short_file</td>" .
               "<td align=right>$info[0]</td></tr>\n";
     }
     print "</table>\n<p>&nbsp;</p>\n";
+
+print <<<END_OF_MULTILINE
+<p class=c><a href="#intro">Introduction</a> |
+<a href="#translators">Translators</a> |
+<a href="#filesummary">File summary by type</a> |
+<a href="#files">Files</a> |
+<a href="#wip">Work in progress</a> |
+<a href="#misstags">Missing revision numbers</a> |
+<a href="#missfiles">Untranslated files</a>
+</p>
+<p>&nbsp;</p>
+END_OF_MULTILINE;
+
+
 }
 
 // All OK, end the file
