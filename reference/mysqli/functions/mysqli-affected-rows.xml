@@ -1,139 +1,135 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.11 $ -->
+<!-- $Revision: 1.12 $ -->
   <refentry id="function.mysqli-affected-rows">
-   <refnamediv>
-    <refname>mysqli_affected_rows</refname>
-    <refpurpose>Gets the number of affected rows in a previous MySQL operation</refpurpose>
-   </refnamediv>
-   <refsect1>
-    <title>Description</title>
-     <methodsynopsis>
-      <type>mixed</type><methodname>mysqli_affected_rows</methodname>
-      <methodparam><type>object</type><parameter>link</parameter></methodparam>
-     </methodsynopsis>
-    <para>
-     <function>mysqli_affected_rows</function> returns the number of rows affected by the last
-     INSERT, UPDATE, or DELETE query associated with the provided <parameter>link</parameter>
-     parameter. If the last query was invalid, this function will return -1.
-    </para>
-    <note>
-     <para>
-      When deleting the entire contents of a table (i.e. 'DELETE FROM foo'), this function will
-      not return the number of rows that were actually deleted. 
-     </para>
-    </note>
-    <para>
-     The <function>mysqli_affected_rows</function> function only works with queries which modify
-     a table. In order to return the number of rows from a SELECT query, use the
-     <function>mysqli_num_rows</function> function instead.
-    </para>
-    <para>
-     <example>
-      <title>Delete-Query</title>
-      <para>Procedural style:</para>
-      <programlisting role="php">
-<![CDATA[
-<?php
-    /* connect to database */
-    $link = mysqli_connect("localhost", "mysql_user", "mysql_password", "mydb") or
-        die("Could not connect: " . mysqli_connect_error());
-    
-    /* this should return the correct numbers of deleted records */
-    mysqli_query($link, "DELETE FROM mytable WHERE id < 10");
-    printf("Records deleted: %2d\n", mysqli_affected_rows($link));
+ <refnamediv>
+  <refname>mysqli_affected_rows</refname>
+  <refname>mysqli->affected_rows</refname>
+  <refpurpose>Gets the number of affected rows in a previous MySQL operation</refpurpose>
+ </refnamediv>
+ <refsect1>
+  <title>Description</title>
+  <para>Procedural style:</para>
+  <methodsynopsis>
+   <type>mixed</type><methodname>mysqli_affected_rows</methodname>
+   <methodparam><type>object</type><parameter>link</parameter></methodparam>
+  </methodsynopsis>
+  <para>Object oriented style (property):</para>
+  <classsynopsis>
+   <ooclass><classname>mysqli</classname></ooclass>
+   <fieldsynopsis><type>mixed</type><varname>affected_rows</varname></fieldsynopsis>
+  </classsynopsis>
+  <para>
+   <function>mysqli_affected_rows</function> returns the number of rows affected by the last 
+   INSERT, UPDATE, or DELETE query associated with the provided <parameter>link</parameter>
+   parameter. If the last query was invalid, this function will return -1.
+  </para>
+  <note>
+   <para>
+    For SELECT statements <function>mysqli_affected_rows</function> works like
+    <function>mysqli_num_rows</function>.
+   </para>
+  </note>
+  <para>
+   The <function>mysqli_affected_rows</function> function only works with queries which modify
+   a table. In order to return the number of rows from a SELECT query, use the
+   <function>mysqli_num_rows</function> function instead.
+  </para>
+ </refsect1>
+ <refsect1>
+  <title>Return Values</title>
+  <para>
+   An integer greater than zero indicates the number of rows affected or retrieved. 
+   Zero indicates that no records where updated for an UPDATE statement, no rows matched 
+   the WHERE clause in the query or that no query has yet been executed. 
+   -1 indicates that the query returned an error.
+  </para>
+  <note> 
+   <para>
+    If the number of affected rows is greater than maximal int value, the number of affected rows
+    will be returned as a string.
+   </para>
+  </note>
+ </refsect1>
+ <refsect1>
+  <title>Example</title>
+  <para>
+   <example>
+    <title>Example for affected rows</title>
+    <programlisting role="php">
+     <![CDATA[
+     <?php
+     /*
+     +-----------------------------------------------------------+
+     | file: mysqli_affected_rows.php                            |
+     +-----------------------------------------------------------+
+     | modifies some datasets and returns number of affected     |
+     | rows                                                      |
+     +-----------------------------------------------------------+
+     */
+     
+     /* ---- Procedural style ---- */
+     $link = mysqli_connect("localhost", "my_user", "my_password", "test")
+     or die("Can't connect to MySQL server on localhost");
 
-    /* without a where clause in a delete statement, it should return 0 */
-    mysqli_query($link, "DELETE FROM mytable");
-    printf("Records deleted: %2d\n", mysqli_affected_rows($link));
+     /* create table and insert some data */
+     mysqli_query($link, "DROP TABLE IF EXISTS affected_rows");
+     mysqli_query($link, "CREATE TABLE affected_rows (a int)");
+     mysqli_query($link, "INSERT INTO affected_rows VALUES (1),(2),(3),(4)");
 
-    /* close connection */
-    mysqli_close($link);
-?>
-]]>
-      </programlisting>
-      <para>Object oriented style:</para>
-      <programlisting role="php">
-<![CDATA[
-<?php
-    /* connect to database */
-    $mysql = mysqli_connect("localhost", "mysql_user", "mysql_password", "mydb") or
-        die("Could not connect: " . mysqli_connect_error());
-    
-    /* this should return the correct numbers of deleted records */
-    $mysql->query("DELETE FROM mytable WHERE id < 10");
-    printf ("Records deleted: %2d\n", $mysql->affected_rows());
+     /* update values and retrieve number of affected rows */
+     mysqli_query($link, "UPDATE affected_rows SET a=5 WHERE a=1");
+     printf("Affected rows (update): %d\n", mysqli_affected_rows($link));
 
-    /* without a where clause in a delete statement, it should return 0 */
-    $mysql->query("DELETE FROM mytable");
-    printf ("Records deleted: %2d\n", $mysql->affected_rows());
+     /* delete rows and retrieve number of affected_rows */
+     mysqli_query($link, "DELETE FROM affected_rows WHERE a < 4");
+     printf("Affected rows (delete): %d\n", mysqli_affected_rows($link));
 
-    /* close connection */
-    $mysql->close();
-?>
-]]>
-      </programlisting>
-      <para>
-       The above examples would produce the following output:
-       <screen>
-<![CDATA[
-Records deleted: 10
-Records deleted:  0
-]]>
-       </screen>
-      </para>
-     </example>
-     <example>
-      <title>Update-Query</title>
-      <para>Procedural style:</para>
-      <programlisting role="php">
-<![CDATA[
-<?php
-    /* connect to database */
-    $link = mysqli_connect("localhost", "mysql_user", "mysql_password", "mydb") or
-        die("Could not connect: " . mysqli_connect_error());
-        
-    /* Update records */
-    mysqli_query($link, "UPDATE mytable SET used=1 WHERE id < 10");
-    printf ("Updated records: %d\n", mysqli_affected_rows($link));
+     /* select all rows and retrieve number of affected_rows */
+     mysqli_query($link, "SELECT a FROM affected_rows");
+     printf("Affected rows (select): %d\n", mysqli_affected_rows($link));
 
-    /* close connection */
-    mysqli_close($link);
-?>
-]]>
-      </programlisting>
-      <para>Object oriented style:</para>
-      <programlisting role="php">
-<![CDATA[
-<?php
-    /* connect to database */
-    $mysql = mysqli_connect("localhost", "mysql_user", "mysql_password", "mydb") or
-        die("Could not connect: " . mysqli_connect_error());
-        
-    /* Update records */
-    $mysql->query("UPDATE mytable SET used=1 WHERE id < 10");
-    printf ("Updated records: %d\n", $mysql->affected_rows($link));
+     mysqli_close($link);
 
-    /* close connection */
-    $mysql->close($link);
-?>
-]]>
-      </programlisting>
-      <para>
-       The above examples would produce the following output:
-       <screen>
-<![CDATA[
-Updated Records: 10
-]]>
-       </screen>
-      </para>
-     </example> 
-    </para>
-    <para>
-     See also: <function>mysqli_num_rows</function>,
-     <function>mysqli_info</function>.
-    </para>
-   </refsect1>
-  </refentry>
+     /* ---- Object oriented style ----*/
+     $mysqli = new mysqli("localhost", "my_user", "my_password", "test");
+
+     if (mysqli_connect_errno()) {
+     printf("Connect failed: %s\n", mysqli_connect_error());
+     exit();
+     }
+
+     /* create table and insert some data */
+     $mysqli->query("DROP TABLE IF EXISTS affected_rows");
+     $mysqli->query("CREATE TABLE affected_rows (a int)");
+     $mysqli->query("INSERT INTO affected_rows VALUES (1),(2),(3),(4)");
+
+     /* update values and retrieve number of affected rows */
+     $mysqli->query("UPDATE affected_rows SET a=5 WHERE a=1");
+     printf("Affected rows (update): %d\n", $mysqli->affected_rows);
+
+     /* delete rows and retrieve number of affected_rows */
+     $mysqli->query("DELETE FROM affected_rows WHERE a < 4");
+     printf("Affected rows (delete): %d\n", $mysqli->affected_rows);
+
+     /* select all rows and retrieve number of affected_rows */
+     $mysqli->query("SELECT a FROM affected_rows");
+     printf("Affected rows (select): %d\n", $mysqli->affected_rows);
+
+     $mysqli->close();
+     ?>
+     ]]>
+    </programlisting>
+   </example> 
+  </para>
+ </refsect1>
+ <refsect1>
+  <title>See also</title>
+  <para>
+   <function>mysqli_num_rows</function>,
+   <function>mysqli_info</function>.
+  </para>
+ </refsect1>
+</refentry>
 
 <!-- Keep this comment at the end of the file
 Local variables:
