@@ -67,6 +67,8 @@ $number_refs = array(
 	"msg_receive_args_force_ref" => array(3, 5, 8),
 	"all_args_force_by_ref" => 1,
 	"all_args_by_ref" => 1,
+	"http_request_info_ref_3" => array(3),
+	"http_request_info_ref_4" => array(4),
 );
 
 $valid_types = "int|float|string|bool|resource|array|object|mixed|number";
@@ -240,10 +242,10 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 		
 		// references
 		$source_ref = (isset($source_refs[$function_name]) ? $source_refs[$function_name] : null);
-		preg_match_all('~<parameter( role="reference")?>(&amp;)?~S', $methodsynopsis, $matches);
+		preg_match_all('~<parameter( role="reference")?>~S', $methodsynopsis, $matches);
 		$byref = array();
 		foreach ($matches[1] as $key => $val) {
-			if ($val || $matches[2][$key]) {
+			if ($val) {
 				$byref[] = $key + 1;
 			}
 		}
