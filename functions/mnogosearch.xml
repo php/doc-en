@@ -267,11 +267,13 @@
       </listitem>    
       <listitem>
        <simpara>
-	 UDM_PARAM_MAX_WORD_LEN - defines maximum word lenght. Any word longer this limit is considered to be a stopword. Please note that this paraneter value is inclusive, 
-	 i.e. if UDM_PARAM_MAX_WORD_LEN=32, a word 32 characters long will not be considered a stopword, while
-	 a word 33 characters long will be. Default value is 32.
+       UDM_PARAM_ISPELL_PREFIXES - Possible values: UDM_PREFIXES_ENABLED and UDM_PREFIXES_DISABLED, 
+       that respectively enable or disable using prefixes. E.g. if a word "tested" is in search query, also words like "test", "testing", etc.
+       Only suffixes are supported by default. Prefixes usually change word meanings, for example if somebody is searching for the word "tested" 
+       one hardly wants "untested"  to be found. Prefixes support may also be found useful for site's 
+	   spelling checking purposes. In order to enable ispell, you have to load ispell data with <function>udm_load_ispell_data</function>.
 	   </simpara>
-      </listitem>    
+      </listitem>
      </itemizedlist>
     </refsect1>
   </refentry>
@@ -342,6 +344,21 @@
 	  id would start at 01 again and it would get the 'VW' id 02 and 'Auto' id of
 	  01, making it 010201. If you want to search for sites under that category then you pass it
 	  cat=010201 in the url.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+      UDM_LIMIT_DATE - defines limitation by date document was modified. 
+      </simpara>
+      <simpara>
+      Format of parameter value: a string with first character &lt; or &gt;, then with no space - date in unixtime format, for example:
+      </simpara>
+      <simpara>
+      Udm_Add_Search_Limit($udm,UDM_LIMIT_DATE,"&lt;908012006");
+      </simpara>
+      <simpara>
+      If &gt; character is used, then search will be restricted to those documents having modification date greater than entered.
+      If &lt;, then smaller.
       </simpara>
      </listitem>
     </itemizedlist>
@@ -585,7 +602,147 @@
     </itemizedlist>
    </refsect1>
   </refentry>
-
+  
+  <refentry id="function.udm-load-ispell-data">
+   <refnamediv>
+    <refname>udm_load_ispell_data</refname>
+    <refpurpose>Load ispell data</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>udm_load_ispell_data</function></funcdef>
+      <paramdef>int <parameter>agent</parameter></paramdef>
+      <paramdef>int <parameter>var</parameter></paramdef>
+      <paramdef>string <parameter>val1</parameter></paramdef>
+      <paramdef>string <parameter>val2</parameter></paramdef>
+      <paramdef>int <parameter>flag</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>udm_load_ispell_data</function> loads ispell data. Returns <literal>TRUE</literal> on success, <literal>FALSE</literal> on error.</para>
+    <para>
+     <parameter>agent</parameter> - agent link identifier, received after call to <function>udm_alloc_agent</function>.
+    </para>
+    <para>
+     <parameter>var</parameter> - parameter, indicating the source for ispell data. May have the following values:
+    </para>
+    <note>
+    <para>
+    It is recommended to load ispell data from files, since in mnogosearch 3.1.10 it is the fastest. In later versions
+    it is planned to optimize loading in UDM_ISPELL_TYPE_DB mode as well, so you just try several modes to find the best for you.
+    </para>
+    </note>
+    <itemizedlist>
+     <listitem>
+    <simpara>
+    UDM_ISPELL_TYPE_DB - indicates that ispell data should be loaded from SQL. In this case, parameters <parameter>val1</parameter> and <parameter>val2</parameter> are ignored and
+    should be left blank. <parameter>flag</parameter> should be equal to <literal>1</literal>.
+    </simpara>
+    <note>
+    <para>
+    <parameter>flag</parameter> indicates that after loading ispell data from defined source it sould be sorted (it is necessary for correct functioning of ispell).
+    In case of loading ispell data from files there may be several calls to <function>udm_load_ispell_data</function>, and there is no sense to sort data after every call, but only after the last one.
+    Since in db mode all the data is loaded by one call, this parameter should have the value <literal>1</literal>.
+    In this mode in case of error, e.g. if ispell tables are absent, the function will return <literal>FALSE</literal> and code and error message will be accessible through <function>udm_error</function> and <function>udm_errno</function>.
+    </para>
+    </note>
+    <simpara>Example:</simpara>
+    <informalexample>
+    <programlisting role="C">
+    	   if (! Udm_Load_Ispell_Data($udm,UDM_ISPELL_TYPE_DB,'','',1)) {
+              printf("Error #%d: '%s'\n",Udm_Errno($udm),Udm_Error($udm));
+              exit;
+           }
+	</programlisting>
+	</informalexample>
+     </listitem>
+     <listitem>
+     <para>
+     UDM_ISPELL_TYPE_AFFIX - indicates that ispell data should be loaded from file and initiates loading affixes file.
+     In this case <parameter>val1</parameter> defines double letter language code for which affixes are loaded, 
+     and <parameter>val2</parameter> - file path. Please note, that if a relative path entered, the module looks for
+     the file not in UDM_CONF_DIR, but in relation to current path, i.e. to the path where the script is executed.
+     In case of error in this mode, e.g. if file is absent, the function will return <literal>FALSE</literal>, and an error message will be displayed.
+     Error message text cannot be accessed through <function>udm_error</function> and <function>udm_errno</function>, since those functions
+     can only return messages associated with SQL. Please, see <parameter>flag</parameter> parameter description in UDM_ISPELL_TYPE_DB.
+     </para>
+     <simpara>Example:</simpara>
+    <informalexample>
+    <programlisting role="C">
+           if ((! Udm_Load_Ispell_Data($udm,UDM_ISPELL_TYPE_AFFIX,'en','/opt/ispell/en.aff',0)) ||
+               (! Udm_Load_Ispell_Data($udm,UDM_ISPELL_TYPE_AFFIX,'ru','/opt/ispell/ru.aff',0)) ||
+               (! Udm_Load_Ispell_Data($udm,UDM_ISPELL_TYPE_SPELL,'en','/opt/ispell/en.dict',0)) ||
+               (! Udm_Load_Ispell_Data($udm,UDM_ISPELL_TYPE_SPELL,'ru','/opt/ispell/ru.dict',1))) {
+              exit;
+           }
+	</programlisting>
+	</informalexample>
+	<note>
+	<para>
+	<parameter>flag</parameter> is equal to <literal>1</literal> only in the last call.
+	</para>
+	</note>
+	 </listitem>
+	 <listitem>
+	 <para>
+	 UDM_ISPELL_TYPE_SPELL - indicates that ispell data should be loaded from file and initiates loading of ispell dictionary file.
+	 In this case <parameter>val1</parameter> defines double letter language code for which affixes are loaded, 
+     and <parameter>val2</parameter> - file path. Please note, that if a relative path entered, the module looks for
+     the file not in UDM_CONF_DIR, but in relation to current path, i.e. to the path where the script is executed.
+     In case of error in this mode, e.g. if file is absent, the function will return <literal>FALSE</literal>, and an error message will be displayed.
+     Error message text cannot be accessed through <function>udm_error</function> and <function>udm_errno</function>, since those functions
+     can only return messages associated with SQL. Please, see <parameter>flag</parameter> parameter description in UDM_ISPELL_TYPE_DB.
+     </para> 
+     <simpara>Example:</simpara>
+    <informalexample>
+    <programlisting role="C">
+           if ((! Udm_Load_Ispell_Data($udm,UDM_ISPELL_TYPE_AFFIX,'en','/opt/ispell/en.aff',0)) ||
+               (! Udm_Load_Ispell_Data($udm,UDM_ISPELL_TYPE_AFFIX,'ru','/opt/ispell/ru.aff',0)) ||
+               (! Udm_Load_Ispell_Data($udm,UDM_ISPELL_TYPE_SPELL,'en','/opt/ispell/en.dict',0)) ||
+               (! Udm_Load_Ispell_Data($udm,UDM_ISPELL_TYPE_SPELL,'ru','/opt/ispell/ru.dict',1))) {
+              exit;
+           }
+	</programlisting>
+	</informalexample>
+	<note>
+	<para>
+	<parameter>flag</parameter> is equal to <literal>1</literal> only in the last call.
+	</para>
+	</note>
+	 </listitem>
+	</itemizedlist> 
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.udm-free-ispell-data">
+   <refnamediv>
+    <refname>udm_free_ispell_data</refname>
+    <refpurpose>Free memory allocated for ispell data</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>udm_free_ispell_data</function></funcdef>
+      <paramdef>int <parameter>agent</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>udm_free_ispell_data</function> always returns <literal>TRUE</literal>.
+    </para>
+    <para>
+     <parameter>agent</parameter> - agent link identifier, received after call to <function>udm_alloc_agent</function>.
+    </para>
+    <note>
+    <para>
+     In mnoGoSearch 3.1.10 this function is not yet implemented, it is added for compatibility with future versions and does not perform anything yet.
+    </para>
+    </note>
+   </refsect1>
+  </refentry>
+  
   <refentry id="function.udm-free-res">
    <refnamediv>
     <refname>udm_free_res</refname>
