@@ -151,7 +151,7 @@ $LANGUAGES = array(
                    "langcode" => "0x804 Simplified Chinese",
                    "preferred_charset" => "CP936",
                    "mime_charset_name" => "gb2312",
-                   "preferred_font" => "MingLiu,10,0"
+                   "preferred_font" => "simsun,10,0"
                )
 );
 ?>
