@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.15 2004-11-01 19:44:31 techtonik Exp $
+  $Id: common.xsl,v 1.16 2004-11-01 21:27:53 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -65,6 +65,23 @@
   </div>
 </xsl:template>
 
+<!-- Rendering of METHODSYNOPSIS. The output of this should look like:
+     
+     int preg_match_all ( string pattern, string subject, array matches [, int flags])
+     
+     working from a structure like this:
+     
+     <methodsynopsis>
+      <type>int</type><methodname>preg_match_all</methodname>
+      <methodparam><type>string</type><parameter>pattern</parameter></methodparam>
+      <methodparam><type>string</type><parameter>subject</parameter></methodparam>
+      <methodparam><type>array</type><parameter>matches</parameter></methodparam>
+      <methodparam choice="opt"><type>int</type><parameter>flags</parameter></methodparam>
+     </methodsynopsis>
+
+     Note, that this is DSSSL like version. htmlhelp.xsl uses another, span style
+-->
+
 <!-- We do not want semicolon at the end of prototype and our own style
      of square brackets for optional parameters. Make methodnames bold
      like in DSSSL -->
@@ -83,7 +100,7 @@
 
 <xsl:template match="methodsynopsis/methodname">
   <b class="{local-name(.)}">
-    <xsl:copy-of select="$content"/>
+    <xsl:copy-of select="."/>
   </b>
 </xsl:template>
 
@@ -98,7 +115,7 @@
 
 <xsl:template match="methodparam">
   <xsl:if test="preceding-sibling::methodparam=false()">
-    <xsl:text> (</xsl:text>
+    <xsl:text> ( </xsl:text>
     <xsl:if test="@choice='opt'">
       <xsl:text>[</xsl:text>
     </xsl:if>
@@ -107,7 +124,7 @@
   <xsl:choose>
     <xsl:when test="following-sibling::methodparam">
       <xsl:choose>
-        <xsl:when test="following-sibling::methodparam[position()=1]/attribute::choice[.='opt']">
+        <xsl:when test="following-sibling::methodparam[position()=1]/@choice='opt'">
           <xsl:text> [, </xsl:text>
         </xsl:when>
         <xsl:otherwise>
@@ -117,14 +134,14 @@
     </xsl:when>
     <xsl:otherwise>
       <xsl:for-each select="preceding-sibling::methodparam">
-				<xsl:if test="attribute::choice[.='opt']">
+				<xsl:if test="@choice='opt'">
 					<xsl:text>]</xsl:text>
 				</xsl:if>
       </xsl:for-each>
-      <xsl:if test="self::methodparam/attribute::choice[.='opt']">
+      <xsl:if test="self::methodparam/@choice='opt'">
         <xsl:text>]</xsl:text>
       </xsl:if>
-      <xsl:text>)</xsl:text>
+      <xsl:text> )</xsl:text>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -289,6 +306,18 @@
 
 <xsl:template match="collabname">
   <xsl:apply-templates/>
+</xsl:template>
+
+
+
+<!--          Tune different INLINE ELEMENTS       -->
+
+<!-- Display PARAMETER enclosed in VAR like in DSSSL 
+     instead of inline.italicmonoseq -->
+<xsl:template match="parameter">
+  <var class="{local-name(.)}">
+    <xsl:apply-templates />
+  </var>
 </xsl:template>
 
 
