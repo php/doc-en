@@ -280,8 +280,14 @@ Class BugHunter {
 
 			$p[$i] = trim($p[$i], '[] ');
 
+			if($p[$i] == 'void' and sizeof($p) == 1) {
+				$params[$i+1]['optional']    = True;
+				$params[$i+1]['type']        = 'void';
+				$params[$i+1]['name']        = 'void';
+			}
+
 			// if plain text mandatory parameter
-			if(preg_match_all("/^({$this->rex_php_types}) +(\&?)([a-z]+[[:alnum:]_\|]*)$/", $p[$i], $matches, PREG_SET_ORDER)) {
+			else if(preg_match_all("/^({$this->rex_php_types}) +(\&?)([a-z]+[[:alnum:]_\|]*)$/", $p[$i], $matches, PREG_SET_ORDER)) {
 				$params[$i+1]['type']        = $matches[0][1];
 				$params[$i+1]['name']        = $matches[0][3];
 				if(strlen($matches[0][2]))
@@ -343,9 +349,6 @@ $hunter = new BugHunter();
 echo "\n\n<hr>Process took : " . round(getmicrotime() - $t_start, 3) . " seconds\n<hr>\n\n";
 echo "\n\n<b>Results :</b>\n\n";
 
-#print_r((array) $hunter);
-
-#phpinfo();
 $tot = 0;
 foreach($hunter->result as $ext => $function) {
 	flush();
@@ -374,5 +377,6 @@ foreach($hunter->result as $ext => $function) {
 
 echo "\n\nTotal proto inconsistencies: <b>$tot</b>";
 
+#print_r((array) $hunter);
 
 ?>
