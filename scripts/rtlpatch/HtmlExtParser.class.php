@@ -42,84 +42,43 @@ class CHtmlExtParse extends CHtmlParse{
 				//TODO: find exceptions (on the stream part there are some)	
 			}
 		}
-		$b = $HEType["b"];
-		if(isset($this->EBT[$b])){
-			$ar = array("class","function");
-			for($a=0;$a<count($this->EBT[$b]);$a++){
-				$elem = &$this->ATE[$this->EBT[$b][$a]];
-				if($this->comp_properties($elem,$ar)){
-					$elem["dir"] = "ltr";
-					if(isset($this->ATE[$this->EBT[$b][$a]+1]["data"])){
-						$this->ATE[$this->EBT[$b][$a]+1]["data"] = "&nbsp;".$this->ATE[$this->EBT[$b][$a]+1]["data"];
-					}
-				}
-			}
-		}
-		
-		//fix consts:
-		$tmp=0;
-		do{
-			if($tmp = $this->get_element_id_by_rule(array("tag"=>"tt","properties"=>array("class","constant"),"offset"=>($tmp+1)))){
-				$this->ATE[$tmp-1]["dir"] = "ltr";
-			}
-		} while($tmp);
+        $tmp=0;
+        while ($tmp = $this->get_element_id_by_rule(array("tag"=>"b","properties"=>array("class","function"),"offset"=>($tmp+1)))){
+            $this->ATE[$tmp]["dir"] = "ltr";
+            $this->add_nbsp($tmp,$tmp+3);
+        }
 
         //fix systemitem:
-        do{
-            if($tmp = $this->get_element_id_by_rule(array("tag"=>"span","properties"=>array("class","systemitem"),"offset"=>($tmp+1)))){
-                $this->ATE[$tmp-1]["dir"] = "ltr";
-            }
+        $tmp=0;
+        while($tmp = $this->get_element_id_by_rule(array("tag"=>"span","properties"=>array("class","systemitem"),"offset"=>($tmp+1)))){
+              $this->ATE[$tmp-1]["dir"] = "ltr";
         } while($tmp);
 
-		//ltr literals:
+		//fix filenames,varnames,userinput,configure options:
 		$tmp=0;
-		do{
-			if($tmp = $this->get_element_id_by_rule(array("tag"=>"tt","properties"=>array("class","literal"),"offset"=>($tmp+1)))){
-				$this->ATE[$tmp]["dir"] = "ltr";
-				if(isset($this->ATE[$tmp+1]["data"])){
-					$this->ATE[$tmp+1]["data"] = "&nbsp;".$this->ATE[$tmp+1]["data"];
-				}
-			}
-		} while($tmp);
-		
-		//fix configure options:
-		$tmp=0;
-		do{
-			if($tmp = $this->get_element_id_by_rule(array("tag"=>"tt","properties"=>array("class","option"),"offset"=>($tmp+1)))){
-				$this->ATE[$tmp]["dir"] = "ltr";
-			}
-		} while($tmp);
-		
-		//fix filenames:
-		$tmp=0;
-		do{
-			if($tmp = $this->get_element_id_by_rule(array("tag"=>"tt","properties"=>array("class","filename"),"offset"=>($tmp+1)))){
-				$this->ATE[$tmp]["dir"] = "ltr";
-				//if filename not before punctuation marks, add &nbsp; to eliminate the align issue came with dir=rtl:
-				if(isset($this->ATE[$tmp+3]["data"]{0})){
-					$ord = ord($this->ATE[$tmp+3]["data"]{0});
-					if($ord>65||$ord==32||$ord==40||$ord==41){//without (all the punctuation marks whitout space, and brackets).
-						$this->ATE[$tmp]["chaintoclose"] = "&nbsp;";
-					}
-				}
-			}
-		} while($tmp);
-		
-		//fix varnames:
-		$tmp=0;
-		do{
-			if($tmp = $this->get_element_id_by_rule(array("tag"=>"tt","properties"=>array("class","varname"),"offset"=>($tmp+1)))){
-				$this->ATE[$tmp]["dir"] = "ltr";
-				//if varname not before punctuation marks, add &nbsp; to eliminate the align issue came with dir=rtl:
-				if(isset($this->ATE[$tmp+3]["data"]{0})){
-					$ord = ord($this->ATE[$tmp+3]["data"]{0});
-					if($ord>65||$ord==32||$ord==40||$ord==41){//without (all the punctuation marks whitout space, and brackets).
-						$this->ATE[$tmp]["chaintoclose"] = "&nbsp;";
-					}
-				}
-			}
-		} while($tmp);
-		
+		while($tmp = $this->get_element_id_by_rule(array("method"=>"prop_or_comp",
+                                                           "tag"=>"tt",
+                                                           "properties"=>array("class","filename",
+                                                                                "class","varname",
+                                                                                "class","userinput",
+                                                                                "class","literal",
+                                                                                "class","option"),
+                                                           "offset"=>($tmp+1)))){
+			$this->ATE[$tmp]["dir"] = "ltr";
+            $this->add_nbsp($tmp,$tmp+3);
+		}
+
+        //fix consts, parameter:
+        $tmp=0;
+        while($tmp = $this->get_element_id_by_rule(array("method"=>"prop_or_comp",
+                                                          "tag"=>"tt",
+                                                          "properties"=>array("class","constant",
+                                                                               "class","parameter"),
+                                                          "offset"=>($tmp+1)))){
+            $this->ATE[$tmp]["dir"] = "ltr";
+            $this->add_nbsp($tmp,$tmp+5);
+        }
+
 		//fix warnning boxes:
 		$tmp=0;
 		while($tmp = $this->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","warning"),"offset"=>($tmp+1)))){
@@ -128,7 +87,13 @@ class CHtmlExtParse extends CHtmlParse{
 				$this->ATE[$td]["align"] = "right";
 			}
 		}
-		
+
+        //fix th:
+        $tmp=0;
+        while($tmp = $this->get_element_id_by_rule(array("tag"=>"th","offset"=>($tmp+1)))){
+              $this->ATE[$tmp]["align"] = "right";
+        }
+
 		//fix caution boxes:
 		$tmp=0;
 		while($tmp = $this->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","caution"),"offset"=>($tmp+1)))){
@@ -137,7 +102,7 @@ class CHtmlExtParse extends CHtmlParse{
 				$this->ATE[$td]["align"] = "right";
 			}
 		}
-		
+
 		//fix for TOC
 		if($tmp = $this->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","TOC"),"offset"=>(0)))){
 			$tocend = $this->ECE[$tmp];
@@ -145,7 +110,7 @@ class CHtmlExtParse extends CHtmlParse{
 				$this->ATE[$tmp]["dir"] = "rtl";
 			}
 		}
-		
+
 		//rtl all the divs
 		$div = $HEType["div"];
 		if(isset($this->EBT[$div])){
@@ -153,7 +118,7 @@ class CHtmlExtParse extends CHtmlParse{
 				$this->ATE[$this->EBT[$div][$a]]["dir"] = "rtl";
 			}
 		}
-		
+
 		// fix the embeded php code:
 		$pre = $HEType["pre"];
 		if(isset($this->EBT[$pre])){
@@ -161,7 +126,7 @@ class CHtmlExtParse extends CHtmlParse{
 				$this->ATE[$this->EBT[$pre][$a]]["dir"] = "ltr";
 			}
 		}
-		
+
 		//fix the meta:
 		$meta = $HEType["meta"];
 		if(isset($this->EBT[$meta])){
@@ -172,16 +137,26 @@ class CHtmlExtParse extends CHtmlParse{
 			}
 		}
 	}
-	
+
+    //parent is the element that open before current location and close after:
+    function get_parent($id){
+         for($a=$id-1;$a>0;$a--){
+             if($this->ECE[$a]>$id) {
+                return $a;
+             }
+         }
+         return false;
+    }
+
 	function get(){
 		global $EHType,$HEType;
-		
+
 		$cnt = count($this->ATE);
-		
+
 		for($a=0;$a<$cnt;$a++){
-			$ret[$a] = "";	
+			$ret[$a] = "";
 		}
-		
+
 		for($a=1;$a<$cnt;$a++){
 			$tg = array_shift($this->ATE[$a]);
 			if($tg<0) continue;
@@ -195,69 +170,92 @@ class CHtmlExtParse extends CHtmlParse{
 					else $ret[$a].=" $key=\"$value\"";
 				}
 				$ret[$a].=">$chaintoend";
-				
+
 				if($this->ECE[$a]!=$a) $ret[$this->ECE[$a]] .= " </$tag>$chaintoclose";
 			} else if($tg == __HTML_PROCESS__){
 					$ret[$a].="<".$this->ATE[$a]["data"]. "\n?>";
 			} else if($tg < __HTML_UNKNOWN__){
-					$ret[$a].=" ".$this->ATE[$a]["data"]." ";	
+					$ret[$a].=" ".$this->ATE[$a]["data"]." ";
 			}
 //mysyslog($ret[$a]);
 		}
 		return implode($ret,"\r\n");
-		
+
 	}
-	
-	
+
+
 	// return element ATE id by:
 	// tag, property, offset on ATE and index (mean, offset on EBT[tag])
 	function get_element_id_by_rule($param){
 		global $EHType,$HEType;
-		
+
 		extract($param);
-		
+
 		$tag = $HEType[$tag];
 		if(!isset($properties)) $properties = false;
 		if(!isset($offset)) $offset = 0;
 		if(!isset($index)) $index = 0;
-		
+        if(!isset($method)) $method = "prop_and_comp";
+
 		if(!isset($this->EBT[$tag])) return false;
-		
+
 		$cnt = count($this->EBT[$tag]);
-		
+
 		for($a=0;$a<$cnt;$a++){
 			$elem = $this->EBT[$tag][$a];
 			if($elem < $offset) continue;
-			if($properties && !$this->comp_properties($this->ATE[$elem],$properties)) continue;
+			if($properties && !$this->$method($this->ATE[$elem],$properties)) continue;
 
 			if($index--) continue;
 			return $elem;
 		}
-		
+
 		return false;
 	}
-	
-	function comp_properties(&$elem,&$properties){
-		for($a=0;$a<count($properties);$a+=2){
-			if(!isset($elem[$properties[$a]])
-				|| ($elem[$properties[$a]]!=$properties[$a+1])){
-				return false;
-			}
-		}
-		return true;
-	}
-	
+
+    //compare properties with and rule
+    function prop_and_comp(&$elem,&$properties){
+        for($a=0;$a<count($properties);$a+=2){
+            if(!isset($elem[$properties[$a]])
+                || ($elem[$properties[$a]]!=$properties[$a+1])){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    //compare properties with or rule
+    function prop_or_comp(&$elem,&$properties){
+        for($a=0;$a<count($properties);$a+=2){
+            if(isset($elem[$properties[$a]]) && ($elem[$properties[$a]]==$properties[$a+1])){
+                return true;
+            }
+        }
+        return false;
+    }
+
 	function change_tag_type($id,$newtag){
 		$this->ATE[$id]["w4htype"] = $newtag;
 		$this->ATE[$this->ECE[$id]]["w4htype"] = $newtag;
-		
+
 		if($newtag < __HTML_UNKNOWN__){
 			if(!isset($this->ATE[$id]["data"])) $this->ATE[$id]["data"] = "";
 		}
-		
+
 		//TODO: update the EBT
 	}
-	
+
+    //this function used to add &nbsp; before texts to avoid joining of ltr const funcname etc, to the follow text:
+    function add_nbsp($id, $ordid){
+          if(isset($this->ATE[$ordid]["data"]{0})){
+                $ord = ord($this->ATE[$ordid]["data"]{0});
+                //if text not before punctuation marks (without space, and brackets), add &nbsp; to eliminate the align issue came with dir=rtl:
+                if($ord>65||$ord==32||$ord==40){
+                    $this->ATE[$id]["chaintoclose"] = "&nbsp;";
+               }
+          }
+    }
+
 	//\/\/\/\/\/\/\/\/\/\
 	function unsetme(){
 		unset($this->data);
