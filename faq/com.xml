@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.9 $ -->
+<!-- $Revision: 1.10 $ -->
  <chapter id="faq.com">
   <title>PHP and COM</title>
   <titleabbrev>PHP and COM</titleabbrev>
@@ -201,7 +201,44 @@
     </question>
     <answer>
      <para>
-      Not yet.
+      Starting in PHP 4.3.0, you can define an event sink and bind it as shown
+      in the example below.  You can use <function>com_print_typeinfo</function>
+      to have PHP generate a skeleton for the event sink class.
+
+      <example>
+       <title>COM event sink example</title>
+       <programlisting role="php">
+<![CDATA[
+<?php
+class IEEventSinker {
+  var $terminated = false;
+
+  function ProgressChange($progress, $progressmax) {
+    echo "Download progress: $progress / $progressmax\n";
+  }
+
+  function DocumentComplete(&$dom, $url) {
+    echo "Document $url complete\n";
+  }
+
+  function OnQuit() {
+    echo "Quit!\n";
+    $this->terminated = true;
+  }
+}
+$ie = new COM("InternetExplorer.Application");
+$sink =& new IEEventSinker();
+com_event_sink($ie, $sink, "DWebBrowserEvents2");
+$ie->Visible = true;
+$ie->Navigate("http://www.php.net");
+while(!$sink->terminated) {
+  com_message_pump(4000);
+}
+$ie = null;
+?>
+]]>
+       </programlisting>
+      </example>
      </para>
     </answer>
    </qandaentry>
