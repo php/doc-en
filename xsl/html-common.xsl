@@ -3,13 +3,16 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.10 2002-02-10 12:14:16 goba Exp $
+  $Id: html-common.xsl,v 1.11 2002-02-10 14:43:22 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0">
 
 <xsl:include href="common.xsl"/>
+
+<!-- We do not want style="" atts to appear in HTML output -->
+<xsl:param name="admon.style" select="''"/>
 
 <!-- Enclose functions in links, add parenthesis -->
 <xsl:template match="function">
