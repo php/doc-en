@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.8 $ -->
+<!-- $Revision: 1.9 $ -->
   <refentry id="function.mysqli-change-user">
    <refnamediv>
     <refname>mysqli_change_user</refname>
@@ -67,19 +67,26 @@
    </refsect1>
    <refsect1>
     <title>Example</title>
-    <para>
      <example>
       <title>Object oriented style</title>
       <programlisting role="php">
 <![CDATA[
 <?php
 
+/* connect database test */
 $mysqli = new mysqli("localhost", "my_user", "my_password", "test");
 
-$mysqli->query("CREATE TEMPORARY TABLE mytemp (a int)");
+/* check connection */
+if (mysqli_connect_errno()) {
+    printf("Connect failed: %s\n", mysqli_connect_error());
+    exit();
+}
+
+/* Set Variable a */
+$mysqli->query("SET @a:=1");
                                          
-/* reset all */
-$mysqli->change_user("my_user", "my_password", NULL);
+/* reset all and select a new database */
+$mysqli->change_user("my_user", "my_password", "world");
 
 if ($result = $mysqli->query("SELECT DATABASE()")) {
     $row = $result->fetch_row();
@@ -87,8 +94,12 @@ if ($result = $mysqli->query("SELECT DATABASE()")) {
     $result->close();
 }
 
-if (!($result = $mysqli->query("SHOW TABLES LIKE mytemp"))) {
-    printf ("temporary table mytemp doesn't exist\n");
+if ($result = $mysqli->query("SELECT @a")) {
+    $row = $result->fetch_row();
+	if ($row[0] === NULL) {
+	    printf("Value of variable a is NULL\n");
+	}
+    $result->close();
 }
 
 /* close connection */
@@ -102,12 +113,20 @@ $mysqli->close();
       <programlisting role="php">
 <![CDATA[
 <?php
+/* connect database test */
 $link = mysqli_connect("localhost", "my_user", "my_password", "test");
 
-mysqli_query($link, "CREATE TEMPORARY TABLE mytemp (a int)");
+/* check connection */
+if (!$link) {
+    printf("Connect failed: %s\n", mysqli_connect_error());
+    exit();
+}
+
+/* Set Variable a */
+mysqli_query($link, "SET @a:=1");
                                          
-/* reset all */
-mysqli_change_user($link, "my_user", "my_password", NULL);
+/* reset all and select a new database */
+mysqli_change_user($link, "my_user", "my_password", "world");
 
 if ($result = mysqli_query($link, "SELECT DATABASE()")) {
     $row = mysqli_fetch_row($result);
@@ -115,17 +134,29 @@ if ($result = mysqli_query($link, "SELECT DATABASE()")) {
     mysqli_free_result($result);
 }
 
-if (!($result = mysqli_query($link, "SHOW TABLES LIKE mytemp"))) {
-    printf ("temporary table mytemp doesn't exist\n");
+if ($result = mysqli_query($link, "SELECT @a")) {
+    $row = mysqli_fetch_row($result);
+	if ($row[0] === NULL) {
+	    printf("Value of variable a is NULL\n");
+	}
+    mysqli_free_result($result);
 }
 
 /* close connection */
 mysqli_close($link);
 ?>
 ]]>
-      </programlisting>
-     </example>
+     </programlisting>
+    </example>
+    <para>
+     The above examples would produce the following output:
     </para>
+    <screen>
+<![CDATA[
+Default database: world
+Value of variable a is NULL
+]]>
+    </screen>
    </refsect1>
   </refentry>
 
