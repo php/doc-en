@@ -2,6 +2,183 @@
   <title>Network Functions</title>
   <titleabbrev>Network</titleabbrev>
 
+  <refentry id="function.accept-connect">
+   <refnamediv>
+    <refname>accept_connect</refname>
+    <refpurpose>Accepts a connection on a socket.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>accept_connect</function></funcdef>
+      <paramdef>int <parameter>socket</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+
+    <para>
+     After the socket <parameter>socket</parameter> has been created
+     using <function>socket</function>, bound to a name with
+     <function>bind</function>, and told to listen for connections
+     with <function>listen</function>, this function will accept
+     incoming connections on that socket. Once a successful connection
+     is made, a new socket descriptor is returned, which may be used
+     for communication. If there are multiple connections queued on
+     the socket, the first will be used. If there are no pending
+     connections, <function>accept_connect</function> will block until
+     a connection becomes present. If <parameter>socket</parameter>
+     has been made non-blocking using
+     <function>socket_set_blocking</function> or
+     <function>set_nonblock</function>, an error code will be
+     returned.
+    </para>
+
+    <para>
+     The socket descriptor returned by
+     <function>accept_connect</function> may not be used to accept new
+     connections. The original listening socket
+     <parameter>socket</parameter>, however, remains open and may be
+     reused.
+    </para>
+
+    <para>
+     Returns a new socket descriptor on success, or a negative error
+     code on failure. This code may be passed to
+     <function>strerror</function> to get a textual explanation of the
+     error.
+    </para>
+
+    <para>
+     See the documentation for <function>bind</function> for an
+     example of using <function>accept_connect</function>.
+    </para>
+    
+    <para>
+     See also 
+     <function>bind</function>,
+     <function>connect</function>,
+     <function>listen</function>,
+     <function>socket</function>, and
+     <function>strerror</function>.
+    </para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.bind">
+   <refnamediv>
+    <refname>bind</refname>
+    <refpurpose>Binds a name to a socket.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>bind</function></funcdef>
+      <paramdef>int <parameter>socket</parameter></paramdef>
+      <paramdef>string <parameter>address</parameter></paramdef>
+      <paramdef>int 
+       <parameter><optional>protocol</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+
+    <para>
+     <function>bind</function> binds the name given in
+     <parameter>address</parameter> to the socket described by
+     <parameter>socket</parameter>, which must be a valid socket
+     descriptor created with <function>socket</function>.
+    </para>
+
+    <para>
+     The <parameter>address</parameter> parameter is either an IP
+     address in dotted-quad notation
+     (e.g. <literal>127.0.0.1</literal>), if the socket is of the
+     <constant>AF_INET</constant> family; or the pathname of a
+     Unix-domain socket, if the socket family is
+     <constant>AF_UNIX</constant>.
+    </para>
+
+    <para>
+     The <parameter>port</parameter> parameter is only used when
+     connecting to an <constant>AF_INET</constant> socket, and
+     designates the port on the remote host to which a connection
+     should be made.
+    </para>
+
+    <para>
+     Returns zero on success, or a negative error code on
+     failure. This code may be passed to <function>strerror</function>
+     to get a textual explanation of the error.
+    </para>
+
+    <para>
+     <example>
+      <title><function>bind</function> Example</title>
+      <programlisting>
+&lt;?php
+error_reporting(E_ALL);
+
+/* Allow the script to hang around waiting for connections. */
+set_time_limit(0);
+
+if (($sock = socket(AF_INET, SOCK_STREAM, 0)) &lt; 0) {
+    echo "socket() failed: reason: " . strerror($sock) . "\n";
+}
+
+if (($ret = bind($sock, '192.168.1.53', 10001)) &lt; 0) {
+    echo "bind() failed: reason: " . strerror($ret) . "\n";
+}
+
+if (($ret = listen($sock, 5)) &lt; 0) {
+    echo "listen() failed: reason: " . strerror($ret) . "\n";
+}
+
+do {
+    if (($msgsock = accept_connect($sock)) &lt; 0) {
+        echo "accept_connect() failed: reason: " . strerror($msgsock) . "\n";
+        break;
+    }
+    do {
+        $buf = '';
+        $ret = read($msgsock, $buf, 2048);
+        if ($ret &lt; 0) {
+            echo "read() failed: reason: " . strerror($ret) . "\n";
+            break 2;
+        }
+        if ($ret == 0) {
+            break 2;
+        }
+        $buf = trim($buf);
+        if ($buf == 'quit') {
+            close($msgsock);
+            break 2;
+        }
+        $talkback = "PHP: You said '$buf'.\n";
+        write($msgsock, $talkback, strlen($talkback));
+        echo "$buf\n";
+    } while (true);
+    close($msgsock);
+} while (true);
+
+close($sock);
+?>
+      </programlisting>
+     </example>
+    </para>
+
+    <para>
+     See also 
+     <function>accept_connect</function>,
+     <function>connect</function>,
+     <function>listen</function>,
+     <function>socket</function>, and
+     <function>strerror</function>.
+    </para>
+
+   </refsect1>
+  </refentry>
+
   <refentry id="function.checkdnsrr">
    <refnamediv>
     <refname>checkdnsrr</refname>
@@ -63,6 +240,114 @@
      write to the system logger.  The use of
      <function>closelog</function> is optional.
     </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.connect">
+   <refnamediv>
+    <refname>connect</refname>
+    <refpurpose>Initiates a connection on a socket.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>connect</function></funcdef>
+      <paramdef>int <parameter>socket</parameter></paramdef>
+      <paramdef>string <parameter>address</parameter></paramdef>
+      <paramdef>int 
+       <parameter><optional>protocol</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+
+    <para>
+     Initiates a connection using the socket descriptor
+     <parameter>socket</parameter>, which must be a valid socket
+     descriptor created with <function>socket</function>.
+    </para>
+
+    <para>
+     The <parameter>address</parameter> parameter is either an IP
+     address in dotted-quad notation
+     (e.g. <literal>127.0.0.1</literal>), if the socket is of the
+     <constant>AF_INET</constant> family; or the pathname of a
+     Unix-domain socket, if the socket family is
+     <constant>AF_UNIX</constant>.
+    </para>
+
+    <para>
+     The <parameter>port</parameter> parameter is only used when
+     connecting to an <constant>AF_INET</constant> socket, and
+     designates the port on the remote host to which a connection
+     should be made.
+    </para>
+
+    <para>
+     Returns zero on success, or a negative error code on
+     failure. This code may be passed to <function>strerror</function>
+     to get a textual explanation of the error.
+    </para>
+
+    <para>
+     <example>
+      <title><function>connect</function> Example</title>
+      <programlisting>
+&lt;?php
+error_reporting(E_ALL);
+
+echo "&lt;h2>TCP/IP Connection&lt;/h2>\n";
+
+/* Get the port for the WWW service. */
+$service_port = getservbyname('www', 'tcp');
+
+/* Get the IP address for the target host. */
+$address = gethostbyname('www.php.net');
+
+/* Create a TCP/IP socket. */
+$socket = socket(AF_INET, SOCK_STREAM, 0);
+if ($socket &lt; 0) {
+    echo "socket() failed: reason: " . strerror($socket) . "\n";
+} else {
+    "socket() successful: " . strerror($socket) . "\n";
+}
+
+echo "Attempting to connect to '$address' on port '$service_port'...";
+$result = connect($socket, $address, $service_port);
+if ($result &lt; 0) {
+    echo "connect() failed.\nReason: ($result) " . strerror($result) . "\n";
+} else {
+    echo "OK.\n";
+}
+
+$in = "HEAD / HTTP/1.0\r\n\r\n";
+$out = '';
+
+echo "Sending HTTP HEAD request...";
+write($socket, $in, strlen($in));
+echo "OK.\n";
+
+echo "Reading response:\n\n";
+while (read($socket, $out, 2048)) {
+    echo $out;
+}
+
+echo "Closing socket...";
+close($socket);
+echo "OK.\n\n";
+?>
+      </programlisting>
+     </example>
+    </para>
+
+    <para>
+     See also 
+     <function>bind</function>,
+     <function>listen</function>,
+     <function>socket</function>, and
+     <function>strerror</function>.
+    </para>
+
    </refsect1>
   </refentry>
 
@@ -141,11 +426,11 @@
 	 <parameter>hostname</parameter> on port
 	 <parameter>port</parameter>.  <parameter>hostname</parameter> may
 	 in this case be either a fully qualified domain name or an IP
-	 address. For UDP connections, you need to explicitely specify the
-	 the protocol: <parameter>udp://hostname</parameter>.  For the
-	 Unix domain, <parameter>hostname</parameter> will be used as the
-	 path to the socket, <parameter>port</parameter> must be set to 0
-	 in this case.  The optional <parameter>timeout</parameter> can be
+	 address. For UDP connections, you need to explicitly specify the
+	 protocol: <parameter>udp://hostname</parameter>.  For the Unix
+	 domain, <parameter>hostname</parameter> will be used as the path
+	 to the socket, <parameter>port</parameter> must be set to 0 in
+	 this case.  The optional <parameter>timeout</parameter> can be
 	 used to set a timeout in seconds for the connect system call.
     </para>
     <para>
@@ -449,6 +734,124 @@ if (!$fp) {
    </refsect1>
   </refentry>
 
+  <refentry id="function.ip2long">
+   <refnamediv>
+    <refname>ip2long</refname>
+    <refpurpose>
+	  Converts a string containing an (IPv4) Internet Protocol dotted address
+	  into a proper address.
+	</refpurpose> 
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>ip2long</function></funcdef>
+      <paramdef>string <parameter>ip_address</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+	 The function <function>ip2long</function> generates an IPv4 Internet
+	 network address from its Internet standard format (dotted string)
+	 representation.
+	 <example>
+	 <title><function>Ip2long</function> Example</title>
+	 <programlisting role="php">
+&lt;?
+$ip = gethostbyname("www.php.net");
+$out = "The following URLs are equivalent:&lt;br&gt;\n";
+$out .= "http://www.php.net/, http://".$ip."/, and http://".ip2long($ip)."/&lt;br&gt;\n";
+echo $out;
+?&gt;
+	 </programlisting>
+	 </example>
+    </para>
+    <para>
+	 See also: <function>long2ip</function>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.listen">
+   <refnamediv>
+    <refname>listen</refname>
+    <refpurpose>Listens for a connection on a socket.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>listen</function></funcdef>
+      <paramdef>int <parameter>socket</parameter></paramdef>
+      <paramdef>int <parameter>backlog</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+
+    <para>
+     After the socket <parameter>socket</parameter> has been created
+     using <function>socket</function> and bound to a name with
+     <function>bind</function>, it may be told to listen for incoming
+     connections on <parameter>socket</parameter>. A maximum of
+     <parameter>backlog</parameter> incoming connections will be
+     queued for processing.
+    </para>
+
+    <para>
+     <function>listen</function> is applicable only to sockets with
+     type <literal>SOCK_STREAM</literal> or
+     <literal>SOCK_SEQPACKET</literal>.
+    </para>
+
+    <para>
+     Returns zero on success, or a negative error code on
+     failure. This code may be passed to <function>strerror</function>
+     to get a textual explanation of the error.
+    </para>
+
+    <para>
+     See the documentation for <function>bind</function> for an
+     example of using <function>listen</function>.
+    </para>
+    
+    <para>
+     See also 
+     <function>accept_connect</function>,
+     <function>bind</function>,
+     <function>connect</function>,
+     <function>socket</function>, and
+     <function>strerror</function>.
+    </para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.long2ip">
+   <refnamediv>
+    <refname>long2ip</refname>
+    <refpurpose>
+	  Converts an (IPv4) Internet network address into a string in Internet
+	  standard dotted format 
+	</refpurpose> 
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>long2ip</function></funcdef>
+      <paramdef>int <parameter>proper_address</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+	 The function <function>long2ip</function> generates an Internet address
+	 in dotted format (i.e.: aaa.bbb.ccc.ddd) from the proper address
+	 representation.
+    </para>
+    <para>
+	 See also: <function>ip2long</function>
+    </para>
+   </refsect1>
+  </refentry>
+
   <refentry id="function.openlog">
    <refnamediv>
     <refname>openlog</refname>
@@ -515,6 +918,71 @@ if (!$fp) {
    </refsect1>
   </refentry>
 
+  <refentry id="function.socket">
+   <refnamediv>
+    <refname>socket</refname>
+    <refpurpose>Create a socket (endpoint for communication).</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>socket</function></funcdef>
+      <paramdef>int <parameter>domain</parameter></paramdef>
+      <paramdef>int <parameter>type</parameter></paramdef>
+      <paramdef>int <parameter>protocol</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+
+    <para>
+     Creates a communication endpoint (a socket), and returns a
+     descriptor to the socket.
+    </para>
+
+    <para>
+     The <parameter>domain</parameter> parameter sets the
+     domain. Currently, <constant>AF_INET</constant> and
+     <constant>AF_UNIX</constant> are understood.
+    </para>
+
+    <para>
+     The <parameter>type</parameter> parameter selects the socket
+     type. This is one of <constant>SOCK_STREAM</constant>,
+     <constant>SOCK_DGRAM</constant>,
+     <constant>SOCK_SEQPACKET</constant>,
+     <constant>SOCK_RAW</constant>, <constant>SOCK_RDM</constant>, or
+     <constant>SOCK_PACKET</constant>.
+    </para>
+
+    <para>
+     <parameter>protocol</parameter> sets the protocol.
+    </para>
+
+    <para>
+     Returns a valid socket descriptor on success, or a negative error
+     code on failure. This code may be passed to
+     <function>strerror</function> to get a textual explanation of the
+     error.
+    </para>
+
+    <para>
+     For more information on the usage of <function>socket</function>,
+     as well as on the meanings of the various parameters, see the
+     Unix man page <filename>socket (2)</filename>.
+    </para>
+
+    <para>
+     See also 
+     <function>accept_connect</function>,
+     <function>bind</function>,
+     <function>connect</function>,
+     <function>listen</function>, and
+     <function>strerror</function>.
+    </para>
+
+   </refsect1>
+  </refentry>
+
   <refentry id="function.set-socket-blocking">
    <refnamediv>
     <refname>socket_set_blocking</refname>
@@ -544,7 +1012,7 @@ if (!$fp) {
     </para>
    </refsect1>
   </refentry>
-  
+
   <refentry id="function.socket-set-timeout">
    <refnamediv>
     <refname>socket_set_timeout</refname>
@@ -589,8 +1057,71 @@ if(!$fp) {
      <function>set_socket_timeout</function> but this usage is deprecated.
     </para>
     <para>
-     See also: <function>fsockopen</function>and<function>fopen</function>.
+     See also: <function>fsockopen</function> and <function>fopen</function>.
     </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.strerror">
+   <refnamediv>
+    <refname>strerror</refname>
+    <refpurpose>Return a string describing a socket error.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>strerror</function></funcdef>
+      <paramdef>int <parameter>errno</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    
+    <para>
+     <function>strerror</function> takes as its
+     <parameter>errno</parameter> parameter the return value of one of
+     the socket functions, and returns the corresponding explanatory
+     text. This makes it a bit more pleasant to figure out why
+     something didn't work; for instance, instead of having to track
+     down a system include file to find out what '-111' means, you
+     just pass it to <function>strerror</function>, and it tells you
+     what happened.
+    </para>
+
+    <para>
+     <example>
+      <title><function>strerror</function> example</title>
+      <programlisting>
+&lt;?php
+if (($socket = socket(AF_INET, SOCK_STREAM, 0)) &lt; 0) {
+   echo "socket() failed: reason: " . strerror($socket) . "\n";
+} 
+
+if (($ret = bind($socket, '127.0.0.1', 80)) &lt; 0) {
+   echo "bind() failed: reason: " . strerror($ret) . "\n";
+}
+?>
+      </programlisting>
+
+      <para>
+       The expected output from the above example (assuming the script
+       is not run with root priviledges):
+       <screen>
+        bind() failed: reason: Permission denied
+       </screen>
+      </para>
+
+     </example>
+    </para>
+
+    <para>
+     See also 
+     <function>accept_connect</function>,
+     <function>bind</function>,
+     <function>connect</function>,
+     <function>listen</function>, and
+     <function>socket</function>.
+    </para>
+
    </refsect1>
   </refentry>
 
@@ -625,71 +1156,6 @@ if(!$fp) {
     <para>
      On Windows NT, the syslog service is emulated using the Event
      Log.
-    </para>
-   </refsect1>
-  </refentry>
-
-  <refentry id="function.ip2long">
-   <refnamediv>
-    <refname>ip2long</refname>
-    <refpurpose>
-	  Converts a string containing an (IPv4) Internet Protocol dotted address
-	  into a proper address.
-	</refpurpose> 
-   </refnamediv>
-   <refsect1>
-    <title>Description</title>
-    <funcsynopsis>
-     <funcprototype>
-      <funcdef>int <function>ip2long</function></funcdef>
-      <paramdef>string <parameter>ip_address</parameter></paramdef>
-     </funcprototype>
-    </funcsynopsis>
-    <para>
-	 The function <function>ip2long</function> generates an IPv4 Internet
-	 network address from its Internet standard format (dotted string)
-	 representation.
-	 <example>
-	 <title><function>Ip2long</function> Example</title>
-	 <programlisting role="php">
-&lt;?
-$ip = gethostbyname("www.php.net");
-$out = "The following URLs are equivalent:&lt;br&gt;\n";
-$out .= "http://www.php.net/, http://".$ip."/, and http://".ip2long($ip)."/&lt;br&gt;\n";
-echo $out;
-?&gt;
-	 </programlisting>
-	 </example>
-    </para>
-    <para>
-	 See also: <function>long2ip</function>
-    </para>
-   </refsect1>
-  </refentry>
-
-  <refentry id="function.long2ip">
-   <refnamediv>
-    <refname>long2ip</refname>
-    <refpurpose>
-	  Converts an (IPv4) Internet network address into a string in Internet
-	  standard dotted format 
-	</refpurpose> 
-   </refnamediv>
-   <refsect1>
-    <title>Description</title>
-    <funcsynopsis>
-     <funcprototype>
-      <funcdef>string <function>long2ip</function></funcdef>
-      <paramdef>int <parameter>proper_address</parameter></paramdef>
-     </funcprototype>
-    </funcsynopsis>
-    <para>
-	 The function <function>long2ip</function> generates an Internet address
-	 in dotted format (i.e.: aaa.bbb.ccc.ddd) from the proper address
-	 representation.
-    </para>
-    <para>
-	 See also: <function>ip2long</function>
     </para>
    </refsect1>
   </refentry>
