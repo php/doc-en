@@ -32,15 +32,20 @@ function prefHandler()
     // Load in the skin JS code
     document.write('<script src="' + skin_js_file + '"><'+ '/script>');
     
-    // Write out context menu for the first time into it's div
-    document.write('<div id="contextMenu">');
-    contextMenuRewrite(true);
-    document.write('</div>');
+    // OnContextMenu is only supported in IE5+ so do
+    // not try to suport the context menu otherwise
+    if (ie_version_major >= 5) {
     
-    // Assign our own event handlers to document events [req. IE5]
-    document.oncontextmenu = contextMenu;
-    document.onclick       = contextMenuCloseTimeout;
-    window.onblur          = contextMenuCloseTimeout;
+        // Write out context menu for the first time into it's div
+        document.write('<div id="contextMenu">');
+        contextMenuRewrite(true);
+        document.write('</div>');
+        
+        // Assign our own event handlers to document events [5+]
+        document.oncontextmenu = contextMenu;
+        document.onclick       = contextMenuCloseTimeout;
+        window.onblur          = contextMenuCloseTimeout;
+    }
 }
 
 // =============================================================================
@@ -117,7 +122,7 @@ function _displayNotes()
     // Get the element from the "all" collection
     element = document.all['pageNotes'];
     
-    // If we have that element, copy notes here
+    // If we have that element, copy notes here [4+]
     if (element) {
         element.innerHTML = parent.nbuff.document.body.innerHTML;
     } else {
@@ -219,7 +224,7 @@ function contextMenuRewrite(first)
     
                 // Copy selection
                 case "copySelection":
-                    // For the first time there is actually no document...
+                    // For the first time there is actually no document... [4+]
                     if (document.selection && !first) {
                         context_selrange = document.selection.createRange();
                         if (context_selrange.text.length > 0) {
@@ -231,7 +236,7 @@ function contextMenuRewrite(first)
                 // Google or AlltheWeb search for selection (need to be in online mode)
                 case "searchSelGoogle":
                 case "searchSelATW":
-                    // For the first time there is actually no document...
+                    // For the first time there is actually no document... [4+]
                     if (document.selection && !first) {
                         context_selrange = document.selection.createRange();
                         if (context_selrange.text.length > 0 && prefs_online) {
@@ -294,7 +299,7 @@ function contextParse(i)
             // Copy the selection from the current document
             case "copySelection":
                 if (context_selrange != null) {                
-                    context_selrange.execCommand("Copy");
+                    context_selrange.execCommand("Copy"); // [4+]
                 }
                 break;
             
@@ -317,11 +322,11 @@ function contextParse(i)
             // Refresh page dispplay
             case "refresh": window.location.reload(true); break;
             
-            // Select all text in the document
+            // Select all text in the document [4+]
             case "selectAll": document.body.createTextRange().select(); break;
 
-            // View source of current page
-            case "viewSource": window.location = "view-source:" + window.location.href; break;
+            // View source of current page (not working!!)
+            // case "viewSource": window.location = "view-source:" + window.location.href; break;
 
             // This should never be accessed, but here to alert if there is an error
             default:
@@ -349,7 +354,7 @@ function contextParse(i)
 // item is clicked involving an operation on a selection]
 function contextGetSelection()
 {
-    // Test if anything is selected
+    // Test if anything is selected [4+]
     if (context_selrange != null && context_selrange.text.length > 0) {
         return context_selrange.text;
     } else {
