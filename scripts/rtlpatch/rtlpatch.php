@@ -35,6 +35,7 @@
 	script runing time on my box is about 15% then the build time, not so big deal, that'll force me rewrite the parser in C ;)
 
 */
+
 error_reporting(2047);
 
 // finding the real path of the needed files:

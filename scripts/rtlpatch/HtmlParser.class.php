@@ -401,10 +401,10 @@ class CHtmlParse{
 			$this->maptmp[$type][] = $this->NOE;
 //debuginfo($this->maptmp[$type]);
 		}else if($type <= -10){
-//debuginfo($type);
-//debuginfo($this->maptmp[$type]);
+//mysyslog($type);
+//print_r($this->maptmp[-$type]);
 
-			if($id = array_pop($this->maptmp[-$type])){
+			if($id = @array_pop($this->maptmp[-$type])){
 				$this->ECE[$id] = $this->NOE;
 			}else{ //if more close 
 				$this->ECE[$this->NOE] = $this->NOE;
