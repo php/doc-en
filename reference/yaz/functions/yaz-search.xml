@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
 <!-- splitted from ./en/functions/yaz.xml, last change in rev 1.1 -->
   <refentry id="function.yaz-search">
    <refnamediv>
@@ -10,15 +10,17 @@
     <title>Description</title>
      <methodsynopsis>
       <type>int</type><methodname>yaz_search</methodname>
-      <methodparam><type>int</type><parameter>id</parameter></methodparam>
+      <methodparam><type>resource</type><parameter>id</parameter></methodparam>
       <methodparam><type>string</type><parameter>type</parameter></methodparam>
       <methodparam><type>string</type><parameter>query</parameter></methodparam>
      </methodsynopsis>
     <para>
      <function>yaz_search</function> prepares for a search on the
-     target with given id. The type represents the query type - only
-     "rpn" is supported now in which case the third argument specifies
-     a Type-1 query (RPN). Like <function>yaz_connect</function> this
+     connection given by <parameter>id</parameter>.
+     The <parameter>type</parameter> represents the query type - only
+     <literal>"rpn"</literal> is supported now in which case the
+     third argument specifies a Type-1 query in prefix query notation.
+     Like <function>yaz_connect</function> this
      function is non-blocking and only prepares for a search to be
      executed later when <function>yaz_wait</function> is called.
     </para>
@@ -37,71 +39,94 @@
     <table>
      <title>RPN Operators</title>
      <tgroup cols="2">
+      <colspec colwidth="1*" colname="construct"/>
+      <colspec colwidth="2*" colname="description"/>
       <thead>
         <row>
-          <entry>Syntax</entry>
+          <entry>Construct</entry>
           <entry>Description</entry>
         </row>
       </thead>
       <tbody>
-        <row>
-         <entry><literal>@and query1 query2</literal></entry>
-         <entry>intersection of query1 and query2</entry>
-        </row>
-        <row>
-         <entry><literal>@or query1 query2</literal></entry>
-         <entry>union of query1 and query2</entry>
-        </row>
-        <row>
-         <entry><literal>@not query1 query2</literal></entry>
-         <entry>query1 and not query2</entry>
-        </row>
-        <row>
-         <entry><literal>@set name</literal></entry>
-         <entry>result set reference</entry>
-        </row>
-        <row>
-         <entry><literal>@attrset set query</literal></entry>
-         <entry>specifies attribute-set for query. This construction is only
-                allowed once - in the beginning of the whole query</entry>
-        </row>
-        <row>
-          <entry><literal>@attr set type=value query</literal></entry>
-          <entry>applies attribute to query. The type and value are
+       <row>
+        <entry><literal>@and</literal> query1 query2</entry>
+        <entry>intersection of query1 and query2</entry>
+       </row>
+       <row>
+        <entry><literal>@or</literal> query1 query2</entry>
+        <entry>union of query1 and query2</entry>
+       </row>
+       <row>
+        <entry><literal>@not</literal> query1 query2</entry>
+        <entry>query1 and not query2</entry>
+       </row>
+       <row>
+        <entry><literal>@set</literal> name</entry>
+        <entry>result set reference</entry>
+       </row>
+       <row>
+        <entry><literal>@attrset</literal> set query</entry>
+        <entry>specifies attribute-set for query. This construction is only
+               allowed once - in the beginning of the whole query</entry>
+       </row>
+       <row>
+         <entry><literal>@attr</literal> [set] type=value query</entry>
+         <entry>applies attribute to query. The type and value are
                  integers specifying the attribute-type and attribute-value
                  respectively. The set, if given, specifies the
                  attribute-set.</entry>
-        </row>
+       </row>
       </tbody>
      </tgroup>
     </table>     
     <example>
     <title>Query Examples</title>
     <para>
-     Query
+     You can search for simple terms, like this
       <screen>computer</screen>
-      matches documents where "computer" occur. No attributes are specified.
+      which matches documents where "computer" occur.
+      No attributes are specified.
     </para>
      <para>
      The Query
-      <screen>"donald knuth"</screen>
-     matches documents where "donald knuth" occur.
+      <screen>"knuth donald"</screen>
+     matches documents where "knuth donald" occur (provided that the
+     server supports phrase search).
      </para>
      <para>
-     For the query
-      <screen>@attr 1=4 art</screen>
-     attribute type is 1 (Bib-1 use), attribute value is 4
-     Title), so this should match documents where <literal>art</literal>
-     occur in the title.
+     This query applies two attributes for the same phrase.
+      <screen>@attr 1=1003 @attr 4=1 "knuth donald"</screen>
+     First attribute is type 1 (Bib-1 use), attribute value is 1003
+     (Author).
+     Second attribute has is type 4 (structure), value 1 (phrase),
+     so this should match documents where Donald Knuth is author.
      </para>
      <para>
-     Another more complex one:
-<screen>@attrset gils @and @attr 1=4 art @attr 1=1003 "donald knuth"</screen>
+      This query
+      <screen>@and @or a b @not @or c d e</screen>
+      would in infix notation look like
+        <literal>(a or b) and ((c or d) not e)</literal>.
+     </para>
+     <para>
+     Another, more complex, one:
+<screen>@attrset gils @and @attr 1=4 art @attr 1=2000 company</screen>
      The query as a whole uses the GILS attributeset. The query matches
-     documents where <literal>art</literal> occur in the title and in which
-     <literal>donald knuth</literal> occur in the author.
+     documents where <literal>art</literal> occur in the title (GILS,BIB-1)
+     and in which <literal>company</literal> occur as Distributor (GILS).
      </para>
     </example>
+    <para>
+     You can find information about attributes at the 
+     <ulink url="&url.yaz-loc-bib1;">Z39.50 Maintenance Agency</ulink>
+     site.
+    </para>
+    <note>
+     <para>
+      If you would like to use a more friendly notation,
+      use the CCL parser - functions <function>yaz_ccl_conf</function> and 
+      <function>yaz_ccl_parse</function>.
+     </para>
+    </note>
    </refsect1>
   </refentry>
 
