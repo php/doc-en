@@ -4,6 +4,34 @@ set_time_limit(0);
 error_reporting(E_ALL);
 ob_implicit_flush();
 
+# {{{ cvs stuff
+
+  function cvs_max_rev($filename,$start,$end) {
+    static $lastfile = "";
+    static $array = array();
+    
+    if($filename!=$lastfile) {
+      $fp=popen("cvs annotate $filename 2>/dev/null","r");
+      $n=0;
+      if(!$fp) die("gaga");           ;
+      $array = array();
+      $lastfile = $filename;
+      while(!feof($fp)) {
+        $line = fgets($fp);
+        if(empty($line)) continue;
+        $tokens=explode(" ",$line);
+        $rev = $tokens[0];
+        $array[++$n]=explode(".",$rev);
+      }
+      pclose($fp);
+    }
+    $max=0;
+    for($n=$start;$n<=$end;$n++)
+      if($max < $array[$n][1]) $max = $array[$n][1];
+    return $max;
+  }
+# }}}
+
 # {{{ convert_file 
 
 function convert_file($dir,$file) {
@@ -190,6 +218,7 @@ function convert_dir($dirname) {
 }
 
 # }}}
+
 
 // convert the current directory
 convert_dir(".");
