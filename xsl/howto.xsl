@@ -3,7 +3,7 @@
 
   HOWTO specific stylesheet based on Docbook XSL 1.66.1
 
-  $Id: howto.xsl,v 1.3 2004-10-29 13:00:22 techtonik Exp $
+  $Id: howto.xsl,v 1.4 2004-11-02 14:36:33 techtonik Exp $
 
 -->
 <!-- 
@@ -38,6 +38,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
   <xsl:import href="./docbook/html/chunk.xsl"/>
+  <xsl:import href="common.xsl"/>
 
 
 
@@ -133,135 +134,6 @@
       <xsl:apply-templates select="." mode="titleabbrev.markup"/>
     </a>
     </span>
-  </xsl:template>
-
-
-
-
-<!-- ==================================================================== -->
-<!-- Strip newlines before and after programlistings. That was a challenge.. -->
-  <xsl:template match="programlisting|screen|synopsis">
-    <xsl:param name="suppress-numbers" select="'0'"/>
-    <xsl:variable name="id">
-      <xsl:call-template name="object.id"/>
-    </xsl:variable>
-
-    <xsl:call-template name="anchor"/>
-
-    <xsl:variable name="content">
-      <pre class="{name(.)}">
-      <xsl:variable name="precontent">
-        <xsl:choose>
-          <xsl:when test="count(*|text()) = count(text()) = 1"><!-- only text() here -->
-            <xsl:call-template name="trim_newlines"/>
-          </xsl:when>
-
-          <xsl:otherwise>                                      <!-- mixed content - process separately to keep markup tags -->
-            <xsl:variable name="nameoffirst" select="local-name((*|text())[position()=1])"/>
-            <xsl:if test="$nameoffirst = ''"><!-- 1st node is text() -->
-              <xsl:call-template name="trim_newlines">
-                <xsl:with-param name="string" select="text()[position()=1]"/>
-                <xsl:with-param name="lttrim" select="true()"/>
-              </xsl:call-template>
-            </xsl:if>
-            <xsl:choose>
-              <xsl:when test="local-name((*|text())[position()=last()]) != ''"><!-- last node is not text() -->
-                <xsl:if test="$nameoffirst = ''"><!-- 1st text() node is already processed -->
-                   <xsl:apply-templates select="*|text()[position()!=1]"/>
-                </xsl:if>
-                <xsl:if test="$nameoffirst != ''"><!-- 1st text() was not processed -->
-                   <xsl:apply-templates />
-                </xsl:if>
-              </xsl:when>
-              <xsl:otherwise>
-                <xsl:if test="$nameoffirst = ''"><!-- 1st text() node is already processed -->
-                   <xsl:apply-templates select="*|text()[position()!=1 and position()!=last()]"/>
-                </xsl:if>
-                <xsl:if test="$nameoffirst != ''"><!-- 1st text() was not processed -->
-                   <xsl:apply-templates select="*|text()[position()!=last()]"/>
-                </xsl:if>
-                <xsl:call-template name="trim_newlines">
-                  <xsl:with-param name="string" select="text()[position()=last()]"/>
-                  <xsl:with-param name="rttrim" select="true()"/>
-                </xsl:call-template>
-              </xsl:otherwise>
-            </xsl:choose>
-          </xsl:otherwise>
-        </xsl:choose>
-      </xsl:variable>
-
-      <xsl:choose>
-        <xsl:when test="$suppress-numbers = '0'
-                        and @linenumbering = 'numbered'
-                        and $use.extensions != '0'
-                        and $linenumbering.extension != '0'">
-          <xsl:call-template name="number.rtf.lines">
-            <xsl:with-param name="rtf" select="$precontent"/>
-          </xsl:call-template>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:copy-of select="$precontent"/>
-        </xsl:otherwise>
-      </xsl:choose>
-      </pre>
-    </xsl:variable>
-
-    <xsl:choose>
-      <xsl:when test="$shade.verbatim != 0">
-        <table xsl:use-attribute-sets="shade.verbatim.style">
-          <tr>
-            <td>
-              <xsl:copy-of select="$content"/>
-            </td>
-          </tr>
-        </table>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:copy-of select="$content"/>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-  
-  <xsl:template name="trim_newlines">
-    <xsl:param name="string" select="."/>
-    <xsl:param name="lttrim" select="false()"/>
-    <xsl:param name="rttrim" select="false()"/> <!-- looking for endstring -->
-
-    <xsl:variable name="nl" select="'&#xA;'" />
-
-    <xsl:choose>
-      <xsl:when test="normalize-space($string) and contains($string,$nl)"><!-- prevent endless cycle on empty blocks -->
-        <xsl:variable name="beforenl" select="substring-before($string,$nl)" />
-        <xsl:variable name="afternl" select="substring-after($string,$nl)" />
-        <xsl:variable name="nextnl" select="normalize-space(substring-before($afternl,$nl))" />
-        <xsl:choose>
-          <xsl:when test="not($rttrim) and string-length(normalize-space($beforenl)) = 0">
-            <xsl:call-template name="trim_newlines">
-              <xsl:with-param name="string" select="$afternl" />
-              <xsl:with-param name="lttrim" select="$lttrim" />
-              <xsl:with-param name="rttrim" select="$rttrim or $nextnl" />
-            </xsl:call-template>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:copy-of select="concat($beforenl,$nl)"/>
-            <xsl:if test="$lttrim">
-              <xsl:copy-of select="$afternl"/>
-            </xsl:if>
-            <xsl:if test="not($lttrim)">
-              <xsl:call-template name="trim_newlines">
-                <xsl:with-param name="string" select="$afternl" />
-                <xsl:with-param name="rttrim" select="true()" />
-              </xsl:call-template>
-            </xsl:if>
-          </xsl:otherwise>
-        </xsl:choose>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:if test="normalize-space($string)">
-          <xsl:value-of select="$string"/>
-        </xsl:if>
-      </xsl:otherwise>
-    </xsl:choose>
   </xsl:template>
 
 
