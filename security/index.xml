@@ -1,4 +1,4 @@
-<!-- $Revision: 1.21 $ -->
+<!-- $Revision: 1.22 $ -->
  <chapter id="security">
   <title>Security</title>
 
@@ -330,7 +330,7 @@ AddHandler php-script .php
      <programlisting role="php">
 &lt;?php
 // remove a file from the user's home directory
-$username = $user_submitted_name;
+$username = $HTTP_POST_VARS['user_submitted_name'];
 $homedir = "/home/$username";
 $file_to_delete = "$userfile";
 unlink ($homedir/$userfile);
@@ -378,7 +378,7 @@ echo "/home/../etc/passwd has been deleted!";
 &lt;?php
 // removes a file from the hard drive that
 // the PHP user has access to. 
-$username = $HTTP_REMOTE_USER; // using an authentication mechanisim
+$username = $HTTP_SERVER_VARS['REMOTE_USER']; // using an authentication mechanisim
 
 $homedir = "/home/$username";
 
@@ -386,7 +386,7 @@ $file_to_delete = basename("$userfile"); // strip paths
 unlink ($homedir/$file_to_delete);
 
 $fp = fopen("/home/logging/filedelete.log","+a"); //log the deletion
-$logstring = "$HTTP_REMOTE_USER $homedir $file_to_delete";
+$logstring = "$username $homedir $file_to_delete";
 fputs ($fp, $logstring);
 fclose($fp);
 
@@ -402,7 +402,7 @@ echo "$file_to_delete has been deleted!";
      <title>More secure file name checking</title>
      <programlisting role="php">
 &lt;?php
-$username = $HTTP_REMOTE_USER; // using an authentication mechanisim
+$username = $HTTP_SERVER_VARS['REMOTE_USER']; // using an authentication mechanisim
 $homedir = "/home/$username";
 
 if (!ereg('^[^./][^/]*$', $userfile))
@@ -515,7 +515,7 @@ if (!ereg('^[^./][^/]*$', $username))
    </para>
    <para>
     One way of catching this issue ahead of time is to make use of
-    PHP's own <function>error_reporting()</function>, to help you
+    PHP's own <function>error_reporting</function>, to help you
     secure your code and find variable usage that may be dangerous.
     By testing your code, prior to deployment, with E_ALL, you can
     quickly find areas where your variables may be open to poisoning
@@ -543,8 +543,11 @@ if ($good_login == 1) { // If above test fails, not initialized or checked befor
     One feature of PHP that can be used to enhance security is
     configuring PHP with register_globals = off. By turning off
     the ability for any user-submitted variable to be injected
-    into PHP code, you can restrict the amount of variable
-    poisoning a potential attacker may inflict.
+    into PHP code, you can reduce the amount of variable
+    poisoning a potential attacker may inflict. They will have
+    to take the additional time to forge submissions, and your
+    internal variables are effectively isolated from user
+    submitted data.
    </para>
    <para>
     While it does slightly increase the amount of effort required
@@ -568,8 +571,9 @@ if ($good_login == 1) { // can be forged by a user in get/post/cookies,
      <title>Working with register_globals = off</title>
      <programlisting role="php">
 &lt;?php
-if($HTTP_COOKIE_VARS["username"]){  // can only come from a cookie
-    $good_login = 1; // cannot be forged by a user
+if($HTTP_COOKIE_VARS['username']){ 
+    // can only come from a cookie, forged or otherwise
+    $good_login = 1;
     fpassthru ("/highly/sensitive/data/index.html");
 }
 ?&gt;
@@ -578,24 +582,31 @@ if($HTTP_COOKIE_VARS["username"]){  // can only come from a cookie
     By using this wisely, it's even possible to take preventative
     measures to warn when forging is being attempted. If you know
     ahead of time exactly where a variable should be coming from,
-    you can check to see if submitted data is inappropriate.
+    you can check to see if submitted data is coming from an
+    inappropriate kind of submission. While it doesn't guarantee
+    that data has not been forged, it does require an attacker
+    to guess the right kind of forging.
     <example>
-     <title>Detecting variable poisoning</title>
+     <title>Detecting simple variable poisoning</title>
      <programlisting role="php">
 &lt;?php
-if ($HTTP_COOKIE_VARS["username"] &&
-    !$HTTP_POST_VARS["username"] &&
-    !$HTTP_GET_VARS["username"] ) { 
+if ($HTTP_COOKIE_VARS['username'] &&
+    !$HTTP_POST_VARS['username'] &&
+    !$HTTP_GET_VARS['username'] ) { 
+    // Perform other checks to validate the user name...
     $good_login = 1;
     fpassthru ("/highly/sensitive/data/index.html");
 } else {
-   mail("admin@example.com", "Possible breakin attempt", "$REMOTE_IP_ADDR");
+   mail("admin@example.com", "Possible breakin attempt", $HTTP_SERVER_VARS['REMOTE_ADDR']);
    echo "Security violation, admin has been alerted.";
    exit;
 }
 ?&gt;
      </programlisting>
     </example>
+    Of course, simply turning on register globals does not mean code
+    is secure. For every piece of data that is submitted, it
+    should also be checked in other ways.
    </para>
   </sect1>
 
@@ -671,6 +682,49 @@ exec ($evil_var);
     you about variables being used before they are checked or
     initialized (so you can prevent unusual data from being
     operated upon).
+   </para>
+  </sect1>
+  
+  <sect1 id="security.hiding">
+   <title>Hiding PHP</title>
+   <para>
+    A few simple techniques can help to hide PHP, possibly slowing
+    down an attacker who is attempting to disover weaknesses in your
+    system. By setting expose_php = off in your php.ini file, you
+    reduce the amount of information available to them.
+   </para>
+   <para>
+    Another tactic is to configure web servers such as apache to
+    parse different filetypes through PHP, either with an .htaccess 
+    directive, or in the apache configuration file itself. You can
+    then use misleading file extensions:
+    <example>
+     <title>Hiding PHP as another language</title>
+     <programlisting role="php">
+# Make PHP code look like other code types
+AddType application/x-httpd-php .asp .py .pl
+     </programlisting>
+    </example>
+    Or obscure it completely:
+    <example>
+     <title>Using unknown types for PHP extensions</title>
+     <programlisting role="php">
+# Make PHP code look like unknown types
+AddType application/x-httpd-php .bop .foo .133t
+     </programlisting>
+    </example>
+    Or hide it as html code, which has a slight performance hit because
+    all html will be parsed through the PHP engine:
+    <example>
+     <title>Using html types for PHP extensions</title>
+     <programlisting role="php">
+# Make all PHP code look like html
+AddType application/x-httpd-php .htm .html
+     </programlisting>
+    </example>
+    For this to work effectively, you must rename your PHP files with
+    the above extensions. While it is a form of security through
+    obscurity, it's a minor preventative measure with few drawbacks.
    </para>
   </sect1>
   
