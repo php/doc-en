@@ -100,15 +100,14 @@ class CHtmlExtParse extends CHtmlParse{
 			}
 		} while($tmp);
 		
-		/*
+		
 		//fix for TOC
-		$tmp=0;
-		do{
-			if($tmp = $this->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","TOC"),"offset"=>($tmp+1)))){
-				$this->ATE[$tmp]["dir"] = "ltr";
+		if($tmp = $this->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","TOC"),"offset"=>(0)))){
+			$tocend = $this->ECE[$tmp];
+			while (($tmp = $this->get_element_id_by_rule(array("tag"=>"a","offset"=>($tmp+1))))&&($tmp<$tocend)){
+				$this->ATE[$tmp]["dir"] = "rtl";
 			}
-		} while($tmp);
-		*/
+		}
 		
 		//rtl all the divs
 		$div = $HEType["div"];
