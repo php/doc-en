@@ -28,7 +28,7 @@ if (isset($_SERVER["argv"][1])) {
 }
 
 if (!isset($_SERVER["argv"][1]) || !is_dir($phpdoc_dir)) {
-	echo "Purpose: Check parameters (types, optional, reference) from PHP sources.\n";
+	echo "Purpose: Check parameters (types, optional, reference, count) from PHP sources.\n";
 	echo "Usage: check-references.php language\n";
 	echo "Notes:\n";
 	echo "- Functions not found in sources are checked as without references.\n";
@@ -125,7 +125,7 @@ $difficult_params = array(
 );
 $difficult_arg_count = array(
 	"getdate", "min", "max", "implode", "strtok", "sybase_fetch_object",
-	"cpdf_text", "pdf_get_parameter", "odbc_exec", "odbc_result_all", "yaz_wait",
+	"cpdf_text", "pdf_get_parameter", "pg_fetch_assoc", "odbc_exec", "odbc_result_all", "yaz_wait",
 	// take account of multiple methodsynopsis:
 	"crack_check", "ibase_prepare", "mysqli_stmt_bind_param", "pg_fetch_result", "pg_put_line", "pg_query", "pg_set_client_encoding", "strtr", "yaz_set_option",
 );
@@ -179,7 +179,7 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 				foreach ($matches2[1] as $val) {
 					unset($source_arg_count[$val]);
 				}
-			} elseif (preg_match_all("~(?:([0-9]+)\\s*($operators)\\s*$zend_num_args|$zend_num_args\\s*($operators)\\s*([0-9]+))(?=[^{]+\\{[^}]+WRONG_PARAM_COUNT)~S", $function_body, $matches2, PREG_SET_ORDER)) { //! should differentiate between || and &&
+			} elseif (preg_match_all("~(?:([0-9]+)\\s*($operators)\\s*$zend_num_args|$zend_num_args\\s*($operators)\\s*([0-9]+))(?=[^}]+WRONG_PARAM_COUNT)~S", $function_body, $matches2, PREG_SET_ORDER)) { //! should differentiate between || and &&
 				$source_arg_counts[$function_name] = array(array(), $filename, $lineno);
 				$source_arg_count =& $source_arg_counts[$function_name][0];
 				foreach ($matches2 as $val) {
@@ -220,6 +220,7 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 echo "Sources were read.\n";
 
 // compare with documentation
+$counts = array("refs" => 0, "types" => 0, "arg_counts" => 0);
 foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 	if (preg_match('~^(.*<methodsynopsis>(.*))<methodname>([^<]+)<(.*)</methodsynopsis>~sSU', file_get_contents($filename), $matches)) {
 		$lineno = substr_count($matches[1], "\n") + 1;
@@ -236,7 +237,7 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 		}
 		
 		// references
-		$source_ref =& $source_refs[$function_name];
+		$source_ref = (isset($source_refs[$function_name]) ? $source_refs[$function_name] : null);
 		preg_match_all('~<parameter>(&amp;)?~S', $methodsynopsis, $matches);
 		$byref = array();
 		foreach ($matches[1] as $key => $val) {
@@ -249,8 +250,9 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 		) {
 			echo (isset($source_ref) ? "Parameter(s) " . (is_int($source_ref) ? "$source_ref and rest" : implode(", ", $source_ref)) : "Nothing") . " should be passed by reference in $filename on line $lineno.\n";
 		}
-		$source_type =& $source_types[$function_name];
-		$source_arg_count =& $source_arg_counts[$function_name];
+		if (isset($source_ref)) {
+			$counts["refs"]++;
+		}
 		
 		// parameter types and optional
 		preg_match_all('~<methodparam(\\s+choice=[\'"]opt[\'"])?>\\s*<type>([^<]+)</type>\\s*<parameter>([^<]+)~i', $methodsynopsis, $matches); // (PREG_OFFSET_CAPTURE can be used to get precise line numbers)
@@ -259,7 +261,9 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 				echo "Parameter #" . ($i+1) . " has wrong type '$val' in $filename on line " . ($lineno + $i + 1) . ".\n";
 			}
 		}
-		if (isset($source_type)) {
+		if (isset($source_types[$function_name])) {
+			$source_type =& $source_types[$function_name];
+			$counts["types"]++;
 			$optional_source = false;
 			$optional_doc = false;
 			$i = 0;
@@ -289,7 +293,9 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 			}
 		
 		// arguments count
-		} elseif (isset($source_arg_count)) {
+		} elseif (isset($source_arg_counts[$function_name])) {
+			$source_arg_count =& $source_arg_counts[$function_name];
+			$counts["arg_counts"]++;
 			$disallowed = array();
 			foreach ($matches[1] as $key => $val) {
 				if (!$val) {
@@ -311,6 +317,8 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 		}
 	}
 }
-echo "Done.\n";
 
+echo "$counts[refs]/". count($source_refs) ." references checked.\n";
+echo "$counts[types]/". count($source_types) ." types checked.\n";
+echo "$counts[arg_counts]/". count($source_arg_counts) ." arg counts checked.\n";
 ?>
