@@ -3,7 +3,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.13 2002-03-15 12:33:52 goba Exp $
+  $Id: html-common.xsl,v 1.14 2002-07-03 18:11:37 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -13,6 +13,17 @@
 
 <!-- We do not want style="" atts to appear in HTML output -->
 <xsl:param name="admon.style" select="''"/>
+
+<!-- Try to cut off the quite deep section depth provided by default
+     This DOES NOT WORK for me [Goba]. If I set it to anything other
+	 then zero it generates the whole TOC, otherwise it's 0 levels deep.
+	 We need to play with this a bit more to be able to switch to XSLT
+	 from DSSSL.
+-->
+<xsl:param name="toc.section.depth">1</xsl:param>
+
+<!-- This makes the generation a bit faster (no file name printouts) -->
+<xsl:param name="chunk.quietly">1</xsl:param>
 
 <!-- Enclose functions in links, add parenthesis -->
 <xsl:template match="function">
