@@ -1,49 +1,100 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.10 $ -->
+<!-- $Revision: 1.11 $ -->
 <!-- splitted from ./en/functions/mysql.xml, last change in rev 1.62 -->
   <refentry id="function.mysql-query">
    <refnamediv>
     <refname>mysql_query</refname>
     <refpurpose>Send a MySQL query</refpurpose>
    </refnamediv>
-   <refsect1>
-    <title>Description</title>
-     <methodsynopsis>
-      <type>resource</type><methodname>mysql_query</methodname>
-      <methodparam><type>string</type><parameter>query</parameter></methodparam>
-      <methodparam choice="opt"><type>resource</type><parameter>link_identifier</parameter></methodparam>
-     </methodsynopsis>
+
+   <refsect1 role="description">
+    &reftitle.description;
+    <methodsynopsis>
+     <type>resource</type><methodname>mysql_query</methodname>
+     <methodparam><type>string</type><parameter>query</parameter></methodparam>
+     <methodparam choice="opt"><type>resource</type><parameter>link_identifier</parameter></methodparam>
+    </methodsynopsis>
     <para>
-     <function>mysql_query</function> sends a query to the currently
+     <function>mysql_query</function> sends a query (to the currently
      active database on the server that's associated with the
-     specified link identifier.  If
-     <parameter>link_identifier</parameter> isn't specified, the last
-     opened link is assumed.  If no link is open, the function tries
-     to establish a link as if <function>mysql_connect</function> was
-     called with no arguments, and use it. The result of the query is buffered.
+     specified <parameter>link_identifier</parameter>).
     </para>
-    <note>
-     <para>
-      The query string should not end with a semicolon.
-     </para>
-    </note>
+   </refsect1>
+
+   <refsect1 role="parameters">
+    &reftitle.parameters;
     <para>
-     Only for SELECT,SHOW,EXPLAIN or DESCRIBE statements
-     <function>mysql_query</function>
-     returns a resource identifier or &false; if the query was
-     not executed correctly. For other type of SQL statements,
+     <variablelist>
+      <varlistentry>
+       <term><parameter>query</parameter></term>
+       <listitem>
+        <para>
+         A SQL query
+        </para>
+        <para>
+         The query string should not end with a semicolon.
+        </para>
+       </listitem>
+      </varlistentry>
+      <varlistentry>
+       <term><parameter>link_identifier</parameter></term>
+       <listitem>
+        <para>
+         A link identifier, as returned by <function>mysql_connect</function>.
+        </para>
+        <para>
+         If <parameter>link_identifier</parameter> isn't specified, the last
+         opened link is assumed.  If no link is open, the function tries
+         to establish a link as if <function>mysql_connect</function> was
+         called with no arguments, and use it. The result of the query is buffered.
+        </para>
+       </listitem>
+      </varlistentry>
+     </variablelist>
+    </para>
+   </refsect1>
+
+   <refsect1 role="returnvalues">
+    &reftitle.returnvalues;
+    <para>
+     For SELECT, SHOW, DESCRIBE or EXPLAIN statements,
+     <function>mysql_query</function> 
+     returns a <type>resource</type> on success, and &false; on
+     error.
+    </para>
+    <para>
+     For other type of SQL statements, UPDATE, DELETE, DROP, etc,
      <function>mysql_query</function> returns &true; on success
-     and &false; on error. A non-&false; return value
-     means that the query was legal and could be executed by
-     the server.  It does not indicate anything about the number of
-     rows affected or returned. It is perfectly possible for a query
-     to succeed but affect no rows or return no rows.
+     and &false; on error.
     </para>
     <para>
-     The following query is syntactically invalid, so
-     <function>mysql_query</function> fails and returns &false;:
+     The returned result resource should be passed to
+     <function>mysql_fetch_array</function>, and other
+     functions for dealing with result tables, to access the returned data.
+    </para>
+    <para>
+     Use <function>mysql_num_rows</function> to find out how many rows
+     were returned for a SELECT statement or
+     <function>mysql_affected_rows</function> to find out how many
+     rows were affected by a DELETE, INSERT, REPLACE, or UPDATE
+     statement.
+    </para>
+    <para>
+     <function>mysql_query</function> will also fail and return &false;
+     if the user does not have permission to access the table(s) referenced by
+     the query.
+    </para>
+   </refsect1>
+
+   <refsect1 role="examples">
+    &reftitle.examples;
+    <para>
      <example>
-      <title><function>mysql_query</function> example</title>
+      <title>Invalid Query</title>
+      <para>
+       The following query is syntactically invalid, so
+       <function>mysql_query</function> fails and returns &false;.
+      </para>
       <programlisting role="php">
 <![CDATA[
 <?php
@@ -51,65 +102,73 @@ $result = mysql_query('SELECT * WHERE 1=1');
 if (!$result) {
     die('Invalid query: ' . mysql_error());
 }
+
 ?>
 ]]>
       </programlisting>
      </example>
     </para>
     <para>
-     The following query is semantically invalid if
-     <literal>my_col</literal> is not a column in the table
-     <literal>my_tbl</literal>, so <function>mysql_query</function>
-     fails and returns &false;:
      <example>
-      <title><function>mysql_query</function></title>
+      <title>Valid Query</title>
+      <para>
+       The following query is valid, so <function>mysql_query</function>
+       returns a <type>resource</type>.
+      </para>
       <programlisting role="php">
 <![CDATA[
 <?php
-$result = mysql_query('SELECT my_col FROM my_tbl');
+// This could be supplied by a user, for example
+$firstname = 'fred';
+$lastname  = 'fox';
+
+// Formulate Query
+// This is the best way to perform a SQL query
+// For more examples, see mysql_real_escape_string()
+$query = sprintf("SELECT firstname, lastname, address, age FROM friends WHERE firstname='%s' AND lastname='%s'",
+    mysql_real_escape_string($firstname),
+    mysql_real_escape_string($lastname));
+
+// Perform Query
+$result = mysql_query($query);
+
+// Check result
+// This shows the actual query sent to MySQL, and the error. Useful for debugging.
 if (!$result) {
-    die('Invalid query: ' . mysql_error());
+    $message  = 'Invalid query: ' . mysql_error() . "\n";
+    $message .= 'Whole query: ' . $query;
+    die($message);
 }
+
+// Use result
+// Attempting to print $result won't allow access to information in the resource
+// One of the mysql result functions must be used
+// See also mysql_result(), mysql_fetch_array(), mysql_fetch_row(), etc.
+while ($row = mysql_fetch_assoc($result)) {
+    echo $row['firstname'];
+    echo $row['lastname'];
+    echo $row['address'];
+    echo $row['age'];
+}
+
+// Free the resources associated with the result set
+// This is done automatically at the end of the script
+mysql_free_result($result);
 ?>
 ]]>
       </programlisting>
      </example>
     </para>
-    <para>
-     <function>mysql_query</function> will also fail and return &false;
-     if you don't have permission to access the table(s) referenced by
-     the query.
-    </para>
-    <para>
-     Assuming the query succeeds, you can call
-     <function>mysql_num_rows</function> to find out how many rows
-     were returned for a SELECT statement or
-     <function>mysql_affected_rows</function> to find out how many
-     rows were affected by a DELETE, INSERT, REPLACE, or UPDATE
-     statement.
-    </para>
-    <para>
-     Only for SELECT,SHOW,DESCRIBE or EXPLAIN statements,
-     <function>mysql_query</function> 
-     returns a new result identifier that you can pass to
-     <function>mysql_fetch_array</function> and other
-     functions dealing with result tables. When you are done with the
-     result set, you can free the resources associated with it by
-     calling <function>mysql_free_result</function>. Although, the
-     memory will automatically be freed at the end of the script's
-     execution.
-    </para>
+   </refsect1>
+
+   <refsect1 role="seealso">
+    &reftitle.seealso;
     <para>
      See also 
-     <function>mysql_num_rows</function>,
-     <function>mysql_affected_rows</function>,
      <function>mysql_unbuffered_query</function>,
-     <function>mysql_free_result</function>,
-     <function>mysql_fetch_array</function>,
-     <function>mysql_fetch_row</function>,
      <function>mysql_fetch_assoc</function>,
-     <function>mysql_result</function>,
-     <function>mysql_select_db</function> and
+     <function>mysql_error</function>,
+     <function>mysql_result</function> and
      <function>mysql_connect</function>.
     </para>
    </refsect1>
