@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+ <reference id="ref.java">
+  <title>Java</title>
+  <titleabbrev>PHP / Java Integration</titleabbrev>
+  <partintro>
+   <para>
+    There are two possible ways to bridge PHP and Java: you can either 
+    integrate PHP into a Java Servlet environment, which is the more 
+    stable and efficient solution, or integrate Java support into PHP.
+    The former is provided by a SAPI module that interfaces with the 
+    Servlet server, the latter by the Java extension.
+   </para>
+   <para>
+    PHP 4 ext/java provides a simple and effective means for creating and
+    invoking methods on Java objects from PHP. The JVM is created using JNI,
+    and everything runs in-process. Build instructions for ext/java can be
+    found in <filename>php4/ext/java/README</filename>.
+
+    <example>
+     <title>Java Example</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+  // get instance of Java class java.lang.System in PHP
+  $system = new Java('java.lang.System');
+
+  // demonstrate property access
+  print 'Java version='.$system->getProperty('java.version').' <br>';
+  print 'Java vendor=' .$system->getProperty('java.vendor').'  <br>';
+  print 'OS='.$system->getProperty('os.name').' '.
+              $system->getProperty('os.version').' on '.
+              $system->getProperty('os.arch').' <br>';
+
+  // java.util.Date example
+  $formatter = new Java('java.text.SimpleDateFormat',
+                        "EEEE, MMMM dd, yyyy 'at' h:mm:ss a zzzz");
+
+  print $formatter->format(new Java('java.util.Date'));
+?>
+]]>
+     </programlisting>
+    </example>
+    <example>
+     <title>AWT Example</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+  // This example is only intented to be run as a CGI.
+
+  $frame  = new Java('java.awt.Frame', 'PHP');
+  $button = new Java('java.awt.Button', 'Hello Java World!');
+
+  $frame->add('North', $button);
+  $frame->validate();
+  $frame->pack();
+  $frame->visible = True;
+
+  $thread = new Java('java.lang.Thread');
+  $thread->sleep(10000);
+
+  $frame->dispose();
+?>
+]]>
+     </programlisting>
+    </example>
+
+    Notes:
+
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       <literal>new Java()</literal> will create an instance of a class if 
+       a suitable constructor is available. If no parameters are passed and 
+       the default constructor is useful as it provides access to classes 
+       like <literal>java.lang.System</literal> which expose most of their 
+       functionallity through static methods.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Accessing a member of an instance will first look for bean properties
+       then public fields. In other words, <literal>print $date.time</literal>
+       will first attempt to be resolved as <literal>$date.getTime()</literal>,
+       then as <literal>$date.time</literal>.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Both static and instance members can be accessed on an object with
+       the same syntax. Furthermore, if the java object is of type
+       <literal>java.lang.Class</literal>, then static members of the class 
+       (fields and methods) can be accessed.
+      </simpara>
+     </listitem>
+     <listitem>
+      <para>
+       Exceptions raised result in PHP warnings, and &null; results. The
+       warnings may be eliminated by prefixing the method call with an
+       "@" sign. The following APIs may be used to retrieve and reset
+       the last error:
+
+       <itemizedlist>
+        <listitem><simpara><function>java_last_exception_get</function></simpara></listitem>
+        <listitem><simpara><function>java_last_exception_clear</function></simpara></listitem>
+       </itemizedlist>
+      </para>
+     </listitem>
+     <listitem>
+      <simpara>
+       Overload resolution is in general a hard problem given the
+       differences in types between the two languages. The PHP Java
+       extension employs a simple, but fairly effective, metric for
+       determining which overload is the best match.
+      </simpara>
+      <simpara>
+       Additionally, method names in PHP are not case sensitive, potentially
+       increasing the number of overloads to select from.
+      </simpara>
+      <simpara>
+       Once a method is selected, the parameters are cooerced if necessary, 
+       possibly with a loss of data (example: double precision floating point
+       numbers will be converted to boolean).
+       <!-- FIXME Why aren't java-doubles converted to PHP-floats? Is this
+       correct? -->
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       In the tradition of PHP, arrays and hashtables may pretty much
+       be used interchangably. Note that hashtables in PHP may only be
+       indexed by integers or strings; and that arrays of primitive types
+       in Java can not be sparse. Also note that these constructs are
+       passed by value, so may be expensive in terms of memory and time.
+      </simpara>
+     </listitem>
+    </itemizedlist>
+   </para>
+   <para>
+    sapi/servlet builds upon the mechanism defined by ext/java to enable
+    the entire PHP processor to be run as a servlet. The primary advanatage
+    of this from a PHP perspective is that web servers which support servlets
+    typically take great care in pooling and reusing JVMs. Build instructions 
+    for the Servlet SAPI module can be found in 
+    <filename>php4/sapi/README</filename>.
+
+    Notes:
+
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       While this code is intended to be able to run on any servlet engine,
+       it has only been tested on Apache's Jakarta/tomcat to date. Bug
+       reports, success stories and/or patches required to get this code
+       to run on other engines would be appreciated.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       PHP has a habit of changing the working directory. sapi/servlet will
+       eventually change it back, but while PHP is running the servlet engine
+       may not be able to load any classes from the CLASSPATH which are
+       specified using a relative directory syntax, or find the work directory
+       used for administration and JSP compilation tasks.
+      </simpara>
+     </listitem>
+    </itemizedlist>
+   </para>
+  </partintro>
+
+
+&reference.java.functions;
+
+ </reference>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+

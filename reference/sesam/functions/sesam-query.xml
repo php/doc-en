@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- splitted from ./en/functions/sesam.xml, last change in rev 1.1 -->
+  <refentry id="function.sesam-query">
+   <refnamediv>
+    <refname>sesam_query</refname>
+    <refpurpose>Perform a SESAM SQL query and prepare the result</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>string</type><methodname>sesam_query</methodname>
+      <methodparam><type>string</type><parameter>query</parameter></methodparam>
+      <methodparam choice="opt"><type>bool</type><parameter>scrollable</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     Returns: A SESAM "result identifier" on success, or
+     &false; on error.
+    </para>
+    <para>
+     A "result_id" resource is used by other functions to retrieve the
+     query results.
+    </para>
+    <para>
+     <function>sesam_query</function> sends a query to the currently
+     active database on the server. It can execute both "immediate"
+     SQL statements and "select type" queries. If an "immediate"
+     statement is executed, then no cursor is allocated, and any
+     subsequent <function>sesam_fetch_row</function> or
+     <function>sesam_fetch_result</function> call will return an empty
+     result (zero columns, indicating end-of-result).  For "select
+     type" statements, a result descriptor and a (scrollable or
+     sequential, depending on the optional boolean
+     <parameter>scrollable</parameter> parameter) cursor will be
+     allocated. If <parameter>scrollable</parameter> is omitted, the
+     cursor will be sequential.
+    </para>
+    <para>
+     When using "scrollable" cursors, the cursor can be freely
+     positioned on the result set. For each "scrollable" query, there
+     are global default values for the scrolling type (initialized to:
+     <literal>SESAM_SEEK_NEXT</literal>) and the scrolling offset
+     which can either be set once by
+     <function>sesam_seek_row</function> or each time when fetching a
+     row using <function>sesam_fetch_row</function>.
+    </para>
+    <para>
+     For "immediate" statements, the number of affected rows is saved
+     for retrieval by the <function>sesam_affected_rows</function>
+     function.
+    </para>
+    <para>
+     See also: <function>sesam_fetch_row</function> and
+     <function>sesam_fetch_result</function>.
+     <example>
+      <title>
+       Show all rows of the "phone" table as a html table
+      </title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+if (!sesam_connect ("phonedb", "demo", "otto"))
+    die ("cannot connect");
+$result = sesam_query ("select * from phone");
+if (!$result) {
+    $err = sesam_diagnostic();
+    die ($err["errmsg"]);
+}
+echo "<TABLE BORDER>\n";
+// Add title header with column names above the result:
+if ($cols = sesam_field_array ($result)) {
+    echo " <TR><TH COLSPAN=".$cols["count"].">Result:</TH></TR>\n";
+    echo " <TR>\n";
+    for ($col = 0; $col < $cols["count"]; ++$col) {
+        $colattr = $cols[$col];
+        /* Span the table head over SESAM's "Multiple Fields": */
+        if ($colattr["count"] > 1) {
+            echo "  <TH COLSPAN=".$colattr["count"].">".$colattr["name"].
+                "(1..".$colattr["count"].")</TH>\n";
+            $col += $colattr["count"] - 1;
+        } else
+            echo "  <TH>" . $colattr["name"] . "</TH>\n";
+    }
+    echo " </TR>\n";
+}
+
+do {
+    // Fetch the result in chunks of 100 rows max.
+    $ok = sesam_fetch_result ($result, 100);
+    for ($row=0; $row < $ok["rows"]; ++$row) {
+        echo " <TR>\n";
+        for ($col = 0; $col < $ok["cols"]; ++$col) {
+            if (isset($ok[$col][$row]))
+                echo "  <TD>" . $ok[$col][$row] . "</TD>\n";
+            } else {
+                echo "  <TD>-empty-</TD>\n";
+            }
+        }
+        echo " </TR>\n";
+    }
+} 
+while ($ok["truncated"]) { // while there may be more data
+    echo "</TABLE>\n";
+}
+// free result id
+sesam_free_result($result);
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+   </refsect1>
+  </refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+ <reference id="ref.cpdf">
+  <title>ClibPDF functions</title>
+  <titleabbrev>ClibPDF</titleabbrev>
+
+  <partintro>
+   <simpara>
+   ClibPDF lets you create PDF documents with PHP. It is available for
+   download from <ulink url="&url.fastio;">FastIO</ulink>, but
+   requires that you purchase a license for commercial use.  ClibPDF
+   functionality and API are similar to <link
+   linkend="ref.pdf">PDFlib</link>.
+   </simpara>
+   <simpara>
+    This documentation should be read alongside the ClibPDF manual since it
+    explains the library in much greater detail. 
+   </simpara>
+   <simpara>
+    Many functions in the native ClibPDF and the PHP module, as well
+    as in <link linkend="ref.pdf">PDFlib</link>, have the same name.
+    All functions except for <function>cpdf_open</function> take the
+    handle for the document as their first parameter.
+   </simpara>
+   <simpara>
+    Currently this handle is not used internally since ClibPDF does
+    not support the creation of several PDF documents at the same time.
+    Actually, you should not even try it, the results are unpredictable. I
+    can't oversee what the consequences in a multi threaded environment
+    are.  According to the author of ClibPDF this will change in one of
+    the next releases (current version when this was written is 1.10).
+    If you need this functionality use the pdflib module.
+   </simpara>
+   <note>
+    <simpara>
+     The function <function>cpdf_set_font</function> has changed since PHP 3
+     to support asian fonts. The encoding parameter is no longer an integer
+     but a string.
+    </simpara>
+   </note>
+   <simpara>
+   A nice feature of ClibPDF (and <link
+   linkend="ref.pdf">PDFlib</link>) is the ability to create the pdf
+   document completely in memory without using temporary files. It
+   also provides the ability to pass coordinates in a predefined unit
+   length. (This feature can also be simulated by
+   <function>pdf_translate</function> when using the <link
+   linkend="ref.pdf">PDFlib</link>.  functions.)
+   </simpara>
+   <simpara>
+    Another nice feature of ClibPDF is the fact that any page can be modified
+    at any time even if a new page has been already opened. The function
+    <function>cpdf_set_current_page</function> allows to leave the current
+    page and presume modifying an other page.
+   </simpara>
+   <simpara>
+    Most of the functions are fairly easy to use. The most difficult part
+    is probably creating a very simple PDF document at all. The following
+    example should help you to get started. It creates a document
+    with one page. The page contains the text "Times-Roman" in an
+    outlined 30pt font. The text is underlined.
+   </simpara>
+   <example>
+    <title>Simple ClibPDF Example</title>
+    <programlisting>
+<![CDATA[
+<?php
+$cpdf = cpdf_open(0);
+cpdf_page_init($cpdf, 1, 0, 595, 842, 1.0);
+cpdf_add_outline($cpdf, 0, 0, 0, 1, "Page 1");
+cpdf_begin_text($cpdf);
+cpdf_set_font($cpdf, "Times-Roman", 30, "WinAnsiEncoding");
+cpdf_set_text_rendering($cpdf, 1);
+cpdf_text($cpdf, "Times Roman outlined", 50, 750);
+cpdf_end_text($cpdf);
+cpdf_moveto($cpdf, 50, 740);
+cpdf_lineto($cpdf, 330, 740);
+cpdf_stroke($cpdf);
+cpdf_finalize($cpdf);
+Header("Content-type: application/pdf");
+cpdf_output_buffer($cpdf);
+cpdf_close($cpdf);
+?>
+]]>
+    </programlisting>
+   </example>
+   <simpara>
+    The pdflib distribution contains a more complex example which creates a
+    series of pages with an analog clock. Here is that example converted
+    into PHP using the ClibPDF extension:
+   </simpara>
+   <example>
+    <title>pdfclock example from pdflib 2.0 distribution</title>
+    <programlisting>
+<![CDATA[
+<?php
+$radius = 200;
+$margin = 20;
+$pagecount = 40;
+
+$pdf = cpdf_open(0);
+cpdf_set_creator($pdf, "pdf_clock.php3");
+cpdf_set_title($pdf, "Analog Clock");
+  
+while($pagecount-- > 0) {
+  cpdf_page_init($pdf, $pagecount+1, 0, 2 * ($radius + $margin), 2 * ($radius + $margin), 1.0);
+  
+  cpdf_set_page_animation($pdf, 4, 0.5, 0, 0, 0);  /* wipe */
+  
+  cpdf_translate($pdf, $radius + $margin, $radius + $margin);
+  cpdf_save($pdf);
+  cpdf_setrgbcolor($pdf, 0.0, 0.0, 1.0);
+  
+  /* minute strokes */
+  cpdf_setlinewidth($pdf, 2.0);
+  for ($alpha = 0; $alpha &lt; 360; $alpha += 6)
+    {
+    cpdf_rotate($pdf, 6.0);
+    cpdf_moveto($pdf, $radius, 0.0);
+    cpdf_lineto($pdf, $radius-$margin/3, 0.0);
+    cpdf_stroke($pdf);
+    }
+  
+  cpdf_restore($pdf);
+  cpdf_save($pdf);
+ 
+  /* 5 minute strokes */
+  cpdf_setlinewidth($pdf, 3.0);
+  for ($alpha = 0; $alpha &lt; 360; $alpha += 30)
+  {
+    cpdf_rotate($pdf, 30.0);
+    cpdf_moveto($pdf, $radius, 0.0);
+    cpdf_lineto($pdf, $radius-$margin, 0.0);
+    cpdf_stroke($pdf);
+  }
+
+  $ltime = getdate();
+
+  /* draw hour hand */
+  cpdf_save($pdf);
+  cpdf_rotate($pdf, -(($ltime['minutes']/60.0) + $ltime['hours'] - 3.0) * 30.0);
+  cpdf_moveto($pdf, -$radius/10, -$radius/20);
+  cpdf_lineto($pdf, $radius/2, 0.0);
+  cpdf_lineto($pdf, -$radius/10, $radius/20);
+  cpdf_closepath($pdf);
+  cpdf_fill($pdf);
+  cpdf_restore($pdf);
+
+  /* draw minute hand */
+  cpdf_save($pdf);
+  cpdf_rotate($pdf, -(($ltime['seconds']/60.0) + $ltime['minutes'] - 15.0) * 6.0);
+  cpdf_moveto($pdf, -$radius/10, -$radius/20);
+  cpdf_lineto($pdf, $radius * 0.8, 0.0);
+  cpdf_lineto($pdf, -$radius/10, $radius/20);
+  cpdf_closepath($pdf);
+  cpdf_fill($pdf);
+  cpdf_restore($pdf);
+
+  /* draw second hand */
+  cpdf_setrgbcolor($pdf, 1.0, 0.0, 0.0);
+  cpdf_setlinewidth($pdf, 2);
+  cpdf_save($pdf);
+  cpdf_rotate($pdf, -(($ltime['seconds'] - 15.0) * 6.0));
+  cpdf_moveto($pdf, -$radius/5, 0.0);
+  cpdf_lineto($pdf, $radius, 0.0);
+  cpdf_stroke($pdf);
+  cpdf_restore($pdf);
+
+  /* draw little circle at center */
+  cpdf_circle($pdf, 0, 0, $radius/30);
+  cpdf_fill($pdf);
+
+  cpdf_restore($pdf);
+
+  cpdf_finalize_page($pdf, $pagecount+1);
+}
+
+cpdf_finalize($pdf);
+Header("Content-type: application/pdf");
+cpdf_output_buffer($pdf);
+cpdf_close($pdf);
+?>
+]]>
+    </programlisting>
+   </example>
+  </partintro>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&reference.cpdf.functions;
+
+ </reference>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+

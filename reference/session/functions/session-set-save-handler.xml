@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- splitted from ./en/functions/session.xml, last change in rev 1.23 -->
+  <refentry id="function.session-set-save-handler">
+   <refnamediv>
+    <refname>session_set_save_handler</refname>
+    <refpurpose>
+     Sets user-level session storage functions
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>void</type><methodname>session_set_save_handler</methodname>
+      <methodparam><type>string</type><parameter>open</parameter></methodparam><methodparam><type>string</type><parameter>close</parameter></methodparam><methodparam><type>string</type><parameter>read</parameter></methodparam><methodparam><type>string</type><parameter>write</parameter></methodparam><methodparam><type>string</type><parameter>destroy</parameter></methodparam><methodparam><type>string</type><parameter>gc</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     <function>session_set_save_handler</function> sets the user-level
+     session storage functions which are used for storing and
+     retrieving data associated with a session.  This is most useful
+     when a storage method other than those supplied by PHP sessions
+     is preferred.  i.e. Storing the session data in a local database.
+    </para>
+    <note>
+     <para>
+      You must set the configuration option
+      <parameter>session.save_handler</parameter> to
+      <parameter>user</parameter> in your &php.ini; file for
+      <function>session_set_save_handler</function> to take effect.
+     </para>
+    </note>
+    <note>
+     <para>
+      The "write" handler is not executed until after the output
+      stream is closed.  Thus, output from debugging statements in the
+      "write" handler will never be seen in the browser.  If debugging
+      output is necessary, it is suggested that the debug output be
+      written to a file instead.
+     </para>
+    </note>
+    <para>
+     The following example provides file based session
+     storage similar to the PHP sessions default save handler
+     <parameter>files</parameter>.  This example could easily be
+     extended to cover database storage using your favorite PHP
+     supported database engine.
+    </para>
+    <para>
+     Read function must return string value always to make save
+     handler work as expected. Return empty string if there is no data
+     to read. Return values from other handlers are converted to
+     boolean expression. TRUE for success, FALSE for failure.
+    </para>
+    <para>
+     <example>
+      <title>
+       <function>session_set_save_handler</function> example
+      </title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+function open ($save_path, $session_name) {
+  global $sess_save_path, $sess_session_name;
+       
+  $sess_save_path = $save_path;
+  $sess_session_name = $session_name;
+  return(true);
+}
+
+function close() {
+  return(true);
+}
+
+function read ($id) {
+  global $sess_save_path, $sess_session_name;
+
+  $sess_file = "$sess_save_path/sess_$id";
+  if ($fp = @fopen($sess_file, "r")) {
+    $sess_data = fread($fp, filesize($sess_file));
+    return($sess_data);
+  } else {
+    return(""); // Must return "" here.
+  }
+
+}
+
+function write ($id, $sess_data) {
+  global $sess_save_path, $sess_session_name;
+
+  $sess_file = "$sess_save_path/sess_$id";
+  if ($fp = @fopen($sess_file, "w")) {
+    return(fwrite($fp, $sess_data));
+  } else {
+    return(false);
+  }
+
+}
+
+function destroy ($id) {
+  global $sess_save_path, $sess_session_name;
+       
+  $sess_file = "$sess_save_path/sess_$id";
+  return(@unlink($sess_file));
+}
+
+/*********************************************
+ * WARNING - You will need to implement some *
+ * sort of garbage collection routine here.  *
+ *********************************************/
+function gc ($maxlifetime) {
+  return true;
+}
+
+session_set_save_handler ("open", "close", "read", "write", "destroy", "gc");
+
+session_start();
+
+// proceed to use sessions normally
+
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+   </refsect1>
+  </refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

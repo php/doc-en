@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- splitted from ./en/functions/oci8.xml, last change in rev 1.2 -->
+  <refentry id="function.ocilogon">
+   <refnamediv>
+    <refname>OCILogon</refname>
+    <refpurpose>Establishes a connection to Oracle</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>int</type><methodname>OCILogon</methodname>
+      <methodparam><type>string</type><parameter>username</parameter></methodparam>
+      <methodparam><type>string</type><parameter>password</parameter></methodparam>
+      <methodparam choice="opt"><type>string</type><parameter>db</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     <function>OCILogon</function> returns an connection identifier
+     needed for most other OCI calls.  The optional third parameter
+     can either contain the name of the local Oracle instance or the
+     name of the entry in tnsnames.ora to which you want to connect.
+     If the optional third parameter is not specified, PHP uses the
+     environment variables ORACLE_SID (Oracle instance) or TWO_TASK
+     (tnsnames.ora) to determine which database to connect to.
+    </para>
+    <para>Connections are shared at the page level when using
+     <function>OCILogon</function>.  This means that commits and
+     rollbacks apply to all open transactions in the page, even if you
+     have created multiple connections.
+    </para>
+    <para>
+     This example demonstrates how the connections are shared.
+     <example>
+      <title>OCILogon</title>
+      <programlisting>
+<![CDATA[
+<?php
+print "<HTML><PRE>";
+$db = "";
+
+$c1 = ocilogon("scott","tiger",$db);
+$c2 = ocilogon("scott","tiger",$db);
+
+function create_table($conn)
+{ $stmt = ociparse($conn,"create table scott.hallo (test varchar2(64))");
+  ociexecute($stmt);
+  echo $conn." created table\n\n";
+}
+
+function drop_table($conn)
+{ $stmt = ociparse($conn,"drop table scott.hallo");
+  ociexecute($stmt);
+  echo $conn." dropped table\n\n";
+}
+
+function insert_data($conn)
+{ $stmt = ociparse($conn,"insert into scott.hallo 
+            values('$conn' || ' ' || to_char(sysdate,'DD-MON-YY HH24:MI:SS'))");
+  ociexecute($stmt,OCI_DEFAULT);
+  echo $conn." inserted hallo\n\n";
+}
+
+function delete_data($conn)
+{ $stmt = ociparse($conn,"delete from scott.hallo");
+  ociexecute($stmt,OCI_DEFAULT);
+  echo $conn." deleted hallo\n\n";
+}
+
+function commit($conn)
+{ ocicommit($conn);
+  echo $conn." committed\n\n";
+}
+
+function rollback($conn)
+{ ocirollback($conn);
+  echo $conn." rollback\n\n";
+}
+
+function select_data($conn)
+{ $stmt = ociparse($conn,"select * from scott.hallo");
+  ociexecute($stmt,OCI_DEFAULT);
+  echo $conn."----selecting\n\n";
+  while (ocifetch($stmt))
+    echo $conn." <".ociresult($stmt,"TEST").">\n\n";
+  echo $conn."----done\n\n";
+}
+
+create_table($c1);
+insert_data($c1);   // Insert a row using c1
+insert_data($c2);   // Insert a row using c2
+
+select_data($c1);   // Results of both inserts are returned
+select_data($c2);   
+
+rollback($c1);      // Rollback using c1
+
+select_data($c1);   // Both inserts have been rolled back
+select_data($c2);   
+
+insert_data($c2);   // Insert a row using c2
+commit($c2);        // commit using c2
+
+select_data($c1);   // result of c2 insert is returned
+
+delete_data($c1);   // delete all rows in table using c1
+select_data($c1);   // no rows returned
+select_data($c2);   // no rows returned
+commit($c1);        // commit using c1
+
+select_data($c1);   // no rows returned
+select_data($c2);   // no rows returned
+
+drop_table($c1);
+print "</PRE></HTML>";
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+    <simpara>
+     See also <function>OCIPLogon</function> and
+     <function>OCINLogon</function>.</simpara>
+   </refsect1>
+  </refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- splitted from ./en/functions/sesam.xml, last change in rev 1.1 -->
+  <refentry id="function.sesam-diagnostic">
+   <refnamediv>
+    <refname>sesam_diagnostic</refname>
+    <refpurpose>
+     Return status information for last SESAM call
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>array</type><methodname>sesam_diagnostic</methodname>
+      <void/>
+     </methodsynopsis>
+    <para>
+     Returns an associative array of status and return codes for the
+     last SQL query/statement/command.  Elements of the array are:
+     <table>
+      <title>
+       Status information returned by <function>sesam_diagnostic</function>
+      </title>
+      <tgroup cols="2">
+       <thead>
+        <row>
+	 <entry>Element</entry>
+	 <entry>Contents</entry>
+        </row>
+       </thead>
+       <tbody>
+        <row>
+	 <entry>$array["sqlstate"]</entry>
+	 <entry>
+	  5 digit SQL return code (see the SESAM manual for the
+	  description of the possible values of SQLSTATE)
+	 </entry>
+        </row>
+        <row>
+	 <entry>$array["rowcount"]</entry>
+	 <entry>
+	  number of affected rows in last update/insert/delete (set
+	  after "immediate" statements only)
+	 </entry>
+        </row>
+        <row>
+	 <entry>$array["errmsg"]</entry>
+	 <entry>
+	  "human readable" error message string (set after errors
+	  only)
+	 </entry>
+        </row>
+        <row>
+	 <entry>$array["errcol"]</entry>
+	 <entry>
+	  error column number of previous error (0-based; or -1 if
+	  undefined. Set after errors only)
+	 </entry>
+        </row>
+        <row>
+	 <entry>$array["errlin"]</entry>
+	 <entry>
+	  error line number of previous error (0-based; or -1 if
+	  undefined. Set after errors only)
+	 </entry>
+        </row>
+       </tbody>
+      </tgroup>
+     </table>
+    </para>
+    <para>
+     In the following example, a syntax error (E SEW42AE ILLEGAL
+     CHARACTER) is displayed by including the offending SQL statement
+     and pointing to the error location:
+     <example>
+      <title>Displaying SESAM error messages with error position</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+// Function which prints a formatted error message,
+// displaying a pointer to the syntax error in the
+// SQL statement
+function PrintReturncode ($exec_str) {
+    $err = Sesam_Diagnostic();
+    $colspan=4; // 4 cols for: sqlstate, errlin, errcol, rowcount
+    if ($err["errlin"] == -1)
+        --$colspan;
+    if ($err["errcol"] == -1)
+        --$colspan;
+    if ($err["rowcount"] == 0)
+        --$colspan;
+    echo "<TABLE BORDER>\n";
+    echo "<TR><TH COLSPAN=".$colspan."><FONT COLOR=red>ERROR:</FONT> ".
+	  	htmlspecialchars($err["errmsg"])."</TH></TR>\n";
+    if ($err["errcol"] >= 0) {
+        echo "<TR><TD COLSPAN=".$colspan."><PRE>\n";
+        $errstmt = $exec_str."\n";
+        for ($lin=0; $errstmt != ""; ++$lin) {
+            if ($lin != $err["errlin"]) { // $lin is less or greater than errlin
+                if (!($i = strchr ($errstmt, "\n")))
+                    $i = "";
+                $line = substr ($errstmt, 0, strlen($errstmt)-strlen($i)+1);
+                $errstmt = substr($i, 1);
+                if ($line != "\n")
+                    print htmlspecialchars ($line);
+            } else {
+                if (! ($i = strchr ($errstmt, "\n")))
+                    $i = "";
+                $line = substr ($errstmt, 0, strlen ($errstmt)-strlen($i)+1);
+                $errstmt = substr($i, 1);
+                for ($col=0; $col < $err["errcol"]; ++$col)
+                    echo (substr($line, $col, 1) == "\t") ? "\t" : ".";
+                echo "<FONT COLOR=RED><BLINK>\\</BLINK></FONT>\n";
+                print "<FONT COLOR=\"#880000\">".htmlspecialchars($line)."</FONT>";
+                for ($col=0; $col < $err["errcol"]; ++$col)
+                    echo (substr ($line, $col, 1) == "\t") ? "\t" : ".";
+                echo "<FONT COLOR=RED><BLINK>/</BLINK></FONT>\n";
+            }
+        }
+        echo "</PRE></TD></TR>\n";
+    }
+    echo "<TR>\n";
+    echo " <TD>sqlstate=" . $err["sqlstate"] . "</TD>\n";
+    if ($err["errlin"] != -1)
+        echo " <TD>errlin=" . $err["errlin"] . "</TD>\n";
+    if ($err["errcol"] != -1)
+        echo " <TD>errcol=" . $err["errcol"] . "</TD>\n";
+    if ($err["rowcount"] != 0)
+         echo " <TD>rowcount=" . $err["rowcount"] . "</TD>\n";
+    echo "</TR>\n";
+    echo "</TABLE>\n";
+}
+
+if (!sesam_connect ("mycatalog", "phoneno", "otto"))
+  die ("cannot connect");
+
+$stmt = "SELECT * FROM phone\n".
+        " WHERE@ LASTNAME='KRAEMER'\n".
+        " ORDER BY FIRSTNAME";
+if (!($result = sesam_query ($stmt)))
+    PrintReturncode ($stmt);
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     See also: <function>sesam_errormsg</function> for simple access
+     to the error string only
+    </para>
+   </refsect1>
+  </refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
