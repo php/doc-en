@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+ <reference id="ref.stream">
+  <title>Stream functions</title>
+  <titleabbrev>Streams</titleabbrev>
+
+  <partintro>
+
+   <section id="stream.intro">
+    &reftitle.intro;
+    <simpara>
+     Streams were introduced with <literal>PHP</literal> 4.3.0 as
+     a way of generalizing file, network, data compression, and other
+     opperations which share a common set of functions and uses. In
+     its simplest definition, a stream is any I/O conduit for exchanging
+     information.  Some streams work on the local filesystem, some
+     use network connections (sockets), while others might potentially focus 
+     on communication devices such as printers or modems.  Because any variety
+     of stream may be added to <literal>PHP</literal> via the 
+     <function>stream_register_wrapper</function> function, there is no 
+     set limit on what can be done with them. See <xref linkend="wrappers"/> 
+     for a listing of stream wrappers built into <literal>PHP</literal>.
+    </simpara>
+    <para>
+     A stream is referenced as: <parameter>scheme</parameter>://<parameter>target</parameter>
+     <itemizedlist>
+      <listitem>
+       <simpara>
+        <parameter>scheme</parameter>(string) -
+        The name of the stream wrapper to be used.  Examples include: file, 
+        http, https, ftp, ftps, compress.zlib, compress.bz2, ssl, tls, and php.  See 
+        <xref linkend="wrappers"/> for a list of PHP builtin wrappers.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>target</parameter> - 
+        Depends on the wrapper used.  For filesystem related streams this is
+        typically a path and filename of the desired file.  For network related 
+        streams this is typically a hostname often with a path appended.  Again, see
+        <xref linkend="wrappers"/> for a description of targets for builtin streams.
+       </simpara>
+      </listitem>
+     </itemizedlist>
+    </para>
+    <simpara>
+     Filters may also be applied to streams to further process data on its
+     way into or out of a stream related call.  Documentation on this
+     functionality is comming soon.
+    </simpara>
+   </section>
+  
+   <section id="stream.requirements">
+    &reftitle.required;
+    &no.requirement;
+   </section>
+   
+   <section id="stream.installation">
+    &reftitle.install; 
+    <para>
+     Streams are an integral part of <literal>PHP</literal>
+     as of version 4.3.0.  No steps are required to enable them.
+    </para>
+   </section>
+
+   <section id="stream.configuration">
+    &reftitle.runtime;
+    &no.config;
+   </section>
+
+   <section id="stream.resources">
+    &reftitle.resources;
+    &no.resource;
+   </section>
+
+   <section id="stream.constants">
+    &reftitle.constants;
+    &no.constants;
+   </section>
+
+   <section id="stream.errors">
+    <title>Stream Errors</title>
+    <para>
+     As with any file or socket related function, an opperation on a stream
+     may fail for a variety of normal reasons (i.e.: Unable to connect to remote
+     host, file not found, etc...).  A stream related call may also fail because
+     the desired stream is not registered on the running system.  See the output of
+     <function>php_info</function> for a list of streams supported by your
+     installation of <literal>PHP</literal>.  As with most PHP internal functions
+     if a failure occours an <constant>E_WARNING</constant> message will be generated
+     describing the nature of the error.
+    </para>
+   </section>
+   
+   <section id="sockets.examples">
+    &reftitle.examples;
+    <para>
+     <example>
+      <title>Using file_get_contents() to retrieve data from multiple sources</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+$localfile = file_get_contents("/home/bar/foo.txt");                         // Read local file from /home/bar
+$localfile = file_get_contents("file:///home/bar/foo.txt");                  // Identical to above, explicitly naming FILE scheme
+$httpfile  = file_get_contents("http://www.example.com/foo.txt");            // Read remote file from www.example.com using HTTP 
+$httpsfile = file_get_contents("https://www.example.com/foo.txt");           // Read remote file from www.example.com using HTTPS
+$ftpfile   = file_get_contents("ftp://user:pass@ftp.example.com/foo.txt");   // Read remote file from ftp.example.com using FTP 
+$ftpsfile  = file_get_contents("ftps://user:pass@ftp.example.com/foo.txt");  // Read remote file from ftp.example.com using FTPS 
+?>
+]]?>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     <example>
+      <title>Making a POST request to an https server</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+/* Send POST request to https://secure.example.com/form_action.php
+ * Include form elements named "foo" and "bar" with dummy values
+ */
+
+$sock = fsockopen("ssl://secure.example.com", 443, $errno, $errstr, 30);
+if (!$sock) die("$errstr ($errno)\n";
+
+$data = "foo=" . urlencode("Value for Foo") . "&bar=" . urlencode("Value for Bar");
+
+fputs($sock, "POST /form_action.php HTTP/1.0\r\n");
+fputs($sock, "Host: secure.example.com\r\n");
+fputs($sock, "Content-type: application/x-www-url-encoded\r\n");
+fputs($sock, "Content-length: " . strlen($data) . "\r\n");
+fputs($sock, "Accept: */*\r\n");
+fputs($sock, "\r\n");
+fputs($sock, "$data\r\n");
+fputs($sock, "\r\n");
+
+$headers = "";
+while ($str = trim(fgets($sock, 4096)))
+  $headers .= "$str\n";
+
+print "\n";
+
+$body = "";
+while (!feof($sock))
+  $body .= fgets($sock, 4096);
+
+fclose($sock);
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     <example>
+      <title>Writting data to a compressed file</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+/* Create a compressed file containing an arbitrarty string
+ * File can be read back using compress.zlib stream or just
+ * decompressed from the command line using 'gzip -d foo-bar.txt.gz'
+ */
+$fp = fopen("compress.zlib://foo-bar.txt.gz","w");
+if (!$fp) die("Unable to create file.");
+
+fwrite($fp, "This is a test.\n");
+
+fclose($fp);
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+   </section>
+   <simpara>
+    For PHP Streams Development, See Also: <xref linkend="streams"/>
+   </simpara>
+  </partintro>
+
+&reference.stream.functions;
+
+ </reference>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+
