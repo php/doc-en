@@ -6,12 +6,14 @@ $DEFAULT_FONT = "Arial,10,0";
 // Charset list: http://www.microsoft.com/globaldev/nlsweb/default.asp
 // Language code: http://www.unicode.org/unicode/onlinedat/languages.html
 // MIME preferred charset list: http://www.iana.org/assignments/character-sets
+// Font list: http://www.microsoft.com/office/ork/xp/three/inte03.htm
+
 $LANGUAGES = array(
     "tw"    => array(
                    "langcode" => "0x404 Traditional Chinese",
                    "preferred_charset" => "CP950",
                    "mime_charset_name" => "Big5",
-                   "preferred_font" => $DEFAULT_FONT
+                   "preferred_font" => "PMingLiu,10,0"
                ),
     "cs"    => array(
                    "langcode" => "0x405 Czech",
@@ -77,7 +79,7 @@ $LANGUAGES = array(
                    "langcode" => "0x412 Korean",
                    "preferred_charset" => "CP949",
                    "mime_charset_name" => "EUC-KR",
-                   "preferred_font" => $DEFAULT_FONT
+                   "preferred_font" => "BatangChe,10 0"
                ),
     "nl"    => array(
                    "langcode" => "0x413 Dutch (Netherlands)",
@@ -125,7 +127,7 @@ $LANGUAGES = array(
                    "langcode" => "0x804 Simplified Chinese",
                    "preferred_charset" => "CP936",
                    "mime_charset_name" => "gb2312",
-                   "preferred_font" => $DEFAULT_FONT
+                   "preferred_font" => "PMingLiu,10,0"
                )
 );
 ?>
