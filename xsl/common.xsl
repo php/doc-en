@@ -55,7 +55,7 @@
 <xsl:template match="methodparam">
   <xsl:if test="preceding-sibling::methodparam=false()">
     <xsl:text> (</xsl:text>
-    <xsl:if test="@choice='opt'">
+    <xsl:if test="@choice='opt' or initializer">
       <xsl:text>[</xsl:text>
     </xsl:if>
   </xsl:if>
@@ -63,7 +63,7 @@
   <xsl:choose>
     <xsl:when test="following-sibling::methodparam">
       <xsl:choose>
-        <xsl:when test="following-sibling::methodparam[position()=1]/attribute::choice[.='opt']">
+        <xsl:when test="following-sibling::methodparam[position()=1]/attribute::choice[.='opt'] or following-sibling::methodparam[position()=1]/initializer">
           <xsl:text> [, </xsl:text>
         </xsl:when>
         <xsl:otherwise>
@@ -72,10 +72,12 @@
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:for-each select="preceding-sibling::methodparam/attribute::choice[.='opt']">
-        <xsl:text>]</xsl:text>
+      <xsl:for-each select="preceding-sibling::methodparam">
+				<xsl:if test="attribute::choice[.='opt'] or initializer">
+					<xsl:text>]</xsl:text>
+				</xsl:if>
       </xsl:for-each>
-      <xsl:if test="self::methodparam/attribute::choice[.='opt']">
+      <xsl:if test="self::methodparam/attribute::choice[.='opt'] or self::methodparam/initializer">
         <xsl:text>]</xsl:text>
       </xsl:if>
       <xsl:text>)</xsl:text>

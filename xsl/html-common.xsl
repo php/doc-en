@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.26 2003-06-04 19:43:32 tom Exp $
+  $Id: html-common.xsl,v 1.27 2003-06-19 17:04:39 hholzgra Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -195,6 +195,12 @@ set       toc
 <!-- METHODNAMES are bold like in DSSSL -->
 <xsl:template match="methodsynopsis/methodname">
   <b><xsl:apply-templates/></b>
+</xsl:template>
+
+<!-- METHODPARAM default values are bold like in DSSSL -->
+<xsl:template match="methodparam/initializer">
+  <xsl:text>=</xsl:text>
+  <i><xsl:apply-templates/></i>
 </xsl:template>
 
 <!-- We need a newline after methodsynopsis, as we have
