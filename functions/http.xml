@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.36 $ -->
+<!-- $Revision: 1.37 $ -->
  <reference id="ref.http">
   <title>HTTP functions</title>
   <titleabbrev>HTTP</titleabbrev>
@@ -45,10 +45,52 @@ header('WWW-Authenticate: NTLM',false);
      </informalexample>
     </para>
     <para>
-     There are two special-case header calls.  The first is the
-     &quot;Location&quot; header.  Not only does it send this header back
-     to the browser, but it also returns a <literal>REDIRECT</literal>
-     (302) status code to the browser.
+     There are two special-case header calls.  The first is a header 
+     that starts with the string "<literal>HTTP/</literal>" (case is not
+     significant), which will be used to figure out the HTTP status
+     code to send. For example, if you have configured Apache to
+     use a PHP script to handle requests for missing files (using
+     the <literal>ErrorDocument</literal> directive), you may want to
+     make sure that your script generates the proper status code.
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+<?php
+  header("HTTP/1.0 404 Not Found");
+?>
+]]>
+      </programlisting>
+     </informalexample>
+     <note>
+      <para>
+       If you want to set the return status like this then you have to 
+       make sure this is the very first header you send. Remember that
+       <function>setcookie</function> uses <function>header</function> 
+       internaly and that the session functions might try to set a 
+       cookie, so these might interfere with setting a return status
+       using <literal>header("HTTP ...")</literal>.
+      </para>
+     </note>
+     <note>
+      <para>
+       In PHP 3, this only works when PHP is compiled as an Apache
+       module. You can achieve the same effect using the
+       <literal>Status</literal> header.
+       <informalexample>
+        <programlisting role="php">
+<![CDATA[
+header("Status: 404 Not Found");
+]]>
+        </programlisting>
+       </informalexample>
+      </para>
+     </note>
+    </para>
+    <para>
+     The second special case is the "Location:" header.  Not only does 
+     it send this header back to the browser, but it also returns a 
+     <literal>REDIRECT</literal> (302) status code to the browser unless 
+     some <literal>3xx</literal> status code has already been set.
      <informalexample>
       <programlisting role="php">
 <![CDATA[
@@ -80,36 +122,6 @@ header("Location: http://".$HTTP_SERVER_VARS['HTTP_HOST']
       </informalexample>
      </para>
     </note>
-    <para>
-     The second special case is any header that starts with the
-     string, &quot;<literal>HTTP/</literal>&quot; (case is not
-     significant), which will be used to figure out the HTTP status
-     code to send. For example, if you have configured Apache to
-     use a PHP script to handle requests for missing files (using
-     the <literal>ErrorDocument</literal> directive), you may want to
-     make sure that your script generates the proper status code.
-     <informalexample>
-      <programlisting role="php">
-<![CDATA[
-header("HTTP/1.0 404 Not Found");
-]]>
-      </programlisting>
-     </informalexample>
-     <note>
-      <para>
-       In PHP 3, this only works when PHP is compiled as an Apache
-       module. You can achieve the same effect using the
-       <literal>Status</literal> header.
-       <informalexample>
-        <programlisting role="php">
-<![CDATA[
-header("Status: 404 Not Found");
-]]>
-        </programlisting>
-       </informalexample>
-      </para>
-     </note>
-    </para>
     <para>
      PHP scripts often generate dynamic content that must not be cached
      by the client browser or any proxy caches between the server and the
