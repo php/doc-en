@@ -20,6 +20,8 @@
 # $Id$
 */
 
+set_time_limit(0);
+
 // Print out info for the viewer and log files
 echo "\ntesting the manual for missing elements...\n";
 
@@ -31,6 +33,7 @@ if (strpos($wrkdir, "scripts") !== FALSE) {
 }
 
 $NSGMLS = "@NSGMLS@"; 
+$NSGMLS_OUTPUT = "missing-entities.out"; 
 
 // Support for Windows systems
 if (substr(PHP_OS, 0, 3) == 'WIN') {
@@ -39,10 +42,8 @@ if (substr(PHP_OS, 0, 3) == 'WIN') {
 
 // Execute a test of the manual
 exec(
-    "@SP_OPTIONS@ $NSGMLS -i lang-@LANG@ -D . " .
-    "-s @SRCDIR@/dtds/dbxml-4.1.2/phpdocxml.dcl manual.xml 2>&1",
-    $results,
-    $retcode
+    "@SP_OPTIONS@ $NSGMLS -f $NSGMLS_OUTPUT -i lang-@LANG@ -D . " .
+    "-s @SRCDIR@/dtds/dbxml-4.1.2/phpdocxml.dcl manual.xml"
 );
 
 // Try to open files for rewriting
@@ -62,8 +63,13 @@ fwrite($mids, "<" . "?xml version='1.0' encoding='iso-8859-1'?>\n\n");
 $missing_ids = array();
 $missing_entities = array();
 
+// Open output file
+$results = file($NSGMLS_OUTPUT);
+
 // Try to find missing IDs and entities
 foreach ($results as $line) {
+    
+    trim($line);
     
     // missing entity found
     if (strpos($line, "not defined") !== FALSE) {
