@@ -66,6 +66,7 @@ $number_refs = array(
 	"sixth_arg_force_ref" => array(6),
 	"msg_receive_args_force_ref" => array(3, 5, 8),
 	"all_args_force_by_ref" => 1,
+	"all_args_by_ref" => 1,
 );
 
 $valid_types = "int|float|string|bool|resource|array|object|mixed|number";
@@ -105,7 +106,7 @@ function params_source_to_doc($type_spec)
 // some parameters should be passed only by reference but they are not forced to
 $wrong_refs = array("dbplus_info", "dbplus_next");
 $difficult_params = array(
-	"ibase_blob_import",
+	"ibase_blob_import", "ibase_execute",
 	"imagefilter",
 	"mt_rand", "rand",
 	"mcrypt_get_block_size", "mcrypt_get_key_size", "mcrypt_get_cipher_name", // inverse order
