@@ -20,11 +20,22 @@
 # $Id$
 */
 
+// If we are in a scripts dir, go one dir up
+// (because the NSGMLS path is relative to that directory!)
+$wrkdir = getcwd();
+if (strpos($wrkdir, "scripts") !== FALSE) {
+    chdir("..");
+}
+
+// Support for Windows systems
+$NSGMLS = str_replace("/", "\\", "@NSGMLS@");
+
 // Execute a test of the manual
 exec(
-    "@SP_OPTIONS@ @NSGMLS@ -i lang-@LANG@ -D . " .
+    "@SP_OPTIONS@ $NSGMLS -i lang-@LANG@ -D . " .
     "-s @SRCDIR@/dtds/dbxml-4.1.2/phpdocxml.dcl manual.xml 2>&1",
-    $results
+    $results,
+    $retcode
 );
 
 // Try to open files for rewriting
@@ -55,9 +66,7 @@ foreach ($results as $line) {
     
     // missing ID found
     else if (strpos($line, "non-existent") !== FALSE) {
-        $line = preg_replace('!^.* ID !g', ' <para id=', $line);
-        $line = preg_replace('!$!g', '></para>', $line);
-        $missing_ids[] = $line;
+        $missing_ids[] = preg_replace("!^.* ID !", " <para id=", $line) . "></para>\n";
     }
 }
 
@@ -66,8 +75,8 @@ $missing_ids = array_unique($missing_ids);
 $missing_entities = array_unique($missing_entities);
 
 // Sort elements (just to make handwork easier, if needed)
-$missing_ids = sort($missing_ids);
-$missing_entities = sort($missing_entities);
+sort($missing_ids);
+sort($missing_entities);
 
 // Write out missing entities to file
 foreach ($missing_entities as $ent) {
