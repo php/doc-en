@@ -33,33 +33,44 @@ Send this file: &lt;INPUT NAME=&quot;userfile&quot; TYPE=&quot;file&quot;&gt;
      </programlisting>
     </example>
     The _URL_ should point to a PHP file.  The MAX_FILE_SIZE hidden
-    field must precede the file input field and its value is the maximum
-    filesize accepted.  The value is in bytes.  In this destination file,
-    the following variables will be defined upon a successful upload:
+    field must precede the file input field and its value is the
+    maximum filesize accepted.  The value is in bytes.
    </para>
+
    <para>
+    In PHP 3, the following variables will be defined within the
+    destination script upon a successful upload, assuming that <link
+    linkend="ini.register-globals">register_globals</link> is turned
+    on in <filename>php.ini</filename>. If <link
+    linkend="ini.track-vars">track_vars</link> is turned on, they will
+    also be available within the global array
+    <varname>$HTTP_POST_VARS</varname>. Note that the following
+    variable names assume the use of the file upload name 'userfile',
+    as used in the example above:
+
     <itemizedlist>
      <listitem>
       <simpara>
-       $userfile - The temporary filename in which the uploaded file
-       was stored on the server machine.
+       <varname>$userfile</varname> - The temporary filename in which
+       the uploaded file was stored on the server machine.
       </simpara>
      </listitem>
      <listitem>
       <simpara>
-       $userfile_name - The original name or path of the file on the 
-       sender's system.
+       <varname>$userfile_name</varname> - The original name or path
+       of the file on the sender's system.
       </simpara>
      </listitem>
      <listitem>
       <simpara>
-       $userfile_size - The size of the uploaded file in bytes.
+       <varname>$userfile_size</varname> - The size of the uploaded
+       file in bytes.
       </simpara>
      </listitem>
      <listitem>
       <simpara>
-       $userfile_type - The mime type of the file if the browser
-       provided this information.  An example would be
+       <varname>$userfile_type</varname> - The mime type of the file
+       if the browser provided this information.  An example would be
        &quot;image/gif&quot;.
       </simpara>
      </listitem>
@@ -67,32 +78,119 @@ Send this file: &lt;INPUT NAME=&quot;userfile&quot; TYPE=&quot;file&quot;&gt;
     Note that the &quot;$userfile&quot; part of the above variables is
     whatever the name of the INPUT field of TYPE=file is in the upload
     form.  In the above upload form example, we chose to call it
-    &quot;userfile&quot;.
+    &quot;userfile&quot;
    </para>
+
+   <para>
+    In PHP 4, the behaviour is slightly different, in that the new
+    global array <varname>$HTTP_POST_FILES</varname> is provided to
+    contain the uploaded file information. This is still only
+    available if <link linkend="ini.track-vars">track_vars</link> is
+    turned on, but <link linkend="ini.track-vars">track_vars</link> is
+    always turned on in versions of PHP after PHP 4.0.2.
+   </para>
+
+   <para>
+    The contents of <varname>$HTTP_POST_FILES</varname> are as
+    follows. Note that this assumes the use of the file upload name
+    'userfile', as used in the example above:
+    <variablelist>
+     <varlistentry>
+      <term><varname>$HTTP_POST_FILES['userfile']['name']</varname></term>
+      <listitem>
+       <para>
+        The original name of the file on the client machine.
+       </para>
+      </listitem>
+     </varlistentry>
+     <varlistentry>
+      <term><varname>$HTTP_POST_FILES['userfile']['type']</varname></term>
+      <listitem>
+       <para>
+        The mime type of the file, if the browser provided this
+        information.  An example would be
+        <literal>&quot;image/gif&quot;</literal>.
+        </para>
+      </listitem>
+     </varlistentry>
+     <varlistentry>
+      <term><varname>$HTTP_POST_FILES['userfile']['size']</varname></term>
+      <listitem>
+       <para>
+        The size, in bytes, of the uploaded file.
+       </para>
+      </listitem>
+     </varlistentry>
+     <varlistentry>
+      <term><varname>$HTTP_POST_FILES['userfile']['tmp_name']</varname></term>
+      <listitem>
+       <para>
+        The temporary filename of the file in which the uploaded file
+        was stored on the server.
+       </para>
+      </listitem>
+     </varlistentry>
+    </variablelist>
+   </para>
+
    <para>
     Files will by default be stored in the server's default temporary
-    directory.  This can be changed by setting the environment variable
-    <envar>TMPDIR</envar> in the environment in which PHP runs.  Setting
-    it using <function>putenv</function> from within a PHP script will
-    not work. This environment variable can also be used to make sure
-    that other operations are working on uploaded files, as well.
+    directory, unless another location has been given with the <link
+    linkend="ini.upload-tmp-dir">upload_tmp_dir</link> directive in
+    <filename>php.ini</filename>. The server's default directory can
+    be changed by setting the environment variable
+    <envar>TMPDIR</envar> in the environment in which PHP runs.
+    Setting it using <function>putenv</function> from within a PHP
+    script will not work. This environment variable can also be used
+    to make sure that other operations are working on uploaded files,
+    as well.
     <example>
-     <title>Validating file uploads.</title>
-     <programlisting>
-&lt?
-// Make sure file is coming from upload directory
-$uploadpath = get_cfg_var('upload_tmp_dir') . '/' . basename($userfile);
+     <title>Validating file uploads</title>
+     <para>
+      The following examples are for versions of PHP 3 greater than
+      3.0.16, and versions of PHP 4 greater than 4.0.2. See the
+      function entries for <function>is_uploaded_file</function> and
+      <function>move_uploaded_file</function>.
+     </para>
+     <programlisting role="php">
+&lt?php 
+if (is_uploaded_file($userfile)) {
+    copy($userfile, "/place/to/put/uploaded/file");
+} else {
+    echo "Possible file upload attack: filename '$userfile'.";
+}
+/* ...or... */
+move_uploaded_file($userfile, "/place/to/put/uploaded/file");
+?>
+     </programlisting>
+     <para>
+      For earlier versions of PHP, you'll need to do something like
+      the following.
+      <note>
+       <para>
+        This will <emphasis>not</emphasis> work in versions of PHP 4
+        after 4.0.2. It depends on internal functionality of PHP which
+        changed after that version.
+       </para>
+      </note>
+     </para>
+     <programlisting role="php">
+&lt?php 
+/* Userland test for uploaded file. */ 
+function is_uploaded_file($filename) {
+    if (!$tmp_file = get_cfg_var('upload_tmp_dir')) {
+        $tmp_file = dirname(tempnam('', ''));
+    }
+    $tmp_file .= '/' . basename($filename);
+    /* User might have trailing slash in php.ini... */
+    return (ereg_replace('/+', '/', $tmp_file) == $filename);
+}
 
-// If you have not set your TMPDIR in pnp.ini, the following line
-// can be uncommented, and used instead of the above line
-// $uploadpath = dirname(tempnam('', '')) . '/' . basename($userfile);
-
-if (file_exists($uploadpath)){
-	copy ("$uploadpath", "/place/to/put/uploaded/file");
-	} else {
-	echo "Not an uploaded file!";
-	exit;
-	}
+if (is_uploaded_file($userfile)) {
+    copy($userfile, "/place/to/put/uploaded/file");
+} else {
+    echo "Possible file upload attack: filename '$userfile'.";
+}
 ?>
      </programlisting>
     </example>
@@ -100,12 +198,13 @@ if (file_exists($uploadpath)){
    <simpara>
     The PHP script which receives the uploaded file should implement
     whatever logic is necessary for determining what should be done
-    with the uploaded file.  You can for example use the $file_size
-    variable to throw away any files that are either too small or too
-    big.  You could use the $file_type variable to throw away any
-    files that didn't match a certain type criteria.  Whatever the
-    logic, you should either delete the file from the temporary
-    directory or move it elsewhere.
+    with the uploaded file.  You can for example use the
+    <varname>$file_size</varname> variable to throw away any files
+    that are either too small or too big.  You could use the
+    <varname>$file_type</varname> variable to throw away any files
+    that didn't match a certain type criteria.  Whatever the logic,
+    you should either delete the file from the temporary directory or
+    move it elsewhere.
    </simpara>
    <simpara>
     The file will be deleted from the temporary directory at the end
