@@ -49,7 +49,41 @@ function filterFiles()
     $fp = fopen("$HTML_TARGET/_script.js", "w");
     fwrite($fp, $script_js);
     fclose($fp);
-    
+   
+    // Rewrite HHP file to make UK English default language like in template
+    // prior to DocBook XSL 1.66.1. Add supplementary files to [FILES] section
+    // and also insert [MERGE] section
+    $hhp_file = "$HTML_TARGET/php_manual_$LANGUAGE.hhp";
+
+    if (file_exists($hhp_file)) {
+        $php_hhp = join("", file($hhp_file));
+
+        // Get rid of hh autoindex "feature" and set UK English language
+        $php_hhp = preg_replace("|Auto Index=Yes(\W+)\w|i","\w",$php_hhp);
+        $php_hhp = str_replace("Language=0x0409 English (UNITED STATES)","Language=0x0809 English (UNITED KINGDOM)",$php_hhp);
+
+        // Capturing line delimiter
+        preg_match("|\[FILES\](\W+)\w|i",$php_hhp,$matches);
+        $delim = $matches[1];
+
+        // Building list of supplemental files. glob doesn't work in 4.3.7/8 :(
+        $d = dir("suppfiles/html");
+        $supp_files = "";
+        while (false !== ($entry = $d->read())) {
+            if ($entry != "." && $entry != ".." && !is_dir($entry))
+                $supp_files .= $delim.$entry;
+        }
+
+        // Insert [MERGE] section and supplemental files 
+        $php_hhp = preg_replace(
+           "|\[FILES\]((\W+)\w)|i",
+           "[MERGE]$2php_manual_notes.chm$2$2[FILES]$supp_files$1",
+           $php_hhp);
+        $fp = fopen($hhp_file, "w");
+        fwrite($fp, $php_hhp);
+        fclose($fp);
+    }
+
     return $counter;
 } // filterFiles() function end
 
