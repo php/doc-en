@@ -50,7 +50,7 @@ set_time_limit(0);
 
 // A file is criticaly "outdated' if
 define("ALERT_REV",   10); // translation is 10 or more revisions behind the en one
-define("ALERT_SIZE",  10); // translation is 10 or more kB smaller than the en one
+define("ALERT_SIZE",   3); // translation is  3 or more kB smaller than the en one
 define("ALERT_DATE", -30); // translation is 30 or more days older than the en one
 
 // Revision marks used to flag files
@@ -231,10 +231,10 @@ function missing_tag()
     }
     
     // Get the parameter if we have it
-    list($trans_file) = func_get_args();
+    list($trans_file, $en_size, $trans_size, $size_diff) = func_get_args();
 
-    // Push file name with missing tag on the list
-    $missing_tags[] = substr($trans_file, strlen($DOCDIR));
+    // Push data of file with missing tag onto the list
+    $missing_tags[] = array(substr($trans_file, strlen($DOCDIR)), $en_size, $trans_size, $size_diff);
 }
 
 // Collect files by status mark
@@ -323,14 +323,6 @@ function get_file_status($file)
         $trans_tag = get_tag($trans_file, "\\S*");
     }
 
-    // If we found no revision tag, then collect this
-    // file in the missing tags list
-    if (count($trans_tag) == 0) {
-        files_by_mark(REV_NOTAG, 1);
-        missing_tag($trans_file, $DOCDIR);
-        return FALSE;
-    }
-
     // Distribute values in separate vars for further processing
     list(, $this_rev, $this_maint, $this_status) = $trans_tag;
 
@@ -361,6 +353,14 @@ function get_file_status($file)
     $trans_date = intval((time() - filemtime($trans_file)) / 86400);
     $date_diff  = $en_date - $trans_date;
 
+    // If we found no revision tag, then collect this
+    // file in the missing tags list
+    if (count($trans_tag) == 0) {
+        files_by_mark(REV_NOTAG, 1);
+        missing_tag($trans_file, $en_size, $trans_size, $size_diff);
+        return FALSE;
+    }
+
     // Make decision on file category by revision, date and size
     if ($rev_diff === 0) {
         $status_mark = REV_UPTODATE;
@@ -375,9 +375,6 @@ function get_file_status($file)
     // Store files by status, and by maintainer too
     files_by_mark ($status_mark, 1);
     files_by_maint($status_mark, $this_maint);
-
-if ($rev_diff === 0 && $this_maint == "")
-echo $file."<br>\n";
     
     return array(
         "full_name"  => $file,
@@ -999,24 +996,27 @@ $count = count($missing_tags);
 if ($count > 0) {
     print "<a name=\"misstags\"></a>" .
           "<table width=\"400\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n".
-          "<tr><th class=blue><b>Files without Revision-comment ($count files):</b></th></tr>\n";
+          "<tr class=blue><th rowspan=2><b>Files without Revision-comment ($count files):</b></th>".
+          "<th colspan=3>Sizes in kB</th></tr>\n".
+          "<tr class=blue><th>en</th><th>$LANG</th><th>diff</th></tr>\n";
     foreach($missing_tags as $val) {
         // Shorten the filename (we have directory headers)
-        $short_file = basename($val);
+        $short_file = basename($val[0]);
 
         // Guess the new directory from the full name of the file
-        $new_dir = substr($val, 0, strrpos($val, "/"));
+        $new_dir = substr($val[0], 0, strrpos($val[0], "/"));
     
         // If this is a new directory, put out dir headline
         if ($new_dir != $prev_dir) {
         
             // Print out directory header
-            print "<tr class=blue><th>".dirname($val)."</th></tr>\n";
+            print "<tr class=blue><th colspan=4>".dirname($val[0])."</th></tr>\n";
         
             // Store the new actual directory
             $prev_dir = $new_dir;
         }
-        print "<tr><td class=miss>$short_file</td></tr>\n";
+        print "<tr class=miss><td>$short_file</td><td class=r>$val[1]</td>".
+              "<td class=r>$val[2]</td><td class=r>$val[3]</td></tr>\n";
     }
     print "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
 
@@ -1060,7 +1060,7 @@ if ($count > 0) {
         }
 
         print "<tr class=miss><td>$short_file</td>" .
-              "<td align=right>$info[0]</td></tr>\n";
+              "<td class=r>$info[0]</td></tr>\n";
     }
     print "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
 
