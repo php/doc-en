@@ -85,7 +85,7 @@ foreach ($entity_urls as $num => $entity_url) {
                     fclose ($fpurl);
                 }
                 else {
-                    errormsg ($entity, "Could not open document: " . $link);
+                    errormsg ($entity, "Could not open document: " . $entity_url);
                 }
             break;
     
@@ -95,10 +95,10 @@ foreach ($entity_urls as $num => $entity_url) {
                     if (@ftp_login($ftp, "anonymous", "georg@php.net")) {
                         $flist = ftp_nlist($ftp, $url["path"]);
                         if (!count($flist)) {
-                            errormsg($entity, "unknown path: " . $url["path"]);
+                            errormsg($entity, "unknown path: " . $url["path"] . " for ftp host: " . $url['host']);
                         }
                     } else {
-                        errormsg ($entity, "could not login as anonymous to " . $url["host"]);
+                        errormsg ($entity, "could not login as anonymous to FTP host: " . $url["host"]);
                         ftp_quit($ftp);
                     }
                 } else {
