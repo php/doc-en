@@ -16,7 +16,7 @@
 # | Authors:    Gabor Hoitsy <goba@php.net>                              |
 # +----------------------------------------------------------------------+
 #
-# $Id: genfuncsummary.sh,v 1.6 2002-02-05 18:03:26 hholzgra Exp $
+# $Id: genfuncsummary.sh,v 1.7 2002-08-24 03:03:58 jmcastagnetto Exp $
 
 if test -f funcsummary.awk; then
   awkscript=funcsummary.awk
@@ -26,13 +26,26 @@ else
   echo 1>&2 funcsummary.awk not found
 	exit
 fi
-	
+
+# try to detect if we are using the broken awk from Solaris
+os=`uname -s`
+has_gawk=`which gawk`
+
+if [ $os = "SunOS" ]; then
+	if [ -s $has_gawk ]; then
+		awkprog=`which nawk`
+	else
+		awkprog=`which nawk`
+	fi
+else
+	awkprog="awk"
+fi
 
 for i in `find $1 -name "*.[ch]" -print -o -name "*.ec" -print | xargs egrep -li "{{{ proto" | sort` ; do
  echo $i | sed -e "s|$1|# php4|"
- awk -f $awkscript < $i | sort +1 | awk -F "---" '{ print $1; print $2; }' | sed -e's/^[[:space:]]+//' -e's/[[:space:]]+/     /'
+ $awkprog -f $awkscript < $i | sort +1 | $awkprog -F "---" '{ print $1; print $2; }' | sed -e's/^[[:space:]]+//' -e's/[[:space:]]+/     /'
 done
 if test -f $1/language-scanner.lex # only in PHP3
 then
-  awk -f funcsummary.awk < $1/language-scanner.lex | sort +1 | awk -F "---" '{ print $1; print $2; }'
+  $awkprog -f funcsummary.awk < $1/language-scanner.lex | sort +1 | $awkprog -F "---" '{ print $1; print $2; }'
 fi
