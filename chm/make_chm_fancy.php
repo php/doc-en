@@ -7,20 +7,20 @@
  to put here in CVS.
 */
 
+include_once('common.php');
+include_once('chm_settings.php');
+
 // This script takes much time to run
 set_time_limit(0);
 
 // Get ENV vars from the system
-$htmldir        = getenv("PHP_HELP_COMPILE_DIR");
-$fancydir       = getenv("PHP_HELP_COMPILE_FANCYDIR");
-$language       = getenv("PHP_HELP_COMPILE_LANG");
 $original_index = "index.html";
 
 // How many files were processed
 $counter = 0;
 
 // Open the directory, and do the work on all HTML files
-$handle = opendir($htmldir);
+$handle = opendir($HTML_PATH);
 while (false !== ($filename = readdir($handle))) {
     if (strpos($filename, ".html") && ($filename != "fancy-index.html")) {
         fancy_design($filename);
@@ -29,29 +29,30 @@ while (false !== ($filename = readdir($handle))) {
 closedir($handle);
 
 // Look for CHM index file (snap-downloader, cvs-usr with/without lang-support) 
-if (false == ($content = join("", @file("make_chm_index_$language.html")))) {
-    if (false == ($content = join("", @file("$language/make_chm_index_$language.html")))) {
-		if (false == ($content = join("", @file("$htmldir/../$language/make_chm_index_$language.html")))) {
-			$content = join("", @file("en/make_chm_index_en.html"));
-		}
+if (false == ($content = oneLiner("make_chm_index_$LANGUAGE.html"))) {
+    if (false == ($content = oneLiner("$LANGUAGE/make_chm_index_$LANGUAGE.html"))) {
+        if (false == ($content = oneLiner("$HTML_PATH/../$LANGUAGE/make_chm_index_$LANGUAGE.html"))) {
+            $content = oneLiner("en/make_chm_index_en.html");
+        }
     }
 }
 
 // Make GENTIME the actual date/time
 $content = str_replace("[GENTIME]", date("D M d H:i:s Y"), $content);
 $content = str_replace("[PUBTIME]", $publication_date, $content);
-$fp = fopen("$fancydir/fancy-index.html", "w");
-fputs($fp, $content);
+$content = setDocumentCharset($content, $LANGUAGES[$LANGUAGE]['mime_charset_name']);
+$fp = fopen("$FANCY_PATH/fancy-index.html", "w");
+fputs_wrapper($fp, $content);
 fclose($fp);
 
-copy("chm/make_chm_style.css", "$fancydir/style.css");
-copy("chm/make_chm_spc.gif", "$fancydir/spacer.gif");
+copy("chm/make_chm_style.css", "$FANCY_PATH/style.css");
+copy("chm/make_chm_spc.gif", "$FANCY_PATH/spacer.gif");
 
 // Three files added (fancy-index.html, style.css and spacer.gif)
 $counter += 3;
   
 echo "\nConverting ready...\n";
-echo "Total number of files written in $fancydir directory: $counter\n\n";
+echo "Total number of files written in $FANCY_PATH directory: $counter\n\n";
   
 /***********************************************************************/
 /* End of script lines, one main function follows                      */
@@ -60,10 +61,10 @@ echo "Total number of files written in $fancydir directory: $counter\n\n";
 // Convert one file from HTML => fancy HTML
 function fancy_design($fname)
 {
-    global $htmldir, $fancydir, $counter, $original_index, $publication_date;
+    global $HTML_PATH, $FANCY_PATH, $LANGUAGE, $LANGUAGES, $counter, $original_index, $publication_date;
 
-    // Get the contents of the file from $htmldir
-    $content = join("", file("$htmldir/$fname"));
+    // Get the contents of the file from $HTML_PATH
+    $content = oneLiner("$HTML_PATH/$fname");
 
     // CSS file linking
     $content = preg_replace("|</HEAD|", '<LINK REL="stylesheet" HREF="style.css"></HEAD', $content);
@@ -119,13 +120,14 @@ function fancy_design($fname)
 
     }
 
-    // Print out that new file to $fancydir
-    $fp = fopen("$fancydir/$fname", "w");
-    fputs($fp, $content);
+    // Print out that new file to $FANCY_PATH
+    $fp = fopen("$FANCY_PATH/$fname", "w");
+    $content = setDocumentCharset($content, $LANGUAGES[$LANGUAGE]['mime_charset_name']);
+    fputs_wrapper($fp, $content);
     fclose($fp);
 
     // Print out a message to see the progress
-    echo "$fancydir/$fname ready...\n";
+    echo "$FANCY_PATH/$fname ready...\n";
     $counter++;
     
 } // fancy_design() function end

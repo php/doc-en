@@ -9,117 +9,12 @@
  See make_chm.README for information about this system.
 */
 
-// Used directories and files
-$HTML_PATH     = getenv("PHP_HELP_COMPILE_DIR");
-$FANCY_PATH    = getenv("PHP_HELP_COMPILE_FANCYDIR");
-$LANGUAGE      = getenv("PHP_HELP_COMPILE_LANG");
+include_once('common.php');
+include_once('chm_settings.php');
+
 $INDEX_IN_HTML = "index.html";
-$INTERNAL_CHARSET = "UTF-8";
-$DEFAULT_FONT = "Arial,10,0";
 
 if (empty($FANCY_PATH)) { $FANCY_PATH = $HTML_PATH; }
-
-// Array to manual code -> HTML Help Code conversion
-// Code list: http://www.helpware.net/htmlhelp/hh_info.htm
-// Charset list: http://www.microsoft.com/globaldev/nlsweb/default.asp
-// Language code: http://www.unicode.org/unicode/onlinedat/languages.html
-$LANGUAGES = array(
-    "tw"    => array(
-                   "langcode" => "0x404 Traditional Chinese",
-                   "preferred_charset" => "CP950",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "cs"    => array(
-                   "langcode" => "0x405 Czech",
-                   "preferred_charset" => "Windows-1250",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "de"    => array(
-                   "langcode" => "0x407 German (Germany)",
-                   "preferred_charset" => "Windows-1252",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "en"    => array(
-                   "langcode" => "0x809 English (United Kingdom)",
-                   "preferred_charset" => "Windows-1252",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "es"    => array(
-                   "langcode" => "0xc0a Spanish (International Sort)",
-                   "preferred_charset" => "Windows-1252",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "fr"    => array(
-                   "langcode" => "0x40c French (France)",
-                   "preferred_charset" => "Windows-1252",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "fi"    => array(
-                   "langcode" => "0x40b Finnish",
-                   "preferred_charset" => "Windows-1252",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "hu"    => array(
-                   "langcode" => "0x40e Hungarian",
-                   "preferred_charset" => "Windows-1250",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "it"    => array(
-                   "langcode" => "0x410 Italian (Italy)",
-                   "preferred_charset" => "Windows-1252",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "ja"    => array(
-                   "langcode" => "0x411 Japanese",
-                   "preferred_charset" => "CP932",
-                   "preferred_font" => "‚l‚r ‚oƒSƒVƒbƒN,10,0"
-               ),
-    "kr"    => array(
-                   "langcode" => "0x412 Korean",
-                   "preferred_charset" => "CP949",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "nl"    => array(
-                   "langcode" => "0x413 Dutch (Netherlands)",
-                   "preferred_charset" => "Windows-1252",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "pl"    => array(
-                   "langcode" => "0x415 Polish",
-                   "preferred_charset" => "Windows-1250",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "pt_BR" => array(
-                   "langcode" => "0x416 Portuguese (Brazil)",
-                   "preferred_charset" => "Windows-1252",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "ro"    => array(
-                   "langcode" => "0x418 Romanian",
-                   "preferred_charset" => "Windows-1250",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "sk"    => array(
-                   "langcode" => "0x41b Slovak",
-                   "preferred_charset" => "Windows-1250",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "sl"    => array(
-                   "langcode" => "0x424 Slovenian",
-                   "preferred_charset" => "Windows-1250",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "sv"    => array(
-                   "langcode" => "0x41d Swedish",
-                   "preferred_charset" => "Windows-1252",
-                   "preferred_font" => $DEFAULT_FONT
-               ),
-    "zh"    => array(
-                   "langcode" => "0x804 Simplified Chinese",
-                   "preferred_charset" => "CP936",
-                   "preferred_font" => $DEFAULT_FONT
-               )
-);
 
 // Files on the top level of the TOC
 $MAIN_FILES = array(
@@ -132,18 +27,6 @@ $MAIN_FILES = array(
     "appendixes.html"
 );
 
-// backwards compatibility
-if (!function_exists("file_get_contents")) {
-    function file_get_contents($file)
-    {
-        $cnt = file($file);
-        if ($cnt !== false) {
-            return join('', $cnt);
-        }
-        return false;
-    }
-}
-
 // Header for index and toc 
 $HEADER = '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <html>
@@ -152,7 +35,7 @@ $HEADER = '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
   <!-- Sitemap 1.0 -->
 </head>
 <body>
-  <object typre="text/site properties">
+  <object type="text/site properties">
     <param name="Window Styles" value="0x800227">
   </object>
   <ul>';
@@ -254,7 +137,6 @@ function makeProjectFile()
     fputs_wrapper($project, "Compiled file=php_manual_$LANGUAGE.chm\n");
     fputs_wrapper($project, "Contents file=php_manual_$LANGUAGE.hhc\n");
     fputs_wrapper($project, "Index file=php_manual_$LANGUAGE.hhk\n");
-    fputs_wrapper($project, "Default Font={$LANGUAGES[$LANGUAGE]['preferred_font']}\n");
     fputs_wrapper($project, "Default Window=phpdoc\n");
     fputs_wrapper($project, "Default topic=$FANCY_PATH\\$FIRST_PAGE\n");
     fputs_wrapper($project, "Display compile progress=Yes\n");
@@ -273,6 +155,7 @@ function makeProjectFile()
     }
 
     fputs_wrapper($project, "Title=$MANUAL_TITLE\n");
+    fputs_wrapper($project, "Default Font={$LANGUAGES[$LANGUAGE]['preferred_font']}\n");
 
     // Define the phpdoc window style (adds more functionality)
     fputs_wrapper($project, "\n[WINDOWS]\nphpdoc=\"$MANUAL_TITLE\",\"php_manual_$LANGUAGE.hhc\",\"php_manual_$LANGUAGE.hhk\"," .
@@ -350,62 +233,4 @@ function findDeeperLinks ($filename, $toc, $index)
     }
     
 } // findDeeperLinks() function end
-
-function fputs_wrapper($fp, $str)
-{
-    fputs($fp, convertCharset($str));
-}
-
-// Return a file joined on one line
-function oneLiner($filename)
-{
-    global $INTERNAL_CHARSET;
-
-    $buf = preg_replace("/[\r|\n]{1,2}/U", " ", file_get_contents($filename));
-    $charset = detectDocumentCharset($buf);
-
-    if ($charset === false) $charset = "UTF-8";
-
-    if ($charset != $INTERNAL_CHARSET) {
-        if (function_exists("iconv")) {
-            $buf = iconv($charset, $INTERNAL_CHARSET, $buf);
-        } elseif (function_exists("mb_convert_encoding")) {
-            $buf = mb_convert_encoding($buf, $INTERNAL_CHARSET, $charset);
-        } elseif (preg_match("/^UTF-?8$/i", $INTERNAL_CHARSET) && preg_match("/^(ISO-8859-1|WINDOWS-1252)$/i", $charset)) {
-            $buf = utf8_encode($buf);
-        } else {
-            die("charset conversion function is not available.");
-        }
-    }
-    return $buf;
-}
-
-function convertCharset($buf)
-{
-    global $LANGUAGE, $LANGUAGES, $INTERNAL_CHARSET;
-
-    $charset = $LANGUAGES[$LANGUAGE]['preferred_charset'];
-
-    if ($charset != $INTERNAL_CHARSET) {
-        if (function_exists("iconv")) {
-            $buf = iconv($INTERNAL_CHARSET, "$charset//TRANSLIT", $buf);
-        } elseif (function_exists("mb_convert_encoding")) {
-            $buf = mb_convert_encoding($buf, $charset, $INTERNAL_CHARSET);
-        } elseif (preg_match("/^UTF-?8$/i", $INTERNAL_CHARSET) && preg_match("/^(ISO-8859-1|WINDOWS-1252)$/i", $charset)) {
-            $buf = utf8_decode($buf);
-        } else {
-            die("$LANGUAGE locale is not supported.");
-        }
-    }
-    return $buf;
-} // oneLiner() function end
-
-// Returns the name of character set in the given document
-function detectDocumentCharset($doc)
-{
-    if (preg_match("/<META\\s+HTTP-EQUIV=\"CONTENT-TYPE\"\\s+CONTENT=\"TEXT\\/HTML;\\s+CHARSET=([\\w\\d-]*)\"\\s*>/iU", $doc, $reg)) {
-        return $reg[1];
-    }
-    return false;
-}
 ?>
