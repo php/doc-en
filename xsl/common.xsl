@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.26 2004-11-21 21:13:48 techtonik Exp $
+  $Id: common.xsl,v 1.27 2005-01-08 18:30:48 hsc Exp $
 
   What is done in this stylesheet as common to all HTML output formats:
 
@@ -80,7 +80,7 @@
 
 <!-- Rendering of METHODSYNOPSIS. The output of this should look like:
      
-     int preg_match_all ( string pattern, string subject, array matches [, int flags])
+     int preg_match_all ( string pattern, string subject, array matches [, int flags] )
      
      working from a structure like this:
      

@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.18 2004-11-14 14:28:25 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.19 2005-01-08 18:30:48 hsc Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -625,7 +625,7 @@ Usage: string date (string format, int [timestamp])<br></h2>
 
 <!-- Rendering of METHODSYNOPSIS with span tags. The output of this should look like:
      
-     int preg_match_all ( string pattern, string subject, array matches [, int flags])
+     int preg_match_all ( string pattern, string subject, array matches [, int flags] )
      
      working from a structure like this:
      
