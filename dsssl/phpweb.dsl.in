@@ -24,46 +24,95 @@
 (define %html-manifest% "PHPWEB.manifest")
 (define %output-dir% "php")
 
-;; XXX hackish workaround.  I'm not sure what side effects setting
+;; Generate anchor for elements without an ID
+;; Hackish workaround. I'm not sure what side effects setting
 ;; the element number to 0 would have?
 (define (generate-anchor #!optional (nd (current-node)))
-  (string-append "AEN" (number->string (or (all-element-number nd) 0))))
+	(string-append
+		"AEN"
+		(number->string (or (all-element-number nd) 0))
+	)
+)
 
+;; Quotes a string to be inserted to a single quoted string
 (define (phpweb-quote str)
-  (string-replace str "'" "\\'"))
+	(string-replace str "'" "\\'")
+)
 
+;; Prints out a PHP file header. Parameter is the current node (unused)
 (define (phpweb-header #!optional (nd (current-node)))
-    (php-code
-     (string-append
-      newline
-      "require('shared-manual.inc');" newline
-      "sendManualHeaders('@ENCODING@','@LANG@');" newline
-      (phpweb-header-navigation nd) newline
-      "manualHeader('" (phpweb-quote (phpweb-node-title nd)) "','" (phpweb-quote (html-base-filename nd)) "');" newline)))
+	(php-code
+		(string-append
+			newline
+			"require('shared-manual.inc');" newline
+			"sendManualHeaders('@ENCODING@','@LANG@');" newline
+			(phpweb-header-navigation nd) newline
+			"manualHeader('"
+			(phpweb-quote (phpweb-node-title nd))
+			"','"
+			(phpweb-quote (html-base-filename nd))
+			"');"
+			newline
+		)
+	)
+)
 
+;; Prints out manual footer PHP code. Parameter is the current node (unused)
 (define (phpweb-footer #!optional (nd (current-node)))
-  (php-code
-   (string-append
-    "manualFooter('" (phpweb-quote (phpweb-node-title nd)) "','" (phpweb-quote (html-base-filename nd)) "');" newline)))
+	(php-code
+		(string-append
+			"manualFooter('"
+			(phpweb-quote (phpweb-node-title nd))
+			"','"
+			(phpweb-quote (html-base-filename nd))
+			"');"
+			newline
+		)
+	)
+)
 
+;; Retrieves a node's title from the XML source. Parameters are
+;; the current node and title element's name (unused)
 (define (phpweb-node-title #!optional (nd (current-node)) (title-elem "title"))
-  (let* ((preferred-title-node
-	  (cond ((equal? (gi nd) "refentry")
-		 (node-list-first
-		  (select-elements
-		   (children
-		    (select-elements (children nd) "refnamediv"))
-		   "refname")))
-		(else
-		 (node-list-first
-		  (select-elements (children nd) title-elem)))))
-	 (title-node
-	  (if (node-list-empty? preferred-title-node)
-	      (select-elements (children nd) "title") ;; fallback
-	      preferred-title-node)))
-    (data title-node)))
+	(let*
+		(
+			(preferred-title-node
+				(cond
+					;; For <refentry>s search for the first (and only one)
+					;; <refname> from the children list of <refnamediv> childrens.
+					(
+						(equal? (gi nd) "refentry")
+							(node-list-first
+								(select-elements
+									(children
+										(select-elements (children nd) "refnamediv")
+									)
+									"refname"
+								)
+							)
+						)
+					;; For other nodes, just select the first children node
+					(else
+						(node-list-first
+							(select-elements (children nd) title-elem)
+						)
+					)
+				)
+			)
+			;; The title node is the preferred title node, or if
+			;; it cannot be find, then then <title> children
+			(title-node
+				(if (node-list-empty? preferred-title-node)
+					(select-elements (children nd) "title")
+					preferred-title-node
+				)
+			)
+		)
+		(data title-node)
+	)
+)
 	       
-;; Print out navigational array. Consider if the array was
+;; Prints out the navigational array. Considers that the array was
 ;; needed (home, prev, next, up, toc) or not needed (local TOC).
 ;; In the later case, nothing should be printed, in the first
 ;; case, an emty array need to be injected. For local TOC
@@ -89,6 +138,9 @@
 	)
 )
    
+;; Returns a list of strings as provided by the "func" function
+;; parameterized with the "node" node. Parameters are the function
+;; to use for mapping and the node list on which to apply the mapping
 (define (phpweb-node-list-map func ndl)
 	(let*
 		(
@@ -103,6 +155,9 @@
 	)
 )
 
+;; Defines the header navigation with PHP calls to set up the
+;; navigation array used by TOC printer functions. Parameter is
+;; the current node.
 (define (phpweb-header-navigation nd)
 	(let
 		(
@@ -132,20 +187,34 @@
 		)
 	)
 )
-
+    
+;; Defines the format of all the output files
+;; generated for phpweb display. Parameters are the
+;; title sequence and the body sequence.
 (define (html-document title-sosofo body-sosofo)
-  (let ((doc-sosofo 
-	 (if (or (chunk?) (node-list=? (current-node) (sgml-root-element)))
-	     (make sequence
-		   (phpweb-header (current-node))
-		   body-sosofo
-		   (phpweb-footer (current-node)))
-	     body-sosofo)))
-    (if (chunk?)
-	(make entity
-	      system-id: (html-entity-file (html-file))
-	      doc-sosofo)
-	doc-sosofo)))
+	(let
+		(
+			(doc-sosofo 
+				(if (or (chunk?) (node-list=? (current-node) (sgml-root-element)))
+					(make sequence
+						(phpweb-header (current-node))
+						body-sosofo
+						(phpweb-footer (current-node))
+					)
+					body-sosofo
+				)
+			)
+		)
+		(if (chunk?)
+			(make
+				entity
+				system-id: (html-entity-file (html-file))
+				doc-sosofo
+			)
+			doc-sosofo
+		)
+	)
+)
 
 &html-common.dsl;
 &common.dsl;
