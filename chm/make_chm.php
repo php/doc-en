@@ -40,7 +40,7 @@ $LANGUAGES = array(
                    "preferred_font" => $DEFAULT_FONT
                ),
     "en"    => array(
-                   "langcode" => "0x409 English (United Kingdom)",
+                   "langcode" => "0x809 English (United Kingdom)",
                    "preferred_charset" => "Windows-1252",
                    "preferred_font" => $DEFAULT_FONT
                ),
