@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.15 $ -->
+<!-- $Revision: 1.16 $ -->
   <refentry id="function.stream-socket-server">
    <refnamediv>
     <refname>stream_socket_server</refname>
@@ -32,6 +32,12 @@
      combination of socket creation flags.  The default value of flags is
      <constant>STREAM_SERVER_BIND</constant> | <constant>STREAM_SERVER_LISTEN</constant>.
     </para>
+    <note>
+     <para>
+      For UDP sockets, you must use <constant>STREAM_SERVER_BIND</constant> as
+      the <parameter>flags</parameter> parameter.
+     </para>
+    </note>
     <para>
      This function only creates a socket, to begin accepting connections
      use <function>stream_socket_accept</function>.
@@ -59,7 +65,7 @@
     </para>
     <para>
      <example>
-      <title><function>stream_socket_server</function> Example</title>
+      <title>Using TCP server sockets</title>
       <programlisting role="php">
 <![CDATA[
 <?php
@@ -92,17 +98,19 @@ if (!$socket) {
       <programlisting role="php">
 <![CDATA[
 <?php
-$socket = stream_socket_server("udp://0.0.0.0:13", $errno, $errstr, STREAM_SERVER_BIND);
+$socket = stream_socket_server("udp://127.0.0.1:1113", $errno, $errstr, STREAM_SERVER_BIND);
 if (!$socket) {
-    echo "ERROR: $errno - $errstr<br />\n";
-} else {
-  while ($conn = stream_socket_accept($socket)) {
-    fwrite($conn, date("D M j H:i:s Y\r\n"));
-    fclose($conn);
-  }
-  fclose($socket);
+    die("$errstr ($errno)");
 }
+
+do {
+    $pkt = stream_socket_recvfrom($socket, 1, 0, $peer);
+    echo "$peer\n";
+    stream_socket_sendto($socket, date("D M j H:i:s Y\r\n"), 0, $peer);
+} while ($pkt !== false);
+
 ?>
+
 ]]>
       </programlisting>
      </example>
