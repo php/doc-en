@@ -60,7 +60,7 @@ for (; ereg('<row>', $lines[$nr]); $nr++) {
 	if (isset($entries[$key])) {
 		// duplicate key, in order to get a stable sorting, add NUL byte and
 		// (line number + 1000000)
-		$key .= "\1".(1000000+$nr);
+		$key .= "\0".(1000000+$nr);
 	}
 
 	$entries[$key] = $entry;
