@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.90 $ -->
+<!-- $Revision: 1.91 $ -->
  <chapter id="language.types">
   <title>Types</title>
 
@@ -242,7 +242,7 @@ if ($show_separators) {
         </listitem>
         <listitem>
          <simpara>an <link linkend="language.types.object">object</link> 
-         with zero elements</simpara>
+         with zero member variables</simpara>
         </listitem>
         <listitem>
          <simpara>the special type <link linkend="language.types.null"
@@ -393,7 +393,9 @@ var_dump( 25/7 );
        the <literal>(int)</literal> or the <literal>(integer)</literal> cast.
        However, in most cases you do not need to use the cast, since a value
        will be automatically converted if an operator, function or 
-       control structure requires a <type>integer</type> argument.
+       control structure requires an <type>integer</type> argument.
+       You can also convert a value to integer with the function
+       <function>intval</function>.
       </simpara>
       <simpara>
        See also <link linkend="language.types.type-juggling">type-juggling</link>.
@@ -974,8 +976,68 @@ $last = $str{strlen($str)-1};
      see also the <link linkend="ref.ctype">character type functions</link>.
     </simpara>
    </sect2>
+   <sect2 id="language.types.string.casting">
+    <title>Converting to string</title>
+    
+    <para>
+     You can convert a value to a string using the <literal>(string)</literal>
+     cast, or the <function>strval</function> function. String conversion
+     is automatically done in the scope of an expression for you where a
+     string is needed. This happens when you use the <function>echo</function>
+     or <function>print</function> functions, or when you compare a variable
+     value to a string.
+    </para>
+    
+    <para>
+     A boolean &true; value is converted to the string <literal>"1"</literal>,
+     the &false; value is represented as <literal>""/literal> (empty string).
+     This way you can convert back and forth between boolean and string values.
+    </para>
+    <para> 
+     An integer or a floating point number is converted to a string
+     representing the number with its digits (includig the exponent part
+     for floating point numbers).
+    </para>
+    <para>
+     Arrays are always converted to the string <literal>"Array"</literal>,
+     so you cannot dump out the contents of an array with <function>echo</function>
+     or <function>print</function> to see what is inside them. See the information
+     below for more tips.
+    </para>
+    <para>
+     Objects are always converted to the string <literal>"Object"</literal>.
+     If you would like to print out the member variable values of an object
+     for debugging reasons, read the paragraphs below. If you would
+     like to find out the class name of which an object is an instance of,
+     use <function>get_class</function>.  
+    </para>
+    <para>
+     Resources are always converted to strings with the structure
+     <literal>"Resource id #1"</literal> where <literal>1</literal> is
+     the unique number of the resource assigned by PHP during runtime.
+    </para>
+    <para>
+     &null; is always converted to an empty string.
+    </para>
+    
+    <para>
+     As you can see above, printing out the arrays, objects or resources does not
+     provide you any useful information about the values themselfs. Look at the
+     functions <function>print_r</function> and <function>var_dump</function>
+     for better ways to print out values for debugging.
+    </para>
+    
+    <para>
+     You can also convert PHP values to strings to store them permanently. This
+     method is called serialization, and can be done with the function
+     <function>serialize</function>. You can also serialize PHP values to
+     XML structures, if you have <link linkend="ref.wddx">WDDX</link> support
+     in your PHP setup.
+    </para>
+   </sect2>
+
    <sect2 id="language.types.string.conversion">
-    <title>String conversion</title>
+    <title>String conversion to numbers</title>
 
     <simpara>
      When a string is evaluated as a numeric value, the resulting
@@ -1937,9 +1999,9 @@ call_user_function(array("foo", "bar")); // static class method call
     PHP does not require (or support) explicit type definition in
     variable declaration; a variable's type is determined by the
     context in which that variable is used. That is to say, if you
-    assign a string value to variable <parameter>var</parameter>,
-    <parameter>var</parameter> becomes a string. If you then assign an
-    integer value to <parameter>var</parameter>, it becomes an
+    assign a string value to variable <parameter>$var</parameter>,
+    <parameter>$var</parameter> becomes a string. If you then assign an
+    integer value to <parameter>$var</parameter>, it becomes an
     integer.
    </simpara>
    <para>
@@ -1984,7 +2046,7 @@ examples:
    <simpara>
     If the last two examples above seem odd, see <link
     linkend="language.types.string.conversion">String
-    conversion</link>.
+    conversion to numbers</link>.
    </simpara>
    <simpara>
     If you wish to force a variable to be evaluated as a certain type,
@@ -2010,15 +2072,27 @@ $a[0] = "f";  // What about string offsets? What happens?
      </informalexample>
     </para>
     <para>
-     Since PHP supports indexing into strings via offsets using the
-     same syntax as array indexing, the example above leads to a
-     problem: should $a become an array with its first element being
-     "f", or should "f" become the first character of the string $a?
+     Since PHP (for historical reasons) supports indexing into strings
+     via offsets using the same syntax as array indexing, the example
+     above leads to a problem: should $a become an array with its first
+     element being "f", or should "f" become the first character of the
+     string $a?
     </para>
     <para>
-     For this reason, as of PHP 3.0.12 and PHP 4.0b3-RC4, the result
-     of this automatic conversion is considered to be undefined. Fixes
-     are, however, being discussed.
+     The current versions of PHP interpret the second assignment as
+     a string offset identification, so $a becomes "f", the result
+     of this automatic conversion however should be considered
+     undefined. PHP 4 introduced the new curly bracket syntax to access
+     characters in string, use this syntax instead of the one presented
+     above: 
+     <informalexample>
+      <programlisting role="php">
+$a    = "abc"; // $a is a string
+$a{1} = "f";   // $a is now "afc"
+      </programlisting>
+     </informalexample>
+     See the section titled <link linkend="language.types.string.substr">String
+     access by character</link> for more informaton.
     </para>
    </note>
 
@@ -2032,7 +2106,7 @@ $a[0] = "f";  // What about string offsets? What happens?
      <informalexample>
       <programlisting role="php">
 $foo = 10;   // $foo is an integer
-$bar = (float) $foo;   // $bar is a float
+$bar = (boolean) $foo;   // $bar is a boolean
       </programlisting>
      </informalexample>
     </para>
@@ -2059,14 +2133,6 @@ $bar = (float) $foo;   // $bar is a float
       </listitem>
      </itemizedlist>
     </para>
-    <note>
-     <simpara>
-      Instead of casting a variable to string, you can also enclose
-      the variable in double quotes.
-      <!-- TODO: example -->
-     </simpara>
-    </note>
-     
     <para>
      Note that tabs and spaces are allowed inside the parentheses, so
      the following are functionally equivalent:
@@ -2077,6 +2143,25 @@ $foo = ( int ) $bar;
       </programlisting>
      </informalexample>
     </para>
+    <note>
+     <simpara>
+      Instead of casting a variable to string, you can also enclose
+      the variable in double quotes.
+     <informalexample>
+      <programlisting role="php">
+$foo = 10;            // $foo is an integer
+$str = "$foo";        // $str is a string
+$fst = (string) $foo; // $fst is also a string
+
+// This prints out that "they are the same"
+if ($fst === $str) {
+    echo "they are the same";
+}
+      </programlisting>
+     </informalexample>
+     </simpara>
+    </note>
+     
     <para>
      It may not be obvious exactly what will happen when casting
      between certain types. For more info, see these sections:
@@ -2090,14 +2175,14 @@ $foo = ( int ) $bar;
        <simpara><link linkend="language.types.integer.casting">Converting to 
         integer</link></simpara>
       </listitem>
+      <listitem>
+       <simpara><link linkend="language.types.string.casting">Converting to 
+        string</link></simpara>
+      </listitem>
       <!-- don't exist yet
       <listitem>
        <simpara><link linkend="language.types.float.casting">Converting to 
         float</link></simpara>
-      </listitem>
-      <listitem>
-       <simpara><link linkend="language.types.string.casting">Converting to 
-        string</link></simpara>
       </listitem>
       <listitem>
        <simpara><link linkend="language.types.array.casting">Converting to 
@@ -2120,19 +2205,7 @@ $foo = ( int ) $bar;
     
     </para>
     <para>
-     <!-- TODO: move to 'converting to string' -->
-     When casting or forcing a conversion from array to string, the
-     result will be the word <literal>Array</literal>. When casting or
-     forcing a conversion from object to string, the result will be
-     the word <literal>Object</literal>. 
-     
-     <!-- not with my PHP, not even a notice... maybe in PHP3? 
-     Does someone know? 
-     
-     In both cases a warning will
-     be issued. -->
-    </para>
-    <para>
+     <!-- TODO: move to 'converting to array' -->
      When casting from a scalar or a string variable to an array, the
      variable will become the first element of the array:
      <informalexample>
@@ -2144,6 +2217,7 @@ echo $arr[0];  // outputs 'ciao'
      </informalexample>
     </para>
     <para>
+     <!-- TODO: move to 'converting to object' -->
      When casting from a scalar or a string variable to an object, the
      variable will become an attribute of the object; the attribute
      name will be 'scalar':
