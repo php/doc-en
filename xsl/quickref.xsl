@@ -3,7 +3,7 @@
 
   quickref.xsl: Stylesheet for generating quick-reference
 
-  $Id: quickref.xsl,v 1.4 2004-11-14 20:37:29 techtonik Exp $
+  $Id: quickref.xsl,v 1.5 2004-11-14 22:30:57 techtonik Exp $
 
 -->
 <!DOCTYPE xsl:stylesheet [
@@ -38,12 +38,12 @@
 
 <xsl:template match="refnamediv">
   <!-- function reference names can't contain spaces -->
-  <xsl:if test="not (contains(normalize-space(refname),' '))">
-    <xsl:value-of select="normalize-space(refname)"/>
+  <xsl:for-each select="refname[not(contains(normalize-space(),' '))]">
+    <xsl:value-of select="normalize-space()"/>
     <xsl:text> - </xsl:text>
-    <xsl:value-of select="normalize-space(refpurpose)"/>
+    <xsl:value-of select="normalize-space(../refpurpose)"/>
     <xsl:text>&#10;</xsl:text>
-  </xsl:if>
+  </xsl:for-each>
 </xsl:template>
 
 </xsl:stylesheet>
