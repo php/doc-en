@@ -1,24 +1,147 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
 <!-- splitted from ./en/functions/sockets.xml, last change in rev 1.27 -->
   <refentry id="function.socket-select">
    <refnamediv>
     <refname>socket_select</refname>
-    <refpurpose>Runs the select() system call on the sets mentioned with a timeout specified by tv_sec and tv_usec </refpurpose>
+    <refpurpose>Runs the select() system call on the given arrays of sockets with a timeout specified by tv_sec and tv_usec </refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
       <type>int</type><methodname>socket_select</methodname>
-      <methodparam><type>resource</type><parameter>read_fd</parameter></methodparam>
-      <methodparam><type>resource</type><parameter>write_fd</parameter></methodparam>
-      <methodparam><type>resource</type><parameter>except_fd</parameter></methodparam>
+      <methodparam><type>resource</type><parameter>read</parameter></methodparam>
+      <methodparam><type>resource</type><parameter>write</parameter></methodparam>
+      <methodparam><type>resource</type><parameter>except</parameter></methodparam>
       <methodparam><type>int</type><parameter>tv_sec</parameter></methodparam>
       <methodparam choice="opt"><type>int</type><parameter>tv_usec</parameter></methodparam>
      </methodsynopsis>
      &warn.experimental.func;
     <para>
-     &warn.undocumented.func;
+     The <function>socket_select</function> accepts arrays of sockets and
+     waits for them to change status. Those coming with BSD sockets background
+     will recognize that those socket resource arrays are in fact the
+     so-called file descriptor sets. Three independent arrays of socket
+     resources are watched.
+    </para>
+    <para>
+     The sockets listed in the <parameter>read</parameter> array will be watched to
+     see if characters become available for reading (more precisely, to see if
+     a read will not block - in particular, a socket resource is also ready on
+     end-of-file, in which case a <function>socket_read</function> will return
+     a zero length string).
+    </para>
+    <para>
+     The sockets listed in the <parameter>write</parameter> array will be
+     watched  to  see if a write will not block.
+    </para>
+    <para>
+     The sockets listed in the <parameter>except</parameter> array will be
+     watched for exceptions.
+    </para>
+    <para>
+     On exit, the arrays are modified to indicate which socket resource
+     actually changed status.
+    </para>
+    <para>
+     You do not need to pass every array to
+     <function>socket_select</function>. You can leave it out and use an
+     empty array or &null; instead. Also do not forget that those arrays are
+     passed <emphasis>by reference</emphasis> and will be modified after
+     <function>socket_select</function> returns.
+    </para>
+    <note>
+     <para>
+      Due a limitation in the current Zend Engine it is not possible to pass a
+      constant modifier like &null; directly as a parameter to a function
+      which expects this parameter to be passed by reference. Instead use a
+      temporary variable or an expression with the leftmost member being a
+      temporary variable:
+      <programlisting role="php">
+<![CDATA[
+socket_select($r, $w, $e = NULL, 0);
+]]>
+     </programlisting>
+     </para>
+    </note>
+    <para>
+     The <parameter>tv_sec</parameter> and <parameter>tv_usec</parameter>
+     together form the <emphasis>timeout</emphasis> parameter. The
+     <emphasis>timeout</emphasis> is an upper bound on the amount of time
+     elapsed before <function>socket_select</function> return.
+     <parameter>tv_sec</parameter> may be zero , causing
+     <function>socket_select</function> to return immediately. This is useful
+     for polling. If <parameter>tv_sec</parameter> is &null; (no timeout),
+     <function>socket_select</function> can block indefinitely.
+    </para>
+    <para>
+     On success <function>socket_select</function> returns the number of
+     socket resorces contained in the modified arrays, which may be zero if
+     the timeout expires before anything interesting happens. On error &false;
+     is returned. The error code can be retrieved with
+     <function>socket_last_error</function>.
+    </para>
+    <note>
+     <para>
+     Be sure to use the <literal>===</literal> operator when checking for an
+     error. Since the <function>socket_select</function> may return 0 the
+     comparison with <literal>==</literal> would evaluate to &true;:
+     <programlisting role="php">
+<![CDATA[
+if (false === socket_select($r, $w, $e = NULL, 0)) {
+    echo "socket_select() failed, reason: " . socket_strerror(socket_last_error()) . "\n";
+}
+]]>
+     </programlisting>
+     </para>
+    </note>
+    <note>
+     <para>
+      Be aware that some socket imeplementations need to be handled very
+      carefully. A few basic rules:
+      <itemizedlist>
+       <listitem>
+        <simpara>
+         You should always try to use <function>socket_select</function>
+         without timeout. Your program should have nothing to do if there is
+         no data available. Code that depends on timeouts is not usually
+         portable and difficult to debug.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         No socket resource must be added to any set if you do not intend to
+         check its result after the <function>socket_select</function> call,
+         and respond appropriately. After <function>socket_select</function>
+         returns, all socket resources in all arrays must be checked. Any
+         socket resource that is available for writing must be written to, and
+         any socket resource available for reading must be read from.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         If you read/write to a socket returns in the arrays be aware that
+         they do not necessarily read/write the full amount of data you have
+         requested. Be prepared to even only be able to read/write a single
+         byte.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         It's common to most socket implementations that the only exception
+         caught with the <parameter>except</parameter> array is out-of-bound
+         data received on a socket.
+        </simpara>
+       </listitem>
+      </itemizedlist>
+     </para>
+    </note>
+    <para>
+     See also
+     <function>socket_read</function>,
+     <function>socket_write</function>,
+     <function>socket_last_error</function> and 
+     <function>socket_strerror</function>.
     </para>
    </refsect1>
   </refentry>
