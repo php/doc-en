@@ -12,7 +12,7 @@ version suitable for print, you will additionally need FO processor.
 XSLT processors:
 	XT: http://www.jclark.com/xml/xt.html
 	Saxon: http://saxon.sourceforge.net/
-	Xalan: http://xml.apache.org/xalan/
+	Xalan: http://xml.apache.org/xalan-j/
 
 XSL DocBook Stylesheets:
 	http://www.nwalsh.com/docbook/xsl/index.html
@@ -87,4 +87,4 @@ does not work for now. Hope, this will change in the near future.
 
 
 Jirka Kosek <jirka@kosek.cz>
-Last modified $Date: 2001-08-05 08:47:50 $
+Last modified $Date: 2001-08-05 09:24:09 $
