@@ -106,7 +106,7 @@ function refineFile($filename)
 
     // Replace title with simple <title> content [shorter, without tags]
     $content = preg_replace(
-        '!<div><h(\d)[^>]*>.+</h\1></div>!Us',
+        '!<h(\d)[^>]*>.+</h\1>!Us',
         "<h1 class=\"masterheader\"><span id=\"pageTitle\">$page_title</span></h1>",
         $content,
         1
@@ -116,8 +116,12 @@ function refineFile($filename)
     // Add divisions for skin support
 
     // Make the document invisible by default, adding a new first div
+    // with id="pageContent" and opening div with id="pageHeaders"
     $bodystart_regex = '!(<div class="(\w+)"( lang=\"\w+\")?>)!Us';
-    if (preg_match($bodystart_regex, $content)) {
+    if (!preg_match($bodystart_regex, $content)) {
+        echo "Can't add first div. No match in $filename\n";
+
+    } else {
         $content = preg_replace(
             $bodystart_regex,
             '<div id="pageContent" style="display:none;">\1<div id="pageHeaders">',
@@ -131,18 +135,17 @@ function refineFile($filename)
             '</div></body></html>',
             $content
         );
-    } else {
-        echo "Can't add first div. No match.\n";
     }
     
-    // For headers we have several possibilities
+    // For headers we have several possibilities to close div id="pageHeaders"
+    // and open div with id="pageText"
     if (strpos($content, '<div class="refnamediv">') !== FALSE) {
         
         // A function page
         if (!strpos($content, "refsynopsisdiv")) {
             $content = str_replace(
-                '</h2></div><div class="refsect1">',
-                '</h2></div></div><div id="pageText"><div class="refsect1">',
+                '</h2></div><div class="refsect1"',
+                '</h2></div></div><div id="pageText"><div class="refsect1"',
                 $content
             );
         }
@@ -150,27 +153,16 @@ function refineFile($filename)
         // The COM or VARIANT classes page (which contain refsynopsisdiv)
         else {
             $content = str_replace(
-                '<div class="refsynopsisdiv">',
-                '</div><div id="pageText"><div class="refsynopsisdiv">',
+                '<div class="refsynopsisdiv"',
+                '</div><div id="pageText"><div class="refsynopsisdiv"',
                 $content
             );
         }
         
     }
 
-    // Normal page, and not an index
-    elseif ($filename != $INDEX_FILE) {
-        
-        $content = preg_replace(
-            '!</h1></div>(<p>)?</div>!',
-            '</h1></div>\\1</div></div><div id="pageText">',
-            $content
-        );
-
-    }
-
     // The index page
-    else {
+    elseif ($filename == $INDEX_FILE)  {
         
         // Delete titlepage div and
         // add pageHeader end and pageText start
@@ -186,6 +178,23 @@ function refineFile($filename)
         );
     }
     
+    // Normal page
+    else {
+        
+        $headend_regex = '!</h1></div>!';
+        if (!preg_match($headend_regex, $content)) {
+            echo "Impossible to close pageHeaders div. No match in $filename\n";
+
+        } else {
+            $content = preg_replace(
+                $headend_regex,
+                '</h1></div></div><div id="pageText">',
+                $content
+            );
+        }
+
+    }
+
     // End that pageText div before the user notes
     $content = str_replace(
         '<a name="_user_notes">',
