@@ -1,7 +1,7 @@
 @echo off
 
 rem !! Please read the make_chm.README file for information
-rem !! about how to build a manual_lang.chm file.
+rem !! about how to build a "php_manual_lang.chm" file.
 
 rem Path of the PHP CGI executable
 set PHP_PATH=D:\progra~1\php404\php.exe
@@ -44,12 +44,12 @@ echo Skipping fancy manual generation...
 echo Now running the toc and project file generator script...
 %PHP_PATH% -q make_chm.php
 
-echo Compiling the actual helpfile (manual-%PHP_HELP_COMPILE_LANG%-date.chm)...
-%PHP_HELP_COMPILER% manual-%PHP_HELP_COMPILE_LANG%.hhp
+echo Compiling the actual helpfile (php_manual_%PHP_HELP_COMPILE_LANG%.chm)...
+%PHP_HELP_COMPILER% php_manual_%PHP_HELP_COMPILE_LANG%.hhp
 
 echo.
 echo Cleaning up the directory
-del manual-%PHP_HELP_COMPILE_LANG%.hh?
+rem del php_manual_%PHP_HELP_COMPILE_LANG%.hh?
 
 echo Done!
 echo.
