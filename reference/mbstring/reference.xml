@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.16 $ -->
+<!-- $Revision: 1.17 $ -->
  <reference id="ref.mbstring">
   <title>Multi-Byte String Functions</title> 
   <titleabbrev>Multi-Byte String</titleabbrev>
@@ -8,94 +8,123 @@
    <section id="mbstring.intro">
     &reftitle.intro;
     <para>
-     There are many languages in which all characters can be expressed
-     by single byte. Multi-byte character codes are used to express
-     many characters for many languages. <literal>mbstring</literal>
-     is developed to handle Japanese characters. However, many
-     <literal>mbstring</literal> functions are able to handle
-     character encoding other than Japanese.
+     While there are many languages in which every necessary character can
+     be represented by a one-to-one mapping to a 8-bit value, there are also
+     several languages which require so many characters for written
+     communication that cannot be contained within the range a mere byte can
+     code. Multibyte character encoding schemes were developed to express
+     that many (more than 256) characters in the regular bytewise coding
+     system.
     </para>
     <para>
-     A multi-byte character encoding represents single character with
-     consecutive bytes. Some character encoding has shift(escape)
-     sequences to start/end multi-byte character strings. Therefore, a
-     multi-byte character string may be destroyed when it is divided
-     and/or counted unless multi-byte character encoding safe method
-     is used. This module provides multi-byte character safe string
-     functions and other utility functions such as conversion
-     functions.
+     When you manipulate (trim, split, splice, etc.) strings encoded in a
+     multibyte encoding, you need to use special functions since two or more
+     consecutive bytes may represent a single character in such encoding
+     schemes. Otherwise, if you apply a non-multibyte-aware string function
+     to the string, it probably fails to detect the beginning or ending of
+     the multibyte character and ends up with a corrupted garbage string that
+     most likely loses its original meaning.
     </para>
     <para>
-     Since PHP is basically designed for ISO-8859-1, some multi-byte
-     character encoding does not work well with PHP. Therefore, it is
-     important to set 
-     <literal>mbstring.language</literal> to appropriate language 
-     (i.e. "Japanese" for Japanese) and
-     <literal>mbstring.internal_encoding</literal> to a character
-     encoding that works with PHP.
+     <literal>mbstring</literal> provides these multibyte specific
+     string functions that help you deal with multibyte encodings in PHP,
+     which is basically supposed to be used with single byte encodings.
+     In addition to that, <literal>mbstring</literal> handles character
+     encoding conversion between the possible encoding pairs.
     </para>
     <para>
-     PHP 4 Character Encoding Requirements 
+     <literal>mbstring</literal> is also designed to handle Unicode-based
+     encodings such as UTF-8 and UCS-2 and many single-byte encodings
+     for convenience (listed below), whereas <literal>mbstring</literal> was
+     originally developed for use in Japanese web pages.
     </para>
-    <para>
-     <itemizedlist>
-      <listitem>
-       <simpara>
-        Per byte encoding
-       </simpara>
-      </listitem>
-      <listitem>
-       <simpara>
-        Single byte characters in range of <literal>00h-7fh</literal>
-        which is compatible with <literal>ASCII</literal>
-       </simpara>
-      </listitem>
-      <listitem>
-       <simpara>
-        Multi-byte characters without <literal>00h-7fh</literal>
-       </simpara>
-      </listitem>
-     </itemizedlist>
-    </para>
-    <para>
-     These are examples of internal character encoding that works with
-     PHP and does NOT work with PHP.
-     <informalexample>
-      <programlisting>
-<![CDATA[
-Character encodings work with PHP: 
-ISO-8859-*, EUC-JP, UTF-8
 
-Character encodings do NOT work with PHP:
-JIS, SJIS
+    <section id="mbstring.php4.req">
+     <title>PHP Character Encoding Requirements</title>
+     <para>
+      Encodings of the following types are safely used with PHP.
+      <itemizedlist>
+       <listitem>
+        <para>
+         A singlebyte encoding,
+         <itemizedlist>
+          <listitem>
+           <simpara>
+            which has ASCII-compatible (ISO646 compatible) mappings for the
+            characters in range of <literal>00h</literal> to
+            <literal>7fh</literal>.
+           </simpara>
+          </listitem>
+         </itemizedlist>
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         A multibyte encoding,
+         <itemizedlist>
+          <listitem>
+           <simpara>
+            which has ASCII-compatible mappings for the characters in range of
+            <literal>00h</literal> to <literal>7fh</literal>.
+           </simpara>
+          </listitem>
+          <listitem>
+           <simpara>
+            which don't use ISO2022 escape sequences.
+           </simpara>
+          </listitem>
+          <listitem>
+           <simpara>
+            which don't use a value from <literal>00h</literal> to
+            <literal>7fh</literal> in any of the compounded bytes
+            that represents a single character.
+           </simpara>
+          </listitem>
+         </itemizedlist>  
+        </para>
+       </listitem>
+      </itemizedlist>
+     </para>
+     <para>
+      These are examples of character encodings that are unlikely to work
+      with PHP.
+      <informalexample>
+       <programlisting>
+<![CDATA[
+JIS, SJIS, ISO-2022-JP, BIG-5
 ]]>
-      </programlisting>
-     </informalexample>
-    </para>
-    <para>
-     Character encoding, that does not work with PHP, may be converted
-     with <literal>mbstring</literal>'s HTTP input/output conversion
-     feature/function.
-    </para>
-    <note>
-     <para>
-      SJIS should not be used for internal encoding unless the reader
-      is familiar with parser/compiler, character encoding and
-      character encoding issues.
+       </programlisting>
+      </informalexample>
      </para>
-    </note>
-    <note>
      <para>
-      If you use databases with PHP, it is recommended that you use the
-      same character encoding for both database and <literal>internal
-      encoding</literal> for ease of use and better performance.
+      Although PHP scripts written in any of those encodings might not work,
+      especially in the case where encoded strings appear as identifiers
+      or literals in the script, you can almost avoid using these encodings
+      by setting up the <literal>mbstring</literal>'s transparent encoding
+      filter function for incoming HTTP queries.
+     </para>
+     <note>
+      <para>
+       It's highly discouraged to use SJIS, BIG5, CP936, CP949 and GB18030 for
+       the internal encoding unless you are familiar with the parser, the
+       scanner and the character encoding.
       </para>
-     <para>
-      If you are using PostgreSQL, it supports character
-      encoding that is different from backend character encoding. See
-      the PostgreSQL manual for details.
-     </para>
-    </note>
+     </note>
+
+     <note>
+      <para>
+       If you have some database connected with PHP, it is recommended that
+       you use the same character encoding for both database and the
+       <literal>internal encoding</literal> for ease of use and better
+       performance.
+      </para>
+      <para>
+       If you are using PostgreSQL, the character encoding used in the
+       database and the one used in the PHP may differ as it supports
+       automatic character set conversion between the backend and the frontend.
+      </para>
+     </note>
+    </section>
    </section>
 
    &reference.mbstring.configure;
@@ -119,25 +148,21 @@ JIS, SJIS
      </para>
      <note>
       <para>
-       For PHP 4.3.2 or earlier, 
-       if <literal>enctype</literal> for HTML form is set to
-       <literal>multipart/form-data</literal>,
-       <literal>mbstring</literal> does not convert character encoding
-        in POST data. If it is the case, strings are needed to be
-       converted to internal character encoding.
+       In PHP 4.3.2 or earlier versions, <literal>mbstring</literal>
+       there is a limitation in this functionality that
+       <literal>mbstring</literal> does not perform character encoding
+       conversion in POST data if the <literal>enctype</literal> attribute in
+       the <literal>form</literal> element is set to
+       <literal>multipart/form-data</literal>. So you have to convert
+       the incoming data by yourself in this case if necessary.
       </para>
-     </note>
-     <note>
       <para>
-       Since PHP 4.3.3,
-       if <literal>enctype</literal> for HTML form is set to
-       <literal>multipart/form-data</literal>, and, 
-       <literal>mbstring.encoding_translation</literal> is set to 
-       On in &php.ini;
-       POST variables and uploaded filename will be converted to
-       internal character encoding.
-       But, characters specified in 'name' of HTML form will not be
-       converted.
+       Beginning with PHP 4.3.3, if <literal>enctype</literal> for HTML form is
+       set to <literal>multipart/form-data</literal> and
+       <literal>mbstring.encoding_translation</literal> is set to On
+       in &php.ini; the POST'ed variables and the names of uploaded files
+       will be converted to the internal character encoding as well.
+       However, the conversion isn't applied to the query keys.
       </para>
      </note>
      <para>
@@ -166,9 +191,8 @@ mbstring.encoding_translation = Off
         </para>
         <para>
          When using PHP as an Apache module, it is possible to
-         override PHP ini setting per Virtual Host in
-         &httpd.conf; or per directory with
-         &htaccess;. Refer to the <link
+         override those settings in each Virtual Host directive in
+         &httpd.conf; or per directory with &htaccess;. Refer to the <link
           linkend="configuration">Configuration</link> section and
          Apache Manual for details.
         </para>
@@ -186,7 +210,7 @@ mbstring.encoding_translation = Off
         </para>
         <note>
          <para>
-          For PHP3-i18n users, <literal>mbstring</literal>'s output
+          PHP3-i18n users should note that <literal>mbstring</literal>'s output
           conversion differs from PHP3-i18n. Character encoding is
           converted using output buffer.
          </para>
@@ -236,51 +260,101 @@ ob_start('mb_output_handler');
    <section id="mbstring.encodings">
      <title>Supported Character Encodings</title>
      <simpara>
-      Currently, the following character encoding is supported by the
-      <literal>mbstring</literal> module. Character encoding may
-      be specified for <literal>mbstring</literal> functions'
-      <literal>encoding</literal> parameter.
+      Currently the following character encodings are supported by the
+      <literal>mbstring</literal> module. Any of those Character encodings
+      can be specified in the <literal>encoding</literal> parameter of
+      <literal>mbstring</literal> functions.
      </simpara>
      <para>
       The following character encoding is supported in this PHP
       extension: 
      </para>
-     <para>
-      <literal>UCS-4</literal>, <literal>UCS-4BE</literal>,
-      <literal>UCS-4LE</literal>, <literal>UCS-2</literal>,
-      <literal>UCS-2BE</literal>, <literal>UCS-2LE</literal>,
-      <literal>UTF-32</literal>, <literal>UTF-32BE</literal>,
-      <literal>UTF-32LE</literal>, <literal>UCS-2LE</literal>,
-      <literal>UTF-16</literal>, <literal>UTF-16BE</literal>,
-      <literal>UTF-16LE</literal>, <literal>UTF-8</literal>,
-      <literal>UTF-7</literal>, <literal>ASCII</literal>,
-      <literal>EUC-JP</literal>, <literal>SJIS</literal>,
-      <literal>eucJP-win</literal>, <literal>SJIS-win</literal>,
-      <literal>ISO-2022-JP</literal>, <literal>JIS</literal>,
-      <literal>ISO-8859-1</literal>, <literal>ISO-8859-2</literal>,
-      <literal>ISO-8859-3</literal>, <literal>ISO-8859-4</literal>,
-      <literal>ISO-8859-5</literal>, <literal>ISO-8859-6</literal>,
-      <literal>ISO-8859-7</literal>, <literal>ISO-8859-8</literal>,
-      <literal>ISO-8859-9</literal>, <literal>ISO-8859-10</literal>,
-      <literal>ISO-8859-13</literal>, <literal>ISO-8859-14</literal>,
-      <literal>ISO-8859-15</literal>, <literal>byte2be</literal>,
-      <literal>byte2le</literal>, <literal>byte4be</literal>,
-      <literal>byte4le</literal>, <literal>BASE64</literal>,
-      <literal>7bit</literal>, <literal>8bit</literal> and
-      <literal>UTF7-IMAP</literal>.
-     </para>
-     <para>
-      As of PHP 4.3.0, the following character encoding support will be added
-      experimentally :
-      <literal>EUC-CN</literal>, <literal>CP936</literal>, <literal>HZ</literal>, 
-      <literal>EUC-TW</literal>, <literal>CP950</literal>, <literal>BIG-5</literal>, 
-      <literal>EUC-KR</literal>, <literal>UHC</literal> (<literal>CP949</literal>), 
-      <literal>ISO-2022-KR</literal>,
-      <literal>Windows-1251</literal> (<literal>CP1251</literal>),
-      <literal>Windows-1252</literal> (<literal>CP1252</literal>),
-      <literal>CP866</literal>, 
-      <literal>KOI8-R</literal>.
-     </para>
+     <itemizedlist>
+      <listitem><simpara>UCS-4</simpara></listitem>
+      <listitem><simpara>UCS-4BE</simpara></listitem>
+     
+      <listitem><simpara>UCS-4LE</simpara></listitem>
+      <listitem><simpara>UCS-2</simpara></listitem>
+     
+      <listitem><simpara>UCS-2BE</simpara></listitem>
+      <listitem><simpara>UCS-2LE</simpara></listitem>
+     
+      <listitem><simpara>UTF-32</simpara></listitem>
+      <listitem><simpara>UTF-32BE</simpara></listitem>
+     
+      <listitem><simpara>UTF-32LE</simpara></listitem>
+      <listitem><simpara>UCS-2LE</simpara></listitem>
+     
+      <listitem><simpara>UTF-16</simpara></listitem>
+      <listitem><simpara>UTF-16BE</simpara></listitem>
+     
+      <listitem><simpara>UTF-16LE</simpara></listitem>
+      <listitem><simpara>UTF-8</simpara></listitem>
+     
+      <listitem><simpara>UTF-7</simpara></listitem>
+      <listitem><simpara>ASCII</simpara></listitem>
+     
+      <listitem><simpara>EUC-JP</simpara></listitem>
+      <listitem><simpara>SJIS</simpara></listitem>
+     
+      <listitem><simpara>eucJP-win</simpara></listitem>
+      <listitem><simpara>SJIS-win</simpara></listitem>
+     
+      <listitem><simpara>ISO-2022-JP</simpara></listitem>
+      <listitem><simpara>JIS</simpara></listitem>
+     
+      <listitem><simpara>ISO-8859-1</simpara></listitem>
+      <listitem><simpara>ISO-8859-2</simpara></listitem>
+     
+      <listitem><simpara>ISO-8859-3</simpara></listitem>
+      <listitem><simpara>ISO-8859-4</simpara></listitem>
+     
+      <listitem><simpara>ISO-8859-5</simpara></listitem>
+      <listitem><simpara>ISO-8859-6</simpara></listitem>
+     
+      <listitem><simpara>ISO-8859-7</simpara></listitem>
+      <listitem><simpara>ISO-8859-8</simpara></listitem>
+     
+      <listitem><simpara>ISO-8859-9</simpara></listitem>
+      <listitem><simpara>ISO-8859-10</simpara></listitem>
+     
+      <listitem><simpara>ISO-8859-13</simpara></listitem>
+      <listitem><simpara>ISO-8859-14</simpara></listitem>
+     
+      <listitem><simpara>ISO-8859-15</simpara></listitem>
+      <listitem><simpara>byte2be</simpara></listitem>
+     
+      <listitem><simpara>byte2le</simpara></listitem>
+      <listitem><simpara>byte4be</simpara></listitem>
+     
+      <listitem><simpara>byte4le</simpara></listitem>
+      <listitem><simpara>BASE64</simpara></listitem>
+     
+      <listitem><simpara>7bit</simpara></listitem>
+      <listitem><simpara>8bit</simpara></listitem>
+      <listitem><simpara>UTF7-IMAP</simpara></listitem>
+      <listitem><simpara>EUC-CN</simpara></listitem>
+      <listitem><simpara>CP936</simpara></listitem>
+      <listitem><simpara>HZ</simpara></listitem>
+      
+      <listitem><simpara>EUC-TW</simpara></listitem>
+      <listitem><simpara>CP950</simpara></listitem>
+      <listitem><simpara>BIG-5</simpara></listitem>
+      
+      <listitem><simpara>EUC-KR</simpara></listitem>
+      <listitem><simpara>UHC (CP949)</simpara></listitem>
+      
+      <listitem><simpara>ISO-2022-KR</simpara></listitem>
+     
+      <listitem><simpara>Windows-1251 (CP1251)</simpara></listitem>
+     
+      <listitem><simpara>Windows-1252 (CP1252)</simpara></listitem>
+     
+      <listitem><simpara>CP866</simpara></listitem>
+      
+      <listitem><simpara>KOI8-R</simpara></listitem>
+
+     </itemizedlist>
      <para>
       &php.ini; entry, which accepts encoding name,
       accepts &quot;<literal>auto</literal>&quot; and
@@ -294,56 +368,48 @@ ob_start('mb_output_handler');
      </para>
      <para>
       If &quot;<literal>auto</literal>&quot; is set, it is expanded to
+      the list of encodings defined per the <link linkend="mbstring.configuration">NLS</link>.
+      For instance, if the NLS is set to <literal>Japanese</literal>,
+      the value is assumed to be
       &quot;<literal>ASCII,JIS,UTF-8,EUC-JP,SJIS</literal>&quot;.
      </para>
      <para>
       See also <function>mb_detect_order</function>
      </para>
-     <note>
-      <para>
-       &quot;Supported character encoding&quot; does not mean that it
-       works as internal character code.
-      </para>
-     </note>
    </section>
     
    <section id="mbstring.overload">
      <title>
-      Overloading PHP string functions with multi byte string functions
+      Function Overloading Feature
      </title>
      <para>
-      Because almost PHP application written for language using
-      single-byte character encoding, there are some difficulties for
-      multibyte string handling including Japanese. Most PHP string
-      functions such as <function>substr</function> do not support
-      multibyte strings.
+      You might often find it difficult to get an existing PHP application
+      work in a given multibyte environment. That's mostly because lots of
+      PHP applications out there are written with the standard
+      string functions such as <function>substr</function>, which are
+      known to not properly handle multibyte-encoded strings.
      </para>
      <para>
-      Multibyte extension (mbstring) has some PHP string functions
-      with multibyte support (ex. <function>substr</function> supports
-      <function>mb_substr</function>).
+      mbstring supports 'function overloading' feature which enables
+      you to add multibyte awareness to such an application without
+      code modification by overloading multibyte counterparts on
+      the standard string functions. For example,
+      <function>mb_substr</function> is called instead of
+      <function>substr</function> if function overloading is enabled.
+      This feature makes it easy to port applications that only support
+      single-byte encodings to a multibyte environment in many cases.
      </para>
      <para>
-      Multibyte extension (mbstring) also supports 'function
-      overloading' to add multibyte string functionality without
-      code modification. Using function overloading, some PHP string
-      functions will be overloaded multibyte string functions.
-      For example, <function>mb_substr</function> is called
-      instead of <function>substr</function> if function overloading
-      is enabled. Function overload makes easy to port application
-      supporting only single-byte encoding for multibyte application.
-     </para>
-     <para>
-      <literal>mbstring.func_overload</literal> in &php.ini; should be
-      set some positive value to use function overloading.
-      The value should specify the category of overloading functions,
-      should be set 1 to enable mail function overloading. 2 to enable
-      string functions, 4 to regular expression functions. For
-      example, if is set for 7, mail, strings, regex functions should
-      be overloaded. The list of overloaded functions are shown in
-      below.
+      To use the function overloading, set
+      <literal>mbstring.func_overload</literal> in &php.ini; to a
+      positive value that represents a combination of bitmasks specifying
+      the categories of functions to be overloaded. It should be set
+      to 1 to overload the <function>mail</function> function. 2 for string
+      functions, 4 for regular expression functions. For example,
+      if is set for 7, mail, strings and regular expression functions should
+      be overloaded. The list of overloaded functions are shown below.
       <table>
-      <title>Functions to be overloaded</title>
+       <title>Functions to be overloaded</title>
        <tgroup cols="3">
         <thead>
          <row>
@@ -417,7 +483,7 @@ ob_start('mb_output_handler');
           <entry>4</entry>
           <entry><function>split</function></entry>
           <entry><function>mb_split</function></entry>
-        	</row>
+         </row>
         </tbody>
        </tgroup>
       </table>
@@ -425,46 +491,58 @@ ob_start('mb_output_handler');
    </section>
 
    <section id="mbstring.ja-basic">
-     <title>Basics of Japanese multi-byte characters</title>
+     <title>Basics of Japanese multi-byte encodings</title>
      <para>
-      Most Japanese characters need more than 1 byte per character. In
-      addition, several character encoding schemes are used under a
-      Japanese environment. There are EUC-JP, Shift_JIS(SJIS) and
-      ISO-2022-JP(JIS) character encoding. As Unicode becomes popular,
-      UTF-8 is used also. To develop Web applications for a Japanese
-      environment, it is important to use the character set for the
-      task in hand, whether HTTP input/output, RDBMS and E-mail.
+      It is often said quite hard to figure out how Japanese texts are
+      handled in the computer. This is not only because Japanese characters
+      can only be represented by multibyte encodings, but because different
+      encoding standards are adopted for different purposes / platforms.
+      Moreover, not a few character set standards are used there, which
+      are slightly different from one another. Those facts have often led
+      developers to inevitable mess-up.
+     </para>
+     <para> 
+      To create a working web application that would be put in the Japanese
+      environment, it is important to use the proper character encoding and
+      character set for the task in hand.
      </para>
      <para>
       <itemizedlist>
        <listitem>
-        <simpara>Storage for a character can be up to six
-         bytes</simpara>
+        <simpara>Storage for a character can be up to six bytes</simpara>
        </listitem>
        <listitem>
         <simpara>
-         A multi-byte character is usually twice of the width compared
-         to single-byte characters. Wider characters are called
-         "zen-kaku" - meaning full width, narrower characters are
-         called "han-kaku" - meaning half width. "zen-kaku" characters
-         are usually fixed width.
+         Most of multibyte characters often appear twice as wide as 
+         a single-byte character on display. Those characters are called
+         "zen-kaku" in Japanese which means "full width", and the other
+         (narrower) characters are called "han-kaku" - means half width.
+         However the graphical properties of the characters depend on
+         the glyphs of the type faces used to display them or print them out.
         </simpara>
        </listitem>
        <listitem>
         <simpara>
-         Some character encoding defines shift(escape) sequence for
-         entering/exiting multi-byte character strings.
+         Some character encodings use shift(escape) sequences defined
+         in ISO2022 to switch the code map of the specific code area
+         (<literal>00h</literal> to <literal>7fh</literal>).
         </simpara>
        </listitem>
        <listitem>
         <simpara>
-          ISO-2022-JP must be used for SMTP/NNTP.
+         ISO-2022-JP should be used in SMTP/NNTP, and headers and entities
+         should be reencoded as per RFC requirements. Although those are not
+         requisites, it's still a good idea because several popular user
+         agents cannot recognize any other encoding methods.
         </simpara>
        </listitem>
        <listitem>
-        <para>
-         &quot;i-mode&quot; web site is supposed to use SJIS.
-        </para>
+        <simpara>
+         Webpages created for mobile phone services such as
+         <ulink url="http://www.eurotechnology.com/imode/faq.html">i-mode</ulink>,
+         <ulink url="http://www.vodafone.jp/english/live/">Vodafone live!</ulink>, or <ulink url="http://www.au.kddi.com/english/ezweb/">ezweb</ulink>
+         are supposed to use Shift_JIS.
+        </simpara>
        </listitem>
       </itemizedlist>
      </para>
@@ -473,14 +551,14 @@ ob_start('mb_output_handler');
    <section id="mbstring.ref">
      <title>References</title>
      <para>
-      Multi-byte character encoding and its related issues are very
-      complex. It is impossible to cover in sufficient detail
-      here. Please refer to the following URLs and other resources for
+      Multibyte character encoding schemes and the related issues are very
+      complicated. There should be too few space to cover in sufficient details.
+      Please refer to the following URLs and other resources for
       further readings.
       <itemizedlist>
        <listitem>
         <para>
-         Unicode/UTF/UCS/etc
+         Unicode materials
         </para>
         <para>
          <ulink url="&url.unicode;">&url.unicode;</ulink>
@@ -488,13 +566,14 @@ ob_start('mb_output_handler');
        </listitem>
        <listitem>
         <para>
-         Japanese/Korean/Chinese character
-         information
+         Japanese/Korean/Chinese character information
         </para>
         <para>
-         <literal>
-         ftp://ftp.ora.com/pub/examples/nutshell/ujip/doc/cjk.inf
-         </literal>
+         <ulink url="ftp://ftp.ora.com/pub/examples/nutshell/ujip/doc/cjk.inf">
+          <literal>
+           ftp://ftp.ora.com/pub/examples/nutshell/ujip/doc/cjk.inf
+          </literal>
+         </ulink>
         </para>
        </listitem>
       </itemizedlist>
