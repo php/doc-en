@@ -11,17 +11,70 @@
       1 ; the depth of all other TOCs
       ))
 
+
+
+
 (element refpurpose
   (make sequence
     (literal " -- ")
     (process-children)))
 
+
+(element (funcdef function) 
+	($bold-seq$
+	 (make sequence
+		 (process-children)
+		 )
+	 )
+	)
+
+
+
+
+(element optional ( process-children ))
+
+(
+ element paramdef  
+	(make sequence
+		(if (equal? (child-number (current-node)) 1)
+				(literal " (")
+				(empty-sosofo)
+				)
+		(process-children)
+		(if (equal? (gi (ifollow (current-node))) (normalize "paramdef"))					
+				(make sequence
+				 ( if (> 
+							 (node-list-length (select-elements (descendants (ifollow (current-node))) (normalize "optional")))
+							 0
+							 )
+							(literal " [")	
+							(empty-sosofo)
+							)
+				 (literal ", " )				 				 
+				 )
+				(make sequence
+				 ( if (> 
+							 (node-list-length (select-elements (descendants (current-node)) (normalize "optional")))
+							 0
+							 )
+							(literal (substring "]]]]]]]]]]]]]]]]]]]]]]]]]]]]" 0 (node-list-length (select-elements (descendants (parent (current-node))) (normalize "optional")))))	
+							(empty-sosofo)
+							)
+				 ( literal ")" )
+				 )
+				)
+		)
+	)
+
+
+
 (element function
   (let* ((function-name (data (current-node)))
-	 (linkend (string-append "function." (string-replace function-name
-							     "_" "-")))
-	 (target (element-with-id linkend))
-	 (parent-gi (gi (parent))))
+				 (linkend 
+					(string-append "function." 
+												 (string-replace function-name "_" "-")))
+				 (target (element-with-id linkend))
+				 (parent-gi (gi (parent))))
     (cond
      ;; function names should be plain in FUNCDEF
      ((equal? parent-gi "funcdef")
@@ -31,51 +84,60 @@
      ;; FUNCTION tag is within the definition of the same function,
      ;; make it bold, add (), but don't make a link
      ((or (node-list-empty? target)
-	  (equal? (case-fold-down
-		   (data (node-list-first
-			  (select-elements
-			   (node-list-first
-			    (children
-			     (select-elements
-			      (children
-			       (ancestor-member (parent) (list "refentry")))
-			      "refnamediv")))
-			   "refname"))))
-		  function-name))
+					(equal? (case-fold-down
+									 (data (node-list-first
+													(select-elements
+													 (node-list-first
+														(children
+														 (select-elements
+															(children
+															 (ancestor-member (parent) (list "refentry")))
+															"refnamediv")))
+													 "refname"))))
+									function-name))
       ($bold-seq$
        (make sequence
-	 (process-children)
-	 (literal "()"))))
+				 (process-children)
+				 (literal "()"))))
      
      ;; else make a link to the function and add ()
      (else
       (make element gi: "A"
-	    attributes: (list
-			 (list "HREF" (href-to target)))
-	    ($bold-seq$
-	     (make sequence
-	       (process-children)
-	       (literal
-		)
-	       (literal "()"))))))))
+						attributes: (list
+												 (list "HREF" (href-to target)))
+						($bold-seq$
+						 (make sequence
+							 (process-children)
+							 (literal
+								)
+							 (literal "()"))))))))
+
+
+
+
+
 
 (element example
   (make sequence
     (make element gi: "TABLE"
-	  attributes: (list
-		       (list "WIDTH" "100%")
-		       (list "BORDER" "0")
-		       (list "CELLPADDING" "0")
-		       (list "CELLSPACING" "0")
-		       (list "CLASS" "EXAMPLE"))
-      (make element gi: "TR"
-	(make element gi: "TD"
-	  ($formal-object$))))))
+					attributes: (list
+											 (list "WIDTH" "100%")
+											 (list "BORDER" "0")
+											 (list "CELLPADDING" "0")
+											 (list "CELLSPACING" "0")
+											 (list "CLASS" "EXAMPLE"))
+					(make element gi: "TR"
+								(make element gi: "TD"
+											($formal-object$))))))
+
+
+
+
 
 (mode book-titlepage-recto-mode
   (element authorgroup
     (process-children))
-
+	
   (element author
     (let ((author-name  (author-string))
           (author-affil (select-elements (children (current-node)) 
@@ -85,4 +147,4 @@
               attributes: (list (list "CLASS" (gi)))
               (literal author-name))
         (process-node-list author-affil))))
-)
+	)

@@ -28,6 +28,121 @@
 @FOOTER_MARGIN@
 @BOTTOM_MARGIN@
 
+;;(element (refsect1 title) (literal "- - -"))
+
+
+(element refname
+  (make sequence
+    (if (and %refentry-generate-name% (first-sibling? (current-node)))
+        ($lowtitlewithsosofo$ 1 (literal (gentext-element-name
+                                          (current-node))))
+        (empty-sosofo))
+		)
+	)
+
+(element refsect1
+  (if (node-list=? (current-node) (sgml-root-element))
+      (make simple-page-sequence
+        page-n-columns: %page-n-columns%
+        page-number-restart?: (or %page-number-restart%
+                                  (book-start?)
+                                  (first-chapter?))
+        page-number-format: ($page-number-format$)
+        use: default-text-style
+        left-header:   ($left-header$)
+        center-header: ($center-header$)
+        right-header:  ($right-header$)
+        left-footer:   ($left-footer$)
+        center-footer: ($center-footer$)
+        right-footer:  ($right-footer$)
+        start-indent: %body-start-indent%
+        input-whitespace-treatment: 'collapse
+        quadding: %default-quadding%
+        (make sequence         
+          (process-children)))
+      (make display-group
+        space-before: %block-sep%
+        space-after: 0in
+        start-indent: %body-start-indent%
+        (make sequence         
+          (process-children)))))
+
+(element (funcdef function) 
+	($bold-seq$
+	 (make sequence
+		 (process-children)
+		 )
+	 )
+	)
+
+
+(element refpurpose
+  (make sequence
+        font-family-name: %body-font-family%
+    (make sequence
+      (process-children))
+))
+
+
+(element funcsynopsis
+  (let* ((width-in-chars (if (attribute-string "width")
+                             (string->number (attribute-string "width"))
+                             %verbatim-default-width%))
+         (fsize (lambda () (if (or (attribute-string (normalize "width"))
+                                   (not %verbatim-size-factor%))
+                               (/ (/ (- %text-width% (inherited-start-indent))
+                                     width-in-chars)
+                                  0.7)
+                               (* (inherited-font-size)
+                                  %verbatim-size-factor%)))))
+    ;; This used to be a sequence, but that caused the start-indent to be
+    ;; wrong when it was the first element of a RefSect.  Making it a
+    ;; paragraph makes the bug go away and doesn't seem to have any ill
+    ;; effects.  Need to investigate further...
+    (make paragraph
+      font-family-name: %mono-font-family%
+      font-size: (fsize)
+      font-weight: 'medium
+      font-posture: 'upright
+      line-spacing: (* (fsize) %line-spacing-factor%)
+      ($informal-object$))))
+
+
+(element optional ( process-children ))
+
+(
+ element paramdef  
+	(make sequence
+		(if (equal? (child-number (current-node)) 1)
+				(literal " (")
+				(empty-sosofo)
+				)
+		(process-children)
+		(if (equal? (gi (ifollow (current-node))) (normalize "paramdef"))					
+				(make sequence
+				 ( if (> 
+							 (node-list-length (select-elements (descendants (ifollow (current-node))) (normalize "optional")))
+							 0
+							 )
+							(literal " [")	
+							(empty-sosofo)
+							)
+				 (literal ", " )				 				 
+				 )
+				(make sequence
+				 ( if (> 
+							 (node-list-length (select-elements (descendants (current-node)) (normalize "optional")))
+							 0
+							 )
+							(literal (substring "]]]]]]]]]]]]]]]]]]]]]]]]]]]]" 0 (node-list-length (select-elements (descendants (parent (current-node))) (normalize "optional")))))	
+							(empty-sosofo)
+							)
+				 ( literal ")" )
+				 )
+				)
+		)
+	)
+
 
 (element function
   (cond
@@ -43,7 +158,11 @@
        (process-children)
        (literal "()"))))))
 
+
+
 &common.dsl;
+
+
 
 </style-specification-body>
 </style-specification>
