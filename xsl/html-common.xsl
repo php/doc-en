@@ -3,7 +3,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.6 2002-02-09 12:21:23 goba Exp $
+  $Id: html-common.xsl,v 1.7 2002-02-09 18:27:27 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -66,6 +66,66 @@
 <xsl:template match="refnamediv">
   <p>(<xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>)</p>
   <xsl:apply-imports/>
+</xsl:template>
+
+<!-- This is the same as in DocBook XSL, except that we
+     preserve the role in programlisting and the like -->
+<xsl:template match="programlisting|screen|synopsis">
+  <xsl:param name="suppress-numbers" select="'0'"/>
+  <xsl:variable name="id">
+    <xsl:call-template name="object.id"/>
+  </xsl:variable>
+
+  <xsl:call-template name="anchor"/>
+  
+  <xsl:variable name="preclass">
+    <xsl:choose>
+      <xsl:when test="./@role">
+        <xsl:value-of select="./@role"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="name(.)"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable name="content">
+    <xsl:choose>
+      <xsl:when test="$suppress-numbers = '0'
+                      and @linenumbering = 'numbered'
+                      and $use.extensions != '0'
+                      and $linenumbering.extension != '0'">
+        <xsl:variable name="rtf">
+          <xsl:apply-templates/>
+        </xsl:variable>
+        <pre class="{$preclass}">
+          <xsl:call-template name="number.rtf.lines">
+            <xsl:with-param name="rtf" select="$rtf"/>
+          </xsl:call-template>
+        </pre>
+      </xsl:when>
+      <xsl:otherwise>
+        <pre class="{$preclass}">
+          <xsl:apply-templates/>
+        </pre>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:choose>
+    <xsl:when test="$shade.verbatim != 0">
+      <table xsl:use-attribute-sets="shade.verbatim.style">
+        <tr>
+          <td>
+            <xsl:copy-of select="$content"/>
+          </td>
+        </tr>
+      </table>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:copy-of select="$content"/>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 </xsl:stylesheet>
