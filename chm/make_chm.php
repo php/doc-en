@@ -18,6 +18,7 @@ $INDEX_IN_HTML = "index.html";
 if (empty($FANCY_PATH)) { $FANCY_PATH = $HTML_PATH; }
 
 // Array to manual code -> HTML Help Code conversion
+// Code list: http://www.helpware.net/htmlhelp/hh_info.htm
 $LANGUAGES = array(
     "cs"    => "0x405 Czech",
     "de"    => "0x407 German (Germany)",
@@ -30,7 +31,7 @@ $LANGUAGES = array(
     "kr"    => "0x412 Korean",
     "nl"    => "0x413 Dutch (Netherlands)",
     "pt_BR" => "0x416 Portuguese (Brazil)",
-	"zh"    => "0x804 Simplified Chinese"
+    "zh"    => "0x804 Simplified Chinese"
 );
 
 // Files on the top level of the TOC
