@@ -97,7 +97,7 @@ the actual english xml files, and print statistics
 
 
   // Checks a file, and gather stats
-  function check_file($file)
+  function check_file($file, $file_cnt)
   {
     // The information is contained in these global arrays and vars
     global $miss_file, $miss_tag, $lang, $docdir, $fp, $r_alert, 
@@ -133,7 +133,9 @@ the actual english xml files, and print statistics
       $r_diff = intval($en_rev) - intval($t_tag[1]);
       $t_rev  = "1.".$t_tag[1];
       if ($r_diff != 0) {
-        $t_td   = "<a href=\"http://cvs.php.net/diff.php/$file?r1=1.$t_tag[1]&r2=1.$en_rev$cvs_opt\">$t_td</a>";
+        $t_td   = "<a href=\"http://cvs.php.net/diff.php/".
+                  preg_replace( "'^".$docdir."'", "phpdoc/", $file ).
+                  "?r1=1.$t_tag[1]&r2=1.$en_rev$cvs_opt\">$t_td</a>";
       }
     } else {
       $r_diff = $t_rev = $t_tag[1];
@@ -158,7 +160,11 @@ the actual english xml files, and print statistics
       $col ="#eee8aa";
     }
 
-    
+    // Write out directory headline
+    if ($file_cnt == 0) {
+      $display_dir = preg_replace("'($docdir)(.+)/[^/]*$'", "\\2/", $t_file);
+      fwrite($fp, "<tr><th colspan=12 height=3 bgcolor=#666699>$display_dir</th></tr>");
+    }
     
     // Write out the line for the file into the file
     fwrite($fp, "<tr>\n <td bgcolor=$col>$t_td</td>\n".
@@ -180,10 +186,6 @@ the actual english xml files, and print statistics
   function check_dir($dir)
   {
     global $fp, $docdir, $lang;
-    
-    // Write out directory headline
-    $display_dir = preg_replace("!$docdir(en)(.+)!", "$lang\\2", $dir);
-    fwrite($fp, "<tr><th colspan=12 height=3 bgcolor=#666699>$display_dir</th></tr>");
     
     // Collect files and diretcories in these arrays
     $directories = array();
@@ -207,13 +209,9 @@ the actual english xml files, and print statistics
     sort($files);
       
     // Files first...
-    $nofile = TRUE;
+    $file_cnt = 0;
     foreach ($files as $file) {
-      if (check_file($dir.$file)) { $nofile = FALSE; }
-    }
-    if ($nofile) {
-      fwrite($fp, "<tr><td colspan=12 height=3 bgcolor=#DDDDDD align=center>No
-        processable file in this directory, or no such directory</td></tr>");
+      if (check_file($dir.$file, $file_cnt))  { $file_cnt++; }
     }
 
     // than the subdirs
