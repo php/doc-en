@@ -33,10 +33,6 @@ the actual english xml files, and print statistics
   If you specify <maintainer>, the script only checks
   the files maintaned by the person you add here
   
-  The script will generate a revcheck.html file in
-  the same dir, where the script runs, containing the
-  information about translations
-  
   Revision comment syntax for translated files:
   
    <!-- EN-Revision: 1.34 Maintainer: tom Status: ready -->
@@ -48,8 +44,8 @@ the actual english xml files, and print statistics
   Read more about Revision comments and related
   funcionality in the PHP Documentation Howto.
    
-  Written by Thomas Schöfbeck <tom@php.net>, 2001-08-11
-  Adapted to phpdoc, developed further: <goba@php.net>
+  Authors: Thomas Schöfbeck <tom@php.net>                           |
+           Gabor Hojtsy <goba@php.net>                              |
 
 <?php
   exit;
@@ -149,10 +145,17 @@ the actual english xml files, and print statistics
     }
 
     // Get translated files tag, with maintainer if needed
-    if (empty($maintainer))
-      $t_tag = get_tag($t_file, "\\S*");
-    else
+    if (!empty($maintainer)) {
       $t_tag = get_tag($t_file, $maintainer);
+      // Don't count other's Tags as missing
+      if (count($t_tag) == 0) {
+        $t_tag = get_tag($t_file, "\\S*");
+        if (count($t_tag) > 0)
+          return FALSE;
+      }
+    }
+    else
+      $t_tag = get_tag($t_file, "\\S*");
 
     // No tag found
     if (count($t_tag) == 0) {
@@ -320,8 +323,12 @@ the actual english xml files, and print statistics
     $txml = preg_replace("/\\s+/", " ", $txml);
 
     // Get intro text
-    preg_match("!<intro>(.+)</intro>!s", $txml, $match);
-    $translation["intro"] = trim($match[1]);
+    if (!empty($maintainer))
+        $translation["intro"] = "Personal Statistics for ".$maintainer;
+    else {
+        preg_match("!<intro>(.+)</intro>!s", $txml, $match);
+        $translation["intro"] = trim($match[1]);
+    }
     
     // Get encoding for the output
     preg_match("!<\?xml(.+)\?>!U", $txml, $match);
@@ -329,18 +336,31 @@ the actual english xml files, and print statistics
     $output_charset = $xmlinfo[1]["encoding"];
     
     // Get persons list
-    preg_match_all("!<person(.+)/\\s?>!U", $txml, $matches);
+    if (!empty($maintainer))
+        $pattern = "!<person([^<]+nick=\"$maintainer\".+)/\\s?>!U";
+    else
+        $pattern = "!<person(.+)/\\s?>!U";
+    preg_match_all($pattern, $txml, $matches);
     $translation['persons'] = get_attr_array($matches[1]);
     foreach($translation['persons'] as $num => $person) {
         $plist[$person["nick"]] = $num;
     }
     $personinfo = array();
-    
+
     // Get files list
-    preg_match_all("!<file(.+)/\\s?>!U", $txml, $matches);
-    $translation['files'] = get_attr_array($matches[1]);
+    if (!empty($maintainer)) {
+        preg_match_all("!<file([^<]+person=\"$maintainer\".+)/\\s?>!U", $txml, $matches);
+        $translation['files'] = get_attr_array($matches[1]);
+        // get all others to clear out from available files
+        preg_match_all("!<file(.+)/\\s?>!U", $txml, $matches);
+        $wip_others = get_attr_array($matches[1]);
+    }
+    else {
+        preg_match_all("!<file(.+)/\\s?>!U", $txml, $matches);
+        $translation['files'] = get_attr_array($matches[1]);
+    }
   }
-  
+
   print("
 <!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd\">
 <html>
@@ -369,7 +389,7 @@ body {margin-left: 0px; margin-right: 0px; margin-top: 0px; margin-bottom: 0px; 
 </table> <br>");
 
 if (isset($translation["intro"])) {
-    print('<table width="800" align="center"><tr><td>' . $translation[intro] . '</td></tr></table><p></p>');
+    print('<table width="800" align="center"><tr><td>' . $translation['intro'] . '</td></tr></table><p></p>');
 }
 
 ob_start();
@@ -494,6 +514,11 @@ if ($count > 0) {
 if (isset($wip_files)) {
   foreach($wip_files as $fname => $one) {
     if (isset($missed_files[$fname])) { unset($missed_files[$fname]); }
+  }
+}
+if (isset($wip_others)) {
+  foreach($wip_others as $file => $one) {
+      if (isset($missed_files[$one['name']])) { unset($missed_files[$one['name']]); }
   }
 }
 
