@@ -3,14 +3,15 @@
 ;; $Id$
 ;;
 
-;; Returns the depth of the auto-generated TOC (table of contents) that
-;; should be made at the nd-level
+;; Returns the depth of the auto-generated TOC (table of
+;; contents) that should be made at the nd-level
 (define (toc-depth nd)
   (if (string=? (gi nd) "book")
       2 ; the depth of the top-level TOC
       1 ; the depth of all other TOCs
       ))
 
+;; Make function definitions bold
 (element (funcdef function) 
   ($bold-seq$
    (make sequence
@@ -55,9 +56,9 @@
   )
 
 
-;; there are two different kinds of optionals
-;; optional parameters and optional parameter parts
-;; an optional parameter is identified by an optional tag
+;; There are two different kinds of optionals
+;; optional parameters and optional parameter parts.
+;; An optional parameter is identified by an optional tag
 ;; with a parameter tag as its parent 
 ;; and only whitespace between them
 (element optional 
@@ -74,6 +75,7 @@
       )
   )                
 
+;; Print out parameters in italic
 (element (paramdef parameter)
   (make sequence
     font-posture: 'italic                                                       
@@ -81,7 +83,7 @@
     )
   )                                                       
 
-;; now this is going to be tricky
+;; Now this is going to be tricky
 (element paramdef  
   (make sequence
     ;; special treatment for first parameter in funcsynopsis
@@ -136,13 +138,16 @@
   )
 
 
+;; How to print out void in a funcprototype
 (element (funcprototype void)
  (make sequence ( literal " (void)" )))
 
+;; How to print out varargs in a funcprototype
 (element (funcprototype varargs)
  (make sequence ( literal " (...)" )))
 
 
+;; Linking types to the correct place
 (element type
   (let* 
     ((orig-name (data (current-node)))
@@ -167,7 +172,7 @@
   )
 )
 
-
+;; Linking of function tags
 (element function
   (let* ((function-name (data (current-node)))
      (linkend 
@@ -183,7 +188,7 @@
      ((equal? parent-gi "funcdef")
       (process-children))
      
-     ;; if a valid ID for the target function is not found, or if the
+     ;; If a valid ID for the target function is not found, or if the
      ;; FUNCTION tag is within the definition of the same function,
      ;; make it bold, add (), but don't make a link
      ((or (node-list-empty? target)
@@ -203,7 +208,7 @@
      (process-children)
      (literal "()"))))
      
-     ;; else make a link to the function and add ()
+     ;; Else make a link to the function and add ()
      (else
       (make element gi: "A"
         attributes: (list
@@ -216,6 +221,7 @@
            (literal "()"))))))))
 
 
+;; Link for classnames
 (element classname
   (let* ((class-name (data (current-node)))
      (linkend 
@@ -226,11 +232,11 @@
      (target (element-with-id linkend))
      (parent-gi (gi (parent))))
     (cond
-     ;; function names should be plain in SYNOPSIS
+     ;; Function names should be plain in SYNOPSIS
      ((equal? parent-gi "synopsis")
       (process-children))
      
-     ;; if a valid ID for the target class is not found, or if the
+     ;; If a valid ID for the target class is not found, or if the
      ;; CLASSNAME tag is within the definition of the same class,
      ;; make it bold, but don't make a link
      ((or (node-list-empty? target)
@@ -248,7 +254,7 @@
       ($bold-seq$
        (process-children)))
      
-     ;; else make a link to the function and add ()
+     ;; Else make a link to the class
      (else
       (make element gi: "A"
         attributes: (list
@@ -257,6 +263,7 @@
          (process-children)))))))
 
 
+;; Linking to constants
 (element constant
   (let* ((constant-name (data (current-node)))
      (linkend 
@@ -270,9 +277,9 @@
 ;     ((equal? parent-gi "funcdef")
 ;      (process-children))
      
-     ;; if a valid ID for the target constant is not found, or if the
+     ;; If a valid ID for the target constant is not found, or if the
      ;; CONSTANT tag is within the definition of the same constant,
-     ;; make it bold, add (), but don't make a link
+     ;; make it bold, but don't make a link
      ((or (node-list-empty? target)
       (equal? (case-fold-down
            (data (node-list-first
@@ -288,7 +295,7 @@
       ($bold-mono-seq$
        (process-children)))
      
-     ;; else make a link to the function and add ()
+     ;; Else make a link to the constant
      (else
       (make element gi: "A"
         attributes: (list
@@ -297,6 +304,7 @@
          (process-children)))))))
 
 
+;; Dispaly of examples
 (element example
   (make sequence
     (make element gi: "TABLE"
@@ -311,6 +319,7 @@
               ($formal-object$))))))
 
 
+;; Prosessing tasks for the frontpage
 (mode book-titlepage-recto-mode
   (element authorgroup
     (process-children))
@@ -327,6 +336,7 @@
     )
 
 
+;; Put version info where the refname part in the refnamediv is
 (element (refnamediv refname)
   (make sequence
     (make element gi: "P"
@@ -338,6 +348,7 @@
     )
   )
 
+;; Display of question tags, link targets
 (element question
   (let* ((chlist   (children (current-node)))
          (firstch  (node-list-first chlist))
@@ -354,8 +365,9 @@
                 (process-node-list (children firstch)))
           (process-node-list restch))))   )          
 
-;; Adding class="" HTML parameter to examples
-;; having a role="" parameter...
+;; Adding class HTML parameter to examples
+;; having a role parameter, to make PHP exaxmples
+;; distinguisable from other ones in the manual
 (define ($verbatim-display$ indent line-numbers?)
   (let (
 (content (make element gi: "PRE"
