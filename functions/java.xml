@@ -1,0 +1,203 @@
+ <reference id="ref.java">
+  <title>Java</title>
+  <titleabbrev>PHP / Java Integration</titleabbrev>
+  <partintro>
+   <para>
+    There are two possible ways to bridge PHP and Java: you can either 
+    integrate Java into PHP or, which is the more currently stable and
+    efficient solution, integrate PHP into a Java Servlet environment.
+    The former is provided by ext/java, the latter by a SAPI module that
+    interfaces with the Servlet server.
+   </para>
+	 <para>
+    PHP 4 ext/java provides a simple and effective means for creating and
+    invoking methods on Java objects from PHP. The JVM is created using JNI,
+    and everything runs in-process. Build instructions for ext/java can be
+    found in php4/ext/java/README.
+
+    <example>
+     <title>Java Example</title>
+     <programlisting role="php">
+&lt;?php
+  // get instance of Java class java.lang.System in PHP
+  $system = new Java("java.lang.System");
+
+  // demonstrate property access
+  print "Java version=".$system-&gt;getProperty("java.version")." &lt;br&gt;";
+  print "Java vendor=" .$system-&gt;getProperty("java.vendor")."  &lt;br&gt;";
+  print "OS=".$system-&gt;getProperty("os.name")." ".
+              $system-&gt;getProperty("os.version")." on ".
+              $system-&gt;getProperty("os.arch")." &lt;br&gt;";
+
+  // java.util.Date example
+  $formatter = new Java("java.text.SimpleDateFormat",
+                        "EEEE, MMMM dd, yyyy 'at' h:mm:ss a zzzz");
+
+  print $formatter-&gt;format(new Java("java.util.Date"));
+?&gt;
+     </programlisting>
+    </example>
+    <example>
+     <title>AWT Example</title>
+     <programlisting role="php">
+&lt;?php
+  // This example is only intented to be run as a CGI.
+
+  $frame  = new Java("java.awt.Frame", "Zend");
+  $button = new Java("java.awt.Button", "Hello Java world!");
+
+  $frame-&gt;add("North", $button);
+  $frame-&gt;validate();
+  $frame-&gt;pack();
+  $frame-&gt;visible = True;
+
+  $thread = new Java("java.lang.Thread");
+  $thread-&gt;sleep(10000);
+
+  $frame-&gt;dispose();
+?&gt;
+     </programlisting>
+    </example>
+
+    Notes:
+
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       new Java() will create an instance of a class if a suitable constructor
+       is available. If no parameters are passed and the default constructor
+       is useful as it provides access to classes like "java.lang.System"
+       which expose most of their functionallity through static methods.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Accessing a member of an instance will first look for bean properties
+       then public fields. In other words, "print $date.time" will first
+       attempt to be resolved as "$date.getTime()", then as "$date.time";
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Both static and instance members can be accessed on an object with
+       the same syntax. Furthermore, if the java object is of type
+       "java.lang.Class", then static members of the class (fields and
+       methods) can be accessed.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Exceptions raised result in PHP warnings, and null results. The
+       warnings may be eliminated by prefixing the method call with an
+       "@" sign. The following APIs may be used to retrieve and reset
+       the last error:
+
+       <itemizedlist>
+        <listitem><simpara><function>java_last_exception_get</simpara></listitem>
+        <listitem><simpara>java_last_exception_clear</simpara></listitem>
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Overload resolution is in general a hard problem given the
+       differences in types between the two languages. The PHP Java
+       extension employs a simple, but fairly effective, metric for
+       determining which overload is the best match.
+
+       Additionally, method names in PHP are not case sensitive, potentially
+       increasing the number of overloads to select from.
+
+       Once a method is selected, the parameters are cooerced if necessary, 
+       possibly with a loss of data (example: double precision floating point
+       numbers will be converted to boolean).
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       In the tradition of PHP, arrays and hashtables may pretty much
+       be used interchangably. Note that hashtables in PHP may only be
+       indexed by integers or strings; and that arrays of primitive types
+       in Java can not be sparse. Also note that these constructs are
+       passed by value, so may be expensive in terms of memory and time.
+      </simpara>
+     </listitem>
+    </itemizedlist>
+   </para>
+   <para>
+    PHP4 sapi/servlet builds upon the mechanism defined by ext/java to enable
+    the entire PHP processor to be run as a servlet. The primary advanatage
+    of this from a PHP perspective is that web servers which support servlets
+    typically take great care in pooling and reusing JVMs. Build instructions 
+    for the Servlet SAPI module can be found in php4/sapi/README.
+
+    Notes:
+
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       While this code is intended to be able to run on any servlet engine,
+       it has only been tested on Apache's Jakarta/tomcat to date. Bug
+       reports, success stories and/or patches required to get this code
+       to run on other engines would be appreciated.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       PHP has a habit of changing the working directory. sapi/servlet will
+       eventually change it back, but while PHP is running the servlet engine
+       may not be able to load any classes from the CLASSPATH which are
+       specified using a relative directory syntax, or find the work directory
+       used for administration and JSP compilation tasks.
+      </simpara>
+     </listitem>
+    </itemizedlist>
+   </para>
+  </partintro>
+
+  <refentry id="function.java-last-exception-clear">
+   <refnamediv>
+    <refname>java_last_exception_clear</refname>
+    <refpurpose>Clear last Java exception</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>void <function>java_last_exception_clear</function></funcdef>
+     </funcprototype>
+    </funcsynopsis>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.java-last-exception-get">
+   <refnamediv>
+    <refname>java_last_exception_get</refname>
+    <refpurpose>Get last Java exception</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>exception <function>java_last_exception_get</function></funcdef>
+     </funcprototype>
+    </funcsynopsis>
+   </refsect1>
+  </refentry>
+ </reference>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->
