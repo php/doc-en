@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!-- 
 
-  common.xsl: Common customizations for all formats
+  common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.13 2004-11-01 12:16:55 techtonik Exp $
+  $Id: common.xsl,v 1.14 2004-11-01 19:30:47 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -13,6 +13,7 @@
 <!-- Colorize background for programlisting and screens
      will go into CSS probably in next DocBook version --> 
 <xsl:param name="shade.verbatim" select="1"/>
+
 
 
 <!-- *************** TUNE FUNCTION REFERENCE PAGES **************** -->
@@ -89,89 +90,140 @@
 </xsl:template>
 
 
-<!-- Remove whitespace before and after the contents of
-     programlisting and screen tags used for PHP code and
-     output examples
+
+<!-- *************** TUNE PROGRAMLISTING DISPLAY **************** -->
+<!-- This is the same as in DocBook XSL verbatim.xsl, except
+     that we preserve the role in programlisting and the like -->
+<xsl:template match="programlisting|screen|synopsis">
+  <xsl:param name="suppress-numbers" select="'0'"/>
+  <xsl:variable name="id">
+    <xsl:call-template name="object.id"/>
+  </xsl:variable>
+
+  <xsl:call-template name="anchor"/>
+
+  <xsl:variable name="preclass">
+    <xsl:choose>
+      <xsl:when test="./@role">
+        <xsl:value-of select="./@role"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="name(.)"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable name="content">
+    <xsl:choose>
+      <xsl:when test="$suppress-numbers = '0'
+                      and @linenumbering = 'numbered'
+                      and $use.extensions != '0'
+                      and $linenumbering.extension != '0'">
+        <xsl:variable name="rtf">
+          <xsl:apply-templates/>
+        </xsl:variable>
+        <pre class="{$preclass}">
+          <xsl:call-template name="number.rtf.lines">
+            <xsl:with-param name="rtf" select="$rtf"/>
+          </xsl:call-template>
+        </pre>
+      </xsl:when>
+      <xsl:otherwise>
+        <pre class="{$preclass}">
+          <xsl:apply-templates/>
+        </pre>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:choose>
+    <xsl:when test="$shade.verbatim != 0">
+      <table xsl:use-attribute-sets="shade.verbatim.style">
+        <tr>
+          <td>
+            <xsl:copy-of select="$content"/>
+          </td>
+        </tr>
+      </table>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:copy-of select="$content"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+
+<!-- Strip newlines before and after the contents of program listing and
+     and screen tags used for PHP code and output examples preserve
+     identation of the first line.
      
-     Thanks to Peter Kullman for the initial version of this code
+     Initial version by techtonik =p
+     Thanks to Peter Kullman for an idea
 -->
 <xsl:template match="screen/text()|programlisting/text()">
- <xsl:variable name="before" select="preceding-sibling::node()"/>
- <xsl:variable name="after" select="following-sibling::node()"/>
-
- <xsl:variable name="conts" select="."/>
-
- <xsl:variable name="contsl">
-  <xsl:choose>
-   <xsl:when test="count($before) = 0">
-    <xsl:call-template name="remove-ws-left">
-     <xsl:with-param name="astr" select="$conts"/>
-    </xsl:call-template>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:value-of select="$conts"/>
-   </xsl:otherwise>
-  </xsl:choose>
- </xsl:variable>
-
- <xsl:variable name="contslr">
-  <xsl:choose>
-   <xsl:when test="count($after) = 0">
-    <xsl:call-template name="remove-ws-right">
-     <xsl:with-param name="astr" select="$contsl"/>
-    </xsl:call-template>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:value-of select="$contsl"/>
-   </xsl:otherwise>
-  </xsl:choose>
- </xsl:variable>
-
- <xsl:value-of select="$contslr"/>
-
-</xsl:template>
-
-<!-- Remove whitespace from the left of a string -->
-<xsl:template name="remove-ws-left">
- <xsl:param name="astr"/>
+ <xsl:variable name="before" select="count(preceding-sibling::*)"/>
+ <xsl:variable name="after" select="count(following-sibling::*)"/>
 
  <xsl:choose>
-  <xsl:when test="starts-with($astr,'&#xA;') or
-                  starts-with($astr,'&#xD;') or
-                  starts-with($astr,'&#x20;') or
-                  starts-with($astr,'&#x9;')">
-   <xsl:call-template name="remove-ws-left">
-    <xsl:with-param name="astr" select="substring($astr, 2)"/>
+  <xsl:when test="$before = 0 and $after = 0">
+   <xsl:call-template name="trim_newlines"/>
+  </xsl:when>
+  <xsl:when test="$before = 0">
+   <xsl:call-template name="trim_newlines">
+    <xsl:with-param name="lttrim" select="true()"/>
+   </xsl:call-template>
+  </xsl:when>
+  <xsl:when test="$after = 0">
+   <xsl:call-template name="trim_newlines">
+    <xsl:with-param name="rttrim" select="true()"/>
    </xsl:call-template>
   </xsl:when>
   <xsl:otherwise>
-   <xsl:value-of select="$astr"/>
+   <xsl:value-of select="."/>
   </xsl:otherwise>
  </xsl:choose>
 </xsl:template>
 
-<!-- Remove whitespace from the right of a string -->
-<xsl:template name="remove-ws-right">
- <xsl:param name="astr"/>
+<xsl:template name="trim_newlines">
+  <xsl:param name="string" select="."/>
+  <xsl:param name="lttrim" select="false()"/>
+  <xsl:param name="rttrim" select="false()"/> <!-- looking for endstring -->
 
- <xsl:variable name="last-char">
-  <xsl:value-of select="substring($astr, string-length($astr), 1)"/>
- </xsl:variable>
+  <xsl:variable name="nl" select="'&#xA;'" />
 
- <xsl:choose>
-  <xsl:when test="($last-char = '&#xA;') or
-                  ($last-char = '&#xD;') or
-                  ($last-char = '&#x20;') or
-                  ($last-char = '&#x9;')">
-   <xsl:call-template name="remove-ws-right">
-    <xsl:with-param name="astr"
-     select="substring($astr, 1, string-length($astr) - 1)"/>
-   </xsl:call-template>
-  </xsl:when>
-  <xsl:otherwise>
-   <xsl:value-of select="$astr"/>
-  </xsl:otherwise>
- </xsl:choose>
+  <xsl:choose>
+    <xsl:when test="normalize-space($string) and contains($string,$nl)"><!-- prevent endless cycle on empty blocks -->
+      <xsl:variable name="beforenl" select="substring-before($string,$nl)" />
+      <xsl:variable name="afternl" select="substring-after($string,$nl)" />
+      <xsl:variable name="nextnl" select="normalize-space(substring-before($afternl,$nl))" />
+      <xsl:choose>
+        <xsl:when test="not($rttrim) and string-length(normalize-space($beforenl)) = 0">
+          <xsl:call-template name="trim_newlines">
+            <xsl:with-param name="string" select="$afternl" />
+            <xsl:with-param name="lttrim" select="$lttrim" />
+            <xsl:with-param name="rttrim" select="$rttrim or $nextnl" />
+          </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:copy-of select="concat($beforenl,$nl)"/>
+          <xsl:if test="$lttrim">
+            <xsl:copy-of select="$afternl"/>
+          </xsl:if>
+          <xsl:if test="not($lttrim)">
+            <xsl:call-template name="trim_newlines">
+              <xsl:with-param name="string" select="$afternl" />
+              <xsl:with-param name="rttrim" select="true()" />
+            </xsl:call-template>
+          </xsl:if>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:if test="normalize-space($string)">
+        <xsl:copy-of select="$string"/>
+      </xsl:if>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 
