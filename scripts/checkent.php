@@ -37,9 +37,6 @@ Check entities in entities/global.ent (HTTP and FTP schemes)
   exit;
 }
 
-// CONFIG SECTION
-$docdir = "../"; // Main directory of the PHP documentation (one dir up in cvs)
-
 /*********************************************************************/
 /* Nothing to modify below this line                                 */
 /*********************************************************************/
@@ -54,11 +51,11 @@ $schemes = array("http", "ftp");
 $filename = "../entities/global.ent";
 
 // Read in the file, or die
-$file_array = file ($filename);
-if (!$file_array) { die ("Cannot open entity file ($filename)."); }
+$file_string = file_get_contents($filename);
+if (!$file_string) { die ("Cannot open entity file ($filename)."); }
 
-// Put the whole file in a string
-$file_string = preg_replace("/[\r\n]/", "", join ("", $file_array));
+$array = explode('<!-- Obsoletes -->', $file_string);
+$file_string = $array[0];
 
 echo "ENTITY CHECK
 
