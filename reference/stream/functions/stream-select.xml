@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+  <refentry id="function.stream-select">
+   <refnamediv>
+    <refname>stream_select</refname>
+    <refpurpose>Runs the equivalent of the select() system call on the given 
+     arrays of streams with a timeout specified by tv_sec and tv_usec </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>int</type><methodname>stream_select</methodname>
+      <methodparam><type>resource</type><parameter>&amp;read</parameter></methodparam>
+      <methodparam><type>resource</type><parameter>&amp;write</parameter></methodparam>
+      <methodparam><type>resource</type><parameter>&amp;except</parameter></methodparam>
+      <methodparam><type>int</type><parameter>tv_sec</parameter></methodparam>
+      <methodparam choice="opt"><type>int</type><parameter>tv_usec</parameter></methodparam>
+     </methodsynopsis>
+    <simpara>
+     The <function>stream_select</function> function accepts arrays of streams and
+     waits for them to change status. Its opperation is equivalent to that of
+     the <function>socket_select</function> function except in that it acts on streams.
+    </simpara>
+    <simpara>
+     The streams listed in the <parameter>read</parameter> array will be watched to
+     see if characters become available for reading (more precisely, to see if
+     a read will not block - in particular, a stream resource is also ready on
+     end-of-file, in which case an <function>fread</function> will return
+     a zero length string).
+    </simpara>
+    <simpara>
+     The streams listed in the <parameter>write</parameter> array will be
+     watched to see if a write will not block.
+    </simpara>
+    <simpara>
+     The streams listed in the <parameter>except</parameter> array will be
+     watched for exceptions.
+    </simpara>
+    <warning>
+     <para>
+      On exit, the arrays are modified to indicate which stream resource
+      actually changed status.
+     </para>
+    </warning>
+    <simpara>
+     You do not need to pass every array to
+     <function>stream_select</function>. You can leave it out and use an
+     empty array or &null; instead. Also do not forget that those arrays are
+     passed <emphasis>by reference</emphasis> and will be modified after
+     <function>stream_select</function> returns.
+    </simpara>
+    <para>
+     Example:
+     <programlisting role="php">
+<![CDATA[
+/* Prepare the read array */
+$read = array($stream1, $stream2);
+
+if (false === ($num_changed_streams = stream_select($read, $write = NULL, $except = NULL, 0))) {
+    /* Error handling */
+else if ($num_changed_streams > 0) {
+    /* At least on one of the streams something interesting happened */
+}
+]]>
+     </programlisting>
+    </para>
+    <note>
+     <para>
+      Due a limitation in the current Zend Engine it is not possible to pass a
+      constant modifier like &null; directly as a parameter to a function
+      which expects this parameter to be passed by reference. Instead use a
+      temporary variable or an expression with the leftmost member being a
+      temporary variable:
+      <programlisting role="php">
+<![CDATA[
+stream_select($r, $w, $e = NULL, 0);
+]]>
+     </programlisting>
+     </para>
+    </note>
+    <simpara>
+     The <parameter>tv_sec</parameter> and <parameter>tv_usec</parameter>
+     together form the <emphasis>timeout</emphasis> parameter. The
+     <emphasis>timeout</emphasis> is an upper bound on the amount of time
+     elapsed before <function>stream_select</function> returns.
+     <parameter>tv_sec</parameter> may be zero , causing
+     <function>stream_select</function> to return immediately. This is useful
+     for polling. If <parameter>tv_sec</parameter> is &null; (no timeout),
+     <function>stream_select</function> can block indefinitely.
+    </simpara>
+    <simpara>
+     On success <function>stream_select</function> returns the number of
+     stream resorces contained in the modified arrays, which may be zero if
+     the timeout expires before anything interesting happens. On error &false;
+     is returned.
+    </simpara>
+    <note>
+     <para>
+     Be sure to use the <literal>===</literal> operator when checking for an
+     error. Since the <function>stream_select</function> may return 0 the
+     comparison with <literal>==</literal> would evaluate to &true;:
+     <programlisting role="php">
+<![CDATA[
+if (false === stream_select($r, $w, $e = NULL, 0)) {
+    echo "stream_select() failed\n";
+}
+]]>
+     </programlisting>
+     </para>
+    </note>
+    <note>
+     <para>
+      Be aware that some stream implementations need to be handled very
+      carefully. A few basic rules:
+      <itemizedlist>
+       <listitem>
+        <simpara>
+         You should always try to use <function>stream_select</function>
+         without timeout. Your program should have nothing to do if there is
+         no data available. Code that depends on timeouts is not usually
+         portable and difficult to debug.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         If you read/write to a stream returned in the arrays be aware that
+         they do not necessarily read/write the full amount of data you have
+         requested. Be prepared to even only be able to read/write a single
+         byte.
+        </simpara>
+       </listitem>
+      </itemizedlist>
+     </para>
+    </note>
+    <para>
+     See also
+     <function>stream_set_blocking</function>
+    </para>
+   </refsect1>
+  </refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
