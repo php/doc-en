@@ -21,6 +21,8 @@
 */
 
 /*
+ * Warning: This script uses a lot of memory 
+ *
  * Usage:
  * $ php notes_stats.php [mbox-file] > notes.php
  */
@@ -39,17 +41,26 @@ $after = 182.5*24*60*60; // half year
 
 $inputs = array(); // pair subjects w/ dates from multiple sources
 
+$time_start = getmicrotime();
+
 if (isset($argv[1]) && file_exists($argv[1])) { // from file
- $lines = file($argv[1]);
- $count = count($lines);
- for ($i = 0; $i < $count; ++$i) {
-  list($time, $subj) = explode(' ', $lines[$i], 2);
-  $inputs[] = array($time, substr($subj, 12));
- }
+
+    $lines = file($argv[1]);
+    $count = count($lines);
+    
+    for ($i = 0; $i < $count; ++$i) {
+        list($time, $subj) = explode(' ', $lines[$i], 2);
+        
+        $inputs[] = array($time, substr($subj, 12));
+    }
+    
 } elseif (isset($argv[1])) {
- echo "File doesn't exist!";
- exit(1);
+
+    echo "File doesn't exist!";
+    exit(1);
+ 
 } else { // from nntp
+
  $s = nntp_connect("news.php.net")
    or die("failed to connect to news server");
 
@@ -60,19 +71,19 @@ if (isset($argv[1]) && file_exists($argv[1])) { // from file
  $first = 1;
  $last =  $new[0];
 
- //$first = 69000;
+ //$first = 69900;
  //$last =  70000;
-
- $time_start = getmicrotime();
 
  $res = nntp_cmd($s,"XOVER $first-$last", 224)
      or die("failed to XOVER the new items");
 
  for ($i = $first; $i < $last; $i++) {
-  $line = fgets($s, 4096);
-  list($n,$subj,$author,$odate,$messageid,$references,$bytes,$lines,$extra)= explode("\t", $line, 9);
-  $inputs[] = array($odate, $subj);
+ 
+     $line = fgets($s, 4096);
+     list($n,$subj,$author,$odate,$messageid,$references,$bytes,$lines,$extra)= explode("\t", $line, 9);
+     $inputs[] = array($odate, $subj);
  }
+
 }
 
 $files = $team = $tmp = array();
@@ -119,7 +130,7 @@ while (list( , $inp) = each($inputs)) {
         @$team[$d[4]][$d[2]]++; 
         @$tmp[$d[4]]++;
         @$files[$d[3]]++;
-     
+ 
     } // end if(preg_match
 } // end while(each
 
