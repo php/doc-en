@@ -30,7 +30,7 @@ if(!is_dir($lang)) {
 }
 
 if (empty ($extension)) {
-	$file = `cat \`find $lang | grep .xml\``;
+	$file = `find $lang | fgrep .xml | xargs cat`;
 } else {
 	$file = `cat {$lang}/functions/{$extension}.xml`;
 }
