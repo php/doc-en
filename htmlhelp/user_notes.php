@@ -92,8 +92,8 @@ fwrite($nproject, "_style.css\n");
 
 // Write out a list of files to work around an IE6 bug
 $jsfile = fopen("$NOTES_TARGET/_filelist.js", "w");
-fwrite($jsfile, "note_file_list = '" . join(" ", $NOTE_FILE_LIST) . "';\n\n");
-fwrite($jsfile, "if (note_file_list.indexOf(chmfile_page) != -1) { notesIframe(); }");
+fwrite($jsfile, "note_file_list = ' " . join(" ", $NOTE_FILE_LIST) . " ';\n\n");
+fwrite($jsfile, "if (note_file_list.indexOf(' ' + chmfile_page + ' ') != -1) { notesIframe(); }");
 fclose($jsfile);
 fwrite($nproject, "_filelist.js\n");
 
