@@ -1,5 +1,15 @@
-Build system of the new CHMs
-============================
+****************************************************************
+** This build system is used to generate the extended CHM     **
+** file available from php.net (only in English). There is    **
+** a different CHM generator system in the 'chm' folder,      **
+** which is used to build the simpler CHM files (in multiple  **
+** languages).                                                **
+**                                                            **
+** Both of the systems are used in paralell.                  **
+****************************************************************
+
+Build system of the extended CHMs
+=================================
 
 [See latest "official" output package online at
  http://php.net/docs-echm]
