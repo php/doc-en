@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.5 $ -->
+<!-- $Revision: 1.6 $ -->
 <!-- splitted from ./en/functions/com.xml, last change in rev 1.12 -->
  <refentry id="class.com">
   <refnamediv>
@@ -7,57 +7,252 @@
    <refpurpose>COM class</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
-  <synopsis>$obj = new <classname>COM</classname>("server.object")</synopsis>
+  <synopsis>$obj = new <classname>COM</classname>("Application.ID")</synopsis>
   </refsynopsisdiv>
   <refsect1 id="class.com.class">
    <title>Description</title>
    <simpara>
-    The COM class provides a framework to integrate (D)COM components into
-    your PHP scripts.
+    The COM class allows you to instantiate an OLE compatible COM object and
+    call its methods and access its properties.
    </simpara>
   </refsect1>
   <refsect1 id="class.com.constructor">
    <title>Methods</title>
     <methodsynopsis>
-     <type>string</type><methodname>COM::COM</methodname>
+     <type>object</type><methodname>COM::COM</methodname>
      <methodparam><type>string</type><parameter>module_name</parameter></methodparam>
-     <methodparam choice="opt"><type>string</type><parameter>server_name</parameter></methodparam>
+     <methodparam choice="opt"><type>mixed</type><parameter>server_name</parameter></methodparam>
      <methodparam choice="opt"><type>int</type><parameter>codepage</parameter></methodparam>
+     <methodparam choice="opt"><type>string</type><parameter>typelib</parameter></methodparam>
     </methodsynopsis>
    <para>
-    COM class constructor. Parameters:
+    COM class constructor. The parameters have the following meanings:
     <variablelist>
     <varlistentry><term>module_name</term>
     <listitem>
      <simpara>
-      name or class-id of the requested component.
+      Can be a ProgID, Class ID or Moniker that names the component to load.
+     </simpara>
+     <simpara>
+      A ProgID is typically the application or DLL name, followed by a period,
+      followed by the object name. e.g: <literal>Word.Application</literal>.
+     </simpara>
+     <simpara>
+      A Class ID is the UUID that uniquely identifies a given class.
+     </simpara>
+     <simpara>
+      A Moniker is a special form of naming, similar in concept to a URL
+      scheme, that identifies a resource and specifies how it should be
+      loaded.  As an example, you could load up Word and get an object
+      representing a word document by specifying the full path to the word
+      document as the module name, or you can use <literal>LDAP:</literal> as
+      a moniker to use the ADSI interface to LDAP.
      </simpara>
     </listitem>
     </varlistentry>
     <varlistentry><term>server_name</term>
     <listitem>
      <simpara>
-      name of the DCOM server from which the component should be fetched.
-      If &null;, <literal>localhost</literal> is assumed.
-      To allow DCOM <constant>com.allow_dcom</constant> has to be set to 
-      &true; in &php.ini;.
+      The name of the DCOM server on which the component should be loaded and
+      run.  If &null;, the object is run using the default for the
+      application.  The default is typically to run it on the local machine,
+      although the administrator might have configured the application to
+      launch on a different machine.
      </simpara>
+     <simpara>
+      If you specify a non-&null; value for server, PHP will refuse to load
+      the object unless the <xref
+      linkend="ini.com.allow-dcom"/> configuration option
+      is set to &true;.
+     </simpara>
+     <para>
+      If <parameter>server_name</parameter> is an array, it should contain the
+      following elements (case sensitive!).  Note that they are all optional
+      (although you need to specify both Username and Password together); if
+      you omit the Server setting, the default server will be used (as
+      mentioned above), and the instantiation of the object will not be
+      affected by the <xref linkend="ini.com.allow-dcom"/>
+      directive.
+
+      <table>
+       <title>DCOM server name</title>
+       <tgroup cols="3">
+        <thead>
+         <row>
+          <entry><parameter>server_name</parameter> key</entry>
+          <entry>type</entry>
+          <entry>description</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry>Server</entry>
+          <entry>string</entry>
+          <entry>The name of the server.</entry>
+         </row>
+         <row>
+          <entry>Username</entry>
+          <entry>string</entry>
+          <entry>The username to connect as.</entry>
+         </row>
+         <row>
+          <entry>Password</entry>
+          <entry>string</entry>
+          <entry>The password for <parameter>Username</parameter>.</entry>
+         </row>
+         <row>
+          <entry>Flags</entry>
+          <entry>integer</entry>
+          <entry>One or more of the following constants, logically OR'd together:
+           <constant>CLSCTX_INPROC_SERVER</constant>,
+           <constant>CLSCTX_INPROC_HANDLER</constant>,
+           <constant>CLSCTX_LOCAL_SERVER</constant>,
+           <constant>CLSCTX_REMOTE_SERVER</constant>,
+           <constant>CLSCTX_SERVER</constant> and
+           <constant>CLSCTX_ALL</constant>.  The default value if not
+           specified here is <constant>CLSCTX_SERVER</constant> if you also
+           omit <parameter>Server</parameter>, or
+           <constant>CLSCTX_REMOTE_SERVER</constant> if you do specify a
+           server.  You should consult the Microsoft documentation for
+           CoCreateInstance for more information on the meaning of these
+           constants; you will typically never have to use them.
+          </entry>
+         </row>
+        </tbody>
+        </tgroup>
+       </table>
+     </para>
     </listitem>
     </varlistentry>
     <varlistentry><term>codepage</term>
     <listitem>
      <simpara>
-      specifies the codepage that is used to convert php-strings to
-      unicode-strings and vice versa. Possible values are
-      <constant>CP_ACP</constant>, <constant>CP_MACCP</constant>,
+      Specifies the codepage that is used to convert strings to
+      unicode-strings and vice versa.  The conversion is applied whenever a
+      PHP string is passed as a parameter or returned from a method of this
+      COM object.  The code page is sticky in PHP 5, which means that it will
+      propogate to objects and variants returned from the object.
+     </simpara>
+     <simpara>
+      Possible values are
+      <constant>CP_ACP</constant> (use system default ANSI code page - the
+      default if this parameter is omitted),
+      <constant>CP_MACCP</constant>,
       <constant>CP_OEMCP</constant>, <constant>CP_SYMBOL</constant>,
-      <constant>CP_THREAD_ACP</constant>, <constant>CP_UTF7</constant>
-      and <constant>CP_UTF8</constant>.
+      <constant>CP_THREAD_ACP</constant> (use codepage/locale set for the
+      current executing thread), <constant>CP_UTF7</constant>
+      and <constant>CP_UTF8</constant>.  You may also use the number for a
+      given codepage; consult the Microsoft documentation for more details on
+      codepages and their numeric values.
      </simpara>
     </listitem>
     </varlistentry>
     </variablelist>
    </para>
+  </refsect1>
+
+  <refsect1 id="class.com.overloadedmethods">
+   <title>Overloaded Methods</title>
+
+   <para>
+    The returned object is an overloaded object, which means that PHP does
+    not see any fixed methods as it does with regular classes; instead, any
+    property or method accesses are passed through to COM. 
+   </para>
+
+   <para>
+    Starting with PHP 5, PHP will automatically detect methods that accept
+    parameters by reference, and will automatically convert regular PHP
+    variables to a form that can be passed by reference.  This means that you
+    can call the method very naturally; you needn't go to any extra effort in
+    your code.
+   </para>
+
+   <para>
+    In PHP 4, to pass parameters by reference you need to create an instance
+    of the <xref linkend="class.variant"/> class to wrap the
+    byref parameters.
+   </para>
+
+  </refsect1>
+  
+  <refsect1 id="class.com.falsemethods">
+   <title>Psuedo Methods</title>
+   
+   <para>
+    In PHP versions prior to 5, a number of not very pleasant hacks meant that
+    the following method names were not passed through to COM and were handled
+    directly by PHP.  PHP 5 eliminates these things; read the details below to
+    determine how to fix your scripts.  These magic method names are case
+    insensitive.
+   </para>
+
+    <methodsynopsis>
+     <type>void</type><methodname>COM::AddRef</methodname>
+     <void/>
+    </methodsynopsis>
+    <simpara>Artificially adds a reference count to the COM object.</simpara>
+    <warning><simpara>You should never need to use this method.  It exists a 
+     logical complement to the Release() method below.</simpara></warning>
+    
+    <methodsynopsis>
+     <type>void</type><methodname>COM::Release</methodname>
+     <void/>
+    </methodsynopsis>
+    <simpara>Artificially removes a reference count from the COM object.</simpara>
+    <warning><simpara>
+     You should never need to use this method.  It's existence in PHP is a bug
+     designed to work around a bug that keeps COM objects running longer than
+     they should.
+    </simpara></warning>
+   </refsect1>
+   
+   <refsect1 id="class.com.iteratormethods">
+    <title>Psuedo Methods for Iterating</title>
+    
+    <para>
+     These pseudo methods are only available if
+     <function>com_isenum</function> returns &true;, in which case, they hide
+     any methods with the same names that might otherwise be provided by the
+     COM object.  These methods have all been eliminated in PHP 5, and you
+     should use <xref linkend="com.foreach"/> instead.
+    </para>
+
+    <methodsynopsis>
+     <type>object</type><methodname>COM::All</methodname>
+     <void/>
+    </methodsynopsis>
+    <simpara>Returns a variant representing a SafeArray that has 10 elements;
+    each element will be an empty/null variant.  This function was supposed to
+    return an array containing all the elements from the iterator, but was
+    never completed.  Do not use.
+    </simpara>
+
+    <methodsynopsis>
+     <type>object</type><methodname>COM::Next</methodname>
+     <void/>
+    </methodsynopsis>
+    <simpara>Returns a variant representing the next element available from
+    the iterator, or &false; when there are no more elements.
+    </simpara>
+
+    <methodsynopsis>
+     <type>object</type><methodname>COM::Prev</methodname>
+     <void/>
+    </methodsynopsis>
+    <simpara>Returns a variant representing the previous element available from
+    the iterator, or &false; when there are no more elements.
+    </simpara>
+
+    <methodsynopsis>
+     <type>void</type><methodname>COM::Reset</methodname>
+     <void/>
+    </methodsynopsis>
+    <simpara>Rewinds the iterator back to the start.</simpara>
+   </refsect1>
+   
+   <refsect1 id="class.com.examples">
+    <title>COM examples</title> 
    <para>
     <example id="example.com1">
      <title>COM example (1)</title>
@@ -65,7 +260,7 @@
 <![CDATA[
 <?php
 // starting word
-$word = new COM("word.application") or die("Unable to instanciate Word");
+$word = new COM("word.application") or die("Unable to instantiate Word");
 echo "Loaded Word, version {$word->Version}\n";
 
 //bring it to front
@@ -82,7 +277,6 @@ $word->Documents[1]->SaveAs("Useless test.doc");
 $word->Quit();
 
 //free the object
-$word->Release();
 $word = null;
 ?>
 ]]>
@@ -121,9 +315,6 @@ while (!$rs->EOF) {
 
 $rs->Close();
 $conn->Close();
-
-$rs->Release();
-$conn->Release();
 
 $rs = null;
 $conn = null;

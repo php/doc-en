@@ -1,30 +1,62 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.5 $ -->
+<!-- $Revision: 1.6 $ -->
 <reference id="ref.com"> 
-  <title>COM support functions for Windows</title> 
+  <title>COM and .Net (Windows)</title> 
   <titleabbrev>COM</titleabbrev> 
   <partintro> 
    <section id="com.intro">
     &reftitle.intro;
     <para>
-     COM is a technology which allows the reuse of code written in any
-     language (by any language) using a standard calling convention and hiding
-     behind APIs the implementation details such as what machine the Component is
-     stored on and the executable which houses it. It can be thought of as a super
-     Remote Procedure Call (RPC) mechanism with some basic object roots. It
-     separates implementation from interface.
-    </para> 
+     COM is an acronym for Component Object Model; it is an object orientated
+     layer (and associated services) on top of DCE RPC (an open standard) and
+     defines a common calling convention that enables code written in any
+     language to call and interoperate with code written in any other language
+     (provided those languages are COM aware).  Not only can the code be
+     written in any language, but it need not even be part of the same
+     executable; the code can be loadaed from a DLL, be found in another
+     process running on the same machine, or, with DCOM (Distributed COM), be
+     found in another process on a remote machine, all without your code even
+     needing to know where a component resides.
+    </para>
     <para>
-     COM encourages versioning, separation of implementation from
-     interface and hiding the implementation details such as executable location and
-     the language it was written in.
-    </para> 
+     There is a subset of COM known as OLE Automation which comprises a set of
+     COM interfaces that allow loose binding to COM objects, so that they can
+     be introspected and called at run-time without compile-time knowledge of
+     how the object works.  The PHP COM extension utilitizes the OLE
+     Automation interfaces to allow you to create and call compatible objects
+     from your scripts.  Technically speaking, this should really be called
+     the "OLE Automation Extension for PHP", since not all COM objects are OLE
+     compatible.
+    </para>
+    <para>
+     Now, why would or should you use COM?  COM is one of the main ways to glue
+     applications and components together on the Windows platform; using COM
+     you can launch Microsoft Word, fill in a document template and save the
+     result as a Word document and send it to a visitor of your web site.  You
+     can also use COM to perform administrative tasks for your network and to
+     configure your IIS; these are just the most common uses; you can do much
+     more with COM.
+    </para>
+    <para>
+     Starting with PHP 5, this extension (and this documentation) was
+     rewritten from scratch and much of the old confusing and bogus cruft has
+     be removed.  Additionally, we support the instantiation and creation of
+     .Net assemblies using the COM interoperability layer provided by
+     Microsoft.
+    </para>
+    <para> 
+     Please read <ulink url="&url.zend.comdotnet;">this article</ulink>
+     for an overview of the changes in this extension in PHP 5.
+    </para>
    </section>
 
    <section id="com.requirements">
     &reftitle.required;
     <para>
-     COM functions are only available on the Windows version of PHP.
+     COM functions are only available for the Windows version of PHP.
+    </para>
+    <para>
+     .Net support requires PHP 5 and the .Net runtime.
     </para> 
    </section>
 
@@ -32,6 +64,124 @@
     &reftitle.install;
     &no.install;
     &windows.builtin;
+    <para>
+     You are responsible for installing support for the various COM objects
+     that you intend to use (such as MS Word); we don't and can't bundle all
+     of those with PHP.
+    </para>
+   </section>
+
+   <section id="com.foreach">
+    <title>For Each</title>
+
+    <para>
+     Starting with PHP 5, you may use PHP's own <xref
+     linkend="control-structures.foreach"/> statement to iterate
+     over the contents of a standard COM/OLE IEnumVariant.  In laymans terms,
+     this means that you can use foreach in places where you would have used
+     <literal>For Each</literal> in VB/ASP code.
+    </para>
+
+   <para>
+    <example>
+     <title>For Each in ASP</title>
+     <programlisting role="php">
+<![CDATA[
+<%
+Set domainObject = GetObject("WinNT://Domain")
+For Each obj in domainObject
+  Response.Write obj.Name & "<br>"
+Next
+%>
+]]>
+     </programlisting>
+    </example>
+   </para>
+
+   <para>
+    <example>
+     <title>while() ... Next() in PHP 4</title>
+     <programlisting role="php">
+<![CDATA[
+<?php 
+$domainObject = new COM("WinNT://Domain"); 
+while ($obj = $domainObject->Next()) { 
+   echo $obj->Name . "<br>"; 
+} 
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+
+   <para>
+    <example>
+     <title>foreach in PHP 5</title>
+     <programlisting role="php">
+<![CDATA[
+<?php 
+$domainObject = new COM("WinNT://Domain"); 
+foreach ($domainObject as $obj) { 
+   echo $obj->Name . "<br>"; 
+} 
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+   </section>
+
+   <section id="com.arrays">
+    <title>Arrays and Array-style COM properties</title>
+
+    <para>
+     Many COM objects expose their properties as arrays, or using array-style
+     access.  In PHP 4, you may use PHP array syntax to read/write such a
+     property, but only a single dimension is allowed.  If  you want to read a
+     multi-dimensional property, you could instead make the property access
+     into a function call, with each parameter representing each dimension of
+     the array access, but there is no way to write to such a property.
+    </para>
+
+    <para>
+     PHP 5 introduces the following new features to make your life easier:
+
+     <itemizedlist>
+      <listitem>
+       <para>
+        Access multi-dimensional arrays, or COM properties that require
+        multiple parameters using PHP array syntax.  You can also write or set
+        properties using this technique.
+       </para>
+      </listitem>
+
+      <listitem>
+       <para>
+        Iterate SafeArrays ("true" arrays) using the <xref
+        linkend="control-structures.foreach"/> control structure.  This works
+        because SafeArrays include information about their size.  If an
+        array-style property implements IEnumVariant then you can also use
+        foreach for that property too; take a look at <xref
+        linkend="com.foreach"/> for more information on this topic.
+       </para>
+      </listitem>
+     </itemizedlist>
+    </para>
+
+   </section>
+
+   <section id="com.exceptions">
+    <title>Exceptions (PHP 5)</title>
+
+    <para>
+     This extension will throw instances of the class <literal>com_exception</literal>
+     whenever there is a potentially fatal error reported by COM.  All
+     COM exceptions have a well-defined <literal>code</literal> property that
+     corresponds to the HRESULT return value from the various COM operations.
+     You may use this code to make programmatic decisions on how to handle the
+     exception.
+    </para>
+
    </section>
 
    &reference.com.ini;
@@ -43,7 +193,9 @@
     <para>
      For further information on COM read the <ulink url="&url.comspecs;">COM
      specification</ulink> or perhaps take a look at Don Box's 
-     <ulink url="&url.yacl;">Yet Another COM Library (YACL)</ulink> 
+     <ulink url="&url.yacl;">Yet Another COM Library (YACL)</ulink>.
+     You might find some additional useful information in our FAQ for <xref
+     linkend="faq.com"/>
     </para> 
    </section>
   </partintro> 
@@ -59,6 +211,7 @@ sgml-shorttag:t
 sgml-minimize-attributes:nil
 sgml-always-quote-attributes:t
 sgml-indent-step:1
+
 sgml-indent-data:t
 indent-tabs-mode:nil
 sgml-parent-document:nil
