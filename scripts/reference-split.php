@@ -2,8 +2,9 @@
 
 set_time_limit(0);
 error_reporting(E_ALL);
-ob_end_clean();
 ob_implicit_flush();
+
+if(php_sapi_name()!="cli") chdir("..");
 
 $en_revs = array();
 
@@ -23,7 +24,6 @@ $en_revs = array();
   // get max. revision for a region in a cvs file 
   // (witch simple data caching)
   function cvs_max_rev($filename,$start,$end) {
-		return array(0,0,0);
     static $lastfile = "";
     static $array = array();
     

@@ -7,8 +7,8 @@ untranslated files as fallback where no translated version
 exists
 
 */
-ob_end_clean();
 ob_implicit_flush();
+set_time_limit(0);
 
 $base_dir  = abs_path($argv[$argc-2]);
 if(php_sapi_name()!="cli") $base_dir=ereg_replace("/scripts$","",$base_dir);
