@@ -1,5 +1,5 @@
 /^[[:space:]]*\/\*[[:space:]]*\{\{\{[[:space:]]*proto/ { 
-	split($0,proto,"proto[[:space:]]+|\*/[[:space:]]*$");
+	split($0,proto,"proto[[:space:]]+|\\*/[[:space:]]*$");
 	parse=1; 
 	same=1;
 	lc=0;
@@ -11,7 +11,7 @@
 			lines = sprintf("%s %s ",lines,line[i]);
 		}
 		if(!same) {
-			split($0,temp,"\*/[[:space:]]*$");
+			split($0,temp,"\\*/[[:space:]]*$");
 			lines = sprintf("%s %s ",lines,temp[1]);
 		}
 		printf("%s --- %s\n",proto[2],lines);
@@ -21,7 +21,7 @@
 }
 {	
 	if(parse && !same) { 
-		split($0,temp,"\*/[[:space:]]*$");
+		split($0,temp,"\\*/[[:space:]]*$");
 		line[lc++]=temp[1];
 		
 	} 
