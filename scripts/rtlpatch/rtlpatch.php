@@ -61,7 +61,7 @@ replacemyfiles($docroot);
 // ------------------- Functions: -----------------
 
 function loopfiles($dirName){
-	$qudir=array();
+	$qudir=$qufile=array();
 	if(!($d = @dir($dirName))){
 		mysyslog("Die: $dirName doesn't exists or have no read permission!\n");
 		exit;
@@ -72,7 +72,7 @@ function loopfiles($dirName){
 			if (is_dir($dirName."/".$entry)) {
 				$qudir[] = $entry;
 			}else{ 
-				if(eregi(".html",$entry)) {
+				if(eregi(".html",$entry)||eregi(".php",$entry)) {
 					$qufile[] = $dirName."/".$entry;
 				}
 			}

@@ -96,7 +96,7 @@ class CHtmlExtParse extends CHtmlParse{
 		for($a=1;$a<$cnt;$a++){
 			$tg = array_shift($this->ATE[$a]);
 			if($tg<0) continue;
-			if($tg>4)  {
+			if($tg>9)  {
 				$tag = $EHType[$tg];
 				$ret[$a] .= "<$tag";
 				foreach ($this->ATE[$a] as $key=>$value){
@@ -105,7 +105,9 @@ class CHtmlExtParse extends CHtmlParse{
 				$ret[$a].=">";
 				
 				if($this->ECE[$a]!=$a) $ret[$this->ECE[$a]] .= " </$tag>";
-			} else {
+			} else if($tg == __HTML_PROCESS__){
+					$ret[$a].="<".$this->ATE[$a]["data"]. "\n?>";
+			} else if($tg < __HTML_UNKNOWN__){
 					$ret[$a].=$this->ATE[$a]["data"];		
 			}
 //mysyslog($ret[$a]);
