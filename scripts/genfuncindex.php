@@ -32,8 +32,8 @@ $letter = ' ';
 foreach ( $functions as $funcentry ) {
     list($function,$description) = explode(" - ",$funcentry);
 
-    if (!ereg("::|->",$function)) {
-        strtolower(trim($function));
+    if (!ereg("::|->", $function)) {
+        $function = strtolower(trim($function));
     }
     if (!ereg("^[[:alnum:]]",$function)) continue;
 
