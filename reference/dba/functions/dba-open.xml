@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.6 $ -->
+<!-- $Revision: 1.7 $ -->
 <!-- splitted from ./en/functions/dba.xml, last change in rev 1.2 -->
   <refentry id="function.dba-open">
    <refnamediv>
@@ -27,7 +27,11 @@
      <parameter>mode</parameter> is "r" for read access, "w" for read/write
      access to an already existing database, "c" for read/write access
      and database creation if it doesn't currently exist, and "n" for
-     create, truncate and read/write access.
+     create, truncate and read/write access. Additional you can use "l" to
+     lock the database with an .lck file or "d" to lock the databasefile itself.
+     It is important that all of your applications do this consistently. If
+     you want to test the access and do not want to wait for the lock you can
+     add "t".
     </para>
     <para>
      <parameter>handler</parameter> is the <link linkend="dba.requirements">name
@@ -44,10 +48,98 @@
      <para>
       There can only be one writer for one database file. When you use dba on 
       a webserver and more than one request requires write operations they can
-      only be done one after another. Unfortuanetly some of the external 
-      libraries simply fail or ignore this when trying to open the database for 
-      another write operation. In this case you must use semaphores to guard
-      against. See <link linkend="ref.sem">System V semaphore support</link>.
+      only be done one after another. Also read during write is not allowed.
+      The dba extension uses locks to prevent this. See the follwoing table:
+      <table>
+       <title>DBA locking</title>
+       <tgroup cols="9">
+        <thead>
+         <row>
+          <entry>already open</entry>
+          <entry><parameter>mode</parameter> = "rl"</entry>
+          <entry><parameter>mode</parameter> = "rlt"</entry>
+          <entry><parameter>mode</parameter> = "wl"</entry>
+          <entry><parameter>mode</parameter> = "wlt"</entry>
+          <entry><parameter>mode</parameter> = "rd"</entry>
+          <entry><parameter>mode</parameter> = "rdt"</entry>
+          <entry><parameter>mode</parameter> = "wd"</entry>
+          <entry><parameter>mode</parameter> = "wdt"</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry>not open</entry>
+          <entry>ok</entry>
+          <entry>ok</entry>
+          <entry>ok</entry>
+          <entry>ok</entry>
+          <entry>ok</entry>
+          <entry>ok</entry>
+          <entry>ok</entry>
+          <entry>ok</entry>
+         </row>
+         <row>
+          <entry><parameter>mode</parameter> = "rl"</entry>
+          <entry>ok</entry>
+          <entry>ok</entry>
+          <entry>wait</entry>
+          <entry>false</entry>
+          <entry>illegal</entry>
+          <entry>illegal</entry>
+          <entry>illegal</entry>
+          <entry>illegal</entry>
+         </row>
+         <row>
+          <entry><parameter>mode</parameter> = "wl"</entry>
+          <entry>wait</entry>
+          <entry>false</entry>
+          <entry>wait</entry>
+          <entry>false</entry>
+          <entry>illegal</entry>
+          <entry>illegal</entry>
+          <entry>illegal</entry>
+          <entry>illegal</entry>
+         </row>
+         <row>
+          <entry><parameter>mode</parameter> = "rd"</entry>
+          <entry>illegal</entry>
+          <entry>illegal</entry>
+          <entry>illegal</entry>
+          <entry>illegal</entry>
+          <entry>ok</entry>
+          <entry>ok</entry>
+          <entry>wait</entry>
+          <entry>false</entry>
+         </row>
+         <row>
+          <entry><parameter>mode</parameter> = "wd"</entry>
+          <entry>illegal</entry>
+          <entry>illegal</entry>
+          <entry>illegal</entry>
+          <entry>illegal</entry>
+          <entry>wait</entry>
+          <entry>false</entry>
+          <entry>wait</entry>
+          <entry>false</entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </table>
+      <simplelist>
+       <member>ok: the second call will be successfull.</member>
+       <member>wait: the second call waits until <function>dba_close</function> is called for the first.</member>
+       <member>false: the second call returns false.</member>
+       <member>illegal: you must not mix "l" and "d" modifiers for <parameter>mode</parameter> parameter.</member>
+      </simplelist>
+     </para>
+    </note>
+    <note>
+     <para>
+      Locking and the <parameter>mode</parameter> modifiers "l", "d" and "t" were
+      added in PHP 4.3.0.
+      In PHP versions before PHP 4.3.0 you must use semaphores to guard against
+      simultanious database access for any database handler with the exception of
+      GDBM. See <link linkend="ref.sem">System V semaphore support</link>.
      </para>
     </note>
     <para>
