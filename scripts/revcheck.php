@@ -54,7 +54,7 @@ define("ALERT_SIZE",  10); // translation is 10 or more kB smaller than the en o
 define("ALERT_DATE", -30); // translation is 30 or more days older than the en one
 
 // Revision marks used to flag files
-define("REV_ACTUAL",   1); // actual file
+define("REV_UPTODATE", 1); // actual file
 define("REV_NOREV",    2); // file with revision comment without revision
 define("REV_CRITICAL", 3); // criticaly old / small / outdated
 define("REV_OLD",      4); // outdated file
@@ -68,9 +68,9 @@ define("NORMHEAD",     9); // only used in table outputs (css)
 
 // Colors used to mark files by status (colors for the above types)
 $CSS = array(
-  REV_ACTUAL   => "background-color: #68D888; color: #000000;",
+  REV_UPTODATE => "background-color: #68D888; color: #000000;",
   REV_NOREV    => "background-color: #f4a460; color: #000000;",
-  REV_CRITICAL => "background-color: #ff6347; color: #000000;", #ff0000
+  REV_CRITICAL => "background-color: #ff6347; color: #000000;",
   REV_OLD      => "background-color: #eee8aa; color: #000000;",
   REV_NOTAG    => "background-color: #dcdcdc; color: #000000;",
   REV_NOTRANS  => "background-color: #dcdcdc; color: #000000;",
@@ -354,7 +354,7 @@ function get_file_status($file)
 
     // Make decision on file category by revision, date and size
     if ($rev_diff === 0) {
-        $status_mark = REV_ACTUAL;
+        $status_mark = REV_UPTODATE;
     } elseif ($rev_diff === "n/a") {
         $status_mark = REV_NOREV;
     } elseif ($rev_diff >= ALERT_REV || $size_diff >= ALERT_SIZE || $date_diff <= ALERT_DATE) {
@@ -654,8 +654,9 @@ END_OF_MULTILINE;
 
 // If we have an introduction text, print it out, with an anchor
 if (!empty($translation["intro"])) {
-    print('<a name="intro"></a>');
-    print('<table width="800" align="center"><tr><td>' . $translation['intro'] . '</td></tr></table><p></p>');
+    print '<a name="intro"></a>';
+    print '<table width="800" align="center"><tr><td align="center">' .
+           $translation['intro'] . '</td></tr></table><p></p>';
 }
 
 // =========================================================================
@@ -678,7 +679,7 @@ print <<<END_OF_MULTILINE
 </tr>
 <tr>
   <th style="{$CSS[REV_CREDIT]}">credits</th>
-  <th style="{$CSS[REV_ACTUAL]}">actual</th>
+  <th style="{$CSS[REV_UPTODATE]}">uptodate</th>
   <th style="{$CSS[REV_OLD]}">old</th>
   <th style="{$CSS[REV_CRITICAL]}">critical</th>
   <th style="{$CSS[REV_NOREV]}">norev</th>
@@ -735,12 +736,12 @@ END_OF_MULTILINE;
               "<td>$person[nick]&nbsp;</td>" .
               "<td align=\"center\">$cvsu&nbsp;</td>" .
               "<td align=\"center\">" . $pi[REV_CREDIT]   . "&nbsp;</td>" .
-              "<td align=\"center\">" . $pi[REV_ACTUAL]   . "&nbsp;</td>" .
+              "<td align=\"center\">" . $pi[REV_UPTODATE] . "&nbsp;</td>" .
               "<td align=\"center\">" . $pi[REV_OLD]      . "&nbsp;</td>" .
               "<td align=\"center\">" . $pi[REV_CRITICAL] . "&nbsp;</td>" .
               "<td align=\"center\">" . $pi[REV_NOREV]    . "&nbsp;</td>" .
               "<td align=\"center\">" . $pi[REV_WIP]      . "&nbsp;</td>" .
-              "<td align=\"center\">" . array_sum($pi)    . "&nbsp;</td>" .
+              "<th bgcolor=\"#666699\">" . array_sum($pi)    . "&nbsp;</th>" .
               "</tr>\n");
      }
   
@@ -750,6 +751,10 @@ END_OF_MULTILINE;
 // =========================================================================
 // Files summary table goes here
 // =========================================================================
+
+// Do not print out file summary table, if we are printing out a page
+// for only one maintainer (his personal summary is in the table above)
+if (empty($MAINT)) {
 
 print <<<END_OF_MULTILINE
 <a name="filesummary"></a>
@@ -761,24 +766,24 @@ print <<<END_OF_MULTILINE
 </tr>
 END_OF_MULTILINE;
 
-$files_sum = array_sum($files_by_mark);
-
-$file_types = array(
-  array (REV_ACTUAL,   "Actual files"),
-  array (REV_OLD,      "Old files"),
-  array (REV_CRITICAL, "Critical files"),
-  array (REV_WIP,      "Work in progress"),
-  array (REV_NOREV,    "Files without revision number"),
-  array (REV_NOTAG,    "Files without revision tag"),
-  array (REV_NOTRANS,  "Files available for translation")
-);
-
-foreach ($file_types as $num => $type) {
-    $type[] = 'style="' . $CSS[$type[0]] . '"';
-    $type[] = intval($files_by_mark[$type[0]]);
-    $type[] = number_format(
-        $files_by_mark[$type[0]] * 100 / $files_sum, 2
+    $files_sum = array_sum($files_by_mark);
+    
+    $file_types = array(
+      array (REV_UPTODATE, "Up to date files"),
+      array (REV_OLD,      "Old files"),
+      array (REV_CRITICAL, "Critical files"),
+      array (REV_WIP,      "Work in progress"),
+      array (REV_NOREV,    "Files without revision number"),
+      array (REV_NOTAG,    "Files without revision tag"),
+      array (REV_NOTRANS,  "Files available for translation")
     );
+    
+    foreach ($file_types as $num => $type) {
+        $type[] = 'style="' . $CSS[$type[0]] . '"';
+        $type[] = intval($files_by_mark[$type[0]]);
+        $type[] = number_format(
+            $files_by_mark[$type[0]] * 100 / $files_sum, 2
+        );
     
 print <<<END_OF_MULTILINE
 <tr>
@@ -788,11 +793,19 @@ print <<<END_OF_MULTILINE
 </tr>
 END_OF_MULTILINE;
 
+    }
+
+print <<<END_OF_MULTILINE
+<tr>
+  <th bgcolor="#666699">Files total</th>
+  <th bgcolor="#666699">{$files_sum}</th>
+  <th bgcolor="#666699">100%</th>
+</tr>
+END_OF_MULTILINE;
+
+    print("</table>\n<p>&nbsp;</p>\n");
+
 }
-
-//print_pre($files_by_mark);
-
-print("</table>\n<p>&nbsp;</p>\n");
 
 // =========================================================================
 // Files table goes here
@@ -829,7 +842,7 @@ $prev_dir = $new_dir = "{$DOCDIR}en";
 foreach ($files_status as $num => $file) {
 
     // Do not print out actual files
-    if ($file["mark"] == REV_ACTUAL) {
+    if ($file["mark"] == REV_UPTODATE) {
         continue;
     }
     
