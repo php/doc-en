@@ -1,5 +1,5 @@
-# php-src/ZendEngine2/zend_builtin_functions.c
-bool class_exists(string classname) 
+# php-src/Zend/zend_builtin_functions.c
+bool class_exists(string classname [, bool autoload]) 
      Checks if the class exists  
 string create_function(string args, string code) 
      Creates an anonymous function, and returns its name (funny, eh?)  
@@ -25,7 +25,7 @@ int func_num_args(void)
      Get the number of arguments that were passed to the function  
 bool function_exists(string function_name)  
      Checks if the function exists  
-string get_class(object object) 
+string get_class([object object]) 
      Retrieves the class name  
 array get_class_methods(mixed class) 
      Returns an array of method names for class or class instance.  
@@ -67,7 +67,7 @@ void restore_exception_handler(void)
      Restores the previously defined exception handler function  
 string set_error_handler(string error_handler [, int error_types]) 
      Sets a user-defined error handler function.  Returns the previously defined error handler, or false on error  
-string set_exception_handler(string exception_handler) 
+string set_exception_handler(callable exception_handler) 
      Sets a user-defined exception handler function.  Returns the previously defined exception handler, or false on error  
 int strcasecmp(string str1, string str2) 
      Binary safe case-insensitive string comparison  
@@ -83,7 +83,9 @@ void trigger_error(string messsage [, int error_type])
      Generates a user-level error/warning/notice message  
 string zend_version(void) 
      Get the version of the Zend Engine  
-# php-src/ZendEngine2/zend_reflection_api.c
+# php-src/Zend/zend_reflection_api.c
+public ReflectionClass[] Reflection_Extension::getClasses() 
+     Returns an array containing Reflection_Class objects for all classes of this extension  
 public Reflection_Class Reflection_Class::getParentClass() 
      Returns the class' parent class, or, if none exists, FALSE  
 public Reflection_Class Reflection_Method::getDeclaringClass() 
@@ -92,12 +94,14 @@ public Reflection_Class Reflection_Parameter::getClass()
      Returns this parameters's class hint or NULL if there is none  
 public Reflection_Class Reflection_Property::getDeclaringClass() 
      Get the declaring class  
-public Reflection_Class::__construct(mixed argument) throws Exception 
+public Reflection_Class::__construct(mixed argument) throws Reflection_Exception 
      Constructor. Takes a string or an instance as an argument  
 public Reflection_Class[] Reflection_Class::getInterfaces() 
      Returns an array of interfaces this class implements  
 public Reflection_Extension::__construct(string name) 
      Constructor. Throws an Exception in case the given extension does not exist  
+public Reflection_Extension|NULL Reflection_Class::getExtension() 
+     Returns NULL or the extension the class belongs to  
 public Reflection_Function::__construct(string name) 
      Constructor. Throws an Exception in case the given function does not exist  
 public Reflection_Function[] Reflection_Extension::getFunctions() 
@@ -110,7 +114,7 @@ public Reflection_Method::__construct(mixed class, string name)
      Constructor. Throws an Exception in case the given method does not exist  
 public Reflection_Method[] Reflection_Class::getMethods() 
      Returns an array of this class' methods  
-public Reflection_Object::__construct(mixed argument) throws Exception 
+public Reflection_Object::__construct(mixed argument) throws Reflection_Exception 
      Constructor. Takes an instance as an argument  
 public Reflection_Parameter::__construct(mixed function, mixed parameter) 
      Constructor. Throws an Exception in case the given method does not exist  
@@ -128,6 +132,8 @@ public array Reflection_Class::getDefaultProperties()
      Returns an associative array containing copies of all default property values of the class  
 public array Reflection_Class::getStaticProperties() 
      Returns an associative array containing all static property values of the class  
+public array Reflection_Extension::getClassNames() 
+     Returns an array containing all names of all classes of this extension  
 public array Reflection_Extension::getConstants() 
      Returns an associative array containing this extension's constants and their values  
 public array Reflection_Extension::getINIEntries() 
@@ -216,21 +222,21 @@ public static array Reflection::getModifierNames(int modifiers)
      Returns an array of modifier names  
 public static mixed Reflection::export(Reflector r [, bool return]) 
      Exports a reflection object. Returns the output if TRUE is specified for return, printing it otherwise.  
-public static mixed Reflection_Class::export(mixed argument, [, bool return]) throws Exception 
+public static mixed Reflection_Class::export(mixed argument, [, bool return]) throws Reflection_Exception 
      Exports a reflection object. Returns the output if TRUE is specified for return, printing it otherwise.  
-public static mixed Reflection_Extension::export(string name, [, bool return]) throws Exception 
+public static mixed Reflection_Extension::export(string name, [, bool return]) throws Reflection_Exception 
      Exports a reflection object. Returns the output if TRUE is specified for return, printing it otherwise.  
-public static mixed Reflection_Function::export(string name, [, bool return]) throws Exception 
+public static mixed Reflection_Function::export(string name, [, bool return]) throws Reflection_Exception 
      Exports a reflection object. Returns the output if TRUE is specified for return, printing it otherwise.  
-public static mixed Reflection_Method::export(mixed class, string name, [, bool return]) throws Exception 
+public static mixed Reflection_Method::export(mixed class, string name, [, bool return]) throws Reflection_Exception 
      Exports a reflection object. Returns the output if TRUE is specified for return, printing it otherwise.  
-public static mixed Reflection_Object::export(mixed argument, [, bool return]) throws Exception 
+public static mixed Reflection_Object::export(mixed argument, [, bool return]) throws Reflection_Exception 
      Exports a reflection object. Returns the output if TRUE is specified for return, printing it otherwise.  
-public static mixed Reflection_Parameter::export(mixed function, mixed parameter, [, bool return]) throws Exception 
+public static mixed Reflection_Parameter::export(mixed function, mixed parameter, [, bool return]) throws Reflection_Exception 
      Exports a reflection object. Returns the output if TRUE is specified for return, printing it otherwise.  
-public static mixed Reflection_Property::export(mixed class, string name, [, bool return]) throws Exception 
+public static mixed Reflection_Property::export(mixed class, string name, [, bool return]) throws Reflection_Exception 
      Exports a reflection object. Returns the output if TRUE is specified for return, printing it otherwise.  
-public stdclass Reflection_Class::newInstance(mixed* args) 
+public stdclass Reflection_Class::newInstance(mixed* args, ...) 
      Returns an instance of this class  
 public string Reflection_Class::__toString() 
      Returns a string representation  
@@ -264,6 +270,8 @@ public string Reflection_Property::__toString()
      Returns a string representation  
 public string Reflection_Property::getName() 
      Returns the class' name  
+public string|false Reflection_Class::getExtensionName() 
+     Returns false or the name of the extension the class belongs to  
 public void Reflection_Property::setValue(stdclass object, mixed value) 
      Sets this property's value  
 # php-src/ext/bcmath/bcmath.c
@@ -578,6 +586,8 @@ bool ctype_xdigit(mixed c)
 # php-src/ext/curl/interface.c
 void curl_close(resource ch) 
      Close a CURL session  
+resource curl_copy_handle(resource ch) 
+     Copy a cURL handle along with all of it's preferences  
 int curl_errno(resource ch) 
      Return an integer containing the last error number  
 string curl_error(resource ch) 
@@ -597,7 +607,7 @@ int curl_multi_add_handle(resource multi, resource ch)
      Add a normal cURL handle to a cURL multi handle  
 void curl_multi_close(resource mh) 
      Close a set of cURL handles  
-int curl_multi_exec(resource mh)  
+int curl_multi_exec(resource mh, int &still_running)  
      Run the sub-connections of the current cURL handle  
 string curl_multi_getcontent(resource ch) 
      Return the content of a cURL handle if CURLOPT_RETURNTRANSFER is set  
@@ -712,12 +722,12 @@ name	string
   readonly=yes   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#ID-1112119403  Since:    
 schemaTypeInfo	typeinfo	 
   readonly=yes   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#Attr-schemaTypeInfo  Since: DOM Level 3   
-domnode dom_attr_attr(string name, [string value]);  
+void DomAttr::__construct(string name, [string value]);  
  
 boolean dom_attr_is_id(); 
   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#Attr-isId  Since: DOM Level 3   
 # php-src/ext/dom/cdatasection.c
-domnode dom_cdatasection_cdatasection(string value);  
+void DomCDataSection::__construct(string value);  
  
 # php-src/ext/dom/characterdata.c
 data	string	 
@@ -735,7 +745,7 @@ dom_void dom_characterdata_replace_data(unsigned long offset, unsigned long coun
 domstring dom_characterdata_substring_data(unsigned long offset, unsigned long count); 
   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#core-ID-6531BCCF  Since:    
 # php-src/ext/dom/comment.c
-dom_comment_comment([string value]);  
+void DomComment::__construct([string value]);  
  
 # php-src/ext/dom/document.c
 formatOutput	boolean	 
@@ -766,6 +776,8 @@ version	string
   readonly=no  URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#core-Document3-version  Since: DOM Level 3   
 encoding	string 
   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#core-Document3-encoding  Since: DOM Level 3   
+void DomDocument::__construct([string version], [string encoding]);  
+ 
 domelement document_element	documentElement	 
   readonly=yes   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#core-ID-87CD092  Since:    
 domnode dom_document_adopt_node(node source); 
@@ -790,8 +802,6 @@ domprocessinginstruction dom_document_create_processing_instruction(string targe
   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#core-ID-135944439  Since:    
 domtext dom_document_create_text_node(string data); 
   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#core-ID-1975348127  Since:    
-domnode dom_document_document([string version], [string encoding]);  
- 
 domelement dom_document_get_element_by_id(string elementId); 
   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#core-ID-getElBId  Since: DOM Level 2   
 domnodelist dom_document_get_elements_by_tag_name(string tagname); 
@@ -833,7 +843,7 @@ string domnode dom_document_savexml([node n]);
 string domnode dom_document_validate(); 
   Since: DOM extended   
 # php-src/ext/dom/documentfragment.c
-dom_documentfragment_documentfragment();  
+void DomDocumentFragment::__construct();  
  
 # php-src/ext/dom/documenttype.c
 entities	namednodemap	 
@@ -911,7 +921,7 @@ tagName	string
   readonly=yes   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#core-ID-104682815  Since:    
 schemaTypeInfo	typeinfo	 
   readonly=yes   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#Element-schemaTypeInfo  Since: DOM Level 3   
-domnode dom_element_element(string name, [string value]);  
+void DomElement::__construct(string name, [string value]);  
  
 domstring dom_element_get_attribute(string name); 
   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#core-ID-666EE0F9  Since:   
@@ -963,7 +973,7 @@ public_id	string
 system_id	string	 
   readonly=yes   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#ID-D7C29F3E  Since:    
 # php-src/ext/dom/entityreference.c
-domnode dom_entityreference_entityreference(string name);  
+void DomEntityReference::__construct(string name);  
  
 # php-src/ext/dom/namednodemap.c
 length	unsigned long	 
@@ -1076,7 +1086,7 @@ data	string
   readonly=no   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#ID-837822393  Since:    
 target	string	 
   readonly=yes   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#ID-1478689192  Since:    
-domnode dom_processinginstruction_processinginstruction(string name, [string value]);  
+void DomProcessingInstruction::__construct(string name, [string value]);  
  
 # php-src/ext/dom/string_extend.c
 int dom_string_extend_find_offset16(int offset32); 
@@ -1086,14 +1096,14 @@ int dom_string_extend_find_offset32(int offset16);
 # php-src/ext/dom/text.c
 wholeText	string	 
   readonly=yes   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#core-Text3-wholeText  Since: DOM Level 3   
+void DomText::__construct([string value]);  
+ 
 boolean dom_text_is_whitespace_in_element_content(); 
   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#core-Text3-isWhitespaceInElementContent  Since: DOM Level 3   
 domtext dom_text_replace_whole_text(string content); 
   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#core-Text3-replaceWholeText  Since: DOM Level 3   
 domtext dom_text_split_text(unsigned long offset); 
   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#core-ID-38853C1D  Since:    
-domtext_text([string value]);  
- 
 # php-src/ext/dom/typeinfo.c
 type_name	string	 
   readonly=yes   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#TypeInfo-typeName  Since:    
@@ -1103,13 +1113,13 @@ type_namespace	string
 dom_void dom_userdatahandler_handle(unsigned short operation, string key, domobject data, node src, node dst); 
   URL: http://www.w3.org/TR/2003/WD-DOM-Level-3-Core-20030226/DOM3-Core.html#ID-handleUserDataEvent  Since:    
 # php-src/ext/dom/xpath.c
+void DomXPath::__construct(domDocument doc);  
+ 
 domdocument document	document  
  
 domnodelist dom_xpath_query(string expr [,domNode context]);  
  
 boolean dom_xpath_register_ns(string prefix, string uri);  
- 
-domxpath dom_xpath_xpath(domDocument doc);  
  
 # php-src/ext/exif/exif.c
 int exif_imagetype(string imagefile) 
@@ -1242,6 +1252,8 @@ bool fbsql_select_db([string database_name [, resource link_identifier]])
      Select the database to open  
 bool fbsql_set_lob_mode(resource result, int lob_mode) 
      Sets the mode for how LOB data re retreived (actual data or a handle)  
+bool fbsql_set_password(resource link_identifier, string user, string password, string old_password) 
+     Change the password for a given user  
 void fbsql_set_transaction(resource link_identifier, int locking, int isolation) 
      Sets the transaction locking and isolation  
 bool fbsql_start_db(string database_name [, resource link_identifier]) 
@@ -1958,11 +1970,7 @@ bool ingres_query(string query [, resource link])
      Send a SQL query to Ingres II  
 bool ingres_rollback([resource link]) 
      Roll back a transaction  
-# php-src/ext/interbase/interbase.c
-bool ibase_add_user(string server, string dba_user_name, string dba_password, string user_name, string password [, string first_name [, string middle_name [, string last_name]]]) 
-     Add an user to security database (only for IB6 or later)  
-int ibase_affected_rows( [ resource link_identifier ] ) 
-     Returns the number of rows affected by the previous INSERT, UPDATE or DELETE statement  
+# php-src/ext/interbase/ibase_blobs.c
 bool ibase_blob_add(resource blob_handle, string data) 
      Add data into created blob  
 bool ibase_blob_cancel(resource blob_handle) 
@@ -1975,28 +1983,22 @@ bool ibase_blob_echo([ resource link_identifier, ] string blob_id)
      Output blob contents to browser  
 string ibase_blob_get(resource blob_handle, int len) 
      Get len bytes data from open blob  
-string ibase_blob_import([resource link_identifier, ] int file_id) 
+string ibase_blob_import([ resource link_identifier, ] resource file) 
      Create blob, copy file in it, and close it  
 array ibase_blob_info([ resource link_identifier, ] string blob_id) 
      Return blob length and other useful info  
 resource ibase_blob_open([ resource link_identifier, ] string blob_id) 
      Open blob for retrieving data parts  
-bool ibase_close([resource link_identifier]) 
-     Close an InterBase connection  
-bool ibase_commit( resource link_identifier ) 
-     Commit transaction  
-bool ibase_commit_ret( resource link_identifier ) 
-     Commit transaction and retain the transaction context  
-resource ibase_connect(string database [, string username [, string password [, string charset [, int buffers [, int dialect [, string role]]]]]]) 
-     Open a connection to an InterBase database  
-bool ibase_delete_user(string server, string dba_user_name, string dba_password, string username) 
-     Delete an user from security database (only for IB6 or later)  
-bool ibase_drop_db([resource link_identifier]) 
-     Drop an InterBase database  
-int ibase_errcode(void)  
-     Return error code  
-string ibase_errmsg(void)  
-     Return error message  
+# php-src/ext/interbase/ibase_events.c
+bool ibase_free_event_handler(resource event) 
+     Frees the event handler set by ibase_set_event_handler()  
+resource ibase_set_event_handler([resource link_identifier,] callback handler, string event [, string event [, ...]]) 
+     Register the callback for handling each of the named events  
+string ibase_wait_event([resource link_identifier,] string event [, string event [, ...]]) 
+     Waits for any one of the passed Interbase events to be posted by the database, and returns its name  
+# php-src/ext/interbase/ibase_query.c
+int ibase_affected_rows( [ resource link_identifier ] ) 
+     Returns the number of rows affected by the previous INSERT, UPDATE or DELETE statement  
 mixed ibase_execute(resource query [, mixed bind_arg [, mixed bind_arg [, ...]]]) 
      Execute a previously prepared query  
 array ibase_fetch_assoc(resource result [, int fetch_flags]) 
@@ -2007,16 +2009,10 @@ array ibase_fetch_row(resource result [, int fetch_flags])
      Fetch a row  from the results of a query  
 array ibase_field_info(resource query_result, int field_number) 
      Get information about a field  
-bool ibase_free_event_handler(resource event) 
-     Frees the event handler set by ibase_set_event_handler()  
 bool ibase_free_query(resource query) 
      Free memory used by a query  
 bool ibase_free_result(resource result) 
      Free the memory used by a result  
-int ibase_gen_id([ resource link_identifier, ] string generator [, int increment ]) 
-     Increments the named generator and returns its new value  
-bool ibase_modify_user(string server, string dba_user_name, string dba_password, string user_name, string password [, string first_name [, string middle_name [, string last_name]]]) 
-     Modify an user in security database (only for IB6 or later)  
 bool ibase_name_result(resource result, string name) 
      Assign a name to a result for use with ... WHERE CURRENT OF <name> statements  
 int ibase_num_fields(resource query_result) 
@@ -2024,27 +2020,61 @@ int ibase_num_fields(resource query_result)
 int ibase_num_params(resource query) 
      Get the number of params in a prepared query  
 int ibase_num_rows( resource result_identifier )  
-    
+     Return the number of rows that are available in a result  
 array ibase_param_info(resource query, int field_number) 
      Get information about a parameter  
-resource ibase_pconnect(string database [, string username [, string password [, string charset [, int buffers [, int dialect [, string role]]]]]]) 
-     Open a persistent connection to an InterBase database  
 resource ibase_prepare([resource link_identifier, ] string query) 
      Prepare a query for later execution  
 mixed ibase_query([resource link_identifier, [ resource link_identifier, ]] string query [, mixed bind_arg [, mixed bind_arg [, ...]]]) 
      Execute a query  
+# php-src/ext/interbase/ibase_service.c
+bool ibase_add_user(resource service_handle, string user_name, string password [, string first_name [, string middle_name [, string last_name]]]) 
+     Add a user to security database  
+mixed ibase_backup(resource service_handle, string source_db, string dest_file [, int options [, bool verbose]]) 
+     Initiates a backup task in the service manager and returns immediately  
+string ibase_db_info(resource service_handle, string db, int action [, int argument]) 
+     Request statistics about a database  
+bool ibase_delete_user(resource service_handle, string user_name, string password [, string first_name [, string middle_name [, string last_name]]]) 
+     Delete a user from security database  
+bool ibase_maintain_db(resource service_handle, string db, int action [, int argument]) 
+     Execute a maintenance command on the database server  
+bool ibase_modify_user(resource service_handle, string user_name, string password [, string first_name [, string middle_name [, string last_name]]]) 
+     Modify a user in security database  
+mixed ibase_restore(resource service_handle, string source_file, string dest_db [, int options [, bool verbose]]) 
+     Initiates a restore task in the service manager and returns immediately  
+string ibase_server_info(resource service_handle, int action) 
+     Request information about a database server  
+resource ibase_service_attach(string host, string dba_username, string dba_password) 
+     Connect to the service manager  
+bool ibase_service_detach(resource service_handle) 
+     Disconnect from the service manager  
+# php-src/ext/interbase/interbase.c
+bool ibase_close([resource link_identifier]) 
+     Close an InterBase connection  
+bool ibase_commit( resource link_identifier ) 
+     Commit transaction  
+bool ibase_commit_ret( resource link_identifier ) 
+     Commit transaction and retain the transaction context  
+resource ibase_connect(string database [, string username [, string password [, string charset [, int buffers [, int dialect [, string role]]]]]]) 
+     Open a connection to an InterBase database  
+bool ibase_drop_db([resource link_identifier]) 
+     Drop an InterBase database  
+int ibase_errcode(void)  
+     Return error code  
+string ibase_errmsg(void)  
+     Return error message  
+int ibase_gen_id(string generator [, int increment [, resource link_identifier ]]) 
+     Increments the named generator and returns its new value  
+resource ibase_pconnect(string database [, string username [, string password [, string charset [, int buffers [, int dialect [, string role]]]]]]) 
+     Open a persistent connection to an InterBase database  
 bool ibase_rollback( resource link_identifier ) 
      Rollback transaction  
 bool ibase_rollback_ret( resource link_identifier ) 
      Rollback transaction and retain the transaction context  
-resource ibase_set_event_handler([resource link_identifier,] callback handler, string event [, string event [, ...]]) 
-     Register the callback for handling each of the named events  
-bool ibase_timefmt(string format) 
+bool ibase_timefmt(string format [, int type ]) 
      Sets the format of timestamp, date and time columns returned from queries  
 resource ibase_trans([int trans_args [, resource link_identifier [, ... ], int trans_args [, resource link_identifier [, ... ]] [, ...]]]) 
      Start a transaction over one or several databases  
-string ibase_wait_event([resource link_identifier,] string event [, string event [, ...]]) 
-     Waits for any one of the passed Interbase events to be posted by the database, and returns its name  
 # php-src/ext/ircg/ircg.c
 bool ircg_channel_mode(int connection, string channel, string mode_spec, string nick) 
      Sets channel mode flags for user  
@@ -2234,6 +2264,8 @@ string mb_internal_encoding([string encoding])
      Sets the current internal encoding or Returns the current internal encoding as a string  
 string mb_language([string language]) 
      Sets the current language or Returns the current language as a string  
+array mb_list_encodings() 
+     Returns an array of all supported encodings  
 string mb_output_handler(string contents, int status) 
      Returns string in output buffer converted to the http_output encoding  
 bool mb_parse_str(string encoded_string [, array result]) 
@@ -2542,6 +2574,8 @@ SWFSoundInstance * swfbutton_addASound(SWFSound sound, int flags)
      associates a sound with a button transition  	NOTE: the transitions are all wrong _UP, _OVER, _DOWN _HIT   
 char *swffont_getShape(code) 
      Returns the glyph shape of a char as a text string  
+int ming_keypress(string str) 
+     Returns the action flag for keyPress(char)  
 void ming_setcubicthreshold (int threshold) 
      Set cubic threshold (?)  
 void ming_setscale(int scale) 
@@ -2564,8 +2598,6 @@ void swfbutton_addShape(object SWFCharacter, int flags)
      Sets the character to display for the condition described in flags  
 object swfbutton_init(void) 
      Returns a new SWFButton object  
-int swfbutton_keypress(string str) 
-     Returns the action flag for keyPress(char)  
 void swfbutton_setAction(object SWFAction) 
      Sets the action to perform when button is pressed  
 void swfbutton_setDown(object SWFCharacter) 
@@ -2682,7 +2714,7 @@ void swfmovie_setFrames(int frames)
      Sets number of frames  
 void swfmovie_setRate(float rate) 
      Sets movie rate  
-void swfmovie_streamMp3(mixed file) 
+void swfmovie_streamMP3(mixed file) 
      Sets sound stream of the SWF movie. The parameter can be stream or string.  
 object swfshape_addfill(mixed arg1, int arg2, [int b [, int a]]) 
      Returns a fill object, for use with swfshape_setleftfill and swfshape_setrightfill. If 1 or 2 parameter(s) is (are) passed first should be object (from gradient class) and the second int (flags). Gradient fill is performed. If 3 or 4 parameters are passed : r, g, b [, a]. Solid fill is performed.  
@@ -2956,8 +2988,8 @@ string msql_result(int query, int row [, mixed field])
 bool msql_select_db(string database_name [, resource link_identifier]) 
      Select an mSQL database  
 # php-src/ext/mssql/php_mssql.c
-bool mssql_bind(resource stmt, string param_name, mixed var, int type  
-  		[, int is_output[, int is_null[, int maxlen]]])     Adds a parameter to a stored procedure or a remote stored procedure   
+bool mssql_bind(resource stmt, string param_name, mixed var, int type [, int is_output [, int is_null [, int maxlen]]]) 
+     Adds a parameter to a stored procedure or a remote stored procedure   
 bool mssql_close([resource conn_id]) 
      Closes a connection to a MS-SQL server  
 int mssql_connect([string servername [, string username [, string password]]]) 
@@ -3112,10 +3144,6 @@ mixed mysqli_affected_rows(object link)
      Get number of affected rows in previous MySQL operation  
 bool mysqli_autocommit(object link, bool mode) 
      Turn auto commit on or of  
-bool mysqli_bind_param(object stmt, array types, mixed variable [,mixed,....]) 
-     Bind variables to a prepared statement as parameters  
-bool mysqli_bind_result(object stmt, mixed var, [,mixed, ...]) 
-     Bind variables to a prepared statement for result storage  
 bool mysqli_change_user(object link, string user, string password, string database) 
      Change logged-in user of the active connection  
 string mysqli_character_set_name(object link) 
@@ -3128,24 +3156,12 @@ bool mysqli_data_seek(object result, int offset)
      Move internal result pointer  
 void mysqli_debug(string debug) 
    
-void mysqli_disable_reads_from_master(object link) 
-   
-void mysqli_disable_rpl_parse(object link) 
-   
 bool mysqli_dump_debug_info(object link) 
-   
-void mysqli_enable_reads_from_master(object link) 
-   
-void mysqli_enable_rpl_parse(object link) 
    
 int mysqli_errno(object link) 
      Returns the numerical value of the error message from previous MySQL operation  
 string mysqli_error(object link) 
      Returns the text of the error message from previous MySQL operation  
-bool mysqli_execute(object stmt) 
-     Execute a prepared statement  
-mixed mysqli_fetch(object stmt) 
-     Fetch results from a prepared statement into the bound variables  
 mixed mysqli_fetch_field (object result) 
      Get column information from a result and return as an object  
 mixed mysqli_fetch_field_direct (object result, int offset) 
@@ -3162,14 +3178,14 @@ int mysqli_field_seek(object result, int fieldnr)
      Set result pointer to a specified field offset   
 int mysqli_field_tell(object result) 
      Get current field offset of result pointer  
-int mysqli_free_result(object result) 
+void mysqli_free_result(object result) 
      Free query result memory for the given result handle  
 string mysqli_get_client_info(void)  
      Get MySQL client info  
+int mysqli_get_client_version(void)  
+     Get MySQL client info  
 string mysqli_get_host_info (object link)  
      Get MySQL host info  
-mixed mysqli_get_metadata(object stmt) 
-     return result set from statement  
 int mysqli_get_proto_info(object link) 
      Get MySQL protocol information  
 string mysqli_get_server_info(object link)  
@@ -3184,8 +3200,6 @@ mixed mysqli_insert_id(object link)
      Get the ID generated from the previous INSERT operation  
 bool mysqli_kill(object link, int processid) 
      Kill a mysql process on the server  
-bool mysqli_master_query(object link, string query) 
-     Enforce execution of a query on the master in a master/slave setup  
 bool mysqli_more_results(object link) 
      check if there any more query results from a multi query  
 bool mysqli_next_result(object link) 
@@ -3198,7 +3212,7 @@ bool mysqli_options(object link, int flags, mixed values)
      Set options  
 int mysqli_param_count(object stmt) { 
      Return the number of parameter for the given statement  
-int mysqli_ping(object link) 
+bool mysqli_ping(object link) 
      Ping a server connection or reconnect if there is no connection  
 mixed mysqli_prepare(object link, string query) 
      Prepare a SQL statement for execution  
@@ -3210,24 +3224,14 @@ bool mysqli_real_query(object link, string query)
      Binary-safe version of mysql_query()  
 bool mysqli_rollback(object link) 
      Undo actions from current transaction  
-int mysqli_rpl_parse_enabled(object link) 
-   
-bool mysqli_rpl_probe(object link) 
-   
-int mysqli_rpl_query_type(string query) 
-   
 string mysqli_select_db(object link, string dbname) 
      Select a MySQL database  
 bool mysqli_send_long_data(object stmt, int param_nr, string data) 
-   
-bool mysqli_send_query(object link, string query) 
    
 void mysqli_server_end(void) 
    
 bool mysqli_server_init(void) 
    initialize embedded server  
-bool mysqli_slave_query(object link, string query) 
-     Enforce execution of a query on a slave in a master/slave setup  
 string mysqli_sqlstate(object link) 
      Returns the SQLSTATE error from previous MySQL operation  
 bool mysqli_ssl_set(object link ,string key ,string cert ,string ca ,string capath ,string cipher]) 
@@ -3236,6 +3240,10 @@ mixed mysqli_stat(object link)
      Get current system status  
 mixed mysqli_stmt_affected_rows(object stmt) 
      Return the number of rows affected in the last query for the given link  
+bool mysqli_stmt_bind_param(object stmt, string types, mixed variable [,mixed,....]) 
+     Bind variables to a prepared statement as parameters  
+bool mysqli_stmt_bind_result(object stmt, mixed var, [,mixed, ...]) 
+     Bind variables to a prepared statement for result storage  
 bool mysqli_stmt_close(object stmt)  
      Close statement  
 void mysqli_stmt_data_seek(object stmt, int offset) 
@@ -3244,8 +3252,22 @@ int mysqli_stmt_errno(object stmt)
    
 string mysqli_stmt_error(object stmt) 
    
+bool mysqli_stmt_execute(object stmt) 
+     Execute a prepared statement  
+mixed mysqli_stmt_fetch(object stmt) 
+     Fetch results from a prepared statement into the bound variables  
+void mysqli_stmt_free_result(object stmt) 
+     Free stored result memory for the given statement handle  
+object mysqli_stmt_init(object link) 
+     Initialize statement object   
 mixed mysqli_stmt_num_rows(object stmt) 
      Return the number of rows in statements result set  
+bool mysqli_stmt_prepare(object link, string query) 
+     prepare server side statement with query   
+void mysqli_stmt_reset(object stmt) 
+     reset a prepared statement  
+mixed mysqli_stmt_result_metadata(object stmt) 
+     return result set from statement  
 string mysqli_stmt_sqlstate(object stmt) 
    
 bool mysqli_stmt_store_result(stmt) 
@@ -3263,9 +3285,9 @@ int mysqli_warning_count (object link)
 # php-src/ext/mysqli/mysqli_nonapi.c
 object mysqli_connect([string hostname [,string username [,string passwd [,string dbname [,int port [,string socket]]]]]]) 
      Open a connection to a mysql server  
-int mysqli_connect_errno() 
+int mysqli_connect_errno(void) 
      Returns the numerical value of the error message from last connect command  
-string mysqli_connect_error() 
+string mysqli_connect_error(void) 
      Returns the text of the error message from previous MySQL operation  
 object mysqli_embedded_connect(void) 
      Open a connection to a embedded mysql server  
@@ -3277,8 +3299,29 @@ mixed mysqli_fetch_object (object result [, string class_name [, NULL|array ctor
      Fetch a result row as an object  
 bool mysqli_multi_query(object link, string query) 
      Binary-safe version of mysql_query()  
-resource mysqli_query(object link, string query [,int resultmode])  
+mixed mysqli_query(object link, string query [,int resultmode])  
  
+# php-src/ext/mysqli/mysqli_repl.c
+void mysqli_disable_reads_from_master(object link) 
+   
+void mysqli_disable_rpl_parse(object link) 
+   
+void mysqli_enable_reads_from_master(object link) 
+   
+void mysqli_enable_rpl_parse(object link) 
+   
+bool mysqli_master_query(object link, string query) 
+     Enforce execution of a query on the master in a master/slave setup  
+int mysqli_rpl_parse_enabled(object link) 
+   
+bool mysqli_rpl_probe(object link) 
+   
+int mysqli_rpl_query_type(string query) 
+   
+bool mysqli_send_query(object link, string query) 
+   
+bool mysqli_slave_query(object link, string query) 
+     Enforce execution of a query on a slave in a master/slave setup  
 # php-src/ext/ncurses/ncurses_functions.c
 int ncurses_addch(int ch) 
      Adds character at current position and advance cursor  
@@ -4329,7 +4372,7 @@ array pg_fetch_array(resource result [, int row [, int result_type]])
      Fetch a row as an array  
 array pg_fetch_assoc(resource result [, int row]) 
      Fetch a row as an assoc array  
-object pg_fetch_object(resource result [, string class_name [, NULL|array ctor_params]]) 
+object pg_fetch_object(resource result [, int row [, string class_name [, NULL|array ctor_params]]]) 
      Fetch a row as an object  
 mixed pg_fetch_result(resource result, [int row_number,] mixed field_name) 
      Returns values from a result identifier  
@@ -4507,6 +4550,10 @@ bool pspell_clear_session(int pspell)
      Clears the current session  
 int pspell_config_create(string language [, string spelling [, string jargon [, string encoding]]]) 
      Create a new config to be used later to create a manager  
+bool pspell_config_data_dir(int conf, string directory) 
+      location of language data files  
+bool pspell_config_dict_dir(int conf, string directory) 
+     location of the main word list  
 bool pspell_config_ignore(int conf, int ignore) 
      Ignore words <= n chars  
 bool pspell_config_mode(int conf, long mode) 
@@ -4706,20 +4753,34 @@ string socket_strerror(int errno)
 int socket_write(resource socket, string buf[, int length]) 
      Writes the buffer to the socket resource, length is optional  
 # php-src/ext/spl/spl_array.c
-mixed|false ArrayIterator::current() 
+mixed|NULL ArrayIterator::current() 
      Return current array entry  
-bool ArrayIterator::hasMore() 
-     Check whether array contains more entries  
-mixed|false ArrayIterator::key() 
+mixed|NULL ArrayIterator::key() 
      Return current array key  
 void ArrayIterator::next() 
      Move to next entry  
 void ArrayIterator::rewind() 
      Rewind array back to the start  
+bool ArrayIterator::seek(int $position) 
+   Seek to position.  
+bool ArrayIterator::valid() 
+     Check whether array contains more entries  
 void ArrayObject::__construct(array|object ar = array()) 
          proto void ArrayIterator::__construct(array|object ar = array())   Cronstructs a new array iterator from a path.  
+bool ArrayObject::append(mixed $newval) 
+   Appends the value.  
+bool ArrayObject::count() 
+   Return the number of elements in the Iterator.  
 ArrayIterator ArrayObject::getIterator() 
      Create a new iterator from a ArrayObject instance  
+bool ArrayObject::offsetExists(mixed $index) 
+   Returns whether the requested $index exists.  
+bool ArrayObject::offsetGet(mixed $index) 
+   Returns the value at the specified $index.  
+bool ArrayObject::offsetSet(mixed $index, mixed $newval) 
+   Sets the value at the specified $index to $newval.  
+bool ArrayObject::offsetUnset(mixed $index) 
+   Unsets the value at the specified $index.  
 # php-src/ext/spl/spl_directory.c
 void DirectoryIterator::__construct(string path) 
    Cronstructs a new dir iterator from a path.  
@@ -4751,8 +4812,6 @@ string DirectoryIterator::getPath()
      Return directory path  
 string DirectoryIterator::getPathname() 
      Return path and filename of current dir entry  
-string DirectoryIterator::hasMore() 
-     Check whether dir contains more entries  
 bool DirectoryIterator::isDir() 
      Returns true if file is directory  
 bool DirectoryIterator::isDot() 
@@ -4773,6 +4832,8 @@ void DirectoryIterator::next()
      Move to next entry  
 void DirectoryIterator::rewind() 
      Rewind dir back to the start  
+string DirectoryIterator::valid() 
+     Check whether dir contains more entries  
 bool RecursiveDirectoryIterator::hasChildren([bool $allow_links = false]) 
      Returns whether current entry is a directory and not '.' or '..'  
 string RecursiveDirectoryIterator::key() 
@@ -4816,8 +4877,6 @@ string sqlite_fetch_single(resource result [, bool decode_binary])
      Fetches the first column of a result set as a string.  
 string sqlite_field_name(resource result, int field_index) 
      Returns the name of a particular field of a result set.  
-bool sqlite_has_more(resource result) 
-     Returns whether more rows are available.  
 bool sqlite_has_prev(resource result) 
    * Returns whether a previous row is available.  
 int sqlite_last_error(resource db) 
@@ -4854,6 +4913,8 @@ string sqlite_udf_encode_binary(string data)
      Apply binary encoding (if required) to a string to return from an UDF.  
 resource sqlite_unbuffered_query(string query, resource db [ , int result_type ]) 
      Executes a query that does not prefetch and buffer all data.  
+bool sqlite_valid(resource result) 
+     Returns whether more rows are available.  
 # php-src/ext/standard/array.c
 array array_change_key_case(array input [, int case=CASE_LOWER]) 
      Retuns an array with all string keys lowercased [or uppercased]  
@@ -5134,19 +5195,19 @@ bool chroot(string directory)
      Change root directory  
 void closedir([resource dir_handle]) 
      Close directory connection identified by the dir_handle  
-object dir(string directory) 
+object dir(string directory[, resource context]) 
      Directory class with properties, handle and class and methods read, rewind and close  
 mixed getcwd(void) 
      Gets the current directory  
 array glob(string pattern [, int flags]) 
      Find pathnames matching a pattern  
-mixed opendir(string path) 
+mixed opendir(string path[, resource context]) 
      Open a directory and return a dir_handle  
 string readdir([resource dir_handle]) 
      Read directory entry from dir_handle  
 void rewinddir([resource dir_handle]) 
      Rewind dir_handle back to the start  
-array scandir(string dir [, int sorting_order]) 
+array scandir(string dir [, int sorting_order [, resource context]]) 
      List files & directories inside the specified path  
 # php-src/ext/standard/dl.c
 int dl(string extension_filename) 
@@ -5991,25 +6052,25 @@ boolean tidy_is_xhtml()
      Indicates if the document is a XHTML document.  
 boolean tidy_is_xhtml() 
      Indicates if the document is a generic (non HTML/XHTML) XML document.  
-boolean tidy_node::has_children() 
+boolean tidy_node::hasChildren() 
      Returns true if this node has children  
-boolean tidy_node::has_siblings() 
+boolean tidy_node::hasSiblings() 
      Returns true if this node has siblings  
-boolean tidy_node::is_asp() 
+boolean tidy_node::isAsp() 
      Returns true if this node is ASP  
-boolean tidy_node::is_comment() 
+boolean tidy_node::isComment() 
      Returns true if this node represents a comment  
-boolean tidy_node::is_html() 
+boolean tidy_node::isHtml() 
      Returns true if this node is part of a HTML document  
-boolean tidy_node::is_jste() 
+boolean tidy_node::isJste() 
      Returns true if this node is JSTE  
-boolean tidy_node::is_php() 
+boolean tidy_node::isPhp() 
      Returns true if this node is PHP  
-boolean tidy_node::is_text() 
+boolean tidy_node::isText() 
      Returns true if this node represents text (no markup)  
-boolean tidy_node::is_xhtml() 
+boolean tidy_node::isXhtml() 
      Returns true if this node is part of a XHTML document  
-boolean tidy_node::is_xml() 
+boolean tidy_node::isXml() 
      Returns true if this node is part of a XML document  
 void tidy_node::tidy_node() 
      Constructor.  
@@ -6155,57 +6216,6 @@ xsl_ xsl_xsltprocessor_transform_to_uri(node doc, string uri [,boolean clone]);
    
 xsl_string xsl_xsltprocessor_transform_to_xml(node doc [,boolean clone]); 
    
-# php-src/ext/yaz/php_yaz.c
-string yaz_addinfo(resource id) 
-     Return additional info for last error (empty string if none)  
-void yaz_ccl_conf(resource id, array package) 
-     Configure CCL package  
-bool yaz_ccl_parse(resource id, string query, array res) 
-     Parse a CCL query  
-bool yaz_close(resource id) 
-     Destory and close target  
-resource yaz_connect(string zurl [, array options]) 
-     Create target with given zurl. Returns positive id if successful.  
-bool yaz_database (resource id, string databases) 
-     Specify the databases within a session  
-void yaz_element(resource id, string elementsetname) 
-     Set Element-Set-Name for retrieval  
-int yaz_errno(resource id) 
-     Return last error number (>0 for bib-1 diagnostic, <0 for other error, 0 for no error  
-string yaz_error(resource id) 
-     Return last error message  
-void yaz_es(resource id, string type, array package) 
-     Sends Extended Services Request  
-array yaz_es_result(resource id) 
-     Inspects Extended Services Result  
-string yaz_get_option(resource id, string name) 
-     Set Option(s) for connection  
-int yaz_hits(resource id) 
-     Return number of hits (result count) for last search  
-void yaz_itemorder(resource id, array package) 
-     Sends Item Order request  
-bool yaz_present(resource id) 
-     Retrieve records  
-void yaz_range(resource id, int start, int number) 
-     Set result set start point and number of records to request  
-string yaz_record(resource id, int pos, string type) 
-     Return record information at given result set position  
-void yaz_scan(resource id, type, query [, flags]) 
-     Sends Scan Request  
-array yaz_scan_result(resource id [, array options]) 
-     Inspects Scan Result  
-void yaz_schema(resource id, string schema) 
-     Set Schema for retrieval  
-bool yaz_search(resource id, string type, string query) 
-     Specify query of type for search - returns true if successful  
-void yaz_set_option(resource id, mixed options) 
-     Set Option(s) for connection  
-void yaz_sort(resource id, string sortspec) 
-     Set result set sorting criteria  
-void yaz_syntax(resource id, string syntax) 
-     Set record syntax for retrieval  
-bool yaz_wait([array options]) 
-     Process events.  
 # php-src/ext/yp/yp.c
 bool yp_all(string domain, string map, string callback) 
      Traverse the map and call a function on each entry  
