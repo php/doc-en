@@ -5,7 +5,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: fo-patch-for-fop.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
+     $Id: fo-patch-for-fop.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
      ********************************************************************
 
      This file is part of the DocBook XSL Stylesheet distribution.

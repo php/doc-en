@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: html.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+     $Id: html.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -39,6 +39,16 @@
   <xsl:param name="object" select="."/>
   <xsl:text>#</xsl:text>
   <xsl:call-template name="object.id">
+    <xsl:with-param name="object" select="$object"/>
+  </xsl:call-template>
+</xsl:template>
+
+<xsl:template name="href.target.with.base.dir">
+  <xsl:param name="object" select="."/>
+  <xsl:if test="$manifest.in.base.dir = 0">
+    <xsl:value-of select="$base.dir"/>
+  </xsl:if>
+  <xsl:call-template name="href.target">
     <xsl:with-param name="object" select="$object"/>
   </xsl:call-template>
 </xsl:template>

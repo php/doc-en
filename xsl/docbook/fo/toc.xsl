@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: toc.xsl,v 1.2 2003-03-09 14:54:49 tom Exp $
+     $Id: toc.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -35,11 +35,41 @@
           <xsl:attribute name="format">
             <xsl:call-template name="page.number.format">
               <xsl:with-param name="element" select="'toc'"/>
+              <xsl:with-param name="master-reference" 
+                              select="$master-reference"/>
             </xsl:call-template>
           </xsl:attribute>
-          <xsl:if test="$double.sided != 0">
-            <xsl:attribute name="initial-page-number">auto-odd</xsl:attribute>
-          </xsl:if>
+
+          <xsl:attribute name="initial-page-number">
+            <xsl:call-template name="initial.page.number">
+              <xsl:with-param name="element" select="'toc'"/>
+              <xsl:with-param name="master-reference" 
+                              select="$master-reference"/>
+            </xsl:call-template>
+          </xsl:attribute>
+
+          <xsl:attribute name="force-page-count">
+            <xsl:call-template name="force.page.count">
+              <xsl:with-param name="master-reference" 
+	                      select="$master-reference"/>
+            </xsl:call-template>
+          </xsl:attribute>
+
+          <xsl:attribute name="hyphenation-character">
+            <xsl:call-template name="gentext">
+              <xsl:with-param name="key" select="'hyphenation-character'"/>
+            </xsl:call-template>
+          </xsl:attribute>
+          <xsl:attribute name="hyphenation-push-character-count">
+            <xsl:call-template name="gentext">
+              <xsl:with-param name="key" select="'hyphenation-push-character-count'"/>
+            </xsl:call-template>
+          </xsl:attribute>
+          <xsl:attribute name="hyphenation-remain-character-count">
+            <xsl:call-template name="gentext">
+              <xsl:with-param name="key" select="'hyphenation-remain-character-count'"/>
+            </xsl:call-template>
+          </xsl:attribute>
 
           <xsl:apply-templates select="." mode="running.head.mode">
             <xsl:with-param name="master-reference" select="$master-reference"/>
@@ -67,11 +97,34 @@
           <xsl:attribute name="format">
             <xsl:call-template name="page.number.format">
               <xsl:with-param name="element" select="'toc'"/>
+              <xsl:with-param name="master-reference" 
+                              select="$master-reference"/>
             </xsl:call-template>
           </xsl:attribute>
-          <xsl:if test="$double.sided != 0">
-            <xsl:attribute name="initial-page-number">auto-odd</xsl:attribute>
-          </xsl:if>
+
+          <xsl:attribute name="initial-page-number">
+            <xsl:call-template name="initial.page.number">
+              <xsl:with-param name="element" select="'toc'"/>
+              <xsl:with-param name="master-reference" 
+                              select="$master-reference"/>
+            </xsl:call-template>
+          </xsl:attribute>
+
+          <xsl:attribute name="hyphenation-character">
+            <xsl:call-template name="gentext">
+              <xsl:with-param name="key" select="'hyphenation-character'"/>
+            </xsl:call-template>
+          </xsl:attribute>
+          <xsl:attribute name="hyphenation-push-character-count">
+            <xsl:call-template name="gentext">
+              <xsl:with-param name="key" select="'hyphenation-push-character-count'"/>
+            </xsl:call-template>
+          </xsl:attribute>
+          <xsl:attribute name="hyphenation-remain-character-count">
+            <xsl:call-template name="gentext">
+              <xsl:with-param name="key" select="'hyphenation-remain-character-count'"/>
+            </xsl:call-template>
+          </xsl:attribute>
 
           <xsl:apply-templates select="." mode="running.head.mode">
             <xsl:with-param name="master-reference" select="$master-reference"/>

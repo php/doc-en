@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: titlepage.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+     $Id: titlepage.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -194,10 +194,11 @@
     <h3 class="{name(.)}"><xsl:call-template name="person.name"/></h3>
     <xsl:apply-templates mode="titlepage.mode" select="./contrib"/>
     <xsl:apply-templates mode="titlepage.mode" select="./affiliation"/>
+    <xsl:apply-templates mode="titlepage.mode" select="./email"/>
   </div>
 </xsl:template>
 
-<xsl:template match="authorblurb" mode="titlepage.mode">
+<xsl:template match="authorblurb|personblurb" mode="titlepage.mode">
   <div class="{name(.)}">
     <xsl:apply-templates mode="titlepage.mode"/>
   </div>
@@ -228,6 +229,12 @@
   <span class="{name(.)}">
     <xsl:apply-templates mode="titlepage.mode"/>
     <br/>
+  </span>
+</xsl:template>
+
+<xsl:template match="collabname" mode="titlepage.mode">
+  <span class="{name(.)}">
+    <xsl:apply-templates mode="titlepage.mode"/>
   </span>
 </xsl:template>
 
@@ -338,6 +345,13 @@
   </h3>
 </xsl:template>
 
+<xsl:template match="corpcredit" mode="titlepage.mode">
+  <span class="{name(.)}">
+    <xsl:apply-templates mode="titlepage.mode"/>
+    <br/>
+  </span>
+</xsl:template>
+
 <xsl:template match="corpname" mode="titlepage.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="titlepage.mode"/>
@@ -369,6 +383,11 @@
 <xsl:template match="editor[position()=1]" mode="titlepage.mode">
   <h4 class="editedby"><xsl:call-template name="gentext.edited.by"/></h4>
   <h3 class="{name(.)}"><xsl:call-template name="person.name"/></h3>
+</xsl:template>
+
+<xsl:template match="email" mode="titlepage.mode">
+  <!-- use the normal e-mail handling code -->
+  <xsl:apply-templates select="."/>
 </xsl:template>
 
 <xsl:template match="firstname" mode="titlepage.mode">
@@ -461,6 +480,7 @@
         <xsl:with-param name="filename" select="$filename"/>
         <xsl:with-param name="quiet" select="$chunk.quietly"/>
         <xsl:with-param name="content">
+        <xsl:call-template name="user.preroot"/>
           <html>
             <head>
               <xsl:call-template name="system.head.content"/>
@@ -479,6 +499,7 @@
     </xsl:when>
     <xsl:otherwise>
       <div class="{local-name(.)}">
+        <a name="{$id}"/>
         <xsl:apply-templates mode="titlepage.mode"/>
       </div>
     </xsl:otherwise>

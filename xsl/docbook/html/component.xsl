@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: component.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+     $Id: component.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -31,6 +31,7 @@
   <xsl:param name="node" select="."/>
   <xsl:variable name="subtitle"
                 select="($node/docinfo/subtitle
+                        |$node/info/subtitle
                         |$node/prefaceinfo/subtitle
                         |$node/chapterinfo/subtitle
                         |$node/appendixinfo/subtitle
@@ -139,6 +140,7 @@
 
 <xsl:template match="preface/subtitle
                      |preface/prefaceinfo/subtitle
+                     |preface/info/subtitle
                      |preface/docinfo/subtitle"
               mode="titlepage.mode" priority="2">
   <xsl:call-template name="component.subtitle">
@@ -189,6 +191,7 @@
 
 <xsl:template match="chapter/subtitle
                      |chapter/chapterinfo/subtitle
+                     |chapter/info/subtitle
                      |chapter/docinfo/subtitle"
               mode="titlepage.mode" priority="2">
   <xsl:call-template name="component.subtitle">
@@ -260,6 +263,7 @@
 
 <xsl:template match="appendix/subtitle
                      |appendix/appendixinfo/subtitle
+                     |appendix/info/subtitle
                      |appendix/docinfo/subtitle"
               mode="titlepage.mode" priority="2">
   <xsl:call-template name="component.subtitle">
@@ -381,6 +385,7 @@
 
 <xsl:template match="article/subtitle
                      |article/articleinfo/subtitle
+                     |article/info/subtitle
                      |article/artheader/subtitle"
               mode="titlepage.mode" priority="2">
   <xsl:call-template name="component.subtitle">

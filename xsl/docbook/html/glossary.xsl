@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: glossary.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+     $Id: glossary.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -55,25 +55,16 @@
 <xsl:template match="glossary/subtitle"></xsl:template>
 <xsl:template match="glossary/titleabbrev"></xsl:template>
 
-<xsl:template match="glossary/title" mode="component.title.mode">
-  <h2>
-    <xsl:apply-templates/>
-  </h2>
-</xsl:template>
-
-<xsl:template match="glossary/subtitle" mode="component.title.mode">
-  <h3>
-    <i><xsl:apply-templates/></i>
-  </h3>
-</xsl:template>
-
 <!-- ==================================================================== -->
 
 <xsl:template match="glosslist">
   <div class="{name(.)}">
     <xsl:call-template name="anchor"/>
+    <xsl:if test="blockinfo/title|title">
+      <xsl:call-template name="formal.object.heading"/>
+    </xsl:if>
     <dl>
-      <xsl:apply-templates/>
+      <xsl:apply-templates select="glossentry"/>
     </dl>
   </div>
 </xsl:template>
@@ -203,7 +194,7 @@ GlossEntry ::=
       <xsl:choose>
         <xsl:when test="$target">
           <a href="#{@otherterm}">
-            <xsl:apply-templates select="$target" mode="xref"/>
+            <xsl:apply-templates select="$target" mode="xref-to"/>
           </a>
         </xsl:when>
         <xsl:when test="$otherterm != '' and not($target)">
@@ -245,7 +236,7 @@ GlossEntry ::=
   <xsl:choose>
     <xsl:when test="$target">
       <a href="#{@otherterm}">
-        <xsl:apply-templates select="$target" mode="xref"/>
+        <xsl:apply-templates select="$target" mode="xref-to"/>
       </a>
     </xsl:when>
     <xsl:when test="$otherterm != '' and not($target)">
@@ -282,6 +273,15 @@ GlossEntry ::=
     <xsl:message>
       <xsl:text>Warning: processing automatic glossary </xsl:text>
       <xsl:text>without a glossary.collection file.</xsl:text>
+    </xsl:message>
+  </xsl:if>
+
+  <xsl:if test="not($collection) and $glossary.collection != ''">
+    <xsl:message>
+      <xsl:text>Warning: processing automatic glossary but unable to </xsl:text>
+      <xsl:text>open glossary.collection file '</xsl:text>
+      <xsl:value-of select="$glossary.collection"/>
+      <xsl:text>'</xsl:text>
     </xsl:message>
   </xsl:if>
 

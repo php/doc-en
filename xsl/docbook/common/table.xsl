@@ -4,6 +4,18 @@
                 exclude-result-prefixes="doc"
                 version="1.0">
 
+<!-- ********************************************************************
+     $Id: table.xsl,v 1.3 2004-10-01 16:32:09 techtonik Exp $
+     ********************************************************************
+
+     This file is part of the XSL DocBook Stylesheet distribution.
+     See ../README or http://nwalsh.com/docbook/xsl/ for copyright
+     and other information.
+
+     ******************************************************************** -->
+
+<!-- ==================================================================== -->
+
 <xsl:template name="blank.spans">
   <xsl:param name="cols" select="1"/>
   <xsl:if test="$cols &gt; 0">
@@ -236,6 +248,9 @@ or 0 (the empty string)</para>
 
   <xsl:variable name="tgroup" select="$row/ancestor::tgroup[1]"/>
 
+  <xsl:variable name="table" select="($tgroup/ancestor::table
+                                     |$tgroup/ancestor::informaltable)[1]"/>
+
   <xsl:variable name="entry.value">
     <xsl:call-template name="get-attribute">
       <xsl:with-param name="element" select="$entry"/>
@@ -313,6 +328,13 @@ or 0 (the empty string)</para>
     </xsl:call-template>
   </xsl:variable>
 
+  <xsl:variable name="table.value">
+    <xsl:call-template name="get-attribute">
+      <xsl:with-param name="element" select="$table"/>
+      <xsl:with-param name="attribute" select="$attribute"/>
+    </xsl:call-template>
+  </xsl:variable>
+
   <xsl:variable name="default.value">
     <!-- This section used to say that rowsep and colsep have defaults based -->
     <!-- on the frame setting. Further reflection and closer examination of the -->
@@ -334,6 +356,12 @@ or 0 (the empty string)</para>
     </xsl:when>
     <xsl:when test="$row.value != ''">
       <xsl:value-of select="$row.value"/>
+    </xsl:when>
+    <xsl:when test="$tgroup.value != ''">
+      <xsl:value-of select="$tgroup.value"/>
+    </xsl:when>
+    <xsl:when test="$table.value != ''">
+      <xsl:value-of select="$table.value"/>
     </xsl:when>
     <xsl:when test="$span.value != ''">
       <xsl:value-of select="$span.value"/>

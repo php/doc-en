@@ -6,7 +6,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: footnote.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
+     $Id: footnote.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -17,7 +17,15 @@
 
 <xsl:template name="format.footnote.mark">
   <xsl:param name="mark" select="'?'"/>
-  <fo:inline baseline-shift="super" font-size="90%">
+  <fo:inline xsl:use-attribute-sets="superscript.properties">
+    <xsl:choose>
+      <xsl:when test="$fop.extensions != 0">
+        <xsl:attribute name="vertical-align">super</xsl:attribute>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:attribute name="baseline-shift">super</xsl:attribute>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:copy-of select="$mark"/>
   </fo:inline>
 </xsl:template>
@@ -39,9 +47,14 @@
               <xsl:apply-templates select="." mode="footnote.number"/>
             </xsl:with-param>
           </xsl:call-template>
+          <xsl:text> </xsl:text>
         </fo:inline>
-        <fo:footnote-body font-family="{$body.font.family}"
-                          font-size="{$footnote.font.size}">
+        <fo:footnote-body font-family="{$body.fontset}"
+                          font-size="{$footnote.font.size}"
+                          font-weight="normal"
+                          font-style="normal"
+                          text-align="{$alignment}"
+                          margin-left="0pc">
           <xsl:apply-templates/>
         </fo:footnote-body>
       </fo:footnote>
@@ -60,6 +73,9 @@
 
 <xsl:template match="footnote" mode="footnote.number">
   <xsl:choose>
+    <xsl:when test="string-length(@label) != 0">
+      <xsl:value-of select="@label"/>
+    </xsl:when>
     <xsl:when test="ancestor::tgroup">
       <xsl:variable name="tfnum">
         <xsl:number level="any" from="table|informaltable" format="1"/>
@@ -76,10 +92,13 @@
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:variable name="pfoot" select="preceding::footnote"/>
-      <xsl:variable name="ptfoot" select="preceding::tgroup//footnote"/>
-      <xsl:variable name="fnum" select="count($pfoot) - count($ptfoot) + 1"/>
-
+      <xsl:variable name="fnum">
+        <!-- FIXME: list in @from is probably not complete -->
+        <xsl:number level="any" 
+                    from="chapter|appendix|preface|article|refentry|bibliography" 
+                    count="footnote[not(@label)][not(ancestor::tgroup)]|ulink[$ulink.footnotes != 0][node()][@url != .][not(ancestor::footnote)]" 
+                    format="1"/>
+      </xsl:variable>
       <xsl:choose>
         <xsl:when test="string-length($footnote.number.symbols) &gt;= $fnum">
           <xsl:value-of select="substring($footnote.number.symbols, $fnum, 1)"/>

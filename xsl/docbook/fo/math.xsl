@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: math.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
+     $Id: math.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -39,38 +39,6 @@
     <xsl:copy-of select="@*"/>
     <xsl:apply-templates/>
   </xsl:copy>
-</xsl:template>
-
-<xsl:template match="equation/mediaobject | informalequation/mediaobject">
-  <xsl:if test="$passivetex.extensions = 0 or $tex.math.in.alt = ''">
-    <xsl:variable name="olist" select="imageobject|imageobjectco
-                       |videoobject|audioobject
-  		     |textobject"/>
-  
-    <xsl:variable name="object.index">
-      <xsl:call-template name="select.mediaobject.index">
-        <xsl:with-param name="olist" select="$olist"/>
-        <xsl:with-param name="count" select="1"/>
-      </xsl:call-template>
-    </xsl:variable>
-  
-    <xsl:variable name="object" select="$olist[position() = $object.index]"/>
-  
-    <xsl:variable name="align">
-      <xsl:value-of select="$object/imagedata[@align][1]/@align"/>
-    </xsl:variable>
-  
-    <fo:block>
-      <xsl:if test="$align != '' ">
-        <xsl:attribute name="text-align">
-          <xsl:value-of select="$align"/>
-        </xsl:attribute>
-      </xsl:if>
-  
-      <xsl:apply-templates select="$object"/>
-      <xsl:apply-templates select="caption"/>
-    </fo:block>
-  </xsl:if>
 </xsl:template>
 
 <xsl:template match="equation/graphic | informalequation/graphic">

@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: l10n.xsl,v 1.2 2003-03-09 14:53:09 tom Exp $
+     $Id: l10n.xsl,v 1.3 2004-10-01 16:32:09 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -31,8 +31,8 @@
       <xsl:when test="$xref-context or $l10n.gentext.use.xref.language != 0">
         <!-- can't do this one step: attributes are unordered! -->
         <xsl:variable name="lang-scope"
-                      select="($target/ancestor-or-self::*[@lang]
-                               |$target/ancestor-or-self::*[@xml:lang])[last()]"/>
+                      select="$target/ancestor-or-self::*
+                              [@lang or @xml:lang][last()]"/>
         <xsl:variable name="lang-attr"
                       select="($lang-scope/@lang | $lang-scope/@xml:lang)[1]"/>
         <xsl:choose>
@@ -48,8 +48,8 @@
       <xsl:otherwise>
         <!-- can't do this one step: attributes are unordered! -->
         <xsl:variable name="lang-scope"
-                      select="(ancestor-or-self::*[@lang]
-                               |ancestor-or-self::*[@xml:lang])[last()]"/>
+                      select="$target/ancestor-or-self::*
+                              [@lang or @xml:lang][last()]"/>
         <xsl:variable name="lang-attr"
                       select="($lang-scope/@lang | $lang-scope/@xml:lang)[1]"/>
 
@@ -118,8 +118,8 @@
       <xsl:otherwise>
         <!-- can't do this one step: attributes are unordered! -->
         <xsl:variable name="lang-scope"
-                      select="($node/ancestor-or-self::*[@lang]
-                               |$node/ancestor-or-self::*[@xml:lang])[last()]"/>
+                      select="$node/ancestor-or-self::*
+                              [@lang or @xml:lang][last()]"/>
         <xsl:variable name="lang-attr"
                       select="($lang-scope/@lang | $lang-scope/@xml:lang)[1]"/>
 
@@ -154,22 +154,11 @@
   <xsl:variable name="l10n.gentext"
                 select="($l10n.xml/l:i18n/l:l10n[@language=$lang]/l:gentext[@key=$key])[1]"/>
 
-  <xsl:variable name="l10n.name">
-    <xsl:choose>
-      <xsl:when test="$local.l10n.gentext">
-        <xsl:value-of select="$local.l10n.gentext/@text"/>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:value-of select="$l10n.gentext/@text"/>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:variable>
-
   <xsl:choose>
-    <xsl:when test="count($local.l10n.gentext) &gt; 0">
+    <xsl:when test="$local.l10n.gentext">
       <xsl:value-of select="$local.l10n.gentext/@text"/>
     </xsl:when>
-    <xsl:when test="count($l10n.gentext) &gt; 0">
+    <xsl:when test="$l10n.gentext">
       <xsl:value-of select="$l10n.gentext/@text"/>
     </xsl:when>
     <xsl:otherwise>
@@ -179,14 +168,14 @@
         <xsl:text>" localization of "</xsl:text>
         <xsl:value-of select="$key"/>
         <xsl:text>" exists</xsl:text>
-	<xsl:choose>
-	  <xsl:when test="$lang = 'en'">
-	     <xsl:text>.</xsl:text>
-	  </xsl:when>
-	  <xsl:otherwise>
-	     <xsl:text>; using "en".</xsl:text>
-	  </xsl:otherwise>
-	</xsl:choose>
+        <xsl:choose>
+          <xsl:when test="$lang = 'en'">
+             <xsl:text>.</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+             <xsl:text>; using "en".</xsl:text>
+          </xsl:otherwise>
+        </xsl:choose>
       </xsl:message>
 
       <xsl:value-of select="($l10n.xml/l:i18n/l:l10n[@language='en']/l:gentext[@key=$key])[1]/@text"/>
@@ -235,10 +224,10 @@
                 select="($l10n.xml/l:i18n/l:l10n[@language=$lang]/l:dingbat[@key=$dingbat])[1]"/>
 
   <xsl:choose>
-    <xsl:when test="count($local.l10n.dingbat) &gt; 0">
+    <xsl:when test="$local.l10n.dingbat">
       <xsl:value-of select="$local.l10n.dingbat/@text"/>
     </xsl:when>
-    <xsl:when test="count($l10n.dingbat) &gt; 0">
+    <xsl:when test="$l10n.dingbat">
       <xsl:value-of select="$l10n.dingbat/@text"/>
     </xsl:when>
     <xsl:otherwise>

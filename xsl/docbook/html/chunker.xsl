@@ -8,6 +8,18 @@
                 exclude-result-prefixes="doc"
                 extension-element-prefixes="saxon xalanredirect lxslt exsl">
 
+<!-- ********************************************************************
+     $Id: chunker.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     ********************************************************************
+
+     This file is part of the XSL DocBook Stylesheet distribution.
+     See ../README or http://nwalsh.com/docbook/xsl/ for copyright
+     and other information.
+
+     ******************************************************************** -->
+
+<!-- ==================================================================== -->
+
 <!-- This stylesheet works with XSLT implementations that support -->
 <!-- exsl:document, saxon:output, or xalanredirect:write -->
 <!-- Note: Only Saxon 6.4.2 or later is supported. -->
@@ -406,5 +418,6 @@
     <xsl:with-param name="content" select="$content"/>
   </xsl:call-template>
 </xsl:template>
+
 
 </xsl:stylesheet>

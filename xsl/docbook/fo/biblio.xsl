@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: biblio.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
+     $Id: biblio.xsl,v 1.3 2004-10-01 16:32:06 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -21,23 +21,46 @@
   </xsl:variable>
 
   <xsl:choose>
-    <xsl:when test="not(parent::*) or parent::book">
+    <xsl:when test="not(parent::*) or parent::part or parent::book">
       <xsl:variable name="master-reference">
         <xsl:call-template name="select.pagemaster"/>
       </xsl:variable>
 
-      <fo:page-sequence id="{$id}"
-                        hyphenate="{$hyphenate}"
+      <fo:page-sequence hyphenate="{$hyphenate}"
                         master-reference="{$master-reference}">
         <xsl:attribute name="language">
           <xsl:call-template name="l10n.language"/>
         </xsl:attribute>
         <xsl:attribute name="format">
-          <xsl:call-template name="page.number.format"/>
+          <xsl:call-template name="page.number.format">
+            <xsl:with-param name="master-reference" select="$master-reference"/>
+          </xsl:call-template>
         </xsl:attribute>
-        <xsl:if test="$double.sided != 0">
-          <xsl:attribute name="initial-page-number">auto-odd</xsl:attribute>
-        </xsl:if>
+        <xsl:attribute name="initial-page-number">
+          <xsl:call-template name="initial.page.number">
+            <xsl:with-param name="master-reference" select="$master-reference"/>
+          </xsl:call-template>
+        </xsl:attribute>
+        <xsl:attribute name="force-page-count">
+          <xsl:call-template name="force.page.count">
+            <xsl:with-param name="master-reference" select="$master-reference"/>
+          </xsl:call-template>
+        </xsl:attribute>
+        <xsl:attribute name="hyphenation-character">
+          <xsl:call-template name="gentext">
+            <xsl:with-param name="key" select="'hyphenation-character'"/>
+          </xsl:call-template>
+        </xsl:attribute>
+        <xsl:attribute name="hyphenation-push-character-count">
+          <xsl:call-template name="gentext">
+            <xsl:with-param name="key" select="'hyphenation-push-character-count'"/>
+          </xsl:call-template>
+        </xsl:attribute>
+        <xsl:attribute name="hyphenation-remain-character-count">
+          <xsl:call-template name="gentext">
+            <xsl:with-param name="key" select="'hyphenation-remain-character-count'"/>
+          </xsl:call-template>
+        </xsl:attribute>
 
         <xsl:apply-templates select="." mode="running.head.mode">
           <xsl:with-param name="master-reference" select="$master-reference"/>
@@ -47,7 +70,9 @@
         </xsl:apply-templates>
 
         <fo:flow flow-name="xsl-region-body">
-          <xsl:call-template name="bibliography.titlepage"/>
+          <fo:block id="{$id}">
+            <xsl:call-template name="bibliography.titlepage"/>
+          </fo:block>
           <xsl:apply-templates/>
         </fo:flow>
       </fo:page-sequence>
@@ -58,8 +83,8 @@
                 space-before.optimum="1.5em"
                 space-before.maximum="2em">
         <xsl:call-template name="bibliography.titlepage"/>
-        <xsl:apply-templates/>
       </fo:block>
+      <xsl:apply-templates/>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -87,11 +112,33 @@
 
 <!-- ==================================================================== -->
 
+<xsl:template match="bibliolist">
+  <xsl:variable name="id">
+    <xsl:call-template name="object.id"/>
+  </xsl:variable>
+
+  <fo:block id="{$id}"
+	    space-before.minimum="1em"
+	    space-before.optimum="1.5em"
+	    space-before.maximum="2em">
+
+    <xsl:if test="blockinfo/title|info/title|title">
+      <xsl:call-template name="formal.object.heading"/>
+    </xsl:if>
+
+    <xsl:apply-templates select="*[not(self::blockinfo)
+			           and not(self::title)
+				   and not(self::titleabbrev)]"/>
+  </fo:block>
+</xsl:template>
+
+<!-- ==================================================================== -->
+
 <xsl:template match="biblioentry">
   <xsl:variable name="id"><xsl:call-template name="object.id"/></xsl:variable>
   <xsl:choose>
     <xsl:when test="string(.) = ''">
-      <xsl:variable name="bib" select="document($bibliography.collection)"/>
+      <xsl:variable name="bib" select="document($bibliography.collection,.)"/>
       <xsl:variable name="entry" select="$bib/bibliography/*[@id=$id][1]"/>
       <xsl:choose>
         <xsl:when test="$entry">
@@ -127,7 +174,7 @@
   <xsl:variable name="id"><xsl:call-template name="object.id"/></xsl:variable>
   <xsl:choose>
     <xsl:when test="string(.) = ''">
-      <xsl:variable name="bib" select="document($bibliography.collection)"/>
+      <xsl:variable name="bib" select="document($bibliography.collection,.)"/>
       <xsl:variable name="entry" select="$bib/bibliography/*[@id=$id][1]"/>
       <xsl:choose>
         <xsl:when test="$entry">
@@ -255,7 +302,7 @@
   </fo:inline>
 </xsl:template>
 
-<xsl:template match="authorblurb" mode="bibliography.mode">
+<xsl:template match="authorblurb|personblurb" mode="bibliography.mode">
   <fo:inline>
     <xsl:apply-templates mode="bibliography.mode"/>
     <xsl:value-of select="$biblioentry.item.separator"/>
@@ -420,6 +467,13 @@
   </fo:inline>
 </xsl:template>
 
+<xsl:template match="corpcredit" mode="bibliography.mode">
+  <fo:inline>
+    <xsl:apply-templates mode="bibliography.mode"/>
+    <xsl:value-of select="$biblioentry.item.separator"/>
+  </fo:inline>
+</xsl:template>
+
 <xsl:template match="corpname" mode="bibliography.mode">
   <fo:inline>
     <xsl:apply-templates mode="bibliography.mode"/>
@@ -484,13 +538,6 @@
 </xsl:template>
 
 <xsl:template match="issn" mode="bibliography.mode">
-  <fo:inline>
-    <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
-  </fo:inline>
-</xsl:template>
-
-<xsl:template match="biblioid" mode="bibliography.mode">
   <fo:inline>
     <xsl:apply-templates mode="bibliography.mode"/>
     <xsl:value-of select="$biblioentry.item.separator"/>
@@ -762,7 +809,7 @@
   </fo:inline>
 </xsl:template>
 
-<xsl:template match="authorblurb" mode="bibliomixed.mode">
+<xsl:template match="authorblurb|personblurb" mode="bibliomixed.mode">
   <fo:inline>
     <xsl:apply-templates mode="bibliomixed.mode"/>
   </fo:inline>
@@ -876,6 +923,12 @@
   </fo:inline>
 </xsl:template>
 
+<xsl:template match="corpcredit" mode="bibliomixed.mode">
+  <fo:inline>
+    <xsl:apply-templates mode="bibliomixed.mode"/>
+  </fo:inline>
+</xsl:template>
+
 <xsl:template match="corpname" mode="bibliomixed.mode">
   <fo:inline>
     <xsl:apply-templates mode="bibliomixed.mode"/>
@@ -931,12 +984,6 @@
 </xsl:template>
 
 <xsl:template match="issn" mode="bibliomixed.mode">
-  <fo:inline>
-    <xsl:apply-templates mode="bibliomixed.mode"/>
-  </fo:inline>
-</xsl:template>
-
-<xsl:template match="biblioid" mode="bibliomixed.mode">
   <fo:inline>
     <xsl:apply-templates mode="bibliomixed.mode"/>
   </fo:inline>

@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: ebnf.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+     $Id: ebnf.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -17,7 +17,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: ebnf.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+$Id: ebnf.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>
@@ -127,9 +127,12 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 	</xsl:otherwise>
       </xsl:choose>
     </td>
-    <td valign="top" width="5%" align="center"><tt>::=</tt></td>
+    <td valign="top" width="5%" align="center">
+      <xsl:copy-of select="$ebnf.assignment"/>
+    </td>
     <td valign="top" width="52%">
       <xsl:apply-templates select="rhs"/>
+      <xsl:copy-of select="$ebnf.statement.terminator"/>
     </td>
     <td align="left" valign="top" width="30%">
       <xsl:choose>

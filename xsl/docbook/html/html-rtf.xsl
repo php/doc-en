@@ -5,6 +5,18 @@
                 exclude-result-prefixes="exsl set"
                 version="1.0">
 
+<!-- ********************************************************************
+     $Id: html-rtf.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     ********************************************************************
+
+     This file is part of the XSL DocBook Stylesheet distribution.
+     See ../README or http://nwalsh.com/docbook/xsl/ for copyright
+     and other information.
+
+     ******************************************************************** -->
+
+<!-- ==================================================================== -->
+
 <!-- This module contains templates that match against HTML nodes. It is used
      to post-process result tree fragments for some sorts of cleanup.
      These templates can only ever be fired by a processor that supports
@@ -279,6 +291,43 @@
       </xsl:choose>
     </xsl:otherwise>
   </xsl:choose>
+</xsl:template>
+
+<!-- ==================================================================== -->
+
+<!-- remove.empty.div mode templates remove empty blocks -->
+
+<xsl:template name="remove.empty.div">
+  <xsl:param name="div"/>
+  <xsl:choose>
+    <xsl:when test="function-available('exsl:node-set')">
+      <xsl:apply-templates select="exsl:node-set($div)" mode="remove.empty.div"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:copy-of select="$div"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template xmlns:html="http://www.w3.org/1999/xhtml"
+              match="html:p|p|html:div|div" mode="remove.empty.div">
+  <xsl:if test="node()">
+    <xsl:copy>
+      <xsl:copy-of select="@*"/>
+      <xsl:apply-templates mode="remove.empty.div"/>
+    </xsl:copy>
+  </xsl:if>
+</xsl:template>
+
+<xsl:template match="*" mode="remove.empty.div">
+  <xsl:copy>
+    <xsl:copy-of select="@*"/>
+    <xsl:apply-templates mode="remove.empty.div"/>
+  </xsl:copy>
+</xsl:template>
+
+<xsl:template match="text()|processing-instruction()|comment()" mode="remove.empty.div">
+  <xsl:copy/>
 </xsl:template>
 
 <!-- ==================================================================== -->

@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: block.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
+     $Id: block.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -12,6 +12,13 @@
      and other information.
 
      ******************************************************************** -->
+
+<!-- ==================================================================== -->
+<!-- What should we do about styling blockinfo? -->
+
+<xsl:template match="blockinfo">
+  <!-- suppress -->
+</xsl:template>
 
 <!-- ==================================================================== -->
 
@@ -43,7 +50,9 @@
 </xsl:template>
 
 <xsl:template match="formalpara/title">
-  <xsl:variable name="titleStr" select="."/>
+  <xsl:variable name="titleStr">
+      <xsl:apply-templates/>
+  </xsl:variable>
   <xsl:variable name="lastChar">
     <xsl:if test="$titleStr != ''">
       <xsl:value-of select="substring($titleStr,string-length($titleStr),1)"/>
@@ -53,7 +62,7 @@
   <fo:inline font-weight="bold"
              keep-with-next.within-line="always"
              padding-end="1em">
-    <xsl:apply-templates/>
+    <xsl:copy-of select="$titleStr"/>
     <xsl:if test="$lastChar != ''
                   and not(contains($runinhead.title.end.punct, $lastChar))">
       <xsl:value-of select="$runinhead.default.title.end.punct"/>
@@ -94,10 +103,12 @@
   <fo:block>
     <xsl:call-template name="anchor"/>
     <xsl:apply-templates select="para|simpara|formalpara|literallayout"/>
-    <fo:inline>
-      <xsl:text>--</xsl:text>
-      <xsl:apply-templates select="attribution"/>
-    </fo:inline>
+    <xsl:if test="attribution">
+      <fo:inline>
+        <xsl:text>--</xsl:text>
+        <xsl:apply-templates select="attribution"/>
+      </fo:inline>
+    </xsl:if>
   </fo:block>
 </xsl:template>
 
@@ -135,11 +146,9 @@
     <xsl:if test="@id">
       <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
     </xsl:if>
-    <xsl:call-template name="formal.object.heading">
-      <xsl:with-param name="title">
-        <xsl:apply-templates select="." mode="title.markup"/>
-      </xsl:with-param>
-    </xsl:call-template>
+    <xsl:if test="title">
+      <xsl:call-template name="formal.object.heading"/>
+    </xsl:if>
     <xsl:apply-templates/>
   </fo:block>
 </xsl:template>
@@ -241,9 +250,9 @@
 
 <xsl:template match="revhistory">
   <fo:table table-layout="fixed">
-    <fo:table-column column-number="1" column-width="33%"/>
-    <fo:table-column column-number="2" column-width="33%"/>
-    <fo:table-column column-number="3" column-width="33%"/>
+    <fo:table-column column-number="1" column-width="proportional-column-width(1)"/>
+    <fo:table-column column-number="2" column-width="proportional-column-width(1)"/>
+    <fo:table-column column-number="3" column-width="proportional-column-width(1)"/>
     <fo:table-body>
       <fo:table-row>
         <fo:table-cell number-columns-spanned="3">

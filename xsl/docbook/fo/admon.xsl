@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: admon.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
+     $Id: admon.xsl,v 1.3 2004-10-01 16:32:06 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -83,9 +83,11 @@
             </fo:block>
           </fo:list-item-label>
           <fo:list-item-body start-indent="body-start()">
-            <fo:block xsl:use-attribute-sets="admonition.title.properties">
-              <xsl:apply-templates select="." mode="object.title.markup"/>
-            </fo:block>
+            <xsl:if test="$admon.textlabel != 0 or title">
+              <fo:block xsl:use-attribute-sets="admonition.title.properties">
+                <xsl:apply-templates select="." mode="object.title.markup"/>
+              </fo:block>
+            </xsl:if>
             <fo:block xsl:use-attribute-sets="admonition.properties">
               <xsl:apply-templates/>
             </fo:block>
@@ -106,10 +108,12 @@
             start-indent="0.25in"
             end-indent="0.25in"
             id="{$id}">
-    <fo:block keep-with-next='always'
-              xsl:use-attribute-sets="admonition.title.properties">
-      <xsl:apply-templates select="." mode="object.title.markup"/>
-    </fo:block>
+    <xsl:if test="$admon.textlabel != 0 or title">
+      <fo:block keep-with-next='always'
+                xsl:use-attribute-sets="admonition.title.properties">
+         <xsl:apply-templates select="." mode="object.title.markup"/>
+      </fo:block>
+    </xsl:if>
 
     <fo:block xsl:use-attribute-sets="admonition.properties">
       <xsl:apply-templates/>

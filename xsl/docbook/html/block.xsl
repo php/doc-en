@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: block.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+     $Id: block.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -11,6 +11,13 @@
      and other information.
 
      ******************************************************************** -->
+
+<!-- ==================================================================== -->
+<!-- What should we do about styling blockinfo? -->
+
+<xsl:template match="blockinfo">
+  <!-- suppress -->
+</xsl:template>
 
 <!-- ==================================================================== -->
 
@@ -99,7 +106,9 @@
 </xsl:template>
 
 <xsl:template match="formalpara/title">
-  <xsl:variable name="titleStr" select="."/>
+  <xsl:variable name="titleStr">
+      <xsl:apply-templates/>
+  </xsl:variable>
   <xsl:variable name="lastChar">
     <xsl:if test="$titleStr != ''">
       <xsl:value-of select="substring($titleStr,string-length($titleStr),1)"/>
@@ -107,7 +116,7 @@
   </xsl:variable>
 
   <b>
-    <xsl:apply-templates/>
+    <xsl:copy-of select="$titleStr"/>
     <xsl:if test="$lastChar != ''
                   and not(contains($runinhead.title.end.punct, $lastChar))">
       <xsl:value-of select="$runinhead.default.title.end.punct"/>
@@ -142,11 +151,11 @@
             <td width="10%" valign="top">&#160;</td>
           </tr>
           <tr>
+            <td width="10%" valign="top">&#160;</td>
             <td colspan="2" align="right" valign="top">
               <xsl:text>--</xsl:text>
               <xsl:apply-templates select="attribution"/>
             </td>
-            <td width="10%" valign="top">&#160;</td>
           </tr>
         </table>
       </xsl:when>
@@ -172,7 +181,11 @@
 <xsl:template match="epigraph">
   <div class="{name(.)}">
       <xsl:apply-templates select="para|simpara|formalpara|literallayout"/>
-    <span>--<xsl:apply-templates select="attribution"/></span>
+      <xsl:if test="attribution">
+        <div class="attribution">
+          <span>--<xsl:apply-templates select="attribution"/></span>
+        </div>
+      </xsl:if>
   </div>
 </xsl:template>
 

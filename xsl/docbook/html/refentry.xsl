@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: refentry.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+     $Id: refentry.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -204,7 +204,9 @@
 <xsl:template match="refsection|refsect1|refsect2|refsect3">
   <div class="{name(.)}">
     <xsl:call-template name="language.attribute"/>
-    <xsl:call-template name="anchor"/>
+    <xsl:call-template name="anchor">
+      <xsl:with-param name="conditional" select="0"/>
+    </xsl:call-template>
     <xsl:apply-templates/>
   </div>
 </xsl:template>

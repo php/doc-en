@@ -6,7 +6,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: inline.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
+     $Id: inline.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -81,7 +81,23 @@
   <xsl:param name="content">
     <xsl:apply-templates/>
   </xsl:param>
-  <xsl:copy-of select="$content"/>
+
+  <xsl:choose>
+    <xsl:when test="@dir">
+      <fo:inline>
+        <xsl:attribute name="direction">
+          <xsl:choose>
+            <xsl:when test="@dir = 'ltr' or @dir = 'lro'">ltr</xsl:when>
+            <xsl:otherwise>rtl</xsl:otherwise>
+          </xsl:choose>
+        </xsl:attribute>
+        <xsl:copy-of select="$content"/>
+      </fo:inline>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:copy-of select="$content"/>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 <xsl:template name="inline.monoseq">
@@ -89,6 +105,14 @@
     <xsl:apply-templates/>
   </xsl:param>
   <fo:inline xsl:use-attribute-sets="monospace.properties">
+    <xsl:if test="@dir">
+      <xsl:attribute name="direction">
+        <xsl:choose>
+          <xsl:when test="@dir = 'ltr' or @dir = 'lro'">ltr</xsl:when>
+          <xsl:otherwise>rtl</xsl:otherwise>
+        </xsl:choose>
+      </xsl:attribute>
+    </xsl:if>
     <xsl:copy-of select="$content"/>
   </fo:inline>
 </xsl:template>
@@ -98,6 +122,14 @@
     <xsl:apply-templates/>
   </xsl:param>
   <fo:inline font-weight="bold">
+    <xsl:if test="@dir">
+      <xsl:attribute name="direction">
+        <xsl:choose>
+          <xsl:when test="@dir = 'ltr' or @dir = 'lro'">ltr</xsl:when>
+          <xsl:otherwise>rtl</xsl:otherwise>
+        </xsl:choose>
+      </xsl:attribute>
+    </xsl:if>
     <xsl:copy-of select="$content"/>
   </fo:inline>
 </xsl:template>
@@ -107,6 +139,19 @@
     <xsl:apply-templates/>
   </xsl:param>
   <fo:inline font-style="italic">
+    <xsl:if test="@id">
+      <xsl:attribute name="id">
+        <xsl:value-of select="@id"/>
+      </xsl:attribute>
+    </xsl:if>
+    <xsl:if test="@dir">
+      <xsl:attribute name="direction">
+        <xsl:choose>
+          <xsl:when test="@dir = 'ltr' or @dir = 'lro'">ltr</xsl:when>
+          <xsl:otherwise>rtl</xsl:otherwise>
+        </xsl:choose>
+      </xsl:attribute>
+    </xsl:if>
     <xsl:copy-of select="$content"/>
   </fo:inline>
 </xsl:template>
@@ -116,6 +161,19 @@
     <xsl:apply-templates/>
   </xsl:param>
   <fo:inline font-weight="bold" xsl:use-attribute-sets="monospace.properties">
+    <xsl:if test="@id">
+      <xsl:attribute name="id">
+        <xsl:value-of select="@id"/>
+      </xsl:attribute>
+    </xsl:if>
+    <xsl:if test="@dir">
+      <xsl:attribute name="direction">
+        <xsl:choose>
+          <xsl:when test="@dir = 'ltr' or @dir = 'lro'">ltr</xsl:when>
+          <xsl:otherwise>rtl</xsl:otherwise>
+        </xsl:choose>
+      </xsl:attribute>
+    </xsl:if>
     <xsl:copy-of select="$content"/>
   </fo:inline>
 </xsl:template>
@@ -125,6 +183,19 @@
     <xsl:apply-templates/>
   </xsl:param>
   <fo:inline font-style="italic" xsl:use-attribute-sets="monospace.properties">
+    <xsl:if test="@id">
+      <xsl:attribute name="id">
+        <xsl:value-of select="@id"/>
+      </xsl:attribute>
+    </xsl:if>
+    <xsl:if test="@dir">
+      <xsl:attribute name="direction">
+        <xsl:choose>
+          <xsl:when test="@dir = 'ltr' or @dir = 'lro'">ltr</xsl:when>
+          <xsl:otherwise>rtl</xsl:otherwise>
+        </xsl:choose>
+      </xsl:attribute>
+    </xsl:if>
     <xsl:copy-of select="$content"/>
   </fo:inline>
 </xsl:template>
@@ -133,7 +204,29 @@
   <xsl:param name="content">
     <xsl:apply-templates/>
   </xsl:param>
-  <fo:inline baseline-shift="super">
+
+  <fo:inline xsl:use-attribute-sets="superscript.properties">
+    <xsl:if test="@id">
+      <xsl:attribute name="id">
+        <xsl:value-of select="@id"/>
+      </xsl:attribute>
+    </xsl:if>
+    <xsl:if test="@dir">
+      <xsl:attribute name="direction">
+        <xsl:choose>
+          <xsl:when test="@dir = 'ltr' or @dir = 'lro'">ltr</xsl:when>
+          <xsl:otherwise>rtl</xsl:otherwise>
+        </xsl:choose>
+      </xsl:attribute>
+    </xsl:if>
+    <xsl:choose>
+      <xsl:when test="$fop.extensions != 0">
+        <xsl:attribute name="vertical-align">super</xsl:attribute>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:attribute name="baseline-shift">super</xsl:attribute>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:copy-of select="$content"/>
   </fo:inline>
 </xsl:template>
@@ -142,7 +235,29 @@
   <xsl:param name="content">
     <xsl:apply-templates/>
   </xsl:param>
-  <fo:inline baseline-shift="sub">
+
+  <fo:inline xsl:use-attribute-sets="subscript.properties">
+    <xsl:if test="@id">
+      <xsl:attribute name="id">
+        <xsl:value-of select="@id"/>
+      </xsl:attribute>
+    </xsl:if>
+    <xsl:if test="@dir">
+      <xsl:attribute name="direction">
+        <xsl:choose>
+          <xsl:when test="@dir = 'ltr' or @dir = 'lro'">ltr</xsl:when>
+          <xsl:otherwise>rtl</xsl:otherwise>
+        </xsl:choose>
+      </xsl:attribute>
+    </xsl:if>
+    <xsl:choose>
+      <xsl:when test="$fop.extensions != 0">
+        <xsl:attribute name="vertical-align">sub</xsl:attribute>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:attribute name="baseline-shift">sub</xsl:attribute>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:copy-of select="$content"/>
   </fo:inline>
 </xsl:template>
@@ -323,6 +438,10 @@
 </xsl:template>
 
 <xsl:template match="literal">
+  <xsl:call-template name="inline.monoseq"/>
+</xsl:template>
+
+<xsl:template match="code">
   <xsl:call-template name="inline.monoseq"/>
 </xsl:template>
 
@@ -527,12 +646,13 @@
     <xsl:when test="($firstterm.only.link = 0 or $firstterm = 1) and @linkend">
       <fo:basic-link internal-destination="{@linkend}"
                      xsl:use-attribute-sets="xref.properties">
-        <xsl:call-template name="inline.charseq"/>
+        <xsl:call-template name="inline.italicseq"/>
       </fo:basic-link>
     </xsl:when>
 
     <xsl:when test="not(@linkend)
                     and ($firstterm.only.link = 0 or $firstterm = 1)
+                    and ($glossterm.auto.link != 0)
                     and $glossary.collection != ''">
       <xsl:variable name="term">
         <xsl:choose>
@@ -555,7 +675,6 @@
         </xsl:when>
         <xsl:otherwise>
           <xsl:variable name="id">
-            <xsl:text>gl.</xsl:text>
             <xsl:choose>
               <xsl:when test="$cterm/@id">
                 <xsl:value-of select="$cterm/@id"/>
@@ -621,7 +740,7 @@
   </xsl:choose>
 </xsl:template>
 
-<xsl:template match="sgmltag">
+<xsl:template match="sgmltag|tag">
   <xsl:variable name="class">
     <xsl:choose>
       <xsl:when test="@class">
@@ -759,6 +878,14 @@
   </xsl:for-each>
 </xsl:template>
 
+<xsl:template match="orgname">
+  <xsl:call-template name="inline.charseq"/>
+</xsl:template>
+
+<xsl:template match="uri">
+  <xsl:call-template name="inline.monoseq"/>
+</xsl:template>
+
 <!-- ==================================================================== -->
 
 <xsl:template match="menuchoice">
@@ -867,6 +994,10 @@
 </xsl:template>
 
 <!-- ==================================================================== -->
+
+<xsl:template match="beginpage">
+  <!-- does nothing; this *is not* markup to force a page break. -->
+</xsl:template>
 
 </xsl:stylesheet>
 

@@ -8,7 +8,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: callout.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
+     $Id: callout.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -89,10 +89,45 @@
   </fo:inline>
 </xsl:template>
 
+<xsl:template match="coref">
+  <!-- tricky; this relies on the fact that we can process the "co" that's -->
+  <!-- "over there" as if it were "right here" -->
+
+  <xsl:variable name="co" select="key('id', @linkend)"/>
+  <xsl:variable name="id" select="@id"/>
+  <xsl:choose>
+    <xsl:when test="not($co)">
+      <xsl:message>
+        <xsl:text>Error: coref link is broken: </xsl:text>
+        <xsl:value-of select="@linkend"/>
+      </xsl:message>
+    </xsl:when>
+    <xsl:when test="local-name($co) != 'co'">
+      <xsl:message>
+        <xsl:text>Error: coref doesn't point to a co: </xsl:text>
+        <xsl:value-of select="@linkend"/>
+      </xsl:message>
+    </xsl:when>
+    <xsl:otherwise>
+      <fo:inline>
+        <xsl:if test="$id != ''">
+	  <xsl:attribute name="id">
+	    <xsl:value-of select="$id"/>
+	  </xsl:attribute>
+	</xsl:if>
+        <xsl:apply-templates select="$co" mode="callout-bug"/>
+      </fo:inline>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
 <xsl:template match="co" mode="callout-bug">
   <xsl:call-template name="callout-bug">
     <xsl:with-param name="conum">
-      <xsl:number count="co" format="1"/>
+      <xsl:number count="co"
+                  level="any"
+                  from="programlisting|screen|literallayout|synopsis"
+                  format="1"/>
     </xsl:with-param>
   </xsl:call-template>
 </xsl:template>
@@ -156,7 +191,7 @@
                        padding-start="0.2em"
                        padding-end="0.2em"
                        baseline-shift="0.1em"
-                       font-family="{$body.font.family}"
+                       font-family="{$body.fontset}"
                        font-weight="bold"
                        font-size="75%">
               <xsl:value-of select="$conum"/>
@@ -186,7 +221,7 @@
                  padding-start="0.2em"
                  padding-end="0.2em"
                  baseline-shift="0.1em"
-                 font-family="{$body.font.family}"
+                 font-family="{$body.fontset}"
                  font-weight="bold"
                  font-size="75%">
         <xsl:value-of select="$conum"/>

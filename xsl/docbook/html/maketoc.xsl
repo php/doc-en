@@ -3,12 +3,35 @@
 		version="1.0"
                 exclude-result-prefixes="doc">
 
+<!-- ********************************************************************
+     $Id: maketoc.xsl,v 1.2 2004-10-01 16:32:08 techtonik Exp $
+     ********************************************************************
+
+     This file is part of the XSL DocBook Stylesheet distribution.
+     See ../README or http://nwalsh.com/docbook/xsl/ for copyright
+     and other information.
+
+     ******************************************************************** -->
+
+<!-- ==================================================================== -->
+
 <xsl:import href="docbook.xsl"/>
 <xsl:import href="chunk.xsl"/>
 
 <xsl:output method="xml" indent="no" encoding='utf-8'/>
 
 <xsl:param name="toc.list.type" select="'tocentry'"/>
+
+<!-- refentry in autotoc.xsl does not use subtoc, so must
+     handle it explicitly here. -->
+<xsl:template match="refentry" mode="toc">
+  <xsl:param name="toc-context" select="."/>
+
+  <xsl:call-template name="subtoc">
+    <xsl:with-param name="toc-context" select="$toc-context"/>
+  </xsl:call-template>
+</xsl:template>
+
 
 <xsl:template name="subtoc">
   <xsl:param name="nodes" select="NOT-AN-ELEMENT"/>

@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: qandaset.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+     $Id: qandaset.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -17,7 +17,7 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="qandaset">
-  <xsl:variable name="title" select="title"/>
+  <xsl:variable name="title" select="(blockinfo/title|title)[1]"/>
   <xsl:variable name="preamble" select="*[name(.) != 'title'
                                           and name(.) != 'titleabbrev'
                                           and name(.) != 'qandadiv'
@@ -70,7 +70,7 @@
 
   <div class="{name(.)}">
     <xsl:apply-templates select="$title"/>
-    <xsl:if test="contains($toc.params, 'toc') and $toc != '0'">
+    <xsl:if test="(contains($toc.params, 'toc') and $toc != '0') or $toc = '1'">
       <xsl:call-template name="process.qanda.toc"/>
     </xsl:if>
     <xsl:apply-templates select="$preamble"/>
@@ -110,7 +110,7 @@
   </div>
 </xsl:template>
 
-<xsl:template match="qandaset/title">
+<xsl:template match="qandaset/blockinfo/title|qandaset/title">
   <xsl:variable name="qalevel">
     <xsl:call-template name="qanda.section.level"/>
   </xsl:variable>
@@ -122,29 +122,43 @@
   </xsl:element>
 </xsl:template>
 
+<xsl:template match="qandaset/blockinfo">
+  <!-- what should this template really do? -->
+  <xsl:apply-templates select="legalnotice" mode="titlepage.mode"/>
+</xsl:template>
+
 <xsl:template match="qandadiv">
   <xsl:variable name="preamble" select="*[name(.) != 'title'
                                           and name(.) != 'titleabbrev'
                                           and name(.) != 'qandadiv'
                                           and name(.) != 'qandaentry']"/>
 
-  <xsl:if test="title">
+  <xsl:if test="blockinfo/title|title">
     <tr class="qandadiv">
       <td align="left" valign="top" colspan="2">
         <xsl:call-template name="anchor">
           <xsl:with-param name="conditional" select="0"/>
         </xsl:call-template>
-        <xsl:apply-templates select="title"/>
+        <xsl:apply-templates select="(blockinfo/title|title)[1]"/>
       </td>
     </tr>
   </xsl:if>
+
+  <xsl:variable name="toc">
+    <xsl:call-template name="dbhtml-attribute">
+      <xsl:with-param name="pis"
+                      select="processing-instruction('dbhtml')"/>
+      <xsl:with-param name="attribute" select="'toc'"/>
+    </xsl:call-template>
+  </xsl:variable>
 
   <xsl:variable name="toc.params">
     <xsl:call-template name="find.path.params">
       <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
     </xsl:call-template>
   </xsl:variable>
-  <xsl:if test="contains($toc.params, 'toc')">
+
+  <xsl:if test="(contains($toc.params, 'toc') and $toc != '0') or $toc = '1'">
     <tr class="toc" colspan="2">
       <td align="left" valign="top" colspan="2">
         <xsl:call-template name="process.qanda.toc"/>
@@ -161,7 +175,7 @@
   <xsl:apply-templates select="qandadiv|qandaentry"/>
 </xsl:template>
 
-<xsl:template match="qandadiv/title">
+<xsl:template match="qandadiv/blockinfo/title|qandadiv/title">
   <xsl:variable name="qalevel">
     <xsl:call-template name="qandadiv.section.level"/>
   </xsl:variable>
@@ -175,8 +189,10 @@
       <xsl:with-param name="conditional" select="0"/>
     </xsl:call-template>
     <xsl:apply-templates select="parent::qandadiv" mode="label.markup"/>
-    <xsl:value-of select="$autotoc.label.separator"/>
-    <xsl:text> </xsl:text>
+    <xsl:if test="$qandadiv.autolabel != 0">
+      <xsl:apply-templates select="." mode="intralabel.punctuation"/>
+      <xsl:text> </xsl:text>
+    </xsl:if>
     <xsl:apply-templates/>
   </xsl:element>
 </xsl:template>
@@ -193,7 +209,7 @@
                               /@defaultlabel"/>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="qanda.defaultlabel"/>
+        <xsl:value-of select="$qanda.defaultlabel"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
@@ -210,7 +226,9 @@
 
       <b>
         <xsl:apply-templates select="." mode="label.markup"/>
-        <xsl:text>. </xsl:text> <!-- FIXME: Hack!!! This should be in the locale! -->
+        <xsl:if test="$deflabel = 'number' and not(label)">
+          <xsl:apply-templates select="." mode="intralabel.punctuation"/>
+	</xsl:if>
       </b>
     </td>
     <td align="left" valign="top">
@@ -227,18 +245,26 @@
 </xsl:template>
 
 <xsl:template match="answer">
+  <xsl:variable name="deflabel">
+    <xsl:choose>
+      <xsl:when test="ancestor-or-self::*[@defaultlabel]">
+        <xsl:value-of select="(ancestor-or-self::*[@defaultlabel])[last()]
+                              /@defaultlabel"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$qanda.defaultlabel"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
   <tr class="{name(.)}">
     <td align="left" valign="top">
       <xsl:call-template name="anchor"/>
       <b>
-        <!-- FIXME: Hack!!! This should be in the locale! -->
         <xsl:variable name="answer.label">
           <xsl:apply-templates select="." mode="label.markup"/>
         </xsl:variable>
         <xsl:copy-of select="$answer.label"/>
-        <xsl:if test="string($answer.label) != ''">
-          <xsl:text>. </xsl:text>
-        </xsl:if>
       </b>
     </td>
     <td align="left" valign="top">
@@ -265,7 +291,7 @@
   <dd><xsl:call-template name="process.qanda.toc"/></dd>
 </xsl:template>
 
-<xsl:template match="qandadiv/title" mode="qandatoc.mode">
+<xsl:template match="qandadiv/blockinfo/title|qandadiv/title" mode="qandatoc.mode">
   <xsl:variable name="qalevel">
     <xsl:call-template name="qandadiv.section.level"/>
   </xsl:variable>
@@ -289,15 +315,29 @@
 </xsl:template>
 
 <xsl:template match="qandaentry" mode="qandatoc.mode">
-  <xsl:apply-templates mode="qandatoc.mode"/>
+  <xsl:apply-templates select="question" mode="qandatoc.mode"/>
 </xsl:template>
 
 <xsl:template match="question" mode="qandatoc.mode">
   <xsl:variable name="firstch" select="(*[name(.)!='label'])[1]"/>
+  <xsl:variable name="deflabel">
+    <xsl:choose>
+      <xsl:when test="ancestor-or-self::*[@defaultlabel]">
+        <xsl:value-of select="(ancestor-or-self::*[@defaultlabel])[last()]
+                              /@defaultlabel"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$qanda.defaultlabel"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
 
   <dt>
     <xsl:apply-templates select="." mode="label.markup"/>
-    <xsl:text>. </xsl:text> <!-- FIXME: Hack!!! This should be in the locale! -->
+    <xsl:if test="$deflabel = 'number' and not(label)">
+      <xsl:apply-templates select="." mode="intralabel.punctuation"/>
+    </xsl:if>
+    <xsl:text> </xsl:text>
     <a>
       <xsl:attribute name="href">
         <xsl:call-template name="href.target">
@@ -307,10 +347,6 @@
       <xsl:value-of select="$firstch"/>
     </a>
   </dt>
-</xsl:template>
-
-<xsl:template match="answer|revhistory" mode="qandatoc.mode">
-  <!-- nop -->
 </xsl:template>
 
 <!-- ==================================================================== -->

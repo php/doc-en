@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: common.xsl,v 1.2 2003-03-09 14:53:09 tom Exp $
+     $Id: common.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -19,7 +19,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: common.xsl,v 1.2 2003-03-09 14:53:09 tom Exp $
+$Id: common.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>
@@ -59,7 +59,7 @@ artheader article audiodata audioobject author authorblurb authorgroup
 beginpage bibliodiv biblioentry bibliography biblioset blockquote book
 bookbiblio bookinfo callout calloutlist caption caution chapter
 citerefentry cmdsynopsis co collab colophon colspec confgroup
-copyright dedication docinfo editor entry entrytbl epigraph equation
+copyright dedication docinfo editor entrytbl epigraph equation
 example figure footnote footnoteref formalpara funcprototype
 funcsynopsis glossary glossdef glossdiv glossentry glosslist graphicco
 group highlights imagedata imageobject imageobjectco important index
@@ -216,6 +216,7 @@ Defaults to the context node.</para>
     <xsl:when test="name($node)='sect5'">5</xsl:when>
     <xsl:when test="name($node)='section'">
       <xsl:choose>
+        <xsl:when test="$node/../../../../../../section">6</xsl:when>
         <xsl:when test="$node/../../../../../section">5</xsl:when>
         <xsl:when test="$node/../../../../section">4</xsl:when>
         <xsl:when test="$node/../../../section">3</xsl:when>
@@ -223,17 +224,14 @@ Defaults to the context node.</para>
         <xsl:otherwise>1</xsl:otherwise>
       </xsl:choose>
     </xsl:when>
-    <xsl:when test="name($node)='refsect1'">1</xsl:when>
-    <xsl:when test="name($node)='refsect2'">2</xsl:when>
-    <xsl:when test="name($node)='refsect3'">3</xsl:when>
-    <xsl:when test="name($node)='refsection'">
-      <xsl:choose>
-        <xsl:when test="$node/../../../../../refsection">5</xsl:when>
-        <xsl:when test="$node/../../../../refsection">4</xsl:when>
-        <xsl:when test="$node/../../../refsection">3</xsl:when>
-        <xsl:when test="$node/../../refsection">2</xsl:when>
-        <xsl:otherwise>1</xsl:otherwise>
-      </xsl:choose>
+    <xsl:when test="name($node)='refsect1' or
+                    name($node)='refsect2' or
+                    name($node)='refsect3' or
+                    name($node)='refsection' or
+                    name($node)='refsynopsisdiv'">
+      <xsl:call-template name="refentry.section.level">
+        <xsl:with-param name="node" select="$node"/>
+      </xsl:call-template>
     </xsl:when>
     <xsl:when test="name($node)='simplesect'">
       <xsl:choose>
@@ -297,6 +295,61 @@ Defaults to the context node.</para>
   </xsl:choose>
 </xsl:template>
 
+<!-- Finds the total section depth of a section in a refentry -->
+<xsl:template name="refentry.section.level">
+  <xsl:param name="node" select="."/>
+
+  <xsl:variable name="RElevel">
+    <xsl:call-template name="refentry.level">
+      <xsl:with-param name="node" select="$node/ancestor::refentry[1]"/>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:variable name="levelinRE">
+    <xsl:choose>
+      <xsl:when test="name($node)='refsynopsisdiv'">1</xsl:when>
+      <xsl:when test="name($node)='refsect1'">1</xsl:when>
+      <xsl:when test="name($node)='refsect2'">2</xsl:when>
+      <xsl:when test="name($node)='refsect3'">3</xsl:when>
+      <xsl:when test="name($node)='refsection'">
+        <xsl:choose>
+          <xsl:when test="$node/../../../../../refsection">5</xsl:when>
+          <xsl:when test="$node/../../../../refsection">4</xsl:when>
+          <xsl:when test="$node/../../../refsection">3</xsl:when>
+          <xsl:when test="$node/../../refsection">2</xsl:when>
+          <xsl:otherwise>1</xsl:otherwise>
+        </xsl:choose>
+      </xsl:when>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:value-of select="$levelinRE + $RElevel"/>
+</xsl:template>
+
+<!-- Finds the section depth of a refentry -->
+<xsl:template name="refentry.level">
+  <xsl:param name="node" select="."/>
+  <xsl:variable name="container"
+                select="($node/ancestor::section |
+                        $node/ancestor::sect1 |
+                        $node/ancestor::sect2 |
+                        $node/ancestor::sect3 |
+                        $node/ancestor::sect4 |
+                        $node/ancestor::sect5)[last()]"/>
+
+  <xsl:choose>
+    <xsl:when test="$container">
+      <xsl:variable name="slevel">
+        <xsl:call-template name="section.level">
+          <xsl:with-param name="node" select="$container"/>
+        </xsl:call-template>
+      </xsl:variable>
+      <xsl:value-of select="$slevel + 1"/>
+    </xsl:when>
+    <xsl:otherwise>1</xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
 <xsl:template name="qandadiv.section.level">
   <xsl:variable name="section.level">
     <xsl:call-template name="qanda.section.level"/>
@@ -314,7 +367,7 @@ Defaults to the context node.</para>
                               /@defaultlabel"/>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="qanda.defaultlabel"/>
+        <xsl:value-of select="$qanda.defaultlabel"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
@@ -551,7 +604,7 @@ Defaults to the context node.</para>
        John Doe, Jane Doe, and A. Nonymous
   -->
   <xsl:param name="person.list"
-             select="./author|./corpauthor|./othercredit|./editor"/>
+             select="author|corpauthor|othercredit|editor"/>
   <xsl:param name="person.count" select="count($person.list)"/>
   <xsl:param name="count" select="1"/>
 
@@ -907,20 +960,34 @@ recursive process.</para>
     
         <xsl:variable name="useobject">
           <xsl:choose>
-          <!-- The phrase is never used -->
+            <!-- The phrase is used only when contains TeX Math and output is FO -->
+            <xsl:when test="name($object)='textobject' and $object/phrase
+                            and $object/@role='tex' and $stylesheet.result.type = 'fo'
+                            and $tex.math.in.alt != ''">
+              <xsl:text>1</xsl:text> 
+            </xsl:when>
+            <!-- The phrase is never used -->
             <xsl:when test="name($object)='textobject' and $object/phrase">
               <xsl:text>0</xsl:text>
             </xsl:when>
             <xsl:when test="name($object)='textobject'
-	                     and $object/ancestor::equation ">
-	    <!-- The first textobject is not a reasonable fallback
-	         for equation image -->
+                            and $object/ancestor::equation ">
+            <!-- The first textobject is not a reasonable fallback
+                 for equation image -->
               <xsl:text>0</xsl:text>
-	    </xsl:when>
+            </xsl:when>
             <!-- The first textobject is a reasonable fallback -->
             <xsl:when test="name($object)='textobject'
-	                    and $object[not(@role) or @role!='tex']">
+                            and $object[not(@role) or @role!='tex']">
               <xsl:text>1</xsl:text>
+            </xsl:when>
+            <!-- don't use graphic when output is FO, TeX Math is used 
+                 and there is math in alt element -->
+            <xsl:when test="$object/ancestor::equation and 
+                            $object/ancestor::equation/alt[@role='tex']
+                            and $stylesheet.result.type = 'fo'
+                            and $tex.math.in.alt != ''">
+              <xsl:text>0</xsl:text>
             </xsl:when>
             <!-- If there's only one object, use it -->
             <xsl:when test="$count = 1 and count($olist) = 1">
@@ -1023,6 +1090,7 @@ object is recognized as a graphic.</para>
   </xsl:variable>
 
   <xsl:choose>
+    <xsl:when test="$use.svg = 0 and $format = 'SVG'">0</xsl:when>
     <xsl:when xmlns:svg="http://www.w3.org/2000/svg"
               test="$use.svg != 0 and $object/svg:*">1</xsl:when>
     <xsl:when test="$graphic.format = '1'">1</xsl:when>
@@ -1042,7 +1110,7 @@ object is recognized as a graphic.</para>
   <xsl:variable name="filename">
     <xsl:choose>
       <xsl:when test="$data[@fileref]">
-        <xsl:value-of select="$data/@fileref"/>
+        <xsl:apply-templates select="$data/@fileref"/>
       </xsl:when>
       <xsl:when test="$data[@entityref]">
         <xsl:value-of select="unparsed-entity-uri($data/@entityref)"/>
@@ -1448,7 +1516,7 @@ year range is <quote>1991-1992</quote> but discretely it's
   -->
 
   <xsl:choose>
-    <xsl:when test="$print.ranges = 0">
+    <xsl:when test="$print.ranges = 0 and count($years) &gt; 0">
       <xsl:choose>
         <xsl:when test="count($years) = 1">
           <xsl:apply-templates select="$years[1]" mode="titlepage.mode"/>
@@ -1584,6 +1652,105 @@ node location.</para>
       </xsl:call-template>
     </xsl:when>
   </xsl:choose>
+</xsl:template>
+
+<xsl:template name="relative-uri">
+  <xsl:param name="filename" select="."/>
+  <xsl:param name="destdir" select="''"/>
+  
+  <xsl:variable name="srcurl">
+    <xsl:call-template name="strippath">
+      <xsl:with-param name="filename">
+        <xsl:call-template name="xml.base.dirs">
+          <xsl:with-param name="base.elem" 
+                          select="$filename/ancestor-or-self::*
+                                   [@xml:base != ''][1]"/>
+        </xsl:call-template>
+        <xsl:value-of select="$filename"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:variable name="srcurl.trimmed">
+    <xsl:call-template name="trim.common.uri.paths">
+      <xsl:with-param name="uriA" select="$srcurl"/>
+      <xsl:with-param name="uriB" select="$destdir"/>
+      <xsl:with-param name="return" select="'A'"/>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:variable name="destdir.trimmed">
+    <xsl:call-template name="trim.common.uri.paths">
+      <xsl:with-param name="uriA" select="$srcurl"/>
+      <xsl:with-param name="uriB" select="$destdir"/>
+      <xsl:with-param name="return" select="'B'"/>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:variable name="depth">
+    <xsl:call-template name="count.uri.path.depth">
+      <xsl:with-param name="filename" select="$destdir.trimmed"/>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:call-template name="copy-string">
+    <xsl:with-param name="string" select="'../'"/>
+    <xsl:with-param name="count" select="$depth"/>
+  </xsl:call-template>
+  <xsl:value-of select="$srcurl.trimmed"/>
+
+</xsl:template>
+
+<!-- ===================================== -->
+
+<xsl:template name="xml.base.dirs">
+  <xsl:param name="base.elem" select="NONODE"/>
+
+  <!-- Recursively resolve xml:base attributes -->
+  <xsl:if test="$base.elem/ancestor::*[@xml:base != '']">
+    <xsl:call-template name="xml.base.dirs">
+      <xsl:with-param name="base.elem" 
+                      select="$base.elem/ancestor::*[@xml:base != ''][1]"/>
+    </xsl:call-template>
+  </xsl:if>
+  <xsl:call-template name="getdir">
+    <xsl:with-param name="filename" select="$base.elem/@xml:base"/>
+  </xsl:call-template>
+
+</xsl:template>
+
+<!-- ===================================== -->
+
+<xsl:template name="strippath">
+  <xsl:param name="filename" select="''"/>
+  <xsl:choose>
+    <xsl:when test="contains($filename, '/../')">
+      <xsl:call-template name="strippath">
+        <xsl:with-param name="filename">
+          <xsl:call-template name="getdir">
+            <xsl:with-param name="filename" select="substring-before($filename, '/../')"/>
+          </xsl:call-template>
+          <xsl:value-of select="substring-after($filename, '/../')"/>
+        </xsl:with-param>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="$filename"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- ===================================== -->
+
+<xsl:template name="getdir">
+  <xsl:param name="filename" select="''"/>
+  <xsl:if test="contains($filename, '/')">
+    <xsl:value-of select="substring-before($filename, '/')"/>
+    <xsl:text>/</xsl:text>
+    <xsl:call-template name="getdir">
+      <xsl:with-param name="filename" select="substring-after($filename, '/')"/>
+    </xsl:call-template>
+  </xsl:if>
 </xsl:template>
 
 </xsl:stylesheet>

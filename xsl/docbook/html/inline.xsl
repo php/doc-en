@@ -6,7 +6,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: inline.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+     $Id: inline.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -102,7 +102,14 @@
       </xsl:with-param>
     </xsl:call-template>
   </xsl:param>
-  <span class="{local-name(.)}"><xsl:copy-of select="$content"/></span>
+  <span class="{local-name(.)}">
+    <xsl:if test="@dir">
+      <xsl:attribute name="dir">
+        <xsl:value-of select="@dir"/>
+      </xsl:attribute>
+    </xsl:if>
+    <xsl:copy-of select="$content"/>
+  </span>
 </xsl:template>
 
 <xsl:template name="inline.monoseq">
@@ -114,7 +121,14 @@
       </xsl:with-param>
     </xsl:call-template>
   </xsl:param>
-  <tt class="{local-name(.)}"><xsl:copy-of select="$content"/></tt>
+  <tt class="{local-name(.)}">
+    <xsl:if test="@dir">
+      <xsl:attribute name="dir">
+        <xsl:value-of select="@dir"/>
+      </xsl:attribute>
+    </xsl:if>
+    <xsl:copy-of select="$content"/>
+  </tt>
 </xsl:template>
 
 <xsl:template name="inline.boldseq">
@@ -126,18 +140,29 @@
       </xsl:with-param>
     </xsl:call-template>
   </xsl:param>
-  <!-- don't put <b> inside figure, example, or table titles -->
-  <xsl:choose>
-    <xsl:when test="local-name(..) = 'title'
-                    and (local-name(../..) = 'figure'
-                         or local-name(../..) = 'example'
-                         or local-name(../..) = 'table')">
-      <xsl:copy-of select="$content"/>
-    </xsl:when>
-    <xsl:otherwise>
-      <b class="{local-name(.)}"><xsl:copy-of select="$content"/></b>
-    </xsl:otherwise>
-  </xsl:choose>
+
+  <span>
+    <xsl:if test="@dir">
+      <xsl:attribute name="dir">
+        <xsl:value-of select="@dir"/>
+      </xsl:attribute>
+    </xsl:if>
+
+    <!-- don't put <b> inside figure, example, or table titles -->
+    <xsl:choose>
+      <xsl:when test="local-name(..) = 'title'
+                      and (local-name(../..) = 'figure'
+                      or local-name(../..) = 'example'
+                      or local-name(../..) = 'table')">
+        <xsl:copy-of select="$content"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <b class="{local-name(.)}">
+          <xsl:copy-of select="$content"/>
+        </b>
+      </xsl:otherwise>
+    </xsl:choose>
+  </span>
 </xsl:template>
 
 <xsl:template name="inline.italicseq">
@@ -149,7 +174,14 @@
       </xsl:with-param>
     </xsl:call-template>
   </xsl:param>
-  <i class="{local-name(.)}"><xsl:copy-of select="$content"/></i>
+  <i class="{local-name(.)}">
+    <xsl:if test="@dir">
+      <xsl:attribute name="dir">
+        <xsl:value-of select="@dir"/>
+      </xsl:attribute>
+    </xsl:if>
+    <xsl:copy-of select="$content"/>
+  </i>
 </xsl:template>
 
 <xsl:template name="inline.boldmonoseq">
@@ -169,10 +201,26 @@
                          or local-name(../..) = 'example'
                          or local-name(../..) = 'table'
                          or local-name(../..) = 'formalpara')">
-      <tt class="{local-name(.)}"><xsl:copy-of select="$content"/></tt>
+      <tt class="{local-name(.)}">
+        <xsl:if test="@dir">
+          <xsl:attribute name="dir">
+            <xsl:value-of select="@dir"/>
+          </xsl:attribute>
+        </xsl:if>
+        <xsl:copy-of select="$content"/>
+      </tt>
     </xsl:when>
     <xsl:otherwise>
-      <b class="{local-name(.)}"><tt><xsl:copy-of select="$content"/></tt></b>
+      <b class="{local-name(.)}">
+        <tt>
+          <xsl:if test="@dir">
+            <xsl:attribute name="dir">
+              <xsl:value-of select="@dir"/>
+            </xsl:attribute>
+          </xsl:if>
+          <xsl:copy-of select="$content"/>
+        </tt>
+      </b>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -186,7 +234,16 @@
       </xsl:with-param>
     </xsl:call-template>
   </xsl:param>
-  <i class="{local-name(.)}"><tt><xsl:copy-of select="$content"/></tt></i>
+  <i class="{local-name(.)}">
+    <tt>
+      <xsl:if test="@dir">
+        <xsl:attribute name="dir">
+          <xsl:value-of select="@dir"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:copy-of select="$content"/>
+    </tt>
+  </i>
 </xsl:template>
 
 <xsl:template name="inline.superscriptseq">
@@ -198,7 +255,14 @@
       </xsl:with-param>
     </xsl:call-template>
   </xsl:param>
-  <sup><xsl:copy-of select="$content"/></sup>
+  <sup>
+    <xsl:if test="@dir">
+      <xsl:attribute name="dir">
+        <xsl:value-of select="@dir"/>
+      </xsl:attribute>
+    </xsl:if>
+    <xsl:copy-of select="$content"/>
+  </sup>
 </xsl:template>
 
 <xsl:template name="inline.subscriptseq">
@@ -210,7 +274,14 @@
       </xsl:with-param>
     </xsl:call-template>
   </xsl:param>
-  <sub><xsl:copy-of select="$content"/></sub>
+  <sub>
+    <xsl:if test="@dir">
+      <xsl:attribute name="dir">
+        <xsl:value-of select="@dir"/>
+      </xsl:attribute>
+    </xsl:if>
+    <xsl:copy-of select="$content"/>
+  </sub>
 </xsl:template>
 
 <!-- ==================================================================== -->
@@ -398,6 +469,10 @@
 </xsl:template>
 
 <xsl:template match="literal">
+  <xsl:call-template name="inline.monoseq"/>
+</xsl:template>
+
+<xsl:template match="code">
   <xsl:call-template name="inline.monoseq"/>
 </xsl:template>
 
@@ -663,8 +738,12 @@
 <xsl:template match="glossterm" name="glossterm">
   <xsl:param name="firstterm" select="0"/>
 
-  <xsl:choose>
+  <!-- To avoid extra <a name=""> anchor from inline.italicseq -->
+  <xsl:variable name="content">
+    <xsl:apply-templates/>
+  </xsl:variable>
 
+  <xsl:choose>
     <xsl:when test="($firstterm.only.link = 0 or $firstterm = 1) and @linkend">
       <xsl:variable name="targets" select="key('id',@linkend)"/>
       <xsl:variable name="target" select="$targets[1]"/>
@@ -686,12 +765,15 @@
           </xsl:call-template>
         </xsl:attribute>
 
-        <xsl:call-template name="inline.italicseq"/>
+        <xsl:call-template name="inline.italicseq">
+          <xsl:with-param name="content" select="$content"/>
+        </xsl:call-template>
       </a>
     </xsl:when>
 
     <xsl:when test="not(@linkend)
                     and ($firstterm.only.link = 0 or $firstterm = 1)
+                    and ($glossterm.auto.link != 0)
                     and $glossary.collection != ''">
       <xsl:variable name="term">
         <xsl:choose>
@@ -745,7 +827,6 @@
         </xsl:when>
         <xsl:otherwise>
           <xsl:variable name="id">
-            <xsl:text>gl.</xsl:text>
             <xsl:choose>
               <xsl:when test="$cterm/@id">
                 <xsl:value-of select="$cterm/@id"/>
@@ -756,7 +837,9 @@
             </xsl:choose>
           </xsl:variable>
           <a href="{$chunkbase}#{$id}">
-            <xsl:call-template name="inline.italicseq"/>
+            <xsl:call-template name="inline.italicseq">
+              <xsl:with-param name="content" select="$content"/>
+            </xsl:call-template>
           </a>
         </xsl:otherwise>
       </xsl:choose>
@@ -803,7 +886,9 @@
               </xsl:call-template>
             </xsl:attribute>
 
-            <xsl:call-template name="inline.italicseq"/>
+            <xsl:call-template name="inline.italicseq">
+              <xsl:with-param name="content" select="$content"/>
+            </xsl:call-template>
           </a>
         </xsl:otherwise>
       </xsl:choose>
@@ -815,7 +900,7 @@
   </xsl:choose>
 </xsl:template>
 
-<xsl:template match="sgmltag">
+<xsl:template match="sgmltag|tag">
   <xsl:call-template name="format.sgmltag"/>
 </xsl:template>
 
@@ -924,6 +1009,10 @@
   </xsl:for-each>
 </xsl:template>
 
+<xsl:template match="uri">
+  <xsl:call-template name="inline.monoseq"/>
+</xsl:template>
+
 <!-- ==================================================================== -->
 
 <xsl:template match="menuchoice">
@@ -1030,6 +1119,10 @@
 </xsl:template>
 
 <!-- ==================================================================== -->
+
+<xsl:template match="beginpage">
+  <!-- does nothing; this *is not* markup to force a page break. -->
+</xsl:template>
 
 </xsl:stylesheet>
 

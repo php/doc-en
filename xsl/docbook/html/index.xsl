@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: index.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+     $Id: index.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -80,18 +80,6 @@
 <xsl:template match="index/subtitle"></xsl:template>
 <xsl:template match="index/titleabbrev"></xsl:template>
 
-<xsl:template match="index/title" mode="component.title.mode">
-  <h2 class="title">
-    <xsl:apply-templates/>
-  </h2>
-</xsl:template>
-
-<xsl:template match="index/subtitle" mode="component.title.mode">
-  <h3>
-    <i><xsl:apply-templates/></i>
-  </h3>
-</xsl:template>
-
 <!-- ==================================================================== -->
 
 <xsl:template match="indexdiv">
@@ -103,15 +91,11 @@
     </xsl:if>
 
     <xsl:call-template name="anchor"/>
-    <xsl:apply-templates mode="not-indexentrys"/>
+    <xsl:apply-templates select="*[not(self::indexentry)]"/>
     <dl>
       <xsl:apply-templates select="indexentry"/>
     </dl>
   </div>
-</xsl:template>
-
-<xsl:template match="indexentry" mode="not-indexentrys">
-  <!-- suppress -->
 </xsl:template>
 
 <xsl:template match="indexdiv/title">

@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: fop.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
+     $Id: fop.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
      ********************************************************************
      (c) Stephane Bline Peregrine Systems 2001
      Driver file to allow pdf bookmarking (based on fop implementation).
@@ -62,10 +62,12 @@ translates characters with code>255 back to ASCII.
           <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
         </xsl:call-template>
       </xsl:variable>
+
       <xsl:if test="contains($toc.params, 'toc')
-                    and section|sect1|refentry
-                        |article|bibliography|glossary
-                        |appendix">
+                    and (book|part|reference|preface|chapter|appendix|article
+                         |glossary|bibliography|index|setindex
+                         |refentry
+                         |sect1|sect2|sect3|sect4|sect5|section)">
         <fox:outline internal-destination="toc...{$id}">
           <fox:label>
             <xsl:call-template name="gentext">

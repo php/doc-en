@@ -11,7 +11,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: graphics.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+     $Id: graphics.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -44,16 +44,19 @@
 
 <xsl:template name="is.graphic.extension">
   <xsl:param name="ext"></xsl:param>
-  <xsl:if test="$ext = 'svg'
-                or $ext = 'png'
-                or $ext = 'jpeg'
-                or $ext = 'jpg'
-                or $ext = 'avi'
-                or $ext = 'mpg'
-                or $ext = 'mpeg'
-                or $ext = 'qt'
-                or $ext = 'gif'
-                or $ext = 'bmp'">1</xsl:if>
+  <xsl:variable name="lcext" select="translate($ext,
+                                       'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                                       'abcdefghijklmnopqrstuvwxyz')"/>
+  <xsl:if test="$lcext = 'svg'
+             or $lcext = 'png'
+             or $lcext = 'jpeg'
+             or $lcext = 'jpg'
+             or $lcext = 'avi'
+             or $lcext = 'mpg'
+             or $lcext = 'mpeg'
+             or $lcext = 'qt'
+             or $lcext = 'gif'
+             or $lcext = 'bmp'">1</xsl:if>
 </xsl:template>
 
 <!-- ==================================================================== -->
@@ -263,7 +266,7 @@
           </xsl:when>
           <xsl:when test="function-available('ximg:getDepth')">
             <xsl:value-of select="ximg:getDepth(ximg:new($filename),
-                                                $nominal.image.width)"/>
+                                                $nominal.image.depth)"/>
           </xsl:when>
           <xsl:otherwise>
             <xsl:value-of select="$nominal.image.depth"/>
@@ -271,13 +274,14 @@
         </xsl:choose>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="$nominal.image.width"/>
+        <xsl:value-of select="$nominal.image.depth"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
 
   <xsl:variable name="contentwidth">
     <xsl:choose>
+      <xsl:when test="$ignore.image.scaling != 0"></xsl:when>
       <xsl:when test="@contentwidth">
         <xsl:variable name="units">
           <xsl:call-template name="length-units">
@@ -344,6 +348,7 @@
 
   <xsl:variable name="contentdepth">
     <xsl:choose>
+      <xsl:when test="$ignore.image.scaling != 0"></xsl:when>
       <xsl:when test="@contentdepth">
         <xsl:variable name="units">
           <xsl:call-template name="length-units">
@@ -507,6 +512,14 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
       <xsl:otherwise>
         <xsl:element name="{$tag}">
           <xsl:attribute name="src">
+	    <xsl:choose>
+	      <xsl:when test="$img.src.path != '' and
+			      $tag = 'img' and
+	                      not(starts-with($filename, '/')) and
+			      not(contains($filename, '://'))">
+	        <xsl:value-of select="$img.src.path"/>
+	      </xsl:when>
+	    </xsl:choose>
             <xsl:value-of select="$filename"/>
           </xsl:attribute>
 
@@ -744,7 +757,7 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
 
 <xsl:template match="graphic">
   <xsl:choose>
-    <xsl:when test="../inlineequation">
+    <xsl:when test="parent::inlineequation">
       <xsl:call-template name="anchor"/>
       <xsl:call-template name="process.image"/>
     </xsl:when>
@@ -769,7 +782,7 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
         <xsl:value-of select="unparsed-entity-uri(@entityref)"/>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="@fileref"/>
+        <xsl:apply-templates select="@fileref"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
@@ -785,7 +798,7 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
                         and $textinsert.extension != '0'">
           <xsl:choose>
             <xsl:when test="element-available('stext:insertfile')">
-              <stext:insertfile href="{$filename}"/>
+              <stext:insertfile href="{$filename}" encoding="{$textdata.default.encoding}"/>
             </xsl:when>
             <xsl:when test="element-available('xtext:insertfile')">
               <xtext:insertfile href="{$filename}"/>
@@ -896,7 +909,7 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
                         and $textinsert.extension != '0'">
           <xsl:choose>
             <xsl:when test="element-available('stext:insertfile')">
-              <stext:insertfile href="{$filename}"/>
+              <stext:insertfile href="{$filename}" encoding="{$textdata.default.encoding}"/>
             </xsl:when>
             <xsl:when test="element-available('xtext:insertfile')">
               <xtext:insertfile href="{$filename}"/>
@@ -924,6 +937,7 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
 
       <xsl:variable name="phrases"
                     select="ancestor::mediaobject/textobject[phrase]
+                            |ancestor::inlinemediaobject/textobject[phrase]
                             |ancestor::mediaobjectco/textobject[phrase]"/>
 
       <xsl:call-template name="process.image">
@@ -1000,6 +1014,7 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
       <xsl:with-param name="filename" select="$filename"/>
       <xsl:with-param name="quiet" select="$chunk.quietly"/>
       <xsl:with-param name="content">
+      <xsl:call-template name="user.preroot"/>
         <html>
           <head>
             <xsl:call-template name="system.head.content"/>
@@ -1093,7 +1108,18 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
         <xsl:value-of select="unparsed-entity-uri(@entityref)"/>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="@fileref"/>
+        <xsl:apply-templates select="@fileref"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable name="encoding">
+    <xsl:choose>
+      <xsl:when test="@encoding">
+        <xsl:value-of select="@encoding"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$textdata.default.encoding"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
@@ -1103,7 +1129,7 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
                     and $textinsert.extension != '0'">
       <xsl:choose>
         <xsl:when test="element-available('stext:insertfile')">
-          <stext:insertfile href="{$filename}"/>
+          <stext:insertfile href="{$filename}" encoding="{$encoding}"/>
         </xsl:when>
         <xsl:when test="element-available('xtext:insertfile')">
           <xtext:insertfile href="{$filename}"/>
@@ -1138,6 +1164,22 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
     <xsl:copy-of select="@*"/>
     <xsl:apply-templates/>
   </xsl:copy>
+</xsl:template>
+
+<!-- Resolve xml:base attributes -->
+<xsl:template match="@fileref">
+  <!-- need a check for absolute urls -->
+  <xsl:choose>
+    <xsl:when test="contains(., ':')">
+      <!-- it has a uri scheme so it is an absolute uri -->
+      <xsl:value-of select="."/>
+    </xsl:when>
+    <xsl:otherwise>
+      <!-- its a relative uri -->
+      <xsl:call-template name="relative-uri">
+      </xsl:call-template>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 </xsl:stylesheet>

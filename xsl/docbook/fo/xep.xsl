@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: xep.xsl,v 1.2 2003-03-09 14:54:49 tom Exp $
+     $Id: xep.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
      ********************************************************************
      (c) Stephane Bline Peregrine Systems 2001
      Implementation of xep extensions:
@@ -27,12 +27,12 @@
 
 <xsl:template name="xep-document-information">
   <rx:meta-info>
-    <xsl:if test="//author[1]">
+    <xsl:if test="(//author)[1]">
       <xsl:element name="rx:meta-field">
         <xsl:attribute name="name">author</xsl:attribute>
         <xsl:attribute name="value">
           <xsl:call-template name="person.name">
-            <xsl:with-param name="node" select="//author[1]"/>
+            <xsl:with-param name="node" select="(//author)[1]"/>
           </xsl:call-template>
         </xsl:attribute>
       </xsl:element>
@@ -49,6 +49,34 @@
         <xsl:value-of select="$title"/>
       </xsl:attribute>
     </xsl:element>
+
+    <xsl:if test="//keyword">
+      <xsl:element name="rx:meta-field">
+        <xsl:attribute name="name">keywords</xsl:attribute>
+        <xsl:attribute name="value">
+          <xsl:for-each select="//keyword">
+            <xsl:value-of select="."/>
+            <xsl:if test="position() != last()">
+              <xsl:text>, </xsl:text>
+            </xsl:if>
+          </xsl:for-each>
+        </xsl:attribute>
+      </xsl:element>
+    </xsl:if>
+
+    <xsl:if test="//subjectterm">
+      <xsl:element name="rx:meta-field">
+        <xsl:attribute name="name">subject</xsl:attribute>
+        <xsl:attribute name="value">
+          <xsl:for-each select="//subjectterm">
+            <xsl:value-of select="."/>
+            <xsl:if test="position() != last()">
+              <xsl:text>, </xsl:text>
+            </xsl:if>
+          </xsl:for-each>
+        </xsl:attribute>
+      </xsl:element>
+    </xsl:if>
   </rx:meta-info>
 </xsl:template>
 
@@ -79,7 +107,7 @@
     <xsl:when test="parent::*">
       <rx:bookmark internal-destination="{$id}">
         <rx:bookmark-label>
-          <xsl:value-of select="translate($bookmark-label, $a-dia, $a-asc)"/>
+          <xsl:value-of select="$bookmark-label"/>
         </rx:bookmark-label>
         <xsl:apply-templates select="*" mode="xep.outline"/>
       </rx:bookmark>
@@ -88,7 +116,7 @@
       <xsl:if test="$bookmark-label != ''">
         <rx:bookmark internal-destination="{$id}">
           <rx:bookmark-label>
-            <xsl:value-of select="translate($bookmark-label, $a-dia, $a-asc)"/>
+            <xsl:value-of select="$bookmark-label"/>
           </rx:bookmark-label>
         </rx:bookmark>
       </xsl:if>
@@ -100,7 +128,7 @@
       </xsl:variable>
       <xsl:if test="contains($toc.params, 'toc')
                     and set|book|part|reference|section|sect1|refentry
-                        |article|bibliography|glossary
+                        |article|bibliography|glossary|chapter
                         |appendix">
         <rx:bookmark internal-destination="toc...{$id}">
           <rx:bookmark-label>

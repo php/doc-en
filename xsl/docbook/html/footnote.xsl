@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: footnote.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+     $Id: footnote.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -65,6 +65,9 @@
 
 <xsl:template match="footnote" mode="footnote.number">
   <xsl:choose>
+    <xsl:when test="string-length(@label) != 0">
+      <xsl:value-of select="@label"/>
+    </xsl:when>
     <xsl:when test="ancestor::tgroup">
       <xsl:variable name="tfnum">
         <xsl:number level="any" from="table|informaltable" format="1"/>
@@ -81,7 +84,7 @@
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:variable name="pfoot" select="preceding::footnote"/>
+      <xsl:variable name="pfoot" select="preceding::footnote[not(@label)]"/>
       <xsl:variable name="ptfoot" select="preceding::tgroup//footnote"/>
       <xsl:variable name="fnum" select="count($pfoot) - count($ptfoot) + 1"/>
 

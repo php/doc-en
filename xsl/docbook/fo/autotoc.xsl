@@ -1,10 +1,11 @@
 <?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:fo="http://www.w3.org/1999/XSL/Format"
+                xmlns:axf="http://www.antennahouse.com/names/XSL/Extensions"
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: autotoc.xsl,v 1.2 2003-03-09 14:54:48 tom Exp $
+     $Id: autotoc.xsl,v 1.3 2004-10-01 16:32:06 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -33,6 +34,15 @@
   <xsl:if test="$nodes">
     <fo:block id="toc...{$id}"
               xsl:use-attribute-sets="toc.margin.properties">
+      <xsl:if test="$axf.extensions != 0">
+        <xsl:attribute name="axf:outline-level">1</xsl:attribute>
+        <xsl:attribute name="axf:outline-expand">false</xsl:attribute>
+        <xsl:attribute name="axf:outline-title">
+          <xsl:call-template name="gentext">
+            <xsl:with-param name="key" select="'TableofContents'"/>
+          </xsl:call-template>
+        </xsl:attribute>
+      </xsl:if>
       <xsl:call-template name="table.of.contents.titlepage"/>
       <xsl:apply-templates select="$nodes" mode="toc">
         <xsl:with-param name="toc-context" select="$toc-context"/>
@@ -64,6 +74,15 @@
   <xsl:if test="$nodes">
     <fo:block id="toc...{$cid}"
               xsl:use-attribute-sets="toc.margin.properties">
+      <xsl:if test="$axf.extensions != 0">
+        <xsl:attribute name="axf:outline-level">1</xsl:attribute>
+        <xsl:attribute name="axf:outline-expand">false</xsl:attribute>
+        <xsl:attribute name="axf:outline-title">
+          <xsl:call-template name="gentext">
+            <xsl:with-param name="key" select="'TableofContents'"/>
+          </xsl:call-template>
+        </xsl:attribute>
+      </xsl:if>
       <xsl:call-template name="table.of.contents.titlepage"/>
       <xsl:apply-templates select="$nodes" mode="toc">
         <xsl:with-param name="toc-context" select="$toc-context"/>
@@ -87,7 +106,7 @@
 
   <xsl:variable name="nodes" select="section|sect1|refentry
                                      |article|bibliography|glossary
-                                     |appendix"/>
+                                     |appendix|index"/>
   <xsl:if test="$nodes">
     <fo:block id="toc...{$id}"
               xsl:use-attribute-sets="toc.margin.properties">
@@ -174,7 +193,7 @@
           <xsl:copy-of select="$label"/>
           <xsl:value-of select="$autotoc.label.separator"/>
         </xsl:if>
-        <xsl:apply-templates select="." mode="title.markup"/>
+        <xsl:apply-templates select="." mode="titleabbrev.markup"/>
       </fo:basic-link>
     </fo:inline>
     <fo:inline keep-together.within-line="always">
@@ -295,7 +314,7 @@
 
   <xsl:call-template name="toc.line"/>
 
-  <xsl:variable name="nodes" select="section|sect1"/>
+  <xsl:variable name="nodes" select="section|sect1|simplesect|refentry"/>
 
   <xsl:if test="$toc.section.depth &gt; 0 and $nodes">
     <fo:block id="toc.{$cid}.{$id}"

@@ -3,6 +3,18 @@
 		version="1.0"
                 exclude-result-prefixes="doc">
 
+<!-- ********************************************************************
+     $Id: chunktoc.xsl,v 1.2 2004-10-01 16:32:08 techtonik Exp $
+     ********************************************************************
+
+     This file is part of the XSL DocBook Stylesheet distribution.
+     See ../README or http://nwalsh.com/docbook/xsl/ for copyright
+     and other information.
+
+     ******************************************************************** -->
+
+<!-- ==================================================================== -->
+
 <xsl:import href="docbook.xsl"/>
 <xsl:import href="chunk-common.xsl"/>
 

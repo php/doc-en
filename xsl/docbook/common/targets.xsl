@@ -4,7 +4,18 @@
                 exclude-result-prefixes="doc"
                 version='1.0'>
 
-<!-- ============================================================ -->
+<!-- ********************************************************************
+     $Id: targets.xsl,v 1.2 2004-10-01 16:32:09 techtonik Exp $
+     ********************************************************************
+
+     This file is part of the XSL DocBook Stylesheet distribution.
+     See ../README or http://nwalsh.com/docbook/xsl/ for copyright
+     and other information.
+
+     ******************************************************************** -->
+
+<!-- ==================================================================== -->
+
 <!-- cross reference target collection  -->
 
 <doc:mode mode="collect.targets" xmlns="">
@@ -51,6 +62,8 @@ document output.
             <xsl:with-param name="method" select="'xml'"/>
             <xsl:with-param name="encoding" select="'utf-8'"/>
             <xsl:with-param name="omit-xml-declaration" select="'yes'"/>
+            <xsl:with-param name="doctype-public" select="''"/>
+            <xsl:with-param name="doctype-system" select="''"/>
             <xsl:with-param name="indent" select="'yes'"/>
             <xsl:with-param name="quiet" select="0"/>
             <xsl:with-param name="content">
@@ -72,7 +85,7 @@ document output.
 
   <xsl:value-of select="$olink.base.uri"/>
   <xsl:call-template name="href.target">
-    <xsl:with-param name="obj" select="$nd"/>
+    <xsl:with-param name="object" select="$nd"/>
   </xsl:call-template>
 </xsl:template>
 
@@ -89,7 +102,7 @@ document output.
 
   <xsl:attribute name="href">
     <xsl:call-template name="olink.href.target">
-      <xsl:with-param name="object" select="$nd"/>
+      <xsl:with-param name="nd" select="$nd"/>
     </xsl:call-template>
   </xsl:attribute>
 
@@ -127,7 +140,9 @@ document output.
       <xsl:with-param name="nd" select="$nd"/>
     </xsl:call-template>
     <ttl>
-      <xsl:apply-templates select="$nd" mode="title.markup"/>
+      <xsl:apply-templates select="$nd" mode="title.markup">
+        <xsl:with-param name="verbose" select="0"/>
+      </xsl:apply-templates>
     </ttl>
     <xreftext>
       <xsl:choose>
@@ -137,7 +152,9 @@ document output.
           </xsl:call-template>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:apply-templates select="$nd" mode="xref-to"/>
+          <xsl:apply-templates select="$nd" mode="xref-to">
+            <xsl:with-param name="verbose" select="0"/>
+          </xsl:apply-templates>
         </xsl:otherwise>
       </xsl:choose>
     </xreftext>
@@ -202,6 +219,14 @@ document output.
 
 <xsl:template match="article" mode="olink.mode">
   <xsl:call-template name="div"/>
+</xsl:template>
+
+<xsl:template match="bibliography|bibliodiv" mode="olink.mode">
+  <xsl:call-template name="div"/>
+</xsl:template>
+
+<xsl:template match="biblioentry|bibliomixed" mode="olink.mode">
+  <xsl:call-template name="obj"/>
 </xsl:template>
 
 <xsl:template match="refentry" mode="olink.mode">

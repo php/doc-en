@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: admon.xsl,v 1.2 2003-03-09 14:56:38 tom Exp $
+     $Id: admon.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -54,6 +54,12 @@
     </xsl:choose>
   </xsl:variable>
 
+  <xsl:variable name="alt">
+    <xsl:call-template name="gentext">
+      <xsl:with-param name="key" select="$admon.type"/>
+    </xsl:call-template>
+  </xsl:variable>
+
   <div class="{name(.)}">
     <xsl:if test="$admon.style != ''">
       <xsl:attribute name="style">
@@ -74,7 +80,7 @@
           <xsl:attribute name="width">
             <xsl:call-template name="admon.graphic.width"/>
           </xsl:attribute>
-          <img alt="[{$admon.type}]">
+          <img alt="[{$alt}]">
             <xsl:attribute name="src">
               <xsl:call-template name="admon.graphic"/>
             </xsl:attribute>
@@ -82,7 +88,9 @@
         </td>
         <th align="left">
           <xsl:call-template name="anchor"/>
-          <xsl:apply-templates select="." mode="object.title.markup"/>
+          <xsl:if test="$admon.textlabel != 0 or title">
+            <xsl:apply-templates select="." mode="object.title.markup"/>
+          </xsl:if>
         </th>
       </tr>
       <tr>
@@ -104,7 +112,9 @@
 
     <h3 class="title">
       <xsl:call-template name="anchor"/>
-      <xsl:apply-templates select="." mode="object.title.markup"/>
+      <xsl:if test="$admon.textlabel != 0 or title">
+        <xsl:apply-templates select="." mode="object.title.markup"/>
+      </xsl:if>
     </h3>
 
     <xsl:apply-templates/>
