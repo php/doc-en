@@ -16,7 +16,7 @@
 # | Authors:    Gabor Hoitsy <goba@php.net>                              |
 # +----------------------------------------------------------------------+
 #
-# $Id: genfuncsummary.sh,v 1.7 2002-08-24 03:03:58 jmcastagnetto Exp $
+# $Id: genfuncsummary.sh,v 1.8 2002-08-24 03:13:49 jmcastagnetto Exp $
 
 if test -f funcsummary.awk; then
   awkscript=funcsummary.awk
@@ -27,15 +27,16 @@ else
 	exit
 fi
 
-# try to detect if we are using the broken awk from Solaris
+# try to detect if we are using the old/broken awk and nawk in Solaris
 os=`uname -s`
 has_gawk=`which gawk`
 
 if [ $os = "SunOS" ]; then
 	if [ -s $has_gawk ]; then
-		awkprog=`which nawk`
+		awkprog="gawk"
 	else
-		awkprog=`which nawk`
+		echo "*** Error *** Gnu awk needed in Solaris"
+		exit 1
 	fi
 else
 	awkprog="awk"
