@@ -64,3 +64,67 @@ See: http://gtk.php.net/manual/en/about.php
 and  http://cvs.php.net/co.php/php-gtk-doc/dbxml/phpgtkdoc.dtd
 
 Goba@php.net
+
+
+A different approach: 
+
+What we really use are <refentry> blocks for functions, <reference>
+is just a container for that (plus it introduces a different numbering
+style in the table of contents).
+
+<refentry> may not only occur wrapped up in <reference> but also in
+e.g. <chapter> and <section>. So a structure like this is completely
+legal with the current DTD:
+
+...
+<part><title>Function Reference</title>
+ <chapter><title>Standard Functions</title>
+	...
+ </chapter>
+ <chapter><title>Database Functions</title>
+  <section><title>DB xyz Functions</title>
+   <para>introduction</para>
+   <refentry id="function.xyz-1">
+    ...
+   </refentry>
+   <refentry id="function.xyz-2">
+    ...
+   </refentry>
+   ...
+  </section>
+ </chapter>
+ ...
+</part>
+...
+
+One problem here is that any material put before the <refentry>s
+in a <section> has to be pure content like <para>. Additional 
+sub-<section>s are only allowed following the <refentry>s
+within a <section>, not ahead of it
+
+The DTD model for <section> is
+
+<!ELEMENT section (sectioninfo?,
+			(%sect.title.content;),
+			(%nav.class;)*,
+			(((%divcomponent.mix;)+,
+ 			  ((%refentry.class;)*|section*))
+			 | (%refentry.class;)+|section+),
+			(%nav.class;)*)>
+
+changing it to something like
+
+<!ELEMENT section (sectioninfo?,
+			(%sect.title.content;),
+			(%nav.class;)*,
+			(((%divcomponent.mix;)+,
+ 			  ((%refentry.class;) | section)*)
+			 | ((%refentry.class;), section)+),
+			(%nav.class;)*)>
+
+*should* help and the stylesheets *should not* care ...
+
+... but i have to confess that i didn't test that stuff yet ... :/
+
+hartmut@php.net
+
