@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.13 $ -->
+<!-- $Revision: 1.14 $ -->
  <reference id="ref.session">
   <title>Session handling functions</title>
   <titleabbrev>Sessions</titleabbrev>
@@ -112,52 +112,32 @@
       As of PHP 4.1.0, <varname>$_SESSION</varname> is available as
       global variable just like <varname>$_POST</varname>,
       <varname>$_GET</varname>, <varname>$_REQUEST</varname> and so on.
-      Not like <varname>$HTTP_SESSION_VARS</varname>,
-      <varname>$_SESSION</varname> is always global. Therefore,
-      <literal>global</literal> should not be used for
-      <varname>$_SESSION</varname>.
+      Unlike <varname>$HTTP_SESSION_VARS</varname>,
+      <varname>$_SESSION</varname> is always global. Therefore, you do not
+      need to use <literal>global</literal> for
+      <varname>$_SESSION</varname>. Please note that this documentation
+      has been changed to use <varname>$_SESSION</varname> everywhere. You can
+      substitute <varname>$HTTP_SESSION_VARS</varname> for
+      <varname>$_SESSION</varname>, if you prefer the former.
      </para>
     </note>
 
     <para>
      If <link
-     linkend="ini.track-vars"><literal>track_vars</literal></link> is
-     enabled and <link
      linkend="ini.register-globals"><literal>register_globals</literal></link>
      is disabled, only members of the global associative array
-     <varname>$HTTP_SESSION_VARS</varname> can be registered as session
+     <varname>$_SESSION</varname> can be registered as session
      variables. The restored session variables will only be available
-     in the array <varname>$HTTP_SESSION_VARS</varname>.
-     <example>
-      <title>
-       Registering a variable with <link
-       linkend="ini.track-vars"><literal>track_vars</literal></link>
-       enabled
-      </title>
-      <programlisting role="php">
-<![CDATA[
-<?php
-session_start();
-if (isset($HTTP_SESSION_VARS['count'])) {
-   $HTTP_SESSION_VARS['count']++;
-}
-else {
-   $HTTP_SESSION_VARS['count'] = 0;
-}
-?>
-]]>
-      </programlisting>
-     </example>
+     in the array <varname>$_SESSION</varname>.
     </para>
     <para>
      Use of <varname>$_SESSION</varname> (or
      <varname>$HTTP_SESSION_VARS</varname> with PHP 4.0.6 or less) is
-     recommended for security and code readablity. With
-     <varname>$_SESSION</varname> or
-     <varname>$HTTP_SESSION_VARS</varname>, there is no need to use
+     recommended for improved security and code readablity. With
+     <varname>$_SESSION</varname>, there is no need to use
      session_register()/session_unregister()/session_is_registered()
-     functions. Users can access session variable like a normal
-     variable.
+     functions. Session variables are accessible like any other
+     variables.
      <example>
       <title>
        Registering a variable with $_SESSION.
@@ -178,7 +158,7 @@ if (!isset($_SESSION['count'])) {
      </example>
      <example>
       <title>
-       Unregistering a variable with $_SESSION.
+       Unregistering a variable with $_SESSION and register_globals disabled.
       </title>
       <programlisting role="php">
 <![CDATA[
@@ -190,26 +170,41 @@ unset($_SESSION['count']);
 ]]>
       </programlisting>
      </example>
+     <example>
+      <title>
+       Unregistering a variable with register_globals enabled, after
+       registering it using $_SESSION.
+      </title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+session_start();
+// With PHP 4.3 and later, you can also use simply use the prior example.
+session_unregister('count');
+?>
+]]>
+      </programlisting>
+     </example>
     </para>
     <para>
      If <link
      linkend="ini.register-globals"><literal>register_globals</literal></link>
      is enabled, then all global variables can be registered as session
-     variables and the session variables will be restored to
-     corresponding global variables. Since PHP must know which global
-     variables are registered as session variables, users must register
-     variables with session_register() function while
-     <varname>$HTTP_SESSION_VARS</varname>/<varname>$_SESSION</varname>
-     does not need to use session_register().
+     variables and the session variables will be restored to corresponding
+     global variables. Since PHP must know which global variables are
+     registered as session variables, users need to register variables with
+     session_register() function. You can avoid this by simply setting entries
+     in <varname>$_SESSION</varname>.
      <caution>
       <para>
        If you are using
-       <varname>$HTTP_SESSION_VARS</varname>/<varname>$_SESSION</varname>
+       <varname>$_SESSION</varname>
        and disable <link
        linkend="ini.register-globals"><literal>register_globals</literal></link>,
        do not use <function>session_register</function>,
        <function>session_is_registered</function> and
-       <function>session_unregister</function>.
+       <function>session_unregister</function>, if your scripts shall work
+       in PHP 4.2 and earlier. You can use these functions in 4.3 and later.
       </para>
       <para>
        If you enable <link
@@ -218,7 +213,7 @@ unset($_SESSION['count']);
         session variables are registered as global variables when
         session data is deserialized. Disabling <link
         linkend="ini.register-globals"><literal>register_globals</literal></link>
-        is recommended for both security and performance reason.
+        is recommended for both security and performance reasons.
       </para>
      </caution>
      <example>
@@ -243,20 +238,21 @@ else {
      </example>
     </para>
     <para>
-     If both <link
-     linkend="ini.track-vars"><literal>track_vars</literal></link> and
-     <link
+     If <link
      linkend="ini.register-globals"><literal>register_globals</literal></link>
-     are enabled, then the globals variables and the
-     <varname>$HTTP_SESSION_VARS</varname>/<varname>$_SESSION</varname>
-     entries will reference the same value for already registered
-     variables.
+     is enabled, then the global variables and the
+     <varname>$_SESSION</varname> entries will automatically reference the
+     same value for session variables which were registered in prior session
+     instances.
     </para>
     <para>
-     If user use session_register() to register session variable,
-     <varname>$HTTP_SESSION_VARS</varname>/<varname>$_SESSION</varname>
-     will not have these variable in array until it is loaded from
-     session storage. (i.e. until next request)
+     Additionally, if you register a new session variable by using
+     <function>session_register()</function>, the entry in the global scope
+     and the <varname>$_SESSION</varname> entry will not reference the same
+     value until the next session start (this applies to PHP 4.2 and before
+     only).  I.e. a modification to the global variable will not be reflected
+     by the <varname>$_SESSION</varname> entry.  This is unlikely to matter in
+     practice and has been corrected in PHP 4.3.
     </para>
    </section>
     
@@ -284,15 +280,15 @@ else {
      session id directly into URLs.
     </para>
     <para>
-     PHP is capable of doing this transparently when compiled with
-     <link linkend="install.configure.enable-trans-sid">
-     <literal>--enable-trans-sid</literal></link>. If you enable this option,
-     relative URIs will be changed to contain the session id
-     automatically.  Alternatively, you can use the constant
-     <literal>SID</literal> which is defined, if the client did not
-     send the appropriate cookie.  <literal>SID</literal> is either of
-     the form <literal>session_name=session_id</literal> or is an empty
-     string.
+     PHP is capable of doing this transparently if compiled with <link
+     linkend="install.configure.enable-trans-sid">
+     <literal>--enable-trans-sid</literal></link>. This option is always
+     enabled in PHP 4.2 and later.  If you enable this option, relative URIs
+     will be changed to contain the session id automatically.  Alternatively,
+     you can use the constant <literal>SID</literal> which is defined, if the
+     client did not send the appropriate cookie.  <literal>SID</literal> is
+     either of the form <literal>session_name=session_id</literal> or is an
+     empty string.
      <note>
       <para>
       The <link linkend="ini.arg_separator.output">arg_separator.output</link>
