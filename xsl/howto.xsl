@@ -3,7 +3,7 @@
 
   HOWTO specific stylesheet based on Docbook XSL 1.66.1
 
-  $Id: howto.xsl,v 1.2 2004-10-01 16:41:50 techtonik Exp $
+  $Id: howto.xsl,v 1.3 2004-10-29 13:00:22 techtonik Exp $
 
 -->
 <!-- 
@@ -258,7 +258,7 @@
       </xsl:when>
       <xsl:otherwise>
         <xsl:if test="normalize-space($string)">
-          <xsl:copy-of select="$string"/>
+          <xsl:value-of select="$string"/>
         </xsl:if>
       </xsl:otherwise>
     </xsl:choose>
