@@ -152,7 +152,7 @@
   (let* 
     ((orig-name (data (current-node)))
       (type-name (cond 
-        ((equal-ci? orig-name "float") "double")
+        ((equal-ci? orig-name "double") "float")
         ((equal-ci? orig-name "int")   "integer")
         (else orig-name))
       )
