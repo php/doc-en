@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.20 2004-11-09 12:59:37 techtonik Exp $
+  $Id: common.xsl,v 1.21 2004-11-10 20:34:59 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -335,14 +335,31 @@
       </b>
   </xsl:variable>
 
+  <!-- replace '->' and '::' in method references with '-' -->
+  <xsl:variable name="argument">
+    <xsl:choose>
+      <xsl:when test="contains(current(), '->')">
+         <xsl:value-of select="concat(substring-before(current(), '->'), '-',
+                                      substring-after(current(), '->'))"/>
+      </xsl:when>
+      <xsl:when test="contains(current(), '::')">
+         <xsl:value-of select="concat(substring-before(current(), '::'), '-',
+                                      substring-after(current(), '::'))"/>
+      </xsl:when>
+      <xsl:otherwise>
+         <xsl:value-of select="string(current())"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  
   <xsl:variable name="function.href">
     <xsl:call-template name="href.target">
-      <xsl:with-param name="object" select="id(concat('function.', translate(string(current()),'_','-')))"/> 
+      <xsl:with-param name="object" select="id(concat('function.', translate($argument,'_','-')))"/> 
     </xsl:call-template>
   </xsl:variable>
 
   <xsl:choose>
-    <xsl:when test="ancestor::refentry/refnamediv/refname=translate(current(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')">
+    <xsl:when test="ancestor::refentry/@id=concat('function.', translate($argument,'_','-'))">
        <xsl:copy-of select="$content"/>
     </xsl:when>
     <xsl:when test="string-length($function.href) != 0">
