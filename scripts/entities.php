@@ -41,15 +41,17 @@ set_time_limit(0);
 $defined_entities = array();
 
 // Default values
-$langcode = "en";
+$langcodes = array("en");
 $filename = "global.ent";
 
 // Parameter value copying
 if ($argc == 3) { 
-    $langcode = $argv[2];
-	if ($langcode === 'all') {
-		$langcode = '..';
-	}
+    $langcodes = array($argv[2]);
+    if ($argv[2] === 'all') {
+        $langcodes = array("ar", "cs", "de", "en", "es", "fr",
+                           "hk", "hu", "it", "ja", "kr", "nl",
+                           "pl", "pt_BR", "ru", "tr", "tw");
+    }
 }
 
 if ($argc >= 2) {
@@ -141,31 +143,42 @@ function check_file ($filename, &$defined_entities, $entity_regexp)
 /* Here starts the program                                           */
 /*********************************************************************/
 
-// Check for directory validity
-if (!@is_dir($docdir . $lang)) {
-  die("The $lang language code is not valid");
-}  
-  
-// If directory is OK, start with the header
-echo "\nStart searching ...\n";
-
+// Get entity definitions
 $entity_regexp = extract_entity_definitions($docdir . $filename, $defined_entities);
 
-// Check the requested directory
-check_dir("$docdir$langcode/", $defined_entities, $entity_regexp);
+// Chechking all languages
+foreach ($langcodes as $langcode) {
 
+    // Check for directory validity
+    if (!@is_dir($docdir . $langcode)) {
+        print("The $langcode language code is not valid\n");
+        continue;
+    } else {
+        $tested_trees[] = $langcode;
+    }
+      
+    // If directory is OK, start with the header
+    echo "Searching in $docdir$langcode ...\n";
+    
+    // Check the requested directory
+    check_dir("$docdir$langcode/", $defined_entities, $entity_regexp);
+
+}
+    
 echo "Generating entity_usage.txt ...\n";
-
+    
 $fp = fopen("entity_usage.txt", "w");
 fwrite($fp, "ENTITY USAGE STATISCTICS
 
 =========================================================
 In this file you can find entity usage stats compiled
 from the entity file: $filename. The entity usage
-was tested in the $langcode tree at phpdoc. You may
-find many unused entities here. Please do not delete
-the entities, unless you make sure, no translation
-makes use of the entity. Interestingly, the purpouse
+was tested in the following tree[s] at phpdoc:\n" .
+join(", ", $tested_trees) . ".
+
+You may find many unused entities here. Please do
+not delete the entities, unless you make sure, no
+translation makes use of the entity. The purpouse
 of this statistics is to reduce the number of unused
 entities in phpdoc. Here comes the numbers and file
 names:
