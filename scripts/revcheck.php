@@ -38,7 +38,7 @@ the actual english xml files, and print statistics
   If you specify ><revcheck.html>, the output is an html file.
   
   Read more about Revision comments and related
-  funcionality in the PHP Documentation Howto.
+  functionality in the PHP Documentation Howto.
    
   Authors: Thomas Schöfbeck <tom@php.net>
            Gabor Hojtsy <goba@php.net>
@@ -302,7 +302,7 @@ function get_dir_status($dir)
 {
     // If this is an old "functions" directory
     // (not under reference) then do not travers
-    if (preg_match("!/en/functions!", $dir)) {
+    if (preg_match("!/en/functions|/chmonly!", $dir)) {
         return array();
     }
     
@@ -324,7 +324,11 @@ function get_dir_status($dir)
       // JUST TEMPORARY TILL THE <TRANSLATION>/REFERENCE/FUNCTIONS.XML - ISSUE IS CLARIFIED
       // If we found a file functions.xml in the
       // <lang>/reference/ tree, skip the file
-      if ($file == "functions.xml" && preg_match("!/\w+/reference/\w+/!", $dir))
+      if (
+          $file == "make_chm_index_en.html"
+	  || $file == "rsusi.txt"
+	  || $file == "DO_NOT_TRANSLATE" 
+	  || ($file == "functions.xml" && strpos($dir, '/reference/')))
         continue;
 
       // Collect files and directories
@@ -481,18 +485,6 @@ function parse_translation($DOCDIR, $LANG, $MAINT)
     return array($output_charset, $translation);
 
 } // parse_translation() function end()
-
-// =========================================================================
-// Debug functions for all the functions and code on this page
-// =========================================================================
-
-// Print preformatted (debug function)
-function print_pre($var)
-{
-    print("<pre>");
-    print_r($var);
-    print("</pre>");
-} // print_pre() function end
 
 // =========================================================================
 // Start of the program execution
@@ -779,21 +771,24 @@ foreach ($files_status as $num => $file) {
     // Guess the new directory from the full name of the file
     $new_dir = dirname($file["full_name"]);
     
-    // If this is a new directory, put out dir headline
-    if ($new_dir != $prev_dir) {
-        
-        // Drop out the unneeded parts from the dirname...
-        $display_dir = str_replace($DOCDIR."en/", "", dirname($file["full_name"]));
-        
-        // Print out directory header
-        print "<tr class=blue><th colspan=12>$display_dir</th></tr>\n";
+    // If this is a new directory, put out old dir lines
+    if ($new_dir != $prev_dir && isset($lines)) {
+        echo $prev_diplay_dir;
+        echo " ($line_number)</th></tr>";
+	echo $lines;
+	
+	$lines = '';
+	$line_number = 0;
         
         // Store the new actual directory
         $prev_dir = $new_dir;
     }
+    // Drop out the unneeded parts from the dirname...
+    $display_dir = str_replace($DOCDIR."en/", "", dirname($file["full_name"]));
+    $prev_diplay_dir = "<tr class=blue><th colspan=12>$display_dir";
     
-    // Write out the line for the current file (get file name shorter)
-    print "<tr class={$CSS[$file['mark']]}><td>{$file['short_name']}</td>".
+    // Save the line for the current file (get file name shorter)
+    $lines .= "<tr class={$CSS[$file['mark']]}><td>{$file['short_name']}</td>".
           "<td> {$file['revision'][0]}</td>" .
           "<td> {$file['revision'][1]}</td>".
           "<td class=rb>{$file['revision'][2]} </td>".
@@ -805,8 +800,13 @@ foreach ($files_status as $num => $file) {
           "<td class=rb>{$file['date'][2]} </td>".
           "<td class=c>{$file['maintainer']}</td>".
           "<td class=c>".trim($file['status'])."</td></tr>\n";
+     $line_number++;
 
 }
+
+// echo the last dir and $lines
+echo "$prev_diplay_dir ($line_number)</th></tr>";
+echo $lines;
 
 print("</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n");
 
