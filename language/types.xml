@@ -11,6 +11,11 @@
     </listitem>
     <listitem>
      <simpara>
+      <link linkend="language.types.boolean">booleans</link>
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
       <link linkend="language.types.double">floating-point numbers
       </link>
      </simpara>
@@ -49,8 +54,15 @@
    information, see the section on <link
    linkend="language.types.type-juggling">Type Juggling</link>.
   </simpara>
+  
+   <sect1 id="language.types.boolean">
+    <title>Booleans</title>
+    <para>
+     This is the simpelest. Either TRUE or FALSE. <!-- more to come -->
+    </para>
+   </sect1>
 
-  <sect1 id="language.types.integer">
+   <sect1 id="language.types.integer">
    <title>Integers</title>
    <para>
     Integers can be specified using any of the following syntaxes:
@@ -131,15 +143,15 @@ $a = 1.234; $a = 1.2e3;
       <tbody>
        <row>
         <entry><literal>\n</literal></entry>
-        <entry>linefeed (LF or 0x0A in ASCII)</entry>
+        <entry>linefeed (LF or 0x0A (10) in ASCII)</entry>
        </row>
        <row>
         <entry><literal>\r</literal></entry>
-        <entry>carriage return (CR or 0x0D in ASCII)</entry>
+        <entry>carriage return (CR or 0x0D (13) in ASCII)</entry>
        </row>
        <row>
         <entry><literal>\t</literal></entry>
-        <entry>horizontal tab (HT or 0x09 in ASCII)</entry>
+        <entry>horizontal tab (HT or 0x09 (9) in ASCII)</entry>
        </row>
        <row>
         <entry><literal>\\</literal></entry>
@@ -293,7 +305,126 @@ $last = $str[strlen($str)-1];
      </programlisting>
     </example>
    </para>
-
+    <sect2 id="language.types.string.parsing">
+     <title>String parsing</title>
+     <!-- Section orig. by jeroen@a-es2.uu.nl,
+     I used simpara all over, because I don't know when
+     to use para. There will also probably some typo's
+     and misspellings.
+     -->
+     <simpara>
+      When a string is specified in double quotes, variables are
+      parsed within it. 
+     </simpara>
+     <simpara>
+      There are two types of syntax, a 
+      <link linked="language.types.string.parsing.simple">simple</link>
+      one and a 
+      <link linked="language.types.string.parsing.complex">complex</link>
+      one.
+      The simple syntax is the most common and convenient, it provides a way
+      to parse a variable, an array-value, or a object-property.
+     </simpara>
+     <simpara>
+      The complex syntax was introduced in PHP 4,
+      <!-- XXX was it? and starting with what version exactly? -->
+      and can by recognised
+      by the curly braces surrounding the expression.
+     </simpara>
+     <sect3 id="language.types.string.parsing.simple">
+      <title>Simple syntax</title>
+      <simpara>
+       If a $ is encoutered, the parser will
+       greedily take as much tokens as possible to form a valid
+       variable name. Enclose the the variable name in curly
+       braces if you want to explicitely specify the end of the
+       name.
+      </simpara>
+      <informalexample>
+       <programlisting role="php">
+ $beer = 'Heineken';
+ echo "$beer's taste is great"; // works, "'" is an invalid character for varnames
+ echo "He drunk some $beers"; // won't work, 's' is a valid character for varnames
+ echo "He drunk some ${beer}s"; // works
+       </programlisting>
+      </informalexample>
+      <simpara>
+       Similary, you can also have an array-index and an 
+       object-property parsed. With array-indices, the
+       ']' marks the end of the index, for object-properties
+       the same rules apply as to simple variables, though
+       with object properties there doesn't exist a trick
+       like the one with variables.
+       
+       <!-- XXX isn't true :(, this would be the trick
+       Also,
+       the same trick with curly-braces works if you
+       want to limit the greediness of parsers (aren't they
+       paying them enough or something?).
+       -->
+      
+      </simpara>
+      <informalexample>
+       <programlisting role="php">
+ $fruits = array( 'strawberry' => 'red' , 'banana' => 'yellow' );
+ echo "A banana is $fruits[banana].";
+ echo "This square is $square->width meters broad.";
+ echo "This square is $square->width00 centimeters broad."; // won't work,
+    // for a solution, see the <link linked="language.types.string.parsing.complex">complex syntax</link>.
+ 
+ <!-- XXX this won't work:
+ echo "This square is $square->{width}00 centimeters broad."; 
+ // XXX: php developers: it would be consequent to make this work.
+ // XXX: like the $obj->{expr} syntax outside a string works, 
+ // XXX: analogously to the ${expr} syntax for variable var's.
+ -->
+ 
+       </programlisting>
+      </informalexample>
+      <simpara>
+       For anything more complex, you should use the complex syntax.
+      </simpara>
+     </sect3>
+     <sect3 id="language.types.string.parsing.complex">
+      <title>Complex (curly) syntax</title>
+      <simpara>
+       I didn't call this complex because the syntax is complex,
+       but because you can include complex expressions this way.
+     </simpara>
+     <simpara>
+      In fact, you can include any value that is in the namespace
+      in strings with this syntax. You simply write the expression
+      the same way as you would outside the string, and then include
+      it in { and }. Since you can't escape '{', this syntax will
+      only be recognised when the $ is immediately following the {.
+      (Use "{\$" to get a literal "{$").
+      Some examples to make it clear:
+     </simpara>
+     <informalexample>
+      <programlisting role="php">
+ $great = 'fantastic';
+ echo "This is { $great}"; // won't work, outputs: This is { fantastic}
+ echo "This is {$great}";  // works, outputs: This is fantastic
+ echo "This square is {$square->width}00 centimeters broad."; 
+ echo "This works: {$arr[4][3]}";     
+ echo "This is wrong: {$arr[foo][3]}"; // for the same reason 
+    // as $foo[bar] is wrong outside a string. 
+ <!-- XXX see the still-to-write explaination in the arrays-section. -->
+ echo "You should do it this way: {$arr['foo'][3]}";
+ echo "You can even write {$obj->values[3]->name}";
+ echo "This is the value of the var named $name: {${$name}}";
+ 
+ <!-- <xxx> maybe it's better to leave this out?? -->
+ // this works, but i disencourage its use, since this is NOT 
+ // involving functions, rather than mere variables, arrays and objects.
+ $beer = 'Heineken';
+ echo "I'd like to have another {${ strrev('reeb') }}, hips";
+ <!-- </xxx> -->
+ 
+       </programlisting>
+      </informalexample>
+     </sect3>
+    </sect2>
    <sect2 id="language.types.string.conversion">
     <title>String conversion</title>
 
@@ -655,6 +786,9 @@ $bar = (double) $foo;   // $bar is a double
        <simpara>(int), (integer) - cast to integer</simpara>
       </listitem>
       <listitem>
+       <simpara>(bool), (boolean) - cast to boolean</simpara>
+      </listitem>
+      <listitem>
        <simpara>(real), (double), (float) - cast to double</simpara>
       </listitem>
       <listitem>
@@ -683,6 +817,37 @@ $foo = ( int ) $bar;
      between certain types. For instance, the following should be
      noted.
     </para>
+     <para>
+      When converting to boolean, the following values are considered
+      FALSE:
+ 
+      <itemizedlist>
+       <listitem>
+        <simpara>the boolean FALSE<!-- duh... --></simpara>
+       </listitem>
+       <listitem>
+        <simpara>the integer 0 (zero) </simpara>
+       </listitem>
+       <listitem>
+        <simpara>the float 0.0 (zero) </simpara>
+       </listitem>
+       <listitem>
+        <simpara>the empty string, and the string "0"</simpara>
+       </listitem>
+       <listitem>
+        <simpara>an array with zero elements</simpara>
+       </listitem>
+       <listitem>
+        <simpara>an object with zero elements</simpara>
+       </listitem>
+      </itemizedlist>
+      
+      Every other value is considered true. 
+      <!-- <XXX> this should be such a cute warning thing... -->
+      (-1 is considered TRUE!).
+      <!-- and/or a few examples, for the people only looking at 
+           the examples... </XXX> -->
+     </para>
     <para>
      When casting or forcing a conversion from array to string, the
      result will be the word <literal>Array</literal>. When casting or
