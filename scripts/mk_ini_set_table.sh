@@ -4,9 +4,12 @@
 # and where they can be changed
 # Jesus M. Castagnetto
 # Mon Mar 19 04:57:02 PST 2001
+# Updated: Thu Apr 25 11:42:26 PDT 2002
+# - look through all PHP_INI_ containing files
+# - save table in the new split dir for the function
 
-main_c="../php4/main/main.c"
-ini_set_table="en/functions/ini_set_table";
+cfiles=`grep -rl PHP_INI_ ../php4/*`
+ini_set_table="en/reference/info/functions/ini_set_table";
 
 awk 'BEGIN {
 	print "<table>\n <title>Configuration options</title>"
@@ -81,6 +84,6 @@ END {
 	print "  </table>";
 	print " </para>";
 	print "</note>";
-}' $main_c > $ini_set_table
+}' $cfiles > $ini_set_table
 
 ls -l $ini_set_table
