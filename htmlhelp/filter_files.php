@@ -216,6 +216,11 @@ function refineFile($filename)
     );
 
     //------------------------------------------------------------------
+    // Add .datatable class for tables to ease styling
+    $content = preg_replace('!<div class="(informal)?table".*<table !U',
+                              '\\0class="datatable" ',$content);
+
+    //------------------------------------------------------------------
     // Put <p> tags after all </ul> or </div> or </table> close tags to
     // enable CSS support for those paragraphs (these break a <p>)
     // BUT do not put a P after our special notes container
