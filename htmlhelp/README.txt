@@ -15,6 +15,10 @@ How to build a CHM manual with this system?
     From the phpdoc root directory:
         cvs update -dP -D'December 31, 2002 11:00pm' xsl
 
+        # ensure the version information is up-to-date and that
+        # html doctypes are included
+        cvs up -A xsl/version.xml xsl/docbook/html/chunker.xsl
+
     {Volunteer to fix the customizations if you are willing
      to, but otherwise you cannot do much more but use the old
      sheets}
@@ -42,7 +46,10 @@ How to build a CHM manual with this system?
     <xsl:template match="collabname" mode="titlepage.mode">
       <xsl:apply-templates />
     </xsl:template>
-    
+
+    <xsl:param name="chunker.output.doctype-system" select="'http://www.w3.org/TR/html4/loose.dtd'"/>
+    <xsl:param name="chunker.output.doctype-public" select="'-//W3C//DTD HTML 4.01 Transitional//EN'"/>
+
     to xsl/html-common.xsl.
 
  5. Run "make chm_xsl"
