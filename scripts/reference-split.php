@@ -4,30 +4,48 @@ set_time_limit(0);
 error_reporting(E_ALL);
 ob_implicit_flush();
 
+$en_revs = array();
+
 # {{{ cvs stuff
 
+  // compare two revision numbter arrays
+  function rev_cmp($a1,$a2) {
+    foreach($a1 as $key=>$val) {
+      if($a1[$key]>$a2[$key]) return 1;
+      if($a1[$key]<$a2[$key]) return -1;
+    }
+    if(count($a1)>count($a2)) return 1;
+    if(count($a1)<count($a2)) return -1;
+    return 0;
+  }
+
+  // get max. revision for a region in a cvs file 
+  // (witch simple data caching)
   function cvs_max_rev($filename,$start,$end) {
     static $lastfile = "";
     static $array = array();
     
     if($filename!=$lastfile) {
-      $fp=popen("cvs annotate $filename 2>/dev/null","r");
+      $cmd="/usr/bin/cvs annotate $filename 2>/dev/null";
+      $fp=popen($cmd,"r");
+      if(!$fp) return false;
+
       $n=0;
-      if(!$fp) die("gaga");           ;
       $array = array();
       $lastfile = $filename;
+
       while(!feof($fp)) {
         $line = fgets($fp);
         if(empty($line)) continue;
         $tokens=explode(" ",$line);
-        $rev = $tokens[0];
-        $array[++$n]=explode(".",$rev);
+        $array[++$n]=explode(".",$tokens[0]);
       }
       pclose($fp);
     }
-    $max=0;
+
+    $max=array();
     for($n=$start;$n<=$end;$n++)
-      if($max < $array[$n][1]) $max = $array[$n][1];
+      if(rev_cmp($max,$array[$n])) $max = $array[$n];
     return $max;
   }
 # }}}
@@ -35,6 +53,8 @@ ob_implicit_flush();
 # {{{ convert_file 
 
 function convert_file($dir,$file) {
+  global $en_revs;
+
 	echo "convert $dir $file\n";
 
 	// open input stream
@@ -56,16 +76,12 @@ function convert_file($dir,$file) {
 	mkdir("$base/functions",0777);
 	
 	// append filename to function entity list
-	$fent= fopen("functions.ent","a");
+	$fent= fopen("$base/functions.ent","a");
 	fwrite($fent,"<!ENTITY $name.entities SYSTEM '$base/functions.ent'>\n");
 	fclose($fent);
 
-	// push dir
-	$olddir = getcwd();
-	chdir($base);
-
 	// create master documentation file
-	$fmaster= fopen("reference.xml","w");
+	$fmaster= fopen("$base/reference.xml","w");
 
 	// current output stream is master file
 	$fout = &$fmaster;
@@ -74,18 +90,33 @@ function convert_file($dir,$file) {
 	$entity = array();
 
 	// process input file
-	$flag=false;
-	$xmlhead="<?xml version='1.0' encoding='iso-8859-1' ?>\n";
-	$lineno=0;
- 	while ($line = fgets($fin, 4096)) {
+	$lineno = 0;
+	$lastline_empty = false;
+	$xmlhead = "<?xml version='1.0' encoding='iso-8859-1' ?>\n"; //default
+  $en_revision = false;
+  $maintainer = "";
+  $trans_status = "";
+
+ 	while ($line = fgets($fin)) {
 		$lineno++;
 
+    // convert numbered sections to generic ones, prep. for hierachical ref
     $line = ereg_replace("(</?)sect[123456]","\\1section",$line);
+
+    // file will move one level down, so path to emacs dtd-file needs one more ..
     $line = str_replace('../../manual.ced','../../../manual.ced',$line);
 
-		if(strstr($line,("<refentry "))) {
-			// start of function description 
-			
+		if (strstr($line,("<?xml"))&&($lineno==1)) { // remember xml header
+			$xmlhead=$line;
+			fwrite($fout,$line);
+    } elseif (strstr($line,"<!-- EN-Revision:")) {
+      $array = explode(" ",$line);
+      foreach($array as $key => $value) {
+        if($value=="EN-Revision:") $en_revision  = explode(".",$array[$key+1]);
+        if($value=="Maintainer:")  $maintainer   = $array[$key+1];
+        if($value=="Status:")      $trans_status = $array[$key+1];
+      }
+		} elseif(strstr($line,("<refentry "))) { // start of function description 
 			// extract id 
 			ereg("id=['\"](.*)['\"]",$line,$matches);
 			$id=str_replace("_","-",$matches[1]);
@@ -95,36 +126,39 @@ function convert_file($dir,$file) {
 			$entity[]="&$base.$id;";
 
 			// open new output stream for this function
-			$fslave=fopen("functions/$id.xml","w");
+			$fslave=fopen("$base/functions/$id.xml","w");
 			$fout=&$fslave;
+
+      // xml header
 			fwrite($fout,$xmlhead);
-			fwrite($fout,$line);
-		} else if(strstr($line,("<partintro"))) {
-      fwrite($fout,preg_replace("/<partintro(.*?)>/","<section\\1><title>Introduction</title>\n",$line));
-		} else if(strstr($line,("</partintro>"))) {
-      fwrite($fout,"</section>\n");
-		} else if(strstr($line,("<funcsynopsis>"))) {
-			
-			$xml=$xmlhead.$line;
-			do {
-				$line=fgets($fin,4096);
-				$xml.=$line;
-			} while(!strstr($line,("</funcsynopsis>")));
-      $result = $xml;
-			if(is_string($result))
-				fwrite($fout,strstr($result,"\n"));
-			else {
-				echo $xml; 
-			}
-		} else if (strstr($line,("<?xml"))&&($lineno==1)) {
-			$xmlhead=$line;
-			fwrite($fout,$line);
+
+      // start collecting stuff
+		  $block = $line;
+      $blockstart=$lineno;
 		} else if (strstr($line,("</refentry>"))) {
 			// end of function description
 			
 			// close output stream and switch 
-			fwrite($fout,$line);
-			if(@is_resource($fslave)) {
+			if(!isset($block)) {
+        fwrite($fout,$line);
+      }else{
+        $cvs_rev = cvs_max_rev("$dir/$file",$blockstart,$lineno);
+        fwrite($fout,"<!-- splitted from $dir/$file, last change in rev ".join(".",$cvs_rev)." -->\n");
+        if(!isset($en_revs[$id])) {
+          $en_revs[$id] = $cvs_rev;
+        } else {
+          fwrite($fout,"<!-- last change to '$id' in en/ tree in rev ".join(".",$en_revs[$id])." -->\n");
+        }
+        // revcheck header
+        if(is_array($en_revision)) {
+          if(rev_cmp($en_revision,$en_revs[$id])>=0) { // new enough
+            fwrite($fout,"<!-- EN-Revision: 1.1 Maintainer: $maintainer Status: $trans_status -->\n");
+          } else {
+            fwrite($fout,"<!-- EN-Revision: 0.0 Maintainer: $maintainer Status: $trans_status -->\n");
+          }
+          fwrite($fout,"<!-- OLD-Revision: ".join(".",$en_revision)."/EN.".join(".",$en_revs[$id])." -->\n");
+        }
+        fwrite($fout,$block.$line);
 				fwrite($fout,'
 <!-- Keep this comment at the end of the file
 Local variables:
@@ -149,9 +183,8 @@ vi: ts=1 sw=1
 ');				
 				fclose($fslave);
 				$fout = &$fmaster;
+        unset($block);
 			}
-		} else if (strstr($line,("<reference "))) {
-      fwrite($fout,str_replace("<reference","<section role='reference' ",$line));
 		} else if (strstr($line,("</reference>"))) {
 			// end of master file
 
@@ -159,26 +192,30 @@ vi: ts=1 sw=1
 			sort($entity);
 
 			// generate entity include for entity file
-			fwrite($fout,"<section><title>Functions</title>&$name.entities;</section>\n\n");
-      fwrite($fout,str_replace("</reference","</section",$line));
+			fwrite($fout,"&$name.entities;\n\n");
+      fwrite($fout,$line);
 		} else {
 			// default -> just copy to current output stream,
       // filter out duplicate blank lines
 			if(trim($line)) {
-				fwrite($fout,$line);				
-				$flag=false;
+        if(isset($block))
+          $block .= $line;
+        else
+          fwrite($fout,$line);				
+				$lastline_empty=false;
 			} else {
-				if(!$flag)
-					fwrite($fout,$line);
-				$flag=true; 
+				if(!$lastline_empty) {
+          if(isset($block))
+            $block .= $line;
+          else
+            fwrite($fout,$line);				
+        }
+				$lastline_empty=true; 
 			}
 		}
 	}
 
 	fclose($fmaster); 
-	// pop dir
-	chdir($olddir);
-
 	// close input stream
 	fclose($fin);
 }
@@ -191,6 +228,10 @@ vi: ts=1 sw=1
 //    and recurse into subdirs
 function convert_dir($dirname) {
 
+  if(@is_dir("$dirname/en")) {
+    convert_dir("$dirname/en");
+  }
+
 	if ($dir = opendir($dirname)) {
 
 		// for each file in dir
@@ -200,9 +241,9 @@ function convert_dir($dirname) {
 			if($file=="CVS") continue;  // ignore CVS information
 
 			if(is_dir("$dirname/$file")) { // is directory?
-				if(!strstr("$dirname/","/reference/")!==false) {
-					convert_dir("$dirname/$file"); // recurse if not 'reference'
-				}
+				if($file!="en" && $file!="reference") {
+          convert_dir("$dirname/$file"); // recurse if not 'reference'
+        }
 			} else if(ereg("xml$",$file)) { // is XML file?
 				if(strpos("$dirname/","/functions/")>0) {
 					convert_file($dirname,$file); // process if in 'functions'
@@ -212,9 +253,7 @@ function convert_dir($dirname) {
 		}
 
 		closedir($dir);
-
 	}
-
 }
 
 # }}}
