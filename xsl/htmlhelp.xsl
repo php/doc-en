@@ -1,41 +1,299 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
+<?xml version="1.0"?>
 <!-- 
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.1 2004-10-18 20:20:32 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.2 2004-10-18 20:28:10 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:stbl="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.Table"
-                xmlns:xtbl="com.nwalsh.xalan.Table"
-                exclude-result-prefixes="stbl xtbl"
-                version="1.0">
+                xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
+                xmlns:exsl="http://exslt.org/common"
+                xmlns:set="http://exslt.org/sets"
+		version="1.0"
+                exclude-result-prefixes="doc exsl set">
 
-<xsl:import href="htmlhelp-db.xsl"/>
-<xsl:import href="html-common.xsl"/>
+<!-- - BASED ON 1.66.1 HTMLHELP.XSL DOCBOOK XSL STYLESHEET - -->
 
+<xsl:import href="./docbook/html/chunk.xsl"/>
+<xsl:import href="./docbook/htmlhelp/htmlhelp-common.xsl"/>
+
+<!-- configure/able/ parameters -->
 <xsl:include href="htmlhelp-config.xsl"/>
 
+
 <xsl:param name="base.dir" select="'htmlhelp/html/'"/>
+<!-- project files for HTML Help are written into base.dir instead of current directory -->
+<xsl:param name="manifest.in.base.dir" select="1"/>
 <xsl:param name="use.id.as.filename" select="1"/>
-<xsl:param name="saxon.character.representation" select="'native'"/>
 
-<xsl:param name="ulink.target" select="'_blank'"/>
+<!-- Supress the ",figure,example,equation" (like DSSSL output). -->
+<xsl:param name="generate.toc">
+appendix  toc,title
+article   toc
+book      toc,title
+chapter   toc,title
+part      toc,title
+preface   toc
+qandadiv  toc
+qandaset  toc
+reference toc,title
+sect1     toc
+sect2     toc
+sect3     toc
+sect4     toc
+sect5     toc
+section   toc
+set       toc
+</xsl:param>
 
-<!-- ======================================================================
-     Custom XSL code for PHP CHM Manual 
+
+<!-- *************** HTML HELP PROJECT PARAMETERS **************** -->
+<!-- Turn off Binary TOC used Prev/Next buttons on toolbar. Files with binary TOC can't be merged -->
+<xsl:param name="htmlhelp.hhc.binary" select="0"/>
+<xsl:param name="htmlhelp.generate.index" select="1"/>
+<xsl:param name="htmlhelp.use.hhk" select="1"/>
+<!-- <xsl:param name="htmlhelp.use.hhk" select="1"/> doesn't work -->
+
+<xsl:param name="htmlhelp.display.progress" select="0"/>
+<xsl:param name="htmlhelp.default.topic" select="'_index.html'"/>
+<xsl:param name="htmlhelp.hhp.window" select="'phpdoc'"/>
+<xsl:param name="htmlhelp.enhanced.decompilation" select="1"/>
+
+<xsl:param name="htmlhelp.hhc.folders.instead.books" select="0"/>
+<xsl:param name="htmlhelp.hhc.show.root" select="0"/>
+
+
+<!-- <xsl:with-param name="xnavigation" select="'0x23520'"/> -->
+<xsl:param name="htmlhelp.show.menu" select="0"/>
+<xsl:param name="htmlhelp.show.toolbar.text" select="1"/>
+<xsl:param name="htmlhelp.show.advanced.search" select="1"/>
+<xsl:param name="htmlhelp.show.favorities" select="1"/>
+
+<!-- <xsl:with-param name="xbuttons" select="'0x386e'"/> -->
+<!-- 0x4387E with additional stop and php.net buttons    -->
+<xsl:param name="htmlhelp.button.hideshow" select="1"/>
+<xsl:param name="htmlhelp.button.locate" select="1"/>
+<xsl:param name="htmlhelp.button.back" select="1"/>
+<xsl:param name="htmlhelp.button.forward" select="1"/>
+<!-- next two buttons are questionable -->
+<xsl:param name="htmlhelp.button.stop" select="1"/>
+<xsl:param name="htmlhelp.button.refresh" select="1"/>
+<xsl:param name="htmlhelp.button.home" select="1"/>
+<xsl:param name="htmlhelp.button.options" select="1"/>
+<xsl:param name="htmlhelp.button.print" select="1"/>
+<!-- next jump button can be discussed too -->
+<xsl:param name="htmlhelp.button.jump1" select="1"/>
+<xsl:param name="htmlhelp.button.jump1.url" select="'http://www.php.net'"/>
+<xsl:param name="htmlhelp.button.jump1.title" select="'PHP.NET'"/>
+<xsl:param name="htmlhelp.button.next" select="0"/>
+<xsl:param name="htmlhelp.button.prev" select="0"/>
+<xsl:param name="htmlhelp.button.zoom" select="0"/>
+
+
+
+<!-- *************** HTML HELP INDEX CUSTOMIZINGS (HHK) **************** -->
+
+<!-- compile custom index file (.hhk) and insert two additional files into
+     index structure. These will be created later by splitting result title
+     page with contents in two -->
+<xsl:template match="book" mode="hhk">
+  <xsl:variable name="title">
+    <xsl:apply-templates select="." mode="title.markup"/>
+  </xsl:variable>
+  <xsl:variable name="bookhref">
+    <xsl:call-template name="href.target"/>
+  </xsl:variable>
+  <xsl:text>
+  </xsl:text>
+  <li><object type="text/sitemap">
+    <param name="Name" value="{normalize-space($title)}"/>
+    <param name="Local" value="_index.html"/>
+  </object></li>
+  <xsl:text>
+  </xsl:text>
+  <li><object type="text/sitemap">
+    <param name="Name" value="{normalize-space($title)}"/>
+    <param name="Local" value="{$bookhref}"/>
+  </object></li>
+  <xsl:apply-templates select="part|preface|chapter|appendix|article|reference|bibliography|colophon"
+                       mode="hhk"/>
+</xsl:template>
+
+<xsl:template match="part|preface|chapter|appendix|article|reference|refentry
+                     |sect1|sect2|sect3|sect4|sect5
+                     |section
+                     |book/glossary|article/glossary
+                     |book/bibliography|article/bibliography
+                     |colophon"
+              mode="hhk">
+  <xsl:variable name="ischunk"><xsl:call-template name="chunk"/></xsl:variable>
+  <xsl:if test="$ischunk='1'">
+    <xsl:variable name="title">
+      <xsl:apply-templates select="." mode="title.markup"/>
+    </xsl:variable>
+    <xsl:variable name="filename">
+      <xsl:call-template name="make-relative-filename">
+        <xsl:with-param name="base.dir" select="''"/>
+        <xsl:with-param name="base.name">
+          <xsl:apply-templates mode="chunk-filename" select="."/>
+        </xsl:with-param>
+      </xsl:call-template>
+    </xsl:variable>
+  <xsl:text>
+  </xsl:text>
+  <li><object type="text/sitemap">
+    <param name="Name" value="{normalize-space($title)}"/>
+    <param name="Local" value="{$filename}"/>
+  </object></li>
+  </xsl:if>
+
+  <xsl:apply-templates select="*" mode="hhk"/>
+</xsl:template>
+
+<xsl:template name="hhk">
+  <xsl:call-template name="write.chunk">
+    <xsl:with-param name="filename">
+      <xsl:if test="$manifest.in.base.dir != 0">
+        <xsl:value-of select="$base.dir"/>
+      </xsl:if>
+      <xsl:value-of select="$htmlhelp.hhk"/>
+    </xsl:with-param>
+    <xsl:with-param name="indent" select="'yes'"/>
+    <xsl:with-param name="content"><xsl:text disable-output-escaping="yes"><![CDATA[<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
+<!-- Sitemap 1.0 -->
+</HEAD><BODY>
+<OBJECT type="text/site properties">
+        <param name="Window Styles" value="0x800227">
+</OBJECT>
+
+<UL>]]></xsl:text>
+<xsl:if test="($htmlhelp.use.hhk != 0) and $htmlhelp.generate.index">
+  <xsl:choose>
+    <xsl:when test="$rootid != ''">
+      <xsl:apply-templates select="key('id',$rootid)" mode="hhk"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="/" mode="hhk"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:if>
+<xsl:text disable-output-escaping="yes"><![CDATA[</UL>
+</BODY></HTML>]]></xsl:text>
+    </xsl:with-param>
+    <xsl:with-param name="encoding" select="$htmlhelp.encoding"/>
+  </xsl:call-template>
+</xsl:template>
+
+<!-- Setup style for TOC window -->
+<xsl:template name="hhc-main">
+  <xsl:text disable-output-escaping="yes"><![CDATA[<HTML>
+<HEAD></HEAD>
+<BODY>
+
+<OBJECT type="text/site properties">
+      <param name="Window Styles" value="0x800227"/>
+]]></xsl:text>
+  <xsl:if test="$htmlhelp.hhc.folders.instead.books != 0">
+      <param name="ImageType" value="Folder"/>
+  </xsl:if>
+  <xsl:text disable-output-escaping="yes"><![CDATA[</OBJECT>
+
+<UL>]]></xsl:text>
+
+  <xsl:choose>
+    <xsl:when test="$rootid != ''">
+      <xsl:apply-templates select="key('id',$rootid)" mode="hhc"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="/" mode="hhc"/>
+    </xsl:otherwise>
+  </xsl:choose>
+
+  <xsl:text disable-output-escaping="yes"><![CDATA[</UL></BODY>
+</HTML>]]></xsl:text>
+</xsl:template>
+
+<xsl:template match="book" mode="hhc">
+  <xsl:variable name="title">
+    <xsl:if test="$htmlhelp.autolabel=1">
+      <xsl:variable name="label.markup">
+        <xsl:apply-templates select="." mode="label.markup"/>
+      </xsl:variable>
+      <xsl:if test="normalize-space($label.markup)">
+        <xsl:value-of select="concat($label.markup,$autotoc.label.separator)"/>
+      </xsl:if>
+    </xsl:if>
+    <xsl:apply-templates select="." mode="title.markup"/>
+  </xsl:variable>
+  <xsl:variable name="href">
+    <xsl:call-template name="href.target"/>
+  </xsl:variable>
+  <xsl:text>
+  </xsl:text>
+  <li><object type="text/sitemap">
+    <param name="Name" value="{normalize-space($title)}"/>
+    <param name="Local" value="_index.html"/>
+  </object></li>
+  <xsl:text>
+  </xsl:text>
+  <li><object type="text/sitemap">
+    <param name="Name" value="{normalize-space($title)}"/>
+    <param name="Local" value="{$href}"/>
+  </object></li>
+  <xsl:text>
+  </xsl:text>
+
+  <xsl:apply-templates select="part|reference|preface|chapter|bibliography|appendix|article|colophon|glossary"
+    		   mode="hhc"/>
+</xsl:template>
+
+
+<!-- [Next template is temporarily until patch to 1.66.1 is approved] -->
+<!-- https://sourceforge.net/tracker/index.php?func=detail&aid=1048856&group_id=21935&atid=373749 -->
+<xsl:template name="hhc">
+  <xsl:call-template name="write.chunk">
+    <xsl:with-param name="filename">
+      <xsl:if test="$manifest.in.base.dir != 0">
+        <xsl:value-of select="$base.dir"/>
+      </xsl:if>
+      <xsl:value-of select="$htmlhelp.hhc"/>
+    </xsl:with-param>
+    <xsl:with-param name="indent" select="'yes'"/>
+    <xsl:with-param name="content">
+      <xsl:call-template name="hhc-main"/>
+    </xsl:with-param>
+    <xsl:with-param name="encoding" select="$htmlhelp.encoding"/>
+  </xsl:call-template>
+</xsl:template>
+
+
+<xsl:param name="htmlhelp.only" select="1"/>
+<!--
+<xsl:param name="htmlhelp.only" select="1"/>
+htmlhelp.autolabel - chapter and section numbers in ToC - off
+
  -->
 
-<!-- Custom head content to make HTML files *small* -->
-<xsl:template name="head.content">
+
+<!-- *************** HH HTML FILES CUSTOMIZATIONS **************** -->
+<xsl:param name="label.from.part" select="1"/>
+
+<!-- *extra* slim HTML head from older templates to strip <link> tags -->
+<xsl:template name="html.head">
+  <head>
+    <xsl:call-template name="system.head.content"/>
+    <xsl:call-template name="head.content"/>
+    <xsl:call-template name="user.head.content"/>
+  </head>
+</xsl:template>
+
+<xsl:template name="user.head.content">
   <xsl:param name="node" select="."/>
-
-  <title>
-    <xsl:apply-templates select="$node" mode="object.title.markup.textonly"/>
-  </title>
   <script language="JavaScript1.2" src="_script.js"></script>
-
 </xsl:template>
 
 <!-- We need quite different body attributes than the defaults -->
@@ -44,16 +302,9 @@
   <xsl:attribute name="oncontextmenu">if(prefs_context_override){return false;}</xsl:attribute>
 </xsl:template>
 
-<!-- Our HTML head part is *extra* slim -->
-<xsl:template name="html.head">
-  <head>
-    <xsl:call-template name="head.content"/>
-  </head>
-</xsl:template>
-
-<!-- We need no header navigation (we'll need footer, so this is
-     why I have not used supress.navigation=1) --> 
-<xsl:template name="header.navigation" />
+<!-- We need no header navigation, but we'll need footer --> 
+<xsl:param name="suppress.navigation" select="0"/>
+<xsl:param name="suppress.header.navigation" select="1"/>
 
 <!-- Footer part with special table for our special needs ;) -->
 <xsl:template name="footer.navigation">
@@ -70,7 +321,7 @@
   <div id="pageNav">
   <table width="100%" border="0" cellspacing="10" cellpadding="0" class="navigation">
     <tr align="left" valign="middle"> 
-      <td>
+      <td width="30%">
         <xsl:if test="count($prev)>0">
           <span id="navPrev">
           <a accesskey="p">
@@ -80,19 +331,19 @@
               </xsl:call-template>
             </xsl:attribute>
             <xsl:text>&lt;&lt; </xsl:text>
-            <xsl:apply-templates select="$prev" mode="phpdoc.object.title"/>
+            <xsl:apply-templates select="$prev" mode="title.markup"/>
           </a>
           </span>
         </xsl:if>
       </td>
-      <td align="center">
+      <td align="center" width="40%">
         <span id="navPath">
         <xsl:apply-templates select="." mode="path.to.this.page">
           <xsl:with-param name="actpage" select="true()"/>
         </xsl:apply-templates>
         </span>
       </td>
-      <td align="right">
+      <td align="right" width="30%">
         <xsl:if test="count($next)>0">
           <span id="navNext">
           <a accesskey="n">
@@ -101,7 +352,7 @@
                 <xsl:with-param name="object" select="$next"/>
               </xsl:call-template>
             </xsl:attribute>
-            <xsl:apply-templates select="$next" mode="phpdoc.object.title"/>
+            <xsl:apply-templates select="$next" mode="title.markup"/>
             <xsl:text> &gt;&gt;</xsl:text>
           </a>
           </span>
@@ -121,7 +372,7 @@
   </div>
 </xsl:template>
 
-<!-- Try to figure out the path to this page from the main page -->
+<!-- Building path to this page from the main page -->
 <xsl:template match="*" mode="path.to.this.page">
   <xsl:param name="actpage" select="false()"/>
   <xsl:variable name="up" select="parent::*"/>
@@ -138,7 +389,7 @@
   <xsl:variable name="object.title">
     <xsl:choose>
       <xsl:when test="count($up)>0">
-        <xsl:apply-templates select="." mode="phpdoc.object.title"/>
+        <xsl:apply-templates select="." mode="title.markup"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:value-of select="'Main'"/>
@@ -165,280 +416,15 @@
   </xsl:choose>
 </xsl:template>
 
-<!-- This is the same as in DocBook XSL, except that we
-     print out a &raquo; HTML entity before the link and add
-     a CSS class to the link -->
-<xsl:template match="ulink" name="ulink">
-  <a class="ulink">
-    <xsl:if test="@id">
-      <xsl:attribute name="name">
-        <xsl:value-of select="@id"/>
-      </xsl:attribute>
-    </xsl:if>
-    <xsl:attribute name="href"><xsl:value-of select="@url"/></xsl:attribute>
-    <xsl:if test="$ulink.target != ''">
-      <xsl:attribute name="target">
-        <xsl:value-of select="$ulink.target"/>
-      </xsl:attribute>
-    </xsl:if>
-    <xsl:text disable-output-escaping="yes">&amp;raquo; </xsl:text>
-    <xsl:choose>
-      <xsl:when test="count(child::node())=0">
-        <xsl:value-of select="@url"/>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:apply-templates/>
-      </xsl:otherwise>
-    </xsl:choose>
-  </a>
-</xsl:template>
-
-<!-- Special reference page formatting for HH -->
-
-<!--  Function page sample:
-<h2 class="subheader">Format a local time/date. (PHP 3, PHP 4 &gt;= 4.0.0)<br>
-Usage: string date (string format, int [timestamp])<br></h2>
--->
-<xsl:template match="refnamediv">
-  <div class="{name(.)}">
-    <xsl:call-template name="anchor"/>
-    <h2 class="subheader">
-      <span id="funcPurpose"><xsl:value-of select="./refpurpose"/></span>
-      (<span id="funcAvail"><xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/></span>)
-      <br/>
-      <span id="funcUsage"><xsl:apply-templates select="../refsect1/methodsynopsis" mode="htmlhelp.methodsyn"/></span>
-    </h2>
-  </div>
-</xsl:template>
-
-<!-- Drop out constant "Description" -->
-<xsl:template match="refsect1/title"/>
-<xsl:template match="refsect1/refpurpose"/>
-
-<!-- Avoid printout of methosyns, where we do not want them,
-     but print out them in header -->
-<xsl:template match="methodsynopsis"/>
-<xsl:template match="methodsynopsis" mode="htmlhelp.methodsyn">
-  <xsl:apply-templates select="." mode="php"/><br/>
-</xsl:template>
-
-<!-- do not enclose <methodname> in a <tt> -->
-<xsl:template match="methodname">
-  <xsl:call-template name="inline.charseq"/>
-</xsl:template>
-
-<!-- Use simple bold text for admonitions -->
-<xsl:template name="nongraphical.admonition">
-  <div class="{name(.)}">
-    <xsl:if test="$admon.style">
-      <xsl:attribute name="style">
-        <xsl:value-of select="$admon.style"/>
-      </xsl:attribute>
-    </xsl:if>
-
-    <b>
-      <xsl:call-template name="anchor"/>
-      <xsl:apply-templates select="." mode="object.title.markup"/>
-      <xsl:text>: </xsl:text>
-    </b>
-
-    <xsl:apply-templates/>
-  </div>
-</xsl:template>
-
-<!-- Different table formatting for default simplelist -->
-<xsl:template match="simplelist">
-  <!-- with no type specified, the default is 'vert' -->
-  <xsl:call-template name="anchor"/>
-  <table border="0" cellspacing="1" cellpadding="2" class="datatable">
-    <xsl:call-template name="simplelist.vert">
-      <xsl:with-param name="cols">
-        <xsl:choose>
-          <xsl:when test="@columns">
-            <xsl:value-of select="@columns"/>
-          </xsl:when>
-          <xsl:otherwise>1</xsl:otherwise>
-        </xsl:choose>
-      </xsl:with-param>
-    </xsl:call-template>
-  </table>
-</xsl:template>
-
-<!-- This is a copy from tables.xsl, except that we have different
-     attributes for table than the default style sheets, provided
-     here in the second line literally, and as a default 0 border -->
-<xsl:template match="tgroup">
-  <table cellspacing="1" cellpadding="2" class="datatable">
-    <xsl:choose>
-      <!-- If there's a <?dbhtml table-summary="foo"?> PI, use it for
-           the HTML table summary attribute -->
-      <xsl:when test="processing-instruction('dbhtml')">
-        <xsl:variable name="summary">
-          <xsl:call-template name="dbhtml-attribute">
-            <xsl:with-param name="pis"
-                            select="processing-instruction('dbhtml')[1]"/>
-            <xsl:with-param name="attribute" select="'table-summary'"/>
-          </xsl:call-template>
-        </xsl:variable>
-        <xsl:if test="$summary != ''">
-          <xsl:attribute name="summary">
-            <xsl:value-of select="$summary"/>
-          </xsl:attribute>
-        </xsl:if>
-      </xsl:when>
-      <!-- Otherwise, if there's a title, use that -->
-      <xsl:when test="../title">
-        <xsl:attribute name="summary">
-          <xsl:value-of select="string(../title)"/>
-        </xsl:attribute>
-      </xsl:when>
-      <!-- Otherwise, forget the whole idea -->
-      <xsl:otherwise><!-- nevermind --></xsl:otherwise>
-    </xsl:choose>
-
-    <xsl:if test="../@pgwide=1">
-      <xsl:attribute name="width">100%</xsl:attribute>
-    </xsl:if>
-
-    <xsl:choose>
-      <xsl:when test="../@frame='none'">
-        <xsl:attribute name="border">0</xsl:attribute>
-      </xsl:when>
-      <xsl:when test="$table.borders.with.css != 0">
-        <xsl:attribute name="border">0</xsl:attribute>
-        <xsl:choose>
-          <xsl:when test="../@frame='topbot' or ../@frame='top'">
-            <xsl:attribute name="style">
-              <xsl:call-template name="border">
-                <xsl:with-param name="side" select="'top'"/>
-              </xsl:call-template>
-            </xsl:attribute>
-          </xsl:when>
-          <xsl:when test="../@frame='sides'">
-            <xsl:attribute name="style">
-              <xsl:call-template name="border">
-                <xsl:with-param name="side" select="'left'"/>
-              </xsl:call-template>
-              <xsl:call-template name="border">
-                <xsl:with-param name="side" select="'right'"/>
-              </xsl:call-template>
-            </xsl:attribute>
-          </xsl:when>
-        </xsl:choose>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:attribute name="border">0</xsl:attribute>
-      </xsl:otherwise>
-    </xsl:choose>
-
-    <xsl:variable name="colgroup">
-      <colgroup>
-        <xsl:call-template name="generate.colgroup">
-          <xsl:with-param name="cols" select="@cols"/>
-        </xsl:call-template>
-      </colgroup>
-    </xsl:variable>
-
-    <xsl:variable name="explicit.table.width">
-      <xsl:call-template name="dbhtml-attribute">
-        <xsl:with-param name="pis"
-                        select="../processing-instruction('dbhtml')[1]"/>
-        <xsl:with-param name="attribute" select="'table-width'"/>
-      </xsl:call-template>
-    </xsl:variable>
-
-    <xsl:variable name="table.width">
-      <xsl:choose>
-        <xsl:when test="$explicit.table.width != ''">
-          <xsl:value-of select="$explicit.table.width"/>
-        </xsl:when>
-        <xsl:when test="$default.table.width = ''">
-          <xsl:text>100%</xsl:text>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="$default.table.width"/>
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:variable>
-
-    <xsl:if test="$default.table.width != ''
-                  or $explicit.table.width != ''">
-      <xsl:attribute name="width">
-        <xsl:choose>
-          <xsl:when test="contains($table.width, '%')">
-            <xsl:value-of select="$table.width"/>
-          </xsl:when>
-          <xsl:when test="$use.extensions != 0
-                          and $tablecolumns.extension != 0">
-            <xsl:choose>
-              <xsl:when test="function-available('stbl:convertLength')">
-                <xsl:value-of select="stbl:convertLength($table.width)"/>
-              </xsl:when>
-              <xsl:when test="function-available('xtbl:convertLength')">
-                <xsl:value-of select="xtbl:convertLength($table.width)"/>
-              </xsl:when>
-              <xsl:otherwise>
-                <xsl:message terminate="yes">
-                  <xsl:text>No convertLength function available.</xsl:text>
-                </xsl:message>
-              </xsl:otherwise>
-            </xsl:choose>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:value-of select="$table.width"/>
-          </xsl:otherwise>
-        </xsl:choose>
-      </xsl:attribute>
-    </xsl:if>
-
-    <xsl:choose>
-      <xsl:when test="$use.extensions != 0
-                      and $tablecolumns.extension != 0">
-        <xsl:choose>
-          <xsl:when test="function-available('stbl:adjustColumnWidths')">
-            <xsl:copy-of select="stbl:adjustColumnWidths($colgroup)"/>
-          </xsl:when>
-          <xsl:when test="function-available('xtbl:adjustColumnWidths')">
-            <xsl:copy-of select="xtbl:adjustColumnWidths($colgroup)"/>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:message terminate="yes">
-              <xsl:text>No adjustColumnWidths function available.</xsl:text>
-            </xsl:message>
-          </xsl:otherwise>
-        </xsl:choose>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:copy-of select="$colgroup"/>
-      </xsl:otherwise>
-    </xsl:choose>
-
-    <xsl:apply-templates select="thead"/>
-    <xsl:apply-templates select="tbody"/>
-    <xsl:apply-templates select="tfoot"/>
-
-    <xsl:if test=".//footnote">
-      <tbody class="footnotes">
-        <tr>
-          <td colspan="{@cols}">
-            <xsl:apply-templates select=".//footnote" 
-                                 mode="table.footnote.mode"/>
-          </td>
-        </tr>
-      </tbody>
-    </xsl:if>
-  </table>
-</xsl:template>
-
 <!-- output formal object titles enclosed in <h3> tags -->
 <xsl:template name="formal.object.heading">
+  <xsl:param name="object" select="."/>
   <h3 class="formalhead">
     <xsl:call-template name="anchor"/>
-    <xsl:apply-templates select="." mode="object.title.markup">
+    <xsl:apply-templates select="$object" mode="object.title.markup">
       <xsl:with-param name="allow-anchors" select="1"/>
     </xsl:apply-templates>
   </h3>
 </xsl:template>
 
 </xsl:stylesheet>
-
