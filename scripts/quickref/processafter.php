@@ -24,7 +24,7 @@ foreach($lines as $key => $line) {
 	$lines[$key]=array_shift(explode("//", trim($line)));
 }
 
-$leave=array("cpd", "dcp", "for", "document", "forms", "break", "if", "continue", "var", "style", "innerHTML", "value", "getElementById", "autocomplete", "onblur", "onfocus", "onkeyup", "onkeydown", "onkeypress", "display", "pattern", "show", "left", "top", "event", "evt", "ev", "which", "length", "all", "navigator", "userAgent", "toLowerCase", "indexOf", "width", "else", "write", "split", "join", "charAt", "substring", "function", "return", "new", "Array", "switch", "case", "push", "pop", "default", "true", "false", "offsetLeft", "offsetParent", "while", "null", "tagName", "clientLeft", "parseInt", "border", "isNaN", "getAttribute", "charCode", "keyCode", "cc", "test", "u57385", "u57386");
+$leave=array("cpd", "dcp", "for", "document", "forms", "break", "if", "continue", "var", "style", "innerHTML", "value", "getElementById", "autocomplete", "onblur", "onfocus", "onkeyup", "onkeydown", "onkeypress", "display", "pattern", "show", "left", "top", "event", "evt", "ev", "which", "length", "all", "navigator", "userAgent", "toLowerCase", "indexOf", "width", "else", "write", "split", "join", "charAt", "substring", "function", "return", "new", "Array", "switch", "case", "push", "pop", "default", "true", "false", "offsetLeft", "offsetParent", "while", "null", "tagName", "clientLeft", "parseInt", "border", "isNaN", "getAttribute", "charCode", "keyCode", "cc", "setTimeout", "fh_EBlurT");
 
 $text=implode(" ", $lines);
 

@@ -192,11 +192,8 @@ function fh_EFocus()
     }
 }
 
-function fh_EBlur()
-{
-    f_p.autocomplete="on";
-    fh_HideAll();
-}
+function fh_EBlur() { setTimeout("fh_EBlurT()", 200); }
+function fh_EBlurT() { f_p.autocomplete="on"; fh_HideAll(); }
 
 function fh_EKeyPress(ev)
 {
