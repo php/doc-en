@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.3 2004-10-19 15:11:09 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.4 2004-10-30 13:50:50 nlopess Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -21,6 +21,8 @@
 <!-- configure/able/ parameters -->
 <xsl:include href="htmlhelp-config.xsl"/>
 
+<xsl:param name="chunker.output.doctype-system" select="'http://www.w3.org/TR/html4/loose.dtd'"/>
+<xsl:param name="chunker.output.doctype-public" select="'-//W3C//DTD HTML 4.01 Transitional//EN'"/>
 
 <xsl:param name="base.dir" select="'htmlhelp/html/'"/>
 <!-- project files for HTML Help are written into base.dir instead of current directory -->
@@ -425,5 +427,8 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
     </xsl:apply-templates>
   </h3>
 </xsl:template>
+
+<xsl:template match="titleabbrev" />
+<xsl:template match="collab" />
 
 </xsl:stylesheet>
