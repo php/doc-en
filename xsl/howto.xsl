@@ -3,7 +3,7 @@
 
   HOWTO specific stylesheet based on Docbook XSL 1.66.1
 
-  $Id: howto.xsl,v 1.1 2004-10-01 14:23:21 techtonik Exp $
+  $Id: howto.xsl,v 1.2 2004-10-01 16:41:50 techtonik Exp $
 
 -->
 <!-- 
@@ -37,7 +37,7 @@
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
-  <xsl:import href="./db/html/chunk.xsl"/>
+  <xsl:import href="./docbook/html/chunk.xsl"/>
 
 
 
