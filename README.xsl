@@ -62,12 +62,6 @@ processor. Run:
 
 For getting PDF from FO file you must run some FO processor on FO file.
 
-Current HTML Help support uses slightly updated version of HTML Help
-stylesheets. Download file http://www.kosek.cz/temp/htmlhelp.zip and
-place its content over directory contrib/htmlhelp in standard
-stylesheets distribution. In near future, this modification will be
-part of standard XSL stylesheet distribution.
-
 
 PERFORMANCE COMMENTS:
 ---------------------
@@ -82,9 +76,9 @@ LIMITATIONS:
 ------------
 
 Not all customization from DSSSL are backported to XSL, so some things
-does not work for now. Hope, this will change in the near future.
+as pretty as in DSSSL output. Hope, this will change in the near future.
 
 
 
 Jirka Kosek <jirka@kosek.cz>
-Last modified $Date: 2001-08-05 09:24:09 $
+Last modified $Date: 2001-08-13 15:11:06 $
