@@ -3,6 +3,8 @@
 
   html.xsl: Chunked HTML specific stylesheet
 
+  $Id: html.xsl,v 1.2 2003-04-19 17:21:57 goba Exp $
+
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0">
@@ -10,7 +12,8 @@
 <xsl:import href="./docbook/html/chunkfast.xsl"/>
 <xsl:include href="html-common.xsl"/>
 
-
+<!-- Output files to the 'html' dir, and name them
+     using the IDs in documents -->
 <xsl:param name="base.dir" select="'html/'"/>
 <xsl:param name="use.id.as.filename" select="1"/>
 
