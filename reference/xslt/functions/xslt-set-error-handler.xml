@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
 <!-- splitted from ./en/functions/xslt.xml, last change in rev 1.1 -->
   <refentry id="function.xslt-set-error-handler">
    <refnamediv>
@@ -14,9 +14,96 @@
        <methodparam><type>mixed</type><parameter>handler</parameter></methodparam>
      </methodsynopsis>
     <para>
-     Set an error handler function for the XSLT processor given by <parameter>xh</parameter>,
-     this function will be called whenever an error occurs in the XSLT transformation
-     (this function is also called for notices).
+     Set an error handler function for the XSLT processor given by 
+     <parameter>xh</parameter>, this function will be called whenever an 
+     error occurs in the XSLT transformation (this function is also called
+     for notices).
+    </para>
+    <para>
+     The user function needs to accept four parameters: the XSLT processor,
+     the error level, the error code and an array of messages. The function 
+     can be shown as:
+     <methodsynopsis>
+      <methodname><replaceable>error_handler</replaceable></methodname>
+      <methodparam><type>resource</type><parameter>xh</parameter></methodparam>
+      <methodparam><type>int</type><parameter>error_level</parameter></methodparam>
+      <methodparam><type>int</type><parameter>error_code</parameter></methodparam>
+      <methodparam><type>array</type><parameter>messages</parameter></methodparam>
+     </methodsynopsis>
+    </para>
+    <para>
+     <example>
+      <title><function>xslt_set_error_handler</function> Example</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+// Our XSLT error handler
+function xslt_error_handler($handler, $errno, $level, $info) 
+{
+  // for now, let's just see the arguments
+  var_dump(func_get_args());
+}
+
+// XML content :
+$xml='<?xml version="1.0"?>
+<para>
+ oops, I misspelled the closing tag
+</pata>';
+
+// XSL content :
+$xsl='<?xml version="1.0"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:template match="/">
+   <strong><xsl:value-of select="para"/></strong>
+</xsl:template>
+</xsl:stylesheet>';
+
+$xh = xslt_create();
+
+xslt_set_error_handler($xh, "xslt_error_handler");
+
+echo xslt_process($xh, 'arg:/_xml', 'arg:/_xsl',
+                  NULL, array("/_xml" => $xml, "/_xsl" => $xsl));
+
+?>
+]]>
+      </programlisting>
+      <para>
+       This example will output something similar to:
+      </para>
+      <screen>
+<![CDATA[
+array(4) {
+  [0]=>
+  resource(1) of type (XSLT Processor)
+  [1]=>
+  int(3)
+  [2]=>
+  int(0)
+  [3]=>
+  array(6) {
+    ["msgtype"]=>
+    string(5) "error"
+    ["code"]=>
+    string(1) "2"
+    ["module"]=>
+    string(9) "Sablotron"
+    ["URI"]=>
+    string(9) "arg:/_xml"
+    ["line"]=>
+    string(1) "4"
+    ["msg"]=>
+    string(34) "XML parser error 7: mismatched tag"
+  }
+}
+]]>
+      </screen>
+     </example>
+    </para>
+    <para>
+     Instead of a function name, an array containing an object reference and
+     a method name can also be supplied. 
     </para>
    </refsect1>
   </refentry>
