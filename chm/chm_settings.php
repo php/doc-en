@@ -9,16 +9,28 @@ $DEFAULT_FONT = "Arial,10,0";
 // Font list: http://www.microsoft.com/office/ork/xp/three/inte03.htm
 
 $LANGUAGES = array(
+    "hk"    => array(
+                   "langcode" => "0xc04 Hong Kong Cantonese",
+                   "preferred_charset" => "CP950",
+                   "mime_charset_name" => "Big5",
+                   "preferred_font" => "MingLiu,10,0"
+               ),
     "tw"    => array(
                    "langcode" => "0x404 Traditional Chinese",
                    "preferred_charset" => "CP950",
                    "mime_charset_name" => "Big5",
-                   "preferred_font" => "PMingLiu,10,0"
+                   "preferred_font" => "MingLiu,10,0"
                ),
     "cs"    => array(
                    "langcode" => "0x405 Czech",
                    "preferred_charset" => "Windows-1250",
                    "mime_charset_name" => "Windows-1250",
+                   "preferred_font" => $DEFAULT_FONT,
+               ),
+    "da"    => array(
+                   "langcode" => "0x406 Danish",
+                   "preferred_charset" => "Windows-1252",
+                   "mime_charset_name" => "Windows-1252",
                    "preferred_font" => $DEFAULT_FONT,
                ),
     "de"    => array(
@@ -139,7 +151,7 @@ $LANGUAGES = array(
                    "langcode" => "0x804 Simplified Chinese",
                    "preferred_charset" => "CP936",
                    "mime_charset_name" => "gb2312",
-                   "preferred_font" => "PMingLiu,10,0"
+                   "preferred_font" => "MingLiu,10,0"
                )
 );
 ?>
