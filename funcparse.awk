@@ -9,6 +9,7 @@ BEGIN { parse=0; FS="[\"(,]"; }
 /^[[:space:]]{0}/ { parse=0; }
 /^[[:space:]]*{/ { if(parse) { print $2; } }
 /^[[:space:]]*PHP_FE/ { if(parse) { print $2; } }
+/^[[:space:]]*PHP_FALIAS/ { if(parse) { print $2; } }
 /^[[:space:]]*PHP_NAMED_FE/ { if(parse) { print $2; } }
 /^[[:space:]]*ZEND_FE/ { if(parse) { print $2; } }
 /^[[:space:]]*cybercash_functions/ { if (parse) { print $2; } }
