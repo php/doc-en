@@ -26,22 +26,26 @@ echo "<" . "?xml version='1.0' encoding='iso-8859-1'?" . ">\n";
  <index id="index.functions">
   <title>&FunctionIndex;</title>
 <?php
-$letter=" ";
 $functions = file($HTTP_SERVER_VARS['argv'][1]);
 usort($functions,"strcasecmp");
+$letter = ' ';
 foreach ( $functions as $funcentry ) {
-	list($function,$description) = explode(" - ",$funcentry);
-	$function=strtolower(trim($function));
-	if(!ereg("^[[:alnum:]]",$function)) continue;
-	if($function{0}!=$letter) {
-		if($letter!=" ") {
-			echo "  </indexdiv>\n";
-		}
-		$letter=$function{0};
-		echo "  <indexdiv>\n";
-		echo "   <title>".strtoupper($letter)."</title>\n";
-	}
-	echo "   <indexentry><primaryie><function>$function</function></primaryie></indexentry>\n";
+    list($function,$description) = explode(" - ",$funcentry);
+
+    if (!ereg("::|->",$function)) {
+        strtolower(trim($function));
+    }
+    if (!ereg("^[[:alnum:]]",$function)) continue;
+
+    if (strtolower($function{0}) != $letter) {
+        if ($letter != ' ') {
+            echo "  </indexdiv>\n";
+        }
+        $letter = strtolower($function{0});
+	echo "  <indexdiv>\n";
+	echo "   <title>".strtoupper($letter)."</title>\n";
+    }
+    echo "   <indexentry><primaryie><function>$function</function></primaryie></indexentry>\n";
 }
 ?>
   </indexdiv>
