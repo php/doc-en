@@ -5,7 +5,7 @@
 searchenabled = true;
 if (myphpnet = getCookie('MYPHPNET')) {
   myphpnet_parts = myphpnet.split(",");
-  if (myphpnet_parts.length > 3 && myphpnet_parts[3] == '0') {
+  if (myphpnet_parts.length > 3 && myphpnet_parts[3] == '1') {
     searchenabled = false;
   }
 }
