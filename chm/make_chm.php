@@ -388,7 +388,7 @@ function convertCharset($buf)
 
     if ($charset != $INTERNAL_CHARSET) {
         if (function_exists("iconv")) {
-            $buf = iconv($INTERNAL_CHARSET, $charset, $buf);
+            $buf = iconv($INTERNAL_CHARSET, "$charset//TRANSLIT", $buf);
         } elseif (function_exists("mb_convert_encoding")) {
             $buf = mb_convert_encoding($buf, $charset, $INTERNAL_CHARSET);
         } elseif (preg_match("/^UTF-?8$/i", $INTERNAL_CHARSET) && preg_match("/^(ISO-8859-1|WINDOWS-1252)$/i", $charset)) {
