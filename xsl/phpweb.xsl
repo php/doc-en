@@ -3,7 +3,7 @@
 
   PHP.net web site specific stylesheet
 
-  $Id: phpweb.xsl,v 1.3 2003-04-21 12:50:55 goba Exp $
+  $Id: phpweb.xsl,v 1.4 2003-04-21 12:52:28 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -39,7 +39,7 @@
  </xsl:call-template>
   
  <xsl:text disable-output-escaping="yes">,
-    'prev' =&lt; </xsl:text>
+    'prev' =&gt; </xsl:text>
 
  <xsl:call-template name="phpdoc.nav.array">
   <xsl:with-param name="node" select="$prev"/>
