@@ -2,6 +2,7 @@
 
 set_time_limit(0);
 error_reporting(E_ALL);
+ob_end_clean();
 ob_implicit_flush();
 
 $en_revs = array();
@@ -22,6 +23,7 @@ $en_revs = array();
   // get max. revision for a region in a cvs file 
   // (witch simple data caching)
   function cvs_max_rev($filename,$start,$end) {
+		return array(0,0,0);
     static $lastfile = "";
     static $array = array();
     
@@ -74,11 +76,6 @@ function convert_file($dir,$file) {
 	if(file_exists($base)) exec("rm -rf $base"); // cleanup
 	mkdir($base,0777);
 	mkdir("$base/functions",0777);
-	
-	// append filename to function entity list
-	$fent= fopen("$base/functions.ent","a");
-	fwrite($fent,"<!ENTITY $name.entities SYSTEM '$base/functions.ent'>\n");
-	fclose($fent);
 
 	// create master documentation file
 	$fmaster= fopen("$base/reference.xml","w");
@@ -123,7 +120,7 @@ function convert_file($dir,$file) {
 			$id=ereg_replace("^function\.","",$id);
 
 			// register entity
-			$entity[]="&$base.$id;";
+			$entity[]=$id;
 
 			// open new output stream for this function
 			$fslave=fopen("$base/functions/$id.xml","w");
@@ -190,9 +187,14 @@ vi: ts=1 sw=1
 
 			// write entity file
 			sort($entity);
+      $fentities = fopen("$base/functions.xml","w");
+      foreach($entity as $key => $value) {
+				fputs($fentities,"&reference.$name.functions.".basename($value).";\n");
+			}
+			fclose($fentities);
 
 			// generate entity include for entity file
-			fwrite($fout,"&$name.entities;\n\n");
+			fwrite($fout,"&reference.$name.functions;\n\n");
       fwrite($fout,$line);
 		} else {
 			// default -> just copy to current output stream,
