@@ -788,7 +788,8 @@ Note: Also be sure to double check the documentation before commit as this
          maybe --enable-{ext} OR a directory path is required or optional
       d) If you're writing over files in CVS, be 100% sure to check unified
          diffs before commit!
-      e) Report problems to phpdoc@lists.php.net
+      e) Run script check-references.php and add &amp; where required.
+      f) Report problems to phpdoc@lists.php.net
 NOTES;
 ?>
 
