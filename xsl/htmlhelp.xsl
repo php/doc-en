@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.6 2004-11-01 12:17:49 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.7 2004-11-01 16:29:45 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -87,9 +87,10 @@ set       toc
 <xsl:param name="htmlhelp.button.options" select="1"/>
 <xsl:param name="htmlhelp.button.print" select="1"/>
 <!-- next jump button can be discussed too -->
-<xsl:param name="htmlhelp.button.jump1" select="1"/>
+<!-- <xsl:param name="htmlhelp.button.jump1" select="1"/>
 <xsl:param name="htmlhelp.button.jump1.url" select="'http://www.php.net'"/>
 <xsl:param name="htmlhelp.button.jump1.title" select="'PHP.NET'"/>
+FIX: hhc.exe chokes on this link.. need additional redirection page -->
 <xsl:param name="htmlhelp.button.next" select="0"/>
 <xsl:param name="htmlhelp.button.prev" select="0"/>
 <xsl:param name="htmlhelp.button.zoom" select="0"/>
