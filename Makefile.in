@@ -1,0 +1,234 @@
+# +----------------------------------------------------------------------+
+# | PHP HTML Embedded Scripting Language Version 3.0                     |
+# +----------------------------------------------------------------------+
+# | Copyright (c) 1997,1998 PHP Development Team (See Credits file)      |
+# +----------------------------------------------------------------------+
+# | This program is free software; you can redistribute it and/or modify |
+# | it under the terms of one of the following licenses:                 |
+# |                                                                      |
+# |  A) the GNU General Public License as published by the Free Software |
+# |     Foundation; either version 2 of the License, or (at your option) |
+# |     any later version.                                               |
+# |                                                                      |
+# |  B) the PHP License as published by the PHP Development Team and     |
+# |     included in the distribution in the file: LICENSE                |
+# |                                                                      |
+# | This program is distributed in the hope that it will be useful,      |
+# | but WITHOUT ANY WARRANTY; without even the implied warranty of       |
+# | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        |
+# | GNU General Public License for more details.                         |
+# |                                                                      |
+# | You should have received a copy of both licenses referred to here.   |
+# | If you did not, or have any questions about PHP licensing, please    |
+# | contact core@php.net.                                                |
+# +----------------------------------------------------------------------+
+# | Authors: Stig Bakken <ssb@fast.no>                                   |
+# +----------------------------------------------------------------------+
+
+#
+# $Id$
+#
+
+VPATH=@srcdir@
+srcdir=@srcdir@
+
+VERSION="@PHP_VERSION@"
+HTML_STYLESHEET=$(srcdir)/html.dsl
+PHPWEB_STYLESHEET=$(srcdir)/phpweb.dsl
+HOWTO_STYLESHEET=$(srcdir)/howto.dsl
+PRINT_STYLESHEET=@DOCBOOK_PRINT@
+
+all: html
+
+PREFACE=preface.sgml \
+	bookinfo.sgml
+
+APPENDICES=appendices/migration.sgml \
+           appendices/escaping.sgml \
+           appendices/regexp.sgml \
+           appendices/http-stuff.sgml \
+           appendices/history.sgml \
+           appendices/debugger.sgml \
+           appendices/phpdevel.sgml
+
+CHAPTERS=chapters/copyright.sgml \
+         chapters/intro.sgml \
+         chapters/config.sgml \
+         chapters/install.sgml \
+         chapters/features.sgml \
+         chapters/lang-syntax.sgml
+
+FUNCREF= \
+	functions/array.sgml \
+	functions/adabas.sgml \
+	functions/bc.sgml \
+	functions/datetime.sgml \
+	functions/dbase.sgml \
+	functions/dbm.sgml \
+	functions/dl.sgml \
+	functions/dir.sgml \
+	functions/exec.sgml \
+	functions/filepro.sgml \
+	functions/filesystem.sgml \
+	functions/http.sgml \
+	functions/hw.sgml \
+	functions/ibase.sgml \
+	functions/ifx.sgml \
+	functions/image.sgml \
+	functions/imap.sgml \
+	functions/ldap.sgml \
+	functions/mail.sgml \
+	functions/math.sgml \
+	functions/misc.sgml \
+	functions/mcrypt.sgml \
+	functions/msql.sgml \
+	functions/mysql.sgml \
+	functions/nis.sgml \
+	functions/sybase.sgml \
+	functions/network.sgml \
+	functions/oci8.sgml \
+	functions/oracle.sgml \
+	functions/pcre.sgml \
+	functions/pgsql.sgml \
+	functions/info.sgml \
+	functions/regex.sgml \
+	functions/sem.sgml \
+	functions/solid.sgml \
+	functions/snmp.sgml \
+	functions/strings.sgml \
+	functions/uodbc.sgml \
+	functions/url.sgml \
+	functions/var.sgml \
+	functions/wddx.sgml \
+	functions/zlib.sgml
+
+FILES=$(PREFACE) $(APPENDICES) $(CHAPTERS) $(FUNCREF)
+ONLINE_MANUAL=*.php3
+DIST_FILES=manual.zip manual.tar.gz manual.rtf.gz bigmanual.html.gz \
+	manual.prc manual.txt.gz
+MIRROR_TARGETS=php3/manual.php3 $(DIST_FILES) html/manual.html
+
+html.dsl: html.dsl.in ../config.status
+	cd .. && CONFIG_FILES=doc/$@ CONFIG_HEADERS= ./config.status
+
+print.dsl: print.dsl.in ../config.status
+	cd .. && CONFIG_FILES=doc/$@ CONFIG_HEADERS= ./config.status
+
+phpweb.dsl: phpweb.dsl.in ../config.status
+	cd .. && CONFIG_FILES=doc/$@ CONFIG_HEADERS= ./config.status
+
+manual.sgml: .manual.sgml
+.manual.sgml: $(FILES)
+	touch .manual.sgml
+
+html: html/manual.html
+phpweb: php3/manual.php3
+rtf: manual.rtf
+dvi: manual.dvi
+ps: manual.ps
+howto: howto.html
+
+Makefile: $(srcdir)/Makefile.in ../config.status
+	cd .. && CONFIG_FILES=doc/$@ CONFIG_HEADERS= ./config.status
+
+checkdoc: $(srcdir)/checkdoc ../config.status
+	cd .. && CONFIG_FILES=doc/$@ CONFIG_HEADERS= ./config.status
+
+mirror-files: $(MIRROR_TARGETS)
+
+sync: mirror-files
+	-rsync -azvc $(ONLINE_MANUAL) www.php.net:/local/Web/sites/phpweb/manual/.
+	-rsync -azvc --exclude bigmanual.html *.html www.php.net:/local/Web/sites/phpweb/manual/html/.
+	-rsync -azvc $(DIST_FILES) www.php.net:/local/Web/sites/phpweb/distributions/.
+
+sync-no: mirror-files
+	-rsync -vc $(ONLINE_MANUAL) ../../phpweb/manual/
+	-rsync --exclude bigmanual.html -vc *.html ../../phpweb/manual/html/
+	-rsync -vc $(DIST_FILES) ../../phpweb/distributions/
+
+commit-no: sync-no
+	(cd ../../phpweb/manual; \
+	files=`cvs -qn update | grep '^?' | cut -c3-`; \
+	test -n "$$files" && cvs add $$files; \
+	cvs commit -m '$(MESSAGE)')
+	(cd ../../phpweb/distributions; cvs commit -m '$(MESSAGE)')
+
+snapshot: manual-snapshot.tar.gz
+
+manual-snapshot.tar.gz: bigmanual.html html/manual.html manual.rtf manual.txt
+	tar -cvzf $@ bigmanual.html html/*.html manual.rtf manual.txt
+
+status: checkdoc
+	$(srcdir)/checkdoc -s > $(srcdir)/status.txt
+	$(srcdir)/checkdoc -m > $(srcdir)/missing.txt
+
+makedoc: makedoc.cc
+	g++ -o makedoc makedoc.cc
+
+bigmanual.html: $(srcdir)/manual.sgml $(HTML_STYLESHEET)
+	jade -V nochunks -d $(HTML_STYLESHEET) -t sgml $(srcdir)/manual.sgml > $@
+
+bigmanual.html.gz: bigmanual.html
+	gzip -c $< > $@
+
+manual.rtf.gz: manual.rtf
+	gzip -c $< > $@
+
+manual.txt.gz: manual.txt
+	gzip -c $< > $@
+
+html/manual.html: $(srcdir)/manual.sgml $(HTML_STYLESHEET)
+	@test -d html || mkdir html
+	jade -d $(HTML_STYLESHEET) -V use-output-dir -t sgml $(srcdir)/manual.sgml
+
+php3/manual.php3: $(srcdir)/manual.sgml $(PHPWEB_STYLESHEET)
+	@test -d php3 || mkdir php3
+	-jade -d $(PHPWEB_STYLESHEET) -V use-output-dir -t sgml $(srcdir)/manual.sgml
+
+manual.txt: bigmanual.html
+	lynx -nolist -dump file:`pwd`/bigmanual.html > manual.txt
+
+manual.prc: manual.txt makedoc
+	./makedoc -b manual.txt manual.prc 'PHP3 Manual'
+
+manual.zip: $(srcdir)/html/manual.html
+	-rm -f $@ && (cd html; zip -9 -q $@ *.html)
+
+manual.tar.gz: $(srcdir)/html/manual.html
+	-rm -f $@ && (cd html; tar -cf - *.html) | gzip > manual.tar.gz
+
+howto.html: $(srcdir)/howto.sgml $(HOWTO_STYLESHEET) global.ent
+	jade -d $(HOWTO_STYLESHEET) -t sgml $(srcdir)/howto.sgml
+
+tex latex: $(srcdir)/manual.tex
+
+# File endings we are going to define general rules for:
+.SUFFIXES: .html .sgml .tex .dvi .ps .rtf
+
+# General rules:
+.sgml.tex:
+	jade -d $(PRINT_STYLESHEET) -t tex $<
+
+.sgml.rtf:
+	jade -d $(PRINT_STYLESHEET) -t rtf $<
+
+.tex.dvi:
+	jadetex $<
+
+.dvi.ps:
+	dvips -o $@ $<
+
+test: manual.sgml
+	nsgmls -s $<
+
+clean:
+	( \
+	cd $(srcdir); \
+	rm -rf html php3; \
+	rm -f manual.txt [a-z]*.html manual.rtf manual.info \
+	rm -f manual.zip manual.tar.gz sync-no commit-no .manual.sgml \
+	rm -f manual.txt manual.prc makedoc *.manifest \
+	rm -f *.aux *.tex *.log *.dvi *.toc *.ps \
+	rm -f status.txt missing.txt checkdoc \
+	rm -f *.php3 $(GENREF) \
+	)
