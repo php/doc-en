@@ -142,8 +142,8 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 	$file = file_get_contents($filename);
 	
 	// references
-	preg_match_all("~^[ \t]*(?:ZEND|PHP)_FE\\((\\w+)\\s*,\\s*(\\w+)\\s*[,)]~mS", $file, $matches, PREG_SET_ORDER);
-	preg_match_all("~^[ \t]*(?:ZEND|PHP)_FALIAS\\((\\w+)\\s*,[^,]+,\\s*(\\w+)\\s*[,)]~mS", $file, $matches2, PREG_SET_ORDER);
+	preg_match_all("~^[ \t]*(?:ZEND|PHP)_FE\\((\\w+)\\s*,\\s*(\\w+)\\s*[,)]~m", $file, $matches, PREG_SET_ORDER);
+	preg_match_all("~^[ \t]*(?:ZEND|PHP)_FALIAS\\((\\w+)\\s*,[^,]+,\\s*(\\w+)\\s*[,)]~m", $file, $matches2, PREG_SET_ORDER);
 	foreach (array_merge($matches, $matches2) as $val) {
 		if ($val[2] != "NULL") {
 			if (empty($number_refs[$val[2]])) {
@@ -154,7 +154,7 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 	}
 	
 	// read parameters
-	preg_match_all('~^(?:ZEND|PHP)(?:_NAMED)?_FUNCTION\\(([^)]+)\\)(.*)^\\}~msSU', $file, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE); // }}} is not in all sources so ^} is used instead
+	preg_match_all('~^(?:ZEND|PHP)(?:_NAMED)?_FUNCTION\\(([^)]+)\\)(.*)^\\}~msU', $file, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE); // }}} is not in all sources so ^} is used instead
 	foreach ($matches as $val) {
 		$function_name = strtolower(trim($val[1][0]));
 		$lineno = substr_count(substr($file, 0, $val[2][1]), "\n") + 1;
@@ -163,7 +163,7 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 		// types and optional
 		if (!in_array($function_name, $difficult_params)
 		&& strpos($function_body, 'zend_parse_parameters_ex') === false // indicate difficulty
-		&& preg_match('~.*zend_parse_parameters\\([^,]*,\\s*"([^"]*)"~sS', $function_body, $matches2) // .* to catch last occurence
+		&& preg_match('~.*zend_parse_parameters\\([^,]*,\\s*"([^"]*)"~s', $function_body, $matches2) // .* to catch last occurence
 		// zend_parse_method_parameters is not yet supported
 		) {
 			$source_types[$function_name] = array($matches2[1], $filename, $lineno);
@@ -171,19 +171,19 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 		
 			// arguments count
 			$zend_num_args = "ZEND_NUM_ARGS()";
-			if (preg_match('~([a-zA-Z0-9_.]+)\\s*=\\s*ZEND_NUM_ARGS()~S', $function_body, $matches2)) { // int argc = ZEND_NUM_ARGS();
+			if (preg_match('~([a-zA-Z0-9_.]+)\\s*=\\s*ZEND_NUM_ARGS()~', $function_body, $matches2)) { // int argc = ZEND_NUM_ARGS();
 				$zend_num_args = $matches2[1];
 			}
 			$zend_num_args = preg_quote($zend_num_args, "~");
-			if (preg_match("~^([ \t]+)switch\\s*\\(\\s*$zend_num_args\\s*\\)(.*)^\\1\\}~msSU", $function_body, $matches2) && preg_match('~\\bdefault\\s*:.*WRONG_PARAM_COUNT~sS', $matches2[2])) {
+			if (preg_match("~^([ \t]+)switch\\s*\\(\\s*$zend_num_args\\s*\\)(.*)^\\1\\}~msU", $function_body, $matches2) && preg_match('~\\bdefault\\s*:.*WRONG_PARAM_COUNT~s', $matches2[2])) {
 				$source_arg_counts[$function_name] = array(array_fill(0, $max_args+1, true), $filename, $lineno);
 				$source_arg_count =& $source_arg_counts[$function_name][0];
 				$switch = $matches2[2];
-				preg_match_all('~\\bcase\\s+([0-9]+)\\s*:~S', $switch, $matches2);
+				preg_match_all('~\\bcase\\s+([0-9]+)\\s*:~', $switch, $matches2);
 				foreach ($matches2[1] as $val) {
 					unset($source_arg_count[$val]);
 				}
-			} elseif (preg_match_all("~(?:([0-9]+)\\s*($operators)\\s*$zend_num_args|$zend_num_args\\s*($operators)\\s*([0-9]+))(?=[^}]+WRONG_PARAM_COUNT)~S", $function_body, $matches2, PREG_SET_ORDER)) { //! should differentiate between || and &&
+			} elseif (preg_match_all("~(?:([0-9]+)\\s*($operators)\\s*$zend_num_args|$zend_num_args\\s*($operators)\\s*([0-9]+))(?=[^}]+WRONG_PARAM_COUNT)~", $function_body, $matches2, PREG_SET_ORDER)) { //! should differentiate between || and &&
 				$source_arg_counts[$function_name] = array(array(), $filename, $lineno);
 				$source_arg_count =& $source_arg_counts[$function_name][0];
 				foreach ($matches2 as $val) {
@@ -226,7 +226,7 @@ echo "Sources were read.\n";
 // compare with documentation
 $counts = array("refs" => 0, "types" => 0, "arg_counts" => 0);
 foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
-	if (preg_match('~^(.*<methodsynopsis>(.*))<methodname>([^<]+)<(.*)</methodsynopsis>~sSU', file_get_contents($filename), $matches)) {
+	if (preg_match('~^(.*<methodsynopsis>(.*))<methodname>([^<]+)<(.*)</methodsynopsis>~sU', file_get_contents($filename), $matches)) {
 		$lineno = substr_count($matches[1], "\n") + 1;
 		$return_type = $matches[2];
 		$function_name = strtolower(trim($matches[3]));
@@ -242,7 +242,7 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 		
 		// references
 		$source_ref = (isset($source_refs[$function_name]) ? $source_refs[$function_name] : null);
-		preg_match_all('~<parameter( role="reference")?>~S', $methodsynopsis, $matches);
+		preg_match_all('~<parameter( role="reference")?>~', $methodsynopsis, $matches);
 		$byref = array();
 		foreach ($matches[1] as $key => $val) {
 			if ($val) {
