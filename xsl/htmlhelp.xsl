@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id$
+  $Id: htmlhelp.xsl,v 1.1 2004-10-18 20:20:32 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
