@@ -35,8 +35,12 @@ class CHtmlExtParse extends CHtmlParse{
 		
 		// fix functions '()':
 		if($tmp = $this->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","refsect1")))){
-			$this->ATE[$tmp+6]["data"] = "<span dir=ltr>".$this->ATE[$tmp+6]["data"];
-			$this->ATE[$tmp+10]["data"] .= "</span>";
+			if(isset($this->ATE[$tmp+6]["data"])){
+				$this->ATE[$tmp+6]["data"] = "<span dir=ltr>".$this->ATE[$tmp+6]["data"];
+				$this->ATE[$tmp+10]["data"] .= "</span>";
+			} else {
+				//TODO: find exceptions (on the stream part there are some)	
+			}
 		}
 		$b = $HEType["b"];
 		if(isset($this->EBT[$b])){
