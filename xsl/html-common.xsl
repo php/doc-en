@@ -3,7 +3,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.15 2002-07-17 10:01:13 goba Exp $
+  $Id: html-common.xsl,v 1.16 2002-07-26 12:17:47 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -13,6 +13,9 @@
 
 <!-- We do not want style="" atts to appear in HTML output -->
 <xsl:param name="admon.style" select="''"/>
+
+<!-- We do not want extra head links in HTML -->
+<xsl:param name="html.extra.head.links" select="0"/>
 
 <!-- This differs from the default as the ",figure,table,example,equation"
      is missing after the book toc (for comformance with the DSSSL output).
