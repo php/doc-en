@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1.1.1 $ -->
+<!-- $Revision: 1.2 $ -->
   <refentry id="function.maxdb-rollback">
    <refnamediv>
     <refname>maxdb_rollback</refname>
+    <refname>maxdb->rollback</refname>
     <refpurpose>Rolls back current transaction</refpurpose>
    </refnamediv>
    <refsect1>
@@ -11,6 +12,14 @@
       <type>bool</type><methodname>maxdb_rollback</methodname>
       <methodparam><type>resource</type><parameter>link</parameter></methodparam>
      </methodsynopsis>
+    <classsynopsis>
+     <ooclass><classname>maxdb</classname></ooclass>
+     <methodsynopsis>
+      <type>bool</type>
+      <methodname>rollback</methodname>
+      <void/>
+     </methodsynopsis>
+    </classsynopsis>
     <para>
      Rollbacks the current transaction for the database specified by the
      <parameter>link</parameter> parameter.
@@ -32,11 +41,61 @@
    <refsect1>
     <title>Example</title>
     <example>
+     <title>Object oriented style</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$maxdb = new maxdb("localhost", "MONA", "RED", "DEMODB");
+
+/* check connection */
+if (maxdb_connect_errno()) {
+   printf("Connect failed: %s\n", maxdb_connect_error());
+   exit();
+}
+
+/* disable autocommit */
+$maxdb->autocommit(FALSE);
+
+$maxdb->query("CREATE TABLE temp.mycity LIKE hotel.city");
+$maxdb->query("INSERT INTO temp.mycity SELECT * FROM hotel.city");
+
+/* commit insert */
+$maxdb->commit();
+
+/* delete all rows */
+$maxdb->query("DELETE FROM temp.mycity");
+
+if ($result = $maxdb->query("SELECT COUNT(*) FROM temp.mycity")) {
+   $row = $result->fetch_row();
+   printf("%d rows in table mycity.\n", $row[0]);
+   /* Free result */
+   $result->close();
+}
+
+/* Rollback */
+$maxdb->rollback();
+
+if ($result = $maxdb->query("SELECT COUNT(*) FROM temp.mycity")) {
+   $row = $result->fetch_row();
+   printf("%d rows in table mycity (after rollback).\n", $row[0]);
+   /* Free result */
+   $result->close();
+}
+
+/* Drop table myCity */
+$maxdb->query("DROP TABLE temp.mycity");
+
+$maxdb->close();
+?>
+]]>
+    </programlisting>
+    </example>
+    <example>
      <title>Procedural style</title>
      <programlisting role="php">
 <![CDATA[
 <?php
-$link = maxdb_connect("localhost", "MONA", "RED");
+$link = maxdb_connect("localhost", "MONA", "RED", "DEMODB");
 
 /* check connection */
 if (maxdb_connect_errno()) {
