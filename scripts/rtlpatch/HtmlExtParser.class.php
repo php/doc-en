@@ -108,7 +108,17 @@ class CHtmlExtParse extends CHtmlParse{
 		} while($tmp);
 		
 		//fix warnning boxes:
-		if($tmp = $this->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","warning"),"offset"=>(0)))){
+		$tmp=0;
+		while($tmp = $this->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","warning"),"offset"=>($tmp+1)))){
+			$cond = array("tag"=>"td","properties"=>array("align","LEFT"),"offset"=>($tmp+1));
+			if (($td = $this->get_element_id_by_rule($cond)) && ($td<$tocend = $this->ECE[$tmp])){
+				$this->ATE[$td]["align"] = "right";
+			}
+		}
+		
+		//fix caution boxes:
+		$tmp=0;
+		while($tmp = $this->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","caution"),"offset"=>($tmp+1)))){
 			$cond = array("tag"=>"td","properties"=>array("align","LEFT"),"offset"=>($tmp+1));
 			if (($td = $this->get_element_id_by_rule($cond)) && ($td<$tocend = $this->ECE[$tmp])){
 				$this->ATE[$td]["align"] = "right";
