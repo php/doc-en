@@ -3,6 +3,8 @@
 
   common.xsl: Common customizations for all formats
 
+  $Id: common.xsl,v 1.11 2004-10-31 23:53:48 techtonik Exp $
+
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0">
@@ -11,27 +13,29 @@
 <!-- Set the LANGUAGE for autom. generated text -->
 <xsl:param name="l10n.gentext.language" select="/book/@lang"/>
 
-<!-- temporary till also this is in std.-distrib. -->
-<xsl:template match="titleabbrev"></xsl:template>
-
-<!-- Start NUMBERING (e.g. chapters) in every part -->
-<xsl:param name="label.from.part" select="'0'"/>
-
-<!-- Colorize background for programlisting and screens -->
+<!-- Colorize background for programlisting and screens
+     will go into CSS probably in next DocBook version --> 
 <xsl:param name="shade.verbatim" select="1"/>
 
-<!-- REFENTRIES: make functionnames the title -->
+
+<!-- *************** TUNE FUNCTION REFERENCE PAGES **************** -->
+<!-- Generate title from function name instead of word "NAME" in title -->
 <xsl:param name="refentry.generate.name" select="'0'"/>
-<xsl:param name="refentry.generate.title" select="1"/>
+<xsl:param name="refentry.generate.title" select="'1'"/>
+
+<!-- Turn off separators on reference and refentry pages -->
+<xsl:param name="refentry.separator" select="'0'"/>
+<xsl:template name="reference.titlepage.separator"/>
+<!-- FIX: temporary till also this is in std.-distrib. -->
+<xsl:template match="reference/titleabbrev"/>
+
 
 <!-- Load VERSION INFORMATION into variable -->
 <xsl:param name="version" select="document('version.xml')/versions"/>
 
-<!-- Make copyright year ranges (like 1999-2004) -->
-<xsl:param name="make.year.ranges" select="1"/>
 
-<!-- PROTOTYPES: PHP-Version without semicolon, etc. 
-     note: methodparams are separated in html-common and fo -->
+<!-- We do not want semicolon at the end of prototype and our own style
+     of square brackets for optional parameters -->
 <xsl:template match="methodsynopsis">
   <xsl:apply-templates />
 </xsl:template>
