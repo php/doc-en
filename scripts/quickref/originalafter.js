@@ -198,24 +198,9 @@ function fh_EKeyPress(ev)
 {
     ev=ev||event||null;
     if (f_s.value=="quickref"&&ev) {
-        var cc=(ev.charCode||ev.charCode==0)?ev.charCode:ev.keyCode||ev.which;
-        if (cc==32) { // spacebar autocomplete 
-            if ((p=f_p.value)=="") return false;
-            matches=fh_FindMatches(p);
-            if (matches.length==0) return false;
-            if (matches.length==1) { // full autocomplete in case of single match
-                f_p.value=matches[0];
-                return false;
-            }
-            if (isnotopera) {
-                len=0;
-                first=matches[0];
-                last=matches[matches.length-1]; matches.length--;
-                while (len<first.length && first.substring(0,len+1)==last.substring(0,len+1)) len++;
-                if (f_p.value!=first.substring(0,len)) {
-                    f_p.value=first.substring(0,len);
-                }
-            }
+        var cc=ev.charCode||ev.keyCode||ev.which;
+        if (cc==32) {
+            f_p.value = f_p.value.replace(/ /g, "");
             return false;
         }
         //if ((cc>=97&&cc<=122)||(cc>=65&&cc<=90)||(cc>=48&&cc<=57)||cc==95) return true; // a-z A-Z 0-9 _
@@ -246,6 +231,25 @@ function fh_EKeyDown(ev)
                 fh_menupos=0;
             }
             fh_UpdateMenu();
+            return false;
+        }
+        if (cc==32) { // spacebar autocomplete 
+            if ((p=f_p.value)=="") return false;
+            matches=fh_FindMatches(p);
+            if (matches.length==0) return false;
+            if (matches.length==1) { // full autocomplete in case of single match
+                f_p.value=matches[0];
+                return false;
+            }
+            if (isnotopera) {
+                len=0;
+                first=matches[0];
+                last=matches[matches.length-1]; matches.length--;
+                while (len<first.length && first.substring(0,len+1)==last.substring(0,len+1)) len++;
+                if (f_p.value!=first.substring(0,len)) {
+                    f_p.value=first.substring(0,len);
+                }
+            }
             return false;
         }
     }
