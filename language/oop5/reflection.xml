@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.5 $ -->
+<!-- $Revision: 1.6 $ -->
  <sect1 id="language.oop5.reflection">
   <title>Reflection</title>
   <sect2 id="language.oop5.reflection.introduction">
@@ -75,7 +75,12 @@ Class [ <internal> class Exception ] {
     Method [ <internal> final private method __clone ] {
     }
 
-    Method [ <internal> <ctor> method __construct ] {
+    Method [ <internal> <ctor> public method __construct ] {
+
+      - Parameters [2] {
+        Parameter #0 [ <required> $message ]
+        Parameter #1 [ <required> $code ]
+      }
     }
 
     Method [ <internal> final public method getMessage ] {
@@ -118,25 +123,35 @@ Class [ <internal> class Exception ] {
 <?php
 class ReflectionFunction implements Reflector
 {
+    final private __clone()
     public object __construct(string name)
     public string __toString()
     public static string export()
     public string getName()
     public bool isInternal()
     public bool isUserDefined()
+    public string getName()
     public string getFileName()
     public int getStartLine()
     public int getEndLine()
     public string getDocComment()
     public array getStaticVariables()
     public mixed invoke(mixed* args)
+    public mixed invokeArgs(array args)
     public bool returnsReference()
     public ReflectionParameter[] getParameters()
+    public int getNumberOfParameters()
+    public int getNumberOfRequiredParameters()
 }
 ?>
 ]]>
     </programlisting>
    </informalexample>
+   <note>
+    <simpara>
+     <function>invokeArgs</function> was added in PHP 5.1.0.
+    </simpara>
+   </note>
    <para>
     To introspect a function, you will first have to create an instance
     of the <classname>ReflectionFunction</classname> class. You can then call
@@ -215,14 +230,17 @@ echo ReflectionFunction::export('counter');
 <?php
 class ReflectionParameter implements Reflector
 {
+    final private __clone()
     public object __construct(string name)
     public string __toString()
     public static string export()
     public string getName()
+    public bool isPassedByReference()
     public ReflectionClass getClass()
     public bool allowsNull()
-    public bool isPassedByReference()
     public bool isOptional()
+    public bool isDefaultValueAvailable()
+    public mixed getDefaultValue()
 }
 ?>
 ]]>
@@ -230,7 +248,9 @@ class ReflectionParameter implements Reflector
    </informalexample>
    <note>
     <para>
-     <function>isOptional</function> was added in PHP 5.1.0.
+     <function>getDefaultValue</function>,
+     <function>isDefaultValueAvailable</function>,
+     <function>isOptional</function> were added in PHP 5.1.0.
     </para>
    </note>
    <para>
@@ -289,12 +309,14 @@ foreach ($reflect->getParameters() as $i => $param) {
 <?php
 class ReflectionClass implements Reflector
 {
-    public __construct(string name)
+    final private __clone()
+    public object __construct(string name)
     public string __toString()
     public static string export()
     public string getName()
     public bool isInternal()
     public bool isUserDefined()
+    public bool isInstantiable()
     public string getFileName()
     public int getStartLine()
     public int getEndLine()
@@ -306,16 +328,21 @@ class ReflectionClass implements Reflector
     public ReflectionProperty[] getProperties()
     public array getConstants()
     public mixed getConstant(string name)
-    public bool isInstantiable()
+    public ReflectionClass[] getInterfaces()
     public bool isInterface()
-    public bool isFinal()
     public bool isAbstract()
+    public bool isFinal()
     public int getModifiers()
     public bool isInstance(stdclass object)
     public stdclass newInstance(mixed* args)
-    public ReflectionClass[] getInterfaces()
     public ReflectionClass getParentClass()
     public bool isSubclassOf(ReflectionClass class)
+    public array getStaticProperties()
+    public array getDefaultProperties()
+    public bool isIterateable()
+    public bool implementsInterface(string name)
+    public ReflectionExtension getExtension()
+    public string getExtensionName()
 }
 ?>
 ]]>
@@ -361,7 +388,7 @@ class Counter extends Object implements Serializable
 }
 
 // Create an instance of the ReflectionClass class
-$class= new ReflectionClass('Counter');
+$class = new ReflectionClass('Counter');
 
 // Print out basic information
 printf(
@@ -399,7 +426,7 @@ printf("---> Methods: %s\n", var_export($class->getMethods(), 1));
 
 // If this class is instantiable, create an instance
 if ($class->isInstantiable()) {
-    $counter= $class->newInstance();
+    $counter = $class->newInstance();
 
     echo '---> $counter is instance? '; 
     echo $class->isInstance($counter) ? 'yes' : 'no';
@@ -440,8 +467,10 @@ if ($class->isInstantiable()) {
 class ReflectionMethod extends ReflectionFunction
 {
     public __construct(mixed class, string name)
+    public string __toString()
     public static string export()
     public mixed invoke(stdclass object, mixed* args)
+    public moxed invokeArgs(stdclass object, array args)
     public bool isFinal()
     public bool isAbstract()
     public bool isPublic()
@@ -449,11 +478,12 @@ class ReflectionMethod extends ReflectionFunction
     public bool isProtected()
     public bool isStatic()
     public bool isConstructor()
+    public bool isDestructor()
     public int getModifiers()
     public ReflectionClass getDeclaringClass()
 
     // Inherited from ReflectionFunction
-    public string __toString()
+    final private __clone()
     public string getName()
     public bool isInternal()
     public bool isUserDefined()
@@ -464,6 +494,8 @@ class ReflectionMethod extends ReflectionFunction
     public array getStaticVariables()
     public bool returnsReference()
     public ReflectionParameter[] getParameters()
+    public int getNumberOfParameters()
+    public int getNumberOfRequiredParameters()
 }
 ?>
 ]]>
@@ -565,6 +597,7 @@ var_dump($method->invoke(NULL));
 <?php
 class ReflectionProperty implements Reflector
 {
+    final private __clone()
     public __construct(mixed class, string name)
     public string __toString()
     public static string export()
@@ -584,7 +617,7 @@ class ReflectionProperty implements Reflector
     </programlisting>
    </informalexample>
    <para>
-    To introspect a method, you will first have to create an instance
+    To introspect a property, you will first have to create an instance
     of the <classname>ReflectionProperty</classname> class. You can then
     call any of the above methods on this instance.
    </para>
@@ -652,6 +685,7 @@ var_dump($obj);
 <![CDATA[
 <?php
 class ReflectionExtension implements Reflector {
+    final private __clone()
     public __construct(string name)
     public string __toString()
     public static string export()
@@ -660,14 +694,16 @@ class ReflectionExtension implements Reflector {
     public ReflectionFunction[] getFunctions()
     public array getConstants()
     public array getINIEntries()
+    public ReflectionClass[] getClasses()
+    public array getClassNames()
 }
 ?>
 ]]>
     </programlisting>
    </informalexample>
    <para>
-    To introspect a method, you will first have to create an instance
-    of the <classname>ReflectionProperty</classname> class. You can then call
+    To introspect an extension, you will first have to create an instance
+    of the <classname>ReflectionExtension</classname> class. You can then call
     any of the above methods on this instance.
    </para>
    <example>
@@ -684,15 +720,21 @@ printf(
     "Version     : %s\n" .
     "Functions   : [%d] %s\n" .
     "Constants   : [%d] %s\n" .
-    "INI entries : [%d] %s\n",
+    "INI entries : [%d] %s\n" .
+    "Classes     : [%d] %s\n",
         $ext->getName(),
         $ext->getVersion() ? $ext->getVersion() : 'NO_VERSION',
         sizeof($ext->getFunctions()),
         var_export($ext->getFunctions(), 1),
+
         sizeof($ext->getConstants()),
         var_export($ext->getConstants(), 1),
+
         sizeof($ext->getINIEntries()),
-        var_export($ext->getINIEntries(), 1)
+        var_export($ext->getINIEntries(), 1),
+
+        sizeof($ext->getClassNames()),
+        var_export($ext->getClassNames(), 1)
 );
 ?>
 ]]>
