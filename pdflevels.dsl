@@ -115,12 +115,16 @@
 					    (list (normalize "bookbiblio") 
 						  (normalize "bibliomisc")
 						  (normalize "biblioset")))))
+
+         (partintro     (select-elements (children (current-node)) 
+					 (normalize "partintro")))
 	 (parent-titles (select-elements (children (current-node)) (normalize "title")))
 	 (info-titles   (select-elements exp-children (normalize "title")))
 	 (titles        (if (node-list-empty? parent-titles)
 			    info-titles
 			    parent-titles))
 	 (subtitles     (select-elements exp-children (normalize "subtitle"))))
+
     (make sequence
       (make paragraph
 	font-family-name: %title-font-family%
@@ -163,7 +167,12 @@
 
 	(with-mode sub-component-title-mode
 	  (make sequence
-	    (process-node-list subtitles)))))))
+	    (process-node-list subtitles)))
+
+	(make sequence
+	  ($process-partintro$ partintro #t)
+	  (empty-sosofo))))))
+
 
 (mode sub-component-title-mode
   (element title
@@ -256,9 +265,6 @@
 
 ;; own code
 
-(define (empty-string)
-  (literal ""))
-
 (element part ($component$))
 (element (part title) (empty-sosofo))
 
@@ -274,3 +280,4 @@
 (define %generate-part-titlepage% #t)
 (define %generate-chapter-titlepage% #t)
 (define %generate-reference-titlepage% #t)
+(define %generate-partintro-on-titlepage% #t)
