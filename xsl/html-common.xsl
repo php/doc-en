@@ -3,7 +3,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.17 2002-08-04 11:50:14 goba Exp $
+  $Id: html-common.xsl,v 1.18 2002-08-04 12:54:15 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -220,16 +220,14 @@ set       toc
 
 <!-- Override default [java] methodsynopsis rendering -->
 <xsl:template match="methodsynopsis">
-  <xsl:apply-templates mode="php"/>
+  <xsl:apply-templates select="." mode="php"/>
 </xsl:template>
 
 <!-- Print out the return type, the method name, then the parameters.
      Close all the optional signs opened and close the prentheses -->
 <xsl:template match="methodsynopsis" mode="php">
-  <xsl:value-of select="./type/text()"/>
-  <xsl:text> </xsl:text>
-  <xsl:value-of select="./methodname/text()"/>
-  <xsl:text> ( </xsl:text>
+  <xsl:value-of select="concat(./type/text(), ' ')"/>
+  <xsl:value-of select="concat(./methodname/text(), ' ( ')"/>
   <xsl:apply-templates select="./methodparam" mode="php"/>
   <xsl:for-each select="./methodparam[@choice = 'opt']">
     <xsl:text>]</xsl:text>
@@ -246,9 +244,8 @@ set       toc
   <xsl:if test="position() != 1">
     <xsl:text>, </xsl:text>
   </xsl:if>
-  <xsl:value-of select="./type/text()"/>
-  <xsl:text> </xsl:text>
-  <xsl:value-of select="./parameter/text()"/>
+  <xsl:value-of select="concat(./type/text(), ' ', ./parameter/text())"/>
 </xsl:template>
 
 </xsl:stylesheet>
+
