@@ -6,9 +6,14 @@
    <para>
     InterBase is a popular database put out by Borland/Inprise.  More
     information about InterBase is available at <ulink
-    url="&url.ibase;">&url.ibase;</ulink>.  Oh, by the way, Interbase
+    url="&url.ibase;">&url.ibase;</ulink>.  Oh, by the way, InterBase
     just joined the open source movement!
    </para>
+   <note>
+    <para>
+     Full support for InterBase 6 was added in PHP 4.0.
+    </para>
+   </note>
   </partintro>
 
   <refentry id="function.ibase-connect">
@@ -55,10 +60,8 @@
      character set for a database. <parameter>buffers</parameter> is the number
      of database buffers to allocate for the server-side cache. If 0 or omitted,
      server chooses its own default. <parameter>dialect</parameter> selects
-     the default SQL dialect for any statement executed within a connection
-     (currently non-functional, needed for forthcoming support for InterBase 6
-     SQL dialects).
-
+     the default SQL dialect for any statement executed within a connection,
+     and it defaults to the highest one supported by client libraries.
     </para>
     <para>
      In case a second call is made to
@@ -70,13 +73,15 @@
      <example>
       <title><function>Ibase_connect</function> example</title>
       <programlisting role="php">
-$dbh = ibase_connect ($host, $username, $password);
-$stmt = 'SELECT * FROM tblname';
-$sth = ibase_query ($dbh, $stmt);
-while ($row = ibase_fetch_object ($sth)) {
-    print $row->email . "\n";
-}
-ibase_close ($dbh);
+&lt;?php
+    $dbh = ibase_connect ($host, $username, $password);
+    $stmt = 'SELECT * FROM tblname';
+    $sth = ibase_query ($dbh, $stmt);
+    while ($row = ibase_fetch_object ($sth)) {
+        print $row->email . "\n";
+    }
+    ibase_close ($dbh);
+?>
       </programlisting>
      </example>
     </para>
@@ -185,7 +190,9 @@ ibase_close ($dbh);
      <paramdef>int 
       <parameter><optional>link_identifier</optional></parameter>
      </paramdef>
-     <paramdef>string <parameter>query</parameter> </paramdef>
+     <paramdef>string
+      <parameter>query</parameter>
+     </paramdef>
      <paramdef>int 
       <parameter><optional>bind_args</optional></parameter> 
      </paramdef>
@@ -193,6 +200,7 @@ ibase_close ($dbh);
     <simpara>
      Performs a query on an InterBase database, returning a result
      identifier for use with <function>ibase_fetch_row</function>,
+     <function>ibase_fetch_object</function>,
      <function>ibase_free_result</function> and
      <function>ibase_free_query</function>.
     </simpara>
@@ -216,8 +224,10 @@ ibase_close ($dbh);
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
-     <funcdef>int <function>ibase_fetch_row</function></funcdef>
-     <paramdef>int <parameter>result_identifier</parameter></paramdef>
+     <funcdef>array <function>ibase_fetch_row</function></funcdef>
+     <paramdef>int
+      <parameter>result_identifier</parameter>
+     </paramdef>
     </funcsynopsis>
     <simpara>
      Returns the next row specified by the result identifier obtained
@@ -234,8 +244,10 @@ ibase_close ($dbh);
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
-     <funcdef>int <function>ibase_fetch_object</function></funcdef>
-     <paramdef>int <parameter>result_id</parameter></paramdef>
+     <funcdef>object <function>ibase_fetch_object</function></funcdef>
+     <paramdef>int
+      <parameter>result_id</parameter>
+     </paramdef>
     </funcsynopsis>
     <para>
      Fetches a row as a pseudo-object from a
@@ -244,13 +256,15 @@ ibase_close ($dbh);
      <function>ibase_execute</function>.
      <informalexample>
       <programlisting role="php">
-$dbh = ibase_connect ($host, $username, $password);
-$stmt = 'SELECT * FROM tblname';
-$sth = ibase_query ($dbh, $stmt);
-while ($row = ibase_fetch_object ($sth)) {
-    print $row->email . "\n";
-}
-ibase_close ($dbh);
+&lt;php
+    $dbh = ibase_connect ($host, $username, $password);
+    $stmt = 'SELECT * FROM tblname';
+    $sth = ibase_query ($dbh, $stmt);
+    while ($row = ibase_fetch_object ($sth)) {
+        print $row->email . "\n";
+    }
+    ibase_close ($dbh);
+?>
       </programlisting>
      </informalexample>
     </para>
@@ -269,7 +283,9 @@ ibase_close ($dbh);
     <title>Description</title>
     <funcsynopsis>
      <funcdef>int <function>ibase_free_result</function></funcdef>
-     <paramdef>int <parameter>result_identifier</parameter></paramdef>
+     <paramdef>int
+      <parameter>result_identifier</parameter>
+     </paramdef>
     </funcsynopsis>
     <simpara>
      Free's a result set the has been created by
@@ -320,19 +336,24 @@ ibase_close ($dbh);
     </funcsynopsis>
     <para>
      Execute a query prepared by <function>ibase_prepare</function>.
+     This is a lot more effective than using <function>ibase_query</function>
+     if you are repeating a same kind of query several times with only
+     some parameters changing.
      <informalexample>
       <programlisting role="php">
-$updates = array(
-    1 => 'Eric',
-    5 => 'Filip',
-    7 => 'Larry'
-);
+&lt;?php
+    $updates = array(
+        1 => 'Eric',
+        5 => 'Filip',
+        7 => 'Larry'
+    );
 
-$query = ibase_prepare("UPDATE FOO SET BAR = ? WHERE BAZ = ?");
+    $query = ibase_prepare("UPDATE FOO SET BAR = ? WHERE BAZ = ?");
 
-while (list($baz, $bar) = each($updates)) {
-    ibase_execute($query, $bar, $baz);
-}
+    while (list($baz, $bar) = each($updates)) {
+        ibase_execute($query, $bar, $baz);
+    }
+?>
       </programlisting>
      </informalexample>
     </para>
@@ -350,7 +371,9 @@ while (list($baz, $bar) = each($updates)) {
     <title>Description</title>
     <funcsynopsis>
      <funcdef>int <function>ibase_free_query</function></funcdef>
-     <paramdef>int <parameter>query</parameter></paramdef>
+     <paramdef>int
+      <parameter>query</parameter>
+     </paramdef>
     </funcsynopsis>
     <simpara>
      Free a query prepared by <function>ibase_prepare</function>.
@@ -362,20 +385,56 @@ while (list($baz, $bar) = each($updates)) {
    <refnamediv>
     <refname>ibase_timefmt</refname>
     <refpurpose>
-     Sets the format of datetime columns returned from queries
+     Sets the format of timestamp, date and time type columns returned from queries
     </refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcdef>int <function>ibase_timefmt</function></funcdef>
-     <paramdef>string <parameter>format</parameter></paramdef>
+     <paramdef>string
+      <parameter>format</parameter>
+     </paramdef>
+     <paramdef>int
+      <parameter><optional>columntype</optional></parameter>
+     </paramdef>
     </funcsynopsis>
-    <simpara>
-     Sets the format of the datetime columns returned from queries.
-     Internally, it uses c-function strftime(), so refer to it's
-     documentation regarding to the format of the string.
-    </simpara>
+    <para>
+     Sets the format of timestamp, date or time type columns returned
+     from queries. Internally, the columns are formatted by c-function
+     strftime(), so refer to it's documentation regarding to the format
+     of the string. <parameter>columntype</parameter> is one of the
+     constants IBASE_TIMESTAMP, IBASE_DATE and IBASE_TIME. If omitted,
+     defaults to IBASE_TIMESTAMP for backwards compatibility.
+     <informalexample>
+      <programlisting role="php">
+&lt;?php
+    // InterBase 6 TIME-type columns will be returned in
+    // the form '05 hours 37 minutes'. 
+    ibase_timefmt("%H hours %M minutes", IBASE_TIME);
+?>
+      </programlisting>
+     </informalexample>
+    </para>
+    <para>
+     You can also set defaults for these formats with PHP configuration
+     directives ibase.timestampformat, ibase.dateformat and ibase.timeformat.
+    </para>
+    <note>
+     <para>
+      <parameter>columntype</parameter> was added in PHP 4.0. It has any
+      meaning only with InterBase version 6 and higher.
+     </para>
+    </note>
+    <note>
+     <para>
+      A backwards incompatible change happened in PHP 4.0 when PHP
+      configuration directive ibase.timeformat was renamed to
+      ibase.timestampformat and directives ibase.dateformat and
+      ibase.timeformat were added, so that the names would match better
+      their functionality.
+     </para>
+    </note>
    </refsect1>
   </refentry>
 
@@ -383,7 +442,7 @@ while (list($baz, $bar) = each($updates)) {
    <refnamediv>
     <refname>ibase_num_fields</refname>
     <refpurpose>
-     Get the number of rows in a result set
+     Get the number of fields in a result set
     </refpurpose>
    </refnamediv>
    <refsect1>
@@ -397,19 +456,21 @@ while (list($baz, $bar) = each($updates)) {
      set.
      <informalexample>
       <programlisting role="php">
-$dbh = ibase_connect ($host, $username, $password);
-$stmt = 'SELECT * FROM tblname';
-$sth = ibase_query ($dbh, $stmt);
+&lt;?php
+    $dbh = ibase_connect ($host, $username, $password);
+    $stmt = 'SELECT * FROM tblname';
+    $sth = ibase_query ($dbh, $stmt);
 
-if (ibase_num_fields($sth) > 0) {
-    while ($row = ibase_fetch_object ($sth)) {
-        print $row->email . "\n";
+    if (ibase_num_fields($sth) > 0) {
+        while ($row = ibase_fetch_object ($sth)) {
+            print $row->email . "\n";
+        }
+    } else {
+        die ("No Results were found for your query");
     }
-} else {
-    die ("No Results were found for your query");
-}
 
-ibase_close ($dbh);
+    ibase_close ($dbh);
+?>
       </programlisting>
      </informalexample>
     </para>
