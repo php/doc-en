@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.4 2004-10-30 13:50:50 nlopess Exp $
+  $Id: htmlhelp.xsl,v 1.5 2004-10-31 10:07:09 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -171,8 +171,8 @@ set       toc
 <OBJECT type="text/site properties">
         <param name="Window Styles" value="0x800227">
 </OBJECT>
-
-<UL>]]></xsl:text>
+<UL>]]>
+</xsl:text>
 <xsl:if test="($htmlhelp.use.hhk != 0) and $htmlhelp.generate.index">
   <xsl:choose>
     <xsl:when test="$rootid != ''">
@@ -190,6 +190,19 @@ set       toc
   </xsl:call-template>
 </xsl:template>
 
+<!-- escape double quotes in titles to correctly generate .hhk entry
+     for example: <title><literal>emply("0")... -->
+<xsl:template match="title/literal">
+  <xsl:variable name="apos" select="&quot;'&quot;" />
+  <xsl:variable name="quot" select='&apos;"&apos;' />
+  <xsl:value-of select="translate(.,'&quot;',$apos)"/>
+</xsl:template>
+
+<!-- *************** HTML HELP TOC CUSTOMIZINGS (HHC) **************** -->
+
+<!-- compile custom TOC file (.hhc) and insert two additional files into
+     contents structure. These will be created later by splitting result title
+     page with contents in two -->
 <!-- Setup style for TOC window -->
 <xsl:template name="hhc-main">
   <xsl:text disable-output-escaping="yes"><![CDATA[<HTML>
@@ -417,6 +430,7 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
   </xsl:choose>
 </xsl:template>
 
+
 <!-- output formal object titles enclosed in <h3> tags -->
 <xsl:template name="formal.object.heading">
   <xsl:param name="object" select="."/>
@@ -428,7 +442,7 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
   </h3>
 </xsl:template>
 
-<xsl:template match="titleabbrev" />
-<xsl:template match="collab" />
+<!-- FIX: temporary till also this is in std.-distrib. -->
+<xsl:template match="reference/titleabbrev"></xsl:template>
 
 </xsl:stylesheet>
