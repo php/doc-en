@@ -1489,7 +1489,7 @@
    ((equal-ci? (data nl) "apache_child_terminate") (literal "PHP 4 >= 4.0.5"))
    ((equal-ci? (data nl) "apache_getenv") (literal "PHP 4 >= 4.3.0"))
    ((equal-ci? (data nl) "apache_get_modules") (literal "PHP 4 >= 4.3.2"))
-   ((equal-ci? (data nl) "apache_get_version") (literal "PHP 4 >= 4.3.2"))
+   ((equal-ci? (data nl) "apache_get_version") (literal "PHP 4 >= 4.3.4"))
    ((equal-ci? (data nl) "apache_request_headers") (literal "PHP 4 >= 4.3.0"))
    ((equal-ci? (data nl) "apache_response_headers") (literal "PHP 4 >= 4.3.0"))
    ((equal-ci? (data nl) "apache_setenv") (literal "PHP 4 >= 4.2.0"))
