@@ -508,6 +508,5 @@ if ($count > 0) {
 
 // All OK, end the file
 print("</body>\n</html>\n");
-echo "Done!\n";
 
 ?>
