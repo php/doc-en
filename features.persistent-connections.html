@@ -1,0 +1,241 @@
+<HTML
+><HEAD
+><TITLE
+>Conexiones persistentes a bases de datos</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.33"><LINK
+REL="HOME"
+TITLE="Manual de PHP"
+HREF="manual.html"><LINK
+REL="UP"
+TITLE="Características"
+HREF="features.html"><LINK
+REL="PREVIOUS"
+TITLE="Manejando conexiones"
+HREF="features.connection-handling.html"><LINK
+REL="NEXT"
+TITLE="Referencia de las Funciones"
+HREF="funcref.html"><META
+NAME="HTTP_EQUIV"
+CONTENT="text/html; charset=ISO-8859-1"></HEAD
+><BODY
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Manual de PHP</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="features.connection-handling.html"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="funcref.html"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="chapter"
+><H1
+><A
+NAME="features.persistent-connections"
+>Capítulo 22. Conexiones persistentes a bases de datos</A
+></H1
+><P
+>&#13;   Las conexiones persistentes son enlaces SQL que no se cierran
+   cuando termina la ejecución del archivo de comandos.
+   Cuando se pide una conexión persistente, PHP comprueba
+   si hay ya una conexión persistente idéntica (que
+   permanecía abierta desde antes) - y si existe, la usa.
+   Si no existe, crea un enlace. Una conexión 'idéntica'
+   es una conexión que se abrió hacia el mismo "host", con
+   el mismo nombre de usuario y la misma contraseña (donde sea
+   aplicable).</P
+><P
+>&#13;   La gente que no está familiarizada con el modo como trabajan
+   y distribuyen la carga los servidores "web" puede confundir que 
+   persistente significa lo que no es.  En particular, ellas 
+   <I
+CLASS="emphasis"
+>no</I
+> te dan la habilidad de abrir 
+   'sesiones de usuario' en el mismo enlace SQL, 
+   <I
+CLASS="emphasis"
+>no</I
+> dan la habilidad de construir una 
+   transacción de forma eficiente, y no hacen un montón de
+   otras cosas. De hecho, para ser extremadamente claros sobre el tema
+   las conexiones persistentes no te dan <I
+CLASS="emphasis"
+>ninguna</I
+>
+   functionalidad que no fuera posible con sus hermanas 
+   no-persistentes.</P
+><P
+>&#13;   ¿Por qué?</P
+><P
+>&#13;   Esto tiene que ver con el modo como funcionan los servidores "web".
+   Hay tres modos en que un servidor "web" puede utilizar PHP para generar
+   páginas web.</P
+><P
+>&#13;   El primer método es usar PHP como una capa CGI. Cuando corre
+   de este modo, se crea y destruye una instancia del intérprete
+   PHP por cada página solicitada (para una página PHP)
+   a tu servidor. Debido a que se destruye después de cada
+   petición, cualquier recurso que adquiera (como un enlace a un
+   servidor de base de datos SQL) se cierra cuando es destruido. En
+   este caso, no se gana nada si se intentan usar conexiones persistentes.
+   </P
+><P
+>&#13;   El segundo, y más popular, método es correr PHP como
+   un módulo en un servidor web multiproceso, lo cual actualmente
+   sólo incluye Apache. Un servidor multiproceso tiene 
+   típicamente un proceso (el padre) que coordina un conjunto de
+   procesos (sus hijos) que realmente hacen el trabajo se servir las
+   páginas web. Cuando entra cada petición de un cliente,
+   es entregada a uno de los hijos que no esté ya sirviendo a
+   otro cliente. Esto significa que cuando el mismo cliente hace una
+   segunda petción al servidor, puede ser atendidp por un proceso
+   hijo distinto del de la primera vez. Lo que una conexión persistente
+   hace por ti en este caso es hacerlo de tal modo que cada proceso hijo
+   sólo necesita conectar a tu SQL server la primera vez que sirve
+   una página que hace uso de una conexión así. Cuando
+   otra página solicita una conexión a SQL server, puede
+   reutilizar la conexión que el hijo estableció previamente.
+   </P
+><P
+>&#13;   El último método es usar PHP como un "plug-in" para un
+   servidor web multihilo. En la actualidad es solamente teórico --
+   PHP no funciona aún como "plug-in" para ningún servidor
+   web multihilo. Hay trabajo en progreso para soportar ISAPI, WSAPI y
+   NSAPI (en Windows), lo cual permitirá a PHP ser utilizado como
+   "plug-in" para servidores web multihilo como Netscape FastTrack,
+   Internet Information Server (IIS) de Microsoft, y O'Reilly's WebSite Pro.
+   Cuando esto ocurra, el comportamiento será exactamente el mismo
+   que para el modelo de multiprocesador descrito anteriormente.</P
+><P
+>&#13;   Si las conexiones persistentes no aportan ninguna funcionalidad
+   añadida, ¿para qué son buenas?</P
+><P
+>&#13;   La respuesta aqui es extremadamente simple -- eficiencia. Las conexiones
+   persistentes son buenas si las cabeceras de control para crear un enlace 
+   a tu servidor SQL es alta. Que estas cabeceras sean o no realmente altas
+   depende de muchos factores. Como, qué clase de base de datos es, si
+   esta o no situada en el mismo ordenador que el servidor web, cómo
+   está de cargada la máquina donde se encuentre el servidor
+   SQL, y otras así. El hecho fundamental es que si la cabecera de
+   conexión es alta, las conexiones persistentes te ayudan 
+   considerablemente . Ellas hacen que el proceso hijo simplemente conecte
+   solamente una vez durante todo su intervalo de vida, en vez de
+   cada vez que procesa una pagina que requiere conectar al servidor SQL.
+   Esto significa que por cada hijo que abrió una conexión
+   persistente tendrá su propia conexión persistente al servidor.
+   Por ejemplo, si tienes 20 procesos hijos distintos que corran un
+   archivo de comandos que cree una conexión persistente a tu
+   servidor SQL, tendrías 20 conexiones diferentes a ti servidor
+   SQL, una por cada hijo.</P
+><P
+>&#13;   Un resumen importante. Las conexiones persistentes fueron diseñadas
+   para tener una equivalencia uno-a-uno con las conexiones normales.
+   Eso significa que deberís <I
+CLASS="emphasis"
+>siempre</I
+> ser capaz
+   de reemplazar las conexiones persistentes por conexiones no persistentes
+   y no cambiará, el modo como se comporta el archivo de comandos.
+   <I
+CLASS="emphasis"
+>Puede</I
+> cambiar la eficiencia del archivo de comandos
+   (y probablemete lo hará), ¡pero no su comportamiento!
+   </P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="features.connection-handling.html"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="manual.html"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="funcref.html"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Manejando conexiones</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="features.html"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Referencia de las Funciones</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>
