@@ -632,7 +632,7 @@ function create_xml_docs()
     echo "READING " . $source_files[$i] . "\n";
     $contents=read_file($source_files[$i]);
     if ($contents == false || $contents == "") {
-      echo "Could not read $filename\n";
+      echo "Could not read {$source_files[$i]}\n";
     }
     if ($generate_functions) {
       parse_file($contents);
