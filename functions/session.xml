@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.70 $ -->
+<!-- $Revision: 1.71 $ -->
  <reference id="ref.session">
   <title>Session handling functions</title>
   <titleabbrev>Sessions</titleabbrev>
@@ -51,6 +51,12 @@
      linkend="ini.track-vars"><literal>track_vars</literal></link> is
      always turned on.
     </para>
+    <para>
+     As of PHP 4.1.0, $_SESSION is available as global variable just
+     like $_POST, $_GET, $_REQUEST and so on.  Not like
+     $HTTP_SESSION_VARS, $_SESSION is always global. Therefore,
+     <literal>global</literal> should not be used for $_SESSION.
+    </para>
    </note>
 
    <para>
@@ -71,8 +77,51 @@
      <programlisting role="php">
 <![CDATA[
 <?php
-session_register("count");
-$HTTP_SESSION_VARS["count"]++;
+if (isset($HTTP_SESSION_VARS['count'])) {
+   $HTTP_SESSION_VARS['count']++;
+}
+else {
+   $HTTP_SESSION_VARS['count'] = 0;
+}
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+   <para>
+    Use of $_SESSION (or $HTTP_SESSION_VARS with PHP 4.0.6 or less) is
+    recommended for security and code readablility. With $_SESSION or
+    $HTTP_SESSION_VARS, there is no need to use
+    session_register()/session_unregister()/session_is_registered()
+    functions. Users can access session variable like a normal
+    variable.
+    <example>
+     <title>
+      Registering a variable with $_SESSION.
+     </title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+// Use $HTTP_SESSION_VARS with PHP 4.0.6 or less
+if (!isset($_SESSION['count'])) {
+    $_SESSION['count'] = 0;
+}
+else {
+    $_SESSION['count']++;
+?>
+]]>
+     </programlisting>
+    </example>
+    <example>
+     <title>
+      Unregistering a variable with $_SESSION.
+     </title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+// Use $HTTP_SESSION_VARS with PHP 4.0.6 or less
+unset($_SESSION['count']);
+
 ?>
 ]]>
      </programlisting>
@@ -83,8 +132,12 @@ $HTTP_SESSION_VARS["count"]++;
     linkend="ini.register-globals"><literal>register_globals</literal></link>
     is enabled, then all global variables can be registered as session
     variables and the session variables will be restored to
-    corresponding global variables.
-  <example>
+    corresponding global variables. Since PHP must know which global
+    variables are registered as session variables, users must register
+    variables with session_register() function while
+    $HTTP_SESSION_VARS/$_SESSION does not need to use
+    session_register().
+    <example>
      <title>
       Registering a variable with <link
       linkend="ini.register-globals"><literal>register_globals</literal></link>
@@ -93,8 +146,13 @@ $HTTP_SESSION_VARS["count"]++;
      <programlisting role="php">
 <![CDATA[
 <?php
-session_register("count");
-$count++;
+if (!session_is_registered('count')) {
+    session_register("count");
+    $count = 0;
+}
+else {
+    $count++;
+}
 ?>
 ]]>
      </programlisting>
@@ -148,8 +206,13 @@ $count++;
      <programlisting role="php">
 <![CDATA[
 <?php
-session_register ("count");
-$count++;
+if (!session_is_registered('count')) {
+    session_register('count');
+    $count = 1;
+}
+else {
+    $count++;
+}
 ?>
 
 Hello visitor, you have seen this page <?php echo $count; ?> times.<p>;
@@ -199,7 +262,9 @@ To continue, <A HREF="nextpage.php?<?=SID?>">click here</A>
        <literal>session.save_path</literal> defines the argument which
        is passed to the save handler. If you choose the default files
        handler, this is the path where the files are created.
-       Defaults to <literal>/tmp</literal>.
+       Defaults to <literal>/tmp</literal>. If
+       <literal>session.save_path</literal>'s path depth is more than
+       2, garbage collection will not be performed.
       </simpara>
       <warning>
        <para>
@@ -293,13 +358,13 @@ To continue, <A HREF="nextpage.php?<?=SID?>">click here</A>
      <listitem>
       <simpara>
        <literal>session.cookie_path</literal> specifies path to set 
-				in session_cookie. Defaults to <literal>/</literal>.
+       in session_cookie. Defaults to <literal>/</literal>.
       </simpara>
      </listitem>
      <listitem>
       <simpara>
        <literal>session.cookie_domain</literal> specifies domain to 
-				set in session_cookie. Default is none at all. 
+       set in session_cookie. Default is none at all. 
       </simpara>
      </listitem>
      <listitem>
@@ -374,6 +439,20 @@ To continue, <A HREF="nextpage.php?<?=SID?>">click here</A>
       browser.
      </para>
     </note>
+    <simpara>
+     <function>session_start</function> will register internal output
+     handler for URL rewriting when <literal>trans-sid</literal> is
+     enabled. If a user uses <literal>ob_gzhandler</literal> or like
+     with <function>ob_start</function>, the order of output handler
+     is important for proper output. For example, user must register
+     <literal>ob_gzhandler</literal> before session start.
+    </simpara>
+    <note>
+     <simpara>
+      Use of <literal>zlib.output_compression</literal> is recommended
+      rather than <literal>ob_gzhandler</literal>
+     </simpara>
+    </note>
    </refsect1>
   </refentry>
 
@@ -408,12 +487,32 @@ To continue, <A HREF="nextpage.php?<?=SID?>">click here</A>
 <![CDATA[
 <?php
 
-# Initialize the session.
-# If you are using session_name("something"), don't forget it now!
+// Initialize the session.
+// If you are using session_name("something"), don't forget it now!
 session_start();
-# Unset all of the session variables.
+// Unset all of the session variables.
 session_unset();
-# Finally, destroy the session.
+// Finally, destroy the session.
+session_destroy();
+
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     <example>
+      <title>Destroying a session with $_SESSION</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+// Initialize the session.
+// If you are using session_name("something"), don't forget it now!
+session_start();
+// Unset all of the session variables.
+unset($_SESSION);
+// Finally, destroy the session.
 session_destroy();
 
 ?>
@@ -460,9 +559,9 @@ session_destroy();
 <![CDATA[
 <?php
 
-# set the session name to WebsiteID
+// set the session name to WebsiteID
 
-$previous_name = session_name ("WebsiteID");
+$previous_name = session_name("WebsiteID");
 
 echo "The previous session name was $previous_name<p>";
 ?>
@@ -622,6 +721,11 @@ $_SESSION["spongebob"] = "He's got square pants.";
       list of functions that return resources are available in the
       <link linkend="resource">resource types</link> appendix.
      </para>
+     <para>
+      If $_SESSION (or $HTTP_SESSION_VARS for PHP 4.0.6 or less) is
+      used, assign variable to $_SESSION. i.e. $_SESSION['var'] =
+      'ABC';
+     </para>
     </note>
     <para>
      See also <function>session_is_registered</function> and
@@ -654,6 +758,13 @@ $_SESSION["spongebob"] = "He's got square pants.";
      This function returns &true; when the variable is successfully
      unregistered from the session.
     </para>
+    <note>
+     <para>
+      If $_SESSION (or $HTTP_SESSION_VARS for PHP 4.0.6 or less) is
+      used, use <function>unset</function> to unregister a session
+      variable.
+     </para>
+    </note>
     <caution>
      <para>
       This function doesn't unset the corresponding global variable for
@@ -684,6 +795,13 @@ $_SESSION["spongebob"] = "He's got square pants.";
      The <function>session_unset</function> function free's all session variables
      currently registered.
     </para>
+    <note>
+     <para>
+      If $_SESSION (or $HTTP_SESSION_VARS for PHP 4.0.6 or less) is
+      used, use <function>unset</function> to unregister session
+      variable. i.e. unset($_SESSION));
+     </para>
+    </note>
    </refsect1>
   </refentry>
 
@@ -707,6 +825,13 @@ $_SESSION["spongebob"] = "He's got square pants.";
      is a variable with the name <parameter>name</parameter>
      registered in the current session.
     </para>
+    <note>
+     <para>
+      If $_SESSION (or $HTTP_SESSION_VARS for PHP 4.0.6 or less) is
+      used, use <function>isset</function> to check a variable is
+      registered in $_SESSION.
+     </para>
+    </note>
    </refsect1>
   </refentry>
   
@@ -913,7 +1038,7 @@ function read ($id) {
     $sess_data = fread($fp, filesize($sess_file));
     return($sess_data);
   } else {
-    return("");
+    return(""); // Must return ("") here.
   }
 
 }
