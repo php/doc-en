@@ -72,12 +72,12 @@ $wrong_source = array("dbplus_info", "dbplus_next", "php_check_syntax", "xdiff_s
 $source_refs = array();
 foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glob("$pecl_dir/*/*.c*")) as $filename) {
 	$file = file_get_contents($filename);
-	preg_match_all('~^\\s*(?:ZEND|PHP)_FE\\((\\w+)\\s*,\\s*(\\w+)\\s*[,)]~mS', $file, $matches, PREG_SET_ORDER);
-	preg_match_all('~^\\s*(?:ZEND|PHP)_FALIAS\\((\\w+)\\s*,[^,]+,\\s*(\\w+)\\s*[,)]~mS', $file, $matches2, PREG_SET_ORDER);
+	preg_match_all("~^[ \t]*(?:ZEND|PHP)_FE\\((\\w+)\\s*,\\s*(\\w+)\\s*[,)]~mS", $file, $matches, PREG_SET_ORDER);
+	preg_match_all("~^[ \t]*(?:ZEND|PHP)_FALIAS\\((\\w+)\\s*,[^,]+,\\s*(\\w+)\\s*[,)]~mS", $file, $matches2, PREG_SET_ORDER);
 	foreach (array_merge($matches, $matches2) as $val) {
 		if ($val[2] != "NULL") {
 			if (empty($number_refs[$val[2]])) {
-				echo "! $val[2] in $filename is not defined.\n";
+				echo "! $val[2] from $filename is not defined.\n";
 			}
 			$source_refs[strtolower($val[1])] = $number_refs[$val[2]];
 		}
@@ -86,9 +86,12 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 
 // compare with documentation
 foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
-	if (preg_match('~^(.*<methodsynopsis>.*)<methodname>([^<]*)(.*)</methodsynopsis>~sS', file_get_contents($filename), $matches)) {
+	if (preg_match('~^(.*<methodsynopsis>.*)<methodname>([^<]+)<(.*)</methodsynopsis>~sSU', file_get_contents($filename), $matches)) {
 		$lineno = substr_count($matches[1], "\n");
 		$function_name = strtolower($matches[2]);
+		if (strpos($function_name, '-') || strpos($function_name, ':')) {
+			continue; // methods are not supported
+		}
 		$methodsynopsis = $matches[3];
 		$source_ref =& $source_refs[$function_name];
 		preg_match_all('~<parameter>(&amp;)?~S', $methodsynopsis, $matches);
