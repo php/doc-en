@@ -45,6 +45,7 @@ class CHtmlExtParse extends CHtmlParse{
 				$elem = &$this->ATE[$this->EBT[$b][$a]];
 				if($this->comp_properties($elem,$ar)){
 					$elem["dir"] = "ltr";
+					$this->ATE[$this->EBT[$b][$a]+1]["data"] = "&nbsp;".$this->ATE[$this->EBT[$b][$a]+1]["data"];
 				}
 			}
 		}
@@ -56,6 +57,24 @@ class CHtmlExtParse extends CHtmlParse{
 				$this->ATE[$tmp-1]["dir"] = "ltr";
 			}
 		} while($tmp);
+		
+		//fix configure options:
+		$tmp=0;
+		do{
+			if($tmp = $this->get_element_id_by_rule(array("tag"=>"tt","properties"=>array("class","option"),"offset"=>($tmp+1)))){
+				$this->ATE[$tmp]["dir"] = "ltr";
+			}
+		} while($tmp);
+		
+		/*
+		//fix for TOC
+		$tmp=0;
+		do{
+			if($tmp = $this->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","TOC"),"offset"=>($tmp+1)))){
+				$this->ATE[$tmp]["dir"] = "ltr";
+			}
+		} while($tmp);
+		*/
 		
 		//rtl all the divs
 		$div = $HEType["div"];
@@ -108,7 +127,7 @@ class CHtmlExtParse extends CHtmlParse{
 			} else if($tg == __HTML_PROCESS__){
 					$ret[$a].="<".$this->ATE[$a]["data"]. "\n?>";
 			} else if($tg < __HTML_UNKNOWN__){
-					$ret[$a].=$this->ATE[$a]["data"];		
+					$ret[$a].=" ".$this->ATE[$a]["data"]." ";	
 			}
 //mysyslog($ret[$a]);
 		}
