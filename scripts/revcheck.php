@@ -94,7 +94,23 @@ the actual english xml files, and print statistics
     }
     return ($match);
   } // get_tag() function end
+  
+  // Grab CREDITS tag, the place to store previous credits
+  function get_credits ($file) {
 
+    // Read the first 300 chars, the comment should be at
+    // the begining of the file
+    $fp = @fopen($file, "r") or die ("Unable to read $file.");
+    $line = fread($fp, 300);
+    fclose($fp);
+    
+    if (preg_match("'<!--\s*CREDITS:\s*(.+)\s*-->'U",
+                   $line, $match)) {
+      return (explode(",", $match[1]));
+    } else {
+      return array();
+    }
+  } // get_credits() end
 
   // Checks a file, and gather stats
   function check_file($file, $file_cnt)
@@ -128,10 +144,17 @@ the actual english xml files, and print statistics
     $maint  = $t_tag[2];
     $en_rev = get_tag($file);
     
+    // Make the maintainer a link
     if (isset($plist[$maint])) {
       $maintd = '<a href="#maint' . $plist[$maint] . '">' . $maint . '</a>';
     } else {
       $maintd = $maint;
+    }
+    
+    // Get credits comment, and add to array
+    $credits = get_credits($t_file);
+    foreach ($credits as $nick) {
+      $personinfo[trim($nick)]["credits"]++;
     }
 
     // Make diff link if the revision is not n/a
@@ -374,9 +397,10 @@ if (isset($translation["persons"])) {
    <th rowspan=2 bgcolor=#666699>Contact email</th>
    <th rowspan=2 bgcolor=#666699>Nick</th>
    <th rowspan=2 bgcolor=#666699>CVS</th>
-   <th colspan=5 bgcolor=#666699>Files maintained</th>
+   <th colspan=6 bgcolor=#666699>Files maintained</th>
   </tr>
   <tr>
+   <th bgcolor=#666699>credits</th>
    <th bgcolor=#666699>actual</th>
    <th bgcolor=#666699>old</th>
    <th bgcolor=#666699>veryold</th>
@@ -392,9 +416,9 @@ if (isset($translation["persons"])) {
     $pi = $personinfo[$person[3]];
     print("<tr bgcolor=$col><td><a name=\"maint$num\">$person[1]</a></td>" .
           "<td>$person[2]</td><td>$person[3]</td><td>$cvsu</td>" .
-          "<td align=center>$pi[actual]</td><td align=center>$pi[old]</td>" .
-          "<td align=center>$pi[veryold]</td><td align=center>$pi[norev]</td>".
-          "<td align=center>$pi[wip]</td></tr>");
+          "<td align=center>$pi[credits]</td><td align=center>$pi[actual]</td>".
+          "<td align=center>$pi[old]</td><td align=center>$pi[veryold]</td>".
+          "<td align=center>$pi[norev]</td><td align=center>$pi[wip]</td></tr>");
    }
   
   print ("</table>\n<p>&nbsp;</p>\n");
