@@ -101,7 +101,8 @@ the actual english xml files, and print statistics
   {
     // The information is contained in these global arrays and vars
     global $miss_file, $miss_tag, $lang, $docdir, $r_alert, 
-         $s_alert, $t_alert, $maintainer, $cvs_opt;
+         $s_alert, $t_alert, $maintainer, $cvs_opt, $plist,
+         $personinfo;
 
     // Translated file name check
     $t_file = preg_replace( "'^".$docdir."en/'", $docdir.$lang."/", $file );
@@ -126,6 +127,12 @@ the actual english xml files, and print statistics
     // Storing values for further processing
     $maint  = $t_tag[2];
     $en_rev = get_tag($file);
+    
+    if (isset($plist[$maint])) {
+      $maintd = '<a href="#maint' . $plist[$maint] . '">' . $maint . '</a>';
+    } else {
+      $maintd = $maint;
+    }
 
     // Make diff link if the revision is not n/a
     $t_td = substr($t_file, strlen($docdir)+strlen($lang)+1);
@@ -152,12 +159,16 @@ the actual english xml files, and print statistics
     // Taging actuality of files with colors
     if ($r_diff === 0) {
       $col = "#68D888";
+      $personinfo[$maint]["actual"]++;
     } elseif ($r_diff == "n/a") {
       $col = "#f4a460 class=hl";
+      $personinfo[$maint]["norev"]++;
     } elseif ($r_diff >= $r_alert || $s_diff >= $s_alert || $t_diff <= $t_alert) {
       $col = "#ff0000 class=hl";
+      $personinfo[$maint]["veryold"]++;
     } else {
       $col ="#eee8aa";
+      $personinfo[$maint]["old"]++;
     }
 
     // Write out directory headline
@@ -176,7 +187,7 @@ the actual english xml files, and print statistics
           " <td bgcolor=$col align=right>$en_date &nbsp;</td>\n".
           " <td bgcolor=$col align=right>$t_date &nbsp;</td>\n".
           " <td bgcolor=$col align=right><b>$t_diff</b> &nbsp;</td>\n".
-          " <td bgcolor=$col align=center>$maint</td>\n".
+          " <td bgcolor=$col align=center>$maintd</td>\n".
           " <td bgcolor=$col align=center>$t_tag[3]</td>\n</tr>\n");
     return TRUE;
   } // check_file() end
@@ -227,7 +238,45 @@ the actual english xml files, and print statistics
   // Check for directory validity
   if (!@is_dir($docdir . $lang)) {
     die("The $lang language code is not valid");
-  }  
+  }
+  
+  // Used regexps here for parsing to be compatible with
+  // non XML compatible PHP setups
+  $translation_xml = $docdir . $lang . "/translation.xml";
+  $translation = array();
+  if (@file_exists($translation_xml)) {
+    $txml = join("", file($translation_xml));
+
+    // Process main structure
+    preg_match("!<translation>\\s+<intro>(.+)</intro>\\s+" . 
+               "<translators>(.+)</translators>\\s+" . 
+               "<work-in-progress>(.+)</work-in-progress>" .
+               "\\s+</translation>!s", $txml, $match);
+    $translation["intro"] = trim($match[1]);
+    
+    // Common preg pieces: space and quote
+    $s = "\\s*"; $q = '\\s*["\']\\s*'; 
+
+    // Process person list
+    $plist = array();
+    preg_match_all("!<person${s}name${s}=${q}(.+)${q}email${s}=${q}(.+)${q}".
+                   "nick${s}=${q}(.+)${q}(cvs${s}=${q}.+${q}|${s})/${s}>!U", $match[2], $persons, PREG_SET_ORDER);
+    foreach($persons as $num => $person) {
+        if (strstr($person[4], "yes")) { $persons[$num][4] = TRUE; }
+        else { $persons[$num][4] = FALSE; }
+        $plist[$person[3]] = $num;
+    }
+    $translation["persons"] = $persons;
+    unset($persons);
+    $personinfo = array();
+    
+    // Process work-in-progress list
+    preg_match_all("!<file${s}name${s}=${q}(.+)${q}person${s}=${q}(.+)${q}".
+                   "type${s}=${q}(.+)${q}/${s}>!U", $match[3], $files, PREG_SET_ORDER);
+    $translation["files"] = $files;
+    unset($files);
+    //print_r($translation);
+  }
   
   print("<html>
 <head>
@@ -251,7 +300,15 @@ the actual english xml files, and print statistics
    </td></tr>
   </table>
  </td></tr>
-</table> <br>
+</table> <br>");
+
+if (isset($translation["intro"])) {
+    print('<table width="750" align="center"><tr><td>' . $translation[intro] . '</td></tr></table><p></p>');
+}
+
+ob_start();
+
+print("
 <table width=750 border=0 cellpadding=4 cellspacing=1 align=center>
  <tr>
   <th rowspan=2 bgcolor=#666699>Translated file</th>
@@ -274,34 +331,109 @@ the actual english xml files, and print statistics
  </tr>
 ");
 
-  // Check the English directory
-  check_dir($docdir."en/");
+// Check the English directory
+check_dir($docdir."en/");
 
+print("</table>\n<p>&nbsp;</p>\n");
+
+// If work-in-progress available (valid translation.xml file in lang)
+if (isset($translation["files"])) {
+  print("
+  <table width=750 border=0 cellpadding=4 cellspacing=1 align=center>
+  <tr>
+   <th bgcolor=#666699>Work in progress files</th>
+   <th bgcolor=#666699>Translator</th>
+   <th bgcolor=#666699>Type</th>
+  </tr>
+  ");
+  
+  foreach($translation["files"] as $num => $filei) {
+    if (isset($plist[$filei[2]])) {
+      $maintd = '<a href="#maint' . $plist[$filei[2]] . '">' . $filei[2] . '</a>';
+    } else { 
+      $maintd = $filei[2];
+    }
+    print("<tr bgcolor=#DDDDDD><td>$filei[1]</td>" .
+          "<td>$maintd</td><td>$filei[3]</td></tr>");
+    $personinfo[$filei[2]]["wip"]++;
+    $wip_files[$filei[1]] = TRUE;
+ }
+  
+  print ("</table>\n<p>&nbsp;</p>\n");
+} 
+
+$file_lists = ob_get_contents();
+ob_end_clean();
+ 
+// If person list available (valid translation.xml file in lang)
+if (isset($translation["persons"])) {
+  print("
+  <table width=750 border=0 cellpadding=4 cellspacing=1 align=center>
+  <tr>
+   <th rowspan=2 bgcolor=#666699>Translator's name</th>
+   <th rowspan=2 bgcolor=#666699>Contact email</th>
+   <th rowspan=2 bgcolor=#666699>Nick</th>
+   <th rowspan=2 bgcolor=#666699>CVS</th>
+   <th colspan=5 bgcolor=#666699>Files maintained</th>
+  </tr>
+  <tr>
+   <th bgcolor=#666699>actual</th>
+   <th bgcolor=#666699>old</th>
+   <th bgcolor=#666699>veryold</th>
+   <th bgcolor=#666699>norev</th>
+   <th bgcolor=#666699>wip</th>
+  </tr>
+  ");
+  
+  foreach($translation["persons"] as $num => $person) {
+    if ($person[4]) { $cvsu = "yes"; $col = "#eee8aa"; }
+    else { $cvsu = "no"; $col = "#dcdcdc"; }
+    $person[2] = str_replace("@", "<small>:at:</small>", $person[2]);
+    $pi = $personinfo[$person[3]];
+    print("<tr bgcolor=$col><td><a name=\"maint$num\">$person[1]</a></td>" .
+          "<td>$person[2]</td><td>$person[3]</td><td>$cvsu</td>" .
+          "<td align=center>$pi[actual]</td><td align=center>$pi[old]</td>" .
+          "<td align=center>$pi[veryold]</td><td align=center>$pi[norev]</td>".
+          "<td align=center>$pi[wip]</td></tr>");
+   }
+  
+  print ("</table>\n<p>&nbsp;</p>\n");
+} 
+
+print($file_lists);
+
+// Files without revision comment
+$count = count($miss_tag);
+if ($count > 0) {
+  print("<table width=350 border=0 cellpadding=3 cellspacing=1 align=center>\n".
+        " <tr><th bgcolor=#666699><b>Files without Revision-comment ($count files):</b></th></tr>\n");
+  foreach($miss_tag as $val) {
+    print(" <tr><td bgcolor=#DDDDDD>&nbsp; $val</td></tr>\n");
+  }
   print("</table>\n<p>&nbsp;</p>\n");
+}
 
-  // Files without revision comment
-  if (count($miss_tag) > 0) {
-    print("<table width=350 border=0 cellpadding=3 cellspacing=1 align=center>\n".
-          " <tr><th bgcolor=#666699><b>Files without Revision-comment:</b></th></tr>\n");
-    foreach($miss_tag as $val) {
-      print(" <tr><td bgcolor=#DDDDDD>&nbsp; $val</td></tr>\n");
-    }
-    print("</table>\n<p>&nbsp;</p>\n");
+// Clear out work in progress files from available files
+if (isset($wip_files)) {
+  foreach($miss_file as $num => $finfo) {
+    if (isset($wip_files[substr($finfo[0],1)])) { unset($miss_file[$num]); }
   }
+}
 
-  // Files not translated
-  if (count($miss_file) > 0) {
-    print("<table width=350 border=0 cellpadding=3 cellspacing=1 align=center>\n".
-          " <tr><th colspan=2 bgcolor=#666699><b>Untranslated Files:</b></th></tr>\n");
-    foreach($miss_file as $v) {
-        print(" <tr><td bgcolor=#DDDDDD>&nbsp; en$v[0]</td>".
-              "<td align=right bgcolor=#DDDDDD>$v[1] kB &nbsp;</td></tr>\n");
-    }
-    print("</table>\n<p>&nbsp;</p>\n");
+// Files not translated and not "wip"
+$count = count($miss_file);
+if ($count > 0) {
+  print("<table width=350 border=0 cellpadding=3 cellspacing=1 align=center>\n".
+        " <tr><th colspan=2 bgcolor=#666699><b>Available for translation ($count files):</b></th></tr>\n");
+  foreach($miss_file as $v) {
+      print(" <tr><td bgcolor=#DDDDDD>&nbsp; en$v[0]</td>".
+            "<td align=right bgcolor=#DDDDDD>$v[1] kB &nbsp;</td></tr>\n");
   }
+  print("</table>\n<p>&nbsp;</p>\n");
+}
 
-  // All OK, end the file
-  print("</body>\n</html>\n");
-  echo "Done!\n";
+// All OK, end the file
+print("</body>\n</html>\n");
+echo "Done!\n";
 
 ?>
