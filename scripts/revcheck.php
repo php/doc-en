@@ -370,6 +370,7 @@ the actual english xml files, and print statistics
 <style type=\"text/css\"><!-- 
  h2 {font-family: Arial,Helvetica,sans-serif; color: #FFFFFF; font-size: 28px; }
  td,a,p {font-family: Arial,Helvetica,sans-serif; color: #000000; font-size: 14px; }
+ a.ref {font-family: Arial,Helvetica,sans-serif; color: #FFFFFF; font-size: 14px; }
  th {font-family: Arial,Helvetica,sans-serif; color: #FFFFFF; font-size: 14px; font-weight: bold; }
 .hl {font-family: Arial,Helvetica,sans-serif; color: #000000; font-size: 14px; font-weight: bold; }
 body {margin-left: 0px; margin-right: 0px; margin-top: 0px; margin-bottom: 0px; }
@@ -397,7 +398,7 @@ ob_start();
 print("
 <table width=\"820\" border=\"0\" cellpadding=\"4\" cellspacing=\"1\" align=\"center\">
 <tr>
-  <th rowspan=\"2\" bgcolor=\"#666699\">Translated file</th>
+  <th rowspan=\"2\" bgcolor=\"#666699\"><a name=\"translated\" class=\"ref\">Translated file</a></th>
   <th colspan=\"3\" bgcolor=\"#666699\">Revision</th>
   <th colspan=\"3\" bgcolor=\"#666699\">Size in kB</th>
   <th colspan=\"3\" bgcolor=\"#666699\">Age in days</th>
@@ -432,7 +433,7 @@ if (isset($translation["files"])) {
   print("
   <table width=\"820\" border=\"0\" cellpadding=\"4\" cellspacing=\"1\" align=\"center\">
   <tr>
-   <th bgcolor=\"#666699\">Work in progress files</th>
+   <th bgcolor=\"#666699\"><a name=\"wip\" class=\"ref\">Work in progress files</a></th>
    <th bgcolor=\"#666699\">Translator</th>
    <th bgcolor=\"#666699\">Type</th>
   ");
@@ -466,7 +467,7 @@ if (isset($translation["persons"])) {
   print("
   <table width=\"820\" border=\"0\" cellpadding=\"4\" cellspacing=\"1\" align=\"center\">
   <tr>
-   <th rowspan=\"2\" bgcolor=\"#666699\">Translator's name</th>
+   <th rowspan=\"2\" bgcolor=\"#666699\"><a name=\"translators\" class=\"ref\">Translator's name</a></th>
    <th rowspan=\"2\" bgcolor=\"#666699\">Contact email</th>
    <th rowspan=\"2\" bgcolor=\"#666699\">Nick</th>
    <th rowspan=\"2\" bgcolor=\"#666699\">CVS</th>
@@ -526,7 +527,7 @@ if (isset($wip_others)) {
 $count = count($missed_files);
 if ($count > 0) {
   print("<table width=\"440\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n".
-        " <tr><th colspan=\"2\" bgcolor=\"#666699\"><b>Available for translation ($count files):</b></th></tr>\n");
+        " <tr><th colspan=\"2\" bgcolor=\"#666699\"><b><a name=\"avail\" class=\"ref\">Available for translation</a> ($count files):</b></th></tr>\n");
   foreach($missed_files as $file => $info) {
       print(" <tr><td bgcolor=\"#DDDDDD\">&nbsp; $file</td>".
             "<td align=\"right\" bgcolor=\"#DDDDDD\">$info[0] kB &nbsp;</td></tr>\n");
