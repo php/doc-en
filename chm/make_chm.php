@@ -21,6 +21,7 @@ if (empty($FANCY_PATH)) { $FANCY_PATH = $HTML_PATH; }
 
 // Array to manual code -> HTML Help Code conversion
 // Code list: http://www.helpware.net/htmlhelp/hh_info.htm
+// Charset list: http://www.microsoft.com/globaldev/nlsweb/default.asp
 $LANGUAGES = array(
     "tw"    => array(
                    "langcode" => "0x404 Traditional Chinese",
@@ -89,11 +90,11 @@ $LANGUAGES = array(
                ),
     "sl"    => array(
                    "langcode" => "0x41d Slovenian",
-                   "preferred_charset" => "Windows-1252",
+                   "preferred_charset" => "Windows-1250",
                    "preferred_font" => $DEFAULT_FONT
                ),
     "sv"    => array(
-                   "langcode" => "0x41d Swedish (Netherlands)",
+                   "langcode" => "0x41d Swedish",
                    "preferred_charset" => "Windows-1252",
                    "preferred_font" => $DEFAULT_FONT
                ),
