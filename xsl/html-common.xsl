@@ -3,7 +3,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.7 2002-02-09 18:27:27 goba Exp $
+  $Id: html-common.xsl,v 1.8 2002-02-10 10:13:33 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -64,8 +64,34 @@
 
 <!-- Add version information bellow function name -->
 <xsl:template match="refnamediv">
-  <p>(<xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>)</p>
-  <xsl:apply-imports/>
+  <div class="{name(.)}">
+    <xsl:call-template name="anchor"/>
+    <xsl:choose>
+      <xsl:when test="$refentry.generate.name != 0">
+        <h2>
+          <xsl:call-template name="gentext">
+            <xsl:with-param name="key" select="'RefName'"/>
+          </xsl:call-template>
+        </h2>
+      </xsl:when>
+      <xsl:when test="$refentry.generate.title != 0">
+        <h2>
+          <xsl:choose>
+            <xsl:when test="../refmeta/refentrytitle">
+              <xsl:apply-templates select="../refmeta/refentrytitle"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:apply-templates select="refname[1]"/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </h2>
+      </xsl:when>
+    </xsl:choose>
+    <p>(<xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>)</p>
+    <p>
+      <xsl:apply-templates/>
+    </p>
+  </div>
 </xsl:template>
 
 <!-- This is the same as in DocBook XSL, except that we
