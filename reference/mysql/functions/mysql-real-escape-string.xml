@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.10 $ -->
+<!-- $Revision: 1.11 $ -->
 <!-- splitted from ./en/functions/mysql.xml, last change in rev 1.100 -->
   <refentry id="function.mysql-real-escape-string">
    <refnamediv>
     <refname>mysql_real_escape_string</refname>
     <refpurpose>
-     Escapes special characters in a string for use in a SQL statement, taking into account the current charset of the connection.
+     Escapes special characters in a string for use in a SQL statement,
+     taking into account the current charset of the connection.
     </refpurpose>
    </refnamediv>
    <refsect1>
@@ -16,46 +17,131 @@
      <methodparam choice="opt"><type>resource</type><parameter>link_identifier</parameter></methodparam>
     </methodsynopsis>
     <para>
+     <variablelist>
+      <varlistentry>
+       <term><parameter>unescaped_string</parameter></term>
+       <listitem><simpara>The string to escape</simpara>
+       </listitem>
+      </varlistentry>
+      <varlistentry>
+       <term><parameter>link_identifier</parameter> (optional)</term>
+       <listitem><simpara>The mysql connection resource</simpara></listitem>
+      </varlistentry>
+     </variablelist>
+    </para>
+    <para>
      This function will escape special characters in the
      <parameter>unescaped_string</parameter>, taking into account the current
      charset of the connection so that it is safe to place it in a
-     <function>mysql_query</function>. 
+     <function>mysql_query</function>. If you wish to insert binary data
+     you must use this function.
     </para>
-    <note>
-     <simpara>
-      <function>mysql_real_escape_string</function> does not escape
-      <literal>%</literal> and <literal>_</literal>.
-     </simpara>
-    </note>
+    <para>
+     mysql_real_escape_string calls MySQL's library function of the
+     same name, which prepends slashes to the following characters:
+     <literal>NULL</literal>, <literal>\x00</literal>, <literal>\n</literal>,
+     <literal>\r</literal>, <literal>\</literal>, <literal>'</literal>,
+     <literal>"</literal> and <literal>\x1a</literal>.
+    </para>
+    <para>
+     You must always (with few exceptions) use this function
+     to make your data safe before inserting. If you have
+     <link linkend="ini.magic-quotes-gpc">magic_quotes_gpc</link> enabled,
+     you must first <function>stripslashes</function> your data. If you don't use
+     this, you'll leave yourself open to SQL Injection Attacks. Here's an example:
+    </para>
     <para>
      <example>
-      <title><function>mysql_real_escape_string</function> example</title>
+      <title>An example SQL Injection Attack</title>
       <programlisting role="php">
 <![CDATA[
 <?php
-$link = mysql_connect('localhost', 'mysql_user', 'mysql_password');
-if (!$link) {
-    die('Could not connect: ' . mysql_error());
+// Query database to check if there are any matching users
+$query = "SELECT * FROM users WHERE user='{$_POST['username']}' AND password='{$_POST['password']}'";
+mysql_query($query);
+
+// We didn't check $_POST['password'], it could be anything the user wanted! For example:
+$_POST['username'] = 'aidan';
+$_POST['password'] = "' OR 1=1";
+
+// This means the query sent to MySQL would be:
+echo $query;
+?>
+]]>
+      </programlisting>
+       <para>
+        The query sent to MySQL:
+       </para>
+      <screen>
+<![CDATA[
+SELECT * FROM users WHERE name='fred' AND password='' OR 1=1
+]]>
+      </screen>
+      <para>
+       This would allow anyone to log in without a valid password! Using
+       <function>mysql_real_escape_string</function> around each variable
+       prevents this.
+      </para>
+      <programlisting role="php">
+<![CDATA[
+<?php
+/**
+ * Apply stripslashes recursively
+ */
+function stripslashes_deep($value)
+{
+    $value = is_array($value) ?
+                array_map('stripslashes_deep', $value) :
+                stripslashes($value);
+
+    return $value;
 }
-$item = "Zak's and Derick's Laptop";
-$escaped_item = mysql_real_escape_string($item, $link);
-printf("Escaped string: %s\n", $escaped_item);
+
+/**
+ * Quote a variable to make it safe for insertion
+ */
+function quote_smart($value)
+{
+    // Stripslashes if we need to
+    if (get_magic_quotes_gpc()) {
+        $value = stripslashes_deep($value);
+    }
+
+    // Quote it if it's not an interger
+    if (!is_int($value)) {
+        $value = "'" . mysql_real_escape_string($value) . "'";
+    }
+
+    return $value;
+}
+
+// Connect
+$link = mysql_connect('localhost', 'mysql_user', 'mysql_password')
+    OR die('Could not connect: ' . mysql_error());
+
+// Make a safe query
+$query = sprintf("SELECT * FROM users WHERE user=%s AND password=%s",
+            quote_smart($_POST['username']),
+            quote_smart($_POST['password']));
+
+mysql_query($query);
 ?>
 ]]>
       </programlisting>
       <para>
-       The above example would produce the following output:
+       Our query is now safe no matter what the user submits!
       </para>
-      <screen>
-<![CDATA[
-Escaped string: Zak\'s and Derick\'s Laptop
-]]>
-      </screen>
      </example>
     </para>
+    <note>
+     <simpara>
+      <function>mysql_real_escape_string</function> does not escape
+      <literal>%</literal> and <literal>_</literal>. These are wildcards in MySQL
+      if not bounded by quotes.
+     </simpara>
+    </note>
     <para>
      See also
-     <function>mysql_escape_string</function>,
      <function>mysql_client_encoding</function>,
      <function>addslashes</function>, and the 
      <link linkend="ini.magic-quotes-gpc">magic_quotes_gpc</link>
