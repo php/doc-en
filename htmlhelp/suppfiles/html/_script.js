@@ -135,7 +135,7 @@ function _displayNotes()
 // affecting several IE 5.5 and IE 6 installations]
 function loadNotes()
 {
-    document.write('<script src="mk:@MSITStore:' +
+    document.write('<script src="ms-its:' +
     chmfile_path + 'php_manual_notes.chm::/_filelist.js"></script>');
 }
 
@@ -144,7 +144,7 @@ function notesIframe()
 {
     // Notes buffer for user notes to display on this page
     document.write(
-        '<iframe name="nbuff" style="display:none" src="mk:@MSITStore:' +
+        '<iframe name="nbuff" style="display:none" src="ms-its:' +
         chmfile_path + 'php_manual_notes.chm::/' + chmfile_page +
         '"></iframe>'
     );
