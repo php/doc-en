@@ -186,6 +186,7 @@ function refineFile($filename)
 
     // !!! Temporary fix for XSLT output escaping problems
     $content = preg_replace("!&amp;raquo; !", "&raquo; ", $content);
+    $content = preg_replace("!&amp;nbsp; !", "&nbsp; ", $content);
     
     //------------------------------------------------------------------
     // Write out file to HTML output directory
