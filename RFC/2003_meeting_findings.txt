@@ -1,0 +1,341 @@
+2003 PHP Documentation Team Meeting findings
+==============================================================================
+
+[See also the agenda in the 2003_meeting_agenda.html file]
+
+Attending (in no particular order):
+ - Hartmut Holzgraefe
+ - Wez Furlong
+ - Friedhelm Betz
+ - Steph Fox
+ - Sebastian Bergmann (partial)
+ - Marcus Börger
+ - Magnus Määtä
+ - Gabor Hojtsy
+ - Rasmus Lerdorf
+ - Christian Stocker (partial)
+ - Sandro Zic (partial)
+ - Derick Rethans
+ 
+0. Prolog
+------------------------------------------------------------------------------
+
+The general outcome of the docmeeting was that most of our problems are
+related to the overcomplicated and hard-to-maintain build system we use,
+and the upcoming livedocs documentation renderer will solve most of those
+problems. That will mean easier contribution, quicker and better content
+distribution to sites, on-the-fly previews, better searching, etc. As a
+concolusion, we have found out, that livedocs *is* the solution for most
+of the problems, so the work done towards fixing problems in the current
+system should be concentrated on getting livedocs be ready for our needs
+as soon as possible.
+
+1. Credits
+------------------------------------------------------------------------------
+
+Wez came up with the idea of putting author information into the refentries
+and sections, which should make it quite easy to give credit. This can be
+done with a <docinfo> in a <refentry>, and a <sectioninfo> for a <section>.
+Both of these take on an <authorgroup> element which may contain all
+necessary information. This method lets people decide on who to give credit
+to on a small scale, and enables automation of extracting credit information
+from XML files.
+ 
+Start from http://www.docbook.org/tdg/en/html/authorgroup.html to get
+more information on the tag and possible parents.
+
+For translated versions, the nicknames can be fetched from the Revision
+comments, where those are appropriately specified. For the original English
+text, everything not added by Hartmut [who have done file splits, movearounds]
+can probably be credited to the first committer.
+
+For the other files, people should just complain that they added it, and it
+can be done by hand (they provide a link to their commit). For the language,
+tutorial, and other sections it can be done by hand for now.
+
+There are other type of contributors, who we cannot assign to individual XML
+files. So there should be a separate [maybe partially generated] credits file
+with their details.
+
+Types of other contributors:
+ - user note maintainers:
+    andrew, meebay, didou, ... The list can be generated from the php-notes
+    mailing list archive. Wez is going to do make a script pull it out from
+    archives, and after that we're going to put up guidelines for who is a
+    maintainer and who is not.
+ - techinical editors:
+    hartmut, egon, goba ... Techical editors [unless someone finds a better
+    name] are those who edit the documentation and contribute to the build
+    system helping the work of authors and translators.
+ - authors:
+    stig, philip ... Authors are for one part those who are historically
+    preserved, and are not available to connect to XML files as authors.
+    For another part, they are those who contribute content on a large
+    scale.
+
+It is generally quite hard to put people in a group, thus it will be decided
+by group consensus. A person is not limited to be listed in only one group.
+  
+The author information detailed above is used to print out the author's name
+on individual documentation pages in the footer with a small font. If there is
+no author info section for a specific page in the XML file, then the author[s]
+of the parent is shown.
+ 
+The author info will also be used to generate a full listing of every
+contributor involved in the documentation process. This list will be presented
+on the bookinfo page. For translations, the translators names will show below
+the authors in a separate section.
+
+History should be preserved/maintained in all the crediting systems involved.
+
+The idea of presenting the author of the PHP extension itself also came up,
+and was generally agreed on. The documentation system can grab the list of
+authors from the php-src/EXTENSIONS file, and will generate extension
+specific author information by the side of the documentation authors' list.
+
+2. Visual editing
+------------------------------------------------------------------------------
+
+To lower the barrier to work/in for the PHP Documentation Team, we should
+provide a simple method to translate/edit files and also to add documentation.
+
+The easiest way is to provide a simple webapp, so translators only need to
+focus on the content when working on the docs. Probably bitflux editor will
+be the base of this webapp. The idea is to put it to work online and see how
+it can be integrated to our workflow.
+
+The main question is how XML files will get to the editor (a checked out
+phpdoc repository should be on the server behind?), and how the
+edited/translated files will go back into the CVS system. We need to make
+sure, that users of this system will see a unified diff, and that somehow /
+somewhere a make test is run before any commit is done.
+
+While this visual editing system will be optional, the command line based
+phpdoc environment should also be simplified to help translators (ie.
+remove DSSSL dependencies, tools, etc). Livedocs will help much in the
+on-the-fly previewing of XML files for those too who will still edit
+files with their own text editors.
+
+ > PROGRESS: See Sandro's blog entry on some afterthoughts on such a visual
+   editing system: http://www.zzoss.com/weblog/index.php?m=200307#106
+
+3. User note handling
+------------------------------------------------------------------------------
+
+Most people think that the approval system should go back in, but also there
+should be a possibility to provide a reason when rejecting a note as to tell
+the note provider why the note was rejected. If an email address of the note
+provider is available, this should be mailed to him/her.
+
+If a note maintainer doesn't know if one note is appropriate, s/he should ask
+the maintainer of the extension.
+
+Either Jim or Rasmus will add functionality to allow the general public to 
+subscribe as a "maintainer" for certain note sections, as per ext/section.
+In other words, allow people without cvs accounts to maintain user notes.
+
+The user note submission interface should be extended to have an option
+for users to allow the display of their email addresses or not. The mirror
+distribution system should be fixed to distribute the email addresses
+obfuscated, so there will be no clear email addresses in the data files.
+We should also think of some solution for the problem that notes are
+directly posted to the php-notes list with the email address provided,
+so the archives emails are open for spammert to collect email addresses.
+
+We have discussed the user note rating system used at gtk.php.net, and
+Steph convinced us, that there is really no advantage they have gained from
+it, as the average note point is around 3.0 (the default value). Also note
+reordering by rating causes problems with notes reflecting to each other
+(eg. "in the message above"). Therefore we are not going to put effort into
+implementing this system on the PHP website.
+
+The user notes will be bundled with some of the offline formats, so users
+without always-on internet access can read the contents as well.
+
+ > DONE: Email address obfuscation on the rsync server [Goba]
+
+4. Buildsystem
+------------------------------------------------------------------------------
+
+We have discussed to replace most of the currently used tools with livedocs
+to serve manual pages on mirror sites and to pregenerate manuals for download.
+
+For the mirror sites, we would not like to add too much work on the mirror
+administrators' shoulders, so we need to pregenerate the index neeeded by
+livedocs on the rsync server (which needs a configured phpdoc build system)
+and distribute the data with rsync (already set up for mirror sites). The
+only new component we require mirror sites to set up is the PHP SQLite
+extension, which is the only requirement of livedocs to be used on mirror
+sites.
+
+We will push out the preconfigured XML sources of phpdoc to the mirror sites
+instead of the pregenerated PHP files of the manual, plus the index generated
+on the rsync server. This index enables livedocs to locate manual parts
+quickly, as well as to perform a full text search in the manual (thanks to
+Ilia). This will solve our website search problem hopefully, though this
+search needs to be extended to be able to search in the very few PHP files
+too on the site (we should ask Ilia to do this). 404 based caching will be
+employed to cache generated pages, so commonly accessed manual pages will
+be pregenerated on the mirror site by livedocs. The cache will be in the
+website's rsync space, so it will be emptyed on every rsync run (with
+current recommended rsync setup).
+
+For printer friendly manual pages, either a different CSS file will be added
+(preferred), or if it does not fit, then the current printer friendly
+URL scheme will be used to print out the pages in a different layout. To make
+printing of extension documentation easier, a "one HTML page per extension"
+option should be added to livedocs by Derick.
+ 
+The XML files on the rsync server will be updated twice a day (every 12
+hours), so new content will get quickly to the mirror sites. In case of there
+are validity or indexing problems with the XML files, no new index will be
+created, and no new XML files will be pushed out. In this case, a warning mail
+will be sent to the phpdoc list, so editors can quickly fix the problem.
+
+We also discussed adding precommit checks to validate the XML files committed,
+inform the commiter of any problems, BUT not stop the commit. In coming up with
+a way to prevent checking in translated versions of files in place of the
+English ones, we can't really find a way of preventing that except for
+tightening CVS access on a by translation base. 
+
+The phpdoc configure system needs to be adapted to xsltproc tools, so
+it should use xmllint instead of nsgmls for validity testing. This lowers
+the requirements to run livedocs and in general to run a phpdoc build
+system. Goba will do this.
+
+For the pregenerated documentation, livedocs should be capable of generating
+HTML files out of the manual XML files for all languages. This will be used
+to generate the "multiple HTML files" version of the documentation, and will
+be generated weekly for all languages.
+
+Livedocs should also be capable of generating one big HTML file for the
+documentation, as this can be used as a base for the Palm formats and the
+PDF format too. If we can find a tool to convert the big HTML file leaving
+links intact, we should use it to generate PDFs from the HTML file. Damien
+may be able to help us, as he uses a very similar approach in his special
+French version of the docs.
+
+It is a good question, whether we need the Palm versions at all? Somebody
+should check how often they are downloaded. For now, we can use the method
+already implemented (generate bightml and then the Palm version out of it).
+
+For the CHM formats, Derick will create another XSL file to generate the CHM
+TOC and index file. Livedocs generated HTML files will be used in the CHMs
+too.
+
+5. Manual structure
+------------------------------------------------------------------------------
+
+As for referece part groupings, we have verified, that there is no solution
+in the DocBook DTD to group reference parts. Livedocs is the answer for this
+question, as it does not really care about the DTD, and is all written in PHP,
+so modifying the code is easy.
+
+About see also lists, the attendees of the meeting concluded in that the
+current see also writing scheme is fine, and there is no need to modify
+it.
+
+The manpage based structure of the function pages were not accepted. Rasmus
+convinced everybody that the manual should be consistent within itself, and
+if some function is not documented the way the others are documented, then
+it should be fixed. Therefore this change is only acceptable if someone
+volunteers to do it in one step [so the manual won't be inconsistent].
+
+Marcus proposed an extended proto scheme (expressed in BNF), which will
+enable the documentation of OO code written in PHP extensions. We already
+have a script to compare prototypes in the PHP source and in the docs
+(bughunter.php), but it either needs to be extended to support the new
+format, or a new program needs to be written. Marcus said he will write
+a new program in C.
+
+Goba will merge Derick's note/tip/caution/warning usage guidelines into
+the HOWTO, so it will be clear for authors when to use these tags.
+
+6. PHP 5 and PECL
+------------------------------------------------------------------------------
+
+The arrival of PHP 5 really only has it's effect on the OO documentation
+pages, so that sections should be split into multiple pages, and we should
+add the version specific changes there. All the examples in the PHP
+documentation should be 4/5 version independent, unless some version
+specific feature is presented, in which case the example should clearly
+state that.
+
+While most of the extensions [if not all] will be moved to PECL, many will
+still be bundled with PHP. A user would also expect to find documentation
+for these at one place, as we discussed earlier, that we need to make the
+PECL and PHP docs close to each other. This means that the PECL docs should
+have the same format, PECL extension docs should be accessible from php.net
+URL shortcuts, etc. This effectively means that PECL would have a copied
+version of our build system.
+
+To better organize resources, Rasmus suggested that we should keep all the
+PECL extension docs in phpdoc, therefore there will be no need to maintain
+two system, two translation teams, two rendering engines, etc. This helps
+PECL look like a very much PHP-tied project, and will help extension gain 
+more popularity.
+
+If the number of PECL extensions grow significantly, first we need to have
+some support for hiding the non-default extensions from the default TOC,
+and from the search results. If there will be a very huge number of PECL
+projects, we need to reconsider the split.
+
+For PECL extensions, authors/credits can be read from the package.xml file,
+so we can put this information into the docs automaticaly.
+
+7. What to do with PHP 3 docs
+------------------------------------------------------------------------------
+
+We discussed the complete removal of the "Extending PHP 3" section, and the
+complete removal of the debugging section. For the rest of the manual, every
+PHP 3 specific section should be marked clearly as such.
+
+8. Better experience
+------------------------------------------------------------------------------
+
+Most of this part was already discussed in the build system point, and most
+of the advancements can be done with livedocs (eg. syntax highlighting).
+
+As the PECL docs will be in phpdoc, the URL shortcuts will automatically work
+for PECL. We will not implement URL shortcuts on php.net for PEAR, unless the
+PEAR people come up, and update, a static list of their own. (Perhaps ask
+Lukas about it).
+
+9. Seperation of PHP Manual and Internals Manual
+------------------------------------------------------------------------------
+
+As we already agreed on having one build system for our projects in the 6th
+point, we concluded in having the internals documentation in the same XML
+structure as the PHP documentation in phpdoc.
+
+We should move all development docs into one <part> (throwing out ZendAPI cvs
+on the road). The Zend API docs should be updated to contain actual
+information.
+
+Again, livedocs should be capable of presenting different "views" for
+different visitors. The default view should not include the development
+docs. Livedocs will use multiple caches to cache files served with
+different views.
+
+10. Licenses
+------------------------------------------------------------------------------
+
+Rasmus will add a new mailing list (doc-license@lists.php.net) where license
+questions will be discussed. Anyone, who subscribes to this mailing list can
+become part of the process, thus eliminating problems with any elections
+needed to select a few responsible people.
+
+Generally the use of documentation is only problematic, if it is done on a
+large scale. If only some small part is redistributed, than it will probably
+be no pain for us. If someone would like to publish a significant amount
+of our work, then we will probably require him to give something back (ie.
+fix errors in the docs / translation or add examples). In case of translations,
+the group should ask those working on the translation too.
+
+11. Misc notes
+------------------------------------------------------------------------------
+
+We'll try to put a class like an ext in the docs. 
+ [I am unable to understand what is this about - Goba]
+
+Derick/Wez should fix the fopen() page to make it not look like a huge note.
