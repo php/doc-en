@@ -85,7 +85,7 @@ $LANGUAGES = array(
                    "langcode" => "0x412 Korean",
                    "preferred_charset" => "CP949",
                    "mime_charset_name" => "EUC-KR",
-                   "preferred_font" => "BatangChe,10,0"
+                   "preferred_font" => "Gulim,10,0"
                ),
     "nl"    => array(
                    "langcode" => "0x413 Dutch (Netherlands)",
