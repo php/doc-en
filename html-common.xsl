@@ -2,7 +2,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.1 2001-02-11 21:51:24 jkj Exp $
+  $Id: html-common.xsl,v 1.2 2001-03-12 13:58:25 jkj Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -11,6 +11,9 @@
 <xsl:param name="funcsynopsis.style">ansi</xsl:param>
 <xsl:param name="funcsynopsis.decoration">1</xsl:param>
 <xsl:param name="refentry.generate.name">0</xsl:param>
+
+<!-- Load version information into variable -->
+<xsl:param name="version" select="document('version.xml')/versions"/>
 
 <!-- We do not want semicolon at the end of prototype -->
 <xsl:template match="paramdef">
@@ -86,5 +89,11 @@
 
 <!-- Title abbreviations are not used in HTML output AFAIK -->
 <xsl:template match="titleabbrev"/>
+
+<!-- Add version information bellow function name -->
+<xsl:template match="refnamediv">
+  <p>(<xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>)</p>
+  <xsl:apply-imports/>
+</xsl:template>
 
 </xsl:stylesheet>
