@@ -53,7 +53,7 @@ $argc = count($argv);
 
 // Test argument number
 if ($argc != 5) {
-    die("ERROR: Missing argument[s], cannot generate file-entities.ent");
+    die("ERROR: Missing argument[s], cannot generate file-entities.ent\n");
 }
 
 // Zend API integration info (either a path or "notfound")
