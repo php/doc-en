@@ -1,8 +1,8 @@
 #!/bin/sh
-# $Id: genfuncsummary.sh,v 1.1 2002-01-06 15:42:31 hholzgra Exp $
+# $Id: genfuncsummary.sh,v 1.2 2002-01-07 10:25:09 goba Exp $
 
 if test -f funcsummary.awk; then
-  awkscrpit=funcsummary.awk
+  awkscript=funcsummary.awk
 elif test -f scripts/funcsummary.awk; then
   awkscript=scripts/funcsummary.awk
 else
