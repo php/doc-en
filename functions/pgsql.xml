@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.79 $ -->
+<!-- $Revision: 1.80 $ -->
  <reference id="ref.pgsql">
   <title>PostgreSQL functions</title>
   <titleabbrev>PostgreSQL</titleabbrev>
@@ -2333,7 +2333,9 @@ $dbconn4 = pg_connect ($conn_string);
      </methodsynopsis>
     <para>
      <function>pg_escape_string</function> escapes string for
-     text/char datatype.  It returns escaped string.
+     text/char datatype.  It returns escaped string for
+     PostgreSQL. Use of this functon is recommended instead of
+     <function>addslashes</function>.
     </para>
     <note>
      <para>
@@ -2376,7 +2378,293 @@ $dbconn4 = pg_connect ($conn_string);
     </para>    
    </refsect1>
   </refentry>
+
+
+
+  <refentry id='function.pg-metadata'>
+   <refnamediv>
+    <refname>pg_metadata</refname>
+    <refpurpose>
+     Get metadata for table.
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>array</type><methodname>pg_metadata</methodname>
+      <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
+      <methodparam><type>string</type><parameter>table_name</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     <function>pg_metadata</function> returns table definition for
+     <literal>table_name</literal> as array. If there is error, it
+     returns &false
+    </para>
+    <note>
+     <para>
+      This function is experimental.
+     </para>
+    </note>
+    <para>
+     See also <function>pg_convert</function>
+    </para>    
+   </refsect1>
+  </refentry>
  
+
+
+  <refentry id='function.pg-convert'>
+   <refnamediv>
+    <refname>pg_convert</refname>
+    <refpurpose>
+     Convert associative array value into suitable for SQL statement.
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>array</type><methodname>pg_convert</methodname>
+      <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
+      <methodparam><type>string</type><parameter>table_name</parameter></methodparam>
+      <methodparam><type>array</type><parameter>assoc_array</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     <function>pg_convert</function> check and convert <literal>assoc_array</literal> suitable for SQL statement.
+    </para>
+    <note>
+     <para>
+      This function is experimental.
+     </para>
+    </note>
+    <para>
+     See also <function>pg_metadata</function>
+    </para>    
+   </refsect1>
+  </refentry>
+ 
+
+
+  <refentry id='function.pg-insert'>
+   <refnamediv>
+    <refname>pg_insert</refname>
+    <refpurpose>
+     Insert array into table.
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>bool</type><methodname>pg_insert</methodname>
+      <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
+      <methodparam><type>string</type><parameter>table_name</parameter></methodparam>
+      <methodparam><type>array</type><parameter>assoc_array</parameter></methodparam>
+      <methodparam choice="opt"><type>bool</type><parameter>convert</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     <function>pg_insert</function> inserts
+     <literal>assoc_array</literal> which has
+     <literal>field=>value</literal> into table specified as
+     <literal>table_name</literal>. If <literal>convert</literal> is
+     not specified or &true, <function>pg_convert</function> applied
+     to <literal>assoc_array</literal>.
+    </para>
+    <example>
+     <title>pg_insert</title>
+     <programlisting role="php">
+ <![CDATA[
+<?php 
+    $db = pg_connect ('dbname=foo');
+    // This is safe, since $_POST is converted autotmatically
+    $res = pg_insert($db, 'post_log', $_POST);
+    if ($res) {
+        echo "POST data is succesfully logged\n";
+    }
+    else {
+        echo "User must have sent wrong inputs\n";
+    }
+?>
+]]>
+     </programlisting>
+    </example>
+    <note>
+     <para>
+      This function is experimental.
+     </para>
+    </note>
+    <para>
+     See also <function>pg_convert</function>
+    </para>    
+   </refsect1>
+  </refentry>
+ 
+
+
+  <refentry id='function.pg-select'>
+   <refnamediv>
+    <refname>pg_select</refname>
+    <refpurpose>
+     Select records.
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>array</type><methodname>pg_select</methodname>
+      <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
+      <methodparam><type>string</type><parameter>table_name</parameter></methodparam>
+      <methodparam><type>array</type><parameter>assoc_array</parameter></methodparam>
+      <methodparam choice="opt"><type>bool</type><parameter>convert</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     <function>pg_select</function> selects records specified by
+     <literal>assoc_array</literal> which has
+     <literal>field=>value</literal>. For successful query, it returns
+     array contains all records and fields that match the condition
+     specified by <literal>assoc_array</literal>. If
+     <literal>convert</literal> is not specified or &true,
+     <function>pg_convert</function> applied to
+     <literal>assoc_array</literal>.
+    </para>
+    <example>
+     <title>pg_select</title>
+     <programlisting role="php">
+ <![CDATA[
+<?php 
+    $db = pg_connect ('dbname=foo');
+    // This is safe, since $_POST is converted autotmatically
+    $rec = pg_select($db, 'post_log', $_POST);
+    if ($rec) {
+        echo "Records selected\n";
+        var_dump($rec);
+    }
+    else {
+        echo "User must have sent wrong inputs\n";
+    }
+?>
+]]>
+     </programlisting>
+    </example>
+    <note>
+     <para>
+      This function is experimental.
+     </para>
+    </note>
+    <para>
+     See also <function>pg_convert</function>
+    </para>    
+   </refsect1>
+  </refentry>
+ 
+
+
+  <refentry id='function.pg-delete'>
+   <refnamediv>
+    <refname>pg_delete</refname>
+    <refpurpose>
+     Delete records.
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>long</type><methodname>pg_delete</methodname>
+      <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
+      <methodparam><type>string</type><parameter>table_name</parameter></methodparam>
+      <methodparam><type>array</type><parameter>assoc_array</parameter></methodparam>
+      <methodparam choice="opt"><type>bool</type><parameter>convert</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     <function>pg_delete</function> deletes record condition specified by
+     <literal>assoc_array</literal> which has
+     <literal>field=>value</literal>. If <literal>convert</literal> is
+     not specified or &true, <function>pg_convert</function> applied
+     to <literal>assoc_array</literal>.
+    </para>
+    <example>
+     <title>pg_insert example</title>
+     <programlisting role="php">
+ <![CDATA[
+<?php 
+    $db = pg_connect ('dbname=foo');
+    // This is safe, since $_POST is converted autotmatically
+    $res = pg_delete($db, 'post_log', $_POST);
+    if ($res) {
+        echo "POST data is deleted: $res\n";
+    }
+    else {
+        echo "User must have sent wrong inputs\n";
+    }
+?>
+]]>
+     </programlisting>
+    </example>
+    <note>
+     <para>
+      This function is experimental.
+     </para>
+    </note>
+    <para>
+     See also <function>pg_convert</function>
+    </para>    
+   </refsect1>
+  </refentry>
+ 
+
+
+  <refentry id='function.pg-update'>
+   <refnamediv>
+    <refname>pg_update</refname>
+    <refpurpose>
+     Update table.
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+     <methodsynopsis>
+      <type>long</type><methodname>pg_update</methodname>
+      <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
+      <methodparam><type>string</type><parameter>table_name</parameter></methodparam>
+      <methodparam><type>array</type><parameter>condition</parameter></methodparam>
+      <methodparam><type>array</type><parameter>data</parameter></methodparam>
+      <methodparam choice="opt"><type>bool</type><parameter>convert</parameter></methodparam>
+     </methodsynopsis>
+    <para>
+     <function>pg_update</function> updates records that matches
+     <literal>condition</literal> with <literal>data</literal> If
+     <literal>convert</literal> is not specified or &true,
+     <function>pg_convert</function> applied to
+     <literal>assoc_array</literal>.
+    </para>
+    <example>
+     <title>pg_insert example</title>
+     <programlisting role="php">
+ <![CDATA[
+<?php 
+    $db = pg_connect ('dbname=foo');
+    $data = array('field1'=>'AA', 'field2'=>'BB');
+    // This is safe, since $_POST is converted automatically
+    $res = pg_update($db, 'post_log', $_POST, $data);
+    if ($res) {
+        echo "Data is updated: $res\n";
+    }
+    else {
+        echo "User must have sent wrong inputs\n";
+    }
+?>
+]]>
+     </programlisting>
+    </example>
+    <note>
+     <para>
+      This function is experimental.
+     </para>
+    </note>
+    <para>
+     See also <function>pg_convert</function>
+    </para>    
+   </refsect1>
+  </refentry>
+  
  </reference>
 
 <!-- Keep this comment at the end of the file
@@ -2399,4 +2687,3 @@ vim600: syn=xml fen fdm=syntax fdl=2 si
 vim: et tw=78 syn=sgml
 vi: ts=1 sw=1
 -->
-
