@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.19 $ -->
+<!-- $Revision: 1.20 $ -->
   <sect1 id="install.apache">
    <title>Servers-Apache</title>
    <para>
@@ -22,7 +22,7 @@
 
     <example id="install.apache.unix.longer">
      <title>
-      Installation Instructions (Apache Shared Module Version) for PHP 4
+      Installation Instructions (Apache Shared Module Version) for PHP
      </title>
      <screen>
 <![CDATA[
@@ -35,38 +35,74 @@
 7.  make
 8.  make install
 9.  cd ../php-xxx
-10. ./configure --with-mysql --with-apxs=/www/bin/apxs
+
+10. Now, configure your PHP.  This is where you customize your PHP
+    with various options, like which extensions will be enabled.  Do a
+    ./configure --help for a list of available options.  In our example
+    we'll do a simple configure with Apache 1 and MySQL support.  Your
+    path to apxs may differ from our example.
+
+      ./configure --with-mysql --with-apxs=/www/bin/apxs
+
 11. make
 12. make install
 
-  If you decide to change your configure options after installation
-  you only need to repeat the last three steps. You only need to 
-  restart apache for the new module to take effect. A recompile of
-  Apache is not needed.
-
-13. cp php.ini-dist /usr/local/lib/php.ini
-
-  You can edit your .ini file to set PHP options.  If
-  you prefer this file in another location, use
-  --with-config-file-path=/path in step 10.
-
-14. Edit your httpd.conf or srm.conf file and check that these lines are
-    present and not commented out:
+    If you decide to change your configure options after installation,
+    you only need to repeat the last three steps. You only need to 
+    restart apache for the new module to take effect. A recompile of
+    Apache is not needed.
   
-   AddType application/x-httpd-php .php
+    Note that unless told otherwise, 'make install' will also install PEAR,
+    various PHP tools such as phpize, install the PHP CLI, and more.
 
-   LoadModule php4_module        libexec/libphp4.so
- 
-  You can choose any extension you wish here.  .php is simply the one
-  we suggest. You can even include .html, and .php3 can be added for 
-  backwards compatibility.
- 
-  The path on the right hand side of the LoadModule statement must point
-  to the path of the PHP module on your system. The above statement is 
-  correct for the steps shown above.
+13. Setup your php.ini file:
 
+      cp php.ini-dist /usr/local/lib/php.ini
 
-15. Use your normal procedure for starting the Apache server. (You must
+    You may edit your .ini file to set PHP options.  If you prefer your
+    php.ini in another location, use --with-config-file-path=/some/path in
+    step 10. 
+    
+    If you instead choose php.ini-recommended, be certain to read the list
+    of changes within, as they affect how PHP behaves.
+
+14. Edit your httpd.conf to load the PHP module.  The path on the right hand
+    side of the LoadModule statement must point to the path of the PHP
+    module on your system.  The make install from above may have already
+    added this for you, but be sure to check.
+        
+    For PHP 4:
+            
+      LoadModule php4_module libexec/libphp4.so
+
+    For PHP 5:
+                      
+      LoadModule php5_module libexec/libphp5.so
+      
+15. And in the AddModule section of httpd.conf, somewhere under the
+    ClearModuleList, add this:
+    
+    For PHP 4:
+    
+      AddModule mod_php4.c
+      
+    For PHP 5:
+    
+      AddModule mod_php5.c
+
+16. Tell Apache to parse certain extensions as PHP.  For example,
+    let's have Apache parse the .php extension as PHP.  You could
+    have any extension(s) parse as PHP by simply adding more, with
+    each separated by a space.  We'll add .phtml to demonstrate.
+
+      AddType application/x-httpd-php .php .phtml
+
+    It's also common to setup the .phps extension to show highlighted PHP
+    source, this can be done with:
+    
+      AddType application/x-httpd-php-source .phps
+
+17. Use your normal procedure for starting the Apache server. (You must
     stop and restart the server, not just cause the server to reload by
     use a HUP or USR1 signal.)
 ]]>
@@ -79,8 +115,11 @@
       lines used in restarting the server, for different apache/unix
       installations. You should replace <literal>/path/to/</literal> with
       the path to these applications on your systems.
-      <informalexample>
-       <screen>
+     </para>
+     <para>
+      <example>
+       <title>Example commands for restarting Apache</title>
+       <programlisting role="shell">
 <![CDATA[
 1. Several Linux and SysV variants:
 /etc/rc.d/init.d/httpd restart
@@ -98,8 +137,10 @@ stop and start:
 /path/to/apachectl stop
 /path/to/apachectl startssl
 ]]>
-       </screen>
-      </informalexample>
+       </programlisting>
+      </example>
+     </para>
+     <para>
       The locations of the apachectl and http(s)dctl binaries often
       vary. If your system has <literal>locate</literal> or
       <literal>whereis</literal> or <literal>which</literal> commands,
@@ -288,10 +329,12 @@ Group "#-1"
      <itemizedlist>
       <listitem>
        <simpara>
-         Open &httpd.conf; with your favorite editor and locate the
-         <literal>LoadModule</literal> directive and add the following line
-         <emphasis>at the end</emphasis> of the list:
-         <literal>LoadModule php4_module "c:/php/sapi/php4apache.dll"</literal>
+        Open &httpd.conf; with your favorite editor and locate the
+        <literal>LoadModule</literal> directive and add the following line
+        <emphasis>at the end</emphasis> of the list for PHP 4:
+        <literal>LoadModule php4_module "c:/php/sapi/php4apache.dll"</literal>
+        or the following for PHP 5:
+        <literal>LoadModule php5_module "c:/php/sapi/php5apache.dll"</literal>
        </simpara>
       </listitem>
       <listitem>
@@ -303,8 +346,9 @@ Group "#-1"
         find by scrolling down a few lines. You will see a list of
         <literal>AddModule</literal> entries, add the following line
         <emphasis>at the end</emphasis> of the list:      
-        <literal>AddModule mod_php4.c</literal>
-        </simpara>
+        <literal>AddModule mod_php4.c</literal>  For PHP 5, instead use
+        <literal>AddModule mod_php5.c</literal>
+       </simpara>
       </listitem>
       <listitem>
        <simpara>
