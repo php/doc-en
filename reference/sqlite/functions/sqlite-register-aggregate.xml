@@ -1,98 +1,98 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
-  <refentry id="function.sqlite-register-aggregate">
-   <refnamediv>
-    <refname>sqlite_register_aggregate</refname>
-    <refpurpose>Register an aggregating UDF for use in SQL statements</refpurpose></refnamediv>
-   <refsect1>
-    <title>Description</title>
-    <methodsynopsis>
-     <type>bool</type><function>sqlite_register_aggregate</function>
-     <methodparam><type>resource</type><parameter>db</parameter></methodparam>
-     <methodparam><type>string</type><parameter>function_name</parameter></methodparam>
-     <methodparam><type>mixed</type><parameter>step_func</parameter></methodparam>
-     <methodparam><type>mixed</type><parameter>finalize_func</parameter></methodparam>
-     <methodparam choice="opt"><type>int</type><parameter>num_args</parameter></methodparam>
-   </methodsynopsis>
-   <para>
-    <function>sqlite_register_aggregate</function> is similar to
-    <function>sqlite_create_function</function> except that it registers
-    functions that can be used to calculate a result aggregated across all the
-    rows of a query.
-   </para>
-   <para>
-    The key difference between this function and
-    <function>sqlite_create_function</function> is that two functions are
-    required to manage the aggregate; <parameter>step_func</parameter> is
-    called for each row of the result set.  Your PHP function should
-    accumulate the result and store it into the aggregation context.
-    Once all the rows have been processed,
-    <parameter>finalize_func</parameter> will be called and it should then
-    take the data from the aggregation context and return the result.
-   </para>
+<!-- $Revision: 1.2 $ -->
+<refentry id="function.sqlite-register-aggregate">
+ <refnamediv>
+  <refname>sqlite_register_aggregate</refname>
+  <refpurpose>Register an aggregating UDF for use in SQL statements</refpurpose></refnamediv>
+ <refsect1>
+  <title>Description</title>
+  <methodsynopsis>
+   <type>bool</type><function>sqlite_register_aggregate</function>
+   <methodparam><type>resource</type><parameter>db</parameter></methodparam>
+   <methodparam><type>string</type><parameter>function_name</parameter></methodparam>
+   <methodparam><type>mixed</type><parameter>step_func</parameter></methodparam>
+   <methodparam><type>mixed</type><parameter>finalize_func</parameter></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>num_args</parameter></methodparam>
+  </methodsynopsis>
+  <para>
+   <function>sqlite_register_aggregate</function> is similar to
+   <function>sqlite_create_function</function> except that it registers
+   functions that can be used to calculate a result aggregated across all the
+   rows of a query.
+  </para>
+  <para>
+   The key difference between this function and
+   <function>sqlite_create_function</function> is that two functions are
+   required to manage the aggregate; <parameter>step_func</parameter> is
+   called for each row of the result set.  Your PHP function should
+   accumulate the result and store it into the aggregation context.
+   Once all the rows have been processed,
+   <parameter>finalize_func</parameter> will be called and it should then
+   take the data from the aggregation context and return the result.
+  </para>
+  <para>
    <example>
     <title>max_length aggregation function example</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-   $data = array(
-      'one',
-      'two',
-      'three',
-      'four'
-      'five'
-      'six',
-      'seven',
-      'eight',
-      'nine'
-      'ten'
-      );
-   $db = sqlite_open(':memory:');
-   sqlite_query($db, "CREATE TABLE strings(a)");
-   foreach ($data as $str) {
-      sqlite_query($db, "INSERT INTO strings VALUES('" .
-         sqlite_escape_string($str) . "')");
-   }
+$data = array(
+   'one',
+   'two',
+   'three',
+   'four'
+   'five'
+   'six',
+   'seven',
+   'eight',
+   'nine'
+   'ten'
+   );
+$db = sqlite_open(':memory:');
+sqlite_query($db, "CREATE TABLE strings(a)");
+foreach ($data as $str) {
+  sqlite_query($db, "INSERT INTO strings VALUES('" .
+    sqlite_escape_string($str) . "')");
+}
 
-   function max_len_step(&$context, $string)
-   {
-       if (strlen($string) > $context) {
-          $context = strlen($string);
-       }
-   }
+function max_len_step(&$context, $string) {
+  if (strlen($string) > $context) {
+    $context = strlen($string);
+  }
+}
 
-   function max_len_finalize(&$context)
-   {
-       return $context;
-   }
+function max_len_finalize(&$context) {
+  return $context;
+}
 
-   sqlite_create_aggregate($db, 'max_len', 'max_len_step', 'max_len_finalize');
+sqlite_create_aggregate($db, 'max_len', 'max_len_step', 'max_len_finalize');
 
-   var_dump(sqlite_array_query($db, 'SELECT max_len(a) from strings'));
-   
+var_dump(sqlite_array_query($db, 'SELECT max_len(a) from strings'));
+
 ?>]]>
-   </programlisting>
-   <para>
-    In this example, we are creating an aggregating function that will
-    calculate the length of the longest string in one of the columns of the
-    table.  For each row, the <literal>max_len_step</literal> function is
-    called and passed a <parameter>context</parameter> parameter.  The context
-    parameter is just like any other PHP variable and be set to hold an array
-    or even an object value.  In this example, we are simply using it to hold
-    the maximum length we have seen so far; if the
-    <parameter>string</parameter> has a length longer than the current
-    maximum, we update the the context to hold this new maximum length.
-   </para>
-   <para>
-    After all of the rows have been processed, SQLite calls the
-    <literal>max_len_finalize</literal> function to determine the aggregate
-    result.  Here, we could perform some kind of calculation based on the
-    data found in the <parameter>context</parameter>.  In our simple example
-    though, we have been calculating the result as the query progressed, so we
-    simply need to return the context value.
-   </para>
-  </example>
-  <note>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   In this example, we are creating an aggregating function that will
+   calculate the length of the longest string in one of the columns of the
+   table.  For each row, the <literal>max_len_step</literal> function is
+   called and passed a <parameter>context</parameter> parameter.  The context
+   parameter is just like any other PHP variable and be set to hold an array
+   or even an object value.  In this example, we are simply using it to hold
+   the maximum length we have seen so far; if the
+   <parameter>string</parameter> has a length longer than the current
+   maximum, we update the the context to hold this new maximum length.
+  </para>
+  <para>
+   After all of the rows have been processed, SQLite calls the
+   <literal>max_len_finalize</literal> function to determine the aggregate
+   result.  Here, we could perform some kind of calculation based on the
+   data found in the <parameter>context</parameter>.  In our simple example
+   though, we have been calculating the result as the query progressed, so we
+   simply need to return the context value.
+  </para>
+  <tip>
    <para>
     It is NOT recommended for you to store a copy of the values in the context
     and then process them at the end, as you would cause SQLite to use a lot of
@@ -100,7 +100,7 @@
     if a million rows were stored in memory, each containing a string 32 bytes
     in length.
    </para>
-  </note>
+  </tip>
   <para>
    See also <function>sqlite_create_function</function>.
   </para>
