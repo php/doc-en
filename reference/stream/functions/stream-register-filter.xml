@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
   <refentry id="function.stream-register-filter">
    <refnamediv>
     <refname>stream_register_filter</refname>
@@ -45,6 +45,27 @@
      so that the next filter in the chain can perform its filter.
      When no filters remain, the stream will write <parameter>data</parameter>
      in its final form.
+     <note>
+      <para>
+       If your filter alters the length of <parameter>data</parameter>, for
+       example by removing the first character, before passing onto
+       <literal>parent::write($data);</literal> it must be certain to include
+       that stolen character in the return count.
+      </para>
+     </note>
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+class myfilter extends php_user_filter {
+  function write($data) {
+    $data = substr($data,1);
+    $written_by_parent = parent::write($data);
+    return ($written_by_parent + 1);
+  }
+} 
+]]>
+      </programlisting>
+     </informalexample>
     </para>
 
     <methodsynopsis>
@@ -88,13 +109,23 @@
      <type>void</type><methodname>oncreate</methodname>
      <void/>
     </methodsynopsis>
-    <!-- When is this called? -->
+    <para>
+     This method is called during instantiation of the filter class
+     object.  If your filter allocates or initializes any other resources
+     (such as a buffer), this is the place to do it.
+    </para>
 
     <methodsynopsis>
      <type>void</type><methodname>onclose</methodname>
      <void/>
     </methodsynopsis>
-    <!-- When is this called? -->
+    <para>
+     This method is called upon filter shutdown (typically, this is also
+     during stream shutdown), and is executed <emphasis>after</emphasis>
+     the <literal>flush</literal> method is called.  If any resources
+     were allocated or initialzed during <literal>oncreate</literal>
+     this would be the time to destroy or dispose of them.
+    </para>
 
     <para>
      The example below implements a filter named <literal>rot13</literal>
