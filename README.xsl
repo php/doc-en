@@ -11,7 +11,7 @@ version suitable for print, you will additionally need FO processor.
 
 XSLT processors:
 	XT: http://www.jclark.com/xml/xt.html
-	Saxon: http://users.iclway.co.uk/mhkay/saxon/
+	Saxon: http://saxon.sourceforge.net/
 	Xalan: http://xml.apache.org/xalan/
 
 XSL DocBook Stylesheets:
@@ -87,4 +87,4 @@ does not work for now. Hope, this will change in the near future.
 
 
 Jirka Kosek <jirka@kosek.cz>
-Last modified $Date: 2001-02-19 11:52:11 $
+Last modified $Date: 2001-08-05 08:47:50 $
