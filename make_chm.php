@@ -27,7 +27,7 @@
       "es"    => "0xc0a Spanish (International Sort)",
       "fr"    => "0x40c French (France)",
       "hu"    => "0x40e Hungarian",
-      "il"    => "0x410 Italian (Italy)",
+      "it"    => "0x410 Italian (Italy)",
       "ja"    => "0x411 Japanese",
       "kr"    => "0x412 Korean",
       "nl"    => "0x413 Dutch (Netherlands)",
@@ -58,7 +58,7 @@
     
     // now try to find out how the manual named in the actual language
     // this must be in the manual.html file as the title (DSSSL generated)
-    $content = join("", file("$fancydir/$indexfile"));
+    $content = join("", file("$fancydir/manual.html"));
     if (preg_match("|>(.*)</TITLE|U", $content, $found)) {
       $manual_title = $found[1];
     } else { $manual_title = "PHP Manual"; }
@@ -66,7 +66,7 @@
     fputs ($f, "Title=$manual_title\n");
     
     // define the phpdoc window style (adds more functionality)
-    fputs($f , "\n[WINDOWS]\nphpdoc=\"PHP Manual\",\"manual_$language.hhc\",," .
+    fputs($f, "\n[WINDOWS]\nphpdoc=\"$manual_title\",\"manual_$language.hhc\",," .
     "\"$fancydir\\$indexfile\",\"$fancydir\\$indexfile\",,,,,0x23520,,0x386e,,,,,,,,0\n");
 
     // write out all the filenames as in $fancydir    
@@ -141,7 +141,7 @@ $tabs  <param name=\"Local\" value=\"$fancydir\\$local\">";
 <UL>
 <?php
   
-  $index_a = file ("$fancydir/$indexfile");
+  $index_a = file ("$fancydir/manual.html");
   $ijoin = join("", $index_a);
   $ijoin = preg_replace("/[\r|\n]/", " ", $ijoin);
   
@@ -152,7 +152,7 @@ $tabs  <param name=\"Local\" value=\"$fancydir\\$local\">";
 
   if ($fancyindex) {
     preg_match('|CLASS=\"title\" ><A NAME=\"manual\" >(.*)</A|U', $ijoin, $match);
-    SiteMapObj($match[1], "$indexfile", "  ", 21);
+    SiteMapObj($match[1], "manual.html", "  ", 21);
   }
 
   preg_match('|<A HREF="preface.html" >(.*)</A >|U', $ijoin, $match);
