@@ -26,7 +26,15 @@ if (_d.all && (isnotopera=(navigator.userAgent.toLowerCase().indexOf("opera")==-
     isnotopera=true;
     width="min-width:155px";
 }
-_d.write("<div id=\"funchelper\" style=\"background-color: white; border: 1px solid black; top: 90px;"+width+"; padding: 4px; font-size: 9px; display:none; position:absolute;\"></div>");
+var funchelper = _d.createElement('div');
+funchelper.setAttribute('style', 'background-color: white; border: 1px solid black; top: 90px;'+width+'; padding: 4px; font-size: 9px; display:none; position:absolute;');
+var elems = _d.getElementsByTagName("*");
+for (var i = 0; i < elems.length; i++) {
+    if (elems[i].tagName.toLowerCase() == 'body') {
+        elems[i].appendChild(funchelper);
+        break;
+    }
+}
 
 // Decompression ---------------------------------------------------------------
 
