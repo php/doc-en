@@ -1,7 +1,11 @@
 <?php
 
-// USE ONLY PHP 4.x TO RUN THIS SCRIPT!!!
-// IT WONT WORK WITH PHP 3
+/* 
+ PLEASE DO NOT MAKE ANY MAJOR MODIFICATIONS TO THIS CODE!
+ There is a new script collection on the way to replace
+ these scripts. Please be patient while it will be ready
+ to put here in CVS.
+*/
 
 // SEE make_chm.README FOR INFORMATION!!!  
 

@@ -1,5 +1,12 @@
 <?php
 
+/* 
+ PLEASE DO NOT MAKE ANY MAJOR MODIFICATIONS TO THIS CODE!
+ There is a new script collection on the way to replace
+ these scripts. Please be patient while it will be ready
+ to put here in CVS.
+*/
+
 // This script takes much time to run
 set_time_limit(0);
 
