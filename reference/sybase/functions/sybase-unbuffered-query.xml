@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
   <refentry id="function.sybase-unbuffered-query">
    <refnamediv>
     <refname>sybase_unbuffered_query</refname>
@@ -36,13 +36,38 @@
      of rows if all result sets have been read. To Sybase, the number of rows 
      is not known and is therefore computed by the client implementation.
     </para>
-    <para> 
-      It is not possible to fire up another query directly after starting an
-      unbuffered query and only if all rows have been read or the 
-      remainding rows have been cancelled. This can be acheived by using
-      <function>sybase_free_result</function> on the return value of
-      <function>sybase_unbuffered_query</function>.
+    <note>
+     <para>
+      If you don't read all of the resultsets prior to executing the next query,
+      PHP will raise a warning and cancel all of the pending results. To get rid of
+      this, use <function>sybase_free_result</function> which will cancel pending 
+      results of an unbuffered query.
+     </para>
+    </note>
+    <para>
+     The optional <parameter>store_result</parameter> can be FALSE to indicate
+     the resultsets should'nt be fetched into memory, thus minimizing memory usage
+     which is particularily interesting with very large resultsets.
     </para>
+    <example>
+     <title><function>sybase_unbuffered_query</function></title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+       $dbh= sybase_connect('SYBASE', '', '');
+       $q= sybase_unbuffered_query('select firstname, lastname from huge_table', $dbh, FALSE);
+       sybase_data_seek($q, 10000);
+       $i= 0;
+       while ($row= sybase_fetch_row($q)) {
+               echo $row[0].' '.$row[0];
+               if ($i++ > 40000) break;
+       }
+       sybase_free_result($q);
+       sybase_close($dbh);
+?>
+]]>
+     </programlisting>
+    </example>
    </refsect1>
   </refentry>
 
