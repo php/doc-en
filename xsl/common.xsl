@@ -3,8 +3,12 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.21 2004-11-10 20:34:59 techtonik Exp $
+  $Id: common.xsl,v 1.22 2004-11-14 13:15:42 techtonik Exp $
 
+-->
+<!-- 
+  What is done in this stylesheet as common to all HTML output formats:
+  - 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0">
@@ -288,6 +292,37 @@
       </xsl:if>
     </xsl:otherwise>
   </xsl:choose>
+</xsl:template>
+
+
+<!-- Make the TOC line like in the DSSSL-version,
+     i.e. label is not included in href           -->
+<xsl:template name="toc.line">
+  <xsl:param name="toc-context" select="."/>
+  <xsl:param name="depth" select="1"/>
+  <xsl:param name="depth.from.context" select="8"/>
+
+  <span>
+  <xsl:attribute name="class"><xsl:value-of select="local-name(.)"/></xsl:attribute>
+
+  <xsl:variable name="label">
+    <xsl:apply-templates select="." mode="label.markup"/>
+  </xsl:variable>
+  <xsl:copy-of select="$label"/>
+  <xsl:if test="$label != ''">
+    <xsl:value-of select="$autotoc.label.separator"/>
+  </xsl:if>
+
+  <a>
+    <xsl:attribute name="href">
+      <xsl:call-template name="href.target">
+        <xsl:with-param name="context" select="$toc-context"/>
+      </xsl:call-template>
+    </xsl:attribute>
+    
+    <xsl:apply-templates select="." mode="titleabbrev.markup"/>
+  </a>
+  </span>
 </xsl:template>
 
 
