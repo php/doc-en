@@ -772,7 +772,7 @@ foreach ($files_status as $num => $file) {
     $new_dir = dirname($file["full_name"]);
     
     // If this is a new directory, put out old dir lines
-    if ($new_dir != $prev_dir) {
+    if ($new_dir != $prev_dir && isset($lines)) {
         echo $prev_diplay_dir;
         echo " ($line_number)</th></tr>";
 	echo $lines;
