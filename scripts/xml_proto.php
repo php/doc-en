@@ -121,8 +121,8 @@ function write_xml_files()
                "     <type>$functype</type><methodname>$funcname</methodname>\n");
 
     for ($j=0; $j<$funclist[$i]["num_args"]; $j++) {
-      $argtype=$funclist[$i]["args"][$j]["type"];
-      $argname=$funclist[$i]["args"][$j]["variable"];
+      $argtype = $funclist[$i]["args"][$j]["type"];
+      $argname = str_replace('&', '&amp;', $funclist[$i]["args"][$j]["variable"]);
       fwrite($fp, "     <methodparam><type>$argtype</type><parameter>$argname</parameter></methodparam>\n");
     }
     if ($funclist[$i]["num_args"] == 0){
