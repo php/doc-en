@@ -87,7 +87,7 @@ function MakeContentFiles()
     for ($i = 0; $i < count ($index_a); $i++) {
         
         /* Chapters */
-        if (ereg(">[IVX]+\.\ <A", $index_a[$i]) && !ereg("HREF=\"ref\.[a-z0-9]+\.html", $index_a[$i+1])) {
+        if (ereg(">[IVXLC]+\.\ <A", $index_a[$i]) && !ereg("HREF=\"ref\.[a-z0-9]+\.html", $index_a[$i+1])) {
 
             $new_list = 1;
             if ($not_closed == 1) {
@@ -105,7 +105,7 @@ function MakeContentFiles()
         }
 
         /* Sub chapters */
-        elseif (ereg(">([0-9]+|[IVXL]+|[A-Z])\.\ <A", $index_a[$i])) {
+        elseif (ereg(">([0-9]+|[IVXLC]+|[A-Z])\.\ <A", $index_a[$i])) {
 
             if ($new_list == 1) {
                 $new_list = 0;
@@ -113,7 +113,7 @@ function MakeContentFiles()
                 fputs($toc, "\n    <ul>\n");
             }
 
-            //preg_match ("/>([0-9]+|[IVXL]+|[A-Z])\. <A/", $index_a[$i], $matches);
+            //preg_match ("/>([0-9]+|[IVXLC]+|[A-Z])\. <A/", $index_a[$i], $matches);
             //$schapter["nr"] = $matches[1];
             preg_match("/HREF=\"([a-z0-9-]+\.([a-z0-9-]+\.)?html)(\#[a-z0-9]+)?\"/", $index_a[$i+1], $matches);
             $schapter["html"] = $matches[1];
