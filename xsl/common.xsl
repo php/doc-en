@@ -27,6 +27,8 @@
 <!-- Load VERSION INFORMATION into variable -->
 <xsl:param name="version" select="document('version.xml')/versions"/>
 
+<!-- Make copyright year ranges (like 1999-2004) -->
+<xsl:param name="make.year.ranges" select="1"/>
 
 <!-- PROTOTYPES: PHP-Version without semicolon, etc. 
      note: methodparams are separated in html-common and fo -->
