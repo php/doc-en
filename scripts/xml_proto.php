@@ -242,10 +242,8 @@ function write_functions_xml()
       fwrite($fp, "     <void/>\n");
     }
 
-    fwrite($fp, "    </methodsynopsis>\n" .
-	       "    <para>\n" .
-               "     &warn.undocumented.func;\n" .
-               "    </para>\n" .
+    fwrite($fp, "    </methodsynopsis>\n\n" .
+               "     &warn.undocumented.func;\n\n" .
                "   </refsect1>\n" .
                "  </refentry>\n" .
                "\n" .
