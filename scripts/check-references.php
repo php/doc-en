@@ -70,6 +70,7 @@ $number_refs = array(
 );
 
 $valid_types = "int|float|string|bool|resource|array|object|mixed|number";
+$invalid_types = "integer|long|double|boolean|class"; // objects are written as appropriate class name so there is no complete list of valid types
 $operators = "!=|<=?|>=?|==";
 $max_args = 12; // maximum number of regular function arguments
 
@@ -233,7 +234,7 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 		$methodsynopsis = $matches[4];
 		
 		// return type
-		if (!preg_match("~<type>(void|$valid_types)</type>~", $return_type)) {
+		if (preg_match("~<type>(callback|$invalid_types)</type>~", $return_type)) {
 			echo "Wrong return type in $filename on line $lineno.\n";
 		}
 		
@@ -258,7 +259,7 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 		// parameter types and optional
 		preg_match_all('~<methodparam(\\s+choice=[\'"]opt[\'"])?>\\s*<type>([^<]+)</type>\\s*<parameter(?: role="reference")?>([^<]+)~i', $methodsynopsis, $matches); // (PREG_OFFSET_CAPTURE can be used to get precise line numbers)
 		foreach ($matches[2] as $i => $val) {
-			if (!preg_match("~callback|$valid_types~", $val)) {
+			if (preg_match("~^(void|$invalid_types)\$~", $val)) {
 				echo "Parameter #" . ($i+1) . " has wrong type '$val' in $filename on line " . ($lineno + $i + 1) . ".\n";
 			}
 		}
@@ -274,7 +275,7 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 					$optional_source = true;
 					continue;
 				} elseif (isset($matches[2][$i])) { // sufficient number of parameters in the documentation
-					if ($matches[2][$i] != $param && $param != "mixed") {
+					if ($matches[2][$i] != $param && $param != "mixed" && ($param != "object" || preg_match("~$valid_types~", $matches[2][$i]))) {
 						$error .= "Parameter #" . ($i+1) . " should be of type $param (is " . $matches[2][$i] . ") in $filename on line " . ($lineno + $i + 1) . ".\n";
 					}
 					if (!empty($matches[1][$i])) {
