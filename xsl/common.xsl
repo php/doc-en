@@ -3,16 +3,17 @@
 
   Common customizations for all formats
 
-  $Id: common.xsl,v 1.3 2002-02-09 12:21:23 goba Exp $
+  $Id: common.xsl,v 1.4 2002-02-10 10:12:35 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0">
 
 <!-- configuration parameters -->
-<xsl:param name="funcsynopsis.style">ansi</xsl:param>
-<xsl:param name="funcsynopsis.decoration">1</xsl:param>
-<xsl:param name="refentry.generate.name">0</xsl:param>
+<xsl:param name="funcsynopsis.style" select="'ansi'"/>
+<xsl:param name="funcsynopsis.decoration" select="'1'"/>
+<xsl:param name="refentry.generate.name" select="'0'"/>
+<xsl:param name="refentry.separator" select="'0'"/>
 
 <!-- Load version information into variable -->
 <xsl:param name="version" select="document('version.xml')/versions"/>
