@@ -41,7 +41,7 @@ function get_function_files($dir) {
     global $FUNCTIONS;
     if ($dh = @opendir($dir . "/functions")) {
         while (($file = readdir($dh)) !== FALSE) {
-            if (fnmatch("*.xml", $file)) {
+            if (ereg("\\.xml\$", $file)) {
                 $FUNCTIONS[] = str_replace(array(".xml", "-"), array("", "_"), $file);
             }
         }
