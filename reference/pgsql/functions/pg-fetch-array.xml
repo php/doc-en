@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.9 $ -->
+<!-- $Revision: 1.10 $ -->
 <!-- splitted from ./en/functions/pgsql.xml, last change in rev 1.2 -->
   <refentry id="function.pg-fetch-array">
    <refnamediv>
@@ -37,10 +37,11 @@
      <parameter>result_type</parameter> is a constant and can take the
      following values: <constant>PGSQL_ASSOC</constant>, 
      <constant>PGSQL_NUM</constant>, and <constant>PGSQL_BOTH</constant>.
-     <function>pg_fetch_array</function> returns associative array
-     that has field name as key for <constant>PGSQL_ASSOC</constant>, field index as key
-     with <constant>PGSQL_NUM</constant> and both field name/index as key with
-     <constant>PGSQL_BOTH</constant>. Default is <constant>PGSQL_BOTH</constant>.
+     Using <constant>PGSQL_NUM</constant>, <function>pg_fetch_array</function>
+     will return an array with numerical indices, using
+     <constant>PGSQL_ASSOC</constant> will return only associative indices
+     while <constant>PGSQL_BOTH</constant>, the default, will return both
+     numerical and associative indices.
      <note>
       <para>
        <parameter>result_type</parameter> was added in PHP 4.0.
@@ -65,17 +66,26 @@ if (!$conn) {
     exit;
 }
 
-$result = pg_query($conn, "SELECT * FROM authors");
+$result = pg_query($conn, "SELECT author, email FROM authors");
 if (!$result) {
     echo "An error occured.\n";
     exit;
 }
 
 $arr = pg_fetch_array($result, 0, PGSQL_NUM);
-echo $arr[0] . " <- array\n";
+echo $arr[0] . " <- Row 1 Author\n";
+echo $arr[1] . " <- Row 1 E-mail\n";
 
-$arr = pg_fetch_array($result, 1, PGSQL_ASSOC);
-echo $arr["author"] . " <- array\n";
+// As of PHP 4.1.0, the row parameter is optional; NULL can be passed instead,
+// to pass a result_type.  Successive calls to pg_fetch_array will return the
+// next row.
+$arr = pg_fetch_array($result, NULL, PGSQL_ASSOC);
+echo $arr["author"] . " <- Row 2 Author\n";
+echo $arr["email"] . " <- Row 2 E-mail\n";
+
+$arr = pg_fetch_array($result);
+echo $arr["author"] . " <- Row 3 Author\n";
+echo $arr[1] . " <- Row 3 E-mail\n";
 
 ?>
 ]]>
@@ -86,7 +96,7 @@ echo $arr["author"] . " <- array\n";
      <para>
       From 4.1.0, <parameter>row</parameter> became optional.
       Calling <function>pg_fetch_array</function> will increment
-      internal row counter by 1.
+      the internal row counter by one.
      </para>
     </note>
     <para>
