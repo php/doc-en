@@ -107,14 +107,13 @@ function fh_FindMatches(pr)
 
 function fh_Show(what)
 {
-    tdv=_d.getElementById("funchelper");
-    ts=tdv.style;
+    ts=funchelper.style;
     if (what=="") {
         if (ts.display!="none") ts.display="none";
     } else {
         ts.display="block";
         ts.left=ElLeft(f_p)+"px";
-        tdv.innerHTML=what;
+        funchelper.innerHTML=what;
     }
 }
 
