@@ -432,7 +432,6 @@
    </refsect1>
   </refentry>
 
-<!--
   <refentry id="function.odbc-field-num">
    <refnamediv>
     <refname>odbc_field_num</refname>
@@ -453,7 +452,6 @@
  
    </refsect1>
   </refentry>
--->
 
   <refentry id="function.odbc-field-type">
    <refnamediv>
@@ -478,7 +476,7 @@
   <refentry id="function.odbc-field-len">
    <refnamediv>
     <refname>odbc_field_len</refname>
-    <refpurpose>get the Length of a field</refpurpose>
+    <refpurpose>get the length (precision) of a field</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
@@ -491,10 +489,53 @@
      <function>odbc_field_len</function> will return the length of
      the field referecend by number in the given ODBC result
      identifier.  Field numbering starts at 1.</para>
- 
+     <simpara>
+     See also: <function>odbc_field_scale</function> to get the scale of a
+     floating point number.</simpara>
+
    </refsect1>
   </refentry>
 
+  <refentry id="function.odbc-field-precision">
+   <refnamediv>
+    <refname>odbc_field_precision</refname>
+    <refpurpose>synonym for <function>odbc_field_len</function></refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>odbc_field_precision</function></funcdef>
+     <paramdef>int <parameter>result_id</parameter></paramdef>
+     <paramdef>int <parameter>field_number</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>odbc_field_precision</function> will return the precision
+     of the field referecend by number in the given ODBC result
+     identifier.</para>
+     See also: <function>odbc_field_scale</function> to get the scale of a 
+     floating point number.</simpara>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.odbc-field-scale">
+   <refnamediv>
+    <refname>odbc_field_scale</refname>
+    <refpurpose>get the scale of a field</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>odbc_field_scale</function></funcdef>
+     <paramdef>int <parameter>result_id</parameter></paramdef>
+     <paramdef>int <parameter>field_number</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     <function>odbc_field_precision</function> will return the scale
+     of the field referecend by number in the given ODBC result
+     identifier.</para>
+   </refsect1>
+  </refentry>
 
   <refentry id="function.odbc-free-result">
    <refnamediv>
@@ -814,10 +855,540 @@ odbc_setoption ($conn, 1, 102, 1);
 $result = odbc_prepare ($conn, $sql);
 odbc_setoption ($result, 2, 0, 30);
 odbc_execute ($result);
-       </programlisting>
-     </example></para>
-    </refsect1>
-   </refentry>
+     </programlisting>
+    </example></para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.odbc-tables">
+   <refnamediv>
+    <refname>odbc_tables</refname>
+    <refpurpose>Get the list of table names stored in a specific data source.
+    Returns a result identifier containing the information.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>odbc_tables</function></funcdef>
+     <paramdef>int <parameter>connection_id</parameter></paramdef>
+     <paramdef>string <parameter><optional>qualifier</optional></parameter></paramdef>
+     <paramdef>string <parameter><optional>owner</optional></parameter></paramdef> 
+     <paramdef>string <parameter><optional>name</optional></parameter></paramdef> 
+     <paramdef>string <parameter><optional>types</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Lists all tables in the requested range.  Returns an ODBC result identifier or 
+     <literal>false</literal> on failure.</para>
+    <para>
+     The result set has the following columns:
+     <itemizedlist>
+      <listitem><simpara>TABLE_QUALIFIER</simpara></listitem>
+      <listitem><simpara>TABLE_OWNER</simpara></listitem> 
+      <listitem><simpara>TABLE_NAME</simpara></listitem>
+      <listitem><simpara>TABLE_TYPE</simpara></listitem>
+      <listitem><simpara>REMARKS</simpara></listitem>
+     </itemizedlist> 
+    </para>
+    <simpara>The result set is ordered by TABLE_TYPE, TABLE_QUALIFIER, TABLE_OWNER
+     and TABLE_NAME.</simpara>
+    <para>
+     The <parameter>owner</parameter> and <parameter>name</parameter> arguments accept
+     search patterns ('%' to match zero or more characters and '_' to match a single
+     character).</para>
+    <para>
+     To support enumeration of qualifiers, owners, and table types, the following special
+     semantics for the <parameter>qualifier</parameter>, <parameter>owner</parameter>,
+     <parameter>name</parameter>, and <parameter>table_type</parameter> are
+     available:
+     <itemizedlist>
+      <listitem>
+       <simpara>If <parameter>qualifier</parameter> is a single percent character (%)
+        and <parameter>owner</parameter> and <parameter>name</parameter> are empty
+        strings, then the result set contains a list of valid qualifiers for the
+        data source. (All columns except the TABLE_QUALIFIER column contain
+        NULLs.)</simpara>
+      </listitem>
+      <listitem>
+       <simpara>If <parameter>owner</parameter> is a single percent character (%)
+        and <parameter>qualifier</parameter> and <parameter>name</parameter> are
+        empty strings, then the result set contains a list of valid owners for
+        the data source. (All columns except the TABLE_OWNER column contain
+        NULLs.)</simpara>
+      </listitem>
+      <listitem>
+       <simpara>If <parameter>table_type</parameter> is a single percent character
+       (%) and <parameter>qualifier</parameter>, <parameter>owner</parameter> and
+       <parameter>name</parameter> are empty strings, then the result set contains
+       a list of valid table types for the data source. (All columns except the
+       TABLE_TYPE column contain NULLs.)</simpara>
+      </listitem>
+     </itemizedlist> 
+    </para>
+    <para>If <parameter>table_type</parameter> is not an empty string, it must contain a list
+     of comma-separated values for the types of interest; each value may be enclosed in
+     single quotes (') or unquoted. For example, "'TABLE','VIEW'" or "TABLE, VIEW".
+     If the data source does not support a specified table type,
+     <function>odbc_tables</function> does not return any results for that type.
+	</para>
+    <simpara>
+     See also <function>odbc_tableprivileges</function> to retrieve associated
+     privileges.
+    </simpara>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.odbc-tableprivileges">
+   <refnamediv>
+    <refname>odbc_tableprivileges</refname>
+    <refpurpose>Lists tables and the privileges associated with each table.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>odbc_tableprivileges</function></funcdef>
+     <paramdef>int <parameter>connection_id</parameter></paramdef>
+     <paramdef>string <parameter><optional>qualifier</optional></parameter></paramdef>
+     <paramdef>string <parameter><optional>owner</optional></parameter></paramdef>
+     <paramdef>string <parameter><optional>name</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Lists tables in the requested range and the privileges associated with each table.
+     Returns an ODBC result identifier or <literal>false</literal> on failure.</para>
+    <para>
+     The result set has the following columns:
+     <itemizedlist>
+      <listitem><simpara>TABLE_QUALIFIER</simpara></listitem>
+      <listitem><simpara>TABLE_OWNER</simpara></listitem>
+      <listitem><simpara>TABLE_NAME</simpara></listitem>
+      <listitem><simpara>GRANTOR</simpara></listitem>
+      <listitem><simpara>GRANTEE</simpara></listitem>
+      <listitem><simpara>PRIVILEGE</simpara></listitem>
+      <listitem><simpara>IS_GRANTABLE</simpara></listitem>
+     </itemizedlist>
+    </para>
+    <simpara>The result set is ordered by TABLE_QUALIFIER, TABLE_OWNER
+     and TABLE_NAME.</simpara>
+    <para>
+     The <parameter>owner</parameter> and <parameter>name</parameter> arguments accept
+     search patterns ('%' to match zero or more characters and '_' to match a single
+     character).
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.odbc-columns">
+   <refnamediv>
+    <refname>odbc_columns</refname>
+    <refpurpose>Lists the column names in specified tables. Returns a result
+     identifier containing the information.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>odbc_columns</function></funcdef>
+     <paramdef>int <parameter>connection_id</parameter></paramdef>
+     <paramdef>string <parameter><optional>qualifier</optional></parameter><paramdef>
+     <paramdef>string <parameter><optional>owner</optional></parameter><paramdef>
+     <paramdef>string <parameter><optional>table_name</optional></parameter><paramdef>
+     <paramdef>string <parameter><optional>column_name</optional></parameter><paramdef>
+    </funcsynopsis>
+    <para>
+     Lists all columns in the requested range.  Returns an ODBC result identifier or
+     <literal>false</literal> on failure.</para>
+    <para>
+     The result set has the following columns:
+     <itemizedlist>
+      <listitem><simpara>TABLE_QUALIFIER</simpara></listitem>
+      <listitem><simpara>TABLE_OWNER</simpara></listitem>
+      <listitem><simpara>TABLE_NAME</simpara></listitem>
+      <listitem><simpara>COLUMN_NAME</simpara></listitem>
+      <listitem><simpara>DATA_TYPE</simpara></listitem>
+      <listitem><simpara>TYPE_NAME</simpara></listitem>
+      <listitem><simpara>PRECISION</simpara></listitem>
+      <listitem><simpara>LENGTH</simpara></listitem>
+      <listitem><simpara>SCALE</simpara></listitem>
+      <listitem><simpara>RADIX</simpara></listitem>
+      <listitem><simpara>NULLABLE</simpara></listitem>
+      <listitem><simpara>REMARKS</simpara></listitem>
+     </itemizedlist>
+    </para>
+    <simpara>The result set is ordered by TABLE_QUALIFIER, TABLE_OWNER
+     and TABLE_NAME.</simpara>
+    <para>
+     The <parameter>owner</parameter>, <parameter>table_name</parameter> and
+     <parameter>column_name</parameter> arguments accept search patterns
+     ('%' to match zero or more characters and '_' to match a single character).
+    </para>
+    <simpara>
+     See also <function>odbc_columnprivileges</function> to retrieve associated
+     privileges
+    </simpara>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.odbc-columnprivileges">
+   <refnamediv>
+    <refname>odbc_columnprivileges</refname>
+    <refpurpose>Returns a result identifier that can be used to fetch a list of columns and associated
+     privileges</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>odbc_columnprivileges</function></funcdef>
+     <paramdef>int <parameter>connection_id</parameter></paramdef>
+     <paramdef>string <parameter><optional>qualifier</optional></parameter><paramdef>
+     <paramdef>string <parameter><optional>owner</optional></parameter><paramdef>
+     <paramdef>string <parameter><optional>table_name</optional></parameter><paramdef>
+     <paramdef>string <parameter><optional>column_name</optional></parameter><paramdef>
+    </funcsynopsis>
+    <para>
+     Lists columns and associated privileges for the given table.
+     Returns an ODBC result identifier or <literal>false</literal> on failure.</para>
+    <para>
+     The result set has the following columns:
+     <itemizedlist>
+      <listitem><simpara>TABLE_QUALIFIER</simpara></listitem>
+      <listitem><simpara>TABLE_OWNER</simpara></listitem>
+      <listitem><simpara>TABLE_NAME</simpara></listitem>
+      <listitem><simpara>GRANTOR</simpara></listitem>
+      <listitem><simpara>GRANTEE</simpara></listitem>
+      <listitem><simpara>PRIVILEGE</simpara></listitem>
+      <listitem><simpara>IS_GRANTABLE</simpara></listitem>
+     </itemizedlist>
+    </para>
+    <simpara>The result set is ordered by TABLE_QUALIFIER, TABLE_OWNER
+     and TABLE_NAME.</simpara>
+    <para>
+     The <parameter>column_name</parameter> argument accepts
+     search patterns ('%' to match zero or more characters and '_' to match a single
+     character).
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.odbc-gettypeinfo">
+   <refnamediv>
+    <refname>odbc_gettypeinfo</refname>
+    <refpurpose>Returns a result identifier containing information about data
+     types supported by the data source.
+   </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>odbc_gettypeinfo</function></funcdef>
+     <paramdef>int <parameter>connection_id</parameter></paramdef>
+     <paramdef>int <parameter><optional>data_type</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Retrieves information about data types supported by the data source.
+     Returns an ODBC result identifier or <literal>false</literal> on failure.
+     The optional argument <parameter>data_type</parameter> can be used to restrict
+     the information to a single data type.
+    </para>
+    <para>
+     The result set has the following columns:
+     <itemizedlist>
+      <listitem><simpara>TYPE_NAME</simpara></listitem>
+      <listitem><simpara>DATA_TYPE</simpara></listitem>
+      <listitem><simpara>PRECISION</simpara></listitem>
+      <listitem><simpara>LITERAL_PREFIX</simpara></listitem>
+      <listitem><simpara>LITERAL_SUFFIX</simpara></listitem>
+      <listitem><simpara>CREATE_PARAMS</simpara></listitem>
+      <listitem><simpara>NULLABLE</simpara></listitem>
+      <listitem><simpara>CASE_SENSITIVE</simpara></listitem>
+      <listitem><simpara>SEARCHABLE</simpara></listitem>
+      <listitem><simpara>UNSIGNED_ATTRIBUTE</simpara></listitem>
+      <listitem><simpara>MONEY</simpara></listitem>
+      <listitem><simpara>AUTO_INCREMENT</simpara></listitem>
+      <listitem><simpara>LOCAL_TYPE_NAME</simpara></listitem>
+      <listitem><simpara>MINIMUM_SCALE</simpara></listitem>
+      <listitem><simpara>MAXIMUM_SCALE</simpara></listitem>
+     </itemizedlist>
+    </para>
+    <simpara>The result set is ordered by DATA_TYPE and TYPE_NAME.</simpara>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.odbc-primarykeys">
+   <refnamediv>
+    <refname>odbc_primarykeys</refname>
+    <refpurpose></refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>Returns a result identifier that can be used to fetch the column
+     names that comprise the primary key for a table
+     <funcdef>int <function>odbc_primarykeys</function></funcdef>
+     <paramdef>int <parameter>connection_id</parameter></paramdef>
+     <paramdef>string <parameter>qualifier</parameter></paramdef>
+     <paramdef>string <parameter>owner</parameter></paramdef>
+     <paramdef>string <parameter>table</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the column names that comprise the primary key for a table.
+     Returns an ODBC result identifier or <literal>false</literal> on failure.
+    </para>
+    <para>
+     The result set has the following columns:
+     <itemizedlist>
+      <listitem><simpara>TABLE_QUALIFIER</simpara></listitem>
+      <listitem><simpara>TABLE_OWNER</simpara></listitem>
+      <listitem><simpara>TABLE_NAME</simpara></listitem>
+      <listitem><simpara>COLUMN_NAME</simpara></listitem>
+      <listitem><simpara>KEY_SEQ</simpara></listitem>
+      <listitem><simpara>PK_NAME</simpara></listitem>
+     </itemizedlist>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.odbc-foreignkeys">
+   <refnamediv>
+    <refname>odbc_foreignkeys</refname>
+    <refpurpose>Returns a list of foreign keys in the specified table
+     or a list of foreign keys in other tables that
+     refer to the primary key in the specified table
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>odbc_foreignkeys</function></funcdef>
+     <paramdef>int <parameter>connection_id</parameter></paramdef>
+     <paramdef>string <parameter>pk_qualifier</parameter><paramdef>
+     <paramdef>string <parameter>pk_owner</parameter><paramdef>
+     <paramdef>string <parameter>pk_table</parameter><paramdef>
+     <paramdef>string <parameter>fk_qualifier</parameter><paramdef>
+     <paramdef>string <parameter>fk_owner</parameter><paramdef>
+     <paramdef>string <parameter>fk_table</parameter><paramdef>
+    </funcsynopsis>
+    <para>
+	 <function>odbc_foreignkeys</function> retrieves information about
+     foreign keys. Returns an ODBC result identifier or <literal>false</literal>
+     on failure.
+    </para>
+    <para>
+     The result set has the following columns:
+     <itemizedlist>
+      <listitem><simpara>PKTABLE_QUALIFIER</simpara></listitem>
+      <listitem><simpara>PKTABLE_OWNER</simpara></listitem>
+      <listitem><simpara>PKTABLE_NAME</simpara></listitem>
+      <listitem><simpara>PKCOLUMN_NAME</simpara></listitem>
+      <listitem><simpara>FKTABLE_QUALIFIER</simpara></listitem>
+      <listitem><simpara>FKTABLE_OWNER</simpara></listitem>
+      <listitem><simpara>FKTABLE_NAME</simpara></listitem>
+      <listitem><simpara>FKCOLUMN_NAME</simpara></listitem>
+      <listitem><simpara>KEY_SEQ</simpara></listitem>
+      <listitem><simpara>UPDATE_RULE</simpara></listitem>
+      <listitem><simpara>DELETE_RULE</simpara></listitem>
+      <listitem><simpara>FK_NAME</simpara></listitem>
+      <listitem><simpara>PK_NAME</simpara></listitem>
+     </itemizedlist>
+    </para>
+    <simpara>If <parameter>pk_table</parameter> contains a table name, 
+     <function>odbc_foreignkeys</function> returns a result set containing
+     the primary key of the specified table and all of the foreign keys that
+     refer to it. 
+    </simpara>
+    <simpara>If <parameter>fk_table</parameter> contains a table name,
+     <function>odbc_foreignkeys</function> returns a result set containing
+     all of the foreign keys in the specified table and the primary keys
+     (in other tables) to which they refer.
+    </simpara>
+    <simpara>
+     If both <parameter>pk_table</parameter> and <parameter>fk_table</parameter>
+     contain table names, <function>odbc_foreignkeys</function> returns the
+     foreign keys in the table specified in <parameter>fk_table</parameter>
+     that refer to the primary key of the table specified in
+     <parameter>pk_table</parameter>. This should be one key at most. 
+    </simpara>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.odbc-procedures">
+   <refnamediv>
+    <refname>odbc_procedures</refname>
+    <refpurpose>Get the list of procedures stored in a specific data source.
+    Returns a result identifier containing the information.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>odbc_procedures</function></funcdef>
+     <paramdef>int <parameter>connection_id</parameter></paramdef>
+     <paramdef>string <parameter><optional>qualifier</optional></parameter></paramdef>
+     <paramdef>string <parameter><optional>owner</optional></parameter></paramdef>
+     <paramdef>string <parameter><optional>name</optional></parameter></paramdef>
+    </funcsynopsis>
+    <para> Lists all procedures in the requested range.  Returns an ODBC result
+     identifier or <literal>false</literal> on failure.
+    </para>
+    <para>
+     The result set has the following columns:
+     <itemizedlist>
+      <listitem><simpara>PROCEDURE_QUALIFIER</simpara></listitem>
+      <listitem><simpara>PROCEDURE_OWNER</simpara></listitem>
+      <listitem><simpara>PROCEDURE_NAME</simpara></listitem>
+      <listitem><simpara>NUM_INPUT_PARAMS</simpara></listitem>
+      <listitem><simpara>NUM_OUTPUT_PARAMS</simpara></listitem>
+      <listitem><simpara>NUM_RESULT_SETS</simpara></listitem>
+      <listitem><simpara>REMARKS</simpara></listitem>
+      <listitem><simpara>PROCEDURE_TYPE</simpara></listitem>
+     </itemizedlist>
+    </para>
+    <para>
+     The <parameter>owner</parameter> and <parameter>name</parameter> arguments accept
+     search patterns ('%' to match zero or more characters and '_' to match a single
+     character).
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.odbc-procedurecolumns">
+   <refnamediv>
+    <refname>odbc_procedurecolumns</refname>
+    <refpurpose>Retrieve information about parameters to procedures</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>odbc_procedurecolumns</function></funcdef>
+     <paramdef>int <parameter>connection_id</parameter></paramdef>
+     <paramdef>string <parameter><optional>qualifier</optional></parameter><paramdef>
+     <paramdef>string <parameter><optional>owner</optional></parameter><paramdef>
+     <paramdef>string <parameter><optional>proc</optional></parameter><paramdef>
+     <paramdef>string <parameter><optional>column</optional></parameter><paramdef>
+    </funcsynopsis>
+    <para>
+     Returns the list of input and output parameters, as well as the 
+     columns that make up the result set for the specified procedures. Returns
+     an ODBC result identifier or <literal>false</literal> on failure.
+    </para>
+    <para>
+     The result set has the following columns:
+     <itemizedlist>
+      <listitem><simpara>PROCEDURE_QUALIFIER</simpara></listitem>
+      <listitem><simpara>PROCEDURE_OWNER</simpara></listitem>
+      <listitem><simpara>PROCEDURE_NAME</simpara></listitem>
+      <listitem><simpara>COLUMN_NAME</simpara></listitem>
+      <listitem><simpara>COLUMN_TYPE</simpara></listitem>
+      <listitem><simpara>DATA_TYPE</simpara></listitem>
+      <listitem><simpara>TYPE_NAME</simpara></listitem>
+      <listitem><simpara>PRECISION</simpara></listitem>
+      <listitem><simpara>LENGTH</simpara></listitem>
+      <listitem><simpara>SCALE</simpara></listitem>
+      <listitem><simpara>RADIX</simpara></listitem>
+      <listitem><simpara>NULLABLE</simpara></listitem>
+      <listitem><simpara>REMARKS</simpara></listitem>
+     </itemizedlist>
+    </para>
+    <simpara>The result set is ordered by PROCEDURE_QUALIFIER, PROCEDURE_OWNER,
+     PROCEDURE_NAME and COLUMN_TYPE.
+    </simpara>
+    <para>
+     The <parameter>owner</parameter>, <parameter>proc</parameter> and
+     <parameter>column</parameter> arguments accept search patterns
+     ('%' to match zero or more characters and '_' to match a single character).
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.odbc-specialcolumns">
+   <refnamediv>
+    <refname>odbc_specialcolumns</refname>
+    <refpurpose>Returns either the optimal set of columns that uniquely identifies
+     a row in the table or columns that are automatically updated when any value
+     in the row is updated by a transaction</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>odbc_specialcolumns</function></funcdef>
+     <paramdef>int <parameter>connection_id</parameter></paramdef>
+     <paramdef>int <parameter>type</parameter></paramdef>
+     <paramdef>string <parameter>qualifier</parameter></paramdef>
+     <paramdef>string <parameter>owner</parameter></paramdef>
+     <paramdef>string <parameter>table</parameter></paramdef>
+     <paramdef>int <parameter>scope</parameter></paramdef>
+     <paramdef>int <parameter>nullable</parameter></paramdef>
+    </funcsynopsis>
+    <simpara>
+     When the type argument is SQL_BEST_ROWID,
+     <function>odbc_specialcolumns</function> returns the
+     column or columns that uniquely identify each row in the table.
+    </simpara>
+    <simpara>
+     When the type argument is SQL_ROWVER, 
+     <function>odbc_specialcolumns</function> returns the
+     optimal column or set of columns that, by retrieving values from
+     the column or columns, allows any row in the specified table to be
+     uniquely identified. 
+    </simpara>
+     Returns an ODBC result identifier or <literal>false</literal> on failure.
+    </simpara>
+    <para>
+     The result set has the following columns:
+     <itemizedlist>
+      <listitem><simpara>SCOPE</simpara></listitem>
+      <listitem><simpara>COLUMN_NAME</simpara></listitem>
+      <listitem><simpara>DATA_TYPE</simpara></listitem>
+      <listitem><simpara>TYPE_NAME</simpara></listitem>
+      <listitem><simpara>PRECISION</simpara></listitem>
+      <listitem><simpara>LENGTH</simpara></listitem>
+      <listitem><simpara>SCALE</simpara></listitem>
+      <listitem><simpara>PSEUDO_COLUMN</simpara></listitem>
+     </itemizedlist>
+    </para>
+    <simpara>The result set is ordered by SCOPE</simpara>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.odbc-statistics">
+   <refnamediv>
+    <refname>odbc_statistics</refname>
+    <refpurpose>Retrieve statistics about a table</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>odbc_statistics</function></funcdef>
+     <paramdef>int <parameter>connection_id</parameter></paramdef>
+     <paramdef>string <parameter>qualifier</parameter><paramdef>
+     <paramdef>string <parameter>owner</parameter><paramdef>
+     <paramdef>string <parameter>table_name</parameter><paramdef>
+     <paramdef>int <parameter>unique</parameter></paramdef>
+     <paramdef>int <parameter>accuracy</parameter></paramdef>
+    </funcsynopsis>
+    <para>Get statistics about a table and it's inexes. Returns an ODBC
+     result identifier or <literal>false</literal> on failure.
+    </para>
+     The result set has the following columns:
+     <itemizedlist>
+      <listitem><simpara>TABLE_QUALIFIER</simpara></listitem>
+      <listitem><simpara>TABLE_OWNER</simpara></listitem>
+      <listitem><simpara>TABLE_NAME</simpara></listitem>
+      <listitem><simpara>NON_UNIQUE</simpara></listitem>
+      <listitem><simpara>INDEX_QUALIFIER</simpara></listitem>
+      <listitem><simpara>INDEX_NAME</simpara></listitem>
+      <listitem><simpara>TYPE</simpara></listitem>
+      <listitem><simpara>SEQ_IN_INDEX</simpara></listitem>
+      <listitem><simpara>COLUMN_NAME</simpara></listitem>
+      <listitem><simpara>COLLATION</simpara></listitem>
+      <listitem><simpara>CARDINALITY</simpara></listitem>
+      <listitem><simpara>PAGES</simpara></listitem>
+      <listitem><simpara>FILTER_CONDITION</simpara></listitem>
+     </itemizedlist>
+    </para>
+    <simpara>The result set is ordered by NON_UNIQUE, TYPE, INDEX_QUALIFIER,
+      INDEX_NAME and SEQ_IN_INDEX.
+    </simpara>
+   </refsect1>
+  </refentry>
 
  </reference>
 
