@@ -8,7 +8,7 @@
 (define (toc-depth nd)
   (if (string=? (gi nd) "book")
       2 ; the depth of the top-level TOC
-      3 ; the depth of all other TOCs
+      1 ; the depth of all other TOCs
       ))
 
 ;; re-defining element-id as we need to get the id of the parent
@@ -112,6 +112,34 @@
     )
   )
 
+
+;; Linking types to the correct place
+(element type
+  (let* 
+    ((orig-name (data (current-node)))
+      (type-name (cond 
+        ((equal-ci? orig-name "bool")   "boolean")
+        ((equal-ci? orig-name "double") "float")
+        ((equal-ci? orig-name "int")   "integer")
+        ((equal-ci? orig-name "NULL")   "null")
+        (else orig-name))
+      )
+      (linkend (string-append "language.types." type-name))
+      (target (element-with-id linkend))
+    )
+    (cond ((node-list-empty? target)
+      (make sequence (process-children) )
+      )
+      (else 
+        (make element gi: "A"
+          attributes: (list (list "HREF" (href-to target)))
+          ( $bold-seq$(make sequence (process-children) ) )
+        )
+      )
+    )
+  )
+)
+
 (element function
   (let* ((function-name (data (current-node)))
      (linkend 
@@ -160,6 +188,74 @@
            (literal "()"))))))))
 
 
+;; Link for classnames
+(element classname
+  (let* ((class-name (data (current-node)))
+     (linkend 
+      (string-append
+       "class." 
+        (string-replace
+         (case-fold-down class-name) "_" "-")))
+     (target (element-with-id linkend))
+     (parent-gi (gi (parent))))
+    (cond
+     ;; Function names should be plain in SYNOPSIS
+     ((equal? parent-gi "synopsis")
+      (process-children))
+     
+     ;; If a valid ID for the target class is not found, or if the
+     ;; CLASSNAME tag is within the definition of the same class,
+     ;; make it bold, but don't make a link
+     ((or (node-list-empty? target)
+      (equal? (case-fold-down
+           (data (node-list-first
+              (select-elements
+               (node-list-first
+                (children
+                 (select-elements
+                  (children
+                   (ancestor-member (parent) (list "refentry")))
+                  "refnamediv")))
+               "refname"))))
+          class-name))
+      ($bold-seq$
+       (process-children)))
+     
+     ;; Else make a link to the class
+     (else
+      (make element gi: "A"
+        attributes: (list
+             (list "HREF" (href-to target)))
+        ($bold-seq$
+         (process-children)))))))
+
+
+;; Linking to constants
+(element constant
+  (let* ((constant-name (data (current-node)))
+     (linkend 
+      (string-append "constant." 
+             (case-fold-down
+              (string-replace constant-name "_" "-"))))
+     (target (element-with-id linkend))
+     (parent-gi (gi (parent))))
+
+    (cond
+     ;; If a valid ID for the target constant is not found
+     ;; make it bold, but don't make a link
+     ((or (node-list-empty? target)(attribute-string (normalize "id")(current-node)))
+			($bold-mono-seq$
+       (process-children)))
+     
+     ;; Else make a link to the constant
+     (else
+      (make element gi: "A"
+        attributes: (list
+             (list "HREF" (href-to target)))
+        ($bold-mono-seq$
+         (process-children)))))))
+
+
 ;; Dispaly of examples
 (element example
   (make sequence
@@ -202,6 +298,27 @@
               attributes: (list (list "CLASS" (gi)))
               (literal editor-name)))))
 )
+
+
+;; Put version info where the refname part in the refnamediv is
+(element (refnamediv refname)
+  (make sequence
+   (if (node-list-empty? 
+     (select-elements (children
+       (select-elements (children (parent (parent (current-node)))) (normalize "refsect1"))
+      ) (normalize "methodsynopsis"))
+    )
+    (empty-sosofo)
+    (make element gi: "P"
+      (literal "    (")
+      (version-info (current-node))
+      (literal ")")
+      )
+    )
+    (process-children)
+    )
+  )
+
 
 ;; Display of question tags, link targets
 (element question
@@ -248,7 +365,34 @@
   content
   (para-check 'restart)))))
 
+;; Special handling of note role="seealso"
+(define ($admonpara$)
+  (let* ((title     (select-elements 
+		     (children (parent (current-node))) (normalize "title")))
+	 (has-title (not (node-list-empty? title)))
+	 (adm-title (if has-title 
+			(make sequence
+			  (with-mode title-sosofo-mode
+			    (process-node-list (node-list-first title)))
+			  (literal (gentext-label-title-sep 
+				    (gi (parent (current-node))))))
+			(literal
+			 (gentext-element-name 
+			  (if (equal? (normalize "seealso") (attribute-string (normalize "role") (parent (current-node))))
+			   (normalize "seealsoie")
+			   (parent (current-node))))
+			 (gentext-label-title-sep 
+			  (gi (parent (current-node))))))))
+    (make element gi: "P"
+	  (if (and (not %admon-graphics%) (= (child-number) 1))
+	      (make element gi: "B"
+		    adm-title)
+	      (empty-sosofo))
+	  (process-children))))
+
+
+
 (define (linebreak) (make element gi: "BR" (empty-sosofo)))
 
-(define %html-header-tags%
-  '(("META" ("HTTP-EQUIV" "Content-type") ("CONTENT" "text/html; charset=ISO-8859-1"))))
+
+;; vim: ts=2 sw=2 et
