@@ -28,6 +28,8 @@ if a%1a == anormala goto skipfancy
 
 echo Now generating the fancy manual in %PHP_HELP_COMPILE_FANCYDIR% dir...
 IF NOT EXIST %PHP_HELP_COMPILE_FANCYDIR%\NUL md %PHP_HELP_COMPILE_FANCYDIR%
+IF NOT EXIST %PHP_HELP_COMPILE_FANCYDIR%\figures md %PHP_HELP_COMPILE_FANCYDIR%\figures
+copy %PHP_HELP_COMPILE_DIR%\figures\*.* %PHP_HELP_COMPILE_FANCYDIR%\figures\*.*
 %PHP_PATH% -q make_chm_fancy.php
 
 goto normal
