@@ -84,6 +84,11 @@ $LANGUAGES = array(
                    "preferred_charset" => "Windows-1252",
                    "preferred_font" => $DEFAULT_FONT
                ),
+    "pl"    => array(
+                   "langcode" => "0x415 Polish",
+                   "preferred_charset" => "Windows-1250",
+                   "preferred_font" => $DEFAULT_FONT
+               ),
     "pt_BR" => array(
                    "langcode" => "0x416 Portuguese (Brazil)",
                    "preferred_charset" => "Windows-1252",
