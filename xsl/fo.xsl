@@ -27,6 +27,10 @@
 <xsl:param name="title.margin.left" select="'-0pc'"/>
 
 
+<!-- Let's give the terms in varlistentries enough space -->
+<xsl:param name="variablelist.as.blocks" select="1"/>
+
+
 <!-- ==========================   TOC   =================================== -->
 
 <xsl:param name="toc.section.depth">0</xsl:param>
