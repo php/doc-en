@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.24 2004-11-14 16:18:42 techtonik Exp $
+  $Id: common.xsl,v 1.25 2004-11-19 11:06:06 techtonik Exp $
 
   What is done in this stylesheet as common to all HTML output formats:
 
@@ -379,21 +379,36 @@
       </b>
   </xsl:variable>
 
-  <!-- replace '->' and '::' in method references with '-' -->
+  <!-- replace '->', '::', '->__' and '::__' in method name with one minus
+       sign '-' to proceed with transformation from name to ID -->
   <xsl:variable name="argument">
-    <xsl:choose>
-      <xsl:when test="contains(current(), '->')">
-         <xsl:value-of select="concat(substring-before(current(), '->'), '-',
-                                      substring-after(current(), '->'))"/>
-      </xsl:when>
-      <xsl:when test="contains(current(), '::')">
-         <xsl:value-of select="concat(substring-before(current(), '::'), '-',
-                                      substring-after(current(), '::'))"/>
-      </xsl:when>
-      <xsl:otherwise>
-         <xsl:value-of select="string(current())"/>
-      </xsl:otherwise>
-    </xsl:choose>
+    <xsl:variable name="token">
+      <xsl:choose>
+        <xsl:when test="contains(current(), '->__')">
+          <xsl:value-of select="'->__'"/>
+        </xsl:when>
+        <xsl:when test="contains(current(), '::__')">
+          <xsl:value-of select="'::__'"/>
+        </xsl:when>
+        <xsl:when test="contains(current(), '->')">
+          <xsl:value-of select="'->'"/>
+        </xsl:when>
+        <xsl:when test="contains(current(), '::')">
+          <xsl:value-of select="'::'"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="false()"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+
+    <xsl:if test="$token">
+      <xsl:value-of select="concat(substring-before(current(), $token), '-',
+                                   substring-after(current(), $token))"/>
+    </xsl:if>
+    <xsl:if test="not ($token)">
+       <xsl:value-of select="string(current())"/>
+    </xsl:if>
   </xsl:variable>
   
   <xsl:variable name="function.href">
