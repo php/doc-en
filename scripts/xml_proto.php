@@ -226,14 +226,14 @@ function write_functions_xml()
 
     for ($j=0; $j<$funclist[$i]["num_args"]; $j++) {
       $argtype = $funclist[$i]["args"][$j]["type"];
-      $argname = str_replace('&', '&amp;', $funclist[$i]["args"][$j]["variable"]);
-      $isopt=$funclist[$i]["args"][$j]["isopt"];
-      if (!$isopt) {
-        fwrite($fp, "     <methodparam><type>$argtype</type><parameter>$argname</parameter></methodparam>\n");
-      } else {
-        fwrite($fp, "     <methodparam choice=\"opt\"><type>$argtype</type><parameter>$argname</parameter></methodparam>\n");
-
+      $argname = $funclist[$i]["args"][$j]["variable"];
+      $isref = (strpos($argname, '&') === 0);
+      if ($isref) {
+        $argname = substr($argname, 1);
       }
+      $isopt=$funclist[$i]["args"][$j]["isopt"];
+      fwrite($fp, "     <methodparam" . ($isopt ? " choice=\"opt\"" : "") . "><type>$argtype</type><parameter" . ($isref ? " role=\"reference\"" : "") . ">$argname</parameter></methodparam>\n");
+
     }
     if ($funclist[$i]["num_args"] == 0){
       fwrite($fp, "     <void/>\n");
@@ -788,7 +788,7 @@ Note: Also be sure to double check the documentation before commit as this
          maybe --enable-{ext} OR a directory path is required or optional
       d) If you're writing over files in CVS, be 100% sure to check unified
          diffs before commit!
-      e) Run script check-references.php and add &amp; where required.
+      e) Run script check-references.php and add role="reference" where required.
       f) Report problems to phpdoc@lists.php.net
 NOTES;
 ?>
