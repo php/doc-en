@@ -1,11 +1,203 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
  <sect1 id="language.oop5.exceptions">
   <title>Exceptions</title>
 
   <para>
-   .
+   PHP5 has an exception model similar to that of other programming languages.
+   An exception can be thrown, try and caught within PHP. A Try block must
+   include at least one catch block. Multiple catch blocks can be used to
+   catch different classtypes; execution will continue after that last catch
+   block defined in sequence. Exceptions can be thrown within catch blocks.
   </para>
+  <para>
+   When an exception is thrown, code following the statement will not be
+   executed and PHP will attempt to find the first matching catch block. If an
+   exception is not caught a PHP Fatal Error will be issued with an Uncaught
+   Exception message, unless there has been a handler defined with
+   <function>set_exception_handler</function>.
+  </para>
+   <example>
+    <title>Throwing an Exception</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+try {
+  $error = 'Always throw this error';
+  throw new Exception($error);
+
+  // code following an execption isn't executed.
+  echo 'Never executed';
+}
+catch (Exception $e) {
+  echo "Caught exception: ",  $e, "\n";
+}
+
+/* continue execution */
+?>
+]]>
+    </programlisting>
+   </example>
+
+  <sect2 id="language.oop5.execptions.extending">
+   <title>Extending Exceptions</title>
+   <para>
+    A User defined Exception class can be defined by extending the built-in
+    Exception class. The members and properties below, show what is accessible
+    within the child class that derives from the built-in Exception class.
+   </para>
+   <example>
+    <title>The Built in Exception class</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class Exception {
+
+  protected $message = 'Unknown exception'; // exception message
+  protected $code = 0;                      // user defined exception code
+  protected $file;                          // source filename of exception
+  protected $line;                          // source line of exception
+
+  function __construct(string $message=NULL, int code=0);
+
+  final function getMessage();              // message of exception 
+  final function getCode();                 // code of exception
+  final function getFile();                 // source filename
+  final function getTrace();                // an array of the backtrace()
+  final function getTraceAsString();        // formated string of trace
+
+  /* Overrideable */
+  function _toString();                     // formated string for display
+   
+}
+?>
+]]>
+    </programlisting>
+   </example>
+   <para>
+    If a class extends the built-in Exception class and re-defines the <link
+    linkend="language.oop5.decon">constructor</link>, it is highly recomended
+    that it also call <link
+    linkend="language.oop5.paamayim-nekudotayim">parent::__construct()</link> 
+    to ensure all available data has been properly assigned. The <link
+    linkend="language.oop5.magic">__toString()</link> method can be overriden
+    to provide a custom output when the object is presented as a string.
+   </para>
+   <example>
+    <title>Extending the Exception class</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+class MyException extends Exception {
+
+  /* Redefine the exception so message isn't optional */
+  public function __construct($message, $code = 0) {
+
+    // custom stuff you want to do..
+    // ...
+    
+    /* make sure everything is assigned properly */
+    parent::__construct($message, $code);
+  }
+
+  /* custom string representation of object */
+  public function __toString() {
+    return __CLASS__ . ": [{$this->code}]: {$this->message}\n";
+  }
+
+  public function customFunction() {
+    echo "A Custom function for this type of exception\n";
+  }
+
+}
+
+class TestException {
+
+  public $var;
+
+  const THROW_NONE    = 0;
+  const THROW_CUSTOM  = 1;
+  const THROW_DEFAULT = 2;
+
+
+  function __construct($avalue = self::THROW_NONE) {
+
+    switch ($avalue) {
+      case self::THROW_CUSTOM:
+        // throw custom exception
+        throw new MyException('1 is an invalid parameter', 5);
+        break;
+
+      case self::THROW_DEFAULT:
+        // throw default one.
+        throw new Exception('2 isnt allowed as a parameter', 6);
+
+        break;
+
+      default: 
+        // No exception, object will be created.
+        $this->var = $avalue;
+        break;
+
+    }
+
+  }
+
+}
+
+$o = null;
+
+try {
+  $o = new TestException(TestException::THROW_CUSTOM);
+}
+catch (MyException $e) {            /* Will be caught */
+  echo "Caught my exception\n", $e;
+  $e->customFunction();
+}
+catch (Exception $e) {              /* Skipped */
+  echo "Caught Default Exception\n", $e;
+}
+var_dump($o);                       /* continue execution */
+echo "\n\n";
+
+try {
+  $o = new TestException(TestException::THROW_DEFAULT);
+}
+catch (MyException $e) {            /* Doesn't match this type */
+  echo "Caught my exception\n", $e;
+  $e->customFunction();
+}
+catch (Exception $e) {              /* Will be caught */
+  echo "Caught Default Exception\n", $e;
+}
+var_dump($o);                       /* continue execution */
+echo "\n\n";
+
+
+try {
+  $o = new TestException(TestException::THROW_CUSTOM);
+}
+catch (Exception $e) {              /* Will be caught */
+  echo "Default Exception caught\n", $e;
+}
+var_dump($o);                       /* continue execution */
+echo "\n\n";
+
+try {
+  $o = new TestException();
+}
+catch (Exception $e) {              /* skipped, no exception */
+  echo "Default Exception caught\n", $e;
+}
+var_dump($o);                       /* continue execution */
+echo "\n\n";
+
+
+]]>
+    </programlisting>
+   </example>
+  </sect2>
 
  </sect1>
  
