@@ -2,7 +2,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.1 2002-01-06 15:42:31 hholzgra Exp $
+  $Id: html-common.xsl,v 1.2 2002-01-20 22:53:09 hholzgra Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -15,25 +15,33 @@
 <!-- Load version information into variable -->
 <xsl:param name="version" select="document('version.xml')/versions"/>
 
-<!-- We do not want semicolon at the end of prototype -->
+<!-- We do not want semicolon at the end of prototype and our own style
+     of square brackets for optional parameters -->
+<xsl:template match="paramdef/parameter/optional">
+  <xsl:apply-templates />
+</xsl:template>
+
 <xsl:template match="paramdef">
-  <xsl:variable name="paramnum">
-    <xsl:number count="paramdef" format="1"/>
-  </xsl:variable>
-  <xsl:if test="$paramnum=1">(</xsl:if>
-  <xsl:choose>
-    <xsl:when test="$funcsynopsis.style='ansi'">
-      <xsl:apply-templates/>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:apply-templates select="./parameter"/>
-    </xsl:otherwise>
-  </xsl:choose>
+  <xsl:if test="preceding-sibling::paramdef=false()">(</xsl:if>
+  <xsl:apply-templates />
   <xsl:choose>
     <xsl:when test="following-sibling::paramdef">
-      <xsl:text>, </xsl:text>
+      <xsl:choose>
+        <xsl:when test="following-sibling::paramdef[position()=1]/child::parameter/child::optional">
+          <xsl:text> [, </xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:text>, </xsl:text>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
+      <xsl:for-each select="preceding-sibling::paramdef/child::parameter/child::optional">
+        <xsl:text>]</xsl:text>
+      </xsl:for-each>
+      <xsl:if test="child::parameter/child::optional">
+        <xsl:text>]</xsl:text>
+      </xsl:if>
       <xsl:text>)</xsl:text>
     </xsl:otherwise>
   </xsl:choose>
