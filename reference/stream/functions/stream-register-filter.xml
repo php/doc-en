@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+  <refentry id="function.stream-register-filter">
+   <refnamediv>
+    <refname>stream_register_filter</refname>
+    <refpurpose>Register a stream filter implemented as a PHP class derived from <literal>php_user_filter</literal></refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <methodsynopsis>
+     <type>boolean</type><methodname>stream_register_filter</methodname>
+     <methodparam><type>string</type><parameter>filtername</parameter></methodparam>
+     <methodparam><type>string</type><parameter>classname</parameter></methodparam>
+    </methodsynopsis>
+    <para>
+     <function>stream_register_filter</function> allows you to implement
+     your own filter on any registered stream used with all the other
+     filesystem functions (such as <function>fopen</function>,
+     <function>fread</function> etc.).
+    </para>
+    <para>
+     To implement a filter, you need to define a class as an extension of
+     <literal>php_user_fitler</literal> with a number of member functions 
+     as defined below. When performing read/write opperations on the stream
+     to which your filter is attached, PHP will pass the data through your
+     filter (and any other filters attached to that stream) so that the
+     data may be modified as desired. You must implement the methods
+     exactly as described below - doing otherwise will lead to undefined
+     behaviour.
+    </para>
+    <para>
+     <function>stream_register_filter</function> will return &false; if the
+     <parameter>filtername</parameter> is already defined.
+    </para>
+
+    <methodsynopsis>
+     <type>int</type><methodname>write</methodname>
+     <methodparam><type>string</type><parameter>data</parameter></methodparam>
+    </methodsynopsis>
+    <para>
+     This method is called whenever data is written to the attached 
+     stream (such as with <function>fwrite</function>).  After 
+     modifying <parameter>data</parameter> as needed your
+     filter should issue: <literal>return parent::write($data);</literal>
+     so that the next filter in the chain can perform its filter.
+     When no filters remain, the stream will write <parameter>data</parameter>
+     in its final form.
+    </para>
+
+    <methodsynopsis>
+     <type>string</type><methodname>read</methodname>
+     <methodparam><type>int</type><parameter>maxlength</parameter></methodparam>
+    </methodsynopsis>
+    <para>
+     This method is called whenever data is read from the attached 
+     stream (such as with <function>fread</function>).  A filter
+     should first call <literal>parent::read($maxlength);</literal> to
+     retrieve the data from the previous filter who, ultimately,
+     retrieved it from the stream.  Your filter may then modify the
+     data as needed and <literal>return</literal> it. 
+     Your filter should never return more than <parameter>maxlength</parameter>
+     bytes.  Since <literal>parent::read($maxlength);</literal> will also
+     not return more than <parameter>maxlength</parameter> bytes this
+     will ordinarily be a non-issue.  However, if your filter 
+     increases the size of the data being returned, you should either
+     call <literal>parent::read($maxlength-$x);</literal> where 
+     <parameter>x</parameter> is the most your filter will grow
+     the size of the data read.  Alternatively, you can build a 
+     read-buffer into your class.
+    </para>
+
+    <methodsynopsis>
+     <type>int</type><methodname>flush</methodname>
+     <methodparam><type>bool</type><parameter>closing</parameter></methodparam>
+    </methodsynopsis>
+    <para>
+     This method is called in response to a request to flush the
+     attached stream (such as with <function>fflush</function> or
+     <function>fclose</function>).  The <parameter>closing</parameter>
+     parameter tells you whether the stream is, in fact, in the
+     process of closing.  The default action is to simply call:
+     <literal>return parent::flush($closing);</literal> , your
+     filter may wish to perform additional writes and/or cleanup
+     calls prior to or directly after a successful flush.
+    </para>
+
+    <methodsynopsis>
+     <type>void</type><methodname>oncreate</methodname>
+     <void/>
+    </methodsynopsis>
+    <!-- When is this called? -->
+
+    <methodsynopsis>
+     <type>void</type><methodname>onclose</methodname>
+     <void/>
+    </methodsynopsis>
+    <!-- When is this called? -->
+
+    <para>
+     The example below implements a filter named <literal>rot13</literal>
+     on the <literal>foo-bar.txt</literal> stream which will perform
+     ROT-13 encryption on all letter characters written to/read from
+     that stream.
+
+     <example> 
+      <title>Filter for ROT13 encoding data on foo-bar.txt stream</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+/* Define our filter class */
+class rot13_filter extends php_user_filter {
+  function read($length) {
+    $tempstr = parent::read($length);
+    for($i = 0; $i < strlen($tempstr); $i++)
+      if (($tempstr[$i] >= 'A' AND $tempstr[$i] <= 'M') OR
+          ($tempstr[$i] >= 'a' AND $tempstr[$i] <= 'm')) $tempstr[$i] = chr(ord($tempstr[$i]) + 13);
+      else if (($tempstr[$i] >= 'N' AND $tempstr[$i] <= 'Z') OR
+               ($tempstr[$i] >= 'n' AND $tempstr[$i] <= 'z')) $tempstr[$i] = chr(ord($tempstr[$i]) - 13);
+    return $tempstr;
+  }
+
+  function write($data) {
+    for($i = 0; $i < strlen($data); $i++)
+      if (($data[$i] >= 'A' AND $data[$i] <= 'M') OR
+          ($data[$i] >= 'a' AND $data[$i] <= 'm')) $data[$i] = chr(ord($data[$i]) + 13);
+      else if (($data[$i] >= 'N' AND $data[$i] <= 'Z') OR
+               ($data[$i] >= 'n' AND $data[$i] <= 'z')) $data[$i] = chr(ord($data[$i]) - 13);
+    return parent::write($data);
+  }
+}
+
+/* Register our filter with PHP */
+stream_register_filter("rot13", "rot13_filter")
+    or die("Failed to register filter");
+
+$fp = fopen("foo-bar.txt", "w");
+
+/* Attach the registered filter to the stream just opened */
+stream_filter_append($fp, "rot13");
+
+fwrite($fp, "Line1\n");
+fwrite($fp, "Word - 2\n");
+fwrite($fp, "Easy As 123\n");
+
+fclose($fp);
+
+/* The filter only applies to the $fp stream
+ * so this readfile will read -without- applying
+ * a second pass of rot13 encoding
+ */
+readfile("foo-bar.txt");
+
+/* Output
+ * ------
+
+Yvar1
+Jbeq - 2
+Rnfl Nf 123
+
+ */
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+    <simpara>
+     See Also:
+     <function>stream_register_wrapper</function>,
+     <function>stream_filter_prepend</function>, and
+     <function>stream_filter_append</function>
+    </simpara>
+   </refsect1>
+  </refentry>
+
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
