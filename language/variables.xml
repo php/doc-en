@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.46 $ -->
+<!-- $Revision: 1.47 $ -->
  <chapter id="language.variables">
   <title>Variables</title>
   
@@ -452,6 +452,111 @@ function Test()
 ]]>
     </programlisting>
    </informalexample>
+
+   <simpara>
+    The Zend Engine 1, driving <literal>PHP4</literal>, implements the
+    <literal>static</literal> and <literal>global</literal> modifier for
+    variables in terms of references. For example, a true global variable
+    imported inside a function scope with the <literal>global</literal>
+    statement actually creates a reference to the global variable. This can
+    lead to unexpected behaviour which the following example addresses:
+   </simpara>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+function test_global_ref() {
+    global $obj;
+    $obj = &new stdclass;
+}
+
+function test_global_noref() {
+    global $obj;
+    $obj = new stdclass;
+}
+
+test_global_ref();
+var_dump($obj);
+test_global_noref();
+var_dump($obj);
+]]>
+    </programlisting>
+   </informalexample>
+
+   <simpara>
+    Executing this example will result in the following output:
+   </simpara>
+
+   <screen>
+NULL
+object(stdClass)(0) {
+}
+   </screen>
+
+   <simpara>
+    A similar behaviour applies to the <literal>static</literal> statement.
+    References are not stored statically:
+   </simpara>
+   
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+function &get_instance_ref() {
+    static $obj;
+
+    echo "Static object: ";
+    var_dump($obj);
+    if (!isset($obj)) {
+        // Assign a reference to the static variable
+        $obj = &new stdclass;
+    }
+    $obj->property++;
+    return $obj;
+}
+
+function &get_instance_noref() {
+    static $obj;
+
+    echo "Static object: ";
+    var_dump($obj);
+    if (!isset($obj)) {
+        // Assign the object to the static variable
+        $obj = new stdclass;
+    }
+    $obj->property++;
+    return $obj;
+}
+
+$obj1 = get_instance_ref();
+$still_obj1 = get_instance_ref();
+echo "\n";
+$obj2 = get_instance_noref();
+$still_obj2 = get_instance_noref();
+]]>
+    </programlisting>
+   </informalexample>
+
+   <simpara>
+    Executing this example will result in the following output:
+   </simpara>
+
+   <screen>
+Static object: NULL
+Static object: NULL
+
+Static object: NULL
+Static object: object(stdClass)(1) {
+  ["property"]=>
+  int(1)
+}
+   </screen>
+
+   <simpara>
+    This example demonstrates that when assigning a reference to a static
+    variable, it's not <emphasis>remembered</emphasis> when you call the
+    <literal>&amp;get_instance_ref()</literal> function a second time.
+   </simpara>
+
 
   </sect1>
 
