@@ -53,8 +53,8 @@ QUICKREF_DEPS=$(srcdir)/quickref.dsl $(srcdir)/Makefile
 all: html
 
 DIST_FILES=manual.zip manual.tar.gz manual.rtf.gz bigmanual.html.gz \
-	manual.prc manual.txt.gz
-MIRROR_TARGETS=php/manual.php $(DIST_FILES) html/manual.html
+	manual_doc.pdb manual.txt.gz
+MIRROR_TARGETS=php/index.php html/index.html $(DIST_FILES)
 
 html.dsl: $(srcdir)/html.dsl.in ./config.status
 	CONFIG_FILES=$@ CONFIG_HEADERS= ./config.status
@@ -74,8 +74,8 @@ manual.xml: $(srcdir)/manual.xml.in .manual.xml
 .manual.xml: $(DEPEND_FILES) global.ent
 	touch .manual.xml
 
-html: html/manual.html
-phpweb: php/manual.php
+html: html/index.html
+phpweb: php/index.php
 rtf: manual.rtf
 dvi: manual.dvi
 ps: manual.ps
@@ -98,14 +98,9 @@ checkdoc: $(srcdir)/checkdoc.in ./config.status
 
 mirror-files: $(MIRROR_TARGETS)
 
-sync: mirror-files
-	-(cd php; rsync -e ssh1 --rsync-path=/usr/local/bin/rsync -azvc . www.php.net:/local/Web/sites/phpweb/manual/.)
-	-(cd html; rsync -e ssh1 --rsync-path=/usr/local/bin/rsync -azvc . www.php.net:/local/Web/sites/phpweb/manual/html/.)
-	-rsync -e ssh1 --rsync-path=/usr/local/bin/rsync -azvc $(DIST_FILES) www.php.net:/local/Web/sites/phpweb/distributions/.
-
 snapshot: manual-snapshot.tar.gz
 
-manual-snapshot.tar.gz: bigmanual.html html/manual.html manual.rtf manual.txt
+manual-snapshot.tar.gz: bigmanual.html html/index.html manual.rtf manual.txt
 	tar -cvzf $@ bigmanual.html html/*.html manual.rtf manual.txt
 
 status: checkdoc ./funclist.txt
@@ -133,24 +128,28 @@ manual.rtf.gz: manual.rtf
 manual.txt.gz: manual.txt
 	gzip -9 -c $< > $@
 
-html/manual.html: manual.xml $(HTML_DEPS)
+html/index.html: manual.xml $(HTML_DEPS)
 	@test -d html || mkdir html
 	$(JADE) $(CATALOG) -d $(HTML_STYLESHEET) -V use-output-dir -t sgml $(srcdir)/phpdocxml.dcl manual.xml
 
-php/manual.php: manual.xml $(PHPWEB_DEPS)
+php/index.php: manual.xml $(PHPWEB_DEPS)
 	@test -d php || mkdir php
 	-$(JADE) $(CATALOG) -d $(PHPWEB_STYLESHEET) -V use-output-dir -t sgml $(srcdir)/phpdocxml.dcl manual.xml
 
 manual.txt: bigmanual.html
 	lynx -nolist -dump file:`pwd`/bigmanual.html > manual.txt
 
-manual.prc: manual.txt makedoc
-	./makedoc -b manual.txt manual.prc 'PHP Manual'
+# really should figure out title based on language
+manual_doc.pdb: manual.txt makedoc
+	./makedoc -b manual.txt manual_doc.pdb 'PHP Manual'
 
-manual.zip: html/manual.html
+manual_isilo.pdb: bigmanual.html
+	iSilo386 bigmanual.html manual_isilo.pdb
+
+manual.zip: html/index.html
 	-rm -f $@ && (cd html; zip -9 -q ../$@ *.html)
 
-manual.tar.gz: html/manual.html
+manual.tar.gz: html/index.html
 	-rm -f $@ && (cd html; tar -cf - *.html) | gzip -9 > manual.tar.gz
 
 howto.html: $(srcdir)/howto.xml $(HOWTO_DEPS) global.ent
@@ -192,8 +191,8 @@ clean:
 	cd $(srcdir); \
 	rm -rf html php; \
 	rm -f manual.txt [a-z]*.html manual.rtf manual.info \
-	rm -f manual.zip manual.tar.gz sync-no commit-no .manual.xml \
-	rm -f manual.prc makedoc *.manifest \
+	rm -f manual.zip manual.tar.gz .manual.xml \
+	rm -f manual_*.pdb makedoc *.manifest \
 	rm -f *.aux *.tex *.log *.dvi *.toc *.ps *.gz \
 	rm -f funclist.txt funcsummary.txt status.txt missing.txt checkdoc \
 	)
