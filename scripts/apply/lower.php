@@ -14,15 +14,6 @@ function apply($input) {
 		}
 	}
 
-#	while( ereg("<function>([[:alnum:]_]+[[:upper:]][[:alnum:]_]+)</function>", $input, $matches)) {
-#		$name = $matches[1];
-#		$lower = strtolower($name);
-#		if($lower != $name) {
-#			$input = str_replace("<function>$name</function>", "<function>$lower</function>", $input);
-#			$flag = true;
-#		}
-#	}
-
 	return $flag ? $input : false ;
 }
 
