@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.52 $ -->
+<!-- $Revision: 1.53 $ -->
  <chapter id="security">
   <title>Security</title>
 
@@ -1023,80 +1023,138 @@ if ($good_login == 1) { // If above test fails, not initialized or checked befor
   <sect1 id="security.registerglobals">
    <title>Using Register Globals</title>
    <para>
-    One feature of PHP that can be used to enhance security is configuring PHP with
-    <link linkend="ini.register-globals">register_globals</link> = off.
-    By turning off the ability for any user-submitted variable to be injected
-    into PHP code, you can reduce the amount of variable
-    poisoning a potential attacker may inflict. They will have
-    to take the additional time to forge submissions, and your
-    internal variables are effectively isolated from user
-    submitted data.
+    Perhaps the most controversial change in PHP is when the default value
+    for the PHP directive <link linkend="ini.register-globals">
+    register_globals</link> went from ON to OFF in PHP 
+    <ulink url="&url.php.release4.2.0;">4.2.0</ulink>.  Reliance on this
+    directive was quite common and many people didn't even know it existed
+    and assumed it's just how PHP works.  This page will explain how one can
+    write insecure code with this directive but keep in mind that the
+    directive itself isn't insecure but rather it's the misuse of it.
    </para>
    <para>
-    While it does slightly increase the amount of effort required
-    to work with PHP, it has been argued that the benefits far
-    outweigh the effort.
+    When on, register_globals will inject (poison) your scripts will all
+    sorts of variables, like request variables from html forms.  This
+    coupled with the fact that PHP doesn't require variable initializion
+    means writing insecure code is that much easier.  It was a difficult
+    decision but the PHP community decided to disable this directive by 
+    default.  When on, people use variables yet really don't know for sure
+    where they come from and can only assume.  Internal variables that are
+    defined in the script itself get mixed up with request data sent by
+    users and disabling register_globals changes this.  Let's demonstrate
+    with an example misuse of register_globals: 
+   </para>
+   <para>
     <example>
-     <title>Working with register_globals=on</title>
+     <title>Example misuse with register_globals = on</title>
      <programlisting role="php">
 <![CDATA[
 <?php
-if ($username) {  // can be forged by a user in get/post/cookies
-    $good_login = 1;
+// define $authorized = true only if user is authenticated
+if (authenticated_user()) {
+    $authorized = true;
 }
 
-if ($good_login == 1) { // can be forged by a user in get/post/cookies,
-    readfile ("/highly/sensitive/data/index.html");
+// Because we didn't first initialize $authenticated as false, this might be
+// defined through register_globals, like from GET auth.php?authenticated=1 
+// So, anyone can be seen as authenticated!
+if ($authorized) {
+    include "/highly/sensitive/data.php";
 }
 ?>
 ]]>
      </programlisting>
     </example>
+   </para>
+   <para>
+    When register_globals = on, our logic above may be compromised.  When
+    off, <varname>$authorized</varname> can't be set via request so it'll
+    be okay although it really is good general programming practice to 
+    initialize variables first.  For example, in our example above we might
+    have first done <literal>$authorized = false</literal>.  Doing this
+    first means our above code would work with register_globals on or off as 
+    users by default would be unauthorized.
+   </para>
+   <para>
+    Another example is that of <link linkend="ref.session">sessions</link>.
+    When register_globals = on, we could also use
+    <varname>$username</varname> in our example below but again you must
+    realize that <varname>$username</varname> could also come from other
+    means, such as GET (through the URL).  
+   </para>
+   <para>
     <example>
-     <title>Working with register_globals = off</title>
+     <title>Example use of sessions with register_globals on or off</title>
      <programlisting role="php">
 <![CDATA[
 <?php
-if($_COOKIE['username']){
-    // can only come from a cookie, forged or otherwise
-    $good_login = 1;
-    readfile ("/highly/sensitive/data/index.html");
+// We wouldn't know where $username came from but do know $_SESSION is 
+// for session data 
+if (isset($_SESSION['username'])) {
+    
+    echo "Hello <b>{$_SESSION['username']}</b>";
+
+} else {
+    
+    echo "Hello <b>Guest</b><br />";
+    echo "Would you like to login?";
+
 }
 ?>
 ]]>
      </programlisting>
     </example>
-    By using this wisely, it's even possible to take preventative
-    measures to warn when forging is being attempted. If you know
-    ahead of time exactly where a variable should be coming from,
-    you can check to see if submitted data is coming from an
-    inappropriate kind of submission. While it doesn't guarantee
-    that data has not been forged, it does require an attacker
-    to guess the right kind of forging.
+   </para>
+   <para>
+    It's even possible to take preventative measures to warn when forging is
+    being attempted. If you know ahead of time exactly where a variable
+    should be coming from, you can check to see if the submitted data is
+    coming from an inappropriate kind of submission.  While it doesn't
+    guarantee that data has not been forged, it does require an attacker to
+    guess the right kind of forging.  If you don't care where the request
+    data comes from, you can use <varname>$_REQUEST</varname> as it contains
+    a mix of GET, POST and COOKIE data.  See also the manual section on
+    using <link linkend="language.variables.external">variables from outside
+    of PHP</link>. 
+   </para>
+   <para>
     <example>
      <title>Detecting simple variable poisoning</title>
      <programlisting role="php">
 <![CDATA[
 <?php
-if ($_COOKIE['username'] &&
-    !$_POST['username'] &&
-    !$_GET['username'] ) {
-    // Perform other checks to validate the user name...
-    $good_login = 1;
-    readfile ("/highly/sensitive/data/index.html");
-} else {
+if (isset($_COOKIE['MAGIC_COOKIE'])) {
+    
+    // MAGIC_COOKIE comes from a cookie.
+    // Be sure to validate the cookie data!
+
+} elseif (isset($_GET['MAGIC_COOKIE']) || isset($_POST['MAGIC_COOKIE'])) {
+   
    mail("admin@example.com", "Possible breakin attempt", $_SERVER['REMOTE_ADDR']);
    echo "Security violation, admin has been alerted.";
    exit;
+
+} else {
+   
+   // MAGIC_COOKIE isn't set through this REQUEST
+
 }
 ?>
 ]]>
      </programlisting>
     </example>
-    Of course, simply turning off register_globals does not mean code
-    is secure. For every piece of data that is submitted, it
-    should also be checked in other ways.
    </para>
+   <para>
+    Of course, simply turning off register_globals does not mean your code
+    is secure.  For every piece of data that is submitted, it should also be
+    checked in other ways.  Always validate your user data and initialize
+    your variables!  To check for unitialized variables you may turn up
+    <function>error_reporting</function> to show
+    <constant>E_NOTICE</constant> level errors.
+   </para>
+   
+   &note.superglobals;
+
   </sect1>
 
 
