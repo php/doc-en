@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.27 2003-06-19 17:04:39 hholzgra Exp $
+  $Id: html-common.xsl,v 1.28 2003-06-19 17:30:21 hholzgra Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -197,7 +197,7 @@ set       toc
   <b><xsl:apply-templates/></b>
 </xsl:template>
 
-<!-- METHODPARAM default values are bold like in DSSSL -->
+<!-- METHODPARAM default values are italics like in DSSSL -->
 <xsl:template match="methodparam/initializer">
   <xsl:text>=</xsl:text>
   <i><xsl:apply-templates/></i>
