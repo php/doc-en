@@ -85,7 +85,7 @@ Class BugHunter {
 	var $php_min_version = '4.3.1-dev';
 	var $parse_all       = '';
 	var $parse_ext       = '';
-	var $module          = 'php5';
+	var $module          = 'php4';
 	var $root            = '../../';
 	var $funclist        = 'phpdoc/funclist.txt';
 	var $index           = Array();
@@ -122,7 +122,7 @@ Class BugHunter {
 		}
 
 		$skip = False;
-		echo "\n\n<b>Indexing functions from `{$this->funclist}'</b>\n";
+		echo "\n\nIndexing functions from `{$this->funclist}'\n";
 		foreach(explode("\r\n", $this->read_file($this->root . $this->funclist)) as $line) {
 			flush();
 			if(preg_match_all("/^# ([[:alnum:]_\/]+\/([[:alnum:]_]+)\/[[:alnum:]_]+\.c)$/", $line, $file, PREG_SET_ORDER)) {
@@ -132,7 +132,7 @@ Class BugHunter {
 				if(!file_exists($this->root . $file[0][1])) {
 					$skip      = True;
 					$cache = $file;
-					echo "\n\tSkipping <b>{$file[0][2]}</b>  -  <i>{$file[0][1]} not in repository</i>...";
+					echo "\n\tSkipping {$file[0][2]}  -  <i>{$file[0][1]} not in repository</i>...";
 					Continue;
 				}
 
@@ -145,7 +145,7 @@ Class BugHunter {
 			}
 		}
 
-		echo "\n\n<b>Parsing Extensions</b>\n";
+		echo "\n\nParsing Extensions\n";
 		if($this->parse_all) {
 			foreach($this->index as $ext => $data) {
 				$this->cur_ext = $ext;
@@ -157,7 +157,7 @@ Class BugHunter {
 		else if($this->parse_ext) {
 			if(!isset($this->index[$this->parse_ext])) {
 				echo "\n\n";
-				echo isset($this->skipped[$this->parse_ext])? "Nothing to do for <b>{$this->parse_ext}</b>" : "Unknown Extension <b>{$this->parse_ext}</b>";
+				echo isset($this->skipped[$this->parse_ext])? "Nothing to do for {$this->parse_ext}" : "Unknown Extension {$this->parse_ext}";
 				echo "\n";
 				Return Exit;
 			}
@@ -224,11 +224,11 @@ Class BugHunter {
 			// Break protos into tiny pieces
 			preg_match_all($rex_proto_synopsis, $proto[1][$i], $detail, PREG_SET_ORDER);
 
-			#echo "<b>" . $detail[0][3] . "</b> : ";
-			#echo "<b><i>" . $detail[0][4] . "</i></b>\n\n";
+			#echo "" . $detail[0][3] . " : ";
+			#echo "<i>" . $detail[0][4] . "</i>\n\n";
 
 			if(!isset($detail[0][3])) {
-				echo "\n<b>Failed parsing proto:</b> <i>{$proto[1][$i]}</i> in <b>{$this->index[$this->cur_ext]['location']}</b>\n";
+				echo "\n\nFailed parsing proto: {$proto[1][$i]} in {$this->index[$this->cur_ext]['location']}\n\n";
 				Return Array();
 			}
 
@@ -346,36 +346,44 @@ $t_start = getmicrotime();
 
 $hunter = new BugHunter();
 
-echo "\n\n<hr>Process took : " . round(getmicrotime() - $t_start, 3) . " seconds\n<hr>\n\n";
-echo "\n\n<b>Results :</b>\n\n";
+echo "\n\nProcess took : " . round(getmicrotime() - $t_start, 3) . " seconds\n\n\n";
+echo "\n\nResults:\n\n";
 
-$tot = 0;
+$tot   = 0;
+$size1 = 20;
+$size2 = 30;
 foreach($hunter->result as $ext => $function) {
 	flush();
-	echo "\n\n<b>$ext</b>\n<hr>\n";
+	echo "\n\t" . str_pad($ext, $size1);
 	$err = 0;
 	foreach($function as $name=>$data) {
 		if(!empty($data['source']['proto']['errors'])) {
-			echo "\n\t" . str_pad($name, 50) . " : ";
 
+			if(!$err)
+				echo "\t[  FAILED  ]";
+
+			echo "\n\t\t" . str_pad("$name()", $size2);
+
+			$line = '';
 			foreach($data['source']['proto']['errors'] as $param=>$error) {
-				echo "\t\tp: $param : ";
+
+				echo "$line\t\t$param. ";
+
+				if(!$line)
+					$line = "\n\t\t" . str_repeat(' ', $size2);
 
 				foreach($error as $err_type=>$err_val) {
-					echo "<b>" . str_pad($err_type, 10) . "</b>" . " : "
-						 .str_pad($err_val , 10)
-						 .','
-					;
+					echo str_pad($err_type, 10) . ($err_type == 'wrong_type'? (" : " . str_pad($err_val , 10)) : '');
 					$err++;
 				}
 			}
 		}
 	}
-	echo "\n\nTotal bugs: $err";
+	echo ($err)? "\n\n\t\tTotal bugs: $err\n" : "\t[    OK    ]";
 	$tot += $err;
 }
 
-echo "\n\nTotal proto inconsistencies: <b>$tot</b>";
+echo "\n\nTotal proto inconsistencies: $tot";
 
 #print_r((array) $hunter);
 
