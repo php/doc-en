@@ -23,7 +23,7 @@ function oneLiner($filename, $only_tags = false)
     global $INTERNAL_CHARSET;
 
     if ($only_tags) {
-        $buf = preg_replace("/<([a-zA-Z]+)(>|[^>]*>)>/Ue", "preg_replace('/[\r\n]{1,2}/U', ' ', \"<\$1 \$2\")", file_get_contents($filename));
+        $buf = preg_replace("/<([a-zA-Z1-9]+)(>|[^a-zA-Z1-9][^>]*>)/Ue", "preg_replace('/[\r\n]{1,2}/U', ' ', \"<\$1 \$2\")", file_get_contents($filename));
     } else {
         $buf = preg_replace("/[\r|\n]{1,2}/U", " ", file_get_contents($filename));
     }
