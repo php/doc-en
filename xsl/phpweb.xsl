@@ -3,20 +3,23 @@
 
   PHP.net web site specific stylesheet
 
-  $Id$
+  $Id: phpweb.xsl,v 1.1 2003-04-19 17:23:22 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0">
 
-<xsl:import href="@DOCBOOKXSL_HTML@"/>
+<xsl:import href="./docbook/html/chunkfast.xsl"/>
 <xsl:include href="html-common.xsl"/>
 
+<!-- Output files to the 'php' dir, use the '.php' extension
+     and name them using the IDs in documents -->
 <xsl:param name="base.dir" select="'php/'"/>
 <xsl:param name="html.ext" select="'.php'"/>
 <xsl:param name="use.id.as.filename" select="1"/>
-<xsl:param name="default.encoding" select="'@ENCODING@'"/>
-<xsl:param name="saxon.character.representation" select="'native'"/>
+
+<!-- Speed up generation (no file name printouts) -->
+<xsl:param name="chunk.quietly">1</xsl:param>
 
 <!-- Special PHP code navigation for generated pages
      Note: I have used xsl:text instead of
