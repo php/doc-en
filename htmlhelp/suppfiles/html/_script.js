@@ -33,7 +33,7 @@ function prefHandler()
     document.write('<script src="' + skin_js_file + '"><'+ '/script>');
     
     // OnContextMenu is only supported in IE5+ so do
-    // not try to suport the context menu otherwise
+    // not try to support the context menu otherwise
     if (ie_version_major >= 5) {
     
         // Write out context menu for the first time into it's div
