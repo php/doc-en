@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.25 2004-11-19 11:06:06 techtonik Exp $
+  $Id: common.xsl,v 1.26 2004-11-21 21:13:48 techtonik Exp $
 
   What is done in this stylesheet as common to all HTML output formats:
 
@@ -396,19 +396,18 @@
         <xsl:when test="contains(current(), '::')">
           <xsl:value-of select="'::'"/>
         </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="false()"/>
-        </xsl:otherwise>
       </xsl:choose>
     </xsl:variable>
 
-    <xsl:if test="$token">
-      <xsl:value-of select="concat(substring-before(current(), $token), '-',
-                                   substring-after(current(), $token))"/>
-    </xsl:if>
-    <xsl:if test="not ($token)">
-       <xsl:value-of select="string(current())"/>
-    </xsl:if>
+    <xsl:choose>
+      <xsl:when test="string-length($token) != 0">
+        <xsl:value-of select="concat(substring-before(current(), $token), '-',
+                                     substring-after(current(), $token))"/>
+      </xsl:when>
+      <xsl:otherwise>
+         <xsl:value-of select="string(current())"/>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:variable>
   
   <xsl:variable name="function.href">
