@@ -405,4 +405,29 @@
   content
   (para-check 'restart)))))
 
+;; Special handling of note role="seealso"
+(define ($admonpara$)
+  (let* ((title     (select-elements 
+		     (children (parent (current-node))) (normalize "title")))
+	 (has-title (not (node-list-empty? title)))
+	 (adm-title (if has-title 
+			(make sequence
+			  (with-mode title-sosofo-mode
+			    (process-node-list (node-list-first title)))
+			  (literal (gentext-label-title-sep 
+				    (gi (parent (current-node))))))
+			(literal
+			 (gentext-element-name 
+			  (if (equal? (normalize "seealso") (attribute-string (normalize "role") (parent (current-node))))
+			   (normalize "seealsoie")
+			   (parent (current-node))))
+			 (gentext-label-title-sep 
+			  (gi (parent (current-node))))))))
+    (make element gi: "P"
+	  (if (and (not %admon-graphics%) (= (child-number) 1))
+	      (make element gi: "B"
+		    adm-title)
+	      (empty-sosofo))
+	  (process-children))))
+
 ;; vim: ts=2 sw=2 et
