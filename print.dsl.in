@@ -304,18 +304,47 @@
    (make sequence ( literal " (...)" )))
    
 (element function
-  (cond
-   ;; function names should be plain in FUNCDEF
-   ((equal? (gi (parent)) "funcdef")
-    (process-children))
-   
-   ;; else make the function name bold and add "()"
-   ;; we should add some cross-reference here later
-   (else
-    ($bold-seq$
-     (make sequence
-       (process-children)
-       (literal "()"))))))
+  (let* ((function-name (data (current-node)))
+     (linkend 
+      (string-append
+       "function." 
+       (string-replace
+        (string-replace function-name "_" "-")
+        "::" ".")))
+     (target (element-with-id linkend))
+     (parent-gi (gi (parent))))
+    (cond
+     ;; function names should be plain in FUNCDEF
+     ((equal? parent-gi "funcdef")
+      (process-children))
+     
+     ;; if a valid ID for the target function is not found, or if the
+     ;; FUNCTION tag is within the definition of the same function,
+     ;; make it bold, add (), but don't make a link
+     ((or (node-list-empty? target)
+      (equal? (case-fold-down
+           (data (node-list-first
+              (select-elements
+               (node-list-first
+                (children
+                 (select-elements
+                  (children
+                   (ancestor-member (parent) (list "refentry")))
+                  "refnamediv")))
+               "refname"))))
+          function-name))
+      ($bold-seq$
+       (make sequence
+     (process-children)
+     (literal "()"))))
+     
+     ;; else make a link to the function and add ()
+     (else
+      (make sequence
+	(make link
+	  destination: (node-list-address target)
+	  )
+	(literal "()"))))))
 
 
 
