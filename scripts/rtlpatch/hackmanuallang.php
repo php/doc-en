@@ -29,11 +29,7 @@
 */
 error_reporting(2047);
 // finding the real path of the needed files:
-$mypath = $_SERVER["SCRIPT_NAME"];
-$spos = strrpos($mypath,"/");
-if(!$spos) $spos = strrpos($mypath,"\\");
-$mypath = substr($mypath,0,$spos);
-if($mypath) $mypath.="/";
+$mypath = dirname(__FILE__)."/";
 
 $lang= $argv[1];
 
