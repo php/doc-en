@@ -131,10 +131,12 @@ class CHtmlExtParse extends CHtmlParse{
 			if($tg>9)  {
 				$tag = $EHType[$tg];
 				$ret[$a] .= "<$tag";
+				$chaintoend="";
 				foreach ($this->ATE[$a] as $key=>$value){
-					$ret[$a].=" $key=\"$value\"";
+					if($key == "chaintoend") $chaintoend = $value;
+					else $ret[$a].=" $key=\"$value\"";
 				}
-				$ret[$a].=">";
+				$ret[$a].=">$chaintoend";
 				
 				if($this->ECE[$a]!=$a) $ret[$this->ECE[$a]] .= " </$tag>";
 			} else if($tg == __HTML_PROCESS__){
