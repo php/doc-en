@@ -1,23 +1,55 @@
  <reference id="ref.curl">
-  <title>CURL Client URL Library Functions</title>
+  <title>CURL, Client URL Library functions</title>
   <titleabbrev>CURL</titleabbrev>
+   <para>
+    PHP supports libcurl, a library, created by Daniel Stenberg, that allows
+    you to connect and communicate to many different types of servers with many
+    different types of protocols.  libcurl currently supports the http, https, ftp,
+    gopher, telnet, dict, file, and ldap protocols.  libcurl also supports
+    HTTPS certificates, HTTP POST, HTTP PUT, FTP uploading (this can also be done
+    with PHP's ftp extension), HTTP form based upload, proxies, cookies and 
+    user+password authentication.
+   </para>
+   <para>
+    In order to use the CURL functions you need to install the
+    <ulink url="&url.curl;">CURL</ulink> package. PHP requires
+    that you use CURL 7.0.2-beta or higher. PHP will not work with any version of 
+    CURL below version 7.0.2-beta.
+   </para>
+   <para>
+    To use PHP's CURL support you must also compile PHP 
+    <option role="configure">--with-curl[=DIR]</option> where DIR is the location 
+    of the directory containing the lib and include directories.  In the "include"
+    directory there should be a folder named "curl" which should contain the 
+    easy.h and curl.h files.  There should be a file named "libcurl.a" located in
+    the "lib" directory.
+   </para>
+   <para>
+    Once you've compiled PHP with CURL support, you can begin using the curl
+    functions.  The basic idea behind the CURL functions is that you initialize a
+    CURL session using the <function>curl_init()</function>, then you can set
+    all your options for the transfer via the <function>curl_exec()</function> and
+    then you finish off your session using the <function>curl_close()</function>.
+    Here is an example that uses the CURL functions to fetch the PHP homepage into
+    a file:
+    <example>
+     <title>Using PHP's CURL module to fetch the PHP homepage</title>
+     <programlisting role="php">
+&lt;?php
 
-  <partintro>
-   <simpara>
-    The CURL module is currently experimental and incomplete. Do
-    not rely on it.
-   </simpara>
-   <simpara>
-    In order to use the CURL functions you need to install the <ulink
-    url="&url.curl;">CURL</ulink> package. PHP requires that you use
-    the 7.0.2-beta version. Version 6.5.2 will not do.
-   </simpara>
-   <simpara>
-    As this documentation is currently as incomplete and
-    experimental as the module itself, you should rely on the
-    CURL C-API documentation for a list of option names and
-    additional information.
-   </simpara>
+$ch = curl_init ("http://www.php.net/");
+$fp = fopen ("php_homepage.txt", "w");
+
+curl_setopt ($ch, CURLOPT_INFILE, $fp);
+curl_setopt ($ch, CURLOPT_HEADER, 0);
+
+curl_exec ($ch);
+curl_close ($ch);
+fclose ($fp);
+?>
+     </programlisting>
+    </example>
+   </para>
   </partintro>
 
   <refentry id="function.curl-init">
@@ -29,18 +61,42 @@
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>int <function>curl_init</function></funcdef>
-      <paramdef>string <parameter>curl</parameter></paramdef>
+      <funcdef>int 
+       <function>curl_init</function>
+      </funcdef>
+      <paramdef>string 
+       <parameter>
+        <optional>url</optional>
+       </parameter>
+      </paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
-     This function must be the first function to call, and it returns
-     a CURL handle that you shall use as input to the other
-     curl-functions.  The init calls intializes curl.
+     The <function>curl_init</function> will initialize a new session
+     and return a CURL handle for use with the <function>curl_setopt</function>,
+     <function>curl_exec</function>, and <function>curl_close</function>
+     functions.  If the optional <parameter>url</parameter> parameter is supplied
+     then the CURLOPT_URL option will be set to the value of the parameter.
+     You can manually set this using the <function>curl_setopt</function>
+     function.
+     <example>
+      <title>Initializing a new CURL session and fetching a webpage</title>
+      <programlisting role="php">
+&lt;?php
+$ch = curl_init();
+
+curl_setopt($ch, CURLOPT_URL, "http://www.zend.com/");
+curl_setopt($ch, CURLOPT_HEADER, 0);
+
+curl_exec($ch);
+
+curl_close($ch);
+?>
+      </programlisting>
+     </example>
     </para>
     <para>
-     If this function returns false, something went wrong and you
-     cannot use the other curl functions.
+     See also:  <function>curl_close</function>, <function>curl_setopt</function>
     </para>
    </refsect1>
   </refentry>
@@ -54,14 +110,158 @@
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>bool <function>curl_setopt</function></funcdef>
-      <paramdef>int <parameter>ch</parameter></paramdef>
-      <paramdef>string <parameter>option</parameter></paramdef>
-      <paramdef>mixed <parameter>value</parameter></paramdef>
+      <funcdef>bool 
+       <function>curl_setopt</function>
+      </funcdef>
+      <paramdef>int 
+       <parameter>ch</parameter>
+      </paramdef>
+      <paramdef>string 
+       <parameter>option</parameter>
+      </paramdef>
+      <paramdef>mixed 
+       <parameter>value</parameter>
+      </paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
-     TODO
+     The <function>curl_setopt</function> function will set options for a CURL
+     session identified by the <parameter>ch</parameter> parameter.  The
+     <parameter>option</parameter> parameter is the option you want to set,
+     and the <parameter>value</parameter> is the value of the option
+     given by the <parameter>option</parameter>.
+    </para>
+    <para>
+     The <parameter>value</parameter> should be a long for the following
+     options (specified in the <parameter>option</parameter> parameter):
+     <itemizedlist>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_INFILESIZE</parameter>:  When you are uploading
+        a file to a remote site, this option should be used to tell PHP
+        what the expected size of the infile will be.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_VERBOSE</parameter>:  Set this option to a non-zero
+        value if you want CURL to report everything that is happening.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_HEADER</parameter>:  Set this option to a non-zero
+        value if you want the header to be included in the output. 
+       </simpara>
+      </listitem>
+      <listitem>
+       <para>
+       <parameter>CURLOPT_NOPROGRESS</parameter>:  Set this option to a non-zero
+        value if you don't want PHP to display a progress meter for CURL transfers
+        <note>
+         <simpara>
+          PHP automatically sets this option to a non-zero parameter, this should
+         only be changed for debugging purposes.
+         </simpara>
+        </note>
+       </para>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_NOBODY</parameter>:  Set this option to a non-zero value
+        if you don't want the body included with the output.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_FAILONERROR</parameter>:  Set this option to a non-zero
+        value if you want PHP to fail silently if the HTTP code returned is greater
+        than 300.  The default behaviour is to return the page normally, ignoring
+        the code.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_UPLOAD</parameter>:  Set this option to a non-zero value
+        if you want PHP to prepare for an upload.
+       </simpara>
+      </listitem>
+      <listitem>
+      <simpara>
+        <parameter>CURLOPT_POST</parameter>:  Set this option to a non-zero value
+        if you want PHP to do a regular HTTP POST.  This POST is a normal 
+        application/x-www-from-urlencoded kind, most commonly used by HTML forms.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_FTPLISTONLY</parameter>:  Set this option to a non-zero
+       value and PHP will just list the names of an FTP directory.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_FTPAPPEND</parameter>:  Set this option to a non-zero 
+        value and PHP will append to the remote file instead of overwriting it.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_NETRC</parameter>:  Set this option to a non-zero value
+        and PHP will scan your ~./netrc file to find your username and password
+        for the remote site that you're establishing a connection with.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_FOLLOWLOCATION</parameter>:  Set this option to a 
+        non-zero value to follow any "Location: " header that the server sends as 
+        a part of the HTTP header (note this is recursive, PHP will follow as many
+        "Location: " headers that it is sent.)
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_PUT</parameter>:  Set this option a non-zero value to
+        HTTP PUT a file.  The file to PUT must be set with the CURLOPT_INFILE and
+        CURLOPT_INFILESIZE.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_MUTE</parameter>:  Set this option to a non-zero value
+        and PHP will be completely silent with regards to the CURL functions.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_TIMEOUT</parameter>:  Pass a long as a parameter that
+        contains the maximum time, in seconds, that you'll allow the curl functions
+        to take.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_LOW_SPEED_LIMIT</parameter>:  Pass a long as a parameter
+        that contains the transfer speed in bytes per second that the transfer should
+        be below during CURLOPT_LOW_SPEED_TIME seconds for PHP to consider it too 
+        slow and abort.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_LOW_SPEED_TIME</parameter>:  Pass a long as a parameter
+        that contains the time in seconds that the transfer should be below the 
+        CURLOPT_LOW_SPEED_LIMIT for PHP to consider it too slow and abort.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        <parameter>CURLOPT_RESUME_FROM</parameter>:  Pass a long as a parameter that
+        contains the offset, in bytes, that you want the transfer to start from.
+       </simpara>
+      </listitem>
+     </itemizedlist>
     </para>
    </refsect1>
   </refentry>
@@ -75,16 +275,18 @@
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>bool <function>curl_exec</function></funcdef>
-      <paramdef>int <parameter>ch</parameter></paramdef>
+      <funcdef>bool 
+       <function>curl_exec</function>
+      </funcdef>
+      <paramdef>int 
+       <parameter>ch</parameter>
+      </paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
-     This function is called after the init and all the
-     <function>curl_easy_setopt</funtion> calls are made, and will
-     perform the transfer as described in the options. It must be
-     called with the same handle as input as the
-     <function>curl_easy_init</function> call returned.
+       This function is should be called after you initialize a CURL session and all the
+       options for the session are set.  Its purpose is simply to execute the predefined 
+       CURL session (given by the <parameter>ch</parameter>).
     </para>
    </refsect1>
   </refentry>
@@ -104,7 +306,7 @@
     </funcsynopsis>
     <para>
      This functions closes a CURL session and frees all ressources.
-     The CURL handle <parameter>ch</parameter> becomes invalid.
+     The CURL handle, <parameter>ch</parameter>, is also deleted.
     </para>
    </refsect1>
   </refentry>
