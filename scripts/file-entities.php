@@ -18,6 +18,9 @@ $trans_dir = $base_dir."/".$argv[$argc-2];
 
 $out_dir = $argv[$argc-1];
 
+// Workaround for cygwin path values
+$out_dir = preg_replace("!^/cygdrive/(\\w)/!", "\\1:/", $out_dir);
+
 $entities = array();
 process($orig_dir, $trans_dir, $orig_dir, $entities);
 
