@@ -35,6 +35,8 @@ if ($phpdoc_dir == '') {
     }
 }
 
+$master_ini_table = '';
+
 echo "Using:\nPHP4 SRC DIR: $phpsrc_dir\nPHPDOC DIR: $phpdoc_dir\n\n";
 
 $inixml_header = <<<INIXML_HEADER
@@ -223,6 +225,8 @@ fclose($fp);
 */
 
 function createINI($dir, $cfgs) {
+    global $master_ini_table;
+    
     $rows = '';
     foreach ($cfgs as $name=>$vals) {
         $rows .= "     <row>\n";
@@ -252,6 +256,8 @@ function createINI($dir, $cfgs) {
         $rows .= "      <entry><constant>{$vals['mod']}</constant></entry>\n";
         $rows .= "     </row>\n";
     }
+    $master_ini_table .= $rows;
+    
     if ($dir == 'en/chapters') {
         $id = 'general';
     } else {
@@ -271,6 +277,20 @@ function createINI($dir, $cfgs) {
         echo "ERROR CREATING {$GLOBALS['phpdoc_dir']}/{$dir}/test_ini.xml\n";
     }
 }
+
+function createMasterINI ($dir, $rows) {
+    $fp = fopen("{$GLOBALS['phpdoc_dir']}/{$dir}/config.master_test.xml", 'w');
+    $out = str_replace('##ID##','master', $GLOBALS['inixml_header']);
+    $out .= $GLOBALS['legend'];
+    $out .= $GLOBALS['table_header'].$rows.$GLOBALS['table_footer'];
+    $out .= $GLOBALS['inixml_footer'];
+    if (is_resource($fp)) {
+	fwrite($fp, $out);
+	fflush($fp);
+	fclose($fp);
+	echo "CREATED {$GLOBALS['phpdoc_dir']}/{$dir}/config.master_test.xml\n";
+    }	
+}	
 
 // flatten tree
 $flat = flatentree($dtree, 'INI');
@@ -409,5 +429,7 @@ foreach ($map as $dir=>$srcfiles) {
         createINI($dir, $cfgs);
     }
 }
+
+createMasterINI('en/chapters', $master_ini_table);
 
 ?>
