@@ -15,7 +15,6 @@
 <style-specification id="local-php-print" use="docbook">
 <style-specification-body>
 
-
 <!-- 
   override default setting for some output parameters 
   (defaults are defined in /usr/share/sgml/docbkdsl/print/dbparam.dsl)
@@ -108,50 +107,120 @@
       ($informal-object$))))
 
 
-(element optional ( process-children ))
 
-(element paramdef  
-	(make sequence
-		(if (equal? (child-number (current-node)) 1)
-				(make sequence
-					(literal " (")
-					( if (> 
-								(node-list-length (select-elements (descendants (current-node)) (normalize "optional")))
-								0
-								)
-							 (literal " [")	
-							 (empty-sosofo)
-							 )
-					(empty-sosofo)
-					)
-				(empty-sosofo)
+;; there are two different kinds of optionals
+;; optional parameters and optional parameter parts
+;; an optional parameter is identified by an optional tag
+;; with a parameter tag as its parent 
+;; and only whitespace between them
+(define (is-true-optional nl)
+	(and (equal? (gi (parent nl)) (normalize "parameter"))
+			 (equal? 0 (string-length (strip (data (preced nl)))))
+			 (equal? 0 (string-length (strip (data (follow nl)))))
+			 )
+	)
+
+(define (has-true-optional nl)
+	(is-true-optional 
+	 (node-list-first-element 
+		(select-elements 
+		 (descendants nl) 
+		 (normalize "optional"))
+		)
+	 )
+	)
+
+
+(define (count-true-optionals nl)
+	(let loop 
+			((result 0)
+			 (nl (select-elements (descendants nl) (normalize "optional")))
+			 )
+		(if(node-list-empty? nl)
+			 result
+			 (if(is-true-optional(node-list-first nl))
+					(loop (+ result 1) (node-list-rest nl))
+					(loop result (node-list-rest nl))
 				)
-		(process-children)
-		(if (equal? (gi (ifollow (current-node))) (normalize "paramdef"))					
-				(make sequence
-				 ( if (> 
-							 (node-list-length (select-elements (descendants (ifollow (current-node))) (normalize "optional")))
-							 0
-							 )
-							(literal " [")	
-							(empty-sosofo)
-							)
-				 (literal ", " )				 				 
-				 )
-				(make sequence
-				 ( if (> 
-							 (node-list-length (select-elements (descendants (current-node)) (normalize "optional")))
-							 0
-							 )
-							(literal (substring "]]]]]]]]]]]]]]]]]]]]]]]]]]]]" 0 (node-list-length (select-elements (descendants (parent (current-node))) (normalize "optional")))))	
-							(empty-sosofo)
-							)
-				 ( literal ")" )
-				 )
-				)
+			 )
 		)
 	)
 
+
+(element optional 
+	;;check for true optional parameter
+    (if (is-true-optional (current-node))
+				;; yes - handle '[...]' in paramdef
+				(process-children-trim) 
+				;; no - do '[...]' output
+				(make sequence
+					(literal %arg-choice-opt-open-str%)
+					(process-children-trim)
+					(literal %arg-choice-opt-close-str%)
+					)
+				)
+		)		
+
+(element (paramdef parameter)
+	(make sequence
+    font-posture: 'italic                                                       
+		(process-children-trim)
+		)
+	)                                                       
+
+;; now this is going to be tricky
+(element paramdef  
+  (make sequence
+		;; special treatment for first parameter in funcsynopsis
+    (if (equal? (child-number (current-node)) 1)
+				;; is first ?
+				(make sequence
+					;; start parameter list
+					(literal " (") 
+					;; is optional ?
+					( if (has-true-optional (current-node))
+							 (literal %arg-choice-opt-open-str%)
+							 (empty-sosofo)
+							 )
+					)
+				;; not first
+				(empty-sosofo)
+				)
+
+		;;
+    (process-children-trim)
+
+		;; special treatment for last parameter 
+    (if (equal? (gi (ifollow (current-node))) (normalize "paramdef"))					
+				;; more parameters will follow
+				(make sequence
+					;; next is optional ?
+					( if (has-true-optional (ifollow (current-node)))
+						;; optional
+						(make sequence
+							(literal " ")
+							(literal %arg-choice-opt-open-str%)
+							)
+						;; not optional
+						(empty-sosofo)
+						)
+					(literal ", " )				 				 
+					)
+				;; last parameter
+				(make sequence
+					(literal 
+					 (let loop ((result "")(count (count-true-optionals (parent (current-node)))))
+						 (if (<= count 0)
+								 result
+								 (loop (string-append result %arg-choice-opt-close-str%)(- count 1))
+								 )
+						 )
+					 )
+					 ( literal ")" )
+					 )
+					)
+				)
+		)
 
 (element function
   (cond
