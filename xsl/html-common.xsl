@@ -3,7 +3,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.11 2002-02-10 14:43:22 goba Exp $
+  $Id: html-common.xsl,v 1.12 2002-02-28 14:21:03 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -19,28 +19,28 @@
   <xsl:choose>
     <xsl:when test="name(parent::*)!='funcdef'">
       <xsl:choose>
-        <xsl:when test="ancestor::refentry/refnamediv/refname!=translate(current(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')">
-          <a>
-	    <xsl:attribute name="href">
-	      <xsl:call-template name="href.target">
-		<xsl:with-param name="object" select="id(concat('function.', translate(string(current()),'_','-')))"/> 
-	      </xsl:call-template>
-	    </xsl:attribute>
-  	    <xsl:call-template name="inline.boldseq">
-	      <xsl:with-param name="content">
-		<xsl:apply-templates/>
-		<xsl:text>()</xsl:text>
-	      </xsl:with-param>
-	    </xsl:call-template>
-          </a>
+        <xsl:when test="ancestor::refentry/refnamediv/refname=translate(current(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')">
+          <xsl:call-template name="inline.boldseq">
+            <xsl:with-param name="content">
+              <xsl:apply-templates/>
+              <xsl:text>()</xsl:text>
+            </xsl:with-param>
+          </xsl:call-template>
         </xsl:when>
         <xsl:otherwise>
-	  <xsl:call-template name="inline.boldseq">
-	    <xsl:with-param name="content">
-	      <xsl:apply-templates/>
-	      <xsl:text>()</xsl:text>
-	    </xsl:with-param>
-	  </xsl:call-template>
+          <a>
+            <xsl:attribute name="href">
+              <xsl:call-template name="href.target">
+                <xsl:with-param name="object" select="id(concat('function.', translate(string(current()),'_','-')))"/> 
+              </xsl:call-template>
+            </xsl:attribute>
+            <xsl:call-template name="inline.boldseq">
+              <xsl:with-param name="content">
+                <xsl:apply-templates/>
+                <xsl:text>()</xsl:text>
+              </xsl:with-param>
+            </xsl:call-template>
+          </a>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:when>
