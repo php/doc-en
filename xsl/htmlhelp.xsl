@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.15 2004-11-09 13:02:05 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.16 2004-11-10 20:38:09 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -308,6 +308,43 @@ FIX: hhc.exe chokes on this link.. need additional redirection page -->
   </xsl:call-template>
 </xsl:template>
 
+<!-- [Temporarily also until it will be discussed in docbook-apps about features operating
+     in html mode - is it neccesary to escape attributes which are already escaped in sources] -->
+<!-- Do not escape titles since we are operating in html mode -->
+<xsl:template match="part|reference|preface|chapter|bibliography|appendix|article|glossary"
+              mode="hhc">
+  <xsl:variable name="title">
+    <xsl:if test="$htmlhelp.autolabel=1">
+      <xsl:variable name="label.markup">
+        <xsl:apply-templates select="." mode="label.markup"/>
+      </xsl:variable>
+      <xsl:if test="normalize-space($label.markup)">
+        <xsl:value-of select="concat($label.markup,$autotoc.label.separator)"/>
+      </xsl:if>
+    </xsl:if>
+    <xsl:apply-templates select="." mode="title.markup"/>
+  </xsl:variable>
+  <xsl:variable name="href">
+    <xsl:call-template name="href.target.with.base.dir"/>
+  </xsl:variable>
+
+  <xsl:text>
+  </xsl:text>
+  <li><object type="text/sitemap">
+    <param name="Name" value="{normalize-space($title)}"/>
+    <param name="Local" value="{$href}"/>
+  </object></li>
+  <xsl:text>
+  </xsl:text>
+
+  <xsl:if test="reference|preface|chapter|appendix|refentry|section|sect1|bibliodiv">
+    <ul>
+      <xsl:apply-templates
+	select="reference|preface|chapter|appendix|refentry|section|sect1|bibliodiv"
+	mode="hhc"/>
+    </ul>
+  </xsl:if>
+</xsl:template>
 
 <!--
 <xsl:param name="htmlhelp.only" select="1"/>
@@ -452,7 +489,6 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
-
 
 
 <!-- *************** HH HTML MARKUP CUSTOMIZATIONS **************** -->
