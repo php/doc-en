@@ -37,10 +37,10 @@ function l(a) { return a[a.length-1]; }
 fcl=new Array(); pst=new Array(""); ac="";
 for (pos=0; pos<cpd.length; pos++) {
     switch (ch=cpd.charAt(pos)) {
-        case ',': fcl.push(l(pst)+ac); ac=""; break;
-        case '(': pst.push(l(pst)+ac); ac=""; break;
-        case ')': case ']': if(ac.length)fcl.push(l(pst)+ac); ac=""; pst.pop(); break;
-        case '[': fcl.push(a=l(pst)+ac); pst.push(a); ac=""; break;
+        case ',': fcl[fcl.length]=l(pst)+ac; ac=""; break;
+        case '(': pst[pst.length]=l(pst)+ac; ac=""; break;
+        case ')': case ']': if(ac.length)fcl[fcl.length]=l(pst)+ac; ac=""; pst.length--; break;
+        case '[': fcl[fcl.length]=(a=l(pst)+ac); pst[pst.length]=a; ac=""; break;
         default: ac=ac+ch;
     }
 }
@@ -91,7 +91,7 @@ function fh_FindMatches(pr)
     if (m&&fh_IsMatch(m-1,pr)) m--;
     if (!fh_IsMatch(m,pr) && m<(fcl.length-1) && fh_IsMatch(m+1,pr)) m++;
     res=new Array;
-    while (m<fcl.length && fh_IsMatch(m,pr)) res.push(fcl[m++]);
+    while (m<fcl.length && fh_IsMatch(m,pr)) res[res.length]=fcl[m++];
     return res;
 }
 
@@ -211,7 +211,7 @@ function fh_EKeyPress(ev)
             if (isnotopera) {
                 len=0;
                 first=matches[0];
-                last=matches.pop();
+                last=matches[matches.length-1]; matches.length--;
                 while (len<first.length && first.substring(0,len+1)==last.substring(0,len+1)) len++;
                 if (f_p.value!=first.substring(0,len)) {
                     f_p.value=first.substring(0,len);
