@@ -15,9 +15,6 @@ set PHP_HELP_COMPILE_LANG=en
 rem The source directory with the original DSSSL made HTML
 set PHP_HELP_COMPILE_DIR=html
 
-rem The index file in this directory (manual.html or index.html)
-set PHP_HELP_COMPILE_INDEX=index.html
-
 rem The directory, where the fancy files need to be copied
 set PHP_HELP_COMPILE_FANCYDIR=fancy
 
