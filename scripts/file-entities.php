@@ -59,28 +59,25 @@ if ($argc != 6) {
 // Zend API integration info (either a path or "notfound")
 $zendapi = ($argv[$argc-1] == "notfound" ? FALSE : $argv[$argc-1]);
 
-// CHM integration (either "yes" or "no")
-$chmenabled = ($argv[$argc-2] == "yes" ? TRUE : FALSE);
-
 // XSL sheets are used or not (either "yes" or "no")
-$xsl_sheet_used = ($argv[$argc-3] == "yes" ? TRUE : FALSE);
+$xsl_sheet_used = ($argv[$argc-2] == "yes" ? TRUE : FALSE);
 
 // The output directory, which we need to parse for windows specific
 // things, special cygwin path notation, and correct all problems is
 // needed. Also use absolute path to have meaningful error messages
-$out_dir = preg_replace("!^/cygdrive/(\\w)/!", "\\1:/", $argv[$argc-4]);
+$out_dir = preg_replace("!^/cygdrive/(\\w)/!", "\\1:/", $argv[$argc-3]);
 $out_dir = str_replace("\\", "/", abs_path($out_dir));
 $out_dir = preg_replace("!/scripts$!", "", $out_dir);
 
 // The source directory is passed in the 5th argument counting from backwards.
 // All backslashes are converted, and the possible "scripts" dirname at the
 // end is omitted
-$srcdir = str_replace("\\", "/", abs_path($argv[$argc-5]));
+$srcdir = str_replace("\\", "/", abs_path($argv[$argc-4]));
 $srcdir = preg_replace("!/scripts$!", "", $srcdir);
 
 // The translation dir is passed as the 6th argument, counting
 // from the end of the argument list
-$trans_dir = $srcdir . "/" . $argv[$argc-6];
+$trans_dir = $srcdir . "/" . $argv[$argc-5];
 
 // The original directory is in the base directory, and named "en"
 $orig_dir = $srcdir . "/en";
@@ -119,23 +116,6 @@ if ($zendapi !== FALSE) {
         entstr("zendapi.toc", "") . "\n"
     );
     echo " Zend part not found\n";
-}
-
-// If CHM part inclusion is enabled
-if ($chmenabled) {
-    fputs(
-        $fp,
-        "<!-- chmonly pages inclusion enabled -->\n" .
-        entstr("chmonly", "$out_dir/chmonly.xml") . "\n"
-    );
-    echo " CHM inclusion enabled\n";
-} else {
-    fputs(
-        $fp,
-        "<!-- chmonly pages inclusion disabled -->\n" .
-        entstr("chmonly", "") . "\n"
-    );
-    echo " CHM inclusion disbaled\n";
 }
 
 // Install part already splitted? [temporary]
