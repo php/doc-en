@@ -62,7 +62,7 @@ function DoCompress($list, $level=0)
 				return ($cache[$key]=$result);
 			}
 		}
-		if ($list[0][0]!=$list[1][0] || ($list[0][1]!=$list[1][1] && $list[2][0]!=$list[0][0])) {
+		if (@($list[0][0]!=$list[1][0] || ($list[0][1]!=$list[1][1] && $list[2][0]!=$list[0][0]))) {
 			$result.=array_shift($list);
 			continue;
 		}
@@ -75,7 +75,7 @@ function DoCompress($list, $level=0)
 			$tmplist=$list;
 			$prefix=array_shift($tmplist);
 			$subs=array();
-			while (substr($tmplist[0],0,strlen($prefix))==$prefix) {
+			while (@substr($tmplist[0],0,strlen($prefix))==$prefix) {
 				$subs[]=substr(array_shift($tmplist),strlen($prefix));
 			}
 			$tmpresult=$prefix."[";

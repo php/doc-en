@@ -86,8 +86,9 @@ foreach($lines as $line) {
 	if ($line[0]=="\"" || $line[0]=="'") continue;
 	preg_match_all("/[a-zA-Z_][a-zA-Z0-9_]*/", $line, $matches);
 	if (sizeof($matches[0]))
-		foreach($matches[0] as $id)
-			$ids[$id]++;
+		foreach($matches[0] as $id) {
+			$ids[$id] = (isset($ids[$id]) ? $ids[$id] + 1 : 1);
+		}
 }
 
 foreach($leave as $toremove)
