@@ -326,6 +326,14 @@
       <literallayout>
        remail,date,Date,subject,Subject,in_reply_to,message_id,newsgroups,
        followup_to,references
+
+message flags:
+   Unseen - 'U' if unseen, ' ' if seen
+   Answered - 'A' if answered, ' ' if unanswered
+   Deleted - 'D' if deleted, ' ' if not deleted
+   Draft - 'X' if draft, ' ' if not draft
+   Flagged - 'F' if flagged, ' ' if not flagged
+
 toaddress (full to: line, up to 1024 characters)
 
 to[] (returns an array of objects from the To line, containing:)
@@ -423,6 +431,57 @@ fetchsubject (subject line formatted to fit <parameter>subjectlength</parameter>
   </refentry>
 
 
+  <refentry id="function.imap-getmailboxes">
+   <refnamediv>
+    <refname>imap_getmailboxes</refname>
+    <refpurpose>Read the list of mailboxes, returning detailed information on each one</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>imap_getmailboxes</function></funcdef>
+     <paramdef>int <parameter>imap_stream</parameter></paramdef>
+     <paramdef>string <parameter>ref</parameter></paramdef>
+     <paramdef>string <parameter>pat</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     Returns an array of objects containing mailbox information. Each
+     object has the attributes <parameter>name</parameter>, specifying
+     the full name of the mailbox; <parameter>delimiter</parameter>,
+     which is the hierarchy delimiter for the part of the hierarchy
+     this mailbox is in; and
+     <parameter>attributes</parameter>. <parameter>Attributes</parameter>
+     is a bitmask that can be tested against:
+    <itemizedlist>
+     <listitem><simpara>
+	LATT_NOINFERIORS - This mailbox has no "children" (there are no mailboxes below this one)
+     <listitem><simpara>
+	LATT_NOSELECT - This is only a container, not a mailbox - you cannot open it.
+     <listitem><simpara>
+	LATT_MARKED - This mailbox is marked. Only used by UW-IMAPD.
+     <listitem><simpara>
+	LATT_UNMARKED - This mailbox is not marked. Only used by UW-IMAPD.
+    </itemizedlist>
+    <para>
+     <parameter>ref</parameter> should normally be just the IMAP
+     server, in the form: {imap_server:imap_port}, and
+     <parameter>pattern</parameter> specifies where in the mailbox
+     hierarchy to start searching. If you want all mailboxes, pass
+     <parameter>pattern</parameter> as an empty string.
+    <para>
+     There are two special characters you can pass as part of the
+     <parameter>pattern</parameter>: '*' and '%'. '*' means to return
+     all mailboxes. If you pass <parameter>pattern</parameter> as '*',
+     you will get a list of the entire mailbox hierarchy. '%' means to
+     return the current level only. '%' as the
+     <parameter>pattern</parameter> parameter will return only the top
+     level mailboxes; '~/mail/%' on UW_IMAPD will return every mailbox
+     in the ~/mail directory, but none in subfolders of that
+     directory.
+   </refsect1>
+  </refentry>
+
+
   <refentry id="function.imap-listsubscribed">
    <refnamediv>
     <refname>imap_listsubscribed</refname>
@@ -442,6 +501,27 @@ fetchsubject (subject line formatted to fit <parameter>subjectlength</parameter>
      <parameter>pattern</parameter> arguments specify the base
      location to search from and the pattern the mailbox name must
      match.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.imap-getsubscribed">
+   <refnamediv>
+    <refname>imap_getsubscribed</refname>
+    <refpurpose>List all the subscribed mailboxes</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>imap_getsubscribed</function></funcdef>
+     <paramdef>int <parameter>imap_stream</parameter></paramdef>
+     <paramdef>string <parameter>ref</parameter></paramdef>
+     <paramdef>string <parameter>pattern</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     This function is identical to
+     <function>imap_getmailboxes</function>, except that it only
+     returns mailboxes that the user is subscribed to.
    </refsect1>
   </refentry>
 
@@ -1035,13 +1115,211 @@ $nntp = imap_open("{localhost/nntp:119}comp.test","","");
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
-     <funcdef>string <function>imap_uid</function></funcdef>
-     <paramdef>string <parameter>mailbox</parameter></paramdef>
+     <funcdef>int <function>imap_uid</function></funcdef>
+     <paramdef>int <parameter>imap_stream</parameter></paramdef>
      <paramdef>int <parameter>msgno</parameter></paramdef>
     </funcsynopsis>
     <para>
      This function returns the UID for the given message sequence
-     number.
+     number. It is the inverse of <function>imap_msgno</function>.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.imap-msgno">
+   <refnamediv>
+    <refname>imap_msgno</refname>
+    <refpurpose>This function returns the message sequence number for the given UID.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>imap_msgno</function></funcdef>
+     <paramdef>int <parameter>imap_stream</parameter></paramdef>
+     <paramdef>int <parameter>uid</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     This function returns the message sequence number for the given
+     UID. It is the inverse of <function>imap_uid</function>.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.imap-search">
+   <refnamediv>
+    <refname>imap_search</refname>
+    <refpurpose>This function returns an array of messages matching the given search criteria.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>imap_search</function></funcdef>
+     <paramdef>int <parameter>imap_stream</parameter></paramdef>
+     <paramdef>string <parameter>criteria</parameter></paramdef>
+     <paramdef>int <parameter>flags</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     This function performs a search on the mailbox currently opened
+     in the given imap stream. <parameter>criteria</parameter> is a
+     string, delimited by spaces, in which the following keywords are
+     allowed. Any multi-word arguments (eg FROM "joe smith") must be
+     quoted.
+    <itemizedlist>  
+     <listitem><simpara>
+      ALL - return all messages matching the rest of the criteria
+     <listitem><simpara>
+      ANSWERED - match messages with the \\ANSWERED flag set
+     <listitem><simpara>
+      BCC "string" - match messages with "string" in the Bcc: field
+     <listitem><simpara>
+      BEFORE "date" - match messages with Date: before <date>
+     <listitem><simpara>
+      BODY "string" - match messages with "string" in the body of the message
+     <listitem><simpara>
+      CC "string" - match messages with "string" in the Cc: field
+     <listitem><simpara>
+      DELETED - match deleted messages
+     <listitem><simpara>
+      FLAGGED - match messages with the \\FLAGGED (sometimes referred to as Important or Urgent) flag set
+     <listitem><simpara>
+      FROM "string" - match messages with "string" in the From: field
+     <listitem><simpara>
+      KEYWORD "string" - match messages with "string" as a keyword
+     <listitem><simpara>
+      NEW - match new messages
+     <listitem><simpara>
+      OLD - match old messages
+     <listitem><simpara>
+      ON "date" - match messages with Date: matching "date"
+     <listitem><simpara>
+      RECENT - match messages with the \\RECENT flag set
+     <listitem><simpara>
+      SEEN - match messages that have been read (the \\SEEN flag is set)
+     <listitem><simpara>
+      SINCE "date" - match messages with Date: after "date"
+     <listitem><simpara>
+      SUBJECT "string" - match messages with "string" in the Subject:
+     <listitem><simpara>
+      TEXT "string" - match messages with text "string"
+     <listitem><simpara>
+      TO "string" - match messages with "string" in the To:
+     <listitem><simpara>
+      UNANSWERED - match messages that have not been answered
+     <listitem><simpara>
+      UNDELETED - match messages that are not deleted
+     <listitem><simpara>
+      UNFLAGGED - match messages that are not flagged
+     <listitem><simpara>
+      UNKEYWORD "string" - match messages that do not have the keyword "string"
+     <listitem><simpara>
+      UNSEEN - match messages which have not been read yet
+    </itemizedlist>
+    <para>
+     For example, to match all unanswered messages sent by Mom, you'd
+     use: "UNANSWERED FROM mom". Searches appear to be case
+     insensitive. This list of criteria is from a reading of the UW
+     c-client source code and may be uncomplete or
+     inaccurate. Searcher beware.
+    <para>
+     Valid values for flags are SE_UID, which causes the returned
+     array to contain UIDs instead of messages sequence numbers.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.imap-last-error">
+   <refnamediv>
+    <refname>imap_last_error</refname>
+    <refpurpose>This function returns the last IMAP error (if any) that occurred during this page request.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>string <function>imap_last_error</function></funcdef>
+    </funcsynopsis>
+    <para>
+     This function returns the full text of the last IMAP error
+     message that occurred on the current page. The error stack is
+     untouched; calling <function>imap_last_error</function>
+     subsequently, with no intervening errors, will return the same
+     error.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.imap-errors">
+   <refnamediv>
+    <refname>imap_errors</refname>
+    <refpurpose>This function returns all of the IMAP errors (if any) that have occurred during this page request or since the error stack was reset.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>imap_errors</function></funcdef>
+    </funcsynopsis>
+    <para>
+     This function returns an array of all of the IMAP error messages
+     generated since the last <function>imap_errors</function> call,
+     or the beginning of the page. When
+     <function>imap_errors</function> is called, the error stack is
+     subsequently cleared.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.imap-alerts">
+   <refnamediv>
+    <refname>imap_alerts</refname>
+    <refpurpose>This function returns all IMAP alert messages (if any) that have occurred during this page request or since the alert stack was reset.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>array <function>imap_alerts</function></funcdef>
+    </funcsynopsis>
+    <para>
+     This function returns an array of all of the IMAP alert messages
+     generated since the last <function>imap_alerts</function> call,
+     or the beginning of the page. When
+     <function>imap_alerts</function> is called, the alert stack is
+     subsequently cleared. The IMAP specification requires that these
+     messages be passed to the user.
+   </refsect1>
+  </refentry>
+
+
+  <refentry id="function.imap-status">
+   <refnamediv>
+    <refname>imap_status</refname>
+    <refpurpose>This function returns status information on a mailbox other than the current one.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>object <function>imap_status</function></funcdef>
+     <paramdef>int <parameter>imap_stream</parameter></paramdef>
+     <paramdef>string <parameter>mailbox</parameter></paramdef>
+     <paramdef>int <parameter>options</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     This function returns an object containing status information. Valid flags are:
+    <itemizedlist>
+     <listitem><simpara>
+      SA_MESSAGES - set status->messages to the number of messages in the mailbox
+     <listitem><simpara>
+      SA_RECENT - set status->recent to the number of recent messages in the mailbox
+     <listitem><simpara>
+      SA_UNSEEN - set status->unseen to the number of unseen (new) messages in the mailbox
+     <listitem><simpara>
+      SA_UIDNEXT - set status->uidnext to the next uid to be used in the mailbox
+     <listitem><simpara>
+      SA_UIDVALIDITY - set status->uidvalidity to a constant that changes when uids for the mailbox may no longer be valid
+     <listitem><simpara>
+      SA_ALL - set all of the above
+    </itemizedlist>
+    <para>
+     status->flags is also set, which contains a bitmask which can be
+     checked against any of the above constants.
    </refsect1>
   </refentry>
 
