@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-chunk.xsl,v 1.1 2003-04-23 17:32:51 goba Exp $
+  $Id: html-chunk.xsl,v 1.2 2003-04-25 18:41:22 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -61,7 +61,7 @@
 </xsl:template>
 
 <!-- Add parenthesis FUNCTIONS, and if target exists link
-     them to their refentry, otherweise make it bold  -->
+     them to their refentry, otherweise make them bold  -->
 <xsl:template match="function">
   <xsl:variable name="content">
     <xsl:apply-templates/><xsl:text>()</xsl:text>
