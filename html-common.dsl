@@ -141,6 +141,13 @@
   )
 
 
+(element (funcprototype void)
+ (make sequence ( literal " ()" )))
+
+(element (funcprototype varargs)
+ (make sequence ( literal " (...)" )))
+
+
 (element function
   (let* ((function-name (data (current-node)))
 	 (linkend 
