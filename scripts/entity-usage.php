@@ -117,7 +117,7 @@ function check_file ($filename, $entity)
     $contents = preg_replace("/[\r\n]/", "", join("", file($filename)));
     
     // Find all entity usage in this file
-    preg_match_all("/$entity/U", $contents, $entities_found);
+    preg_match_all("/$entity;/U", $contents, $entities_found);
 
     if (count($entities_found[0]) != 0) {
         echo $filename . "\n";
