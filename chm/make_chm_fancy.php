@@ -31,7 +31,9 @@ closedir($handle);
 // Look for CHM index file (snap-downloader, cvs-usr with/without lang-support) 
 if (false == ($content = join("", @file("make_chm_index_$language.html")))) {
     if (false == ($content = join("", @file("$language/make_chm_index_$language.html")))) {
-        $content = join("", @file("en/make_chm_index_en.html"));
+		if (false == ($content = join("", @file("$htmldir/../$language/make_chm_index_$language.html")))) {
+			$content = join("", @file("en/make_chm_index_en.html"));
+		}
     }
 }
 
