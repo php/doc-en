@@ -16,6 +16,7 @@
 # +----------------------------------------------------------------------+
 # | Authors:    Thomas Schöfbeck <tom@php.net>                           |
 # |             Gabor Hojtsy <goba@php.net>                              |
+# |             Mark Kronsbein <mk@php.net>                              |
 # +----------------------------------------------------------------------+
 */
 if ($argc < 2 || $argc > 3) {
@@ -44,8 +45,9 @@ the actual english xml files, and print statistics
   Read more about Revision comments and related
   funcionality in the PHP Documentation Howto.
    
-  Authors: Thomas Schöfbeck <tom@php.net>                           |
-           Gabor Hojtsy <goba@php.net>                              |
+  Authors: Thomas Schöfbeck <tom@php.net>
+           Gabor Hojtsy <goba@php.net>
+           Mark Kronsbein <mk@php.net> 
 
 <?php
   exit;
