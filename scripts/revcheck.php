@@ -76,7 +76,7 @@ $CSS = array(
   REV_NOTRANS  => "wip",
   REV_CREDIT   => "wip",
   REV_WIP      => "wip",
-  NORMHEAD     => "normhead",
+  NORMHEAD     => "blue",
 );
 
 // Option for the link to cvs.php.net: normal: "&f=h"
@@ -624,36 +624,33 @@ print <<<END_OF_MULTILINE
 <meta http-equiv="Content-Type" content="text/html; charset={$charset}">
 <style type="text/css">
 <!--
- h2,td,a,p,a.ref,th,.hl { font-family: Arial,Helvetica,sans-serif; font-size: 14px; }
- h2, th, a.ref { color: #FFFFFF; }
- td,a,p        { color: #000000; }
- h2            { font-size: 28px; }
- th            { font-weight: bold; }
- th.blue       { background-color: #666699; }
- .act          { background-color: #68D888; }
- .norev        { background-color: #f4a460; }
- .old          { background-color: #eee8aa; }
- .crit         { background-color: #ff6347; }
- .normhead     { background-color: #666699; color: #ffffff; }
- .wip          { background-color: #dcdcdc; }
- .miss         { background-color: #dddddd; }
- .hl           { color: #000000; font-weight: bold; }
- body          { margin: 0px 0px 0px 0px; }
+h2,td,a,p,a.ref,th { font-family:Arial,Helvetica,sans-serif; font-size:14px; }
+h2,th,a.ref { color:#FFFFFF; }
+td,a,p { color:#000000; }
+h2     { font-size:28px; }
+th     { font-weight:bold; }
+.blue  { background-color:#666699; }
+.act   { background-color:#68D888; }
+.norev { background-color:#f4a460; }
+.old   { background-color:#eee8aa; }
+.crit  { background-color:#ff6347; }
+.wip   { background-color:#dcdcdc; }
+.miss  { background-color:#dddddd; }
+.r     { text-align:right }
+.c     { text-align:center }
+body   { margin:0px 0px 0px 0px; background-color:#F0F0F0; }
 //-->
 </style>
 </head>
-<body bgcolor="#F0F0F0">
+<body>
 <table width="100%" border="0" cellspacing="0" bgcolor="#666699">
 <tr><td>
-  <table width="100%" border="0" cellspacing="1" bgcolor="#9999CC">
-   <tr><td><h2 align="center">Status of the translated PHP Manual</h2>
-      <p align="center" style="font-size:12px;">
-       Generated: {$date} &nbsp; / &nbsp; Language: $LANG<br></p>
-   </td></tr>
-  </table>
+<table width="100%" border="0" cellspacing="1" bgcolor="#9999CC">
+<tr><td><h2 class=c>Status of the translated PHP Manual</h2><p class=c style="font-size:12px;">Generated: {$date} &nbsp; / &nbsp; Language: $LANG<br></p></td></tr>
+</table>
 </td></tr>
 </table>
-<p align="center"><a href="#intro">Introduction</a> |
+<p class=c><a href="#intro">Introduction</a> |
 <a href="#translators">Translators</a> |
 <a href="#filesummary">File summary by type</a> |
 <a href="#files">Files</a> |
@@ -670,7 +667,7 @@ END_OF_MULTILINE;
 // If we have an introduction text, print it out, with an anchor
 if (!empty($translation["intro"])) {
     print '<a name="intro"></a>';
-    print '<table width="800" align="center"><tr><td align="center">' .
+    print '<table width="800" align="center"><tr><td class=c>' .
            $translation['intro'] . '</td></tr></table><p></p>';
 }
 
@@ -686,20 +683,20 @@ print <<<END_OF_MULTILINE
 <a name="translators"></a>
 <table width="820" border="0" cellpadding="4" cellspacing="1" align="center">
 <tr>
-  <th rowspan="2" class="blue">Translator's name</th>
-  <th rowspan="2" class="blue">Contact email</th>
-  <th rowspan="2" class="blue">Nick</th>
-  <th rowspan="2" class="blue">CVS</th>
-  <th colspan="7" class="blue">Files maintained</th>
+<th rowspan="2" class="blue">Translator's name</th>
+<th rowspan="2" class="blue">Contact email</th>
+<th rowspan="2" class="blue">Nick</th>
+<th rowspan="2" class="blue">CVS</th>
+<th colspan="7" class="blue">Files maintained</th>
 </tr>
 <tr>
-  <th class="{$CSS[REV_CREDIT]}" style="color:#000000">credits</th>
-  <th class="{$CSS[REV_UPTODATE]}" style="color:#000000">uptodate</th>
-  <th class="{$CSS[REV_OLD]}" style="color:#000000">old</th>
-  <th class="{$CSS[REV_CRITICAL]}" style="color:#000000">critical</th>
-  <th class="{$CSS[REV_NOREV]}" style="color:#000000">norev</th>
-  <th class="{$CSS[REV_WIP]}" style="color:#000000">wip</th>
-  <th class="{$CSS[NORMHEAD]}">sum</th>
+<th class="{$CSS[REV_CREDIT]}" style="color:#000000">credits</th>
+<th class="{$CSS[REV_UPTODATE]}" style="color:#000000">uptodate</th>
+<th class="{$CSS[REV_OLD]}" style="color:#000000">old</th>
+<th class="{$CSS[REV_CRITICAL]}" style="color:#000000">critical</th>
+<th class="{$CSS[REV_NOREV]}" style="color:#000000">norev</th>
+<th class="{$CSS[REV_WIP]}" style="color:#000000">wip</th>
+<th class="{$CSS[NORMHEAD]}">sum</th>
 </tr>
 END_OF_MULTILINE;
 
@@ -725,10 +722,10 @@ END_OF_MULTILINE;
         // Decide on the CVS text and the color of the line
         if ($person["cvs"] === "yes") {
             $cvsu = "x";
-            $col = '"old"';
+            $col = "old";
         } else {
             $cvsu = "&nbsp;";
-            $col = '"wip"';
+            $col = "wip";
         }
         
         // Try to do some antispam actions
@@ -747,16 +744,16 @@ END_OF_MULTILINE;
         
         print("<tr class=$col>" .
               "<td><a name=\"maint$num\">$person[name]</a></td>" .
-              "<td>$person[email]&nbsp;</td>" .
+              "<td>$person[email]</td>" .
               "<td>$person[nick]&nbsp;</td>" .
-              "<td align=\"center\">$cvsu</td>" .
-              "<td align=\"center\">" . $pi[REV_CREDIT]   . "&nbsp;</td>" .
-              "<td align=\"center\">" . $pi[REV_UPTODATE] . "&nbsp;</td>" .
-              "<td align=\"center\">" . $pi[REV_OLD]      . "&nbsp;</td>" .
-              "<td align=\"center\">" . $pi[REV_CRITICAL] . "&nbsp;</td>" .
-              "<td align=\"center\">" . $pi[REV_NOREV]    . "&nbsp;</td>" .
-              "<td align=\"center\">" . $pi[REV_WIP]      . "&nbsp;</td>" .
-              "<th class=\"blue\">" . array_sum($pi)    . "&nbsp;</th>" .
+              "<td class=c>$cvsu</td>" .
+              "<td class=c>" . $pi[REV_CREDIT]   . "&nbsp;</td>" .
+              "<td class=c>" . $pi[REV_UPTODATE] . "&nbsp;</td>" .
+              "<td class=c>" . $pi[REV_OLD]      . "&nbsp;</td>" .
+              "<td class=c>" . $pi[REV_CRITICAL] . "&nbsp;</td>" .
+              "<td class=c>" . $pi[REV_NOREV]    . "&nbsp;</td>" .
+              "<td class=c>" . $pi[REV_WIP]      . "&nbsp;</td>" .
+              "<th class=blue>" . array_sum($pi)    . "</th>" .
               "</tr>\n");
      }
   
@@ -775,9 +772,9 @@ print <<<END_OF_MULTILINE
 <a name="filesummary"></a>
 <table width="450" border="0" cellpadding="4" cellspacing="1" align="center">
 <tr>
- <th class="blue">File status type</th>
- <th class="blue">Number of files</th>
- <th class="blue">Percent of files</th>
+<th class="blue">File status type</th>
+<th class="blue">Number of files</th>
+<th class="blue">Percent of files</th>
 </tr>
 END_OF_MULTILINE;
 
@@ -812,9 +809,9 @@ END_OF_MULTILINE;
 
 print <<<END_OF_MULTILINE
 <tr>
- <th class="blue">Files total</th>
- <th class="blue">{$files_sum}</th>
- <th class="blue">100%</th>
+<th class="blue">Files total</th>
+<th class="blue">{$files_sum}</th>
+<th class="blue">100%</th>
 </tr>
 END_OF_MULTILINE;
 
@@ -830,23 +827,23 @@ print <<<END_OF_MULTILINE
 <a name="files"></a>
 <table width="820" border="0" cellpadding="4" cellspacing="1" align="center">
 <tr>
- <th rowspan="2" class="blue">Translated file</th>
- <th colspan="3" class="blue">Revision</th>
- <th colspan="3" class="blue">Size in kB</th>
- <th colspan="3" class="blue">Age in days</th>
- <th rowspan="2" class="blue">Maintainer</th>
- <th rowspan="2" class="blue">Status</th>
+<th rowspan="2" class="blue">Translated file</th>
+<th colspan="3" class="blue">Revision</th>
+<th colspan="3" class="blue">Size in kB</th>
+<th colspan="3" class="blue">Age in days</th>
+<th rowspan="2" class="blue">Maintainer</th>
+<th rowspan="2" class="blue">Status</th>
 </tr>
 <tr>
- <th class="blue">en</th>
- <th class="blue">$LANG</th>
- <th class="blue">diff</th>
- <th class="blue">en</th>
- <th class="blue">$LANG</th>
- <th class="blue">diff</th>
- <th class="blue">en</th>
- <th class="blue">$LANG</th>
- <th class="blue">diff</th>
+<th class="blue">en</th>
+<th class="blue">$LANG</th>
+<th class="blue">diff</th>
+<th class="blue">en</th>
+<th class="blue">$LANG</th>
+<th class="blue">diff</th>
+<th class="blue">en</th>
+<th class="blue">$LANG</th>
+<th class="blue">diff</th>
 </tr>
 END_OF_MULTILINE;
 
@@ -890,7 +887,7 @@ foreach ($files_status as $num => $file) {
         $display_dir = str_replace("{$DOCDIR}en/", "", dirname($file["full_name"]));
         
         // Print out directory header
-        print "<tr><th colspan=\"12\" height=\"3\" class=\"blue\">$display_dir</th></tr>\n";
+        print "<tr class=blue><th colspan=\"12\" height=\"3\">$display_dir</th></tr>\n";
         
         // Store the new actual directory
         $prev_dir = $new_dir;
@@ -900,18 +897,18 @@ foreach ($files_status as $num => $file) {
     $style = 'class=' . $CSS[$file["mark"]];
     
     // Write out the line for the current file (get file name shorter)
-    print "<tr><td $style>{$file['short_name']}</td>".
-          "<td $style> {$file['revision'][0]}</td>" .
-          "<td $style> {$file['revision'][1]}</td>".
-          "<td $style align=right><b>{$file['revision'][2]}</b> </td>".
-          "<td $style align=right>{$file['size'][0]} </td>".
-          "<td $style align=right>{$file['size'][1]} </td>".
-          "<td $style align=right><b>{$file['size'][2]}</b> </td>".
-          "<td $style align=right>{$file['date'][0]} </td>".
-          "<td $style align=right>{$file['date'][1]} </td>".
-          "<td $style align=right><b>{$file['date'][2]}</b> </td>".
-          "<td $style align=center>{$file['maintainer']} </td>".
-          "<td $style align=center>{$file['status']} </td></tr>\n";
+    print "<tr $style><td>{$file['short_name']}</td>".
+          "<td> {$file['revision'][0]}</td>" .
+          "<td> {$file['revision'][1]}</td>".
+          "<td class=r><b>{$file['revision'][2]}</b> </td>".
+          "<td class=r>{$file['size'][0]} </td>".
+          "<td class=r>{$file['size'][1]} </td>".
+          "<td class=r><b>{$file['size'][2]}</b> </td>".
+          "<td class=r>{$file['date'][0]} </td>".
+          "<td class=r>{$file['date'][1]} </td>".
+          "<td class=r><b>{$file['date'][2]}</b> </td>".
+          "<td class=c>{$file['maintainer']}</td>".
+          "<td class=c>".trim($file['status'])."</td></tr>\n";
 
 }
 
@@ -977,7 +974,7 @@ if (count($translation["files"]) != 0) {
         }
       
         // End the line
-        print "</tr>";
+        print "</tr>\n";
 
         // Collect files in WIP list
         $wip_files[$finfo["name"]] = TRUE;
@@ -993,7 +990,7 @@ if ($count > 0) {
           "<table width=\"540\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n".
           "<tr><th class=blue><b>Files without Revision-comment ($count files):</b></th></tr>\n";
     foreach($missing_tags as $val) {
-        print "<tr><td class=miss> $val</td></tr>\n";
+        print "<tr><td class=miss>$val</td></tr>\n";
     }
     print "</table>\n<p>&nbsp;</p>\n";
 }
@@ -1019,8 +1016,8 @@ if ($count > 0) {
           "<tr><th class=blue><b><a name=\"avail\" class=\"ref\">" .
           " Available for translation</a> ($count files):</b></th><th class=blue><b>kB</b></th></tr>\n";
     foreach($missing_files as $file => $info) {
-        print "<tr class=miss><td> $file</td>" .
-              "<td align=right>$info[0] </td></tr>\n";
+        print "<tr class=miss><td>$file</td>" .
+              "<td align=right>$info[0]</td></tr>\n";
     }
     print "</table>\n<p>&nbsp;</p>\n";
 }
