@@ -2,7 +2,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.2 2001-03-12 13:58:25 jkj Exp $
+  $Id: html-common.xsl,v 1.1 2002-01-06 15:42:31 hholzgra Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"

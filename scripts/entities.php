@@ -12,7 +12,7 @@ list used and unused entities.
 
   <entity-file> must be a file name (with relative
   path from the phpdoc root) to a file containing
-  <!ENTITY...> definitions. Defaults to global.ent.
+  <!ENTITY...> definitions. Defaults to entities/global.ent.
 
   <language-code> must be a valid language code used in the repository, or
   'all' for all languages. Defaults to en.
@@ -42,7 +42,7 @@ $defined_entities = array();
 
 // Default values
 $langcodes = array("en");
-$filename = "global.ent";
+$filename = "entities/global.ent";
 
 // Parameter value copying
 if ($argc == 3) { 

@@ -28,11 +28,18 @@
 # |             Rasmus Lerdorf <rasmus@lerdorf.on.ca>                    |
 # +----------------------------------------------------------------------+
 # 
-# $Id$
+# $Id: genfunclist.sh,v 1.1 2002-01-06 15:42:31 hholzgra Exp $
 
 for i in `find $1 -name "*.[c]" -print -o -name "*.ec" -print | xargs egrep -li function_entry` ; do
  echo $i | sed -e 's/\.\.\//# /'
- awk -f funcparse.awk < $i | sort
+ if test -f funcparse.awk ; then
+  awk -f funcparse.awk < $i | sort
+ elif test -f scripts/funcparse.awk; then
+  awk -f scripts/funcparse.awk < $i | sort
+ else 
+  echo 1>&2 funcparse.awk not found
+	exit
+ fi
 done
 if test -f $1/language-scanner.lex # only in PHP3 sources
 then 

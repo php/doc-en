@@ -4,13 +4,13 @@
 if ($argc > 1 || in_array($argv[1], array('--help', '-help', '-h', '-?'))) {
 ?>
 
-Check entities in global.ent (HTTP and FTP schemes)
+Check entities in entities/global.ent (HTTP and FTP schemes)
 
   Usage:
   <?=$argv[0]?>
 
   This script checks FTP and HTTP URLs listed
-  in global.ent. Grab the output, to put it in
+  in entities/global.ent. Grab the output, to put it in
   a text file.
   
   Written by Georg Richter <georg@php.net>
@@ -34,7 +34,7 @@ set_time_limit(0);
 $schemes = array("http", "ftp");
 
 // Start this script only from the scripts dir
-$filename = "../global.ent";
+$filename = "../entities/global.ent";
 
 // Read in the file, or die
 $file_array = file ($filename);

@@ -13,8 +13,16 @@
  */
 
 $lang = 'en';
+$outdir = 'man7';
 
-
+if(!is_dir($lang)) {
+  if(is_dir("../$lang")) {
+	  $lang="../$lang";
+		$outdir="../$outdir";
+	} else {
+	  die("language '$lang' not found");
+	}
+}
 $file = `cat \`find $lang | grep .xml\``;
 #$file = str_replace("\n", '', $file);
 
@@ -119,16 +127,16 @@ foreach($refentries[0] as $refentry) {
  * We have an array now with all the data, now write it to seperate files.
  */
 
-if(!file_exists('man7')) {
+if(!file_exists($outdir)) {
     umask(0000);
-    mkdir('man7', 0755);
+    mkdir($outdir, 0755);
 }
 
 foreach($functions as $function) {
     if(function_exists('gzwrite')) {
-        $fp = fopen('man7/php_' . $function['name'] . '.man.gz',  'w');
+        $fp = fopen($outdir . '/php_' . $function['name'] . '.man.gz',  'w');
     } else {
-        $fp = fopen('man7/php_' . $function['name'] . '.man',  'w');
+        $fp = fopen($outdir . '/php_' . $function['name'] . '.man',  'w');
     }
     /*
     $function['name']
