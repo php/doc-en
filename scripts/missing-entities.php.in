@@ -1,0 +1,93 @@
+<?php
+/*
+# +----------------------------------------------------------------------+
+# | PHP Version 4                                                        |
+# +----------------------------------------------------------------------+
+# | Copyright (c) 1997-2002 The PHP Group                                |
+# +----------------------------------------------------------------------+
+# | This source file is subject to version 2.02 of the PHP licience,     |
+# | that is bundled with this package in the file LICENCE and is         |
+# | avalible through the world wide web at                               |
+# | http://www.php.net/license/2_02.txt.                                 |
+# | If uou did not receive a copy of the PHP license and are unable to   |
+# | obtain it through the world wide web, please send a note to          |
+# | license@php.net so we can mail you a copy immediately                |
+# +----------------------------------------------------------------------+
+# | Authors:    Hartmut Holzgraefe <hartmut@six.de>                      |
+# |             Gabor Hojtsy <goba@php.net>                              |
+# +----------------------------------------------------------------------+
+# 
+# $Id$
+*/
+
+// Execute a test of the manual
+exec(
+    "@SP_OPTIONS@ @NSGMLS@ -i lang-@LANG@ -D . " .
+    "-s @SRCDIR@/dtds/dbxml-4.1.2/phpdocxml.dcl manual.xml 2>&1",
+    $results
+);
+
+// Try to open files for rewriting
+$ment = fopen("entities/missing-entities.ent", "w");
+$mids = fopen("entities/missing-ids.xml", "w");
+
+// Exit if we cannot rewrite the files
+if (!$ment || !$mids) {
+    die("ERROR: Cannot open files for writing\n");
+}
+
+// Write out XML declaration
+fwrite($ment, "<" . "?xml version='1.0' encoding='iso-8859-1'?>\n\n");
+fwrite($mids, "<" . "?xml version='1.0' encoding='iso-8859-1'?>\n\n");
+
+// Initalize arrays
+$missing_ids = array(); $missing_ents = array();
+
+// Try to find missing IDs and entities
+foreach ($results as $line) {
+    
+    // missing entity found
+    if (strpos($line, "not defined") !== FALSE) {
+        $line = preg_replace('!^.[^"]*"!g', '<!ENTITY ', $line);
+        $line = preg_replace('!".*!g', ' "???">', $line);
+        $missing_entities[] = $line;
+    }
+    
+    // missing ID found
+    else if (strpos($line, "non-existent") !== FALSE) {
+        $line = preg_replace('!^.* ID !g', ' <para id=', $line);
+        $line = preg_replace('!$!g', '></para>', $line);
+        $missing_ids[] = $line;
+    }
+}
+
+// Find unique elements (one error message can occur several times)
+$missing_ids = array_unique($missing_ids);
+$missing_entities = array_unique($missing_entities);
+
+// Sort elements (just to make handwork easier, if needed)
+$missing_ids = sort($missing_ids);
+$missing_entities = sort($missing_entities);
+
+// Write out missing entities to file
+foreach ($missing_entities as $ent) {
+    fwrite($ment, $ent);
+}
+
+// That's all for missing entities
+fclose($ment);
+
+// If we have missing IDs, write them out as an appendix
+if (count($missing_ids) > 0) {
+
+    fwrite($mids, "<appendix id=\"missing-stuff\"><title>&MissingStuff;</title>\n");
+    foreach ($missing_ids as $idpara) {
+        fwrite($mids, $idpara);
+    }
+    fwrite($mids, "</appendix>\n");
+}
+
+// That's all for missing IDs
+fclose($mids);
+
+?>
