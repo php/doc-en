@@ -100,7 +100,7 @@ the actual english xml files, and print statistics
   function check_file($file, $file_cnt)
   {
     // The information is contained in these global arrays and vars
-    global $miss_file, $miss_tag, $lang, $docdir, $fp, $r_alert, 
+    global $miss_file, $miss_tag, $lang, $docdir, $r_alert, 
          $s_alert, $t_alert, $maintainer, $cvs_opt;
 
     // Translated file name check
@@ -163,11 +163,11 @@ the actual english xml files, and print statistics
     // Write out directory headline
     if ($file_cnt == 0) {
       $display_dir = preg_replace("'($docdir)(.+)/[^/]*$'", "\\2/", $t_file);
-      fwrite($fp, "<tr><th colspan=12 height=3 bgcolor=#666699>$display_dir</th></tr>");
+      print("<tr><th colspan=12 height=3 bgcolor=#666699>$display_dir</th></tr>");
     }
     
     // Write out the line for the file into the file
-    fwrite($fp, "<tr>\n <td bgcolor=$col>$t_td</td>\n".
+    print("<tr>\n <td bgcolor=$col>$t_td</td>\n".
           " <td bgcolor=$col> 1.$en_rev</td><td bgcolor=$col> $t_rev</td>\n".
           " <td bgcolor=$col align=right><b>$r_diff</b> &nbsp;</td>\n".
           " <td bgcolor=$col align=right>$en_size &nbsp;</td>\n".
@@ -185,7 +185,7 @@ the actual english xml files, and print statistics
   // Checks a diretory of phpdoc XML files
   function check_dir($dir)
   {
-    global $fp, $docdir, $lang;
+    global $docdir, $lang;
     
     // Collect files and diretcories in these arrays
     $directories = array();
@@ -229,11 +229,7 @@ the actual english xml files, and print statistics
     die("The $lang language code is not valid");
   }  
   
-  // If directory is OK, start with the header
-  echo "\nWriting report into revcheck.html ...\n";
-
-  $fp = @fopen("revcheck.html", "w") or die ("Unable to open file.");
-  fwrite($fp, "<html>
+  print("<html>
 <head>
 <title>PHPDOC Revision-check</title>
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\">
@@ -281,32 +277,31 @@ the actual english xml files, and print statistics
   // Check the English directory
   check_dir($docdir."en/");
 
-  fwrite($fp, "</table>\n<p>&nbsp;</p>\n");
+  print("</table>\n<p>&nbsp;</p>\n");
 
   // Files without revision comment
   if (count($miss_tag) > 0) {
-    fwrite($fp, "<table width=350 border=0 cellpadding=3 cellspacing=1 align=center>\n".
+    print("<table width=350 border=0 cellpadding=3 cellspacing=1 align=center>\n".
           " <tr><th bgcolor=#666699><b>Files without Revision-comment:</b></th></tr>\n");
     foreach($miss_tag as $val) {
-      fwrite($fp, " <tr><td bgcolor=#DDDDDD>&nbsp; $val</td></tr>\n");
+      print(" <tr><td bgcolor=#DDDDDD>&nbsp; $val</td></tr>\n");
     }
-    fwrite($fp, "</table>\n<p>&nbsp;</p>\n");
+    print("</table>\n<p>&nbsp;</p>\n");
   }
 
   // Files not translated
   if (count($miss_file) > 0) {
-    fwrite($fp, "<table width=350 border=0 cellpadding=3 cellspacing=1 align=center>\n".
+    print("<table width=350 border=0 cellpadding=3 cellspacing=1 align=center>\n".
           " <tr><th colspan=2 bgcolor=#666699><b>Untranslated Files:</b></th></tr>\n");
     foreach($miss_file as $v) {
-        fwrite($fp, " <tr><td bgcolor=#DDDDDD>&nbsp; en$v[0]</td>".
+        print(" <tr><td bgcolor=#DDDDDD>&nbsp; en$v[0]</td>".
               "<td align=right bgcolor=#DDDDDD>$v[1] kB &nbsp;</td></tr>\n");
     }
-    fwrite($fp, "</table>\n<p>&nbsp;</p>\n");
+    print("</table>\n<p>&nbsp;</p>\n");
   }
 
   // All OK, end the file
-  fwrite($fp, "</body>\n</html>\n");
-  fclose($fp);
+  print("</body>\n</html>\n");
   echo "Done!\n";
 
 ?>
