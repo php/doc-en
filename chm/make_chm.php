@@ -87,6 +87,16 @@ $LANGUAGES = array(
                    "preferred_charset" => "Windows-1252",
                    "preferred_font" => $DEFAULT_FONT
                ),
+    "sl"    => array(
+                   "langcode" => "0x41d Slovenian",
+                   "preferred_charset" => "Windows-1252",
+                   "preferred_font" => $DEFAULT_FONT
+               ),
+    "sv"    => array(
+                   "langcode" => "0x41d Swedish (Netherlands)",
+                   "preferred_charset" => "Windows-1252",
+                   "preferred_font" => $DEFAULT_FONT
+               ),
     "zh"    => array(
                    "langcode" => "0x804 Simplified Chinese",
                    "preferred_charset" => "CP936",
