@@ -225,16 +225,16 @@ the actual english xml files, and print statistics
     
     // Write out the line for the file into the file
     print("<tr>\n <td bgcolor=$col>$t_td</td>\n".
-          " <td bgcolor=$col> 1.$en_rev</td><td bgcolor=$col> $t_rev &nbsp;</td>\n".
-          " <td bgcolor=$col align=\"right\"><b>$r_diff</b> &nbsp;</td>\n".
-          " <td bgcolor=$col align=\"right\">$en_size &nbsp;</td>\n".
-          " <td bgcolor=$col align=\"right\">$t_size &nbsp;</td>\n".
-          " <td bgcolor=$col align=\"right\"><b>$s_diff</b> &nbsp;</td>\n".
-          " <td bgcolor=$col align=\"right\">$en_date &nbsp;</td>\n".
-          " <td bgcolor=$col align=\"right\">$t_date &nbsp;</td>\n".
-          " <td bgcolor=$col align=\"right\"><b>$t_diff</b> &nbsp;</td>\n".
-          " <td bgcolor=$col align=\"center\">$maintd &nbsp;</td>\n".
-          " <td bgcolor=$col align=\"center\">$t_tag[3] &nbsp;</td>\n</tr>\n");
+          " <td bgcolor=$col> 1.$en_rev</td><td bgcolor=$col> $t_rev</td>\n".
+          " <td bgcolor=$col align=\"right\"><b>$r_diff</b>&nbsp;</td>\n".
+          " <td bgcolor=$col align=\"right\">$en_size&nbsp;</td>\n".
+          " <td bgcolor=$col align=\"right\">$t_size&nbsp;</td>\n".
+          " <td bgcolor=$col align=\"right\"><b>$s_diff</b>&nbsp;</td>\n".
+          " <td bgcolor=$col align=\"right\">$en_date&nbsp;</td>\n".
+          " <td bgcolor=$col align=\"right\">$t_date&nbsp;</td>\n".
+          " <td bgcolor=$col align=\"right\"><b>$t_diff</b>&nbsp;</td>\n".
+          " <td bgcolor=$col align=\"center\">$maintd&nbsp;</td>\n".
+          " <td bgcolor=$col align=\"center\">$t_tag[3]&nbsp;</td>\n</tr>\n");
     return TRUE;
   } // check_file() end
 
@@ -395,7 +395,7 @@ if (isset($translation["intro"])) {
 ob_start();
 
 print("
-<table width=\"800\" border=\"0\" cellpadding=\"4\" cellspacing=\"1\" align=\"center\">
+<table width=\"820\" border=\"0\" cellpadding=\"4\" cellspacing=\"1\" align=\"center\">
 <tr>
   <th rowspan=\"2\" bgcolor=\"#666699\">Translated file</th>
   <th colspan=\"3\" bgcolor=\"#666699\">Revision</th>
@@ -430,7 +430,7 @@ if (isset($translation["files"])) {
     if (isset($file["revision"])) { $using_rev = TRUE; }
   }
   print("
-  <table width=\"800\" border=\"0\" cellpadding=\"4\" cellspacing=\"1\" align=\"center\">
+  <table width=\"820\" border=\"0\" cellpadding=\"4\" cellspacing=\"1\" align=\"center\">
   <tr>
    <th bgcolor=\"#666699\">Work in progress files</th>
    <th bgcolor=\"#666699\">Translator</th>
@@ -464,7 +464,7 @@ ob_end_clean();
 // If person list available (valid translation.xml file in lang)
 if (isset($translation["persons"])) {
   print("
-  <table width=\"800\" border=\"0\" cellpadding=\"4\" cellspacing=\"1\" align=\"center\">
+  <table width=\"820\" border=\"0\" cellpadding=\"4\" cellspacing=\"1\" align=\"center\">
   <tr>
    <th rowspan=\"2\" bgcolor=\"#666699\">Translator's name</th>
    <th rowspan=\"2\" bgcolor=\"#666699\">Contact email</th>
@@ -488,10 +488,10 @@ if (isset($translation["persons"])) {
     $person["email"] = str_replace("@", "<small>:at:</small>", $person["email"]);
     $pi = $personinfo[$person["nick"]];
     print("<tr bgcolor=$col><td><a name=\"maint$num\">$person[name]</a></td>" .
-          "<td>$person[email] &nbsp;</td><td>$person[nick] &nbsp;</td><td>$cvsu &nbsp;</td>" .
-          "<td align=\"center\">$pi[credits] &nbsp;</td><td align=\"center\">$pi[actual] &nbsp;</td>".
-          "<td align=\"center\">$pi[old] &nbsp;</td><td align=\"center\">$pi[veryold] &nbsp;</td>".
-          "<td align=\"center\">$pi[norev] &nbsp;</td><td align=\"center\">$pi[wip] &nbsp;</td></tr>\n");
+          "<td>$person[email]&nbsp;</td><td>$person[nick]&nbsp;</td><td>$cvsu&nbsp;</td>" .
+          "<td align=\"center\">$pi[credits]&nbsp;</td><td align=\"center\">$pi[actual]&nbsp;</td>".
+          "<td align=\"center\">$pi[old]&nbsp;</td><td align=\"center\">$pi[veryold]&nbsp;</td>".
+          "<td align=\"center\">$pi[norev]&nbsp;</td><td align=\"center\">$pi[wip]&nbsp;</td></tr>\n");
    }
   
   print ("</table>\n<p>&nbsp;</p>\n");
@@ -502,7 +502,7 @@ print($file_lists);
 // Files without revision comment
 $count = count($miss_tag);
 if ($count > 0) {
-  print("<table width=\"350\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n".
+  print("<table width=\"440\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n".
         " <tr><th bgcolor=\"#666699\"><b>Files without Revision-comment ($count files):</b></th></tr>\n");
   foreach($miss_tag as $val) {
     print(" <tr><td bgcolor=\"#DDDDDD\">&nbsp; $val</td></tr>\n");
@@ -525,7 +525,7 @@ if (isset($wip_others)) {
 // Files not translated and not "wip"
 $count = count($missed_files);
 if ($count > 0) {
-  print("<table width=\"350\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n".
+  print("<table width=\"440\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n".
         " <tr><th colspan=\"2\" bgcolor=\"#666699\"><b>Available for translation ($count files):</b></th></tr>\n");
   foreach($missed_files as $file => $info) {
       print(" <tr><td bgcolor=\"#DDDDDD\">&nbsp; $file</td>".
