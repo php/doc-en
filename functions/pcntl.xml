@@ -1,0 +1,360 @@
+<?xml encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+ <reference id="ref.pcntl">
+  <title>Process Control Functions</title>
+  <titleabbrev>PCNTL</titleabbrev>
+  <partintro>
+   <para>
+    Process Control support in PHP is not enabled by default.  You
+    will need to use the <link
+    linkend="install.configure.enable-pcntl">--enable-pcntl</link>
+    configuration option when compiling PHP to enable Process Control
+    support.
+   </para>
+   <para>
+    The following list of signals are supported by the Process Control
+    functions.  Please see your systems signal(7) man page for details
+    of the default behavior of these signals.
+   <table>
+    <title>Supported Signals</title>
+    <tgroup cols="2">
+     <tbody>
+      <row>
+       <entry><literal>SIG_IGN</literal></entry>
+       <entry><literal>SIGFPE</literal></entry>
+       <entry><literal>SIGCONT</literal></entry>
+      </row>
+      <row>
+       <entry><literal>SIG_DFL</literal></entry>
+       <entry><literal>SIGKILL</literal></entry>
+       <entry><literal>SIGSTOP</literal></entry>
+      </row>
+      <row>
+       <entry><literal>SIG_ERR</literal></entry>
+       <entry><literal>SIGUSR1</literal></entry>
+       <entry><literal>SIGTSTP</literal></entry>
+      </row>
+      <row>
+       <entry><literal>SIGHUP</literal></entry>
+       <entry><literal>SIGUSR2</literal></entry>
+       <entry><literal>SIGTTIN</literal></entry>
+      </row>
+      <row>
+       <entry><literal>SIGINT</literal></entry>
+       <entry><literal>SIGSEGV</literal></entry>
+       <entry><literal>SIGTTOU</literal></entry>
+      </row>
+      <row>
+       <entry><literal>SIGQUIT</literal></entry>
+       <entry><literal>SIGPIPE</literal></entry>
+       <entry><literal>SIGURG</literal></entry>
+      </row>
+      <row>
+       <entry><literal>SIGILL</literal></entry>
+       <entry><literal>SIGALRM</literal></entry>
+       <entry><literal>SIGXCPU</literal></entry>
+      </row>
+      <row>
+       <entry><literal>SIGTRAP</literal></entry>
+       <entry><literal>SIGTERM</literal></entry>
+       <entry><literal>SIGXFSZ</literal></entry>
+      </row>
+      <row>
+       <entry><literal>SIGABRT</literal></entry>
+       <entry><literal>SIGSTKFLT</literal></entry>
+       <entry><literal>SIGVTALRM</literal></entry>
+      </row>
+      <row>
+       <entry><literal>SIGIOT</literal></entry>
+       <entry><literal>SIGCHLD</literal></entry>
+       <entry><literal>SIGPROF</literal></entry>
+      </row>
+      <row>
+       <entry><literal>SIGBUS</literal></entry>
+       <entry><literal>SIGCLD</literal></entry>
+       <entry><literal>SIGWINCH</literal></entry>
+      </row>
+      <row>
+       <entry><literal>SIGPOLL</literal></entry>
+       <entry><literal>SIGIO</literal></entry>
+       <entry><literal>SIGPWR</literal></entry>
+      </row>
+      <row>
+       <entry><literal>SIGSYS</literal></entry>
+       <entry><literal></literal></entry>
+       <entry><literal></literal></entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </table>
+   </para>
+
+
+   <sect1 id="pcntl-example">
+    <title>Process Control Example</title>
+    <para>
+     This example forks off a daemon process with a signal handler.
+    </para>
+    <example>
+     <title>Process Control Example</title>
+     <programlisting role="php">
+&lt;?php
+
+$pid = pcntl_fork();
+if ($pid == -1) {
+     die("could not fork"); 
+} else if ($pid) {
+     exit(); // we are the parent 
+} else {
+     // we are the child
+}
+
+// detatch from the controlling terminal
+if (!posix_setsid()) {
+    die("could not detach from terminal");
+}
+
+// setup signal handlers
+pcntl_signal(SIGTERM, "sig_handler");
+pcntl_signal(SIGHUP, "sig_handler");
+
+// loop forever performing tasks
+while(1) {
+
+    // do something interesting here
+
+}
+
+
+function sig_handler($signo) {
+
+     switch($signo) {
+         case SIGTERM:
+             // handle shutdown tasks
+             exit;
+             break;
+         case SIGHUP:
+             // handle restart tasks
+             break;
+         default:
+             // handle all other signals
+     }
+
+}
+
+
+?>
+     </programlisting>
+    </example>
+   </sect1>
+  </partintro>
+
+
+ <refentry id="function.pcntl-fork">
+  <refnamediv>
+   <refname>pcntl_fork</refname>
+   <refpurpose>Forks the currently running process</refpurpose>
+  </refnamediv>
+  <refsect1>
+   <title>Description</title>
+   <funcsynopsis>
+    <funcprototype>
+     <funcdef>int <function>pcntl_fork</function></funcdef>
+     <void/>
+    </funcprototype>
+   </funcsynopsis>
+   <para>
+    The <function>pcntl_fork</function> function creates a child
+    process that differs from the parent process only in it's PID and
+    PPID. Please see your system's fork(2) man page for specific details as to
+    how fork works on your system.
+   </para>
+   <para>
+    On success, the PID of the child process is returned in the
+    parent's thread of execution, and a 0 is returned in the child's
+    thread of execution.  On failure, a -1 will be returned in the
+    parent's context, no child process will be created, and a PHP
+    error is raised.
+   </para>
+   <para>
+    See also <function>pcntl_waitpid</function> and
+    <function>pcntl_signal</function>.
+   </para>
+  </refsect1>
+ </refentry>
+ 
+
+ <refentry id="function.pcntl-waitpid">
+  <refnamediv>
+   <refname>pcntl_waitpid</refname>
+   <refpurpose>Waits on or returns the status of a forked child</refpurpose>
+  </refnamediv>
+  <refsect1>
+   <title>Description</title>
+   <funcsynopsis>
+    <funcprototype>
+     <funcdef>int <function>pcntl_waitpid</function></funcdef>
+     <paramdef>int <parameter>pid</parameter></paramdef>
+     <paramdef>int <parameter>status</parameter></paramdef>
+     <paramdef>int <parameter>options</parameter></paramdef>
+    </funcprototype>
+   </funcsynopsis>
+   <para>
+    The <function>pcntl_waitpid</function> function suspends execution
+    of the current process until a child as specified by the
+    <parameter>pid</parameter> argument has exited, or until a signal
+    is delivered whose action is to terminate the current process or
+    to call a signal handling function.  If a child as requested by
+    <parameter>pid</parameter> has already exited by the time of the
+    call (a so-called "zombie" process), the function returns
+    immediately.  Any system resources used by the child are
+    freed. Please see your system's waitpid(2) man page for specific
+    details as to how waitpid works on your system.
+   </para>
+   <para>
+    <function>pcntl_waitpid</function> returns the process ID of the
+    child which exited, -1 on error or zero if WNOHANG was used and no
+    child was available
+   </para>
+   <para>
+    The value of <parameter>pid</parameter> can be one of the following:
+    <variablelist>
+     <varlistentry>
+      <term>&lt; -1</term>
+      <listitem>
+       <simpara>
+	wait for any child process whose process group ID is equal to
+	the absolute value of <parameter>pid</parameter>.
+       </simpara>
+      </listitem>
+     </varlistentry>
+     <varlistentry>
+      <term>-1</term>
+      <listitem>
+       <simpara>
+	wait for any child process; this is the same behaviour that
+	the wait function exhibits.
+       </simpara>
+      </listitem>
+     </varlistentry>
+     <varlistentry>
+      <term>0</term>
+      <listitem>
+       <simpara>
+	wait for any child process whose process group ID is equal to
+	that of the calling process.
+       </simpara>
+      </listitem>
+     </varlistentry>
+     <varlistentry>
+      <term>&gt; 0</term>
+      <listitem>
+       <simpara>
+	wait for the child whose process ID is equal to the value of
+	<parameter>pid</parameter>.
+       </simpara>
+      </listitem>
+     </varlistentry>
+    </variablelist>
+   </para>
+   <para>
+    <function>pcntl_waitpid</function> will store status information
+    in the <parameter>status</parameter> parameter which can be
+    evaluated using the following functions:
+    <function>pcntl_wifexited</function>,
+    <function>pcntl_wifstopped</function>,
+    <function>pcntl_wifsignaled</function>,
+    <function>pcntl_wexitstatus</function>,
+    <function>pcntl_wtermsig</function> and
+    <function>pcntl_wstopsig</function>.
+   </para>
+   <para>
+    The value of <parameter>options</parameter> is the value of zero
+    or more of the following two global constants
+    <literal>OR</literal>ed together:
+    <variablelist>
+     <varlistentry>
+      <term>WNOHANG</term>
+      <listitem>
+       <simpara>
+ 	return immediately if no child has exited.
+       </simpara>
+      </listitem>
+     </varlistentry>
+     <varlistentry>
+      <term>WUNTRACED</term>
+      <listitem>
+       <simpara>
+ 	return for children which are stopped, and whose status has
+ 	not been reported.
+       </simpara>
+      </listitem>
+     </varlistentry>
+    </variablelist>
+   </para>
+   <para>
+    See also <function>pcntl_fork</function>,
+    <function>pcntl_signal</function>,
+    <function>pcntl_wifexited</function>,
+    <function>pcntl_wifstopped</function>,
+    <function>pcntl_wifsignaled</function>,
+    <function>pcntl_wexitstatus</function>,
+    <function>pcntl_wtermsig</function> and
+    <function>pcntl_wstopsig</function>.
+   </para>
+  </refsect1>
+ </refentry>
+
+
+ <refentry id="function.pcntl-signal">
+  <refnamediv>
+   <refname>pcntl_signal</refname>
+   <refpurpose>Installs a signal handler</refpurpose>
+  </refnamediv>
+  <refsect1>
+   <title>Description</title>
+   <funcsynopsis>
+    <funcprototype>
+     <funcdef>bool <function>pcntl_signal</function></funcdef>
+     <paramdef>int <parameter>signo</parameter></paramdef>
+     <paramdef>mixed <parameter>handle</parameter></paramdef>
+    </funcprototype>
+   </funcsynopsis>
+   <para>
+    The <function>pcntl_signal</function> function installs a new
+    signal handler for the signal indicated by
+    <parameter>signo</parameter>.  The signal handler is set to
+    <parameter>handler</parameter> which may be the name of a user
+    created function, or either of the two global constants SIG_IGN
+    or SIG_DFL.
+   </para>
+   <para>
+    <function>pcntl_signal</function> returns &true; on success or
+    &false; on failure.
+   </para>
+   <para>
+    See also <function>pcntl_fork</function> and
+    <function>pcntl_waitpid</function>.
+   </para>
+  </refsect1>
+ </refentry>
+
+
+ </reference>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->
