@@ -963,6 +963,8 @@ $fl_array = preg_grep ("/^(\d+)?\.\d+$/", $array);
      The following sections describe  the  use  of  each  of  the
      meta-characters.
 
+
+
 BACKSLASH
      The backslash character has several uses. Firstly, if it  is
      followed  by  a  non-alphameric character, it takes away any
@@ -1118,6 +1120,10 @@ BACKSLASH
      \Z  and  \z  is that \Z matches before a newline that is the
      last character of the string as well as at the  end  of  the
      string, whereas \z matches only at the end.
+     
+     
+     
+     
 
 CIRCUMFLEX AND DOLLAR
      Outside a character class, in the default matching mode, the
@@ -1223,6 +1229,7 @@ SQUARE BRACKETS
      backslash or appear in a position where it cannot be  inter-
      preted as indicating a range, typically as the first or last
      character in the class.
+     
      It is not possible to have the literal character "]" as  the
      end  character  of  a  range.  A  pattern such as [W-]46] is
      interpreted as a class of two characters ("W" and "-")  fol-
@@ -1271,7 +1278,6 @@ VERTICAL BAR
      subpattern  (defined  below),  "succeeds" means matching the
      rest of the main pattern as well as the alternative  in  the
      subpattern.
-
 
 
 
@@ -1536,6 +1542,7 @@ REPETITION
      nested capturing  subpatterns,  the  corresponding  captured
      values  may  have been set in previous iterations. For exam-
      ple, after
+     
        /(a|(b))+/
 
      matches "aba" the value of the second captured substring  is
@@ -1640,6 +1647,7 @@ ASSERTIONS
      whatsoever, because the assertion  (?!foo)  is  always  true
      when  the  next  three  characters  are  "bar". A lookbehind
      assertion is needed to achieve this effect.
+     
      Lookbehind assertions start with (?&lt;=  for  positive  asser-
      tions and (?&lt;! for negative assertions. For example,
 
@@ -1686,22 +1694,42 @@ ASSERTIONS
        (?&lt;=\d{3})(?&lt;!999)foo
 
      matches "foo" preceded by three digits that are  not  "999".
-     Furthermore,  assertions  can  be nested in any combination.
-     For example,
+     Notice  that each of the assertions is applied independently
+     at the same point in the subject string. First  there  is  a
+     check  that  the  previous  three characters are all digits,
+     then there is a check that the same three characters are not
+     "999".   This  pattern  does not match "foo" preceded by six
+     characters, the first of which are digits and the last three
+     of  which  are  not  "999".  For  example,  it doesn't match
+     "123abcfoo". A pattern to do that is
+
+       (?&lt;=\d{3}...)(?&lt;!999)foo
+
+     This time the first assertion looks  at  the  preceding  six
+     characters,  checking  that  the first three are digits, and
+     then the second assertion checks that  the  preceding  three
+     characters are not "999".
+
+     Assertions can be nested in any combination. For example,
 
        (?&lt;=(?&lt;!foo)bar)baz
 
      matches an occurrence of "baz" that  is  preceded  by  "bar"
-     which in turn is not preceded by "foo".
+     which in turn is not preceded by "foo", while
+
+       (?<=\d{3}(?!999)...)foo
+
+     is another pattern which matches  "foo"  preceded  by  three
+     digits and any three characters that are not "999".
 
      Assertion subpatterns are not capturing subpatterns, and may
      not  be  repeated,  because  it makes no sense to assert the
-     same thing several times. If an assertion contains capturing
-     subpatterns within it, these are always counted for the pur-
-     poses of numbering the capturing subpatterns  in  the  whole
-     pattern.   Substring  capturing  is carried out for positive
-     assertions, but it does not make sense for  negative  asser-
-     tions.
+     same thing several times. If any kind of assertion  contains
+     capturing  subpatterns  within it, these are counted for the
+     purposes of numbering the capturing subpatterns in the whole
+     pattern.   However,  substring capturing is carried out only
+     for positive assertions, because it does not make sense  for
+     negative assertions.
 
      Assertions count towards the maximum  of  200  parenthesized
      subpatterns.
@@ -1762,22 +1790,21 @@ ONCE-ONLY SUBPATTERNS
 
        abcd$
 
-     when applied to a long  string  which  does  not  match  it.
-     Because matching proceeds from left to right, PCRE will look
-     for each "a" in the subject and then  see  if  what  follows
-     matches the rest of the pattern. If the pattern is specified
-     as
+     when applied to a long string which does not match.  Because
+     matching  proceeds  from  left  to right, PCRE will look for
+     each "a" in the subject and then see if what follows matches
+     the rest of the pattern. If the pattern is specified as
 
        ^.*abcd$
 
      then the initial .* matches the entire string at first,  but
-     when  this  fails,  it  backtracks to match all but the last
-     character, then all but the last two characters, and so  on.
-     Once again the search for "a" covers the entire string, from
-     right to left, so we are no better off. However, if the pat-
-     tern is written as
+     when  this  fails  (because  there  is no following "a"), it
+     backtracks to match all but the last character, then all but
+     the  last  two  characters, and so on. Once again the search
+     for "a" covers the entire string, from right to left, so  we
+     are no better off. However, if the pattern is written as
 
-       ^(?&gt;.*)(?&lt;=abcd)
+       ^(?>.*)(?<=abcd)
 
      then there can be no backtracking for the .*  item;  it  can
      match  only  the  entire  string.  The subsequent lookbehind
@@ -1786,7 +1813,35 @@ ONCE-ONLY SUBPATTERNS
      this approach makes a significant difference to the process-
      ing time.
 
+     When a pattern contains an unlimited repeat inside a subpat-
+     tern  that  can  itself  be  repeated an unlimited number of
+     times, the use of a once-only subpattern is the only way  to
+     avoid  some  failing matches taking a very long time indeed.
+     The pattern
 
+       (\D+|<\d+>)*[!?]
+
+     matches an unlimited number of substrings that  either  con-
+     sist  of  non-digits,  or digits enclosed in <>, followed by
+     either ! or ?. When it matches, it runs quickly. However, if
+     it is applied to
+
+       aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+     it takes a long  time  before  reporting  failure.  This  is
+     because the string can be divided between the two repeats in
+     a large number of ways, and all have to be tried. (The exam-
+     ple  used  [!?]  rather  than a single character at the end,
+     because both PCRE and Perl have an optimization that  allows
+     for  fast  failure  when  a  single  character is used. They
+     remember the last single character that is  required  for  a
+     match,  and  fail early if it is not present in the string.)
+     If the pattern is changed to
+
+       ((?>\D+)|<\d+>)*[!?]
+
+     sequences of non-digits cannot be broken, and  failure  hap-
+     pens quickly.
 
 CONDITIONAL SUBPATTERNS
      It is possible to cause the matching process to obey a  sub-
@@ -1804,8 +1859,8 @@ CONDITIONAL SUBPATTERNS
      error occurs.
 
      There are two kinds of condition. If the  text  between  the
-     parentheses  consists of a sequence of digits, then the con-
-     dition is satisfied if  the  capturing  subpattern  of  that
+     parentheses  consists  of  a  sequence  of  digits, then the
+     condition is satisfied if the capturing subpattern  of  that
      number  has  previously matched. Consider the following pat-
      tern, which contains non-significant white space to make  it
      more  readable  (assume  the  PCRE_EXTENDED  option)  and to
@@ -1833,7 +1888,7 @@ CONDITIONAL SUBPATTERNS
      tives on the second line:
 
        (?(?=[^a-z]*[a-z])
-       \d{2}[a-z]{3}-\d{2}  |  \d{2}-\d{2}-\d{2} )
+       \d{2}-[a-z]{3}-\d{2}  |  \d{2}-\d{2}-\d{2} )
 
      The condition is a positive lookahead assertion that matches
      an optional sequence of non-letters followed by a letter. In
@@ -1858,6 +1913,65 @@ COMMENTS
 
 
 
+RECURSIVE PATTERNS
+     Consider the problem of matching a  string  in  parentheses,
+     allowing  for  unlimited nested parentheses. Without the use
+     of recursion, the best that can be done is to use a  pattern
+     that  matches  up  to some fixed depth of nesting. It is not
+     possible to handle an arbitrary nesting depth. Perl 5.6  has
+     provided   an  experimental  facility  that  allows  regular
+     expressions to recurse (amongst other things).  The  special 
+     item (?R) is  provided for  the specific  case of recursion. 
+     This PCRE  pattern  solves the  parentheses  problem (assume 
+     the PCRE_EXTENDED option is set so that white space is 
+     ignored):
+
+       \( ( (?>[^()]+) | (?R) )* \)
+
+     First it matches an opening parenthesis. Then it matches any
+     number  of substrings which can either be a sequence of non-
+     parentheses, or a recursive  match  of  the  pattern  itself
+     (i.e. a correctly parenthesized substring). Finally there is
+     a closing parenthesis.
+
+     This particular example pattern  contains  nested  unlimited
+     repeats, and so the use of a once-only subpattern for match-
+     ing strings of non-parentheses is  important  when  applying
+     the  pattern to strings that do not match. For example, when
+     it is applied to
+
+       (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa()
+
+     it yields "no match" quickly. However, if a  once-only  sub-
+     pattern  is  not  used,  the match runs for a very long time
+     indeed because there are so many different ways the + and  *
+     repeats  can carve up the subject, and all have to be tested
+     before failure can be reported.
+
+     The values set for any capturing subpatterns are those  from
+     the outermost level of the recursion at which the subpattern
+     value is set. If the pattern above is matched against
+
+       (ab(cd)ef)
+
+     the value for the capturing parentheses is  "ef",  which  is
+     the  last  value  taken  on  at the top level. If additional
+     parentheses are added, giving
+
+       \( ( ( (?>[^()]+) | (?R) )* ) \)
+          ^                        ^
+          ^                        ^ then the string they capture
+     is "ab(cd)ef", the contents of the top level parentheses. If
+     there are more than 15 capturing parentheses in  a  pattern,
+     PCRE  has  to  obtain  extra  memory  to store data during a
+     recursion, which it does by using  pcre_malloc,  freeing  it
+     via  pcre_free  afterwards. If no memory can be obtained, it
+     saves data for the first 15 capturing parentheses  only,  as
+     there is no way to give an out-of-memory error from within a
+     recursion.
+
+
+
 PERFORMANCE
      Certain items that may appear in patterns are more efficient
      than  others.  It is more efficient to use a character class
@@ -1876,7 +1990,7 @@ PERFORMANCE
      match from the character immediately following one  of  them
      instead of from the very start. For example, the pattern
 
-        (.*) second
+       (.*) second
 
      matches the subject "first\nand second" (where \n stands for
      a newline character) with the first captured substring being
@@ -1888,6 +2002,40 @@ PERFORMANCE
      setting PCRE_DOTALL, or starting the  pattern  with  ^.*  to
      indicate  explicit anchoring. That saves PCRE from having to
      scan along the subject looking for a newline to restart at.
+
+     Beware of patterns that contain nested  indefinite  repeats.
+     These  can  take a long time to run when applied to a string
+     that does not match. Consider the pattern fragment
+
+       (a+)*
+
+     This can match "aaaa" in 33 different ways, and this  number
+     increases  very  rapidly  as  the string gets longer. (The *
+     repeat can match 0, 1, 2, 3, or 4 times,  and  for  each  of
+     those  cases other than 0, the + repeats can match different
+     numbers of times.) When the remainder of the pattern is such
+     that  the entire match is going to fail, PCRE has in princi-
+     ple to try every possible variation, and this  can  take  an
+     extremely long time.
+
+     An optimization catches some of the more simple  cases  such
+     as
+
+       (a+)*b
+
+     where a literal character follows. Before embarking  on  the
+     standard matching procedure, PCRE checks that there is a "b"
+     later in the subject string, and if there is not,  it  fails
+     the  match  immediately. However, when there is no following
+     literal this optimization cannot be used. You  can  see  the
+     difference by comparing the behaviour of
+
+       (a+)*\d
+
+     with the pattern above. The former gives  a  failure  almost
+     instantly  when  applied  to a whole line of "a" characters,
+     whereas the latter takes an appreciable  time  with  strings
+     longer than about 20 characters.
     </literallayout>
    </refsect1>
   </refentry>
