@@ -11,11 +11,6 @@
       1 ; the depth of all other TOCs
       ))
 
-
-
-
-
-
 (element (funcdef function) 
   ($bold-seq$
    (make sequence
@@ -358,5 +353,28 @@
                       (literal (question-answer-label (current-node)) " "))
                 (process-node-list (children firstch)))
           (process-node-list restch))))   )          
+
+;; Adding class="" HTML parameter to examples
+;; having a role="" parameter...
+(define ($verbatim-display$ indent line-numbers?)
+  (let (
+(content (make element gi: "PRE"
+       attributes: (list
+    (list "CLASS" (if (attribute-string (normalize "role"))
+      (attribute-string (normalize "role"))
+      (gi))))
+       (if (or indent line-numbers?)
+   ($verbatim-line-by-line$ indent line-numbers?)
+   (process-children)))))
+    (if %shade-verbatim%
+(make element gi: "TABLE"
+      attributes: ($shade-verbatim-attr$)
+      (make element gi: "TR"
+    (make element gi: "TD"
+  content)))
+(make sequence
+  (para-check)
+  content
+  (para-check 'restart)))))
 
 ;; vim: ts=2 sw=2 et
