@@ -181,14 +181,14 @@ function refineFile($filename)
     // Normal page
     else {
         
-        $headend_regex = '!</h1></div>!';
+        $headend_regex = '!</h1>((</div>)+)!';
         if (!preg_match($headend_regex, $content)) {
             echo "Impossible to close pageHeaders div. No match in $filename\n";
 
         } else {
             $content = preg_replace(
                 $headend_regex,
-                '</h1></div></div><div id="pageText">',
+                '</h1>\1<div id="pageText">',
                 $content
             );
         }
