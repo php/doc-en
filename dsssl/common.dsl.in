@@ -83,7 +83,7 @@
 	(normalize "authorgroup")
 	(normalize "author")
 	(normalize "editor")
-        (normalize "pubdate")
+	(normalize "pubdate")
 	(normalize "copyright")
 	(normalize "abstract")
 	(normalize "legalnotice")))
@@ -100,18 +100,56 @@
   (if (node-list-empty? nl)
       (empty-sosofo) ;; empty list -> do nothing
       (make sequence ;; process list node
-        (if (attribute-string (normalize "choice") (node-list-first nl))
-            (if (string=? "opt" (attribute-string (normalize "choice") (node-list-first nl)))
+        (if (or (and (attribute-string (normalize "choice") (node-list-first nl))
+										 (string=? "opt" (attribute-string (normalize "choice") (node-list-first nl)))
+										 )
+								(has-default-value (node-list-first nl)))
                 (literal %arg-choice-opt-close-str%) ;; is optional parameter -> close a bracket
                 (empty-sosofo)
                 )         
-            (empty-sosofo)
-            )         
         (methodsynopsis-generate-closing-optionals (node-list-rest nl)) ;; process rest of list
         )
       )
   )
-  
+
+(define (is-true-optional nl)
+  (and (equal? (gi (parent nl)) (normalize "parameter"))
+       (equal? 0 (string-length (strip (data (preced nl)))))
+       (equal? 0 (string-length (strip (data (follow nl)))))
+       )
+  )
+
+
+(define (has-true-optional nl)
+  (is-true-optional 
+   (node-list-first-element 
+    (select-elements 
+     (descendants nl) 
+     (normalize "optional"))
+    )
+   )
+  )
+
+
+(define (count-true-optionals nl)
+  (let loop 
+      ((result 0)
+       (nl (select-elements (descendants nl) (normalize "optional")))
+       )
+    (if(node-list-empty? nl)
+       result
+       (if(is-true-optional(node-list-first nl))
+          (loop (+ result 1) (node-list-rest nl))
+          (loop result (node-list-rest nl))
+          )
+       )
+    )
+  )
+
+(define (has-default-value nl)
+	(not (node-list-empty? ( select-elements (descendants nl) (normalize "initializer"))))
+	)
+
 ;; render methodsynopsis
 (element methodsynopsis 
 	(make sequence 
@@ -146,8 +184,10 @@
     ;; special case -> first parameter is optional
     (if (equal? (gi (ipreced (current-node))) (normalize "methodparam"))
         (empty-sosofo) ;; have prev. parameters -> is not first
-        (if  (equal? (attribute-string (normalize "choice")) "opt")
-             (literal %arg-choice-opt-open-str%) ;; generate opening bracket
+        (if  (or (equal? (attribute-string (normalize "choice")) "opt")
+								 (has-default-value (current-node))
+								 )
+						 (literal %arg-choice-opt-open-str%) ;; generate opening bracket
              (empty-sosofo) 
              )
         )
@@ -158,7 +198,9 @@
     (if (equal? (gi (ifollow (current-node))) (normalize "methodparam"))
         (make sequence
           ;; is next parameter optional?
-          (if  (equal? (attribute-string (normalize "choice") (ifollow (current-node))) "opt")
+          (if  (or (equal? (attribute-string (normalize "choice") (ifollow (current-node))) "opt")
+									 (has-default-value (ifollow (current-node)))
+									 )
                (make sequence 
                  (literal " ")
                  (literal %arg-choice-opt-open-str%)
@@ -173,8 +215,9 @@
     )
   )
 
+;; special "void" return type tag
 (element (methodsynopsis void)
-	(literal "void")
+	(literal "void ")
 )
 
   
@@ -192,4 +235,13 @@
 		(process-children-trim)
 		)
 	)
+
+;; render default value
+(element (methodparam initializer)
+	(make sequence 
+		(literal "=")
+    ($italic-seq$ (process-children-trim))
+    )
+  )                                                       
+
 

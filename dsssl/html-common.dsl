@@ -31,41 +31,6 @@
   )
 
 
-(define (is-true-optional nl)
-  (and (equal? (gi (parent nl)) (normalize "parameter"))
-       (equal? 0 (string-length (strip (data (preced nl)))))
-       (equal? 0 (string-length (strip (data (follow nl)))))
-       )
-  )
-
-
-(define (has-true-optional nl)
-  (is-true-optional 
-   (node-list-first-element 
-    (select-elements 
-     (descendants nl) 
-     (normalize "optional"))
-    )
-   )
-  )
-
-
-(define (count-true-optionals nl)
-  (let loop 
-      ((result 0)
-       (nl (select-elements (descendants nl) (normalize "optional")))
-       )
-    (if(node-list-empty? nl)
-       result
-       (if(is-true-optional(node-list-first nl))
-          (loop (+ result 1) (node-list-rest nl))
-          (loop result (node-list-rest nl))
-          )
-       )
-    )
-  )
-
-
 ;; There are two different kinds of optionals
 ;; optional parameters and optional parameter parts.
 ;; An optional parameter is identified by an optional tag
@@ -363,6 +328,7 @@
     (process-children)
     )
   )
+
 
 ;; Display of question tags, link targets
 (element question
