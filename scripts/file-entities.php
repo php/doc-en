@@ -10,16 +10,19 @@ exists
 ob_implicit_flush();
 set_time_limit(0);
 
-$base_dir  = str_replace("\\","/",abs_path($argv[$argc-2]));
+$base_dir  = str_replace("\\","/",abs_path($argv[$argc-3]));
 $base_dir=ereg_replace("/scripts$","",$base_dir);
 
 $orig_dir  = $base_dir."/en";
-$trans_dir = $base_dir."/".$argv[$argc-1];
+$trans_dir = $base_dir."/".$argv[$argc-2];
+
+$out_dir = $argv[$argc-1];
 
 $entities = array();
 process($orig_dir, $trans_dir, $orig_dir, $entities);
 
-$fp = fopen("$base_dir/entities/file-entities.ent", "a");
+$fp = fopen("$out_dir/entities/file-entities.ent", "a")
+  or die("failed to open $out_dir/entities/file-entities.ent for writing");
 foreach($entities as $entity) {
 	fputs($fp, "$entity\n");
 }
