@@ -89,7 +89,7 @@ $LANGUAGES = array(
                    "preferred_font" => $DEFAULT_FONT
                ),
     "sl"    => array(
-                   "langcode" => "0x41d Slovenian",
+                   "langcode" => "0x41b Slovenian",
                    "preferred_charset" => "Windows-1250",
                    "preferred_font" => $DEFAULT_FONT
                ),
