@@ -41,11 +41,39 @@ class Cart {
     items from this cart.
    </para>
 
+   <caution>
+    <simpara>
+     The following cautionary note are valid for PHP4.
+    </simpara>
+    
+    <simpara>
+     The name <literal>stdClass</literal> is used interally by
+     Zend and is reserved. You cannot have a class named
+     <literal>stdClass</literal> in PHP.
+    </simpara>
+    
+    <simpara>
+      The function names <literal>__sleep</literal> and
+      <literal>__wakeup</literal> are magical in PHP classes. You
+      cannot have functions with these names in any of your
+      classes unless you want the magic functionality associated
+      with them. See below for more information.
+    </simpara>
+    
+    <simpara>
+      PHP reserves all function names starting with __ as magical.
+      It is recommended that you do not use function names with
+      __ in PHP unless you want some documented magic functionality.
+    </simpara>
+   </caution>
+
    <note>
     <simpara>
      In PHP 4, only constant initializers for <literal>var</literal>
-     variables are allowed. Use constructors for non-constant
-     initializers.  
+     variables are allowed. To initialize variables with non-constant
+     values, you need an initialization function which is called
+     automatically when an object is being constructed from the
+     class. Such a function is called a constructor (see below).
     </simpara>
     <informalexample>
      <programlisting role="php">
@@ -80,19 +108,85 @@ class Cart {
  
    <informalexample>
     <programlisting role="php">
-$cart = new Cart;
-$cart->add_item("10", 1);
+  $cart = new Cart;
+  $cart->add_item("10", 1);
+
+  $another_cart = new Cart;
+  $another_cart->add_item("0815", 3);
     </programlisting>
    </informalexample>
  
    <para>
-    This creates an object $cart of the class Cart. The function
-    add_item() of that object is being called to add 1 item of article
-    number 10 to the cart.  </para><para> Classes can be extensions of
-    other classes. The extended or derived class has all variables and
-    functions of the base class and what you add in the extended
-    definition.  This is done using the extends keyword. Multiple
-    inheritance is not supported.
+    This creates the objects $cart and $another_cart, both of
+    the class Cart. The function add_item() of the $cart object
+    is being called to add 1 item of article number 10 to the
+    $cart. 3 items of article number 0815 are being added to
+    $another_cart.
+   </para>
+   
+   <para>
+    Both, $cart and $another_cart, have functions add_item(),
+    remove_item() and a variable items. These are distinct functions and
+    variables. You can think of the objects as something like
+    directories in a filesystem, where you can have two different 
+    files README.TXT, as long as they are in different directories,
+    and you'll have to type the full pathname in order to reach each
+    file from the toplevel directory. In PHP terms, the toplevel
+    directory would be the global namespace, and the pathname separator
+    would be -&gt;. Thus, the names $cart-&gt;items and 
+    $another_cart-&gt;items name two different variables. Note
+    that the variable is named $cart-&gt;items, not
+    $cart-&gt;$items, that is, a variable name in PHP has only a
+    single dollar sign.
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+// correct, single $
+$cart->items  = array("10" => 1); 
+
+// invalid, because $cart->$items becomes $cart->""
+$cart->$items = array("10" => 1);
+
+// correct, but may or may not be what was intended:
+// $cart->$myvar becomes $ncart->items
+$myvar = 'items';
+$cart->$myvar = array("10" => 1);  
+    </programlisting>
+   </informalexample>
+
+   <para>
+    Within a class, you do not know under which name the object will
+    be accessible in your program: At the time the Cart class was 
+    written, it was unknown that the object will be named $cart or
+    $another_cart later. Thus, you cannot write $cart-&gt;items within
+    the Cart class. Instead, in order to be able to access it's own
+    functions and variables from within a class, one can use the
+    pseudo-variable $this which can be read as 'my own' or
+    'current object'. Thus, '$this->items[$artnr] += $num' can
+    be read as 'add $num to the $artnr counter of my own items
+    array' or 'add $num to the $artnr counter of the items array
+    within the current object'.
+   </para>
+  </sect1>
+  
+  <sect1 id="keyword.extends">
+   <title><literal>extends</literal></title>
+
+   <para>
+    Often you need classes with similar variables and functions
+    to another existing class. In fact, it is good practice to
+    define a generic class which can be used in all your
+    projects and adapt this class for the needs of each of your
+    specific projects. To facilitate this, Classes can be
+    extensions of other classes.  The extended or derived class
+    has all variables and functions of the base class (this is
+    called 'inheritance' despite the fact that nobody died) and what
+    you add in the extended definition. It is not possible to
+    substract from a class, that is, to undefine any existing 
+    functions or variables. An extended class is always dependent
+    on a single base class, that is, multiple inheritance is
+    not supported. Classes are extended using the keyword 'extends'.
    </para>
  
    <informalexample>
@@ -123,36 +217,30 @@ print $ncart->owner;        // print the cart owners name
 $ncart->add_item ("10", 1); // (inherited functionality from cart)
     </programlisting>
    </informalexample>
-  
-   <para>
-    Within functions of a class the variable $this means this
-    object. You have to use $this->something to access any variable or
-    function named something within your current object.  Both in and
-    outside of the object you do not need a $ when accessing an object's
-    properties.
-   </para>
 
-   <informalexample>
-    <programlisting role="php">
-$ncart->owner  = "chris"; // no $
+  </sect1>
 
-$ncart->$owner = "chris";
-// this is invalid because $ncart->$owner = $ncart->""
+  <sect1 id="language.oop.constructor">
+   <title><literal>Constructors</literal></title>
 
-$myvar = 'owner';
-$ncart->$myvar = "chris";  
-// this is valid because $ncart->$myvar = $ncart->owner
-    </programlisting>
-   </informalexample>
+   <caution>
+    <simpara>
+     In PHP3 and PHP4 constructors behave differently. The PHP4
+     semantics are strongly preferred.
+    </simpara>
+   </caution>
 
    <para>
     Constructors are functions in a class that are automatically
-    called when you create a new instance of a class. A function
-    becomes a constructor when it has the same name as the class.
+    called when you create a new instance of a class. In PHP3, a
+    function becomes a constructor when it has the same name as 
+    the class. In PHP4, a function becomes a constructor, when
+    it has the same name as the class it is defined in.
    </para>
  
    <informalexample>
     <programlisting role="php">
+// Works in PHP3 and PHP4.
 class Auto_Cart extends Cart {
     function Auto_Cart () {
         $this->add_item ("10", 1);
@@ -166,11 +254,14 @@ class Auto_Cart extends Cart {
     which initializes the cart with one item of article number "10"
     each time a new Auto_Cart is being made with "new". Constructors
     can also take arguments and these arguments can be optional, which
-    makes them much more useful.
+    makes them much more useful. To be able to still use the class
+    without parameters, all parameters to constructors should be
+    made optional by providing default values.
    </para>
  
    <informalexample>
     <programlisting role="php">
+// Works in PHP3 and PHP4.
 class Constructor_Cart extends Cart {
     function Constructor_Cart ($item = "10", $num = 1) {
         $this->add_item ($item, $num);
@@ -186,15 +277,364 @@ $default_cart   = new Constructor_Cart;
 $different_cart = new Constructor_Cart ("20", 17);
     </programlisting>
    </informalexample>
- 
+
    <caution>
     <simpara>
-     For derived classes, the constructor of the parent class is not
-     automatically called when the derived class's constructor is
-     called.
+     In PHP3, derived classes and constructors have a number of
+     limitations. The following examples should be read carefully
+     to understand these limitations.
     </simpara> 
    </caution>
+   
+   <informalexample>
+    <programlisting role="php">
+class A {
+  function A() {
+    echo "I am the constructor of A.&lt;br>\n";
+  }
+}
+
+class B extends A {
+  function C() {
+    "I am a regular function.&lt;br>\n";
+  }
+}
+
+// no constructor is being called in PHP3.
+$b = new B;
+    </programlisting>
+   </informalexample>
+
+   <para>
+    In PHP3, no constructor is being called in the above example.
+    The rule in PHP3 is: 'A constructor is a function of the same
+    name as the class.'. The name of the class is B, and there is
+    no function called B() in class B. Nothing happens.
+   </para>
+   
+   <para>
+    This is fixed in PHP4 by introducing another rule: If a class
+    has no constructor, the constructor of the base class is being
+    called, if it exists. The above example would have printed
+    'I am the constructor of A.&lt;br>' in PHP4.
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+class A {
+  function A() {
+    echo "I am the constructor of A.&lt;br>\n";
+  }
+  
+  function B() {
+    echo "I am a regular function named B in class A.&lt;br>\n";
+    echo "I am not a constructor in A.&lt;br>\n";
+  }
+}
+
+class B extends A {
+  function C() {
+    echo "I am a regular function.&lt;br>\n";
+  }
+}
+
+// This will call B() as a constructor.
+$b = new B;
+    </programlisting>
+   </informalexample>
+   
+   <para>
+    In PHP3, the function B() in class A will suddenly become a
+    constructor in class B, although it was never intended to be.
+    The rule in PHP3 is: 'A constructor is a function of the same
+    name as the class.'. PHP3 does not care if the function is
+    being defined in class B, or if it has been inherited.
+   </para>
+   
+   <para>
+    This is fixed in PHP4 by modifying the rule to: 'A constructor
+    is a function of the same name as the class it is being defined
+    in.'. Thus in PHP4, the class B would have no constructor function
+    of its own and the constructor of the base class would have been
+    called, printing 'I am the constructor of A.&lt;br>'.
+   </para>
+   
+   <caution>
+    <simpara>
+     Neither PHP3 nor PHP4 call constructors of the base class 
+     automatically from a constructor of a derived class. It is
+     your responsibility to propagate the call to constructors
+     upstream where appropriate.
+    </simpara>
+   </caution>
+   
+   <note>
+    <simpara>
+     There are no destructors in PHP3 or PHP4. You may use
+     <function>register_shutdown_function</function> instead
+     to simulate most effects of destructors.
+    </simpara>
+   </note>
+   
+   <para>
+    Destructors are functions that are called automatically
+    when a variable is destroyed, either with <function>unset</function>
+    or by simply going out of scope. There are no destructors
+    in PHP.
+   </para>
   </sect1>
+
+ <sect1 id="keyword.paamayim_nekudotayim"><!-- :-) -->
+   <title><literal>::</literal></title>
+
+   <caution>
+    <simpara>
+     The following is valid for PHP4 only.
+    </simpara>
+   </caution>
+
+   <para>
+    Sometimes it is useful to refer to functions and variables
+    in base classes or to refer to functions in classes that
+    have not yet any instances. The :: operator is being used
+    for this.
+   </para>
+   
+   <informalexample>
+    <programlisting role="php">
+class A {
+  function example() {
+    echo "I am the original function A::example().&lt;br>\n";
+  }
+}
+
+class B extends A {
+  function example() {
+    echo "I am the redefined function B::example().&lt;br>\n";
+    A::example();
+  }
+}
+
+// there is no object of class A.
+// this will print
+//   I am the original function A::example().&lt;br>
+A::example();
+
+// create an object of class B.
+$b = new B;
+
+// this will print 
+//   I am the redefined function B::example().&lt;br>
+//   I am the original function A::example().&lt;br>
+$b->example();
+    </programlisting>
+   </informalexample>
+
+   <para>
+    The above example calls the function example() in
+    class A, but there is no object of class A, so that
+    we cannot write $a->example() or similar. Instead we
+    call example() as a 'class function', that is, as a
+    function of the class itself, not any object of that
+    class.
+   </para>
+   
+   <para>
+    There are class functions, but there are no class variables.
+    In fact, there is no object at all at the time of the call.
+    Thus, a class function may not use any object variables (but
+    it can use local and global variables), and it may no use
+    $this at all.
+   </para>
+
+   <para>
+    In the above example, class B redefines the function example(). 
+    The original definition in class A is shadowed
+    and no longer available, unless you are refering specifically
+    to the implementation of example() in class A using the 
+    ::-operator. Write A::example() to do this.
+   </para>
+   
+   <para>
+    In this context, there is a current object and it may
+    have object variables. Thus, when used from WITHIN an
+    object function, you may use $this and object variables.
+   </para>
+
+ </sect1>
+
+ <sect1 id="keyword.parent">
+   <title><literal>parent</literal></title>
+
+  <para>
+   You may find yourself writing code that refers to
+   variables and functions in base classes. This is
+   particularly true if your derived class is a refinement
+   or specialisation of code in your base class. 
+  </para>
+  
+  <para>
+   Instead of using the literal name of the base class in your
+   code, you should be using the special name
+   <literal>parent</literal>, which refers to the name of your
+   base class as given in the <literal>extends</literal>
+   declation of your class. By doing this, you avoid using the
+   name of your base class in more than one place. Should
+   your inheritance tree change during implementation, the
+   change is easily made by simply changing the 
+   <literal>extends</literal> declaration of your class.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+class A {
+  function example() {
+    echo "I am A::example() and provide basic functionality.&lt;br>\n";
+  }
+}
+
+class B extends A {
+  function example() {
+    echo "I am B::example and provide additional functionality().&lt;br>\n";
+    parent::example();
+  }
+}
+
+$b = new B;
+
+// This will call B::example(), which will in turn call A::example().
+$b->example();
+   </programlisting>
+  </informalexample>
+ </sect1>
+
+ <sect1 id="language.oop.serialization">
+  <title>Serializing objects - objects in sessions</title>
+
+  <caution>
+   <simpara>
+    The following information is valid for PHP4 only. In
+    PHP3, an 
+   </simpara>
+  </caution>
+
+  <para>
+   <function>serialize</function> returns a string containing a
+   byte-stream representation of any value that can be stored in
+   PHP. <function>unserialize</function> can use this string to
+   recreate the original variable values. Using serialize to
+   save an object will save all variables in an object.  The
+   functions in an object will not be saved, only the name of
+   the class.
+  </para>
+  
+  <para>
+   In order to be able to <function>unserialize</function> an
+   object, the class of that object needs to be defined. That
+   is, if you have an object $a of class A on page1.php and
+   serialize this, you'll get a string that refers to class A
+   and contains all values of variabled contained in $a. If
+   you want to be able to unserialize this on page2.php,
+   recreating $a of class A, the definition of class A must
+   be present in page2.php. This can be done for example
+   by storing the class defintion of class A in an include
+   file and including this file in both page1.php and page2.php.
+  </para>
+  
+  <informalexample>
+   <programlisting role="php">
+classa.inc:
+  class A {
+    var $one = 1;
+    
+    function show_one() {
+      echo $this->one;
+    }
+  }
+  
+page1.php:
+  include("classa.inc");
+  
+  $a = new A;
+  $s = serialize($a);
+  // store $s somewhere where page2.php can find it.
+  $fp = fopen("store", "w");
+  echo $s;
+  fclose($fp);
+
+page2.php:
+  // this is needed for the unserialize to work properly.
+  include("classa.inc");
+
+  $s = implode("", @file("store"));
+  unserialize($s);
+
+  // now use the function show_one of the $a object.  
+  $a->show_one();
+   </programlisting>
+  </informalexample>
+  
+  <para>
+   If you are using sessions and use <function>session_register</function>
+   to register objects, these objects are serialized automatically
+   at the end of each PHP page, and are unserialized automatically on
+   each of the following pages. This basically means that these objects
+   can show up on any of your pages once they become part of your
+   session.
+  </para>
+  
+  <para>
+   It is strongly recommended that you include the class
+   definitions of all such registered objects on all of your
+   pages, even if you do not actually use these classes on all
+   of your pages. If you don't and an object is being
+   unserialized without its class definition being present, it
+   will lose its class association and become an object of class
+   <literal>stdClass</literal> without any functions available
+   at all, that is, it will become quite useless.
+  </para>
+  
+  <para>
+   So if the in the example above $a became part of a session by
+   running <literal>session_register("a")</literal>, you should
+   include the file <literal>classa.inc</literal> on all of your
+   pages, not only page1.php and page2.php.
+  </para>
+ </sect1>
+
+ <sect1 id="language.oop.magic-functions">
+  <title>The magic functions <literal>__sleep</literal> and <literal>__wakeup</literal></title>
+
+  <para>
+   <function>serialize</function> checks if your class has a function with
+   the magic name <literal>__sleep</literal>. If so, that function is
+   being run prior to any serialization. It can clean up the object
+   and is supposed to return an array with the names of all variables
+   of that object that should be serialized.
+  </para>
+  
+  <para>
+   The intended use of <literal>__sleep</literal> is to close any
+   database connections that object may have, committing pending
+   data or perform similar cleanup tasks. Also, the function is
+   useful if you have very large objects which need not be
+   saved completely.
+  </para>
+  
+  <para>
+   Conversely, <function>unserialize</function> checks for the
+   presence of a function with the magic name 
+   <literal>__wakeup</literal>. If present, this function can
+   reconstruct any ressources that object may have.
+  </para>
+  
+  <para>
+    The intended use of <literal>__wakeup</literal> is to
+    reestablish any database connections that may have been lost
+    during serialization and perform other reinitialization
+    tasks.
+  </para>
+ </sect1>
   
  <sect1 id="language.oop.newref">
    <title>References inside the constructor</title>
