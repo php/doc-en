@@ -35,7 +35,7 @@
   <title>Function Index</title>
 <?php
 $letter=" ";
-$functions = file($_SERVER['argv'][1]);
+$functions = file($HTTP_SERVER_VARS['argv'][1]);
 usort($functions,"strcasecmp");
 foreach ( $functions as $funcentry ) {
 	list($function,$description) = explode("-",$funcentry);
