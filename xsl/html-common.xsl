@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.24 2003-04-25 19:06:11 goba Exp $
+  $Id: html-common.xsl,v 1.25 2003-04-25 19:47:26 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -192,13 +192,16 @@ set       toc
 
 <!-- ======================== END TITLEPAGE =============================== -->
 
-
-
-<!-- METHODNAMES should be bold like in DSSSL -->
+<!-- METHODNAMES are bold like in DSSSL -->
 <xsl:template match="methodsynopsis/methodname">
   <b><xsl:apply-templates/></b>
 </xsl:template>
 
+<!-- We need a newline after methodsynopsis, as we have
+     multiple methodsynopsys parts sometimes -->
+<xsl:template match="methodsynopsis">
+  <xsl:apply-templates/><br/>
+</xsl:template>
 
 <!-- Add LINKS to TYPES -->
 <xsl:template match="type">
