@@ -3209,6 +3209,6 @@
    ((equal-ci? (data nl) "zzip_opendir") (literal "4.0.5 - 4.0.6 only"))
    ((equal-ci? (data nl) "zzip_read") (literal "4.0.5 - 4.0.6 only"))
    ((equal-ci? (data nl) "zzip_readdir") (literal "4.0.5 - 4.0.6 only"))
-   (else (literal "unknown"))
+   (else (literal "no version information, might be only in CVS"))
    )
   )
