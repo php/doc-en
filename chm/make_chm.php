@@ -20,6 +20,7 @@ if (empty($FANCY_PATH)) { $FANCY_PATH = $HTML_PATH; }
 // Array to manual code -> HTML Help Code conversion
 // Code list: http://www.helpware.net/htmlhelp/hh_info.htm
 $LANGUAGES = array(
+    "tw"    => "0x404 Traditional Chinese",
     "cs"    => "0x405 Czech",
     "de"    => "0x407 German (Germany)",
     "en"    => "0x809 Enlish (United Kingdom)",
