@@ -57,7 +57,7 @@ if ($argc != 6) {
 }
 
 // Zend API integration info (either a path or "notfound")
-$zendapi = ($argv[$argc-1] == "notfound" ? FALSE : $zendapi);
+$zendapi = ($argv[$argc-1] == "notfound" ? FALSE : $argv[$argc-1]);
 
 // CHM integration (either "yes" or "no")
 $chmenabled = ($argv[$argc-2] == "yes" ? TRUE : FALSE);
@@ -75,15 +75,15 @@ $out_dir = preg_replace("!/scripts$!", "", $out_dir);
 // The source directory is passed in the 5th argument counting from backwards.
 // All backslashes are converted, and the possible "scripts" dirname at the
 // end is omitted
-$base_dir = str_replace("\\", "/", abs_path($argv[$argc-5]));
-$base_dir = preg_replace("!/scripts$!", "", $base_dir);
+$srcdir = str_replace("\\", "/", abs_path($argv[$argc-5]));
+$srcdir = preg_replace("!/scripts$!", "", $srcdir);
 
 // The translation dir is passed as the 6th argument, counting
 // from the end of the argument list
-$trans_dir = $base_dir . "/" . $argv[$argc-6];
+$trans_dir = $srcdir . "/" . $argv[$argc-6];
 
 // The original directory is in the base directory, and named "en"
-$orig_dir = $base_dir . "/en";
+$orig_dir = $srcdir . "/en";
 
 // ......:ENTITY CREATION:......................................................
 
@@ -126,7 +126,7 @@ if ($chmenabled) {
     fputs(
         $fp,
         "<!-- chmonly pages inclusion enabled -->\n" .
-        entstr("chmonly", "$base_dir/chmonly.xml") . "\n"
+        entstr("chmonly", "$out_dir/chmonly.xml") . "\n"
     );
     echo " CHM inclusion enabled\n";
 } else {
@@ -150,7 +150,7 @@ if (file_exists("$trans_dir/chapters/install.xml")) {
     fputs(
         $fp,
         "<!-- old install.xml not found in language dir -->\n" .
-        entstr("chapters.install", "$base_dir/installpart.xml") . "\n"
+        entstr("chapters.install", "$out_dir/installpart.xml") . "\n"
     );
     echo " Using the install part from installpart.xml\n";
 }
@@ -159,14 +159,14 @@ if (file_exists("$trans_dir/chapters/install.xml")) {
 fputs(
    $fp,
    "<!-- reserved constants in one central file -->\n" .
-   entstr("appendices.reserved.constants", "$base_dir/reserved.constants.xml") . "\n"
+   entstr("appendices.reserved.constants", "$out_dir/reserved.constants.xml") . "\n"
 );
 
 // The global function index page is special
 fputs(
    $fp,
    "<!-- global function index file -->\n" .
-   entstr("global.function-index", "$base_dir/funcindex.xml") . "\n" .
+   entstr("global.function-index", "$out_dir/funcindex.xml") . "\n" .
    "<!-- all other files -->\n"
 );
 
