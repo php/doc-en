@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.22 $ -->
+<!-- $Revision: 1.23 $ -->
 <chapter id="faq.using">
   <title>Using PHP</title>
   <titleabbrev>Using PHP</titleabbrev>
 
   <para>
-   This section gathers most common errors you can
-   face, while writing PHP scripts.
+   This section gathers many common errors that you may face 
+   while writing PHP scripts.
   </para>
 
   <qandaset>
@@ -19,44 +19,85 @@
     </question>
     <answer>
      <para>
-      Make sure that the <link linkend="ini.track-vars">track_vars</link>
-      feature is enabled in your &php.ini;
-      file. Since PHP 4.0.3, this feature is always on. When
-      <literal>track_vars</literal> is on, it creates some
-      associative arrays, the most important here is:
-      <literal>$_POST</literal> (this used to be called
-      <literal>$HTTP_POST_VARS</literal> in <literal>PHP</literal> versions
-      prior 4.1.0). So, to write a generic
-      script to handle POST method variables you would
-      need something similar to the following:
+      PHP offers many <link linkend="language.variables.predefined">
+      predefined variables</link>, like the superglobal <varname>
+      $_POST</varname>.  You may loop through <varname>$_POST</varname>
+      as it's an associate array of all POSTed values.  For example, let's
+      simply loop through it with <link linkend="control-structures.foreach">
+      foreach</link>, check for <function>empty</function> values,
+      and print them out.
       <programlisting role="php">
 <![CDATA[
-foreach ($_POST as $var => $value) {
-    echo "$var = $value<br>\n";
+<?php
+$empty = $post = array();
+foreach ($_POST as $varname => $varvalue) {
+    if (empty($varvalue)) {
+        $empty[$varname] = $varvalue;
+    } else {
+        $post[$varname] = $varvalue;
+    }
 }
+
+print "<pre>";
+if (empty($empty)) {
+    print "None of the POSTed values are empty, posted:\n";
+    var_dump($post);
+} else {
+    print "We have " . count($empty) . " empty values\n";
+    print "Posted:\n"; var_dump($post);
+    print "Empty:\n";  var_dump($empty);
+    exit;
+}
+?>
 ]]>
       </programlisting>
      </para>
+     
+     &note.superglobals;
+
     </answer>
    </qandaentry>
 
-   <qandaentry id="faq.using.singlequotes">
+   <qandaentry id="faq.using.addslashes">
     <question>
      <para>
       I need to convert all single-quotes (') to a backslash 
-      followed by a single-quote. How can I do this with a 
-      regular expression?
+      followed by a single-quote (\'). How can I do this with a 
+      regular expression?  I'd also like to convert " to \" and
+      \ to \\.
      </para>
     </question>
     <answer>
      <para>
-      First off, take a look at the <function>addslashes</function>
-      function. It will do exactly what you want. You should also have
-      a look at the <link linkend="ini.magic-quotes-gpc">magic_quotes_gpc</link> 
-      directive in your &php.ini; file.
+      The function <function>addslashes</function> will do this.  See
+      also <function>mysql_escape_string</function>.  You may also
+      strip backslashes with <function>stripslashes</function>.
      </para>
+
+     &note.magicquotes.gpc;
+
     </answer>
    </qandaentry>
+   
+   <qandaentry id="faq.using.stripslashes">
+    <question>
+     <para>
+      All my " turn into \" and my ' turn into \', how do I get rid of all 
+      these unwanted backslashes?  How and why did they get there?
+     </para>
+    </question>
+    <answer>
+     <para>
+      The PHP function <function>stripslashes</function> will strip those
+      backslashes from your <type>string</type>.  Most likely the backslashes 
+      magically exist because the PHP directive 
+      <link linkend="ini.magic-quotes-gpc">magic_quotes_gpc</link> is on.
+     </para>
+     
+     &note.magicquotes.gpc;
+     
+    </answer>
+   </qandaentry>   
 
    <qandaentry id="faq.using.wrong-order">
     <question>
@@ -129,11 +170,14 @@ echo "myfunc($variable) = " . myfunc($variable);
     </question>
     <answer>
      <para>
-      The functions <function>header</function>, 
-      <function>setcookie</function> and the session functions need to add
-      headers to the output stream. But headers can only be sent before all other
-      content, check if your script is sending headers after having already sent 
-      content.
+      The functions <function>header</function>, <function>setcookie
+      </function>, and the <link linkend="ref.session">session 
+      functions</link> need to add headers to the output stream but headers 
+      can only be sent before all other content.  There can be no output
+      before using these functions, output such as HTML.  The function <function>
+      headers_sent</function> will check if your script has already sent 
+      headers and see also the <link linkend="ref.outcontrol">Output Control
+      functions</link>.
      </para>
     </answer>
    </qandaentry>
@@ -161,6 +205,12 @@ foreach ($headers as $name => $content) {
 ]]>
       </programlisting>
      </para>
+     <para>
+      See also 
+      <function>apache_lookup_uri</function>,
+      <function>apache_response_headers</function>, and
+      <function>fsockopen</function>
+     </para>
     </answer>
    </qandaentry>
 
@@ -180,7 +230,9 @@ foreach ($headers as $name => $content) {
       then recognize the authentication correctly. With the ISAPI
       module, this is not a problem. This should not effect other
       NT web servers. For more information, see: 
-      <ulink url="&url.iis;">&url.iis;</ulink>.
+      <ulink url="&url.iis;">&url.iis;</ulink> and the manual
+      section on <link linkend="features.http-auth">HTTP Authentication
+      </link>.
      </para>
     </answer>
    </qandaentry>
@@ -218,15 +270,19 @@ foreach ($headers as $name => $content) {
     <question>
      <para>
       How am I supposed to mix XML and PHP? It complains 
-      about my &lt;?xml&gt; tags!
+      about my &lt;?xml tags!
      </para>
     </question>
     <answer>
      <para>
-      You need to turn off the short tags by setting
-      <link linkend="ini.short-open-tag">short_tags</link> to 0 in your
-      &php.ini; file, or by using the appropriate Apache directive. You could
-      even use a &lt;File&gt; section to do this selectively.
+      In order to embed &lt;?xml straight into your PHP code, you'll have to turn off
+      short tags by having the PHP directive 
+      <link linkend="ini.short-open-tag">short_open_tags</link> set to 
+      <literal>0</literal>.  You cannot set this directive with <function>
+      ini_set</function>.  Regardless of <link linkend="ini.short-open-tag">
+      short_open_tags</link> being on or off, you can do something like:
+      <literal>&lt;?php echo '&lt;?xml'; ?&gt;</literal>.  The default
+      for this directive is on.
      </para>
     </answer>
    </qandaentry>
@@ -254,19 +310,24 @@ foreach ($headers as $name => $content) {
    <qandaentry id="faq.using.variables">
     <question>
      <para>
-      Where can I find a complete list of pre-set variables available 
-      to me, and why are these not documented in the PHP documentation?
+      Where can I find a complete list of variables are available to me 
+      in PHP?
      </para>
     </question>
     <answer>
      <para>
-      The best way is to stick a <literal>&lt;?php phpinfo(); ?&gt;</literal>
-      part on a page and load it up. This will show you all sorts of
-      information about your PHP setup, including a list of both
-      environment variables and also special variables set by your
-      web server. This list can't really be documented in the PHP
-      documentation because it will change from one server to another.
+      Read the manual page on <link linkend="language.variables.predefined">
+      predefined variables</link> as it includes a partial list of predefined
+      variables available to your script.  A complete list of available
+      variables (and much more information) can be seen by calling the 
+      <function>phpinfo</function> function.  Be sure to read the manual 
+      section on <link linkend="language.variables.external">variables from 
+      outside of PHP</link> as it describes common scenerios for 
+      external variables, like from a HTML form, a Cookie, and the URL.
      </para>
+     
+     &note.registerglobals;
+
     </answer>
    </qandaentry>
 
@@ -280,19 +341,27 @@ foreach ($headers as $name => $content) {
     </question>
     <answer>
      <para>
-      Environment variables are normal global variables, so you must
-      either declare them as global variables in your function (by using
-      "<literal>global $DOCUMENT_ROOT;</literal>", for example) or by using
-      the global variable array (ie, "<literal>$GLOBALS["DOCUMENT_ROOT"]</literal>").
+      It's important to realize that the PHP directive <link linkend="
+      ini.register-globals">register_globals</link> also affects server
+      and environment variables.  When register_globals = off (the default
+      is off since PHP 4.2.0), <varname>$DOCUMENT_ROOT</varname> will
+      not exist. Instead, use <varname>$_SERVER['DOCUMENT_ROOT']
+      </varname>.  If register_globals = on then the variables
+      <varname>$DOCUMENT_ROOT</varname> and
+      <varname>$GLOBALS['DOCUMENT_ROOT']</varname> will also exist.
      </para>
-     <note>
-      <para>
-       Since PHP 4.1.0 you can also use the superglobal array
-       <literal>$_SERVER</literal> which is available in every function.
-       For example, you can now use <literal>$_SERVER["DOCUMENT_ROOT"]</literal>
-       instead of <literal>$DOCUMENT_ROOT</literal>.
-      </para>
-     </note>
+     <para>
+      If you're sure register_globals = on and wonder why
+      <varname>$DOCUMENT_ROOT</varname> isn't available inside functions,
+      it's because these are like any other variables and would 
+      require <literal>global $DOCUMENT_ROOT</literal> inside the
+      function.  See also the manual page on 
+      <link linkend="language.variables.scope">variable scope</link>.  It's
+      preferred to code with register_globals = off.
+     </para>
+     
+     &note.superglobals;
+
     </answer>
    </qandaentry>
 
