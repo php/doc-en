@@ -69,6 +69,8 @@ $number_refs = array(
 );
 
 $valid_types = "int|float|string|bool|resource|array|object|mixed|number";
+$operators = "!=|<=?|>=?|==";
+$max_args = 12; // maximum number of regular function arguments
 
 // convert source formatting to document types, built from ZendAPI/zend.arguments.retrieval and howto/chapter-conventions
 function params_source_to_doc($type_spec)
@@ -101,7 +103,7 @@ function params_source_to_doc($type_spec)
 }
 
 // some parameters should be passed only by reference but they are not forced to
-$wrong_source = array("dbplus_info", "dbplus_next");
+$wrong_refs = array("dbplus_info", "dbplus_next");
 $difficult_params = array(
 	"ibase_blob_import",
 	"imagefilter",
@@ -121,12 +123,19 @@ $difficult_params = array(
 	"apd_echo",
 	"fdf_set_on_import_javascript",
 );
+$difficult_arg_count = array(
+	"getdate", "min", "max", "mysqli_stmt_bind_param", "pg_fetch_result", "implode", "strtok", "strtr", "sybase_fetch_object",
+	"cpdf_text", "muscat_setup", "pdf_get_parameter", "odbc_exec", "odbc_result_all", "yaz_set_option", "yaz_wait",
+);
 
 // read referenced parameters from sources
 $source_refs = array(); // array("function_name" => number_ref, ...)
 $source_types = array(); // array("function_name" => array("type_spec", filename, lineno), ...)
+$source_arg_counts = array(); // array("function_name" => array(disallowed_count => true, ...), ...)
 foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glob("$pecl_dir/*/*.c*")) as $filename) {
 	$file = file_get_contents($filename);
+	
+	// references
 	preg_match_all("~^[ \t]*(?:ZEND|PHP)_FE\\((\\w+)\\s*,\\s*(\\w+)\\s*[,)]~mS", $file, $matches, PREG_SET_ORDER);
 	preg_match_all("~^[ \t]*(?:ZEND|PHP)_FALIAS\\((\\w+)\\s*,[^,]+,\\s*(\\w+)\\s*[,)]~mS", $file, $matches2, PREG_SET_ORDER);
 	foreach (array_merge($matches, $matches2) as $val) {
@@ -137,16 +146,63 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 			$source_refs[strtolower($val[1])] = $number_refs[$val[2]];
 		}
 	}
+	
 	// read parameters
 	preg_match_all('~^(?:ZEND|PHP)(?:_NAMED)?_FUNCTION\\(([^)]+)\\)(.*)^\\}~msSU', $file, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE); // }}} is not in all sources so ^} is used instead
 	foreach ($matches as $val) {
 		$function_name = strtolower(trim($val[1][0]));
+		$lineno = substr_count(substr($file, 0, $val[2][1]), "\n") + 1;
+		
+		// types and optional
 		if (!in_array($function_name, $difficult_params)
 		&& strpos($val[2][0], 'zend_parse_parameters_ex') === false // indicate difficulty
-		&& preg_match('~.*zend_parse_parameters\\([^,]*,\\s*"([^"]*)"~sS', $val[2][0], $matches2, PREG_OFFSET_CAPTURE) // .* to catch last occurence
+		&& preg_match('~.*zend_parse_parameters\\([^,]*,\\s*"([^"]*)"~sS', $val[2][0], $matches2) // .* to catch last occurence
 		// zend_parse_method_parameters is not yet supported
 		) {
-			$source_types[$function_name] = array($matches2[1][0], $filename, substr_count(substr($file, 0, $val[2][1] + $matches2[1][1]), "\n") + 1);
+			$source_types[$function_name] = array($matches2[1], $filename, $lineno);
+		} elseif (!in_array($function_name, $difficult_arg_count)) {
+		
+			// arguments count
+			$zend_num_args = "ZEND_NUM_ARGS()";
+			if (preg_match('~([a-zA-Z0-9_.]+)\\s*=\\s*ZEND_NUM_ARGS()~', $val[2][0], $matches2)) { // int argc = ZEND_NUM_ARGS();
+				$zend_num_args = $matches2[1];
+			}
+			$zend_num_args = preg_quote($zend_num_args, "~");
+			//! should differentiate between || and &&
+			if (preg_match_all("~(?:([0-9]+)\\s*($operators)\\s*$zend_num_args|$zend_num_args\\s*($operators)\\s*([0-9]+))(?=[^{]+\\{[^}]+WRONG_PARAM_COUNT)~S", $val[2][0], $matches2, PREG_SET_ORDER)) {
+				$source_arg_counts[$function_name] = array(array(), $filename, $lineno);
+				$source_arg_count =& $source_arg_counts[$function_name][0];
+				foreach ($matches2 as $val) {
+					$number = $val[1] . $val[4];
+					$operator = strtr($val[2], "><", "<>") . $val[3]; // unify to $zend_num_args $operator $number
+					switch ($operator{0}) {
+					case "=":
+					case "!":
+						if (!$source_arg_count) {
+							$source_arg_count = array_fill(0, $max_args+1, true);
+						}
+						unset($source_arg_count[$number]);
+						break;
+					case "=": // old version
+						$source_arg_count[$number] = true;
+						break;
+					case "<":
+						for ($i=0; $i < $number; $i++) {
+							$source_arg_count[$i] = true;
+						}
+						break;
+					case ">":
+						for ($i=$number+1; $i <= $max_args; $i++) {
+							$source_arg_count[$i] = true;
+						}
+						break;
+					}
+					if ($operator == "<=" || $operator == ">=") {
+						$source_arg_count[$number] = true;
+					}
+				}
+			}
+			//TODO: switch($zend_num_args)
 		}
 	}
 }
@@ -177,20 +233,21 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 				$byref[] = $key + 1;
 			}
 		}
-		if (!in_array($function_name, $wrong_source) 
+		if (!in_array($function_name, $wrong_refs) 
 		&& (is_int($source_ref) ? $byref[0] != $source_ref || count($byref) != count($matches[1]) - $source_ref + 1 : $byref != $source_ref)
 		) {
 			echo (isset($source_ref) ? "Parameter(s) " . (is_int($source_ref) ? "$source_ref and rest" : implode(", ", $source_ref)) : "Nothing") . " should be passed by reference in $filename on line $lineno.\n";
 		}
+		$source_type =& $source_types[$function_name];
+		$source_arg_count =& $source_arg_counts[$function_name];
 		
 		// parameter types and optional
-		preg_match_all('~<methodparam(\\s+choice=[\'"]opt[\'"])?>\\s*<type>([^<]+)</type>~i', $methodsynopsis, $matches); // (PREG_OFFSET_CAPTURE can be used to get precise line numbers)
+		preg_match_all('~<methodparam(\\s+choice=[\'"]opt[\'"])?>\\s*<type>([^<]+)</type>\\s*<parameter>([^<]+)~i', $methodsynopsis, $matches); // (PREG_OFFSET_CAPTURE can be used to get precise line numbers)
 		foreach ($matches[2] as $i => $val) {
 			if (!preg_match("~callback|$valid_types~", $val)) {
 				echo "Parameter #" . ($i+1) . " has wrong type '$val' in $filename on line " . ($lineno + $i + 1) . ".\n";
 			}
 		}
-		$source_type =& $source_types[$function_name];
 		if (isset($source_type)) {
 			$optional_source = false;
 			$optional_doc = false;
@@ -218,6 +275,27 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 			}
 			if ($error) {
 				echo "$error: source in $source_type[1] on line $source_type[2].\n";
+			}
+		
+		// arguments count
+		} elseif (isset($source_arg_count)) {
+			$disallowed = array();
+			foreach ($matches[1] as $key => $val) {
+				if (!$val) {
+					$disallowed[$key] = true;
+				}
+			}
+			$count = count($matches[3]);
+			if (!$matches[3] || substr($matches[3][$count - 1], -3) != "...") {
+				if ($count > $max_args) {
+					echo "Warning: Too much parameters in $function_name.\n";
+				} elseif ($count < $max_args) {
+					$disallowed += array_fill($count + 1, $max_args - $count, true);
+				}
+			}
+			if ($source_arg_count[0] != $disallowed) {
+				echo "Wrong arguments count in $filename on line $lineno.\n";
+				echo ": source in $source_arg_count[1] on line $source_arg_count[2].\n";
 			}
 		}
 	}
