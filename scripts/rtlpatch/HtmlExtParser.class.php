@@ -97,9 +97,23 @@ class CHtmlExtParse extends CHtmlParse{
 		do{
 			if($tmp = $this->get_element_id_by_rule(array("tag"=>"tt","properties"=>array("class","varname"),"offset"=>($tmp+1)))){
 				$this->ATE[$tmp]["dir"] = "ltr";
+				//if varname not before punctuation marks, add &nbsp; to eliminate the align issue came with dir=rtl:
+				if(isset($this->ATE[$tmp+3]["data"]{0})){
+					$ord = ord($this->ATE[$tmp+3]["data"]{0});
+					if($ord>65||$ord==32||$ord==40||$ord==41){//without (all the punctuation marks whitout space, and brackets).
+						$this->ATE[$tmp]["chaintoclose"] = "&nbsp;";
+					}
+				}
 			}
 		} while($tmp);
 		
+		//fix warnning boxes:
+		if($tmp = $this->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","warning"),"offset"=>(0)))){
+			$cond = array("tag"=>"td","properties"=>array("align","LEFT"),"offset"=>($tmp+1));
+			if (($td = $this->get_element_id_by_rule($cond)) && ($td<$tocend = $this->ECE[$tmp])){
+				$this->ATE[$td]["align"] = "right";
+			}
+		}
 		
 		//fix for TOC
 		if($tmp = $this->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","TOC"),"offset"=>(0)))){
@@ -151,14 +165,15 @@ class CHtmlExtParse extends CHtmlParse{
 			if($tg>9)  {
 				$tag = $EHType[$tg];
 				$ret[$a] .= "<$tag";
-				$chaintoend="";
+				$chaintoend = $chaintoclose = "";
 				foreach ($this->ATE[$a] as $key=>$value){
 					if($key == "chaintoend") $chaintoend = $value;
+					else if ($key == "chaintoclose") $chaintoclose = $value;
 					else $ret[$a].=" $key=\"$value\"";
 				}
 				$ret[$a].=">$chaintoend";
 				
-				if($this->ECE[$a]!=$a) $ret[$this->ECE[$a]] .= " </$tag>";
+				if($this->ECE[$a]!=$a) $ret[$this->ECE[$a]] .= " </$tag>$chaintoclose";
 			} else if($tg == __HTML_PROCESS__){
 					$ret[$a].="<".$this->ATE[$a]["data"]. "\n?>";
 			} else if($tg < __HTML_UNKNOWN__){
