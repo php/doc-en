@@ -3,17 +3,20 @@
 
   Common customizations for all formats
 
-  $Id: common.xsl,v 1.4 2002-02-10 10:12:35 goba Exp $
+  $Id: common.xsl,v 1.5 2002-02-10 12:13:23 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0">
 
-<!-- configuration parameters -->
+<!-- Configuration parameters -->
 <xsl:param name="funcsynopsis.style" select="'ansi'"/>
 <xsl:param name="funcsynopsis.decoration" select="'1'"/>
 <xsl:param name="refentry.generate.name" select="'0'"/>
+
+<!-- Turn off separators on reference and refentry pages -->
 <xsl:param name="refentry.separator" select="'0'"/>
+<xsl:template name="reference.titlepage.separator"/>
 
 <!-- Load version information into variable -->
 <xsl:param name="version" select="document('version.xml')/versions"/>
