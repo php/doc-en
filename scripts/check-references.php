@@ -68,6 +68,8 @@ $number_refs = array(
 	"all_args_force_by_ref" => 1,
 );
 
+$valid_types = "int|float|string|bool|resource|array|object|mixed|number";
+
 // convert source formatting to document types, built from ZendAPI/zend.arguments.retrieval and howto/chapter-conventions
 function params_source_to_doc($type_spec)
 {
@@ -99,7 +101,7 @@ function params_source_to_doc($type_spec)
 }
 
 // some parameters should be passed only by reference but they are not forced to
-$wrong_source = array("dbplus_info", "dbplus_next", "xdiff_string_merge3", "xdiff_string_patch");
+$wrong_source = array("dbplus_info", "dbplus_next");
 $difficult_params = array(
 	"ibase_blob_import",
 	"imagefilter",
@@ -152,14 +154,21 @@ echo "Sources were read.\n";
 
 // compare with documentation
 foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
-	if (preg_match('~^(.*<methodsynopsis>.*)<methodname>([^<]+)<(.*)</methodsynopsis>~sSU', file_get_contents($filename), $matches)) {
+	if (preg_match('~^(.*<methodsynopsis>(.*))<methodname>([^<]+)<(.*)</methodsynopsis>~sSU', file_get_contents($filename), $matches)) {
 		$lineno = substr_count($matches[1], "\n") + 1;
-		$function_name = strtolower(trim($matches[2]));
+		$return_type = $matches[2];
+		$function_name = strtolower(trim($matches[3]));
 		if (strpos($function_name, '-') || strpos($function_name, ':')) {
 			continue; // methods are not supported
 		}
-		$methodsynopsis = $matches[3];
+		$methodsynopsis = $matches[4];
 		
+		// return type
+		if (!preg_match("~<type>(void|$valid_types)</type>~", $return_type)) {
+			echo "Wrong return type in $filename on line $lineno.\n";
+		}
+		
+		// references
 		$source_ref =& $source_refs[$function_name];
 		preg_match_all('~<parameter>(&amp;)?~S', $methodsynopsis, $matches);
 		$byref = array();
@@ -174,9 +183,15 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 			echo (isset($source_ref) ? "Parameter(s) " . (is_int($source_ref) ? "$source_ref and rest" : implode(", ", $source_ref)) : "Nothing") . " should be passed by reference in $filename on line $lineno.\n";
 		}
 		
+		// parameter types and optional
+		preg_match_all('~<methodparam(\\s+choice=[\'"]opt[\'"])?>\\s*<type>([^<]+)</type>~i', $methodsynopsis, $matches); // (PREG_OFFSET_CAPTURE can be used to get precise line numbers)
+		foreach ($matches[2] as $i => $val) {
+			if (!preg_match("~callback|$valid_types~", $val)) {
+				echo "Parameter #" . ($i+1) . " has wrong type '$val' in $filename on line " . ($lineno + $i + 1) . ".\n";
+			}
+		}
 		$source_type =& $source_types[$function_name];
 		if (isset($source_type)) {
-			preg_match_all('~<methodparam(\\s+choice=[\'"]opt[\'"])?>\\s*<type>([^<]+)</type>~i', $methodsynopsis, $matches); // (PREG_OFFSET_CAPTURE can be used to get precise line numbers)
 			$optional_source = false;
 			$optional_doc = false;
 			$i = 0;
