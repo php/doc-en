@@ -1,45 +1,252 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.4 $ -->
+<!-- $Revision: 1.5 $ -->
 <!-- splitted from ./en/functions/yaz.xml, last change in rev 1.1 -->
   <refentry id="function.yaz-record">
-   <refnamediv>
-    <refname>yaz_record</refname>
-    <refpurpose>Returns a record</refpurpose>
-   </refnamediv>
-   <refsect1>
-    <title>Description</title>
-     <methodsynopsis>
-      <type>string</type><methodname>yaz_record</methodname>
-      <methodparam><type>resource</type><parameter>id</parameter></methodparam>
-      <methodparam><type>int</type><parameter>pos</parameter></methodparam>
-      <methodparam><type>string</type><parameter>type</parameter></methodparam>
-     </methodsynopsis>
-    <para>
-     Returns the record at position <parameter>pos</parameter> or an empty
-     string if no record exists at the given position.
-    </para>
-    <para>
-     The <function>yaz_record</function> function inspects a record in the
-     current result set at the position specified by parameter
-     <parameter>pos</parameter>. If no database record exists at the given
-     position an empty string is returned. The <parameter>type</parameter>
-     specifies the form of the returned record.
-    </para>
-    <para>
-     If type is <literal>"string"</literal> the record is
-     returned in a string representation suitable for printing
-     (for XML and SUTRS).
-     If <parameter>type</parameter> is <literal>"array"</literal>
-     the record is returned as an array representation (for structured
-     records).
-     If <parameter>type</parameter> is <literal>"raw"</literal> the
-     record is returned in its original raw form.
-    </para>
-    <para>
-     Records in a result set are numbered 1, 2, ... $hits where
-     $hits is the count returned by <function>yaz_hits</function>.
-    </para>
-   </refsect1>
+ <refnamediv>
+  <refname>yaz_record</refname>
+  <refpurpose>Returns a record</refpurpose>
+ </refnamediv>
+ <refsect1>
+  <title>Description</title>
+  <methodsynopsis>
+   <type>string</type><methodname>yaz_record</methodname>
+   <methodparam><type>resource</type><parameter>id</parameter></methodparam>
+   <methodparam><type>int</type><parameter>pos</parameter></methodparam>
+   <methodparam><type>string</type><parameter>type</parameter></methodparam>
+  </methodsynopsis>
+  <para>
+   Returns the record at position <parameter>pos</parameter> or an empty
+   string if no record exists at the given position.
+  </para>
+  <para>
+   The <function>yaz_record</function> function inspects a record in the
+   current result set at the position specified by parameter
+   <parameter>pos</parameter>. If no database record exists at the given
+   position an empty string is returned. 
+  </para>
+  <para>
+   Record positions in a result set are numbered 1, 2, ... $hits where
+   $hits is the count returned by <function>yaz_hits</function>.
+  </para>
+  <para>
+   The <parameter>type</parameter> specifies the form of the
+   returned record.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+    <term><literal>string</literal></term>
+    <listitem>
+     <para>
+      The record is returned as a string for simple display.
+      In this mode, all MARC records are converted to a line-by-line format
+      since ISO2709 is hardly readable.
+      XML records and SUTRS are returned in their original format.
+      GRS-1 are returned in a (ugly) line-by-line format.
+     </para>
+     <para>
+      This format is suitable if records are to be displayed in a quick
+      way - for debugging - or because it is not feasible to perform
+      proper display.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>xml</literal></term>
+    <listitem>
+     <para>
+      The record is returned as an XML string if possible.
+      In this mode, all MARC records are converted to 
+      <ulink url="&url.yaz-marcxml;">MARCXML</ulink>.
+      XML records and SUTRS are returned in their original format.
+      GRS-1 is not supported.
+     </para>
+     <para>
+      This format is similar to <literal>string</literal> except that
+      MARC records are converted to MARCXML
+     </para>
+     <para>
+      This format is suitable if records are processed by an XML parser
+      or XSLT processor afterwareds.
+     </para>
+    </listitem>
+   </varlistentry>
+
+   <varlistentry>
+    <term><literal>raw</literal></term>
+    <listitem>
+     <para>
+      The record is returned as a string in its original form.
+      This type is suitable for MARC, XML and SUTRS. It does not
+      work for GRS-1.
+     </para>
+     <para>
+      MARC records are returned as a ISO2709 string. XML and SUTRS are
+      returned as strings.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><literal>syntax</literal></term>
+    <listitem>
+     <para>
+      The syntax of the record is returned as a string, i.e.
+      <literal>USmarc</literal>, <literal>GRS-1</literal>,
+      <literal>XML</literal>, etc.
+     </para>
+    </listitem>
+   </varlistentry>
+
+   <varlistentry>
+    <term><literal>database</literal></term>
+    <listitem>
+     <para>
+      The name of database associated with record at the position
+      is returned as a string.
+     </para>
+    </listitem>
+   </varlistentry>
+
+   <varlistentry>
+    <term><literal>array</literal></term>
+    <listitem>
+     <para>
+      The record is returned as an array that reflects the GRS-1
+      structure. This type is suitable for MARC and GRS-1. XML, SUTRS
+      are not supported and if the actual record is XML or SUTRS an
+      empty string will be returned.
+     </para>
+     <para>
+      The array returned consists of a list corresponding to
+      each leaf/internal node of GRS-1. Each list item consists
+      a sub list with first element <emphasis>path</emphasis> and
+      <emphasis>data</emphasis> (if data is available).
+      </para>
+     <para>
+      The path which is a string holds a list of each tree component (of
+      the structured GRS-1 record) from root to leaf. Each component is
+      a tag type, tag value pair of the form
+      <literal>(</literal><replaceable>type</replaceable><literal>,</literal>
+      <replaceable>value</replaceable>
+     </para>
+     <para>
+      String tags normally has a corresponding tag type 3.
+      MARC can also be returned as an array (they are converted to
+      GRS-1 internally).
+     </para>
+    </listitem>
+   </varlistentry>
+   
+  </variablelist>
+
+  <note>
+   <para>
+    It is the application which is responsible for actually
+    ensuring that the records are returned from the Z39.50/SRW server
+    in the proper format. The type given only specifies a conversion
+    to take place on the client side (in PHP/YAZ).
+   </para>
+  </note>
+
+  <para>
+   Besides conversion of the transfer record to a string/array, PHP/YAZ
+   it is also possible to perform a character set conversion of the
+   record. Especially for USMARC/MARC21 that is recommended since
+   these are typically returned in the character set MARC-8 that is
+   not supported by browsers, etc. To specify a conversion, add
+   <literal>; charset=</literal><replaceable>from</replaceable><literal>,
+   </literal><replaceable>to</replaceable> where
+   <replaceable>from</replaceable> is the original character set 
+   of the record and <replaceable>to</replaceable> is the resulting character
+   set (as seen by PHP).
+  </para>
+  
+  <example>
+   <title>Array for GRS-1 record</title>
+   <para>
+    Consider GRS-1 record
+    <screen>
+(4,52)Robert M. Pirsig
+(4,70)
+      (4,90)
+            (2,7)Transworld Publishers, ltd.
+    </screen>
+    This record has two nodes at root level.
+    First element at root level is (4,52) 
+    [tag type 4, tag value 52], and has data 
+    <literal>Robert M. Pirsig</literal>. Second element at root level 
+    (4,70) has a subtree with a single element (4,90). (4,90) has
+    yet another sub tree (2,7) with data <literal>Transworld Publishers,
+     ltd.</literal>.
+   </para>
+   <para>
+    If this record is present at position $p, then
+    <programlisting role="php">
+$ar = yaz_record($id, $p, "array");
+print_r($ar);
+    </programlisting>
+    produces
+    <screen>
+ Array
+(
+    [0] => Array
+        (
+            [0] => (4,52)
+            [1] => Robert M. Pirsig
+        )
+    [1] => Array
+        (
+            [0] => (4,70)
+        )
+    [2] => Array
+        (
+            [0] => (4,70)(4,90)
+        )
+    [3] => Array
+        (
+            [0] => (4,70)(4,90)(2,7)
+            [1] => Transworld Publishers, ltd.
+        )
+)      
+    </screen>
+   </para>
+  </example>
+
+  <example>
+   <title>Working with MARCXML</title>
+   <para>
+    The following PHP snippet returns a MARC21/USMARC record as
+    MARCXML. The original record is returned in marc-8 (unknown
+    to most XML parsers), so we convert it to UTF-8 (which all 
+    XML parsers must support).
+    <programlisting role="php">
+     $rec = yaz_record($id, $p, "xml; charset=marc-8,utf-8");
+    </programlisting>
+   </para>
+   <para>
+    The record <literal>$rec</literal> can be processed with
+    the <link linkend="ref.xslt">Sablotron XSLT</link> processor as follows:
+   </para>
+   <para>
+    <programlisting role="php">
+<![CDATA[ 
+$xslfile = 'display.xsl';
+$processor = xslt_create();
+$parms = array('/_xml' => $rec);
+$res = xslt_process($processor, 'arg:/_xml', $xslfile, NULL, $parms);
+xslt_free($processor);
+$res = preg_replace("'</?html[^>]*>'", '', $res);
+print $res;
+]]>
+    </programlisting>
+   </para>
+   <para>
+    For PHP5 the <link linkend="ref.xsl">XSL</link> extension can be
+    used instead of Sablotron XSLT.
+   </para>
+  </example>
+ </refsect1>
   </refentry>
 
 <!-- Keep this comment at the end of the file
