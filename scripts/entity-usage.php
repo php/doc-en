@@ -54,9 +54,10 @@ $langcodes = array("en");
 if ($argc == 3) { 
     $langcodes = array($argv[2]);
     if ($argv[2] === 'all') {
-        $langcodes = array("ar", "cs", "de", "en", "es", "fr",
-                           "hk", "hu", "it", "ja", "kr", "nl",
-                           "pl", "pt_BR", "ru", "tr", "tw");
+        $langcodes = array("ar", "cs", "de", "el", "en", "es", "fi",
+                           "fr", "he", "hk", "hu", "it", "ja", "kr",
+                           "lt", "nl", "pt", "pl", "pt_BR", "ro",
+                           "ru", "sk", "sl", "sv", "tr", "tw", "zh");
     }
 }
 
