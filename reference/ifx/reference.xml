@@ -1,167 +1,198 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
  <reference id="ref.ifx">
   <title>Informix functions</title>
   <titleabbrev>Informix</titleabbrev>
 
   <partintro>
-   <para>
-    The Informix driver for Informix (IDS) 7.x, SE 7.x, Universal
-    Server (IUS) 9.x and IDS 2000 is implemented in "ifx.ec" and
-    "php3_ifx.h" in the informix extension directory.  IDS 7.x support
-    is fairly complete, with full support for BYTE and TEXT
-    columns. IUS 9.x support is partly finished: the new data types
-    are there, but SLOB and CLOB support is still under construction.
-   </para>
-   <note>
-    <title>Configuration notes</title>
+   <section id="ifx.intro">
+   &reftitle.intro;
     <para>
-     You need a version of ESQL/C to compile the PHP Informix driver.
-     ESQL/C versions from 7.2x on should be OK. ESQL/C is now part of
-     the Informix Client SDK.
+     The Informix driver for Informix (IDS) 7.x, SE 7.x, Universal
+     Server (IUS) 9.x and IDS 2000 is implemented in "ifx.ec" and
+     "php3_ifx.h" in the informix extension directory.  IDS 7.x support
+     is fairly complete, with full support for BYTE and TEXT
+     columns. IUS 9.x support is partly finished: the new data types
+     are there, but SLOB and CLOB support is still under construction.
     </para>
+   </section>
+
+   <section id="ifx.requirenments">
+    &reftitle.required;
+     <note>
+     <title>Configuration notes</title>
+      <para>
+       You need a version of ESQL/C to compile the PHP Informix driver.
+       ESQL/C versions from 7.2x on should be OK. ESQL/C is now part of
+       the Informix Client SDK.
+      </para>
+      <para>
+       Make sure that the "INFORMIXDIR" variable has been set, and that
+       $INFORMIXDIR/bin is in your PATH before you run the "configure"
+       script.
+      </para>
+     </note>
+   </section>
+
+   <section id="ifx.installation">
+    &reftitle.install;
+    <note>
+     <para>
+      The configure script will autodetect the libraries and include
+      directories, if you run configure
+      <option role="configure">--with_informix=yes</option>. You can
+      override this detection by specifying "IFX_LIBDIR", "IFX_LIBS" and
+      "IFX_INCDIR" in the environment.  The configure script will also
+      try to detect your Informix server version.  It will set the
+      "HAVE_IFX_IUS" conditional compilation variable if your Informix
+      version >= 9.00.
+     </para>
+    </note>
+   </section>
+
+   <section id="ifx.configuration">
+    &reftitle.runtime;
+    <note>
+     <para>
+      Make sure that the Informix environment variables INFORMIXDIR and
+      INFORMIXSERVER are available to the PHP ifx driver, and that the
+      INFORMIX bin directory is in the PATH. Check this by running a
+      script that contains a call to <function>phpinfo</function>
+      before you start testing. The <function>phpinfo</function>
+      output should list these environment variables. This is &true; for
+      both CGI php and Apache mod_php. You may have to set these
+      environment variables in your Apache startup script.
+     </para>
+     <para>
+      The Informix shared libraries should also be available to the
+      loader (check LD_LINBRARY_PATH or ld.so.conf/ldconfig).
+     </para>
+    </note>
+    <note>
+     <title>
+      Some notes on the use of BLOBs (TEXT and BYTE columns)
+     </title>
+     <para>
+      BLOBs are normally addressed by BLOB identifiers.  Select queries
+      return a "blob id" for every BYTE and TEXT column.  You can get
+      at the contents with "string_var = ifx_get_blob($blob_id);" if
+      you choose to get the BLOBs in memory (with :
+      "ifx_blobinfile(0);").  If you prefer to receive the content of
+      BLOB columns in a file, use "ifx_blobinfile(1);", and
+      "ifx_get_blob($blob_id);" will get you the filename.  Use normal
+      file I/O to get at the blob contents.
+     </para>
+     <para>
+      For insert/update queries you must create these "blob id's"
+      yourself with "<function>ifx_create_blob</function>;". You then
+      plug the blob id's into an array, and replace the blob columns
+      with a question mark (?) in the query string.  For
+      updates/inserts, you are responsible for setting the blob
+      contents with <function>ifx_update_blob</function>.
+     </para>
+     <para>
+      The behaviour of BLOB columns can be altered by configuration
+      variables that also can be set at runtime :
+     </para>
+     <para>
+      configuration variable : ifx.textasvarchar
+     </para>
+     <para>
+      configuration variable : ifx.byteasvarchar
+     </para>
+     <para>
+      runtime functions :
+     </para>
+     <para>
+      ifx_textasvarchar(0) : use blob id's for select queries with TEXT
+      columns
+     </para>
+     <para>
+      ifx_byteasvarchar(0) : use blob id's for select queries with BYTE
+      columns
+     </para>
+     <para>
+      ifx_textasvarchar(1) : return TEXT columns as if they were
+      VARCHAR columns, so that you don't need to use blob id's for
+      select queries.
+     </para>
+     <para>
+      ifx_byteasvarchar(1) : return BYTE columns as if they were
+      VARCHAR columns, so that you don't need to use blob id's for
+      select queries.
+     </para>
+     <para>
+      configuration variable : ifx.blobinfile
+     </para>
+     <para>
+      runtime function :
+     </para>
+     <para>
+      ifx_blobinfile_mode(0) : return BYTE columns in memory, the blob
+      id lets you get at the contents.
+     </para>
+     <para>
+      ifx_blobinfile_mode(1) : return BYTE columns in a file, the blob
+      id lets you get at the file name.
+     </para>
+     <para>
+      If you set ifx_text/byteasvarchar to 1, you can use TEXT and BYTE
+      columns in select queries just like normal (but rather long)
+      VARCHAR fields.  Since all strings are "counted" in PHP, this
+      remains "binary safe".  It is up to you to handle this
+      correctly. The returned data can contain anything, you are
+      responsible for the contents.
+     </para>
+     <para>
+      If you set ifx_blobinfile to 1, use the file name returned by
+      ifx_get_blob(..) to get at the blob contents.  Note that in this
+      case YOU ARE RESPONSIBLE FOR DELETING THE TEMPORARY FILES CREATED
+      BY INFORMIX when fetching the row.  Every new row fetched will
+      create new temporary files for every BYTE column.
+     </para>
+     <para>
+      The location of the temporary files can be influenced by the
+      environment variable "blobdir", default is "." (the current
+      directory).  Something like : putenv(blobdir=tmpblob"); will ease
+      the cleaning up of temp files accidentally left behind (their
+      names all start with "blb").
+     </para>
+    </note>
+    <note>
+     <title>Automatically trimming "char" (SQLCHAR and SQLNCHAR) data</title>
+     <para>
+      This can be set with the configuration variable
+     </para>
+     <para>
+      ifx.charasvarchar : if set to 1 trailing spaces will be
+      automatically trimmed, to save you some "chopping".
+     </para>
+    </note>
+    <note>
+     <title>&null; values</title>
+     <para>
+      The configuration variable ifx.nullformat (and the runtime
+      function <function>ifx_nullformat</function>) when set to &true;
+      will return &null; columns as the string "&null;", when set to &false;
+      they return the empty string. This allows you to discriminate
+      between &null; columns and empty columns.
+     </para>
+    </note>
+   </section>
+
+   <section id="ifx.resources">
+    &reftitle.resources;
     <para>
-     Make sure that the "INFORMIXDIR" variable has been set, and that
-     $INFORMIXDIR/bin is in your PATH before you run the "configure"
-     script.
     </para>
-    <para> 
-     The configure script will autodetect the libraries and include
-     directories, if you run "configure --with_informix=yes".  You can
-     override this detection by specifying "IFX_LIBDIR", "IFX_LIBS" and
-     "IFX_INCDIR" in the environment.  The configure script will also
-     try to detect your Informix server version.  It will set the
-     "HAVE_IFX_IUS" conditional compilation variable if your Informix
-     version >= 9.00.
-    </para>
-   </note>
-   <note>
-    <title>Runtime considerations</title>
-    <para>
-     Make sure that the Informix environment variables INFORMIXDIR and
-     INFORMIXSERVER are available to the PHP ifx driver, and that the
-     INFORMIX bin directory is in the PATH. Check this by running a
-     script that contains a call to <function>phpinfo</function>
-     before you start testing. The <function>phpinfo</function>
-     output should list these environment variables. This is &true; for
-     both CGI php and Apache mod_php. You may have to set these
-     environment variables in your Apache startup script.
-    </para>
-    <para>
-     The Informix shared libraries should also be available to the
-     loader (check LD_LINBRARY_PATH or ld.so.conf/ldconfig).
-    </para>
-   </note>
-   <note>
-    <title>
-     Some notes on the use of BLOBs (TEXT and BYTE columns)
-    </title>
-    <para>
-     BLOBs are normally addressed by BLOB identifiers.  Select queries
-     return a "blob id" for every BYTE and TEXT column.  You can get
-     at the contents with "string_var = ifx_get_blob($blob_id);" if
-     you choose to get the BLOBs in memory (with :
-     "ifx_blobinfile(0);").  If you prefer to receive the content of
-     BLOB columns in a file, use "ifx_blobinfile(1);", and
-     "ifx_get_blob($blob_id);" will get you the filename.  Use normal
-     file I/O to get at the blob contents.
-    </para>
-    <para>
-     For insert/update queries you must create these "blob id's"
-     yourself with "<function>ifx_create_blob</function>;". You then
-     plug the blob id's into an array, and replace the blob columns
-     with a question mark (?) in the query string.  For
-     updates/inserts, you are responsible for setting the blob
-     contents with <function>ifx_update_blob</function>.
-    </para>
-    <para>
-     The behaviour of BLOB columns can be altered by configuration
-     variables that also can be set at runtime :
-    </para>
-    <para>
-     configuration variable : ifx.textasvarchar
-    </para>
-    <para>
-     configuration variable : ifx.byteasvarchar
-    </para>
-    <para>
-     runtime functions :
-    </para>
-    <para>
-     ifx_textasvarchar(0) : use blob id's for select queries with TEXT
-     columns
-    </para>
-    <para>
-     ifx_byteasvarchar(0) : use blob id's for select queries with BYTE
-     columns
-    </para>
-    <para>
-     ifx_textasvarchar(1) : return TEXT columns as if they were
-     VARCHAR columns, so that you don't need to use blob id's for
-     select queries.
-    </para>
-    <para>
-     ifx_byteasvarchar(1) : return BYTE columns as if they were
-     VARCHAR columns, so that you don't need to use blob id's for
-     select queries.
-    </para>
-    <para>
-     configuration variable : ifx.blobinfile
-    </para>
-    <para>
-     runtime function :
-    </para>
-    <para>
-     ifx_blobinfile_mode(0) : return BYTE columns in memory, the blob
-     id lets you get at the contents.
-    </para>
-    <para>
-     ifx_blobinfile_mode(1) : return BYTE columns in a file, the blob
-     id lets you get at the file name.
-    </para>
-    <para>
-     If you set ifx_text/byteasvarchar to 1, you can use TEXT and BYTE
-     columns in select queries just like normal (but rather long)
-     VARCHAR fields.  Since all strings are "counted" in PHP, this
-     remains "binary safe".  It is up to you to handle this
-     correctly. The returned data can contain anything, you are
-     responsible for the contents.
-    </para>
-    <para>
-     If you set ifx_blobinfile to 1, use the file name returned by
-     ifx_get_blob(..) to get at the blob contents.  Note that in this
-     case YOU ARE RESPONSIBLE FOR DELETING THE TEMPORARY FILES CREATED
-     BY INFORMIX when fetching the row.  Every new row fetched will
-     create new temporary files for every BYTE column.
-    </para>
-    <para>
-     The location of the temporary files can be influenced by the
-     environment variable "blobdir", default is "." (the current
-     directory).  Something like : putenv(blobdir=tmpblob"); will ease
-     the cleaning up of temp files accidentally left behind (their
-     names all start with "blb").
-    </para>
-   </note>
-   <note>
-    <title>Automatically trimming "char" (SQLCHAR and SQLNCHAR) data</title>
-    <para>
-     This can be set with the configuration variable
-    </para>
-    <para>
-     ifx.charasvarchar : if set to 1 trailing spaces will be
-     automatically trimmed, to save you some "chopping".
-    </para>
-   </note>
-   <note>
-    <title>&null; values</title>
-    <para>
-     The configuration variable ifx.nullformat (and the runtime
-     function <function>ifx_nullformat</function>) when set to &true;
-     will return &null; columns as the string "&null;", when set to &false;
-     they return the empty string. This allows you to discriminate
-     between &null; columns and empty columns.
-    </para>
-   </note>
+   </section>
+
+   <section id="ifx.constants">
+    &reftitle.constants;
+    &no.constants;
+   </section>
+
+
+
   </partintro>
 
 &reference.ifx.functions;
