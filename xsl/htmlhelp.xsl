@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.5 2004-10-31 10:07:09 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.6 2004-11-01 12:17:49 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -17,6 +17,7 @@
 
 <xsl:import href="./docbook/html/chunk.xsl"/>
 <xsl:import href="./docbook/htmlhelp/htmlhelp-common.xsl"/>
+<xsl:import href="common.xsl"/>
 
 <!-- configure/able/ parameters -->
 <xsl:include href="htmlhelp-config.xsl"/>
@@ -28,6 +29,7 @@
 <!-- project files for HTML Help are written into base.dir instead of current directory -->
 <xsl:param name="manifest.in.base.dir" select="1"/>
 <xsl:param name="use.id.as.filename" select="1"/>
+<xsl:param name="chunk.quietly" select="1"/>
 
 <!-- Supress the ",figure,example,equation" (like DSSSL output). -->
 <xsl:param name="generate.toc">
@@ -441,8 +443,5 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
     </xsl:apply-templates>
   </h3>
 </xsl:template>
-
-<!-- FIX: temporary till also this is in std.-distrib. -->
-<xsl:template match="reference/titleabbrev"></xsl:template>
 
 </xsl:stylesheet>
