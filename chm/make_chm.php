@@ -20,6 +20,7 @@ if (empty($FANCY_PATH)) { $FANCY_PATH = $HTML_PATH; }
 $MAIN_FILES = array(
     "getting-started.html",
     "langref.html",
+    "security.html",
     "features.html",
     "funcref.html",
     "zend.html",
