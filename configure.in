@@ -4,46 +4,131 @@ dnl autoconf initialisation
 AC_INIT()
 
 
+dnl {{{ check for support programs
 
-dnl check for support programs
+dnl {{{   check for PHP
 
-dnl check for PHP
 dnl use given argument, if any, else search in path 
 AC_ARG_WITH(php,
-[  --with-php=[PATH]       Look for PHP executable needed for helper scripts],
+[  --with-php=PATH         Look for PHP executable needed for helper scripts],
 [
-	if test $withval != "yes"; then
-		AC_MSG_CHECKING([for php])
- 		if test -x $withval; then
-  	  PHP=$withval
-			AC_MSG_RESULT($PHP)
-		else
-			PHP=no
-			AC_MSG_RESULT(no)
-			AC_MSG_WARN([$withval: not an executable file])
-		fi
-	else
-		AC_PATH_PROG(PHP,"php",no)
+  if test $withval != "yes"; then
+    AC_MSG_CHECKING([for php])
+    if test -x $withval; then
+      PHP=$withval
+      AC_MSG_RESULT($PHP)
+    else
+      PHP=no
+      AC_MSG_RESULT(no)
+      AC_MSG_ERROR([$withval: not an executable file])
+    fi
+  else
+    AC_PATH_PROG(PHP,"php",no)
   fi
 ],[
-	AC_PATH_PROG(PHP,"php",no)
+  AC_PATH_PROG(PHP,"php",no)
 ]
 )
 if test $PHP = "no"; then
-	AC_MSG_WARN([no PHP binary found])
+  AC_MSG_WARN([no PHP binary found])
 else
-	AC_MSG_CHECKING([php version])
-	PHPVERSION=`$PHP -qv`
-	if test "yes" == `echo '<? echo phpversion()>3?"yes":"no"; ?>' | $PHP -q`; then
-		AC_MSG_RESULT($PHPVERSION ok)
-	else
-  	AC_MSG_RESULT($PHPVERSION)
-		AC_MSG_WARN([PHP version 4.0.0 or newer needed])
-		PHP=no
-	fi
+  AC_MSG_CHECKING([php version])
+  PHPVERSION=`$PHP -qv`
+  if test "yes" == `echo '<? echo phpversion()>3?"yes":"no"; ?>' | $PHP -q`; then
+    AC_MSG_RESULT($PHPVERSION ok)
+  else
+    AC_MSG_RESULT($PHPVERSION)
+    AC_MSG_WARN([PHP version 4.0.0 or newer needed])
+    PHP=no
+  fi
 fi
 AC_SUBST(PHP)
 
+dnl }}}
+
+dnl {{{   check for the OpenJade DSSSL parser
+
+dnl use given argument, if any, else search in path 
+
+AC_ARG_WITH(jade,
+[  --with-jade=PATH        Look for jade or openjade executable],[
+  if test $withval != "yes"; then
+    AC_MSG_CHECKING([for jade])
+    if test -x $withval; then
+      JADE=$withval
+      AC_MSG_RESULT($JADE)
+    else
+      JADE=no
+      AC_MSG_RESULT(no)
+      AC_MSG_ERROR([$withval: not an executable file])
+    fi
+  else
+    if test -e ../phpdoc-tools/jade/jade.exe ; then
+      AC_MSG_CHECKING([for jade])
+      JADE=../phpdoc-tools/jade/jade.exe
+      AC_MSG_RESULT($JADE)
+    else
+      AC_PATH_PROG(JADE,"openjade",no)
+      if test $JADE = "no"; then
+        AC_PATH_PROG(JADE,"jade",no)
+      fi
+    fi
+  fi
+],[
+  if test -e ../phpdoc-tools/jade/jade.exe ; then
+    AC_MSG_CHECKING([for jade])
+    JADE=../phpdoc-tools/jade/jade.exe
+    AC_MSG_RESULT($JADE)
+  else
+    AC_PATH_PROG(JADE,"openjade",no)
+    if test $JADE = "no"; then
+      AC_PATH_PROG(JADE,"jade",no)
+    fi
+   fi
+]
+)
+AC_SUBST(JADE)
+
+dnl }}}
+
+dnl {{{   check for nsgmls (for win32 plug&pray)
+
+AC_ARG_WITH(nsgmls,
+[  --with-nsgmls=PATH      Look for nsgmls executable],[
+  if test $withval != "yes"; then
+    AC_MSG_CHECKING([for nsgmls])
+    if test -x $withval; then
+      NSGMLS=$withval
+      AC_MSG_RESULT($NSGMLS)
+    else
+      NSGMLS=no
+      AC_MSG_RESULT(no)
+      AC_MSG_ERROR([$withval: not an executable file])
+    fi
+  else
+    if test -e ../phpdoc-tools/jade/nsgmls.exe ; then
+      AC_MSG_CHECKING([for nsgmls])
+      NSGMLS=../phpdoc-tools/jade/nsgmls.exe
+      AC_MSG_RESULT($NSGMLS)
+    else
+      AC_PATH_PROG(NSGMLS,"nsgmls",no)
+    fi
+  fi
+],[
+    if test -e ../phpdoc-tools/jade/nsgmls.exe ; then
+      AC_MSG_CHECKING([for nsgmls])
+      NSGMLS=../phpdoc-tools/jade/nsgmls.exe
+      AC_MSG_RESULT($NSGMLS)
+    else
+      AC_PATH_PROG(NSGMLS,"nsgmls",no)
+    fi
+]
+)
+AC_SUBST(NSGMLS)
+
+dnl }}}
+
+dnl }}}
 
 
 
@@ -52,20 +137,20 @@ AC_SUBST(PHP)
 dnl AC_MSG_CHECKING(for DocBook doctype)
 dnl check_catalog_files() {
 dnl    for catalog in $@; do
-dnl 	  DBDT=`grep -E '^PUBLIC.*"docbook.dtd".*$' $catalog 2>/dev/null | cut -d'"' -f 2 `
-dnl 	  if test -n "$DBDT" ; then
-dnl 	      DOCBOOK_DOCTYPE=$DBDT
-dnl 	      return 1
-dnl 	  fi  
-dnl 	  MORECATS=`grep -i '^catalog' $catalog 2>/dev/null | cut -d'"' -f 2`
-dnl 	  if test -n "$MORECATS" ; then
-dnl 	     if check_catalog_files $MORECATS ; then
-dnl 	       return 1
-dnl 	     else 
-dnl 	       return 0
-dnl 	     fi
-dnl 	  fi
-dnl 	  return 0
+dnl     DBDT=`grep -E '^PUBLIC.*"docbook.dtd".*$' $catalog 2>/dev/null | cut -d'"' -f 2 `
+dnl     if test -n "$DBDT" ; then
+dnl         DOCBOOK_DOCTYPE=$DBDT
+dnl         return 1
+dnl     fi  
+dnl     MORECATS=`grep -i '^catalog' $catalog 2>/dev/null | cut -d'"' -f 2`
+dnl     if test -n "$MORECATS" ; then
+dnl        if check_catalog_files $MORECATS ; then
+dnl          return 1
+dnl        else 
+dnl          return 0
+dnl        fi
+dnl     fi
+dnl     return 0
 dnl    done
 dnl    return 0
 dnl }
@@ -87,43 +172,43 @@ AC_ARG_WITH(dsssl,
 [  --with-dsssl=[DIR]      Look for DSSSL stylesheets in the specified directory],
 [
     if test -d "$withval" ; then
-	DOCBOOK_HTML=$withval/html/docbook.dsl
+  DOCBOOK_HTML=$withval/html/docbook.dsl
         DOCBOOK_PRINT=$withval/print/docbook.dsl
         AC_MSG_RESULT(in $withval)
     fi
 ],[
     for dir in \
            /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh \
-	   /usr/local/share/sgml/docbook/dsssl/modular \
-	   /usr/lib/dsssl/stylesheets/docbook \
-	   /usr/lib/dsssl/stylesheets/nwalsh-modular \
-	   /usr/lib/dsssl/stylesheets/docbook \
-	   /usr/lib/sgml/stylesheets/nwalsh-modular \
-	   /usr/lib/sgml/docbook\
-	   /usr/lib/sgml/stylesheets/docbook \
-	   /opt/sgml/lib/stylesheets/docbook \
-	   /usr/share/sgml/docbk30/dsl \
-	   /usr/share/sgml/docbkdsl \
-	   /usr/share/sgml/stylesheets/docbook \
+     /usr/local/share/sgml/docbook/dsssl/modular \
+     /usr/lib/dsssl/stylesheets/docbook \
+     /usr/lib/dsssl/stylesheets/nwalsh-modular \
+     /usr/lib/dsssl/stylesheets/docbook \
+     /usr/lib/sgml/stylesheets/nwalsh-modular \
+     /usr/lib/sgml/docbook\
+     /usr/lib/sgml/stylesheets/docbook \
+     /opt/sgml/lib/stylesheets/docbook \
+     /usr/share/sgml/docbk30/dsl \
+     /usr/share/sgml/docbkdsl \
+     /usr/share/sgml/stylesheets/docbook \
            /usr/share/sgml/docbook/stylesheet/dsssl/modular \
            /usr/share/sgml/docbook/dsssl-stylesheets \
-	   /usr/local/lib/dsssl/stylesheets/docbook \
-	   /usr/local/lib/dsssl/stylesheets/nwalsh-modular \
-	   /usr/local/lib/sgml/stylesheets/docbook \
-	   /usr/local/lib/sgml/stylesheets/nwalsh-modular \
-	   /usr/local/lib/sgml/docbook \
-	   /usr/local/share/sgml/docbook/dsssl/modular \
-	   ../phpdoc-tools/dsssl/docbook \
-	   ../phpdoc-tools/dsssl \
-	   phpdoc-tools/dsssl/docbook \
-	   phpdoc-tools/dsssl
+     /usr/local/lib/dsssl/stylesheets/docbook \
+     /usr/local/lib/dsssl/stylesheets/nwalsh-modular \
+     /usr/local/lib/sgml/stylesheets/docbook \
+     /usr/local/lib/sgml/stylesheets/nwalsh-modular \
+     /usr/local/lib/sgml/docbook \
+     /usr/local/share/sgml/docbook/dsssl/modular \
+     ../phpdoc-tools/dsssl/docbook \
+     ../phpdoc-tools/dsssl \
+     phpdoc-tools/dsssl/docbook \
+     phpdoc-tools/dsssl
     do
-	if test -f "$dir/html/docbook.dsl"; then
+  if test -f "$dir/html/docbook.dsl"; then
             DOCBOOK_HTML="$dir/html/docbook.dsl"
             DOCBOOK_PRINT="$dir/print/docbook.dsl"
             AC_MSG_RESULT(autodetected: $dir)
             break
-	fi
+  fi
     done
 ])
 if test -z "$DOCBOOK_HTML"; then
@@ -176,9 +261,9 @@ AC_ARG_WITH(source,
 [  --with-source=[DIR]     Look at the specified source directory],
 [
     if test -d "$withval" ; then
-	PHP_SOURCE=$withval
+  PHP_SOURCE=$withval
     else
-	PHP_SOURCE=../php4
+  PHP_SOURCE=../php4
     fi
 ],[
   PHP_SOURCE=../php4
@@ -193,23 +278,23 @@ AC_ARG_WITH(zendapi,
 [  --with-zendapi=[DIR]      Look for ZendAPI documentation in the specified directory],
 [
     if test -d "$withval" ; then
-	ZENDAPI=$withval
+  ZENDAPI=$withval
     fi
 ],[
     ZENDAPI="not found"
     for dir in \
            ./ZendAPI \
-	   ../ZendAPI
+     ../ZendAPI
     do
-	if test -d "$dir"; then
-	    ZENDAPI="autodetected $dir"
+  if test -d "$dir"; then
+      ZENDAPI="autodetected $dir"
             break
-	fi
+  fi
     done
     if test -d "$ZENDAPI"; then
-	ZEND_FIGURES="cp -r $ZENDAPI/figures ."
+  ZEND_FIGURES="cp -r $ZENDAPI/figures ."
     else
-	ZEND_FIGURES=""
+  ZEND_FIGURES=""
     fi
 ])
 AC_MSG_RESULT($ZENDAPI)
@@ -223,35 +308,35 @@ AC_ARG_WITH(lang,
         PHP_BUILD_DATE=`date '+%Y-%m-%d'`
         AC_SUBST(PHP_BUILD_DATE)
 
-	LANG=en
-	AC_MSG_RESULT([en (default)])
+  LANG=en
+  AC_MSG_RESULT([en (default)])
     else
         if test ! -d "$srcdir/$withval"; then
-	    AC_MSG_RESULT()
-	    AC_MSG_ERROR(Language \"$withval\" not supported!)
-	fi
+      AC_MSG_RESULT()
+      AC_MSG_ERROR(Language \"$withval\" not supported!)
+  fi
        
         dnl day/month/year
         PHP_BUILD_DATE=`date '+%d-%m-%Y'`
         AC_SUBST(PHP_BUILD_DATE)
 
-	case $withval in
-	  kr)
-	    LANG="ko"
- 	    LANGDIR="kr"
-	  ;;
-	  hk)
-	    LANG="zh_hk"
-	    LANGDIR="hk"
-	  ;;
-	  tw)
-	    LANG="zh_tw"
-	    LANGDIR="tw"
-	  ;;
-	  *)
-	    LANG=$withval
-	    LANGDIR=$withval
-	esac
+  case $withval in
+    kr)
+      LANG="ko"
+      LANGDIR="kr"
+    ;;
+    hk)
+      LANG="zh_hk"
+      LANGDIR="hk"
+    ;;
+    tw)
+      LANG="zh_tw"
+      LANGDIR="tw"
+    ;;
+    *)
+      LANG=$withval
+      LANGDIR=$withval
+  esac
         AC_MSG_RESULT( $withval )
     fi
 ],[
@@ -359,68 +444,33 @@ case "$LANG" in
 esac
 AC_SUBST(PALMDOCTITLE)
 
-dnl look for the OpenJade DSSSL parser
-AC_PATH_PROG(OPENJADECHK, "openjade", no)
-if test $OPENJADECHK = "no"; then
-    dnl OpenJade isnt present, so look for the older Jade instead
-    AC_PATH_PROG(JADECHK, "jade", no)
-    if test $JADECHK = "no"; then
-        AC_MSG_CHECKING(for jade in phpdoc-tools)
-        if test -e ../phpdoc-tools/jade/jade.exe ; then
-            JADEPATH=../phpdoc-tools/jade/jade.exe
-            AC_MSG_RESULT("yes")
-        else
-            AC_MSG_RESULT("no")
-            AC_MSG_ERROR(unable to locate either Jade or OpenJade)
-        fi
-    else
-        JADEPATH=$JADECHK
-    fi
-else
-    JADEPATH=$OPENJADECHK
-fi
-
-dnl Search for nsgmls (for win32 plug&pray)
-if test -e ../phpdoc-tools/jade/nsgmls.exe ; then
-    NSGMLSCMD=../phpdoc-tools/jade/nsgmls.exe
-else
-    NSGMLSCMD=nsgmls
-fi
-
 HTMLHELP_ENCODING=$ENCODING
 
 case "$ENCODING" in
   UTF-8)
-    JADE="SP_ENCODING=XML SP_CHARSET_FIXED=YES $JADEPATH"
-    NSGMLS="SP_ENCODING=XML SP_CHARSET_FIXED=YES $NSGMLSCMD"
+    SP_OPTIONS="SP_ENCODING=XML SP_CHARSET_FIXED=YES"
     ;;
   big5)
-    JADE="SP_ENCODING=big5 SP_CHARSET_FIXED=YES $JADEPATH"
-    NSGMLS="SP_ENCODING=big5 SP_CHARSET_FIXED=YES $NSGMLSCMD"
+    SP_OPTIONS="SP_ENCODING=big5 SP_CHARSET_FIXED=YES"
     ;;
   ISO-8859-2)
-    JADE="SP_ENCODING=ISO-8859-2 $JADEPATH"
-    NSGMLS="SP_ENCODING=ISO-8859-2 $NSGMLSCMD"
+    SP_OPTIONS="SP_ENCODING=ISO-8859-2"
     HTMLHELP_ENCODING="windows-1250"
     ;;
   ISO-8859-6)
-    JADE="SP_ENCODING=ISO-8859-6 $JADEPATH"
-    NSGMLS="SP_ENCODING=ISO-8859-6 $NSGMLSCMD"
+    SP_OPTIONS="SP_ENCODING=ISO-8859-6"
     HTMLHELP_ENCODING="windows-1256"
     ;;
   ISO-8859-9)
-    JADE="SP_ENCODING=ISO-8859-9 $JADEPATH"
-    NSGMLS="SP_ENCODING=ISO-8859-9 $NSGMLSCMD"
+    SP_OPTIONS="SP_ENCODING=ISO-8859-9"
     HTMLHELP_ENCODING="windows-1254"
     ;;
   *)
-    JADE=$JADEPATH
-    NSGMLS=$NSGMLSCMD
+    SP_OPTIONS=""
     ;;
 esac
 
-AC_SUBST(JADE)
-AC_SUBST(NSGMLS)
+AC_SUBST(SP_OPTIONS)
 AC_SUBST(HTMLHELP_ENCODING)
 
 
@@ -479,15 +529,15 @@ dnl look for tex bug in print stylesheet
     if test 2 -eq  `grep -c tex  /usr/share/sgml/docbkdsl/print/dbprint.dsl`
     then
       if fgrep -q 'country: (dsssl-country-code)' /usr/share/sgml/docbkdsl/print/dbprint.dsl
-      then 	
+      then  
         if ! grep -q ';;.*country:' /usr/share/sgml/docbkdsl/print/dbprint.dsl
-	then
-	  AC_MSG_WARN(to prevent a tex bug you should comment out )
-	  AC_MSG_WARN('country: (dsssl-country-code)' )
-	  AC_MSG_WARN(in /usr/share/sgml/docbkdsl/print/dbprint.dsl )
-	  AC_MSG_WARN(or update your DSSSL-Stylesheets)
-	  AC_MSG_WARN(to at least version 1.54)
-	fi
+  then
+    AC_MSG_WARN(to prevent a tex bug you should comment out )
+    AC_MSG_WARN('country: (dsssl-country-code)' )
+    AC_MSG_WARN(in /usr/share/sgml/docbkdsl/print/dbprint.dsl )
+    AC_MSG_WARN(or update your DSSSL-Stylesheets)
+    AC_MSG_WARN(to at least version 1.54)
+  fi
       fi
     fi
   fi
@@ -500,30 +550,30 @@ DEPEND_FILES=""
 rm -f chapters.ent
 echo "<!-- DON'T TOUCH - AUTOGENERATED BY ./configure -->" > chapters.ent
 if test -d "$ZENDAPI"; then
-	echo  >> chapters.ent
-  	echo "<!-- begin ZendAPI integration -->" >> chapters.ent
-  	echo "<!ENTITY % zend.defs     SYSTEM \"$ZENDAPI/Extending_Zend.ent\">" >> chapters.ent
-  	echo "<!ENTITY zend.api SYSTEM \"$ZENDAPI/Extending_Zend.xml\">" >> chapters.ent
-	echo  >> chapters.ent
-	echo "%zend.defs;"  >> chapters.ent
-  	echo "<!-- end ZendAPI integration -->" >> chapters.ent
-	echo  >> chapters.ent
+  echo  >> chapters.ent
+    echo "<!-- begin ZendAPI integration -->" >> chapters.ent
+    echo "<!ENTITY % zend.defs     SYSTEM \"$ZENDAPI/Extending_Zend.ent\">" >> chapters.ent
+    echo "<!ENTITY zend.api SYSTEM \"$ZENDAPI/Extending_Zend.xml\">" >> chapters.ent
+  echo  >> chapters.ent
+  echo "%zend.defs;"  >> chapters.ent
+    echo "<!-- end ZendAPI integration -->" >> chapters.ent
+  echo  >> chapters.ent
 else
-  	echo "<!-- ZendAPI not found -->" >> chapters.ent
-  	echo "<!ENTITY zend.api \"\">" >> chapters.ent
+    echo "<!-- ZendAPI not found -->" >> chapters.ent
+    echo "<!ENTITY zend.api \"\">" >> chapters.ent
 fi
 for file in `find $srcdir/en -name "*.xml" | sed -e"s%^$srcdir\/en\/%%g" | sort`
 do 
-	name=`echo $file | sed -e"s/\//./g" -e"s/.xml$//g" -e "s/_/-/g"`
-	if test -f $srcdir/$LANGDIR/$file  
-	then
-		file=$srcdir/$LANGDIR/$file	
-	else
-		file=$srcdir/en/$file
-		echo " untranslated $file (`wc -l <$file | tr -d ' '` lines)"
-	fi
-	DEPEND_FILES="$DEPEND_FILES $file"
-  	echo "<!ENTITY $name     SYSTEM \"$file\">" >> chapters.ent
+  name=`echo $file | sed -e"s/\//./g" -e"s/.xml$//g" -e "s/_/-/g"`
+  if test -f $srcdir/$LANGDIR/$file  
+  then
+    file=$srcdir/$LANGDIR/$file 
+  else
+    file=$srcdir/en/$file
+    echo " untranslated $file (`wc -l <$file | tr -d ' '` lines)"
+  fi
+  DEPEND_FILES="$DEPEND_FILES $file"
+    echo "<!ENTITY $name     SYSTEM \"$file\">" >> chapters.ent
 done
 echo "<!ENTITY global.function-index  SYSTEM \"$srcdir/funcindex.xml\">" >> chapters.ent
 
