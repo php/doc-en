@@ -1,5 +1,5 @@
 <?xml encoding="iso-8859-1"?>
-<!-- $Revision: 1.30 $ -->
+<!-- $Revision: 1.31 $ -->
  <reference id="ref.mail">
   <title>Mail functions</title>
   <titleabbrev>Mail</titleabbrev>
@@ -7,6 +7,57 @@
    <simpara>
     The <function>mail</function> function allows you to send mail
    </simpara>
+
+   <variablelist>
+    <title>Mail Configuration Directives</title>
+
+    <varlistentry id="ini.smtp">
+     <term>
+      <parameter>SMTP</parameter>
+      <type>string</type>
+     </term>
+     <listitem>
+      <para>
+       DNS name or IP address of the SMTP server PHP under Windows
+       should use for mail sent with the <function>mail</function>
+       function.</para>
+     </listitem>
+    </varlistentry>
+
+    <varlistentry id="ini.sendmail-from">
+     <term>
+      <parameter>sendmail_from</parameter>
+      <type>string</type>
+     </term>
+     <listitem>
+      <para>
+       Which "From:" mail address should be used in mail sent from
+       PHP under Windows.</para>
+     </listitem>
+    </varlistentry>
+
+    <varlistentry id="ini.sendmail-path">
+     <term>
+      <parameter>sendmail_path</parameter>
+      <type>string</type>
+     </term>
+     <listitem>
+      <para>
+       Where the <command>sendmail</command> program can be found,
+       usually <filename>/usr/sbin/sendmail</filename> or
+       <filename>/usr/lib/sendmail</filename>
+       <command>configure</command> does an honest attempt of
+       locating this one for you and set a default, but if it fails,
+       you can set it here.</para>
+      <para>
+       Systems not using sendmail should set this directive to the
+       sendmail wrapper/replacement their mail system offers, if any.
+       For example, <ulink url="&url.qmail;">Qmail</ulink>
+       users can normally set it to
+       <filename>/var/qmail/bin/sendmail</filename>.</para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
   </partintro>
 
   <refentry id="function.mail">
@@ -57,43 +108,38 @@ mail("joecool@example.com", "My Subject", "Line 1\nLine 2\nLine 3");
     <simpara>
      If a fourth string argument is passed, this string is inserted at
      the end of the header.  This is typically used to add extra
-     headers.  Multiple extra headers are separated with a newline.
+     headers. Multiple extra headers are separated with a carriage return
+     and newline.
     </simpara>
     <note>
      <para>
-     On Win32 systems, you must use <literal>\r\n</literal> to
-     seperate headers.  Please also note that the cc: and bcc: headers
-     are case sensitve and should be written as <literal>Cc:</literal>
-     and <literal>Bcc:</literal> on Win32 systems.
+     You must use <literal>\r\n</literal> to seperate headers, although
+     some Unix mail transfer agents may work with just a single newline
+     (<literal>\n</literal>). The Cc: header is case sensitive and must
+     be written as <literal>Cc:</literal> on Win32 systems. The Bcc:
+     header is also not supported on Win32 systems.
      </para>
     </note>
-    <simpara>
-     If the fifth parameter is supplied, PHP will add this data
-     to the call to the mailer.  This is useful when setting the
-     correct Return-Path header when using sendmail.
-    </simpara>
     <para>
      <example>
       <title>Sending mail with extra headers.</title>
       <programlisting>
 mail("nobody@example.com", "the subject", $message,
-     "From: webmaster@$SERVER_NAME\nReply-To: webmaster@$SERVER_NAME\nX-Mailer: PHP/" . phpversion());
+     "From: webmaster@$SERVER_NAME\r\n"
+    ."Reply-To: webmaster@$SERVER_NAME\r\n"
+    ."X-Mailer: PHP/" . phpversion());
       </programlisting>
      </example>
-     With the fifth parameter you can set additional command line
-     parameters to the mail program. In the example below we set the
-     correct Return-Path header when using sendmail. Normally sendmail
-     will add the X-Authentication-Warning header when using the -f
-     parameter, because the webserver user is probably not a member of
-     the trusted users. To suppress this warning, you should add the web
-     server user to the trusted users in your sendmail configuration file.
     </para>
-    <note>
-     <para>
-      This fifth parameter was added in PHP 4.0.5.
-     </para>
-    </note>
     <para>
+     The <parameter>additional_parameters</parameter> parameter
+     can be used to pass additional parameters to the program configured
+     to use when sending mail using the <literal>sendmail_path</literal>
+     configuration setting. For example, this can be used to set the
+     envelope sender address when using sendmail. You may need to add
+     the user that your web server runs as to your sendmail configuration
+     to prevent a 'X-Warning' header from being added to the message when
+     you set the envelope sender using this method.
      <example>
       <title>Sending mail with extra headers and setting an additional command line parameter.</title>
       <programlisting>
@@ -101,51 +147,66 @@ mail("nobody@example.com", "the subject", $message,
      "From: webmaster@$SERVER_NAME", "-fwebmaster@$SERVER_NAME");
       </programlisting>
      </example>
-     You can also use fairly simple string building techniques to
-     build complex email messages.
+    </para>
+    <note>
+     <para>
+      This fifth parameter was added in PHP 4.0.5.
+     </para>
+    </note>
+    <para>
+     You can also use simple string building techniques to build complex
+     email messages.
      <example>
       <title>Sending complex email.</title>
       <programlisting>
 /* recipients */
-$recipient .= "Mary &lt;mary@example.com&gt;" . ", " ; //note the comma
-$recipient .= "Kelly &lt;kelly@example.com&gt;";
+$to  = "Mary &lt;mary@example.com&gt;" . ", " ; //note the comma
+$to .= "Kelly &lt;kelly@example.com&gt;";
 
 /* subject */
 $subject = "Birthday Reminders for August";
 
 /* message */
-$message .= "The following email includes a formatted ASCII table\n";
-$message .= "Day \t\tMonth \t\tYear\n";
-$message .= "3rd \t\tAug \t\t1970\n";
-$message .= "17rd\t\tAug \t\t1973\n";
-
-/* you can add a stock signature */
-$message .= "-- \r\n"; //Signature delimiter
-$message .= "Birthday reminder";
-
-/* additional header pieces for errors, From cc's, bcc's, etc */
-
-$headers .= "From: Birthday Reminder &lt;birthday@example.com&gt;\n";
-$headers .= "X-Sender: &lt;birthday@example.com&gt;\n";
-$headers .= "X-Mailer: PHP\n"; // mailer
-$headers .= "X-Priority: 1\n"; // Urgent message!
-$headers .= "Return-Path: &lt;birthday@example.com&gt;\n";  // Return path for errors
+$message = '
+&lt;html&gt;
+&lt;head&gt;
+ &lt;title&gt;Birthday Reminders for August&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;p&gt;Here are the birthdays upcoming in August!&lt;/p&gt;
+&lt;table&gt;
+ &lt;tr&gt;
+  &lt;th&gt;Person&lt;/th&gt;&lt;th&gt;Day&lt;/th&gt;&lt;th&gt;Month&lt;/th&gt;&lt;th&gt;Year&lt;/th&gt;
+ &lt;/tr&gt;
+ &lt;tr&gt;
+  &lt;td&gt;Joe&lt;/td&gt;&lt;td&gt;3rd&lt;/td&gt;&lt;td&gt;August&lt;/td&gt;&lt;td&gt;1970&lt;/td&gt;
+  &lt;td&gt;Sally&lt;/td&gt;&lt;td&gt;17th&lt;/td&gt;&lt;td&gt;August&lt;/td&gt;&lt;td&gt;1973&lt;/td&gt;
+ &lt;/tr&gt;
+&lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+';
 
 /* To send HTML mail, you can set the Content-type header. */
-// $headers .= "Content-type: text/html; charset=iso-8859-1\n";
+$headers  = "MIME-Version: 1.0\r\n";
+$headers .= "Content-type: text/html; charset=iso-8859-1\r\n";
 
-$headers .= "Cc: birthdayarchive@example.com\n";
-$headers .= "Bcc: birthdaycheck@example.com\n";
+/* additional headers */
+$headers .= "From: Birthday Reminder &lt;birthday@example.com&gt;\r\n";
+
+$headers .= "Cc: birthdayarchive@example.com\r\n";
+$headers .= "Bcc: birthdaycheck@example.com\r\n";
 
 /* and now mail it */
-mail($recipient, $subject, $message, $headers);
+mail($to, $subject, $message, $headers);
       </programlisting>
      </example>
     </para>
     <note>
      <para>
-       Make sure you have no new-line (or other whitespace) after your to or
-       subject parameters, as this may cause strange results.
+       Make sure you do not have any newline characters in the
+       <parameter>to</parameter> or <parameter>subject</parameter>,
+       or the mail may not be sent properly.
      </para>
     </note>
    </refsect1>
