@@ -3,10 +3,10 @@
 /* 
  PLEASE DO NOT MAKE ANY MAJOR MODIFICATIONS TO THIS CODE!
  There is a new script collection on the way to replace
- these scripts. This script is updated to handle many
- things. Code backported from the new script collection.
- Please be patient while it will be ready to put here.
- See make_chm.README for information until then.
+ these scripts. Please see the htmlhelp folder for the new
+ build system.
+ 
+ See make_chm.README for information about this system.
 */
 
 // Used directories and files
