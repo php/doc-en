@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.14 $ -->
+<!-- $Revision: 1.15 $ -->
 <!-- splitted from ./en/functions/mysql.xml, last change in rev 1.100 -->
   <refentry id="function.mysql-real-escape-string">
    <refnamediv>
@@ -32,8 +32,8 @@
      This function will escape special characters in the
      <parameter>unescaped_string</parameter>, taking into account the current
      character set of the connection so that it is safe to place it in a
-     <function>mysql_query</function>. If you wish to insert binary data
-     you must use this function.
+     <function>mysql_query</function>. If binary data is to be inserted, this function
+     must be used.
     </para>
     <para>
      <function>mysql_real_escape_string</function> calls MySQL's library function
@@ -62,15 +62,19 @@ $query = sprintf("SELECT * FROM users WHERE user='%s' AND password='%s'",
      </example>
     </para>
     <para>
-     You must always (with few exceptions) use this function to make your data
-     safe before sending a query to MySQL. If you have
-     <link linkend="ini.magic-quotes-gpc">magic_quotes_gpc</link> enabled,
-     and you are working with data from user input, you must first
-     <function>stripslashes</function> your data. If your data are form other
-     sources and you have <link linkend="ini.magic-quotes-runtime">
-     magic_quotes_runtime</link> enabled, you also have to
-     <function>stripslashes</function> your data. If you don't do so, you leave
-     yourself open to SQL Injection Attacks. Here's an example:
+     This function must always (with few exceptions) be used to make data
+     safe before sending a query to MySQL.
+    </para>
+    <note>
+     <para>
+      If <link linkend="ini.magic-quotes-gpc">magic_quotes_gpc</link> is enabled,
+      first apply <function>stripslashes</function> to the data. Using this function
+      on data which has already been escaped will escape the data twice.
+     </para>
+    </note>
+    <para>
+     If this function is not used to escape data, the query is vulnerable to
+     <link linkend="security.database.sql-injection">SQL Injection Attacks</link>.
     </para>
     <para>
      <example>
@@ -100,28 +104,27 @@ SELECT * FROM users WHERE name='aidan' AND password='' OR 1=1
 ]]>
       </screen>
       <para>
-       This would allow anyone to log in without a valid password! Using
-       <function>mysql_real_escape_string</function> around each variable
-       prevents this.
+       This would allow anyone to log in without a valid password.
+      </para>
+      <para>
+       Using <function>mysql_real_escape_string</function> around each variable
+       prevents this. This example demonstrates the proper method for querying a database,
+       independent of the <link linkend="security.magicquotes">Magic Quotes</link> setting.
       </para>
       <programlisting role="php">
 <![CDATA[
 <?php
-/**
- * Quote a variable to make it safe
- */
+// Quote variable to make safe
 function quote_smart($value)
 {
-    // Stripslashes if we need to
+    // Stripslashes
     if (get_magic_quotes_gpc()) {
         $value = stripslashes($value);
     }
-
-    // Quote it if it's not an integer
+    // Quote if not integer
     if (!is_int($value)) {
         $value = "'" . mysql_real_escape_string($value) . "'";
     }
-
     return $value;
 }
 
@@ -139,7 +142,7 @@ mysql_query($query);
 ]]>
       </programlisting>
       <para>
-       The query will now execute correctly, and Injection attacks will no longer work.
+       The query will now execute correctly, and SQL Injection attacks will not work.
       </para>
      </example>
     </para>
