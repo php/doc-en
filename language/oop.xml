@@ -30,7 +30,7 @@ class Cart {
         }   
     }
 }
-?>
+?&gt;
      </programlisting>
     </informalexample>
    </para>
@@ -195,6 +195,176 @@ $different_cart = new Constructor_Cart ("20", 17);
     </simpara> 
    </caution>
   </sect1>
+  
+ <sect1 id="keyword.newref">
+   <title>references inside the constructor</title>
+   <para>
+    Creating references within the constructor can lead to confusing results. This tutorial like section helps you
+    to avoid problems.
+ 
+    <informalexample>
+     <programlisting role="php">
+
+class foo {
+    function foo($name) {
+        // create a reference inside the global array $globalref
+        global $globalref;
+		$globalref[] = &$this;
+        // set name to passed value
+        $this->setName($name);
+		// and put it out
+        $this->echoName();
+    }
+
+    function echoName() {
+        echo "<br>",$this->Name;
+    }
+	
+	function setName($name)	{
+		$this->Name = $name;
+    }
+}
+    </programlisting>
+   </informalexample>
+
+   <para>
+   Let us check out if there is a difference between <varname>$bar1</varname> which has been created using the copy <literal>=</literal> operator
+   and <varname>$bar2</varname> which has been created using the reference <literal>=&</literal> operator...
+   </para>
+
+    <informalexample>
+     <programlisting role="php">
+   
+    $bar1 = new foo('set in constructor');
+    $bar1->echoName();
+    $globalref[0]->echoName();
+    
+    /* output:
+    set in constructor
+    set in constructor
+    set in constructor */
+    
+    $bar2 =& new foo('set in constructor');
+    $bar2->echoName();
+    $globalref[1]->echoName();
+
+    /* output:
+    set in constructor
+    set in constructor
+    set in constructor */
+    
+        </programlisting>
+   </informalexample>
+   
+   <para>
+    Apparently there is no difference, but in fact there is a very significant one:
+    <varname>$bar1</varname> and <varname>$globalref[0]</varname> are _NOT_ referenced, they are NOT the same variable. 
+    This is because "new" does not return a reference by default, instead it returns a copy.
+       <note>
+         <simpara>
+         There is no performance loss (since php 4 and up use reference counting) returning copies instead of references.
+         On the contrary it is most often better to simply work with copies instead of references, because creating
+         references takes some time where creating copies virtually takes no time (unless none of them is a large array or object
+         and one of them gets changed and the other(s) one(s) subsequently, then it would be wise to use references to change them
+         all concurrently).
+         </simpara>
+        </note>
+    To prove what is written above let us watch the code below.
+   </para>
+
+   <informalexample>
+     <programlisting role="php">
+        // now we will change the name. what do you expect?
+        // you could expect that both $bar and $globalref[0] change their names...
+        $bar1->setName('set from outside');
+
+        // as mentioned before this is not the case.
+        $bar1->echoName();
+        $globalref[0]->echoName();
+
+        /* output:
+        set on object creation
+        set from outside */
+
+        // let us see what is different with $bar2 and $globalref[1]
+        $bar2->setName('set from outside');
+
+        // luckily they are not only equyl, they are thesame variable
+        // thus $bar2->Name and $globalref[1]->Name are the same too
+        $bar2->echoName();
+        $globalref[1]->echoName();
+
+        /* output:
+        set from outside
+        set from outside */
+        
+      </programlisting>
+   </informalexample>   
+   
+   <para>
+   Another final example, try to understand it.
+   
+   <informalexample>
+     <programlisting role="php">
+
+class a {
+    function a($i) {
+        $this->value = $i;
+        // try to figure out why we do not need a reference here
+        $this->b = new b($this);
+    }
+
+    function createRef() {
+        $this->c = new b($this);
+    }
+
+    function echoValue() {
+        echo "<br>","class ",get_class($this),': ',$this->value;
+        }
+}
+
+
+class b  {
+
+    function b(&$a) {
+        $this->a = &$a;
+    }
+
+   function echoValue() {
+        echo "<br>","class ",get_class($this),': ',$this->a->value;
+        }
+
+}
+
+// try to undestand why using a simple copy here would yield
+// in an undesired result in the *-marked line
+$a =& new a(10);
+$a->createRef();
+
+$a->echoValue();
+$a->b->echoValue();
+$a->c->echoValue();
+
+$a->value = 11;
+
+$a->echoValue();
+$a->b->echoValue(); // *
+$a->c->echoValue();
+
+/*
+output:
+class a: 10
+class b: 10
+class b: 10
+class a: 11
+class b: 11
+class b: 11
+*/
+      </programlisting>
+   </informalexample>   
+</para>
+</sect1>
+
  
  </chapter>
  
