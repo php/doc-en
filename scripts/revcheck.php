@@ -103,10 +103,10 @@ $DOCDIR = "../";
 function get_tag($file, $val = "en-rev")
 {
 
-    // Read the first 200 chars. The comment should be at
+    // Read the first 500 chars. The comment should be at
     // the begining of the file
     $fp = @fopen($file, "r") or die ("Unable to read $file.");
-    $line = fread($fp, 200);
+    $line = fread($fp, 500);
     fclose($fp);
 
     // Check for English CVS revision tag (. is for $ in the preg!),
@@ -144,10 +144,10 @@ function get_tag($file, $val = "en-rev")
 // Grab CREDITS tag, the place to store previous credits
 function get_credits ($file) {
 
-    // Read the first 300 chars, the comment should be at
+    // Read the first 500 chars, the comment should be at
     // the begining of the file, if it is there
     $fp = @fopen($file, "r") or die ("Unable to read $file.");
-    $line = fread($fp, 300);
+    $line = fread($fp, 500);
     fclose($fp);
     
     // Try to find credits info in file, let more credits
@@ -394,7 +394,12 @@ function get_file_status($file)
 // The English directory is passed to this function to check
 function get_dir_status($dir, $DOCDIR, $LANG)
 {
-
+    // If this is an old "functions" directory
+    // (not under reference) then do not travers
+    if (preg_match("!/en/functions!", $dir)) {
+        return array();
+    }
+    
     // Collect files and diretcories in these arrays
     $directories = array();
     $files       = array();
@@ -862,7 +867,10 @@ foreach ($files_status as $num => $file) {
                               preg_replace( "'^".$DOCDIR."'", "phpdoc/", $file["full_name"]) .
                               "?r1=" . $file["revision"][1] . 
                               "&amp;r2=" . $file["revision"][0] .
-                              CVS_OPT . "\">" . $file["short_name"] . "</a>";
+                              CVS_OPT . "\">" . basename($file["short_name"]) . "</a>";
+    } else {
+        // Else just shorten the filename (we have directory headers)
+        $file["short_name"] = basename($file["short_name"]);
     }
 
     // Guess the new directory from the full name of the file
@@ -884,7 +892,7 @@ foreach ($files_status as $num => $file) {
     // Style attribute for all the cells
     $style = 'style="' . $CSS[$file["mark"]] . '"';
     
-    // Write out the line for the current file
+    // Write out the line for the current file (get file name shorter)
     print "<tr>\n <td $style>{$file['short_name']}</td>\n".
           " <td $style> {$file['revision'][0]}</td>" .
           " <td $style> {$file['revision'][1]}</td>\n".
