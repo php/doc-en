@@ -736,8 +736,13 @@ function parse_cli($progargc, $progargv)
   return(1);
 }
 
+if (minimum_version('5.0')) {
+$myargc=$argc;
+$myargv=$argv;
+} else {
 $myargc=$_SERVER["argc"];
 $myargv=$_SERVER["argv"];
+}
 
 if (!minimum_version("4.3.0")) {
   echo "You need PHP 4.3.0-pre1 or higher!\n";
