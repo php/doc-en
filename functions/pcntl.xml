@@ -1,5 +1,5 @@
 <?xml encoding="iso-8859-1"?>
-<!-- $Revision: 1.4 $ -->
+<!-- $Revision: 1.5 $ -->
  <reference id="ref.pcntl">
   <title>Process Control Functions</title>
   <titleabbrev>PCNTL</titleabbrev>
@@ -27,6 +27,12 @@
     configuration option when compiling PHP to enable Process Control
     support.
    </para>
+   <note>
+    <para>
+     Currently, this module will not function on non-Unix platforms
+     (Windows).
+    </para>
+   </note>
    <para>
     The following list of signals are supported by the Process Control
     functions.  Please see your systems signal(7) man page for details
@@ -36,17 +42,12 @@
     <tgroup cols="2">
      <tbody>
       <row>
-       <entry><literal>SIG_IGN</literal></entry>
        <entry><literal>SIGFPE</literal></entry>
        <entry><literal>SIGCONT</literal></entry>
-      </row>
-      <row>
-       <entry><literal>SIG_DFL</literal></entry>
        <entry><literal>SIGKILL</literal></entry>
-       <entry><literal>SIGSTOP</literal></entry>
       </row>
       <row>
-       <entry><literal>SIG_ERR</literal></entry>
+       <entry><literal>SIGSTOP</literal></entry>
        <entry><literal>SIGUSR1</literal></entry>
        <entry><literal>SIGTSTP</literal></entry>
       </row>
@@ -243,13 +244,9 @@ if ($pid == -1) {
     &false; on failure.
    </para>
    <example>
-    <title><function>pcntl_fork</function> Example</title>
+    <title><function>pcntl_signal</function> Example</title>
     <programlisting role="php">
 &lt;?php
-
-// setup signal handlers
-pcntl_signal(SIGTERM, "sig_handler");
-pcntl_signal(SIGHUP, "sig_handler");
 
 // signal handler function
 function sig_handler($signo) {
@@ -262,11 +259,29 @@ function sig_handler($signo) {
          case SIGHUP:
              // handle restart tasks
              break;
+         case SIGUSR1:
+             print "Caught SIGUSR1...\n";
+             break;
          default:
              // handle all other signals
      }
 
 }
+
+
+print "Installing signal handler...\n";
+
+// setup signal handlers
+pcntl_signal(SIGTERM, "sig_handler");
+pcntl_signal(SIGHUP, "sig_handler");
+pcntl_signal(SIGUSR1, "sig_handler");
+
+print "Generating signal SIGTERM to self...\n";
+
+// send SIGUSR1 to current process id
+posix_kill(posix_getpid(), SIGUSR1);
+
+print "Done\n"
 
 ?&gt;
     </programlisting>
