@@ -37,7 +37,13 @@
 */
 error_reporting(2047);
 
-$mypath = $_SERVER["PWD"];
+// finding the real path of the needed files:
+$mypath = $_SERVER["SCRIPT_NAME"];
+$spos = strrpos($mypath,"/");
+if(!$spos) $spos = strrpos($mypath,"\\");
+$mypath = substr($mypath,0,$spos);
+if($mypath) $mypath.="/";
+
 $docroot = $_SERVER["argv"][1];
 
 require "$mypath/HtmlParser.class.php";
