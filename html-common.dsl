@@ -142,7 +142,7 @@
 
 
 (element (funcprototype void)
- (make sequence ( literal " ()" )))
+ (make sequence ( literal " (void)" )))
 
 (element (funcprototype varargs)
  (make sequence ( literal " (...)" )))
