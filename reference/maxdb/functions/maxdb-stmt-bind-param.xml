@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
   <refentry id="function.maxdb-stmt-bind-param">
    <refnamediv>
     <refname>maxdb_stmt_bind_param</refname>
+    <refname>stmt->bind_param</refname>
     <refpurpose>Binds variables to a prepared statement as parameters</refpurpose>
    </refnamediv>
    <refsect1>
@@ -12,15 +13,43 @@
      <type>bool</type><methodname>maxdb_stmt_bind_param</methodname>
      <methodparam><type>resource</type><parameter>stmt</parameter></methodparam>
      <methodparam><type>string</type><parameter>types</parameter></methodparam>
-     <methodparam><type>mixed</type><parameter role="reference">var1</parameter></methodparam>
-     <methodparam choice="opt"><type>mixed</type><parameter role="reference">...</parameter></methodparam>
+     <methodparam><type>mixed</type><parameter>&amp;var1</parameter></methodparam>
+     <methodparam choice="opt"><type>mixed</type><parameter>&amp;...</parameter></methodparam>
     </methodsynopsis>
+    <para>Object oriented style (method):</para>
+    <classsynopsis>
+     <ooclass><classname>stmt</classname></ooclass>
+     <methodsynopsis>
+      <type>bool</type>
+       <methodname>bind_param</methodname>
+      <methodparam><type>array</type><parameter>types</parameter></methodparam>
+      <methodparam><type>mixed</type><parameter>&amp;var1</parameter></methodparam>
+      <methodparam choice="opt"><type>mixed</type><parameter>&amp;...</parameter></methodparam>
+     </methodsynopsis>
+    </classsynopsis>
     <para>
      <function>maxdb_stmt_bind_param</function> is used to bind variables for the
      parameter markers in the SQL statement that was passed to
      <function>maxdb_prepare</function>. 
      The string <parameter>types</parameter> contains one or more characters which specify
-     the types for the corresponding bind variables
+     the types for the corresponding bind variables.
+    </para>
+    <para>
+     Variables for SELECT INTO SQL statements can also be bound using <function>maxdb_stmt_bind_param</function>.
+     Parameters for database procedures can be bound using <function>maxdb_stmt_bind_param</function>. See the
+     examples how to use <function>maxdb_stmt_bind_param</function> in this cases.
+    </para>
+    <para>
+     If a variable bound as INTO variable to a SQL statement was used before, the content of this variable
+     is overwritten by the data of the SELECT INTO statement. A reference to this variable will be invalid after a call to
+      <function>maxdb_stmt_bind_param</function>.
+    </para>
+    <para>
+      For INOUT parameters of database procedures the content of the bound INOUT variable is overwritten by the output
+      value of the database procedure. A reference to this variable will be invalid after a call to
+      <function>maxdb_stmt_bind_param</function>.
+    </para>
+    <para>
      <table>
       <title>Type specification chars</title>
       <tgroup cols='2'>
@@ -73,11 +102,52 @@
    <refsect1>
     <title>Example</title>
     <example>
+     <title>Object oriented style</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$maxdb = new maxdb('localhost', 'MONA', 'RED', 'DEMODB');
+
+/* check connection */
+if (maxdb_connect_errno()) {
+   printf("Connect failed: %s\n", maxdb_connect_error());
+   exit();
+}
+
+$maxdb->query ("CREATE TABLE temp.mycity LIKE hotel.city");
+$maxdb->query ("INSERT INTO temp.mycity SELECT * FROM hotel.city");
+
+$stmt = $maxdb->prepare("INSERT INTO temp.mycity VALUES (?, ?, ?)");
+$stmt->bind_param('sss', $zip, $name, $state);
+
+$zip = '11111';
+$name = 'Georgetown';
+$state = 'NY';
+
+/* execute prepared statement */
+$stmt->execute();
+
+printf("%d Row inserted.\n", $stmt->affected_rows);
+
+/* close statement and connection */
+$stmt->close();
+
+/* Clean up table CountryLanguage */
+$maxdb->query("DELETE FROM temp.mycity WHERE name='Georgetown'");
+printf("%d Row deleted.\n", $maxdb->affected_rows);
+
+/* close connection */
+$maxdb->close();
+?>
+]]>
+    </programlisting>
+    </example>
+    <example>
      <title>Procedural style</title>
      <programlisting role="php">
 <![CDATA[
 <?php
-$link = maxdb_connect("localhost", "MONA", "RED");
+$link = maxdb_connect("localhost", "MONA", "RED", "DEMODB");
 
 /* check connection */
 if (!$link) {
@@ -120,6 +190,91 @@ maxdb_close($link);
 <![CDATA[
 1 Row inserted.
 1 Row deleted.
+]]>
+    </screen>
+    <example>
+     <title>Procedural style (SELECT INTO)</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$link = maxdb_connect("localhost", "MONA", "RED", "DEMODB");
+
+/* check connection */
+if (!$link) {
+   printf("Connect failed: %s\n", maxdb_connect_error());
+   exit();
+}
+   
+/* Performing SQL query */
+$stmt = maxdb_prepare ($link, "SELECT price INTO ? FROM hotel.room where hno = ? and type = ?");
+if (!$stmt) {
+  printf ("Prepare failed: %s\n", maxdb_error($link));
+}
+
+$hno = "50";
+$rtype = "suite";
+
+maxdb_stmt_bind_param($stmt, 'dss', $price, $hno, $rtype);
+maxdb_stmt_execute($stmt);
+
+printf ("%f\n", $price);
+
+maxdb_stmt_close ($stmt);
+?>
+]]>
+     </programlisting>
+    </example>
+    <para>
+     The above examples would produce the following output:
+    </para>
+    <screen>
+<![CDATA[
+21.600000
+]]>
+    </screen>
+    <example>
+     <title>Procedural style (DB procedure)</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$link = maxdb_connect("localhost", "MONA", "RED", "DEMODB");
+
+/* check connection */
+if (!$link) {
+   printf("Connect failed: %s\n", maxdb_connect_error());
+   exit();
+}
+
+maxdb_report (MAXDB_REPORT_OFF);
+maxdb_query($link,"DROP DBPROC test_proc");
+maxdb_report (MAXDB_REPORT_ERROR);
+
+$query = "create dbproc test_proc (INOUT e_text char(72)) AS select * from SYSDBA.DUAL; fetch into :e_text;";
+
+maxdb_query($link, $query);
+
+/* Performing SQL query */
+$stmt = maxdb_prepare ($link, "CALL test_proc (?)");
+if (!$stmt) {
+  printf ("Prepare failed: %s\n", maxdb_error($link));
+}
+
+maxdb_stmt_bind_param($stmt, 's', $result);
+maxdb_stmt_execute($stmt);
+
+printf ("%s\n", $result);
+
+maxdb_stmt_close ($stmt);
+?>
+]]>
+     </programlisting>
+    </example>
+    <para>
+     The above examples would produce the following output:
+    </para>
+    <screen>
+<![CDATA[
+a
 ]]>
     </screen>
    </refsect1>
