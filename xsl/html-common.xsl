@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.22 2003-04-23 17:32:51 goba Exp $
+  $Id: html-common.xsl,v 1.23 2003-04-25 18:42:38 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -547,8 +547,12 @@ set       toc
   <i><tt><xsl:apply-templates/></tt></i>
 </xsl:template>
 
-<xsl:template match="constant|filename|literal|option|varname">
+<xsl:template match="filename|literal|option|varname">
   <tt><xsl:apply-templates/></tt>
+</xsl:template>
+
+<xsl:template match="constant">
+ <b><tt><xsl:apply-templates/></tt></b>
 </xsl:template>
 
 <xsl:template match="refsection|refsect1|refsect2|refsect3">
