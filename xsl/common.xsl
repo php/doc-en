@@ -3,12 +3,21 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.22 2004-11-14 13:15:42 techtonik Exp $
+  $Id: common.xsl,v 1.23 2004-11-14 13:28:52 techtonik Exp $
 
 -->
 <!-- 
   What is done in this stylesheet as common to all HTML output formats:
-  - 
+  - shade programlistings and screens
+  - function page title generated from function name
+  - display PHP version information from version.xml
+  - render functions prototypes in specific PHP way
+  - preserve "role" attributes for programlistings
+  - strip empty newlines around programlistings
+  - TOC labels (like section numbers) are not included in TOC href
+  - style admonitions and collab names
+  - output "parameter" enclosed in vars like in DSSSL
+  - link <function> blocks to appropriate function references
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0">
