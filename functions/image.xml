@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.80 $ -->
+<!-- $Revision: 1.81 $ -->
 <reference id="ref.image">
  <title>Image functions</title>
  <titleabbrev>Image</titleabbrev>
@@ -8,11 +8,17 @@
   <simpara>
    You can use the image functions in PHP to get the size of
    <acronym>JPEG</acronym>, <acronym>GIF</acronym>,
-   <acronym>PNG</acronym>, <acronym>TIFF</acronym> and
-   <acronym>SWF</acronym> images, and if
+   <acronym>PNG</acronym>, <acronym>SWF</acronym>,
+   <acronym>TIFF</acronym> and <acronym>JPEG2000</acronym> images, and if
    you have the <acronym>GD</acronym> library (available at <ulink
    url="&url.gd;">&url.gd;</ulink>) you will also be able to create
    and manipulate images.
+  </simpara>
+  <simpara>
+   If you have PHP compiled with <option role="configure">--enable-exif</option>
+   you are able to work with information stored in headers of
+   <acronym>JPEG</acronym> and <acronym>TIFF</acronym> images. These
+   functions do not require <acronym>GD</acronym> library.
   </simpara>
   <simpara>
    The format of images you are able to manipulate depend on the
@@ -34,6 +40,52 @@
    <option role="configure">--with-t1lib[=dir]</option>.
   </simpara>
  </partintro>
+
+ <refentry id="function.exif-imagetype">
+  <refnamediv>
+   <refname>exif_imagetype</refname>
+   <refpurpose>Determine the type of an image.</refpurpose>
+  </refnamediv>
+  <refsect1>
+   <title>Description</title>
+    <methodsynopsis>
+     <type>int|false</type><methodname>exif_thumbnail</methodname>
+      <methodparam><type>string</type><parameter>filename</parameter></methodparam>
+    </methodsynopsis>
+   <para>
+    <function>exif_imagetype</function> reads the first bytes of an image and
+    checks its signature. When a correct signature is found a constant will be
+    returned otherwise the return value is &false; The return value is the same
+    value that <function>GetImageSize</function> returns in index 2 but this
+    function is much faster.
+   </para>
+   <para>
+    The following constants are defined:
+    1 = IMAGETYPE_GIF, 2 = IMAGETYPE_JPG, 3 = IMAGETYPE_PNG, 4 = IMAGETYPE_SWF,
+    5 = IMAGETYPE_PSD, 6 = IMAGETYPE_BMP, 7 = IMAGETYPE_TIFF_II (intel byte order),
+    8 = IMAGETYPE_TIFF_MM (motorola byte order), 9 = IMAGETYPE_JPC, 10 = IMAGETYPE_JP2,
+    11 = IMAGETYPE_JPX.
+   </para>
+   <para>
+    This function can be used to avoid calls to other exif functions with unsupported
+    file teypes or in conjunction with $_SERVER['HTTP_ACCEPT'] to check whether or
+    not the viewer is able to see a specific image in his browser.
+   </para>
+   <para>
+    <note>
+     <simpara>
+      This function is only available in PHP 4 compiled using --enable-exif.
+     </simpara>
+     <simpara>
+      This function does not require the GD image library.
+     </simpara>
+     <simpara>
+      See also <function>GetImageSize</function>.
+     </simpara>
+    </note>
+   </para>
+  </refsect1>
+ </refentry>
 
   <refentry id="function.exif-read-data">
    <refnamediv>
@@ -125,7 +177,7 @@
     </note>
     <para>
      <example>
-      <title><function>read_exif_data</function> example</title>
+      <title><function>exif_read_data</function> example</title>
       <programlisting role="php">
 <![CDATA[
 <?php
@@ -167,6 +219,11 @@ COMMENT.0: Comment #1.
 COMMENT.1: Comment #2.
 COMMENT.2: Comment #3end?>
 ]]>
+<!-- Version 4.3 will provide additional lines
+THUMBNAIL.JPEGInterchangeFormat: 134
+THUMBNAIL.Thumbnail.Height: 1
+THUMBNAIL.Thumbnail.Height: 1
+-->
        </screen>
       </para>
      </example>
@@ -196,6 +253,15 @@ COMMENT.2: Comment #3end?>
      </para>
     </note>
     <note>
+     <para>
+     Starting from PHP 4.3 the function can read all embedded <acronym>IFD</acronym>
+     data including arrays (returned as such). Also the size of an embedded thumbnail
+     is returned in <emphasis>THUMBNAIL</emphasis> subarray and the function
+     <function>exif_read_data</function> can return thumbnails in <acronym>TIFF</acronym>
+     format.
+     </para>
+    </note>
+    <note>
       <simpara>
        This function is only available in PHP 4 compiled using --enable-exif.
        Its functionality and behaviour has changed in PHP 4.2. Earlier versions
@@ -221,11 +287,24 @@ COMMENT.2: Comment #3end?>
     <methodsynopsis>
      <type>string</type><methodname>exif_thumbnail</methodname>
       <methodparam><type>string</type><parameter>filename</parameter></methodparam>
+      <methodparam choice="opt"><type>int</type><parameter>&width</parameter></methodparam>
+      <methodparam choice="opt"><type>int</type><parameter>&height</parameter></methodparam>
     </methodsynopsis>
    <para>
     <function>exif_thumbnail</function> reads the embedded thumbnail of
     a TIFF or JPEG image. If the image contains no thumbnail &false;
     will be returned.
+   </para>
+   <para>
+    Both parameters <parameter>width</parameter> and <parameter>height</parameter> are
+    available since PHP 4.3 and return the size of the thumbnail. It is possible that
+    <function>exif_thumbnail</function> cannot create and image but determine the its
+    size. In this case the return value is false but <parameter>width</parameter> and
+    <parameter>height</parameter> are set.
+   </para>
+   <para>
+    Starting from version PHP 4.3 the function <function>exif_thumbnail</function> can
+    return thumbnails in <acronym>TIFF</acronym> format.
    </para>
    <para>
     <note>
@@ -270,8 +349,10 @@ COMMENT.2: Comment #3end?>
     Returns an array with 4 elements. Index 0 contains the width of
     the image in pixels. Index 1 contains the height.  Index 2 a
     flag indicating the type of the image.  1 = GIF, 2 = JPG, 3 =
-    PNG, 4 = SWF, 5 = PSD, 6 = BMP. Index 3 is a text string with the correct
-    "height=xxx width=xxx" string that can be used directly in an IMG
+    PNG, 4 = SWF, 5 = PSD, 6 = BMP, 7 = TIFF(intel byte order),
+    8 = TIFF(motorola byte order, 9 = JPC, 10 = JP2, 11 = JPX.
+    Index 3 is a text string with the correct
+    height="yyy" width="xxx" string that can be used directly in an IMG
     tag.
     <example>
      <title>GetImageSize (file)</title>
@@ -331,10 +412,16 @@ COMMENT.2: Comment #3end?>
     </example>
     <note>
      <simpara>
+      TIFF support was added in PHP 4.2. JPEG2000 support will be added
+      in PHP 4.3.
+     </simpara>
+     <simpara>
       This function does not require the GD image library.
      </simpara>
-    </note>
-    <note>
+     <simpara>
+      See also <function>exif_imagetype</function>, <function>exif_read_data</function>
+      and <function>exif_thumbnail</function>.
+     </simpara>
      <simpara>
       URL support was added in PHP 4.0.5
      </simpara>
