@@ -9,8 +9,9 @@
    properties make anything run on a web server insecure by default.
    PHP is designed specifically to be a more secure language for
    writing CGI programs than Perl or C, and with correct selection of
-   compile-time and runtime configuration options it gives you
-   exactly the combination of freedom and security you need.
+   compile-time and runtime configuration options, and proper coding
+   practices, it can give you exactly the combination of freedom and
+   security you need.
   </simpara>
   <simpara>
    As there are many different ways of utilizing PHP, there are many
@@ -18,12 +19,23 @@
    selection of options guarantees you can use PHP for a lot of
    purposes, but it also means there are combinations of these
    options and server configurations that result in an insecure
-   setup.  This chapter explains the different configuration option
-   combinations and the situations they can be safely used.
+   setup.
+  </simpara>
+   The configuration flexibility of PHP is equally rivalled by the
+   code flexibility. PHP can be used to build complete server
+   applications, with all the power of a shell user, or it can be used
+   for simple server-side includes with little risk in a tightly
+   controlled environment. How you build that environment, and how
+   secure it is, is largely up to the PHP developer.
+  <simpara>
+   This chapter starts by explaining the different configuration
+   option combinations and the situations they can be safely used. It
+   then describes different considerations in coding for different
+   levels of security, and ends with some general security advice.
   </simpara>
 
   <sect1 id="security.cgi">
-   <title>CGI binary</title>
+   <title>Installed as CGI binary</title>
 
    <sect2>
     <title>Possible attacks</title>
@@ -241,7 +253,7 @@ AddHandler php3-script .php3
   </sect1>
 
   <sect1 id="security.apache">
-   <title>Apache module</title>
+   <title>Installed as an Apache module</title>
    <simpara>
     When PHP is used as an Apache module it inherits Apache's user
     permissions (typically those of the "nobody" user). This has several
@@ -302,7 +314,7 @@ AddHandler php3-script .php3
    </simpara>
    <para>
     <example>
-     <title>Filesystem attack</title>
+     <title>Poor variable checking leads to....</title>
      <programlisting role="php">
 &lt;?php
 // remove a file from the user's home directory
@@ -317,6 +329,58 @@ echo "$file_to_delete has been deleted!";
    Since the username is postable from a user form, they can submit
    a username and file belonging to someone else, and delete files.
    In this case, you'd want to use some other form of authentication.
+   Consider what could happen if the variables submitted were
+   "../etc/" and "passwd". The code would then effectively read:
+    <example>
+     <title>... A filesystem attack</title>
+     <programlisting role="php">
+&lt;?php
+// removes a file from anywhere on the hard drive that
+// the PHP user has access to. If PHP has root access:
+$username = "../etc/";
+$homedir = "/home/../etc/";
+$file_to_delete = "passwd";
+unlink ("/home/../etc/passwd");
+echo "/home/../etc/passwd" has been deleted!";
+?>
+     </programlisting>
+    </example>   
+    There are two appropriate measures to prevent these issues.
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       Only allow limited permissions to the PHP web user binary.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Check all file-related variables which are submitted.
+      </simpara>
+     </listitem>
+    </itemizedlist>
+    Here is an improved script:
+    <example>
+     <title>More secure file name checking</title>
+     <programlisting role="php">
+&lt;?php
+// removes a file from the hard drive that
+// the PHP user has access to. 
+$username = $HTTP_REMOTE_USER; // use an authentication mechanisim
+
+$homedir = "/home/$username";
+
+$file_to_delete = basename("$userfile"); // strip paths
+unlink ($homedir/$file_to_delete);
+
+$fp = fopen("/home/logging/filedelete.log","+a"); //log the deletion
+$logstring = "$HTTP_REMOTE_USER $homedir $file_to_delete";
+fputs ($fp, $logstring);
+fclose($fp);
+
+echo "$file_to_delete has been deleted!";
+?>
+     </programlisting>
+    </example>      
    </para>   
   </sect1>
 
@@ -385,7 +449,7 @@ echo "$file_to_delete has been deleted!";
 unlink ($evil_var);
 
 // Write logging of their access... or maybe not?
-fputs ($evil_var);
+fputs ($fp, $evil_var);
 
 // Execute something trivial.. or rm -rf *?
 system ($evil_var);
@@ -427,10 +491,55 @@ exec ($evil_var);
     </itemizedlist>
     By adequately asking these questions while writing the script,
     rather than later, you prevent an unfortunate re-write when you
-    need to oncrease your security.
+    need to increase your security. By starting out with this mindset,
+    you won't guarantee the security of your system, but you can help
+    improve it.
    </para>
   </sect1>
-   
+
+  <sect1 id="security.general">
+   <title>General considerations</title>
+   <simpara>
+    A completely secure system is a virtual impossibility, so an
+    approach often used in the security profession is one of balancing
+    risk and usability. If every variable submitted by a user required
+    two forms of biometric validation (such as a retinal scan and a
+    fingerprint), you would have an extremely high level of
+    accountability. It would also take half an hour to fill out a fairly
+    complex form, which would tend to encourage users to find ways of
+    bypassing the security. The best security is often inobtrusive
+    enough to suit the requirements without the user being prevented
+    from accomplishing their work. Indeed, some security attacks are
+    merely exploits of this kind of overly built security.
+   </simpara>
+   <simpara>
+    A phrase worth remembering: A system is only as good as the weakest
+    link in a chain. If all transactions are heavily logged based on
+    time, location, transaction type, etc. but the user is only
+    verified based on a single cookie, the validity of tying the users
+    to the transaction log is severely weakened.
+   </simpara>
+   <simpara>
+    When testing, keep in mind that you will not be able to test all
+    possibilities for even the simplest of pages. The input you
+    may expect will be completely unrelated to the input given by
+    a disgruntled employee, a cracker with months of time on their
+    hands, or a housecat walking across the keyboard. This is why it's
+    best to look at the code from a logical perspective, to discern
+    where unexpected data can be introduced, and then follow how it is
+    modified, reduced, or amplified.
+   </simpara>
+   <simpara>
+    The Internet is filled with people trying to make a name for
+    themselves by breaking your code, crashing your site, posting
+    inappropriate content, and otherwise making your day interesting.
+    It doesn't matter if you have a small or large site, you are
+    a target by simply being online, by having a server that can be
+    connected to. Many cracking programs do not discern by size, they
+    simply trawl massive IP blocks looking for victims. Try not to
+    become one.
+   </simpara>
+  </sect1>
  </chapter>
 
 <!-- Keep this comment at the end of the file
