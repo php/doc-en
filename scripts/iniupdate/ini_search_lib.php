@@ -41,12 +41,12 @@ function recurse($dir) {
             $file = preg_replace('@(//.*$)|(/\*.*\*/)@SmsU', '', $file);
 
             /* The MAGIC Regexp :) */
-            if(preg_match_all('/(?:PHP|ZEND)_INI_(?:ENTRY(?:_EX)?|BOOLEAN)\s*\(\s*"([^"]+)"\s*,\s*("\S*"|[^,]+)\s*,\s*([^,]+)/S', $file, $matches)) {
+            if(preg_match_all('/(?:PHP|ZEND)_INI_(?:ENTRY(?:_EX)?|BOOLEAN)\s*\(\s*"([^"]+)"\s*,((?:".*"|[^,])+)\s*,\s*([^,]+)/S', $file, $matches)) {
 
                 $count = count($matches[0]);
                 for($i=0;$i<$count;$i++) {
 
-                    $default = htmlspecialchars($matches[2][$i], ENT_NOQUOTES);
+                    $default = htmlspecialchars(trim($matches[2][$i]), ENT_NOQUOTES);
 
                     $permissions = preg_replace(array('/\s+/', '/ZEND/'), array('', 'PHP'), $matches[3][$i]);
                     $permissions =  ($permissions == 'PHP_INI_PERDIR|PHP_INI_SYSTEM' || $permissions == 'PHP_INI_SYSTEM|PHP_INI_PERDIR') ? 'PHP_INI_PERDIR' : $permissions;

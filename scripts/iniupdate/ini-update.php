@@ -23,7 +23,7 @@
 
 $php_src_dir = '../../../php-src'; //php-src path
 $pecl_dir    = '../../../pecl';    //pecl path
-$phpdoc_dir  = '../../';           //phpdoc path
+$phpdoc_dir  = '../..';            //phpdoc path
 
 /******* END of configurations *****/
 
@@ -54,12 +54,12 @@ function recurse($dir) {
             $file = preg_replace('@(//.*$)|(/\*.*\*/)@SmsU', '', $file);
 
             /* The MAGIC Regexp :) */
-            if(preg_match_all('/(?:PHP|ZEND)_INI_(?:ENTRY(?:_EX)?|BOOLEAN)\s*\(\s*"([^"]+)"\s*,\s*("\S*"|[^,]+)\s*,\s*([^,]+)/S', $file, $matches)) {
+            if(preg_match_all('/(?:PHP|ZEND)_INI_(?:ENTRY(?:_EX)?|BOOLEAN)\s*\(\s*"([^"]+)"\s*,((?:".*"|[^,])+)\s*,\s*([^,]+)/S', $file, $matches)) {
 
                 $count = count($matches[0]);
                 for($i=0;$i<$count;$i++) {
 
-                    $default = htmlspecialchars($matches[2][$i], ENT_NOQUOTES);
+                    $default = htmlspecialchars(trim($matches[2][$i]), ENT_NOQUOTES);
 
                     $permissions = preg_replace(array('/\s+/', '/ZEND/'), array('', 'PHP'), $matches[3][$i]);
                     $permissions =  ($permissions == 'PHP_INI_PERDIR|PHP_INI_SYSTEM' || $permissions == 'PHP_INI_SYSTEM|PHP_INI_PERDIR') ? 'PHP_INI_PERDIR' : $permissions;
@@ -97,7 +97,7 @@ function fix_ini_xml($filename) {
     // remove old permissions constants usage about PHP_INI_PERDIR
     $file = preg_replace('/(?:PHP_INI_SYSTEM\s*\|\s*)?PHP_INI_PERDIR(?:\s*\|\s*PHP_INI_SYSTEM)?/', 'PHP_INI_PERDIR', $file);
 
-    preg_match_all('@<tbody>.+</tbody>@USs', $file, $matches);
+    preg_match_all('@<tgroup\s+cols="4">.+<tbody>.+</tbody>.+</tgroup>@USs', $file, $matches);
 
     foreach ($matches[0] as $match) {
         preg_match_all('@<row>.+</row>@USs', $match, $matches_row);
@@ -128,6 +128,7 @@ function fix_ini_xml($filename) {
     // if the file was modified, write the changes
     if ($original != $file) {
         file_put_contents($filename, $file);
+        echo "Wrote $filename\n";
     }
 }
 
@@ -239,7 +240,7 @@ foreach ($deprecated as $val) {
 if ($link_files) {
     echo "Warning - unmatched links:\n";
     foreach ($link_files as $ini => $file) {
-        echo str_pad("$ini", 30, " ", STR_PAD_RIGHT) . " => " . substr($file, strlen($phpdoc_dir)+4) . "\n";
+        echo str_pad($ini, 30, ' ', STR_PAD_RIGHT) . ' => ' . substr($file, strlen($phpdoc_dir)+4) . "\n";
     }
 }
 
@@ -251,7 +252,7 @@ $pos = strpos($file, '<tbody>', strpos($file, '<title>Configuration options</tit
 $pos2 = strpos($file, '</tbody>', $pos);
 
 file_put_contents("$phpdoc_dir/en/appendices/ini.xml", substr($file, 0, $pos) . PHP_EOL . $string . '     ' . substr($file, $pos2));
-
+echo "\n\nWrote the main table\n";
 
 
 /* fix ini.xml files (if needed) */

@@ -80,7 +80,11 @@ function last_version($array) {
         if ($val) {
             if (isset($old)) {
                 if ($val != $old) {
-                    $str .= " $old in PHP &lt;= " . tag2version($old_tag) . '.';
+                    if ($old_tag == 'php_4_cvs') {
+                        $str .= " $old in PHP &lt; 5.";
+                    } else {
+                        $str .= " $old in PHP &lt;= " . tag2version($old_tag) . '.';
+                    }
                 }
             }
 
