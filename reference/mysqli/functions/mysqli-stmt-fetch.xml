@@ -1,45 +1,73 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.4 $ -->
-  <refentry id="function.mysqli-stmt-data-seek">
+<!-- $Revision: 1.1 $ -->
+  <refentry id="function.mysqli-stmt-fetch">
    <refnamediv>
-    <refname>mysqli_stmt_data_seek</refname>
-    <refname>stmt->data_seek</refname>
-    <refpurpose>Seeks to an arbitray row in statement result set</refpurpose>
+    <refname>mysqli_stmt_fetch</refname>
+    <refname>stmt->fetch</refname>
+    <refpurpose>
+     Fetch results from a prepared statement into the bound variables
+    </refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <para>Procedural style:</para>
     <methodsynopsis>
-     <type>bool</type><methodname>mysqli_stmt_data_seek</methodname>
-     <methodparam><type>object</type><parameter>statement</parameter></methodparam>
-     <methodparam><type>int</type><parameter>offset</parameter></methodparam>
+     <type>mixed</type><methodname>mysqli_stmt_fetch</methodname>
+     <methodparam><type>object</type><parameter>stmt</parameter></methodparam>
     </methodsynopsis>
     <para>Object oriented style (method):</para>
     <classsynopsis>
      <ooclass><classname>stmt</classname></ooclass>
      <methodsynopsis>
-      <type>bool</type>
-      <methodname>data_seek</methodname>
-      <methodparam><type>int</type><parameter>offset</parameter></methodparam>
+      <type>mixed</type>
+      <methodname>fetch</methodname>
+      <methodparam><type>void</type><parameter></parameter></methodparam>
      </methodsynopsis>
-    </classsynopsis>
+    </classsynopsis>    
     <para>
-     The <function>mysqli_stmt_data_seek</function> function seeks to an arbitrary result pointer
-     specified by the <parameter>offset</parameter> in the statement result set represented by
-     <parameter>statement</parameter>. The <parameter>offset</parameter> parameter must be between
-     zero and the total number of rows minus one (0..<function>mysqli_stmt_num_rows</function> - 1).
+     <function>mysqli_stmt_fetch</function> returns row data using the variables bound by <function>mysqli_stmt_bind_result</function>.
     </para>
+    <note>
+     <para>
+      Note that all columns must be bound by the application before calling <function>mysqli_stmt_fetch</function>. 
+     </para>
+    </note>
    </refsect1>
    <refsect1>
     <title>Return values</title>
-    <para>
-     &return.success;
-    </para>
+    <table>
+     <title>Return values</title>
+     <tgroup cols='2'>
+      <thead>
+       <row>
+        <entry>Value</entry>
+        <entry>Description</entry>
+       </row>
+      </thead>
+      <tbody>
+       <row>
+        <entry>&true;</entry>
+        <entry>Success. Data has been fetched</entry>
+       </row>
+       <row>
+        <entry>&false;</entry>
+        <entry>Error occured</entry>
+       </row>
+       <row>
+        <entry><literal>&null;</literal></entry>
+        <entry>No more rows/data exists</entry>
+       </row>
+      </tbody>
+     </tgroup>
+    </table>
    </refsect1>
    <refsect1>
     <title>See also</title>
     <para>
-     <function>mysqli_prepare</function>
+     <function>mysqli_prepare</function>,
+     <function>mysqli_stmt_errno</function>,
+     <function>mysqli_stmt_error</function>,
+     <function>mysqli_stmt_bind_result</function>
     </para>
    </refsect1>
    <refsect1>
@@ -49,34 +77,28 @@
      <programlisting role="php">
 <![CDATA[
 <?php
-/* Open a connection */
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-/* check connection */ 
+/* check connection */
 if (mysqli_connect_errno()) {
     printf("Connect failed: %s\n", mysqli_connect_error());
     exit();
 }
+ 
+$query = "SELECT Name, CountryCode FROM City ORDER by ID DESC LIMIT 150,5";
 
-$query = "SELECT Name, CountryCode FROM City ORDER BY Name";
 if ($stmt = $mysqli->prepare($query)) {
 
-    /* execute query */
+    /* execute statement */
     $stmt->execute();
 
     /* bind result variables */
     $stmt->bind_result($name, $code);
 
-    /* store result */
-    $stmt->store_result();
-
-    /* seek to row no. 400 */
-    $stmt->data_seek(399);
-
     /* fetch values */
-    $stmt->fetch();
-
-    printf ("City: %s  Countrycode: %s\n", $name, $code);
+    while ($stmt->fetch()) {
+        printf ("%s (%s)\n", $name, $code);
+    }
 
     /* close statement */
     $stmt->close();
@@ -93,34 +115,28 @@ $mysqli->close();
      <programlisting role="php">
 <![CDATA[
 <?php
-/* Open a connection */
 $link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */ 
+/* check connection */
 if (mysqli_connect_errno()) {
     printf("Connect failed: %s\n", mysqli_connect_error());
     exit();
 }
 
-$query = "SELECT Name, CountryCode FROM City ORDER BY Name";
+$query = "SELECT Name, CountryCode FROM City ORDER by ID DESC LIMIT 150,5";
+
 if ($stmt = mysqli_prepare($link, $query)) {
 
-    /* execute query */
+    /* execute statement */
     mysqli_stmt_execute($stmt);
 
     /* bind result variables */
     mysqli_stmt_bind_result($stmt, $name, $code);
 
-    /* store result */
-    mysqli_stmt_store_result($stmt);
-
-    /* seek to row no. 400 */
-    mysqli_stmt_data_seek($stmt, 399);
-
     /* fetch values */
-    mysqli_stmt_fetch($stmt);
-
-    printf ("City: %s  Countrycode: %s\n", $name, $code);
+    while (mysqli_stmt_fetch($stmt)) {
+        printf ("%s (%s)\n", $name, $code);
+    }
 
     /* close statement */
     mysqli_stmt_close($stmt);
@@ -137,7 +153,11 @@ mysqli_close($link);
     </para>
     <screen>
 <![CDATA[
-City: Benin City  Countrycode: NGA
+Rockford (USA)
+Tallahassee (USA)
+Salinas (USA)
+Santa Clarita (USA)
+Springfield (USA)
 ]]>
     </screen>
    </refsect1>
