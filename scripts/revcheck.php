@@ -28,6 +28,9 @@ the actual english xml files, and print statistics
    
    <!-- EN-Revision: n/a Maintainer: tom Status: working -->
    
+  Read more about Revision comments and related
+  funcionality in the PHP Documentation Howto.
+   
   Written by Thomas Schöfbeck <tom@php.net>, 2001-08-11
   Adapted to phpdoc, developed further: <goba@php.net>
 
@@ -253,6 +256,33 @@ the actual english xml files, and print statistics
       check_dir($dir.$file."/");
     }
   } // check_dir() end
+  
+  // Get a multidimensional array with tag attributes
+  function get_attr_array ($tags_attrs)
+  {
+    $tag_attrs_processed = array();
+    // Go through the tag attributes
+    foreach($tags_attrs as $attrib_list) {
+      // Get attr name and values
+      preg_match_all("!(.+)=\\s*([\"'])\\s*(.+)\\2!U", $attrib_list, $attribs);
+      // Assign all attributes to one associative array
+      $attrib_array = array();
+      foreach ($attribs[1] as $num => $attrname) {
+        $attrib_array[trim($attrname)] = trim($attribs[3][$num]);
+      }
+      // Collect in order of tags received
+      $tag_attrs_processed[] = $attrib_array;
+    }
+    return $tag_attrs_processed;
+  } // get_attr_array() end
+  
+  // Print preformatted (debug function)
+  function print_pre($var)
+  {
+    print("<pre>");
+    print_r($var);
+    print("</pre>");
+  } // print_pre() end 
 
   /*********************************************************************/
   /* Here starts the program                                           */
@@ -269,36 +299,23 @@ the actual english xml files, and print statistics
   $translation = array();
   if (@file_exists($translation_xml)) {
     $txml = join("", file($translation_xml));
+    $txml = preg_replace("/\\s+/", " ", $txml);
 
-    // Process main structure
-    preg_match("!<translation>\\s+<intro>(.+)</intro>\\s+" . 
-               "<translators>(.+)</translators>\\s+" . 
-               "<work-in-progress>(.+)</work-in-progress>" .
-               "\\s+</translation>!s", $txml, $match);
+    // Get intro text
+    preg_match("!<intro>(.+)</intro>!s", $txml, $match);
     $translation["intro"] = trim($match[1]);
     
-    // Common preg pieces: space and quote
-    $s = "\\s*"; $q = '\\s*["\']\\s*'; 
-
-    // Process person list
-    $plist = array();
-    preg_match_all("!<person${s}name${s}=${q}(.+)${q}email${s}=${q}(.+)${q}".
-                   "nick${s}=${q}(.+)${q}(cvs${s}=${q}.+${q}|${s})/${s}>!U", $match[2], $persons, PREG_SET_ORDER);
-    foreach($persons as $num => $person) {
-        if (strstr($person[4], "yes")) { $persons[$num][4] = TRUE; }
-        else { $persons[$num][4] = FALSE; }
-        $plist[$person[3]] = $num;
+    // Get persons list
+    preg_match_all("!<person(.+)/\\s?>!U", $txml, $matches);
+    $translation['persons'] = get_attr_array($matches[1]);
+    foreach($translation['persons'] as $num => $person) {
+        $plist[$person["nick"]] = $num;
     }
-    $translation["persons"] = $persons;
-    unset($persons);
     $personinfo = array();
     
-    // Process work-in-progress list
-    preg_match_all("!<file${s}name${s}=${q}(.+)${q}person${s}=${q}(.+)${q}".
-                   "type${s}=${q}(.+)${q}/${s}>!U", $match[3], $files, PREG_SET_ORDER);
-    $translation["files"] = $files;
-    unset($files);
-    //print_r($translation);
+    // Get files list
+    preg_match_all("!<file(.+)/\\s?>!U", $txml, $matches);
+    $translation['files'] = get_attr_array($matches[1]);
   }
   
   print("<html>
@@ -370,16 +387,16 @@ if (isset($translation["files"])) {
   </tr>
   ");
   
-  foreach($translation["files"] as $num => $filei) {
-    if (isset($plist[$filei[2]])) {
-      $maintd = '<a href="#maint' . $plist[$filei[2]] . '">' . $filei[2] . '</a>';
+  foreach($translation["files"] as $num => $finfo) {
+    if (isset($plist[$finfo["person"]])) {
+      $maintd = '<a href="#maint' . $plist[$finfo["person"]] . '">' . $finfo["person"] . '</a>';
     } else { 
-      $maintd = $filei[2];
+      $maintd = $finfo["person"];
     }
-    print("<tr bgcolor=#DDDDDD><td>$filei[1]</td>" .
-          "<td>$maintd</td><td>$filei[3]</td></tr>");
-    $personinfo[$filei[2]]["wip"]++;
-    $wip_files[$filei[1]] = TRUE;
+    print("<tr bgcolor=#DDDDDD><td>$finfo[name]</td>" .
+          "<td>$maintd</td><td>$finfo[type]</td></tr>");
+    $personinfo[$finfo["person"]]["wip"]++;
+    $wip_files[$finfo["name"]] = TRUE;
  }
   
   print ("</table>\n<p>&nbsp;</p>\n");
@@ -410,12 +427,12 @@ if (isset($translation["persons"])) {
   ");
   
   foreach($translation["persons"] as $num => $person) {
-    if ($person[4]) { $cvsu = "yes"; $col = "#eee8aa"; }
+    if ($person["cvs"] === "yes") { $cvsu = "yes"; $col = "#eee8aa"; }
     else { $cvsu = "no"; $col = "#dcdcdc"; }
-    $person[2] = str_replace("@", "<small>:at:</small>", $person[2]);
-    $pi = $personinfo[$person[3]];
-    print("<tr bgcolor=$col><td><a name=\"maint$num\">$person[1]</a></td>" .
-          "<td>$person[2]</td><td>$person[3]</td><td>$cvsu</td>" .
+    $person["email"] = str_replace("@", "<small>:at:</small>", $person["email"]);
+    $pi = $personinfo[$person["nick"]];
+    print("<tr bgcolor=$col><td><a name=\"maint$num\">$person[name]</a></td>" .
+          "<td>$person[email]</td><td>$person[nick]</td><td>$cvsu</td>" .
           "<td align=center>$pi[credits]</td><td align=center>$pi[actual]</td>".
           "<td align=center>$pi[old]</td><td align=center>$pi[veryold]</td>".
           "<td align=center>$pi[norev]</td><td align=center>$pi[wip]</td></tr>");
