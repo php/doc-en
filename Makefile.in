@@ -39,6 +39,7 @@ HOWTO_STYLESHEET=dsssl/howto.dsl
 PRINT_STYLESHEET=dsssl/print.dsl
 QUICKREF_STYLESHEET=dsssl/quickref.dsl
 KDEVELOP_TOC_STYLESHEET=dsssl/kdevelop_toc.dsl
+XMLDCL=$(srcdir)/dtds/dbxml-3.1.7/phpdocxml.dcl
 
 HTML_DEPS=$(HTML_STYLESHEET) dsssl/html-common.dsl dsssl/html-locale.dsl dsssl/common.dsl zendapi
 HOWTO_DEPS=$(HOWTO_STYLESHEET) dsssl/html-common.dsl dsssl/html-locale.dsl dsssl/common.dsl howto/howto.ent
@@ -135,18 +136,18 @@ summary: ./funcsummary.txt
 quickref: quickref.txt
 quickref.txt: manual.xml $(QUICKREF_DEPS)
 	if test ! -e funcindex.xml; then touch funcindex.xml; fi 
-	$(JADE) $(CATALOG) -d $(QUICKREF_STYLESHEET) -V nochunks -t sgml $(srcdir)/dtds/dbxml-3.1.7/phpdocxml.dcl manual.xml | sed -e 's/   */ /g' | sort -f > quickref.txt
+	$(JADE) $(CATALOG) -d $(QUICKREF_STYLESHEET) -V nochunks -t sgml $(XMLDCL) manual.xml | sed -e 's/   */ /g' | sort -f > quickref.txt
 
 kdevelop_toc: php.toc
 php.toc: manual.xml $(KDEVELOP_TOC_DEPS)
 	echo '<!DOCTYPE gideontoc>' > $@
-	$(JADE) $(CATALOG) -d $(KDEVELOP_TOC_STYLESHEET) -V nochunks -t sgml $(srcdir)/dtds/dbxml-3.1.7/phpdocxml.dcl manual.xml | sed -e's/\& /\&amp; /g' >> $@
+	$(JADE) $(CATALOG) -d $(KDEVELOP_TOC_STYLESHEET) -V nochunks -t sgml $(XMLDCL) manual.xml | sed -e's/\& /\&amp; /g' >> $@
 
 scripts/makedoc: scripts/makedoc.cc
 	g++ -o scripts/makedoc scripts/makedoc.cc
 
 @MANUAL@.html: manual.xml $(HTML_DEPS)
-	$(JADE) $(CATALOG) -V nochunks -d $(HTML_STYLESHEET) -t sgml $(srcdir)/dtds/dbxml-3.1.7/phpdocxml.dcl manual.xml > $@
+	$(JADE) $(CATALOG) -V nochunks -d $(HTML_STYLESHEET) -t sgml $(XMLDCL) manual.xml > $@
 
 @MANUAL@.html.gz: @MANUAL@.html
 	gzip -9 -c $< > $@
@@ -158,7 +159,7 @@ scripts/makedoc: scripts/makedoc.cc
 	gzip -9 -c $< > $@
 
 @MANUAL@.tex: manual.xml
-	$(JADE) $(CATALOG) -d $(PRINT_STYLESHEET) -t tex $(srcdir)/dtds/dbxml-3.1.7/phpdocxml.dcl $<
+	$(JADE) $(CATALOG) -d $(PRINT_STYLESHEET) -t tex $(XMLDCL) $<
 	mv manual.tex $@
 
 @MANUAL@.pdf: @MANUAL@.dvi
@@ -175,11 +176,11 @@ scripts/makedoc: scripts/makedoc.cc
 
 html/index.html: manual.xml $(HTML_DEPS)
 	@test -d html || mkdir html
-	$(JADE) $(CATALOG) -d $(HTML_STYLESHEET) -V use-output-dir -t sgml $(srcdir)/dtds/dbxml-3.1.7/phpdocxml.dcl manual.xml
+	$(JADE) $(CATALOG) -d $(HTML_STYLESHEET) -V use-output-dir -t sgml $(XMLDCL) manual.xml
 
 php/index.php: manual.xml $(PHPWEB_DEPS)
 	@test -d php || mkdir php
-	-$(JADE) $(CATALOG) -d $(PHPWEB_STYLESHEET) -V use-output-dir -t sgml $(srcdir)/dtds/dbxml-3.1.7/phpdocxml.dcl manual.xml
+	-$(JADE) $(CATALOG) -d $(PHPWEB_STYLESHEET) -V use-output-dir -t sgml $(XMLDCL) manual.xml
 
 @MANUAL@.txt: @MANUAL@.html
 	lynx -term=vt100 -nolist -dump file:`pwd`/$< > $@
@@ -202,13 +203,13 @@ php/index.php: manual.xml $(PHPWEB_DEPS)
 
 howto/html/index.html: howto/howto.xml $(HOWTO_DEPS)
 	@test -d howto/html || mkdir howto/html
-	-$(JADE) -i lang-en $(CATALOG) -d $(HOWTO_STYLESHEET) -V use-output-dir -t sgml $(srcdir)/dtds/dbxml-3.1.7/phpdocxml.dcl $(srcdir)/howto/howto.xml
+	-$(JADE) -i lang-en $(CATALOG) -d $(HOWTO_STYLESHEET) -V use-output-dir -t sgml $(XMLDCL) $(srcdir)/howto/howto.xml
 
 howto/howto.html.tar.gz: howto/html/index.html $(HOWTO_DEPS)
 	tar -cvzf $@ howto/html/*.html  
   
 install.html: install.xml $(HTML_DEPS)
-	$(JADE) $(CATALOG) -V nochunks -d dsssl/install.dsl -t sgml $(srcdir)/dtds/dbxml-3.1.7/phpdocxml.dcl install.xml > $@
+	$(JADE) $(CATALOG) -V nochunks -d dsssl/install.dsl -t sgml $(XMLDCL) install.xml > $@
 
 install.txt: install.html
 	lynx -nolist -dump file:`pwd`/$< > $@
@@ -218,7 +219,7 @@ install.txt: install.html
 
 # General rules:
 .xml.rtf:
-	$(JADE) $(CATALOG) -d $(PRINT_STYLESHEET) -t rtf $(srcdir)/dtds/dbxml-3.1.7/phpdocxml.dcl $<
+	$(JADE) $(CATALOG) -d $(PRINT_STYLESHEET) -t rtf $(XMLDCL) $<
 
 # runs three times -
 # 1. generates the dvi with a completely bogus table of contents
@@ -236,11 +237,11 @@ install.txt: install.html
 
 # test all possible errors
 test: manual.xml
-	$(NSGMLS) -i lang-$(LANG) -s $(srcdir)/dtds/dbxml-3.1.7/phpdocxml.dcl manual.xml
+	$(NSGMLS) -i lang-$(LANG) -s $(XMLDCL) manual.xml
 
 # ignore missing IDs and check if the manual can be generated anyway
 test_man_gen: manual.xml
-	$(NSGMLS) -wno-idref -i lang-$(LANG) -s $(srcdir)/dtds/dbxml-3.1.7/phpdocxml.dcl $<
+	$(NSGMLS) -wno-idref -i lang-$(LANG) -s $(XMLDCL) manual.xml
 
 clean:
 	rm -rf html php fancy figures howto/html
