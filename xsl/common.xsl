@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all formats
 
-  $Id: common.xsl,v 1.12 2004-11-01 08:36:04 techtonik Exp $
+  $Id: common.xsl,v 1.13 2004-11-01 12:16:55 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -89,23 +89,6 @@
 </xsl:template>
 
 
-<!-- for the list of TRANSLATORS -->
-<xsl:template match="collab" mode="titlepage.mode">
-  <xsl:choose>
-    <xsl:when test="position()=last()">
-      <xsl:apply-templates/>
-    </xsl:when>
-    <xsl:when test="position() &gt; 1">
-      <xsl:apply-templates/><xsl:text>, </xsl:text>
-    </xsl:when>
-    <xsl:otherwise></xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
-<xsl:template match="collabname">
-  <xsl:apply-templates/>
-</xsl:template>
-
 <!-- Remove whitespace before and after the contents of
      programlisting and screen tags used for PHP code and
      output examples
@@ -189,6 +172,25 @@
    <xsl:value-of select="$astr"/>
   </xsl:otherwise>
  </xsl:choose>
+</xsl:template>
+
+
+
+<!-- *************** FOR TRANSLATORS LIST **************** -->
+<xsl:template match="collab" mode="titlepage.mode">
+  <xsl:choose>
+    <xsl:when test="position()=last()">
+      <xsl:apply-templates/>
+    </xsl:when>
+    <xsl:when test="position() &gt; 1">
+      <xsl:apply-templates/><xsl:text>, </xsl:text>
+    </xsl:when>
+    <xsl:otherwise></xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="collabname">
+  <xsl:apply-templates/>
 </xsl:template>
 
 </xsl:stylesheet>
