@@ -116,19 +116,24 @@ function refineFile($filename)
     // Add divisions for skin support
 
     // Make the document invisible by default, adding a new first div
-    $content = preg_replace(
-        '!(<div class="(\w+)">)!Us',
-        '<div id="pageContent" style="display:none;">\1<div id="pageHeaders">',
-        $content,
-        1
-    );
+    $bodystart_regex = '!(<div class="(\w+)"( lang=\"\w+\")?>)!Us';
+    if (preg_match($bodystart_regex, $content)) {
+        $content = preg_replace(
+            $bodystart_regex,
+            '<div id="pageContent" style="display:none;">\1<div id="pageHeaders">',
+            $content,
+            1
+        );
     
-    // Put there the end of this pageContent
-    $content = str_replace(
-        '</body></html>',
-        '</div></body></html>',
-        $content
-    );
+        // Put there the end of this pageContent
+        $content = str_replace(
+            '</body></html>',
+            '</div></body></html>',
+            $content
+        );
+    } else {
+        echo "Can't add first div. No match.\n";
+    }
     
     // For headers we have several possibilities
     if (strpos($content, '<div class="refnamediv">') !== FALSE) {
@@ -200,7 +205,7 @@ function refineFile($filename)
         "formatPre",
         $content
     );
-    
+
     //------------------------------------------------------------------
     // Put <p> tags after all </ul> or </div> or </table> close tags to
     // enable CSS support for those paragraphs (these break a <p>)
