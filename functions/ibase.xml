@@ -32,15 +32,36 @@
      <paramdef>string 
       <parameter><optional>charset</optional></parameter>
      </paramdef>
+     <paramdef>int 
+      <parameter><optional>buffers</optional></parameter>
+     </paramdef>
+     <paramdef>int 
+      <parameter><optional>dialect</optional></parameter>
+     </paramdef>
      <paramdef>string 
       <parameter><optional>role</optional></parameter>
      </paramdef>
     </funcsynopsis>
     <para>
-     Establishes a connection to a InterBase server. The database argument
-     has to be a valid path to database file. Username and password can also
+     Establishes a connection to an InterBase server.
+     The <parameter>database</parameter> argument
+     has to be a valid path to database file on the server it resides on.
+     If the server is not local, it must be prefixed with either
+     'hostname:' (TCP/IP), '//hostname/' (NetBEUI) or 'hostname@' (IPX/SPX),
+     depending on the connection protocol used. <parameter>username</parameter>
+     and <parameter>password</parameter> can also
      be specified with PHP configuration directives ibase.default_user and
-     ibase.default_password. In case a second call is made to
+     ibase.default_password. <parameter>charset</parameter> is the default
+     character set for a database. <parameter>buffers</parameter> is the number
+     of database buffers to allocate for the server-side cache. If 0 or omitted,
+     server chooses its own default. <parameter>dialect</parameter> selects
+     the default SQL dialect for any statement executed within a connection
+     (currently non-functional, needed for forthcoming support for InterBase 6
+     SQL dialects).
+
+    </para>
+    <para>
+     In case a second call is made to
      <function>ibase_connect</function> with the same arguments, no new link
      will be established, but instead, the link identifier of the already opened
      link will be returned. The link to the server will be closed as soon as the
@@ -59,6 +80,17 @@ ibase_close ($dbh);
       </programlisting>
      </example>
     </para>
+    <note>
+     <para>
+      <parameter>buffers</parameter> was added in PHP4-RC2.
+     </para>
+    </note>
+    <note>
+     <para>
+      <parameter>dialect</parameter> was added in PHP4-RC2. It is functional
+       only with InterBase 6 and versions higher than that.
+     </para>
+    </note>
     <note>
      <para>
       <parameter>role</parameter> was added in PHP4-RC2. It is functional
@@ -279,13 +311,31 @@ ibase_close ($dbh);
     <title>Description</title>
     <funcsynopsis>
      <funcdef>int <function>ibase_execute</function></funcdef>
-     <paramdef>int <parameter>query</parameter></paramdef>
+     <paramdef>int 
+      <parameter>query</parameter>
+     </paramdef>
+     <paramdef>int 
+      <parameter><optional>bind_args</optional></parameter> 
+     </paramdef>
     </funcsynopsis>
-    <simpara>
-     Execute a query prepared (and perhaps binded) by
-     <function>ibase_prepare</function> and
-     <function>ibase_bind</function>.
-    </simpara>
+    <para>
+     Execute a query prepared by <function>ibase_prepare</function>.
+     <informalexample>
+      <programlisting role="php">
+$updates = array(
+    1 => 'Eric',
+    5 => 'Filip',
+    7 => 'Larry'
+);
+
+$query = ibase_prepare("UPDATE FOO SET BAR = ? WHERE BAZ = ?");
+
+while (list($baz, $bar) = each($updates)) {
+    ibase_execute($query, $bar, $baz);
+}
+      </programlisting>
+     </informalexample>
+    </para>
    </refsect1>
   </refentry>
 
@@ -323,13 +373,9 @@ ibase_close ($dbh);
     </funcsynopsis>
     <simpara>
      Sets the format of the datetime columns returned from queries.
+     Internally, it uses c-function strftime(), so refer to it's
+     documentation regarding to the format of the string.
     </simpara>
-    <note>
-     <para>
-      <function>Ibase_timefmt</function> is currently not functional
-      in PHP4.
-     </para>
-    </note>
    </refsect1>
   </refentry>
 
