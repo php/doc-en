@@ -35,6 +35,31 @@
     <programlisting role="php">
 &lt;?PHP
 
+$zip = zip_open("/tmp/test2.zip");
+
+if ($zip) {
+
+    while ($zip_entry = zip_read($zip)) {
+        echo "Name:               " . zip_entry_name($zip_entry) . "\n";
+        echo "Actual Filesize:    " . zip_entry_filesize($zip_entry) . "\n";
+        echo "Compressed Size:    " . zip_entry_compressedsize($zip_entry) . "\n";
+        echo "Compression Method: " . zip_entry_compressionmethod($zip_entry) . "\n";
+
+        if (zip_entry_open($zip, $zip_entry, "r")) {
+            echo "File Contents:\n";
+            $buf = zip_entry_read($zip_entry, zip_entry_filesize($zip_entry));
+            echo "$buf\n";
+
+            zip_entry_close($zip_entry);
+        }
+        echo "\n";
+
+    }
+
+    zip_close($zip);
+
+}
+
 ?&gt;
     </programlisting>
    </example>
@@ -72,7 +97,7 @@
  <refentry id="function.zip-entry-close">
   <refnamediv>
    <refname>zip_close</refname>
-   <refpurpose>Close a Zip Entry</refpurpose>
+   <refpurpose>Close a Directory Entry</refpurpose>
   </refnamediv>
   <refsect1>
    <title>Description</title>
@@ -101,7 +126,7 @@
  <refentry id="function.zip-entry-compressedsize">
   <refnamediv>
    <refname>zip_entry_compressedsize</refname>
-   <refpurpose>Retrive the Compressed Size of a Zip Entry</refpurpose>
+   <refpurpose>Retrive the Compressed Size of a Directory Entry</refpurpose>
   </refnamediv>
   <refsect1>
    <title>Description</title>
@@ -127,7 +152,7 @@
  <refentry id="function.zip-entry-compressionmethod">
   <refnamediv>
    <refname>zip_entry_compressionmethod</refname>
-   <refpurpose>Retrive the Compression Method of a Zip Entry</refpurpose>
+   <refpurpose>Retrive the Compression Method of a Directory Entry</refpurpose>
   </refnamediv>
   <refsect1>
    <title>Description</title>
@@ -153,7 +178,7 @@
  <refentry id="function.zip-entry-filesize">
   <refnamediv>
    <refname>zip_entry_filesize</refname>
-   <refpurpose>Retrive the Actual File Size of a Zip Entry</refpurpose>
+   <refpurpose>Retrive the Actual File Size of a Directory Entry</refpurpose>
   </refnamediv>
   <refsect1>
    <title>Description</title>
@@ -179,7 +204,7 @@
  <refentry id="function.zip-entry-name">
   <refnamediv>
    <refname>zip_entry_name</refname>                 
-   <refpurpose>Retrive the Name of a Zip Entry</refpurpose>                         
+   <refpurpose>Retrive the Name of a Directory Entry</refpurpose>                         
   </refnamediv>
   <refsect1>
    <title>Description</title>
@@ -198,6 +223,97 @@
    <para>
     See also <function>zip_open</function> and
     <function>zip_read</function>.
+   </para>
+  </refsect1>
+ </refentry>
+
+ <refentry id="function.zip-entry-open">
+  <refnamediv>
+   <refname>zip_entry_open</refname>
+   <refpurpose>Open a Directory Entry for Reading</refpurpose>
+  </refnamediv>
+  <refsect1>
+   <title>Description</title>
+   <funcsynopsis>
+    <funcprototype>
+     <funcdef>bool <function>zip_entry_open</function></funcdef>      
+     <paramdef>resource <parameter>zip</parameter></paramdef>
+     <paramdef>resource <parameter>zip_entry</parameter></paramdef>
+     <paramdef>string <parameter><optional>mode</optional></parameter></paramdef>
+    </funcprototype>
+   </funcsynopsis>
+   <para>
+    Opens a directory entry in a zip file for reading.  The parameter
+    <parameter>zip</parameter> is a valid resource handle returned by
+    <function>zip_open</function>.  The parameter
+    <parameter>zip_entry</parameter> is a directory entry resource
+    returned by <function>zip_read</function>.  The optional parameter
+    <parameter>mode</parameter> can be any of the modes specified in
+    the documentaion for <function>fopen</function>.
+   </para>
+   <note>
+    <para>
+     Currently, <parameter>mode</parameter> is ignored and is always
+     <literal>"rb"</literal>.  This is due to the fact that zip
+     support in PHP is read only access.  Please see
+     <function>fopen</function> for an explanation of various modes,
+     including <literal>"rb"</literal>.
+    </para>
+   </note>
+   <para>
+    Returns <literal>true</literal> on succes or <literal>false</literal> on failure.
+   </para>
+   <note>
+    <para>
+     Unlike <function>fopen</function> and other similar functions,
+     the return value of <function>zip_entry_open</function> only
+     indicates the result of the operation and is not needed for
+     reading or closing the directory entry.
+    </para>
+   </note>
+   <para>
+    See also <function>zip_entry_read</function> and
+    <function>zip_entry_close</function>.
+   </para>
+  </refsect1>
+ </refentry>
+
+ <refentry id="function.zip-entry-read">
+  <refnamediv>
+   <refname>zip_read</refname>
+   <refpurpose>Read From an Open Directory Entry</refpurpose>
+  </refnamediv>
+  <refsect1>
+   <title>Description</title>
+   <funcsynopsis>
+    <funcprototype>
+     <funcdef>string <function>zip_entry_read</function></funcdef>
+     <paramdef>resource <parameter>zip_entry</parameter></paramdef>
+     <paramdef>int <parameter><optional>length</optional></parameter></paramdef>
+    </funcprototype>
+   </funcsynopsis>
+   <para>
+    Reads up to <parameter>length</parameter> bytes from an open
+    directory entry.  If <parameter>length</parameter> is not
+    specified, then <function>zip_entry_read</function> will attempt
+    to read 1024 bytes.  The parameter
+    <parameter>zip_entry</parameter> is a valid directory entry
+    returned by <function>zip_read</function>.
+   </para>
+   <note>
+    <para>
+     The <parameter>length</parameter> parameter should be the
+     uncompressed length you wish to read.
+    </para>
+   </note>
+   <para>
+    Returns the data read, or <literal>false</literal> if the end of
+    the file is reached.
+   </para>
+   <para>
+    See also <function>zip_entry_open</function>,
+    <function>zip_entry_close</function> and
+    <function>zip_entry_filesize</function>.
    </para>
   </refsect1>
  </refentry>
