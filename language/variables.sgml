@@ -1,0 +1,374 @@
+  <chapter id="language.variables">
+   <title>Variables</title>
+
+   <sect1 id="language.variables.scope">
+    <title>Variable scope</title>
+
+    <simpara>
+     The scope of a variable is the context within which it is defined.
+     For the most part all PHP variables only have a single scope.
+     However, within user-defined functions a local function scope is
+     introduced.  Any variable used inside a function is by default
+     limited to the local function scope.  For example:
+    
+    <informalexample>
+     <programlisting> 
+$a = 1; /* global scope */ 
+
+Function Test () { 
+    echo $a; /* reference to local scope variable */ 
+} 
+
+Test ();
+     </programlisting>
+    </informalexample>
+
+    <simpara>
+     This script will not produce any output because the echo statement
+     refers to a local version of the $a variable, and it has not been
+     assigned a value within this scope.  You may notice that this is a
+     little bit different from the C language in that global variables
+     in C are automatically available to functions unless specifically
+     overridden by a local definition.  This can cause some problems in
+     that people may inadvertently change a global variable.  In PHP
+     global variables must be declared global inside a function if they
+     are going to be used in that function.  An example:
+
+    <informalexample>
+     <programlisting>
+$a = 1;
+$b = 2;
+
+Function Sum () {
+    global $a, $b;
+
+    $b = $a + $b;
+} 
+
+Sum ();
+echo $b;
+     </programlisting>
+    </informalexample>
+
+    <simpara>
+     The above script will output &quot;3&quot;.  By declaring $a and
+     $b global within the function, all references to either variable
+     will refer to the global version.  There is no limit to the number
+     of global variables that can be manipulated by a function.
+
+    <simpara>
+     A second way to access variables from the global scope is to use
+     the special PHP-defined $GLOBALS array.  The previous example can
+     be rewritten as:
+
+    <informalexample>
+     <programlisting>
+$a = 1;
+$b = 2;
+
+Function Sum () {
+    $GLOBALS["b"] = $GLOBALS["a"] + $GLOBALS["b"];
+} 
+
+Sum ();
+echo $b;
+     </programlisting>
+    </informalexample>
+
+    <simpara>
+     The $GLOBALS array is an associative array with the name of the
+     global variable being the key and the contents of that variable
+     being the value of the array element.
+
+    <simpara>
+     Another important feature of variable scoping is the
+     <emphasis>static</emphasis> variable.  A static variable exists
+     only in a local function scope, but it does not lose its value
+     when program execution leaves this scope.  Consider the following
+     example:
+
+    <informalexample>
+     <programlisting>
+Function Test () {
+    $a = 0;
+    echo $a;
+    $a++;
+}
+     </programlisting>
+    </informalexample>
+
+    <simpara>
+     This function is quite useless since every time it is called it
+     sets $a to 0 and prints &quot;0&quot;.  The $a++ which increments
+     the variable serves no purpose since as soon as the function exits
+     the $a variable disappears.  To make a useful counting function
+     which will not lose track of the current count, the $a variable is
+     declared static:
+
+    <informalexample>
+     <programlisting>
+Function Test () {
+    static $a = 0;
+    echo $a;
+    $a++;
+}
+     </programlisting>
+    </informalexample>
+
+    <simpara>
+     Now, every time the Test() function is called it will print the
+     value of $a and increment it.
+
+    <simpara>
+     Static variables are also essential when functions are called
+     recursively.  A recursive function is one which calls itself.
+     Care must be taken when writing a recursive function because it is
+     possible to make it recurse indefinitely.  You must make sure you
+     have an adequate way of terminating the recursion.  The following
+     simple function recursively counts to 10:
+
+    <informalexample>
+     <programlisting>
+Function Test () {
+    static $count = 0;
+
+    $count++;
+    echo $count;
+    if ($count < 10) {
+        Test ();
+    }
+    $count--;
+}
+     </programlisting>
+    </informalexample>
+
+   <sect1 id="language.variables.variable">
+    <title>Variable variables</title>
+
+    <simpara>
+     Sometimes it is convenient to be able to have variable variable
+     names.  That is, a variable name which can be set and used
+     dynamically.  A normal variable is set with a statement such as:
+
+    <informalexample>
+     <programlisting>
+$a = "hello";
+     </programlisting>
+    </informalexample>
+
+    <simpara>
+     A variable variable takes the value of a variable and treats that as the
+     name of a variable.  In the above example, <emphasis>hello</emphasis>, can
+     be used as the name of a variable by using two dollar signs. ie.
+
+    <informalexample>
+     <programlisting>
+$$a = "world";
+     </programlisting>
+    </informalexample>
+
+    <simpara>
+     At this point two variables have been defined and stored in the
+     PHP symbol tree: $a with contents "hello" and $hello with contents
+     "world".  Therefore, this statement:
+
+    <informalexample>
+     <programlisting>
+echo "$a ${$a}";
+     </programlisting>
+    </informalexample>
+
+    <simpara>
+     produces the exact same output as:
+
+    <informalexample>
+     <programlisting>
+echo "$a $hello";
+     </programlisting>
+    </informalexample>
+
+    <simpara>
+     ie. they both produce: <emphasis>hello world</emphasis>.
+
+    <simpara>
+     In order to use variable variables with arrays, you have to
+     resolve an ambiguity problem.  That is, if you write $$a[1] then
+     the parser needs to know if you meant to use $a[1] as a variable,
+     or if you wanted $$a as the variable and then the [1] index from
+     that variable.  The syntax for resolving this ambiguity is:
+     ${$a[1]} for the first case and ${$a}[1] for the second.
+
+   <sect1 id="language.variables.external">
+    <title>Variables from outside PHP</title>
+
+    <sect2 id="language.variables.external.form">
+     <title>HTML Forms (GET and POST)</title>
+
+     <simpara>
+      When a form is submitted to a PHP script, any variables from that
+      form will be automatically made available to the script by
+      PHP. For instance, consider the following form:
+
+     <para>
+      <example>
+       <title>Simple form variable</title>
+       <programlisting>
+&lt;form action="foo.php3" method="post">
+    Name: &lt;input type="text" name="name">&lt;br>
+    &lt;input type="submit">
+&lt;/form>
+       </programlisting>
+      </example>
+
+     <simpara>
+      When submitted, PHP will create the variable
+      <computeroutput>$name</computeroutput>, which will will contain
+      whatever what entered into the <emphasis>Name:</emphasis> field
+      on the form.
+
+     <simpara>
+      PHP also understands arrays in the context of form variables, but
+      only in one dimension. You may, for example, group related
+      variables together, or use this feature to retrieve values from a
+      multiple select input:
+
+     <para>
+     <example>
+      <title>More complex form variables</title>
+       <programlisting>
+&lt;form action="array.html" method="post">
+    Name: &lt;input type="text" name="personal[name]">&lt;br>
+    Email: &lt;input type="text" name="personal[email]">&lt;br>
+    Beer: &lt;br>
+    &lt;select multiple name="beer[]">
+        &lt;option value="warthog">Warthog
+        &lt;option value="guinness">Guinness
+        &lt;/select>
+    &lt;input type="submit">
+&lt;/form>
+       </programlisting>
+      </example>
+
+      <simpara>
+       If PHP's track_vars feature is turned on, either by the <link
+       linkend="ini.track-vars">track_vars</link> configuration setting
+       or the <computeroutput>&lt;?php_track_vars?&gt;</computeroutput>
+       directive, then variables submitted via the POST or GET methods
+       will also be found in the global associative arrays
+       $HTTP_POST_VARS and $HTTP_GET_VARS as appropriate.
+
+     <sect3>
+      <title>IMAGE SUBMIT variable names</TITLE>
+
+      <simpara>
+       When submitting a form, it is possible to use an image instead
+       of the standard submit button with a tag like:
+
+      <informalexample>
+       <programlisting>
+&lt;input type=image src="image.gif" name="sub">
+       </programlisting>
+      </informalexample>
+
+      <simpara>
+       When the user clicks somewhere on the image, the accompanying
+       form will be transmitted to the server with two additional
+       variables, sub_x and sub_y. These contain the coordinates of
+       the user click within the image.  The experienced may note that
+       the actual variable names sent by the browser contains a period
+       rather than an underscore, but PHP converts the period to an
+       underscore automatically.
+
+    <sect2 id="language.variables.external.cookies">
+     <title>HTTP Cookies</title>
+
+     <simpara>
+      PHP transparently supports HTTP cookies as defined by <ulink
+      url="&spec.cookies;">Netscape's Spec</ulink>.  Cookies are a
+      mechanism for storing data in the remote browser and thus
+      tracking or identifying return users.  You can set cookies using
+      the <function>SetCookie</function> function.  Cookies are part
+      of the HTTP header, so the SetCookie function must be called
+      before any output is sent to the browser.  This is the same
+      restriction as for the <function>Header</function> function.
+      Any cookies sent to you from the client will automatically be
+      turned into a PHP variable just like GET and POST method data.
+
+     <simpara>
+      If you wish to assign multiple values to a single cookie, just
+      add <emphasis>[]</emphasis> to the cookie name.  For example:
+
+     <informalexample>
+      <programlisting>
+SetCookie ("MyCookie[]", "Testing", time()+3600);
+      </programlisting>
+     </informalexample>
+
+     <simpara>
+      Note that a cookie will replace a previous cookie by the same
+      name in your browser unless the path or domain is different.  So,
+      for a shopping cart application you may want to keep a counter
+      and pass this along.  i.e.
+
+     <example>
+      <title>SetCookie Example</title>
+      <programlisting>
+$Count++;
+SetCookie ("Count", $Count, time()+3600);
+SetCookie ("Cart[$Count]", $item, time()+3600);
+      </programlisting>
+     </example>
+
+    <sect2 id="language.variables.external.environment">
+     <title>Environment variables</title>
+
+     <para>
+      PHP automatically makes environment variables available as normal
+      PHP variables.
+     
+     <informalexample>
+      <programlisting>
+echo $HOME;  /* Shows the HOME environment variable, if set. */
+      </programlisting>
+     </informalexample>
+
+     <para>
+      Since information coming in via GET, POST and Cookie mechanisms
+      also automatically create PHP variables, it is sometimes best to
+      explicitly read a variable from the environment in order to make
+      sure that you are getting the right version.  The
+      <function>getenv</function> function can be used for this.  You
+      can also set an environment variable with the
+      <function>putenv</function> function.
+
+    <sect2>
+     <title>Determining variable types</title>
+
+     <para>
+      Because PHP determines the types of variables and converts them
+      (generally) as needed, it is not always obvious what type a given
+      variable is at any one time.  PHP includes several functions
+      which find out what type a variable is. They are
+      <function>gettype</function>, <function>is_long</function>,
+      <function>is_double</function>, <function>is_string</function>,
+      <function>is_array</function>, and
+      <function>is_object</function>.
+     
+  </chapter>
+ 
+ <!-- Keep this comment at the end of the file
+ Local variables:
+ mode: sgml
+ sgml-omittag:t
+ sgml-shorttag:t
+ sgml-minimize-attributes:nil
+ sgml-always-quote-attributes:t
+ sgml-indent-step:1
+ sgml-indent-data:t
+ sgml-parent-document:nil
+ sgml-default-dtd-file:"../manual.ced"
+ sgml-exposed-tags:nil
+ sgml-local-catalogs:nil
+ sgml-local-ecat-files:nil
+ End:
+ -->
