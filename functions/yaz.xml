@@ -8,8 +8,8 @@
     This extension offers a PHP interface to the
     <productname>YAZ</productname> toolkit that implements the Z39.50
     protocol for information retrieval. With this extension you can easily
-    implement a Z39.50 origin (client) that searches Z39.50 targets
-    (servers) in parallel.
+    implement a Z39.50 origin (client) that searches or scans Z39.50
+    targets (servers) in parallel.
    </para>
    <para>
     <productname>YAZ</productname> is available at <ulink
@@ -22,7 +22,8 @@
     fairly easy to use. It supports persistent stateless connections very
     similar to those offered by the various SQL APIs that are available
     for PHP. This means that sessions are stateless but shared amongst
-    users, thus saving the connect and initialize phase steps in most cases.
+    users, thus saving the connect and initialize phase steps in most
+    cases.
    </para>
    </sect1>
    <sect1 id="yaz.install">
@@ -57,14 +58,14 @@ make install
     particular association.
    </para>
    <para>
-    The script below demonstrates the parallel searching feature of
-    the API. When invoked with no arguments it prints a query form; else
-    (arguments are supplied) it searches the targets as given in in array
-    host.
-   </para>
-   <para>
    <example>
-    <title><function>YAZ</function></title>
+    <title><function>Parallel searching using YAZ</function></title>
+     <simpara>
+      The script below demonstrates the parallel searching feature of
+      the API. When invoked with no arguments it prints a query form; else
+      (arguments are supplied) it searches the targets as given in in array
+      host.
+     </simpara>
     <programlisting role="php">
 $num_hosts = count ($host);
 if (empty($term) || count($host) == 0) {
@@ -152,8 +153,9 @@ if (empty($term) || count($host) == 0) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     Closes a connection to a target. The application can no longer
-     refer to the target with the given ID.
+     Closes the Z-association given by <parameter>id</parameter>.
+     The <parameter>id</parameter> is a target ID as returned by a
+     previous <function>yaz_connect</function> command.
     </para>
    </refsect1>
   </refentry>
@@ -162,6 +164,7 @@ if (empty($term) || count($host) == 0) {
    <refnamediv>
     <refname>yaz_connect</refname>
     <refpurpose>
+     Prepares for a connection and Z-association with a target.
      Returns a positive association ID on success; zero on failure
     </refpurpose>
    </refnamediv>
@@ -170,8 +173,13 @@ if (empty($term) || count($host) == 0) {
     <funcsynopsis>
      <funcprototype>
       <funcdef>int <function>yaz_connect</function></funcdef>
-      <paramdef>string <parameter>zurl</parameter></paramdef>
-     </funcprototype>
+      <paramdef>string
+        <parameter>zurl</parameter>
+      </paramdef>
+      <paramdef>string
+       <parameter><optional>authentication</optional></parameter>
+      </paramdef>
+      </funcprototype>
     </funcsynopsis>
     <para>
      <function>Yaz_connect</function> prepares for a connection to a
@@ -206,7 +214,7 @@ if (empty($term) || count($host) == 0) {
      question.
     </para>
     <para>
-     <function>Yaz_errno</function> should be called after network
+     <function>yaz_errno</function> should be called after network
      activity for each target - (after <function>yaz_wait</function>
      returns) to determine the success or failure of the last
      operation (e.g. search).
@@ -232,7 +240,7 @@ if (empty($term) || count($host) == 0) {
      is returned if last operation was a success.
     </para>
     <para>
-     <function>Yaz_error</function> returns a english message
+     <function>yaz_error</function> returns an english text message
      corresponding to the last error number as returned by
      <function>yaz_errno</function>.
     </para>
@@ -277,9 +285,10 @@ if (empty($term) || count($host) == 0) {
     </funcsynopsis>
     <para>
      This function is used in conjunction with
-     <function>yaz_search</function> to specify the element set name
-     for records to be retrieved. Most servers support F (full) and
-     B (brief).
+     <function>yaz_search</function> and <function>yaz_present</function>
+     to specify the element set name for records to be retrieved.
+     Most servers support <literal>F</literal> (full) and
+     <literal>B</literal> (brief).
     </para>
     <para>
      Returns true on success; false on error. 
@@ -458,12 +467,35 @@ if (empty($term) || count($host) == 0) {
    </refsect1>
   </refentry>
 
+  <refentry id="function.yaz-present">
+   <refnamediv>
+    <refname>yaz_present</refname>
+    <refpurpose>
+     Prepares for retrieval (Z39.50 present).
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>yaz_present</function></funcdef>
+      <void></void>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function prepares for retrieval of records after
+     a successful search. The <function>yaz_range</function> should
+     be called prior to this function to specify the range of
+     records to be retrieved. 
+    </para>
+   </refsect1>
+  </refentry>
+
   <refentry id="function.yaz-syntax">
    <refnamediv>
     <refname>yaz_syntax</refname>
     <refpurpose>
-     Specifies the object identifier (OID) for the preferred record syntax
-     for retrieval.
+     Specifies the preferred record syntax for retrieval.
     </refpurpose>
    </refnamediv>
    <refsect1>
@@ -476,37 +508,356 @@ if (empty($term) || count($host) == 0) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     The syntax may be specified in a raw dot-notation (like
-     <literal>1.2.840.10003.5.10</literal>) or as one of the known
-     record syntaxes (sutrs, usmarc, grs1, xml, etc.).
-     This function is used in conjunction with
-     <function>yaz_search</function> to specify the preferred record
-     syntax for retrieval.
+     The syntax is specified as an OID (Object Identifier) in a
+     raw dot-notation (like <literal>1.2.840.10003.5.10</literal>) or
+     as one of the known registered record syntaxes (sutrs, usmarc, grs1,
+     xml, etc.). This function is used in conjunction with
+     <function>yaz_search</function> and <function>yaz_present</function>
+     to specify the preferred record syntax for retrieval.
     </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.yaz-scan">
+   <refnamediv>
+    <refname>yaz_scan</refname>
+    <refpurpose>Prepares for a scan</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>yaz_scan</function></funcdef>
+      <paramdef>int <parameter>id</parameter></paramdef>
+      <paramdef>string <parameter>type</parameter></paramdef>
+      <paramdef>string <parameter>startterm</parameter></paramdef>
+      <paramdef>array
+       <parameter><optional>flags</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function prepares for a Z39.50 Scan Request. Argument
+     <parameter>id</parameter> specifies target ID. Starting term
+     point for the scan is given by <parameter>startterm</parameter>.
+     The form in which is the starting term is specified is given by
+     <parameter>type</parameter>. Currently type <literal>rpn</literal>
+     is supported. The optional <parameter>flags</parameter>
+     specifies additional information to control the behaviour of the
+     scan request. Three indexes are currently read from the flags:
+     <literal>number</literal> (number of terms requested),
+     <literal>position</literal> (preferred position of term) and
+     <literal>stepSize</literal> (preferred step size).
+     To actually tranfer the Scan Request to the target and receive the
+     Scan Response, <function>yaz_wait</function> must be called. Upon
+     completion of <function>yaz_wait</function> call
+     <function>yaz_error</function> and
+     <function>yaz_scan_result</function> to handle the response.
+    </para>
+    <para>
+      The syntax of <parameter>startterm</parameter> is similar to the
+      RPN query as described in <function>yaz_search</function>. The
+      startterm consists of zero or more  <literal>@attr</literal>-operator 
+      specifications, then followed by exactly one token.
+    </para>
+    <para>
+    <example>
+    <title>PHP function that scans titles</title>
+    <programlisting>
+      function scan_titles($id, $starterm) {
+        yaz_scan($id,"rpn", "@attr 1=4 " . $starterm);
+        yaz_wait();
+        $errno = yaz_errno($id);
+        if ($errno == 0) {
+          $ar = yaz_scan_result($id,&$options);
+          echo 'Scan ok; ';
+          $ar = yaz_scan_result($id, &$options);
+          while(list($key,$val)=each($options)) {
+             echo "$key = $val &nbsp;";
+          }
+          echo '&lt;br>&lt;table>&lt;tr>&lt;td>';
+          while(list($key,list($k, $term, $tcount))=each($ar)) {
+            if (empty($k)) continue;
+            echo "&lt;tr>&lt;td>$term&lt;/td>&lt;td>";
+            echo $tcount;
+            echo "&lt;/td>&lt;/tr>";
+          }
+          echo '&lt;/table>';
+        } else {
+          echo "Scan failed. Error: " . yaz_error($id) . "&lt;br>";
+        }
+      }
+    </programlisting>
+    </example>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.yaz-scan-result">
+   <refnamediv>
+    <refname>yaz_scan_result</refname>
+    <refpurpose>Returns Scan Response result</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>array <function>yaz_scan_result</function></funcdef>
+      <paramdef>int <parameter>id</parameter></paramdef>
+      <paramdef>array &amp;
+       <parameter><optional>result</optional></parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Given a target ID this function returns and array with terms as received
+     from the target in the last Scan Response.
+     This function returns an array (0..n-1) where n is the number
+     of terms returned. Each value is a pair where first item is
+     term, second item is result-count.
+     If the <parameter>result</parameter> is given it will be modified to hold
+     additional information taken from the Scan Response:
+     <literal>number</literal> (number of entries returned),
+     <literal>stepsize</literal> (Step-size),
+     <literal>position</literal> (position of term),
+     <literal>status</literal> (Scan Status).
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.yaz-ccl-conf">
+   <refnamediv>
+    <refname>yaz_ccl_conf</refname>
+    <refpurpose>Configure CCL parser</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>yaz_ccl_conf</function></funcdef>
+      <paramdef>int <parameter>id</parameter></paramdef>
+      <paramdef>array <parameter>config</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function configures the CCL query parser for a target
+     with definitions of access points (CCL qualifiers) and their
+     mapping to RPN. To map a specific CCL query to RPN afterwards
+     call the <function>yaz_ccl_parse</function> function.
+     Each index of the array <parameter>config</parameter> is the
+     name of a CCL field and the corresponding value holds a string
+     that specifies a mapping to RPN.
+     The mapping is a sequence of attribute-type, attribute-value
+     pairs. Attribute-type and attribute-value is separated by an equal
+     sign (<literal>=</literal>). Each pair is separated by white space.
+    </para>
+    <para>
+    <example>
+    <title>CCL configuration</title>
+    <simpara>
+     In the example below, the CCL parser is configured to support
+     three CCL fields: <literal>ti</literal>, <literal>au</literal> and
+     <literal>isbn</literal>. Each field is mapped to their BIB-1
+     equivalent. It is assumed that variable <literal>$id</literal> is a
+     target ID.
+    </simpara>
+    <programlisting>
+      $field["ti"] = "1=4";
+      $field["au"] = "1=1";
+      $field["isbn"] = "1=7";
+      yaz_ccl_conf($id,$field);
+    </programlisting>
+    </example>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.yaz-ccl-parse">
+   <refnamediv>
+    <refname>yaz_ccl_parse</refname>
+    <refpurpose>Invoke CCL Parser</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>yaz_ccl_parse</function></funcdef>
+      <paramdef>int <parameter>id</parameter></paramdef>
+      <paramdef>string <parameter>query</parameter></paramdef>
+      <paramdef>array &amp;<parameter>result</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function invokes the CCL parser. It converts a given
+     CCL FIND query to an RPN query which may be passed to the
+     <function>yaz_search</function> function to perform a search.
+     To define a set of valid CCL fields call
+     <function>yaz_ccl_conf</function> prior to this function.
+     If the supplied <parameter>query</parameter> was successfully
+     converted to RPN, this function returns true, and the index
+     <literal>rpn</literal> of the supplied array
+     <parameter>result</parameter> holds a valid RPN query.
+     If the query could not be converted (because of invalid syntax,
+     unknown field, etc.) this function returns false and three
+     indexes are set in the resulting array to indicate the cause
+     of failure: <literal>errorcode</literal>CCL error code (integer),
+     <literal>errorstring</literal>CCL error string, and 
+     <literal>errorpos</literal>approximate position in query of failure
+     (integer is character position).
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.yaz-itemorder">
+   <refnamediv>
+    <refname>yaz_itemorder</refname>
+    <refpurpose>
+     Prepares for Z39.50 Item Order with an ILL-Request package
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>yaz_itemorder</function></funcdef>
+      <paramdef>array <parameter>args</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     This function prepares for an Extended Services request using the
+     Profile for the Use of Z39.50 Item Order Extended Service to
+     Transport ILL (Profile/1). See
+     <ulink url="http://www.nlc-bnc.ca/iso/ill/stanprf.htm">this</ulink>
+     and the
+     <ulink url="http://www.nlc-bnc.ca/iso/ill/document/standard/z-ill-1a.pdf">
+     specification</ulink>.
+     The args parameter must be a hash array with information about the
+     Item Order request to be sent. The key of the hash is the name
+     of the corresponding ASN.1 tag path. For example, the ISBN below
+     the Item-ID has the key item-id,ISBN. 
+    </para>
+    <para>
+    The ILL-Request parameters are:
+    </para>
+    <literallayout>
+protocol-version-num
+transaction-id,initial-requester-id,person-or-institution-symbol,person
+transaction-id,initial-requester-id,person-or-institution-symbol,institution
+transaction-id,initial-requester-id,name-of-person-or-institution,name-of-person
+transaction-id,initial-requester-id,name-of-person-or-institution,name-of-institution
+transaction-id,transaction-group-qualifier
+transaction-id,transaction-qualifier
+transaction-id,sub-transaction-qualifier
+service-date-time,this,date
+service-date-time,this,time
+service-date-time,original,date
+service-date-time,original,time
+requester-id,person-or-institution-symbol,person
+requester-id,person-or-institution-symbol,institution
+requester-id,name-of-person-or-institution,name-of-person
+requester-id,name-of-person-or-institution,name-of-institution
+responder-id,person-or-institution-symbol,person
+responder-id,person-or-institution-symbol,institution
+responder-id,name-of-person-or-institution,name-of-person
+responder-id,name-of-person-or-institution,name-of-institution
+transaction-type
+delivery-address,postal-address,name-of-person-or-institution,name-of-person
+delivery-address,postal-address,name-of-person-or-institution,name-of-institution
+delivery-address,postal-address,extended-postal-delivery-address
+delivery-address,postal-address,street-and-number
+delivery-address,postal-address,post-office-box
+delivery-address,postal-address,city
+delivery-address,postal-address,region
+delivery-address,postal-address,country
+delivery-address,postal-address,postal-code
+delivery-address,electronic-address,telecom-service-identifier
+delivery-address,electronic-address,telecom-service-addreess
+billing-address,postal-address,name-of-person-or-institution,name-of-person
+billing-address,postal-address,name-of-person-or-institution,name-of-institution
+billing-address,postal-address,extended-postal-delivery-address
+billing-address,postal-address,street-and-number
+billing-address,postal-address,post-office-box
+billing-address,postal-address,city
+billing-address,postal-address,region
+billing-address,postal-address,country
+billing-address,postal-address,postal-code
+billing-address,electronic-address,telecom-service-identifier
+billing-address,electronic-address,telecom-service-addreess
+ill-service-type
+requester-optional-messages,can-send-RECEIVED
+requester-optional-messages,can-send-RETURNED
+requester-optional-messages,requester-SHIPPED
+requester-optional-messages,requester-CHECKED-IN
+search-type,level-of-service
+search-type,need-before-date
+search-type,expiry-date
+search-type,expiry-flag
+place-on-hold
+client-id,client-name
+client-id,client-status
+client-id,client-identifier
+item-id,item-type
+item-id,call-number
+item-id,author
+item-id,title
+item-id,sub-title
+item-id,sponsoring-body
+item-id,place-of-publication
+item-id,publisher
+item-id,series-title-number
+item-id,volume-issue
+item-id,edition
+item-id,publication-date
+item-id,publication-date-of-component
+item-id,author-of-article
+item-id,title-of-article
+item-id,pagination
+item-id,ISBN
+item-id,ISSN
+item-id,additional-no-letters
+item-id,verification-reference-source
+copyright-complicance
+retry-flag
+forward-flag
+requester-note
+forward-note
+    </literallayout>
+    <para>
+    There are also a few parameters that are part of the Extended
+    Services Request package and the ItemOrder package:
+    </para>
+    <literallayout>
+package-name
+user-id
+contact-name
+contact-phone
+contact-email
+itemorder-item
+    </literallayout>
    </refsect1>
   </refentry>
 
   <refentry id="function.yaz-wait">
    <refnamediv>
     <refname>yaz_wait</refname>
-    <refpurpose>Executes queries</refpurpose>
+    <refpurpose>Wait for Z39.50 requests to complete</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
       <funcdef>int <function>yaz_wait</function></funcdef>
-      <paramdef>int <parameter>id</parameter></paramdef>
-      <paramdef>string <parameter>syntax</parameter></paramdef>
+      <void></void>
      </funcprototype>
     </funcsynopsis>
     <para>
      This function carries out networked (blocked) activity for
      outstanding requests which have been prepared by the functions
      <function>yaz_connect</function>,
-     <function>yaz_search</function>.  <function>yaz_wait</function>
-     returns when all targets have either completed all requests or
-     otherwise completed (in case of errors).
+     <function>yaz_search</function>, <function>yaz_present</function>,
+     <function>yaz_scan</function> and <function>yaz_itemorder</function>.
+     <function>yaz_wait</function> returns when all targets have either
+     completed all requests or aborted (in case of errors).
     </para>
    </refsect1>
   </refentry>
