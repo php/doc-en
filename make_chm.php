@@ -9,8 +9,8 @@ $fancydir = getenv("PHP_HELP_COMPILE_FANCYDIR");
 if (empty($fancydir)) {
     $fancydir = getenv("PHP_HELP_COMPILE_DIR");
 }
-$language = getenv("PHP_HELP_COMPILE_LANG");
-$original_index = getenv("PHP_HELP_COMPILE_INDEX");
+$language       = getenv("PHP_HELP_COMPILE_LANG");
+$original_index = "index.html";
 
 // header for index and toc 
 $header = '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">

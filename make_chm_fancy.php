@@ -7,9 +7,9 @@ set_time_limit(0);
 $htmldir        = getenv("PHP_HELP_COMPILE_DIR");
 $fancydir       = getenv("PHP_HELP_COMPILE_FANCYDIR");
 $language       = getenv("PHP_HELP_COMPILE_LANG");
-$original_index = getenv("PHP_HELP_COMPILE_INDEX");
+$original_index = "index.html";
 
-// How many files are processed
+// How many files were processed
 $counter = 0;
 
 // Open the directory, and do the work on all HTML files
@@ -22,14 +22,15 @@ while (false !== ($filename = readdir($handle))) {
 closedir($handle);
 
 // Look for CHM index file (snap-downloader, cvs-usr with/without lang-support) 
-if (false == ($content = join("", file("make_chm_index_$language.html")))) {
-    if (false == ($content = join("", file("$language/make_chm_index_$language.html")))) {
-        $content = join("", file("en/make_chm_index_en.html"));
+if (false == ($content = join("", @file("make_chm_index_$language.html")))) {
+    if (false == ($content = join("", @file("$language/make_chm_index_$language.html")))) {
+        $content = join("", @file("en/make_chm_index_en.html"));
     }
 }
 
 // Make GENTIME the actual date/time
-$content = preg_replace("/\\[GENTIME\\]/", date("D M d H:i:s Y"), $content);
+$content = str_replace("[GENTIME]", date("D M d H:i:s Y"), $content);
+$content = str_replace("[PUBTIME]", $publication_date, $content);
 $fp = fopen("$fancydir/fancy-index.html", "w");
 fputs($fp, $content);
 fclose($fp);
@@ -50,7 +51,7 @@ echo "Total number of files written in $fancydir directory: $counter\n\n";
 // Convert one file from HTML => fancy HTML
 function fancy_design($fname)
 {
-    global $htmldir, $fancydir, $counter, $original_index;
+    global $htmldir, $fancydir, $counter, $original_index, $publication_date;
 
     // Get the contents of the file from $htmldir
     $content = join("", file("$htmldir/$fname"));
@@ -88,6 +89,15 @@ function fancy_design($fname)
 
     // Fix the original manual index to look far better...
     elseif ($fname == "$original_index") {
+
+        // Find out manual generation date
+        if (preg_match('|<P\s+CLASS="pubdate"\s+>([\\d-]+)<BR></P\s+>|U', $content, $match)) {
+            $publication_date = $match[1];
+        } else { 
+            $publication_date = 'n/a';
+        }
+
+        // Modify the index file to meet our needs
         preg_match('|CLASS=\"title\"\\s+><A\\s+NAME=\"manual\"\\s+>(.*)</A\\s+></H1|U', $content, $match);
         $indexchange = '<TABLE BORDER="0" WIDTH="100%" HEIGHT="100%" CELLSPACING="0" CELLPADDING="0"><TR><TD COLSPAN="3"><DIV CLASS="NAVHEADER"><TABLE BGCOLOR="#CCCCFF" BORDER="0" CELLPADDING="0" CELLSPACING="0" WIDTH="100%"><TR><TD><TABLE
         WIDTH="100%" BORDER="0" CELLPADDING="3" CELLSPACING="0"><TR><TH COLSPAN="3">'.$match[1].'</TH></TR><TR><TD COLSPAN="3" ALIGN="center">&nbsp;</TD></TR></TABLE></TD></TR><TR BGCOLOR="#333366"><TD><IMG SRC="spacer.gif" BORDER="0" WIDTH="1" HEIGHT="1"><BR></TD></TR></TABLE>
@@ -97,6 +107,7 @@ function fancy_design($fname)
         preg_match('|<DIV\\s+CLASS="TOC"\\s+><DL\\s+><DT\\s+><B\\s+>(.*)</B\\s+>|U', $content, $match);
         $content = preg_replace("|(CLASS=\"title\"\\s+><A\\s+NAME=\"manual\"\\s+>).*(</A)|U", "\\1$match[1]\\2", $content);
         $content = preg_replace("|<DT\\s+><B\\s+>(.*)</B\\s+></DT\\s+>|U", "", $content);
+
     }
 
     // Print out that new file to $fancydir
