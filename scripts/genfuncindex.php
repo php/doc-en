@@ -26,16 +26,18 @@ echo "<" . "?xml version='1.0' encoding='iso-8859-1'?" . ">\n";
  <index id="index.functions">
   <title>&FunctionIndex;</title>
 <?php
-$functions = file($HTTP_SERVER_VARS['argv'][1]);
+$functions = file($_SERVER['argv'][1]);
 usort($functions,"strcasecmp");
 $letter = ' ';
+
 foreach ( $functions as $funcentry ) {
     list($function,$description) = explode(" - ",$funcentry);
 
     if (!ereg("::|->", $function)) {
         $function = strtolower(trim($function));
     }
-    if (!ereg("^[[:alnum:]]",$function)) continue;
+
+    $function = str_replace('>', '&#62;', $function);
 
     if (strtolower($function{0}) != $letter) {
         if ($letter != ' ') {
