@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.25 2003-04-25 19:47:26 goba Exp $
+  $Id: html-common.xsl,v 1.26 2003-06-04 19:43:32 tom Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -241,17 +241,19 @@ set       toc
 
 <!-- Add VERSION INFORMATION below FUNCTION name -->
 <xsl:template match="refnamediv">
-  <h2>
-    <xsl:apply-templates select="refname[1]"/>
-  </h2>
-  <p>
-    <xsl:text>(</xsl:text>
-    <xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>
-    <xsl:text>)</xsl:text>
-  </p>
-  <p>
-    <xsl:apply-templates/>
-  </p>
+  <div class="{name(.)}">
+    <h1>
+      <xsl:apply-templates select="refname[1]"/>
+    </h1>
+    <p>
+      <xsl:text>(</xsl:text>
+      <xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>
+      <xsl:text>)</xsl:text>
+    </p>
+    <p>
+      <xsl:apply-templates/>
+    </p>
+  </div>
 </xsl:template>
 
 
@@ -540,36 +542,6 @@ set       toc
   <xsl:apply-templates mode="titlepage.mode"/>
 </xsl:template>
 
-<!-- Make REFENTRY titles appear in H1 as in DSSSL sheets -->
-<xsl:template match="refnamediv">
-  <div class="{name(.)}">
-    <xsl:call-template name="anchor"/>
-    <xsl:choose>
-      <xsl:when test="$refentry.generate.name != 0">
-        <h2>
-          <xsl:call-template name="gentext">
-            <xsl:with-param name="key" select="'RefName'"/>
-          </xsl:call-template>
-        </h2>
-      </xsl:when>
-      <xsl:when test="$refentry.generate.title != 0">
-        <h1>
-          <xsl:choose>
-            <xsl:when test="../refmeta/refentrytitle">
-              <xsl:apply-templates select="../refmeta/refentrytitle"/>
-            </xsl:when>
-            <xsl:otherwise>
-              <xsl:apply-templates select="refname[1]"/>
-            </xsl:otherwise>
-          </xsl:choose>
-        </h1>
-      </xsl:when>
-    </xsl:choose>
-    <p>
-      <xsl:apply-templates/>
-    </p>
-  </div>
-</xsl:template>
 
 <!-- Just to DECREASE FILESIZE (since we have no css-styles) -->
 <xsl:template name="refentry.titlepage">
