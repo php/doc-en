@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.13 $ -->
+<!-- $Revision: 1.14 $ -->
 <appendix id="filters">
  <title>List of Available Filters</title>
  <para>
@@ -233,7 +233,8 @@ fwrite($fp, "This is a test.\n");
   <title>Compression Filters</title>
 
   <simpara>
-   While the <xref linkend="wrappers.compression"/> provide a way of creating
+   While the <link linkend="wrappers.compression">Compression Wrappers</link>
+   provide a way of creating
    gzip and bz2 compatible files on the local filesystem, they do not provide a 
    means for generalized compression over network streams, nor do they provide a 
    means to begin with a non-compressed stream and transition to a compressed one.  
@@ -279,7 +280,7 @@ fwrite($fp, "This is a test.\n");
 
   <simpara>
     zlib.* compression filters are available with PHP as of version <literal>5.1.0</literal> if
-    <xref linkend="ref.zlib"/> support is enabled.  They are also available as a backport in version
+    <link linkend="ref.zlib">zlib</link> support is enabled.  They are also available as a backport in version
     <literal>5.0.x</literal> by installing the <ulink url="&url.pecl.package;zlib_filter">zlib_filter</ulink>
     package from <ulink url="&url.pecl;">PECL</ulink>.  These filters are <emphasis>not</emphasis>
     available for PHP 4.
@@ -381,7 +382,7 @@ The compressed file is 56 bytes long.
 
   <simpara>
     bzip2.* compression filters are available with PHP as of version <literal>5.1.0</literal> if
-    <xref linkend="ref.bzip2"/> support is enabled.  They are also available as a backport in version
+    <link linkend="ref.bzip2">bz2</link> support is enabled.  They are also available as a backport in version
     <literal>5.0.x</literal> by installing the <ulink url="&url.pecl.package;bz2_filter">bz2_filter</ulink>
     package from <ulink url="&url.pecl;">PECL</ulink>.  These filters are <emphasis>not</emphasis>
     available for PHP 4.
@@ -416,6 +417,120 @@ The compressed file is 1488 bytes long.
 ]]>
    </programlisting>
   </example>
+ </section>
+
+ <section id="filters.encryption">
+  <title>Encryption Filters</title>
+
+  <simpara>
+   <literal>mcrypt.*</literal> and <literal>mdecrypt.*</literal>
+   provide symmetric encryption and decryption using libmcrypt.
+   Both sets of filters support the same algorithms available to
+   <link linkend="ref.mcrypt">mcrypt extension</link> in the form of
+   <literal>mcrypt.ciphername</literal> where <parameter>ciphername</parameter>
+   is the name of the cipher as it would be passed to
+   <function>mcrypt_module_open</function>.
+   The following five filter parameters are also available:
+  </simpara>
+
+  <para>
+   <table>
+    <title>mcrypt filter parameters</title>
+    <tgroup cols="4">
+     <thead>
+      <row>
+       <entry>Parameter</entry>
+       <entry>Required?</entry>
+       <entry>Default</entry>
+       <entry>Sample Values</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>mode</entry>
+       <entry>Optional</entry>
+       <entry>cbc</entry>
+       <entry>cbc, cfb, ecb, nofb, ofb, stream</entry>
+      </row>
+      <row>
+       <entry>algorithms_dir</entry>
+       <entry>Optional</entry>
+       <entry>ini_get('mcrypt.algorithms_dir')</entry>
+       <entry>Location of algorithms modules</entry>
+      </row>
+      <row>
+       <entry>modes_dir</entry>
+       <entry>Optional</entry>
+       <entry>ini_get('mcrypt.modes_dir')</entry>
+       <entry>Location of modes modules</entry>
+      </row>
+      <row>
+       <entry>iv</entry>
+       <entry>Required</entry>
+       <entry>N/A</entry>
+       <entry>Typically 8, 16, or 32 bytes of binary data.  Depends on cipher</entry>
+      </row>
+      <row>
+       <entry>key</entry>
+       <entry>Required</entry>
+       <entry>N/A</entry>
+       <entry>Typically 8, 16, or 32 bytes of binary data.  Depends on cipher</entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </table>
+  </para>
+
+  <example>
+   <title>Encrypting file output using 3DES</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$passphrase = 'My secret';
+
+/* Turn a human readable passphrase
+ * into a reproducable iv/key pair
+ */
+$iv = substr(md5('iv'.$passphrase, true), 0, 8);
+$key = substr(md5('pass1'.$passphrase, true) . 
+               md5('pass2'.$passphrase, true), 0, 24);
+$opts = array('iv'=>$iv, 'key'=>$key);
+
+$fp = fopen('secert-file.enc', 'wb');
+stream_filter_append($fp, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
+fwrite($fp, 'Secret secret secret data');
+fclose($fp);
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <example>
+   <title>Reading an encrypted file</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$passphrase = 'My secret';
+
+/* Turn a human readable passphrase
+ * into a reproducable iv/key pair
+ */
+$iv = substr(md5('iv'.$passphrase, true), 0, 8);
+$key = substr(md5('pass1'.$passphrase, true) . 
+               md5('pass2'.$passphrase, true), 0, 24);
+$opts = array('iv'=>$iv, 'key'=>$key);
+
+$fp = fopen('secert-file.enc', 'rb');
+stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_WRITE, $opts);
+$data = rtrim(stream_get_contents($fp));
+fclose($fp);
+
+echo $data;
+?>
+]]>
+   </programlisting>
+  </example>
+
  </section>
 
 </appendix>
