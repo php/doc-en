@@ -29,24 +29,40 @@ class CHtmlExtParse extends CHtmlParse{
 		$this->CHtmlParse($data);
 	}
 	
-	function get_hebrew(){
+	function fix_hebrew(){
 		global $EHType,$HEType;
-		
 		$cnt = count($this->ATE);
 		
-		for($a=0;$a<$cnt;$a++){
-			$ret[$a] = "";	
+		// fix functions '()':
+		if($tmp = $this->get_element_id_by_rule(array("tag"=>"div","properties"=>array("class","refsect1")))){
+			$this->ATE[$tmp+6]["data"] = "<span dir=ltr>".$this->ATE[$tmp+6]["data"];
+			$this->ATE[$tmp+10]["data"] .= "</span>";
+		}
+		$b = $HEType["b"];
+		if(isset($this->EBT[$b])){
+			$ar = array("class","function");
+			for($a=0;$a<count($this->EBT[$b]);$a++){
+				$elem = &$this->ATE[$this->EBT[$b][$a]];
+				if($this->comp_properties($elem,$ar)){
+					$elem["dir"] = "ltr";
+				}
+			}
 		}
 		
-		// if there is hebrew on the page, we make rtl default
-		$wrong_mode = "rtl";
-		$deflang = __HTML_FREE_ENGLISH__;
-		$html = $HEType["html"];
-		if(isset($this->EBT[__HTML_FREE_HEBREW__])
-				&& isset($this->EBT[$html])){
-			$this->ATE[$this->EBT[$html][0]]["dir"] = "rtl";
-			$wrong_mode = "ltr";
-			$deflang = __HTML_FREE_HEBREW__;
+		//fix consts:
+		$tmp=0;
+		do{
+			if($tmp = $this->get_element_id_by_rule(array("tag"=>"tt","properties"=>array("class","constant"),"offset"=>($tmp+1)))){
+				$this->ATE[$tmp-1]["dir"] = "ltr";
+			}
+		} while($tmp);
+		
+		//rtl all the divs
+		$div = $HEType["div"];
+		if(isset($this->EBT[$div])){
+			for($a=0;$a<count($this->EBT[$div]);$a++){
+				$this->ATE[$this->EBT[$div][$a]]["dir"] = "rtl";
+			}
 		}
 		
 		// fix the embeded php code:
@@ -61,8 +77,20 @@ class CHtmlExtParse extends CHtmlParse{
 		$meta = $HEType["meta"];
 		if(isset($this->EBT[$meta])){
 			for($a=0;$a<count($this->EBT[$meta]);$a++){
-				$this->ATE[$this->EBT[$meta][$a]]["content"] = "text/html; charset=WINDOWS-1255";
+				$elem = &$this->ATE[$this->EBT[$meta][$a]];
+				if(isset($elem["http-equiv"]) && $elem["http-equiv"]=="Content-type")
+					$elem["content"] = "text/html; charset=WINDOWS-1255";
 			}
+		}
+	}
+	
+	function get(){
+		global $EHType,$HEType;
+		
+		$cnt = count($this->ATE);
+		
+		for($a=0;$a<$cnt;$a++){
+			$ret[$a] = "";	
 		}
 		
 		for($a=1;$a<$cnt;$a++){
@@ -72,34 +100,60 @@ class CHtmlExtParse extends CHtmlParse{
 				$tag = $EHType[$tg];
 				$ret[$a] .= "<$tag";
 				foreach ($this->ATE[$a] as $key=>$value){
-					$ret[$a].=" $key='$value'";
+					$ret[$a].=" $key=\"$value\"";
 				}
 				$ret[$a].=">";
 				
 				if($this->ECE[$a]!=$a) $ret[$this->ECE[$a]] .= " </$tag>";
 			} else {
-				if($tg != $deflang) {
-//					if($a>1 && isset($ret[$a+1]) && ($this->ECE[$a-1] = $a+1)) {
-//						//hack; remove later try to encapsulate the parent:
-//						$ret[$a-1]="<span dir=$wrong_mode>".$ret[$a-1];
-//						$ret[$a].= $this->ATE[$a]["data"];
-//						$ret[$a+1]="</span>".$ret[$a+1];
-//					} else {
-						// regular case:
-						$ret[$a].="<span dir=$wrong_mode>{$this->ATE[$a]["data"]}</span>";
-//					}
-					
-				} else {
-					$ret[$a].=$this->ATE[$a]["data"];	
-				}			
+					$ret[$a].=$this->ATE[$a]["data"];		
 			}
-			
-			
+//mysyslog($ret[$a]);
 		}
 		return implode($ret,"\r\n");
 		
 	}
 	
+	
+	// return element ATE id by:
+	// tag, property, offset on ATE and index (mean, offset on EBT[tag])
+	function get_element_id_by_rule($param){
+		global $EHType,$HEType;
+		
+		extract($param);
+		
+		$tag = $HEType[$tag];
+		if(!isset($properties)) $properties = false;
+		if(!isset($offset)) $offset = 0;
+		if(!isset($index)) $index = 0;
+		
+		if(!isset($this->EBT[$tag])) return false;
+		
+		$cnt = count($this->EBT[$tag]);
+		
+		for($a=0;$a<$cnt;$a++){
+			$elem = $this->EBT[$tag][$a];
+			if($elem < $offset) continue;
+			if($properties && !$this->comp_properties($this->ATE[$elem],$properties)) continue;
+
+			if($index--) continue;
+			return $elem;
+		}
+		
+		return false;
+	}
+	
+	function comp_properties(&$elem,&$properties){
+		for($a=0;$a<count($properties);$a+=2){
+			if(!isset($elem[$properties[$a]])
+				|| ($elem[$properties[$a]]!=$properties[$a+1])){
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	//\/\/\/\/\/\/\/\/\/\
 	function unsetme(){
 		unset($this->data);
 		unset($this->ATH);

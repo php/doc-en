@@ -97,7 +97,8 @@ mysyslog("start fixing $file");
 	$txt = mygetfile($file);
 	$tree = new CHtmlExtParse($txt);
 //var_dump($tree);exit;
-	$newtext = $tree->get_hebrew();
+	$tree->fix_hebrew();
+	$newtext = $tree->get();
 	savemyfile($file,$newtext);
 	$tree->unsetme();
 	unset($tree);
@@ -125,6 +126,7 @@ function savemyfile($file,$text){
 	}
 	fwrite($f,$text);
 	fclose($f);
+//die("\n---".__LINE__."---".__FILE__);
 	return true;
 }
 
