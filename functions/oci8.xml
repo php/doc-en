@@ -2,17 +2,113 @@
   <title>Oracle 8 functions</title>
   <titleabbrev>OCI8</titleabbrev>
   <partintro>
-   <simpara>
-    These functions allow you to access Oracle8 and Oracle7 databases. It
-    uses the Oracle8 Call-Interface (OCI8). You will need the Oracle8 client
-    libraries to use this extension.
-   </simpara>
-   <simpara>
+   <para>
+    These functions allow you to access Oracle8 and Oracle7 databases.
+    It uses the Oracle8 Call-Interface (OCI8). You will need the Oracle8
+    client libraries to use this extension.
+   </para>
+   <para>
     This extension is more flexible than the standard Oracle
     extension. It supports binding of global and local PHP variables
     to Oracle placeholders, has full LOB, FILE and ROWID support
     and allows you to use user-supplied define variables.
-   </simpara>
+   </para>
+   <para>
+    Before using this extension, make sure that you have set up your
+    oracle environment variables properly for the Oracle user, as well
+    as your web daemon user. The variables you might need to set are as
+    follows:
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       ORACLE_HOME
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       ORACLE_SID
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       LD_PRELOAD
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       LD_LIBRARY_PATH
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       NLS_LANG
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       ORA_NLS33
+      </simpara>
+     </listitem>
+    </itemizedlist>
+   </para>
+   <para>
+    After setting up the environment variables for your webserver user,
+    be sure to also add the webserver user (nobody, www) to the oracle
+    group.
+   </para>
+   <para>
+    <example>
+     <title>OCI Hints</title>
+      <programlisting role="php">
+&lt;?php
+// by sergo@bacup.ru
+
+// Use option: OCI_DEFAULT for execute command to delay ececution
+OCIExecute($stmt, OCI_DEFAULT);
+
+// for retrieve data use (after fetch):
+
+$result = OCIResult($stmt, $n);
+if (is_object ($result)) $result = $result->load();
+
+// For INSERT or UPDATE statetment use:
+
+$sql = "insert into table (field1, field2) values (field1 = 'value',
+ field2 = empty_clob()) returning field2 into :field2";
+OCIParse($conn, $sql);
+$clob = OCINewDescriptor($conn, OCI_D_LOB);
+OCIBindByName ($stmt, ":field2", &$clob, -1, OCI_B_CLOB);
+OCIExecute($stmt, OCI_DEFAULT);
+$clob->save ("some text");
+
+?&gt;
+     </programlisting>
+    </example>
+   </para>
+   <para>
+    You can easily access stored procedures in the same way as you
+    would from the commands line.
+    <example>
+     <title>Using Stored Procedures</title>
+      <programlisting role="php">
+&lt;?php
+// by webmaster@remoterealty.com
+$sth = OCIParse ( $dbh, "begin sp_newaddress( :address_id, '$firstname',
+ '$lastname', '$company', '$address1', '$address2', '$city', '$state',
+ '$postalcode', '$country', :error_code );end;" );
+
+// This calls stored procedure sp_newaddress, with :address_id being an
+// in/out variable and :error_code being an out variable. 
+// Then you do the binding:
+
+   OCIBindByName ( $sth, ":address_id", $addr_id, 10 );
+   OCIBindByName ( $sth, ":error_code", $errorcode, 10 );
+   OCIExecute ( $sth );
+
+?&gt;
+     </programlisting>
+    </example>
+   </para>
   </partintro>
 	
 <!--
@@ -153,7 +249,6 @@ OCILogoff($conn);
      <programlisting>
 &lt;?php
 /* OCIBindByPos example thies@digicol.de (980221)
-
   inserts 3 resords into emp, and uses the ROWID for updating the 
   records just after the insert.
 */
@@ -646,7 +741,7 @@ Upload file: &lt;input type="file" name="lob_upload">&lt;br>
      }else{
         echo "Couldn't upload Blob\n";
      }
-     OCIFreeDescriptor($lob);
+     OCIFreeDesc($lob);
      OCIFreeStatement($stmt);
      OCILogoff($conn);
   }
@@ -655,6 +750,7 @@ Upload file: &lt;input type="file" name="lob_upload">&lt;br>
     </example>
    </refsect1>
   </refentry>
+  
   <refentry id="function.ocirowcount">
    <refnamediv>
     <refname>OCIRowCount</refname>
@@ -1171,6 +1267,26 @@ OCILogoff($conn);
     </funcsynopsis>
     <para>
      <function>OCIFreeCursor</function> returns true if successful, or false if
+     unsuccessful.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.ocifreedesc">
+   <refnamediv>
+    <refname>OCIFreeDesc</refname>
+    <refpurpose>Deletes a large object descriptor.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>OCIFreeDesc</function></funcdef>
+      <paramdef>object <parameter>lob</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>OCIFreeDesc</function> returns true if successful, or false if
      unsuccessful.
     </para>
    </refsect1>
