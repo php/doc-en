@@ -1,5 +1,6 @@
-// phpZ version 1.0 PHP Manual CHM version skin by Gonzalo De la Peña <gnz@pistonbroke.com>
+// phpZ version 1.0.2 PHP Manual CHM version skin by Gonzalo De la Peña <gnz@pistonbroke.com>
 // Based partially on the PHP CHM base skin by Gabor Hojtsy 
+// Minor enhancements by Richard Quadling <richard.quadling@bandvulc.co.uk>
 // 
 // system requirements:
 // Microsoft Internet Explorer 5.0 minimum
@@ -24,7 +25,7 @@ function setGlobals() {
 		functionPage = true;
 	else
 		functionPage = false;
-	manualVersion = 'phpZ skin<BR>ver 1.0';
+	manualVersion = 'phpZ skin<BR>ver 1.0.2';
 	manualDate = '';
 }
 
@@ -35,6 +36,8 @@ function displayPage() {
 	assembleSkin();
 	document.all('pageContent').style.display = 'block';
 	//showPageCode();
+	// RAQ : Thursday, 17 February 2005 02:20 pm : Force focus to document to allow access keys to function.
+	document.focus();
 }
 
 // shows the current page source code (after DHTML) in a separate window
@@ -140,7 +143,7 @@ function getHeaderNonFunctionPage() {
 	html += '</TD>';
 	html += '</TR></TABLE>';
 	html += '<TABLE cellpadding=0 cellspacing=0 border=0 width="100%"><TR>';
-	html += '<TD><DIV class="tiny centered text" style="color:#0B9C8D; background-color:#316B58; width:85; height:30; background-image:url(\''+ skinpath +'\\header_green_background.gif\');"><A href="mailto:gnz@pistonbroke.com?subject=phpZ skin feedback" title="skin feedback" style="color:#0B9C8D;">'+ manualVersion +'</A><BR>'+ manualDate +'</DIV></TD>';
+	html += '<TD><DIV class="tiny centered text" style="color:#0B9C8D; background-color:#316B58; width:85; height:30; background-image:url(\''+ skinpath +'\\header_green_background.gif\');"><A href="mailto:gnz@amorfo.com?subject=phpZ skin feedback" title="skin feedback" style="color:#0B9C8D;">'+ manualVersion +'</A><BR>'+ manualDate +'</DIV></TD>';
 	html += '<TD valign="bottom"><DIV style="margin-left:5;">'+ getSwitcherTabs() +'</DIV></TD>';
 	html += '<TD width="100%" align="right">'+ getIconBar() +'</TD>';
 	html += '</TR></TABLE>';
@@ -271,6 +274,11 @@ function getFooter() {
 	var next = document.all('navNext');
 	var html = '';
 	var prevText, nextText;
+	// RAQ : Friday, 18 February 2005 09:32 am : Initialise variables
+	var prevURL = '';
+	var prevText = '';
+	var nextURL = '';
+	var nextText = '';
 	
 	if ( ! prev || ! next )
 	{
@@ -280,6 +288,7 @@ function getFooter() {
 		prev.innerHTML = '&nbsp;';
 	}
 	else
+	{
 		if ( ie_version_major >= 6 )
 		{
 			prevText = prev.childNodes[0].childNodes[0];
@@ -287,18 +296,30 @@ function getFooter() {
 			nextText = next.childNodes[0].childNodes[0];
 			nextText.data = nextText.substringData(0, nextText.length - 3);
 		}
+	// RAQ : Friday, 18 February 2005 09:33 am : Retrieve URL and Text for next and previous.
+		prevURL = prev.all.tags('A')(0).href;
+		prevText = prev.all.tags('A')(0).innerText;
+		nextURL = next.all.tags('A')(0).href;
+		nextText = next.all.tags('A')(0).innerText;
+	}
 	
 	html += '<DIV style="background-color:#BABFD4; border-top:2px solid #000000; margin-top:4; height:42; overflow:hidden;">';
 	html += '<TABLE cellpadding=0 cellspacing=0 border=0 width="100%"><TR>';
 	
 	html += '<TD><DIV style="margin:3 10 0 10;"><TABLE cellpadding=0 cellspacing=4 border=0><TR>';
-	html += '<TD><IMG src="'+ skinpath +'icn_prev.gif" width=24 height=24></TD>';
-	html += '<TD class="small text"><U>p</U>rev: '+ prev.innerHTML +'</TD>';
+	// RAQ : Thursday, 17 February 2005 02:22 pm : Use auto click on access key and allow image and prev to work as link.
+	//	html += '<TD><IMG src="'+ skinpath +'icn_prev.gif" width=24 height=24></TD>';
+	//	html += '<TD class="small text"><U>p</U>rev: '+ prev.innerHTML +'</TD>';
+	html += '<TD><A HREF="' + prevURL + '"><IMG border="0" src="'+ skinpath +'icn_prev.gif" width=24 height=24></a></TD>';
+	html += '<TD class="small text"><A accesskey="p" onfocus="click();" HREF="' + prevURL + '"><U>p</U>rev: '+ prevText +'</a></TD>';
 	html += '</TR></TABLE></DIV></TD>';
 	
 	html += '<TD align="right"><DIV style="margin:3 10 0 10;"><TABLE cellpadding=0 cellspacing=4 border=0><TR>';
-	html += '<TD class="small text"><U>n</U>ext: '+ next.innerHTML +'</TD>';
-	html += '<TD><IMG src="'+ skinpath +'icn_next.gif" width=24 height=24></TD>';
+	// RAQ : Friday, 18 February 2005 09:52 am : Use auto click on access key and allow image and prev to work as link and allow Index (ALT+N) and next (ALT+X) to coexist.
+	//	html += '<TD class="small text"><U>n</U>ext: '+ next.innerHTML +'</TD>';
+	//	html += '<TD><IMG src="'+ skinpath +'icn_next.gif" width=24 height=24></TD>';
+	html += '<TD class="small text"><A accesskey="x" onfocus="click();" HREF="' + nextURL + '">ne<U>x</U>t: '+ nextText +'</a></TD>';
+	html += '<TD><A HREF="' + nextURL + '"><IMG border="0" src="'+ skinpath +'icn_next.gif" width=24 height=24></a></TD>'; // RAQ Thursday, 17 February 2005 Allow next and image act as a link.
 	html += '</TR></TABLE></DIV></TD>';
 	
 	html += '</TR></TABLE>';
