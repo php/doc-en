@@ -330,6 +330,7 @@ function get_dir_status($dir)
 	  || $file == "rsusi.txt"
 	  || $file == "README"
 	  || $file == "contributors.xml"
+	  || $file == "contributors.ent"
 	  || $file == "DO_NOT_TRANSLATE" 
 	  || ($file == "functions.xml" && strpos($dir, '/reference/')))
         continue;
