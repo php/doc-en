@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.25 $ -->
+<!-- $Revision: 1.26 $ -->
  <reference id="ref.session">
   <title>Session handling functions</title>
   <titleabbrev>Sessions</titleabbrev>
@@ -59,38 +59,29 @@
    <section id="session.security">
     <title>Sessions and security</title>
     <para>
-     Using sessions, does not mean, you can be absolutely sure, that
-     the session data can only be viewed by that user. This is important 
-     to keep in mind, when storing and displaying sensitive
-     information. When storing data into a session, one should always
-     ask themselves, what the damage is, when somebody else views that
-     information, or how your application is affected when this session
-     is actually somebody else.
+     The session module cannot guarantee that the information you store
+     in a session is only viewed by the user who created the session. You need
+     to take additional measures to actively protect the integrity of the
+     session, depending on the value associated with it.
     </para>
     <para>
-     For instance, if somebody else takes a session, can he then post
-     a message in a forum, as that user and how big of a problem is
-     that? Or perhaps he can view what the original user was thinking
-     of ordering, because he gets access to that user's shopping cart.
-     Obviously for a flowershop, this is less dramatic, than for a
-     pharmacy.
+     Assess the importance of the data carried by your sessions and deploy
+     addditional protections -- this usually comes at a price, reduced
+     convenience for the user.  For example, if you want to protect users from
+     simple social engineering tactics, you need to enable
+     session.use_only_cookies.  In that case, cookies must be enabled
+     unconditionally.
     </para>
     <para>
-     Therefore, when dealing with sensitive information, there should
-     always be additional methods to decide whether it is a valid
-     session. Sessions are not reliable as a secure authentication
-     mechanism.
+     There are several ways to leak an existing session id to third parties.
+     A leaked session id enables the third party to access all resources which
+     are associated with a specific id.  First, URLs carrying session ids.  If
+     you link to an external site, the URL including the session id might be
+     stored in the external site's referrer logs. Second, a more active
+     attacker might listen to your network traffic. If it is not encrypted,
+     session ids will flow in plain text over the network. The solution here
+     is to implement SSL on your server and make it mandatory for users.
     </para>
-    <para>
-     Sessions rely on the session ID, meaning one can 'steal' a
-     session, by stealing the session ID. This can be made harder, by
-     using a cookie specifically a session cookie, but does not in any
-     way make it impossible and still relies on the user closing all
-     browser windows, to expire the session cookie.
-     Besides that, even session cookies can be sniffed on a network or
-     logged by a proxyserver.
-    </para>
-
    </section>
    <section id="session.requirements">
     &reftitle.required;
@@ -100,7 +91,11 @@
       Optionally you can use shared memory allocation (mm), developed by
       Ralf S. Engelschall, for session storage. You have to download
       <ulink url="&url.mm;">mm</ulink> and install it. This option is not
-      available for Windows platforms.
+      available for Windows platforms. Note that the session storage module
+      for mm does not guarantee that concurrent accesses to the same session
+      are properly locked. It might be more appropiate to use a shared memory
+      based filesystem (such as tmpfs on Solaris/Linux, or /dev/md on BSD) to
+      store sessions in files, because they are properly locked.
      </para>
     </note>
    </section>
@@ -265,18 +260,16 @@ else {
      linkend="ini.register-globals"><literal>register_globals</literal></link>
      is enabled, then the global variables and the
      <varname>$_SESSION</varname> entries will automatically reference the
-     same value for session variables which were registered in prior session
-     instances.
+     same values which were registered in the prior session instance.
     </para>
     <para>
-     Additionally, if you register a new session variable by using
-     <function>session_register</function>, the entry in the global scope
-     and the <varname>$_SESSION</varname> entry will not reference the same
-     value until the next <function>session_start</function> (this
-     applies to PHP 4.2 and before only).  I.e. a modification to the
-     global variable will not be reflected by the
-     <varname>$_SESSION</varname> entry.  This is unlikely to matter
-     in practice and has been corrected in PHP 4.3.
+     There is a defect in PHP 4.2.3 and earlier.  If you register a new
+     session variable by using <function>session_register</function>, the
+     entry in the global scope and the <varname>$_SESSION</varname> entry will
+     not reference the same value until the next
+     <function>session_start</function>.  I.e. a modification to the newly
+     registered global variable will not be reflected by the
+     <varname>$_SESSION</varname> entry.  This has been corrected in PHP 4.3.
     </para>
    </section>
     
@@ -299,26 +292,30 @@ else {
     </para>
     <para>
      The session module supports both methods. Cookies are optimal, but
-     since they are not reliable (clients are not bound to accept
-     them), we cannot rely on them. The second method embeds the
-     session id directly into URLs.
+     because they are not always available, we also provide an alternative
+     way.  The second method embeds the session id directly into URLs.
     </para>
     <para>
-     PHP is capable of doing this transparently if compiled with <link
-     linkend="install.configure.enable-trans-sid">
-     <literal>--enable-trans-sid</literal></link>. This option is always
-     enabled in PHP 4.2 and later.  If you enable this option, relative URIs
-     will be changed to contain the session id automatically.  Alternatively,
-     you can use the constant <literal>SID</literal> which is defined, if the
-     client did not send the appropriate cookie.  <literal>SID</literal> is
-     either of the form <literal>session_name=session_id</literal> or is an
-     empty string.
+     PHP is capable of transforming links transparently. Unless you are using
+     PHP 4.2 or later, you need to enable it manually when building PHP.
+     Under UNIX, pass <link linkend="install.configure.enable-trans-sid">
+     <literal>--enable-trans-sid</literal></link> to configure. If this build
+     option and the run-time option session.use_trans_sid are enabled,
+     relative URIs will be changed to contain the session id automatically.
      <note>
       <para>
       The <link linkend="ini.arg-separator.output">arg_separator.output</link>
-      &php.ini; directive allows to customize the argument seperator.
+      &php.ini; directive allows to customize the argument seperator. For full
+      XHTML conformance, specify &amp;amp; there.
       </para>
      </note> 
+    </para>
+    <para>
+     Alternatively, you can use the constant <literal>SID</literal> which is
+     always defined.  If the client did not send an appropriate session
+     cookie, it has the form <literal>session_name=session_id</literal>.
+     Otherwise, it expands to an empty string. Thus, you can embed it
+     unconditionally into URLs.
     </para>
     <para>
      The following example demonstrates how to register a variable, and
