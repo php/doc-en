@@ -1,5 +1,5 @@
 <?xml encoding="iso-8859-1"?>
-<!-- $Revision: 1.18 $ -->
+<!-- $Revision: 1.19 $ -->
  <reference id="ref.fbsql">
   <title>FrontBase functions</title>
   <titleabbrev>FrontBase</titleabbrev>
@@ -48,7 +48,6 @@
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      <function>fbsql_affected_rows</function> returns the number
      of rows affected by the last INSERT, UPDATE or DELETE query
@@ -106,12 +105,20 @@
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      <function>fbsql_autocommit</function> returns the current
      autocommit status. if the optional OnOff parameter is
      given the auto commit status will be changed.
+     With OnOff set to &true each statement will be commited
+     automatically, if no errors was found.
+     With OnOff set to &false the user must commit or rollback
+     the transaction unsing either <function>fbsql_commit</function> or
+     <function>fbsql_rollback</function>.
     </para> 
+    <para> See also:
+     <function>fbsql_commit</function> and
+     <function>fbsql_rollback</function>
+    </para>
    </refsect1>
   </refentry>
 
@@ -141,7 +148,6 @@
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      <function>fbsql_change_user</function> changes the logged in user
      of the current active connection, or the connection given by the 
@@ -170,7 +176,6 @@
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      Returns: &true; on success, &false; on error.
     </para>
@@ -198,6 +203,39 @@
     <para> 
      See also: <function>fbsql_connect</function>, and
      <function>fbsql_pconnect</function>.
+    </para>
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.fbsql-commit">
+   <refnamediv>
+    <refname>fbsql_commit</refname>
+    <refpurpose>Commits a transaction to the database</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>fbsql_commit</function></funcdef>
+      <paramdef>resource 
+       <parameter>
+        <optional>link_identifier</optional>
+       </parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para> 
+     Returns: &true; on success, &false; on failure.
+    </para>
+    <para> 
+     <function>fbsql_commit</function> ends the current transaction
+     by writing all insertsm updates and deletes to the disk and unlucking
+     all row and table locks held by the transaction.
+     This command is only needed if autocommit is set to false.
+    </para>
+    <para> See also:
+     <function>fbsql_autocommit</function> and
+     <function>fbsql_rollback</function>
     </para>
    </refsect1>
   </refentry>
@@ -230,7 +268,6 @@
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns a positive FrontBase link identifier on success, or an error
      message on failure.
@@ -292,7 +329,6 @@
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      <function>fbsql_create_db</function> attempts to create a new
      database on the server associated with the specified link
@@ -336,7 +372,6 @@
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns: The database password for the database represented by the link
      identifier.
@@ -372,7 +407,6 @@
       <paramdef>int <parameter>row_number</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns: &true; on success, &false; on failure.
     </para>
@@ -440,7 +474,6 @@
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns: A positive FrontBase result identifier to the query result,
      or &false; on error.
@@ -455,6 +488,85 @@
     </para>
     <para> 
      See also <function>fbsql_connect</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.fbsql-db-status">
+   <refnamediv>
+    <refname>fbsql_db_status</refname>
+    <refpurpose>Get the status for a given database.</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>int <function>fbsql_db_status</function></funcdef>
+      <paramdef>string <parameter>database_name</parameter></paramdef>
+      <paramdef>resource 
+       <parameter>
+        <optional>link_identifier</optional>
+       </parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para> 
+     Returns: An integer value with the current status.
+    </para>
+    <para> 
+     <function>fbsql_db_status</function> requests the current
+     status of the database specified by <parameter>database_name</parameter>.
+     if the <parameter>link_identifier</parameter> is omitted the default 
+     link_identifier will be used.
+    </para>
+    <para> 
+     The return value can be one of the following constants:
+     <itemizedlist>
+      <listitem>
+       <simpara>
+	&false - The exec handler for the host was invalid. This
+	error will ocour when the link_identifier connects directly to
+	a database by using a port number. FBExec can be available on the 
+	server but no connection has been made for it.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+	FBSQL_UNKNOWN - The Status is unknown.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+	FBSQL_STOPPED - The database is not running. Use 
+	<function>fbsql_start_db</function> to start the database.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+	FBSQL_STARTING - The database is starting.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+	FBSQL_RUNNING - The database is running and can be used to
+	perform SQL operations.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+	FBSQL_STOPPING - The database is stopping.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+	FBSQL_NOEXEC - FBExec is not running on the server and it is not 
+	possible to get the status of the database.
+       </simpara>
+      </listitem>
+    </para>
+    <para> See also:
+     <function>fbsql_start_db</function> and
+     <function>fbsql_stop_db</function>
     </para>
    </refsect1>
   </refentry>
@@ -477,7 +589,6 @@
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns: &true; on success, &false; on failure.
     </para>  
@@ -507,7 +618,6 @@
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      Returns the error number from the last fbsql function, or
      <literal>0</literal> (zero) if no error occurred.
@@ -559,7 +669,6 @@ echo fbsql_errno().": ".fbsql_error()."&lt;BR>";
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      Returns the error text from the last fbsql function, or
      <literal>''</literal> (the empty string) if no error occurred.
@@ -612,7 +721,6 @@ echo fbsql_errno().": ".fbsql_error()."&lt;BR>";
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns an array that corresponds to the fetched row, or &false;
      if there are no more rows.</para>
@@ -683,7 +791,6 @@ fbsql_free_result ($result);
       <paramdef>resource <parameter>result</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns an associative array that corresponds to the fetched row,
      or &false; if there are no more rows.</para>
@@ -748,7 +855,6 @@ fbsql_free_result ($result);
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      Returns an object containing field information.
     </para>  
@@ -840,7 +946,6 @@ fbsql_free_result ($result);
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns: An array that corresponds to the lengths of each field
      in the last row fetched by <function>fbsql_fetch_row</function>,
@@ -878,7 +983,6 @@ fbsql_free_result ($result);
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns an object with properties that correspond to the fetched
      row, or &false; if there are no more rows.
@@ -935,7 +1039,6 @@ fbsql_free_result ($result);
       <paramdef>resource <parameter>result</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns: An array that corresponds to the fetched row, or &false;
      if there are no more rows.
@@ -977,7 +1080,6 @@ fbsql_free_result ($result);
       <paramdef>int <parameter>field_offset</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      <function>fbsql_field_flags</function> returns the field flags of
      the specified field. The flags are reported as a single word
@@ -1003,7 +1105,6 @@ fbsql_free_result ($result);
       <paramdef>int <parameter>field_index</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      <function>fbsql_field_name</function> returns the name of the
      specified field index. <parameter>result</parameter> must be a
@@ -1063,7 +1164,6 @@ password
       <paramdef>int <parameter>field_offset</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      <function>fbsql_field_len</function> returns the length of the
      specified field.
@@ -1087,7 +1187,6 @@ password
       <paramdef>int <parameter>field_offset</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      Seeks to the specified field offset.  If the next call to
      <function>fbsql_fetch_field</function> doesn't include a field
@@ -1116,7 +1215,6 @@ password
       <paramdef>int <parameter>field_offset</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns the name of the table that the specifed field is
      in.
@@ -1140,7 +1238,6 @@ password
       <paramdef>int <parameter>field_offset</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      <function>fbsql_field_type</function> is similar to the
      <function>fbsql_field_name</function> function. The arguments are
@@ -1192,7 +1289,6 @@ fbsql_close();
       <paramdef>int <parameter>result</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      <function>fbsql_free_result</function> will free all memory
      associated with the result identifier <parameter>result</parameter>.
@@ -1225,7 +1321,6 @@ fbsql_close();
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      <function>fbsql_insert_id</function> returns the ID generated for
      an column defined as DEFAULT UNIQUE by the previous INSERT query using the
@@ -1269,7 +1364,6 @@ fbsql_close();
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      <function>fbsql_list_dbs</function> will return a result pointer
      containing the databases available from the current fbsql
@@ -1328,7 +1422,6 @@ database3
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      <function>fbsql_list_fields</function> retrieves information
      about the given tablename. Arguments are the database name and
@@ -1392,7 +1485,6 @@ field3
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      <function>fbsql_list_tables</function> takes a database name and
      returns a result pointer much like the
@@ -1418,7 +1510,6 @@ field3
       <paramdef>int <parameter>result_id</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      When sending more than one SQL statement to the server or executing a stored procedure
      with multiple results will cause the server to return multiple result sets.
@@ -1461,7 +1552,6 @@ field3
       <paramdef>resource <parameter>result</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      <function>fbsql_num_fields</function> returns the number of
      fields in a result set.
@@ -1488,7 +1578,6 @@ field3
       <paramdef>resource <parameter>result</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      <function>fbsql_num_rows</function> returns the number of rows in
      a result set. This command is only valid for SELECT statements. 
@@ -1544,7 +1633,6 @@ echo "$num_rows Rows\n";
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns: A positive FrontBase persistent link identifier on success,
      or &false; on error.
@@ -1596,7 +1684,6 @@ echo "$num_rows Rows\n";
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      <function>fbsql_query</function> sends a query to the currently
      active database on the server that's associated with the
@@ -1699,7 +1786,6 @@ $result = fbsql_query ("SELECT my_col FROM my_tbl")
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      <function>fbsql_result</function> returns the contents of one
      cell from a FrontBase result set.  The field argument can be the
@@ -1730,6 +1816,38 @@ $result = fbsql_query ("SELECT my_col FROM my_tbl")
    </refsect1>
   </refentry>
 
+  <refentry id="function.fbsql-rollback">
+   <refnamediv>
+    <refname>fbsql_rollback</refname>
+    <refpurpose>Rollback a transaction to the database</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>fbsql_rollback</function></funcdef>
+      <paramdef>resource 
+       <parameter>
+        <optional>link_identifier</optional>
+       </parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para> 
+     Returns: &true; on success, &false; on failure.
+    </para>
+    <para> 
+     <function>fbsql_rollback</function> ends the current transaction by
+     rolling back all statements issued since last commit.
+     This command is only needed if autocommit is set to false.
+    </para>
+    <para> See also:
+     <function>fbsql_autocommit</function> and
+     <function>fbsql_commit</function>
+    </para>
+   </refsect1>
+  </refentry>
+
   <refentry id="function.fbsql-select-db">
    <refnamediv>
     <refname>fbsql_select_db</refname>
@@ -1748,7 +1866,6 @@ $result = fbsql_query ("SELECT my_col FROM my_tbl")
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns: &true; on success, &false; on error.
     </para>
@@ -1780,6 +1897,68 @@ $result = fbsql_query ("SELECT my_col FROM my_tbl")
    </refsect1>
   </refentry>
 
+  <refentry id="function.fbsql-start-db">
+   <refnamediv>
+    <refname>fbsql_start_db</refname>
+    <refpurpose>Start a database on local or remote server</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>fbsql_start_db</function></funcdef>
+      <paramdef>string <parameter>database_name</parameter></paramdef>
+      <paramdef>resource 
+       <parameter>
+        <optional>link_identifier</optional>
+       </parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para> 
+     Returns: &true; on success, &false; on failure.
+    </para>
+    <para> 
+     <function>fbsql_start_db</function>
+    </para>
+    <para> See also:
+     <function>fbsql_db_status</function> and
+     <function>fbsql_stop_db</function>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.fbsql-stop-db">
+   <refnamediv>
+    <refname>fbsql_stop_db</refname>
+    <refpurpose>Stop a database on local or remote server</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool <function>fbsql_stop_db</function></funcdef>
+      <paramdef>string <parameter>database_name</parameter></paramdef>
+      <paramdef>resource 
+       <parameter>
+        <optional>link_identifier</optional>
+       </parameter>
+      </paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para> 
+     Returns: &true; on success, &false; on failure.
+    </para>
+    <para> 
+     <function>fbsql_stop_db</function>
+    </para>
+    <para> See also:
+     <function>fbsql_db_status</function> and
+     <function>fbsql_start_db</function>
+    </para>
+   </refsect1>
+  </refentry>
+
   <refentry id="function.fbsql-tablename">
    <refnamediv>
     <refname>fbsql_tablename</refname>
@@ -1794,7 +1973,6 @@ $result = fbsql_query ("SELECT my_col FROM my_tbl")
       <paramdef>int <parameter>i</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      <function>fbsql_tablename</function> takes a result pointer
      returned by the <function>fbsql_list_tables</function> function
@@ -1837,7 +2015,6 @@ while ($i &lt; fbsql_num_rows ($result)) {
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para> 
      Returns  &true; if warnings is turned on otherwise &false;.
     </para>
