@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.2 2004-10-18 20:28:10 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.3 2004-10-19 15:11:09 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -34,7 +34,7 @@ article   toc
 book      toc,title
 chapter   toc,title
 part      toc,title
-preface   toc
+preface   toc,title
 qandadiv  toc
 qandaset  toc
 reference toc,title
@@ -271,7 +271,6 @@ set       toc
 </xsl:template>
 
 
-<xsl:param name="htmlhelp.only" select="1"/>
 <!--
 <xsl:param name="htmlhelp.only" select="1"/>
 htmlhelp.autolabel - chapter and section numbers in ToC - off
