@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.25 $ -->
+<!-- $Revision: 1.26 $ -->
  <reference id="ref.xslt">
   <title>XSLT functions</title>
   <titleabbrev>XSLT</titleabbrev>
 
   <partintro>
-	   &warn.experimental;
    <sect1 id="xslt.partintro">
     <title>Introduction</title>
 
@@ -24,7 +23,7 @@
     <sect2 id="xslt.install">
      <title>Installation</title>
      <para>
-      This extension uses <productname>Sabloton</productname>
+      This extension uses <productname>Sablotron</productname>
       and <productname>expat</productname>, which can both be
       found at <ulink
       url="&url.sablotron;">&url.sablotron;</ulink>. Binaries
@@ -32,8 +31,8 @@
      </para>
      <para>
       On UNIX, run <command>configure</command> with the <option
-      role="configure">--with-sablot</option>.  
-      The <productname>Sablotron</productname> library
+      role="configure">--enable-xslt --with-xslt-sablot</option>
+      options.  The <productname>Sablotron</productname> library
       should be installed somewhere your compiler can find it. 
      </para>
     </sect2>
@@ -41,33 +40,38 @@
     <sect2 id="xslt.about">
      <title>About This Extension</title>
      <para>
-      This PHP extension implements support
-      <productname>Sablotron</productname> from Ginger Alliance
-      in PHP. This toolkit lets you transform 
-      XML documents into other documents, including new XML
-      documents, but also into HTML or other target formats. It
-      basically provides a standardized and portable template
-      mechanism, separating content and design of a website.
+      This PHP extension provides a processor independent API to XSLT
+      transformations.  Currently this extension only supports the Sablotron
+      library from the Ginger Alliance.  Support is planned for other 
+      libraries, such as the Xalan library or the libxslt library.
      </para>
+     <note>
+      <simpara>
+       This extension is different than the sablotron extension distributed with
+       versions of PHP prior to PHP 4.1, currently only the new XSLT extension in 
+       PHP 4.1 is supported.  If you need support for the old extension, please ask
+       your questions on the php-general@lists.php.net mailing list.
+      </simpara>
+     </note>
     </sect2>
 
    </sect1>
   </partintro>
 
-  <refentry id="function.xslt-closelog">
+  <refentry id="function.xslt-set-log">
    <refnamediv>
-    <refname>xslt_closelog</refname>
-    <refpurpose>Clear the logfile for a given instance of Sablotron</refpurpose>
+    <refname>xslt_set_log</refname>
+    <refpurpose>Set the log file to write log messages to</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>bool <function>xslt_closelog</function></funcdef>
+      <funcdef>void <function>xslt_set_log</function></funcdef>
       <paramdef>resource <parameter>xh</parameter></paramdef>
+      <paramdef>mixed <parameter>log</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      <variablelist>
       <varlistentry>
@@ -78,11 +82,47 @@
     </simpara>
        </listitem>
       </varlistentry>
+      <varlistentry>
+       <term><parameter>log</parameter></term>
+       <listitem>
+       <simpara>
+       This parameter is either a boolean value which toggles logging on and off, or a
+       string containing the logfile in which log errors too.
+       </simpara>
+       </listitem>
+      </varlistentry> 
      </variablelist></para>
     <para>
-     This function returns &false; if <parameter>parser</parameter> does
-     not refer to a valid parser, or if the closing of the logfile
-     fails. Otherwise it returns &true;.
+    This function allows you to set the file in which you want XSLT log messages to, 
+    XSLT log messages are different than error messages, in that log messages are not 
+    actually error messages but rather messages related to the state of the XSLT processor.
+    They are useful for debugging XSLT, when something goes wrong.
+    </para>
+    <para>
+    By default logging is disabled, in order to enable logging you must first call 
+    <function>xslt_set_log</function> with a boolean parameter which enables logging, then if 
+    you want to set the log file to debug to, you must then pass it a string containing the 
+    filename:
+     <example>
+      <title>
+      Using the XSLT Logging features
+      </title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+$xh = xslt_create();
+xslt_set_log($xh, true);
+xslt_set_log($xh, getcwd() . 'myfile.log');
+
+$result = xslt_process($xh, 'dog.xml', 'pets.xsl');
+print($result);
+
+xslt_free($xh);
+?>
+]]>
+      </programlisting>
+     </example>
     </para>
    </refsect1>
   </refentry>
@@ -90,7 +130,7 @@
   <refentry id="function.xslt-create">
    <refnamediv>
     <refname>xslt_create</refname>
-    <refpurpose>Create a new XSL processor.</refpurpose>
+    <refpurpose>Create a new XSLT processor.</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
@@ -100,10 +140,9 @@
       <void/>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
-     This function returns a handle for a new XSL processor. This handle
-     is needed in all subsequent calls to XSL functions.
+     Create and return a new XSLT processor resource for manipulation by the
+     other XSLT functions.
     </para>
    </refsect1>
   </refentry>
@@ -111,7 +150,7 @@
   <refentry id="function.xslt-errno">
    <refnamediv>
     <refname>xslt_errno</refname>
-    <refpurpose>Return the current error number</refpurpose>
+    <refpurpose>Return a error number</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
@@ -123,11 +162,9 @@
        </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
-     Return the current error number of the given XSL processor. If
-     no handle is given, the last error number that occured anywhere
-     is returned.
+     Return an error code describing the last error that occured on the 
+     passed XSLT processor.
     </para>
    </refsect1>
   </refentry>
@@ -135,7 +172,7 @@
   <refentry id="function.xslt-error">
    <refnamediv>
     <refname>xslt_error</refname>
-    <refpurpose>Return the current error string</refpurpose>
+    <refpurpose>Return a error string</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
@@ -147,34 +184,34 @@
        </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
-     Return the current error string of the given XSL processor. If
-     no handle is given, the last error string that occured anywhere
-     is returned.
+     Return a string describing the last error that occured on the 
+     passed XSLT processor.
     </para>
-   </refsect1>
-  </refentry>
-
-  <refentry id="function.xslt-fetch-result">
-   <refnamediv>
-    <refname>xslt_fetch_result</refname>
-    <refpurpose>Fetch a (named) result buffer</refpurpose>
-   </refnamediv>
-   <refsect1>
-    <title>Description</title>
-    <funcsynopsis>
-     <funcprototype>
-      <funcdef>string <function>xslt_fetch_result</function></funcdef>
-       <paramdef>resource <parameter>xh</parameter></paramdef>
-       <paramdef>string <parameter>result_name</parameter></paramdef>
-     </funcprototype>
-    </funcsynopsis>
-	&warn.experimental.func;
     <para>
-     Fetch a result buffer from the XSLT processor identified by
-     the given handle. If no result name is given, the
-     buffer named &quot;/_result&quot; is fetched.
+     <example>
+      <title>
+      Handling errors using the <function>xslt_error</function> and 
+      <function>xslt_errno</function> functions.
+      </title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+$xh = xslt_create();
+$result = xslt_process($xh, 'dog.xml', 'pets.xsl');
+if (!$result) {
+    die(sprintf("Cannot process XSLT document [%d]: %s", 
+                xslt_errno($xh), xslt_error($xh)));
+}
+
+print($result);
+
+xslt_free($xh);
+?>
+]]>
+      </programlisting>
+     </example>
     </para>
    </refsect1>
   </refentry>
@@ -194,119 +231,8 @@
        </paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      Free the XSLT processor identified by the given handle.
-    </para>
-   </refsect1>
-  </refentry>
-
-  <refentry id="function.xslt-openlog">
-   <refnamediv>
-    <refname>xslt_openlog</refname>
-    <refpurpose>Set a logfile for XSLT processor messages</refpurpose>
-   </refnamediv>
-   <refsect1>
-    <title>Description</title>
-    <funcsynopsis>
-     <funcprototype>
-      <funcdef>bool <function>xslt_openlog</function></funcdef>
-       <paramdef>resource <parameter>xh</parameter></paramdef>
-       <paramdef>string <parameter>logfile</parameter></paramdef>
-       <paramdef>int <parameter>loglevel</parameter></paramdef>
-     </funcprototype>
-    </funcsynopsis>
-	&warn.experimental.func;
-    <para>
-     Set a logfile for the XSLT processor to place all of its error
-     messages.
-    </para>
-   </refsect1>
-  </refentry>
-
-  <refentry id="function.xslt-output-begintransform">
-   <refnamediv>
-    <refname>xslt_output_begintransform</refname>
-    <refpurpose>Begin an XSLT transformation on the output</refpurpose>
-   </refnamediv>
-   <refsect1>
-    <title>Description</title>
-    <funcsynopsis>
-     <funcprototype>
-      <funcdef>void 
-       <function>xslt_output_begintransform</function>
-      </funcdef>
-       <paramdef>
-        string <parameter>xslt_filename</parameter>
-       </paramdef>
-     </funcprototype>
-    </funcsynopsis>
-	&warn.experimental.func;
-    <para>
-     This function will begin the output transformation on your data.
-     From the point you call <function>xslt_output_begintransform</function>
-     till the point you call <function>xslt_output_endtransform</function>
-     all output will be transformed through the xslt stylesheet given by
-     the first argument.
-    </para>
-    <para>
-     <note>
-      <simpara>
-       This function does not currently support nested output transformations.
-      </simpara>
-     </note>
-    </para>
-    <para>
-     <example>
-      <title>
-       Transforming output through an XSLT stylesheet, using the DOM-XML functions for xml generation
-      </title>
-      <programlisting role="php">
-<![CDATA[
-<?php
-
-$xsl_file = "article.xsl";
-xslt_output_begintransform($xsl_file);
-
-$doc = new_xmldoc('1.0');
-$article = $doc->new_root('article');
-
-$article->new_child('title', 'The History of South Tyrol');
-$article->new_child('author', 'Sterling Hughes');
-$article->new_child('body', 'Back after WWI, Italy gained South Tyrol from 
-                             Austria.  Since that point nothing interesting has
-                             happened');
-
-echo $doc->dumpmem();
-
-xslt_output_endtransform();
-]]>
-      </programlisting>
-     </example>
-    </para>
-   </refsect1>
-  </refentry>
-
-  <refentry id="function.xslt-output-endtransform">
-   <refnamediv>
-    <refname>xslt_output_endtransform</refname>
-    <refpurpose>End an output transformation started with xslt_output_begintransform</refpurpose>
-   </refnamediv>
-   <refsect1>
-    <title>Description</title>
-    <funcsynopsis>
-     <funcprototype>
-      <funcdef>void
-       <function>xslt_output_endtransform</function>
-      </funcdef>
-      <void/>
-     </funcprototype>
-    </funcsynopsis>
-	&warn.experimental.func;
-    <para>
-     The <function>xslt_output_endtransform</function> ends the output transformation
-     started by the <function>xslt_output_begintransform</function> function.  You must call
-     this function in order to see the results of the output transformation.
     </para>
    </refsect1>
   </refentry>
@@ -314,115 +240,159 @@ xslt_output_endtransform();
   <refentry id="function.xslt-process">
    <refnamediv>
     <refname>xslt_process</refname>
-    <refpurpose>Transform XML data through a string containing XSL data</refpurpose>
+    <refpurpose>Perform an XSLT transformation</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>bool 
+      <funcdef>mixed 
        <function>xslt_process</function>
       </funcdef>
-       <paramdef>string <parameter>xsl_data</parameter></paramdef>
-       <paramdef>string <parameter>xml_data</parameter></paramdef>
-       <paramdef>string <parameter>result</parameter></paramdef>
+       <paramdef>resource <parameter>xh</parameter></paramdef>
+       <paramdef>string <parameter>xml</parameter></paramdef>
+       <paramdef>string <parameter>xsl</parameter></paramdef>
+       <paramdef>string <parameter><optional>result</optional></parameter></paramdef>
+       <paramdef>array <parameter><optional>arguments</optional></parameter></paramdef>
+       <paramdef>array <parameter><optional>parameters</optional></parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
-     The <function>xslt_process</function> takes a string containing the XSLT stylesheet as
-     its first argument, it takes a second string containing the XML data you want to 
-     transform and then a third string containing the results of the transformation. 
-     <function>xslt_process</function> will return &true; on success and &false; on failure,
-     to get the error number and error string if an error occurs use the 
-     <function>xslt_errno</function> and <function>xslt_error</function> functions.
+     The XSLT process function is the crux of the new XSLT extension, it allows you to
+     perform an XSLT transformation using almost any type of input source visa-vi the concept 
+     of argument buffers.  Argument buffers is a concept taken from the Sablotron XSLT 
+     processors (which is currently the only XSLT processor this extension supports).  
     </para>
     <para>
+     The simplest type of transformation with the <function>xslt_process</function> function 
+     is transforming an XML file with an XSLT file and placing the result in third file, which
+     contains the new XML document (or HTML document).  Doing this with sablotron is really quite 
+     easy...
+    <para>
      <example>
-     <title>Using the <function>xslt_process</function> to transform three strings</title>
+     <title>Using the <function>xslt_process</function> to transform an XML file and a XSL file 
+     to a new XML file</title>
      <programlisting role="php">
 <![CDATA[
 <?php
 
-$xslData = '<xsl:stylesheet
-  version="1.0"
-  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+// Allocate a new XSLT processor
+$xh = xslt_create();
 
-<xsl:template match="article">
-    <table border="1" cellpadding="2" cellspacing="1">
-        <tr>
-            <td width="20%">
-             &amp;#160;
-            </td>
-            <td width="80%">
-                <h2><xsl:value-of select="title"/></h2>
-                <h3><xsl:value-of select="author"/></h3>
-                <br/>
-                
-                <xsl:copy-of select="p"/>
-            </td>
-        </tr>
-    </table>
-</xsl:template>
-
-</xsl:stylesheet>';
-
-$xmlData = '<?xml version="1.0"?>
-<article>
-    <title>Learning German</title>
-    <author>Sterling Hughes</author>
-    <p>
-        Essential phrases:
-        <br/>
-        K#246;nnen Sie mir sagen, wo die Toilette ist?<br/>
-        Ein grosses Bier, bitte!<br/>
-        Noch eins, bitte.<br/>
-    </p>
-</article>';
-
-if (xslt_process($xslData, $xmlData, $result)) {
-    echo "Here is the brilliant in-depth article on learning";
-    echo " German: ";
-    echo "<br>\n<br>";
-    echo $result;
-} else {
-    echo "There was an error that occurred in the XSL transformation...\n";
-    echo "\tError number: " . xslt_errno() . "\n";
-    echo "\tError string: " . xslt_error() . "\n";
-    exit;
+// Process the document
+if (xslt_process($xh, 'sample.xml', 'sample.xsl', 'result.xml')) {
+    print "SUCCESS, sample.xml was transformed by sample.xsl into result.xml";
+    print ", result.xml has the following contents\n<br>\n";
+    print "<pre>\n";
+    readfile('result.xml');
+    print "</pre>\n";
 }
+else {
+    print "Sorry, sample.xml could not be transformed by sample.xsl into";
+    print "  result.xml the reason is that " . xslt_error($xh) . " and the ";
+    print "error code is " . xslt_errno($xh);
+}
+
+xslt_free($xh);
+
 ?>
 ]]>
       </programlisting>
      </example>
     </para>
-   </refsect1>
-  </refentry>
-
-  <refentry id="function.xslt-run">
-   <refnamediv>
-    <refname>xslt_run</refname>
-    <refpurpose>Apply a XSLT stylesheet to a file.</refpurpose>
-   </refnamediv>
-   <refsect1>
-    <title>Description</title>
-    <funcsynopsis>
-     <funcprototype>
-      <funcdef>bool <function>xslt_run</function></funcdef>
-       <paramdef>resource <parameter>xh</parameter></paramdef>
-       <paramdef>string <parameter>xslt_file</parameter></paramdef>
-       <paramdef>string <parameter>xml_data_file</parameter></paramdef>
-       <paramdef>string <parameter>result</parameter></paramdef>
-       <paramdef>array <parameter>xslt_params</parameter></paramdef>
-       <paramdef>array <parameter>xslt_args</parameter></paramdef>
-     </funcprototype>
-    </funcsynopsis>
-	&warn.experimental.func;
     <para>
-      Process the xml_data_file by applying the xslt_file stylesheet to
-      it. The stylesheet has access to xslt_params and the processor
-      is started with xslt_args. The result of the XSLT transformation
-      is placed in the named buffer (default is &quot;/_result&quot;).
+     While this functionality is great, many times, especially in a web environment, you want to
+     be able to print out your results directly.  Therefore, if you omit the third argument to 
+     the <function>xslt_process</function> function (or provide a NULL value for the argument), it 
+     will automatically return the value of the XSLT transformation, instead of writing it to a 
+     file...
+    </para>
+    <para>
+     <example>
+     <title>Using the <function>xslt_process</function> to transform an XML file and a XSL file 
+     to a variable containing the resulting XML data</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+// Allocate a new XSLT processor
+$xh = xslt_create();
+
+// Process the document, returning the result into the $result variable
+$result = xslt_process($xh, 'sample.xml', 'sample.xsl');
+if ($result) {
+    print "SUCCESS, sample.xml was transformed by sample.xsl into the \$result";
+    print " variable, the \$result variable has the following contents\n<br>\n";
+    print "<pre>\n";
+    print $result;
+    print "</pre>\n";
+}
+else {
+    print "Sorry, sample.xml could not be transformed by sample.xsl into";
+    print "  the \$result variable the reason is that " . xslt_error($xh) . 
+    print " and the error code is " . xslt_errno($xh);
+}
+
+xslt_free($xh);
+
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     The above two cases are the two simplest cases there are when it comes to XSLT transformation
+     and I'd dare say that they are the most common cases, however, sometimes you get your XML and
+     XSLT code from external sources, such as a database or a socket.  In these cases you'll have 
+     the XML and/or XSLT data in a variable -- and in production applications the overhead of dumping
+     these to file may be too much.  This is where XSLT's &quot;argument&quot; syntax, comes to the 
+     rescue.  Instead of files as the XML and XSLT arguments to the <function>xslt_process</function>
+     function, you can specify &quot;argument place holders&quot; which are then subsituted by values
+     given in the arguments array (5th parameter to the <function>xslt_process</function> function).  
+     The following is an example of processing XML and XSLT into a result variable without the use 
+     of files at all.
+    </para>
+    <para>
+     <example>
+     <title>Using the <function>xslt_process</function> to transform a variable containing XML data 
+     and a variable containing XSL data into a variable containing the resulting XML data</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+// $xml and $xsl contain the XML and XSL data
+
+$arguments = array(
+     '/_xml' => $xml,
+     '/_xsl' => $xsl
+);
+
+// Allocate a new XSLT processor
+$xh = xslt_create();
+
+// Process the document
+$result = xslt_process($xh, 'arg:/_xml', 'arg:/_xsl', NULL, $arguments); 
+if ($result) {
+    print "SUCCESS, sample.xml was transformed by sample.xsl into the \$result";
+    print " variable, the \$result variable has the following contents\n<br>\n";
+    print "<pre>\n";
+    print $result;
+    print "</pre>\n";
+}
+else {
+    print "Sorry, sample.xml could not be transformed by sample.xsl into";
+    print "  the \$result variable the reason is that " . xslt_error($xh) . 
+    print " and the error code is " . xslt_errno($xh);
+}
+xslt_free($xh);
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     Finally, the last argument to the <function>xslt_process</function> function is any parameters
+     that you want to pass to the XSLT document.  These parameters can then be accessed within
+     your XSL files using the &lt;xsl:param name=&quot;parameter_name&quot;&gt; instruction.
     </para>
    </refsect1>
   </refentry>
@@ -436,43 +406,141 @@ if (xslt_process($xslData, $xmlData, $result)) {
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>bool <function>xslt_set_sax_handler</function></funcdef>
+      <funcdef>void <function>xslt_set_sax_handler</function></funcdef>
        <paramdef>resource <parameter>xh</parameter></paramdef>
        <paramdef>array <parameter>handlers</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
      Set SAX handlers on the resource handle given by 
-     <parameter>xh</parameter>.
+     <parameter>xh</parameter>. SAX handlers should be a two dimensional array 
+     with the format (all top level elements are optional):
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+array(
+[document] => 
+    array(
+        start document handler,
+        end document handler
+    ),
+[element] => 
+    array(
+        start element handler,
+        end element handler
+    ),
+[namespace] => 
+    array(
+        start namespace handler,
+        end namespace handler
+    ),
+[comment] => comment handler,
+[pi] => processing instruction handler,
+[character] => character data handler
+)
+]]>
+     </programlisting>
+    </informalexample>
     </para>
    </refsect1>
   </refentry>
 
-  <refentry id="function.xslt-transform">
+  <refentry id="function.xslt-set-scheme-handler">
    <refnamediv>
-    <refname>xslt_transform</refname>
-    <refpurpose>Perform an XSLT transformation</refpurpose>
+    <refname>xslt_set_scheme_handler</refname>
+    <refpurpose>Set Scheme handlers for a XSLT processor</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>bool
-       <function>xslt_transform</function>
-      </funcdef>
-      <paramdef>string <parameter>xsl</parameter></paramdef>
-      <paramdef>string <parameter>xml</parameter></paramdef>
-      <paramdef>string <parameter>result</parameter></paramdef>
-      <paramdef>string <parameter>params</parameter></paramdef>
-      <paramdef>string <parameter>args</parameter></paramdef>
-      <paramdef>string <parameter>resultBuffer</parameter></paramdef>
+      <funcdef>void <function>xslt_set_scheme_handler</function></funcdef>
+       <paramdef>resource <parameter>xh</parameter></paramdef>
+       <paramdef>array <parameter>handlers</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
-	&warn.experimental.func;
     <para>
-     The <function>xslt_transform</function> provides an interface to sablotron's
-     more advanced features without requiring you to use the resource API.
+     Set Scheme handlers on the resource handle given by 
+     <parameter>xh</parameter>. Scheme handlers should be an array with the
+     format (all elements are optional):
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+array(
+[get_all] => get all handler,
+[open] => open handler,
+[get] => get handler,
+[put] => put handler,
+[close] => close handler
+)
+]]>
+     </programlisting>
+    </informalexample>
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.xslt-set-error-handler">
+   <refnamediv>
+    <refname>xslt_set_error_handler</refname>
+    <refpurpose>Set an error handler for a XSLT processor</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>void <function>xslt_set_error_handler</function></funcdef>
+       <paramdef>resource <parameter>xh</parameter></paramdef>
+       <paramdef>mixed <parameter>handler</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Set an error handler function for the XSLT processor given by <parameter>xh</parameter>,
+     this function will be called whenever an error occurs in the XSLT transformation
+     (this function is also called for notices).
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.xslt-set-base">
+   <refnamediv>
+    <refname>xslt_set_base</refname>
+    <refpurpose>Set the base URI for all XSLT transformations</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>void <function>xslt_set_base</function></funcdef>
+       <paramdef>resource <parameter>xh</parameter></paramdef>
+       <paramdef>string <parameter>uri</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Sets the base URI for all XSLT transformations, the base URI is used 
+     with Xpath instructions to resolve document() and other commands which 
+     access external resources.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.xslt-set-encoding">
+   <refnamediv>
+    <refname>xslt_set_encoding</refname>
+    <refpurpose>Set the encoding for the parsing of XML documents</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>void <function>xslt_set_encoding</function></funcdef>
+       <paramdef>resource <parameter>xh</parameter></paramdef>
+       <paramdef>string <parameter>encoding</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     Set the encoding for the XSLT transformations.  When using the Sablotron backend this option
+     is only available when you compile Sablotron with encoding support.
     </para>
    </refsect1>
   </refentry>
