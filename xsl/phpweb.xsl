@@ -3,7 +3,7 @@
 
   PHP.net web site specific stylesheet
 
-  $Id: phpweb.xsl,v 1.2 2003-04-20 09:08:23 goba Exp $
+  $Id: phpweb.xsl,v 1.3 2003-04-21 12:50:55 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -32,18 +32,14 @@
  <xsl:variable name="home" select="/*[1]"/>
  <xsl:variable name="up" select="parent::*"/>
 
- <xsl:text disable-output-escaping="yes">&lt;?php
-  require('shared-manual.inc');
-  sendManualHeaders('@ENCODING@','@LANG@');
-  setupNavigation(array(
-    'home' =&gt; </xsl:text>
+ <xsl:call-template name="phpweb.header"/>
  
  <xsl:call-template name="phpdoc.nav.array">
   <xsl:with-param name="node" select="$home"/>
  </xsl:call-template>
   
  <xsl:text disable-output-escaping="yes">,
-    'prev' =&gt; </xsl:text>
+    'prev' =&lt; </xsl:text>
 
  <xsl:call-template name="phpdoc.nav.array">
   <xsl:with-param name="node" select="$prev"/>
