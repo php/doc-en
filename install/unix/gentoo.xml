@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+<sect1 id="install.unix.gentoo">
+ <title>Gentoo installation notes</title>
+ <para>
+ This section contains notes and hints specific to installing
+ PHP on <ulink url="&url.gentoo;">Gentoo Linux</ulink>.
+ </para>
+ <sect2 id="install.unix.gentoo.portage">
+  <title>Using Portage (emerge)</title>
+   <simpara>
+    While you can just download the PHP source and compile it youself,
+    using Gentoo's packaging system is the simplest and cleanest
+    method of installing PHP. If you are not familiar with building
+    software on Linux, this is the way to go.
+   </simpara>
+   <simpara>
+    If you have built your Gentoo system so far, you are probably used
+    to Portage already. Installing Apache and PHP is no different than 
+    the other system tools.
+   </simpara>
+   <simpara>
+    The first decision you need to make is whether you want to install
+    Apache 1.3.x or Apache 2.x. While both can be used with PHP, the 
+    steps given bellow will use Apache 1.3.x. Another thing to consider
+    is whether your local Portage tree is up to date. If you have not
+    updated it recently, you need to run <command>emerge sync</command>
+    before anything else. This way, you will be using the most recent
+    stable version of Apache and PHP.
+   </simpara>
+   <simpara>
+    Now that everything is in place, you can use the following example
+    to install Apache and PHP:
+   </simpara>
+   <example id="install.unix.gentoo.portage.example">
+    <title>Gentoo Install Example with Apache 1.3</title>
+    <programlisting role="shell">
+<![CDATA[
+# emerge \<apache-2
+# USE="-*" emerge php mod_php
+# ebuild /var/db/pkg/dev-php/mod_php-<your PHP version>/mod_php-<your PHP version>.ebuild config
+# nano /etc/conf.d/apache
+  Add "-D PHP4" to APACHE_OPTS
+  
+# rc-update add apache default
+# /etc/init.d/apache start
+]]>
+    </programlisting>
+   </example>
+   <simpara>
+    You can read more about emerge in the excellent 
+    <ulink url="&url.gentoo.portage;">Portage Manual</ulink> provided
+    on the Gentoo website.
+   </simpara>
+   <simpara>
+    If you need to use Apache 2, you can simply use <command>emerge apache</command>
+    in the last example.
+   </simpara>
+ </sect2>
+ <sect2 id="install.unix.gentoo.config">
+  <title>Better control on configuration</title>
+   <simpara>
+    In the last section, PHP was emerged without any activated modules.
+    As of this writing, the only module activated by default with Portage 
+    is XML which is needed by <ulink url="&url.php.pear;">PEAR</ulink>.
+    This may not be what you want and you will soon discover that you need 
+    more activated module (like MySQL, gettext, GD, etc.)
+   </simpara>
+   <simpara>
+    When you compile PHP from source yourself, you need to activate modules
+    via the <command>configure</command> command. With Gentoo, you can simply
+    provide USE flags which will be passed to the configure script automatically.
+    To see which USE flags to use with emerge, you can try:
+   </simpara>
+   <example id="install.unix.gentoo.config.example">
+    <title>Getting the list of valid USE flags</title>
+    <programlisting role="shell">
+<![CDATA[
+# USE="-*" emerge -pv php
+
+[ebuild  N    ] dev-php/php-4.3.6-r1  -X -berkdb -crypt -curl -debug -doc 
+-fdftk -firebird -flash -freetds -gd -gd-external -gdbm -gmp -hardenedphp 
+-imap -informix -ipv6 -java -jpeg -kerberos -ldap -mcal -memlimit -mssql 
+-mysql -ncurses -nls -oci8 -odbc -pam -pdflib -png -postgres -qt -readline 
+-snmp -spell -ssl -tiff -truetype -xml2 -yaz  3,876 kB
+]]>
+    </programlisting>
+   </example>
+   <simpara>
+    As you can see from the last output, PHP considers a lot of USE flags.
+    Look at them closely and choose what you need. If you choose a flag and 
+    you do not have the proper librairies, Portage will compile them for you.
+    It is a good idea to use <command>emerge -pv</command> again to see what
+    Portage will compile in accordance to your USE flags. As an example,
+    if you do not have X installed and you choose to include X in the USE
+    flags, Portage will compile X prior to PHP, which can take a couple
+    of hours.
+   </simpara>
+   <simpara>
+    If you choose to compile PHP with MySQL, cURL and GD support, the command
+    will look something like this:
+   </simpara>  
+   <example id="install.unix.gentoo.config.example2">
+    <title>Install PHP with USE flags</title>
+    <programlisting role="shell">
+<![CDATA[
+# USE="-* curl mysql gd" emerge php mod_php
+]]>
+    </programlisting>
+   </example>
+   <simpara>
+    As in the last example, do not forget to emerge php as well as mod_php.
+    php is responsible for the command line version of PHP as mod_php is
+    for the Apache module version of PHP.
+   </simpara>
+ </sect2>
+ <sect2 id="install.unix.gentoo.faq">
+  <title>Common Problems</title>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     If you see the PHP source instead of the result the script should
+     produce, you have probably forgot to edit <filename>/etc/conf.d/apache</filename>.
+     Apache needs to be started with the -D PHP4 flag. To see if the flag is
+     present, you should be able to see it when using 
+     <command>ps ax | grep apache</command> while Apache is running.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Due to slotting problems, you might end up with more than one version
+     of PHP installed on your system. If this is the case, you need to unmerge
+     the old versions manually by using
+     <command>emerge unmerge mod_php-&lt;old version&gt;</command>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     If you cannot emerge PHP because of Java, try putting <command>-*</command>
+     in front of your USE flags like in the above examples.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     If you are having problems configuring Apache and PHP, you can always
+     search the <ulink url="&url.gentoo.forums;">Gentoo Forums</ulink>.
+     Try searching with the keywords "Apache PHP".
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </sect2>
+</sect1>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
