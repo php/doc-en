@@ -17,6 +17,9 @@
 # | Authors:    Jeroen van Wolffelaar <jeroen@php.net>                   |
 # +----------------------------------------------------------------------+
 */
+
+set_time_limit(0);
+
 if ($argc < 2 || $argc > 3) { ?>
 Process the manual to do some replacements.
 
