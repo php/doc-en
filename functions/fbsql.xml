@@ -347,7 +347,7 @@
     fbsql_select_db ("samp_db")
         or die ("Could not select database");
 
-    $query = "SELECT last_name, first_name FROM friends";
+    $query = "SELECT last_name, first_name FROM friends;";
     $result = fbsql_query ($query)
         or die ("Query failed");
 
@@ -476,7 +476,7 @@ fbsql_connect("marliesle");
 echo fbsql_errno().": ".fbsql_error()."&lt;BR>";
 fbsql_select_db("nonexistentdb");
 echo fbsql_errno().": ".fbsql_error()."&lt;BR>";
-$conn = fbsql_query("SELECT * FROM nonexistenttable");
+$conn = fbsql_query("SELECT * FROM nonexistenttable;");
 echo fbsql_errno().": ".fbsql_error()."&lt;BR>";
 ?&gt;
       </programlisting>
@@ -526,7 +526,7 @@ fbsql_connect("marliesle");
 echo fbsql_errno().": ".fbsql_error()."&lt;BR>";
 fbsql_select_db("nonexistentdb");
 echo fbsql_errno().": ".fbsql_error()."&lt;BR>";
-$conn = fbsql_query("SELECT * FROM nonexistenttable");
+$conn = fbsql_query("SELECT * FROM nonexistenttable;");
 echo fbsql_errno().": ".fbsql_error()."&lt;BR>";
 ?&gt;
       </programlisting>
@@ -1090,7 +1090,7 @@ password
 
 fbsql_connect ("localhost", "_SYSTEM", "");
 fbsql_select_db ("wisconsin");
-$result = fbsql_query ("SELECT * FROM onek");
+$result = fbsql_query ("SELECT * FROM onek;");
 $fields = fbsql_num_fields ($result);
 $rows   = fbsql_num_rows ($result);
 $i = 0;
@@ -1161,14 +1161,14 @@ fbsql_close();
     </funcsynopsis>
     <para>
      <function>fbsql_insert_id</function> returns the ID generated for
-     an AUTO_INCREMENT column by the previous INSERT query using the
+     an column defined as DEFAULT UNIQUE by the previous INSERT query using the
      given <parameter>link_identifier</parameter>.  If
      <parameter>link_identifier</parameter> isn't specified, the last
      opened link is assumed.
     </para>
     <para>
      <function>fbsql_insert_id</function> returns 0 if the previous
-     query does not generate an AUTO_INCREMENT value. If you need to
+     query does not generate an DEFAULT UNIQUE value. If you need to
      save the value for later, be sure to call fbsql_insert_id()
      immediately after the query that generates the value.
     </para>
@@ -1176,22 +1176,10 @@ fbsql_close();
      <para>
       The value of the FrontBase SQL function
       <literal>LAST_INSERT_ID()</literal> always contains the most
-      recently generated AUTO_INCREMENT value, and is not reset
+      recently generated DEFAULT UNIQUE value, and is not reset
       between queries.
     </para>
     </note>
-    <warning>
-     <para>
-      <function>fbsql_insert_id</function> converts the return type of
-      the native FrontBase C API function
-      <literal>fbsql_insert_id()</literal> to a type of
-      <literal>long</literal>.  If your AUTO_INCREMENT column has
-      a column type of BIGINT, the value returned by
-      <function>fbsql_insert_id</function> will be incorrect.
-      Instead, use the internal FrontBase SQL function
-      <literal>LAST_INSERT_ID()</literal>.
-     </para>
-    </warning>
    </refsect1>
   </refentry>
 
@@ -1345,6 +1333,50 @@ field3
    </refsect1>
   </refentry>
 
+  <refentry id="function.fbsql-next-result">
+   <refnamediv>
+    <refname>fbsql_next_result</refname>
+    <refpurpose>Move the internal result pointer to the next result</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>bool 
+       <function>fbsql_next_result</function>
+      </funcdef>
+      <paramdef>int <parameter>result_id</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     When sending more than one SQL statement to the server or executing a stored procedure
+     with multiple results will cause the server to return multiple result sets.
+     This function will test for additional results available form the server. if an
+     additional result set exists it will free the existing result set and prepare to
+     fetch the wors from the new result set.
+     The function will return <literal>TRUE</literal> if an additional result set was 
+     available or <literal>FALSE</literal> othervise.
+    </para>
+    <example>
+     <title><function>fbsql_next_result</function> example</title>
+     <programlisting role="php">
+&lt;?php
+    $link = fbsql_connect ("localhost", "_SYSTEM", "secret");
+    fbsql_select_db("MyDB", $link);
+    $SQL = "Select * from table1; select * from table2;";
+    $rs = fbsql_query($SQL, $link);
+    do {
+        while ($row = fbsql_fetch_row($rs)) {
+        }
+    } while (fbsql_next_result($rs));
+    fbsql_free_result($rs);
+    fbsql_close ($link);
+?&gt;
+     </programlisting>
+    </example>
+   </refsect1>
+  </refentry>
+
   <refentry id="function.fbsql-num-fields">
    <refnamediv>
     <refname>fbsql_num_fields</refname>
@@ -1397,7 +1429,7 @@ field3
 $link = fbsql_connect("localhost", "username", "password"); 
 fbsql_select_db("database", $link);
 
-$result = fbsql_query("SELECT * FROM table1", $link); 
+$result = fbsql_query("SELECT * FROM table1;", $link); 
 $num_rows = fbsql_num_rows($result); 
 
 echo "$num_rows Rows\n";
@@ -1501,7 +1533,7 @@ echo "$num_rows Rows\n";
     </para>
     <note>
      <para>
-      The query string should not end with a semicolon.
+      The query string shall always end with a semicolon.
      </para>
     </note>
     <para>
