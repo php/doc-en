@@ -51,7 +51,7 @@ How to build a CHM manual with this system?
     one exists).
 
  6. Get all the user notes from
-    http://ANY_MIRROR.php.net/backend/notes/ALL.bz2,
+    http://ANY_MIRROR.php.net/backend/notes/all.bz2,
     extract it's contents, and place the resulting
     "all" file to the same folder where the
     make_chm.bat resides.
