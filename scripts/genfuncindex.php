@@ -26,7 +26,7 @@ $letter=" ";
 $functions = file($HTTP_SERVER_VARS['argv'][1]);
 usort($functions,"strcasecmp");
 foreach ( $functions as $funcentry ) {
-	list($function,$description) = explode("-",$funcentry);
+	list($function,$description) = explode(" - ",$funcentry);
 	$function=strtolower(trim($function));
 	if(!ereg("^[[:alnum:]]",$function)) continue;
 	if($function{0}!=$letter) {
