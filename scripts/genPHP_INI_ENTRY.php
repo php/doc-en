@@ -10,9 +10,12 @@
 $phpsrc_dir = '';
 // use command line parameter is available
 if ($argc == 2 && $argv[1] != '') {
-    $phpsrc_dir = $argv[1];
+    if (@is_dir($argv[1])) {
+        $phpsrc_dir = realpath($argv[1]);
+    } else {
+	die ("Invalid phpsrc_dir, {$argv[1]} is not a directory\n");
+    }
 }
-//$phpsrc_dir = '/cvs/php5';
 // figure out the php4 source dir
 if ($phpsrc_dir == '') {
     if (file_exists('../php4')) {
@@ -196,7 +199,7 @@ function findINI($fname) {/*{{{*/
         //$match = str_replace('"','',$match);
         //$entry = preg_split('/,\s*/', $match);
         // dummy settings seem to always have these values (ex. ncurses.c)
-            if ($entry[1] == 42 || $entry[1] == 'foobar') {
+            if ($entry[2] == 42 || $entry[2] == 'foobar') {
                 continue;
             }
             $found['INI'][$entry[1]] = array(
