@@ -171,7 +171,7 @@ function write_reference_xml()
        "   </para>\n" .
        "  </section>\n" .
        "  <!-- Information found in constants.xml -->\n" .
-       "  &references.".$extension_name."constants\n" .
+       "  &reference." . $extension_name . ".constants;\n" .
        " </partintro>\n" .
        " &reference." . $extension_name . ".functions;\n" .
        "</reference>\n\n" .
@@ -343,7 +343,7 @@ function write_functions_xml()
         "    </programlisting>\n" .
         "    &example.outputs;\n" .
         "    <screen>\n" .
-        "<!CDATA[\n" .
+        "<![CDATA[\n" .
         "Use the PEAR Coding Standards\n" .
         "]]>\n" .
         "    </screen>\n" .
