@@ -157,12 +157,18 @@
 				 (linkend (string-append "language.types." type-name))
 				 (target (element-with-id linkend))
 				 )
-		(make element gi: "A"
-					attributes: (list (list "HREF" (href-to target)))
-					($bold-seq$ (make sequence (process-children) ) )
+		(cond ((node-list-empty? target)
+					 (make sequence (process-children) )
+					 )
+					(else 
+					 (make element gi: "A"
+								 attributes: (list (list "HREF" (href-to target)))
+								 ($bold-seq$ (make sequence (process-children) ) )
+								 )
+					 )
 					)
 		)
-	)
+)
 
 
 (element function
