@@ -165,6 +165,7 @@
         ((equal-ci? orig-name "bool")   "boolean")
         ((equal-ci? orig-name "double") "float")
         ((equal-ci? orig-name "int")   "integer")
+        ((equal-ci? orig-name "NULL")   "null")
         (else orig-name))
       )
       (linkend (string-append "language.types." type-name))
