@@ -27,6 +27,7 @@ PHP_SOURCE=@PHP_SOURCE@
 LANG=@LANG@
 JADE=@JADE@ -wno-idref
 NSGMLS=@NSGMLS@
+PHP=@PHP@
 
 CATALOG=@CATALOG@
 
@@ -42,7 +43,7 @@ HTML_DEPS=$(HTML_STYLESHEET) html-common.dsl html-locale.dsl common.dsl zendapi
 HOWTO_DEPS=$(HOWTO_STYLESHEET) html-common.dsl html-locale.dsl common.dsl howto/howto.ent
 PRINT_DEPS=$(PRINT_STYLESHEET) common.dsl zendapi
 PHPWEB_DEPS=$(PHPWEB_STYLESHEET) html-common.dsl common.dsl
-QUICKREF_DEPS=quickref.dsl Makefile
+QUICKREF_DEPS=quickref.dsl Makefile 
 KDEVELOP_TOC_DEPS=kdevelop_toc.dsl Makefile
 
 PALMDOCTITLE=@PALMDOCTITLE@
@@ -97,10 +98,17 @@ funcsummary.txt: FORCE
 	$(srcdir)/genfuncsummary $(PHP_SOURCE) > funcsummary.txt
 
 revcheck.html: FORCE
-	PHPDOCDIR=$(srcdir) php -f $(scriptdir)/revcheck.php $(LANG) > revcheck.html
+	PHPDOCDIR=$(srcdir) $(PHP) -f $(scriptdir)/revcheck.php $(LANG) > revcheck.html
 
 funcindex.xml: quickref.txt
-	php -q -d short_tags=off $(srcdir)/genfuncindex.php quickref.txt @ENCODING@ > funcindex.xml
+ifeq ($(PHP),no)
+	@echo "WARNING: recreating the function index needs php"
+	@echo "         which was not found by configure"
+	@echo "         reusing old file"
+	touch funcindex.xml
+else 
+	$(PHP) -q -d short_tags=off $(srcdir)/genfuncindex.php quickref.txt @ENCODING@ > funcindex.xml
+endif
 
 Makefile: $(srcdir)/Makefile.in ./config.status
 	CONFIG_FILES=$@ CONFIG_HEADERS= ./config.status
@@ -117,13 +125,14 @@ manual-snapshot.tar.gz: @MANUAL@.html html/index.html @MANUAL@.rtf @MANUAL@.txt
 	tar -cvzf $@ @MANUAL@.html html/*.html @MANUAL@.rtf @MANUAL@.txt
 
 status: ./funclist.txt
-	php -q $(scriptdir)/checkdoc.php > status.txt
-	php -q $(scriptdir)/checkdoc.php missing > missing.txt
+	$(PHP) -q $(scriptdir)/checkdoc.php > status.txt
+	$(PHP) -q $(scriptdir)/checkdoc.php missing > missing.txt
 
 summary: ./funcsummary.txt
 
 quickref: quickref.txt
 quickref.txt: manual.xml $(QUICKREF_DEPS)
+	if test ! -e funcindex.xml; then touch funcindex.xml; fi 
 	$(JADE) $(CATALOG) -d $(QUICKREF_STYLESHEET) -V nochunks -t sgml $(srcdir)/phpdocxml.dcl manual.xml | sed -e 's/   */ /g' | sort -f > quickref.txt
 
 kdevelop_toc: php.toc
