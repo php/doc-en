@@ -867,6 +867,11 @@ require ("file.inc");  /* $varone and $vartwo will be available in file.inc */
     has been discontinued. If you need this functionality, see
     <function>include</function>.
    </simpara>
+   <simpara>
+    See also <function>include</function>, <function>require_once</function>,
+    <function>include_once</function>, <function>readfile</function>,
+	and <function>virtual</function>.
+   </simpara>
   </sect1>
  
   <sect1 id="function.include">
@@ -1047,38 +1052,177 @@ include ("file.inc");  /* $varone and $vartwo will be available in file.inc */
     files</link> feature; the above holds true regardless.
    </simpara>
    <simpara>
-    See also <function>readfile</function>,
-    <function>require</function>, and <function>virtual</function>.
+    See also <function>require</function>, <function>require_once</function>,
+    <function>include_once</function>, <function>readfile</function>,
+	and <function>virtual</function>.
    </simpara>
   </sect1>
  
   <sect1 id="function.require-once">
    <title><function>require_once</function></title>
-   <simpara>
-    TODO: The <function>require_once</function> statement replaces
-    itself with the specified file, much like the C preprocessor's
-    <literal>#include</literal> works.
-   </simpara>
    <para>
-    Seel also: <function>require</function>,
+    The <function>require_once</function> statement replaces
+    itself with the specified file, much like the C preprocessor's
+    <literal>#include</literal> works, and in that respect is
+	similar to the <function>require</function> statement. The main
+	difference is that in an inclusion chain, the use of
+	<function>require_once</function> will assure that the code is
+	added to your script only once, and avoid clashes with variable
+	values or function names that can happen.
+   </para>
+   <para>
+     For example, if you create the following 2 include files
+	 <literal>utils.inc</literal> and <literal>foolib.inc</literal>
+	 <example>
+	 <title>utils.inc</title>
+	 <programlisting role="php">
+&lt;?php
+define(PHPVERSION, floor(phpversion()));
+echo "GLOBALS ARE NICE\n";
+function goodTea() {
+	return "Oolong tea tastes good!";
+}
+?&gt;
+	 </programlisting>
+	 </example>
+	 <example>
+	 <title>foolib.inc</title>
+	 <programlisting role="php">
+&lt;?php
+require ("utils.inc");
+function showVar($var) {
+	if (PHPVERSION == 4) {
+		print_r($var);
+	} else {
+		dump_var($var);
+	}
+}
+
+// bunch of other functions ...
+?&gt;
+	 </programlisting>
+	 </example>
+	 And then you write a script <literal>cause_error_require.php</literal>
+	 <example>
+	 <title>cause_error_require.php</title>
+	 <programlisting role="php">
+&lt;?php
+require("foolib.inc");
+/* the following will generate and error */
+require("utils.inc");
+$foo = array("1",array("complex","quaternion"));
+echo "this is requiring utils.inc again which is also\n";
+echo "required in foolib.inc\n";
+echo "Running goodTea: ".goodTea()."\n";
+echo "Printing foo: ".showVar($foo);
+?&gt;
+	 </programlisting>
+	 </example>
+	 When you try running the latter one, the resulting ouptut will be (using
+	 PHP 4.01pl2):
+	 <informalexample>
+	 <programlisting>
+GLOBALS ARE NICE
+GLOBALS ARE NICE
+
+Fatal error:  Cannot redeclare causeerror() in utils.inc on line 5
+	 </programlisting>
+	 </informalexample>
+	 By modifying <literal>foolib.inc</literal> and
+	 <literal>cause_errror_require.php</literal> 
+	 to use <function>require_once</function>
+	 instead of <function>require</function> and renaming the
+	 last one to <literal>avoid_error_require_once.php</literal>, we have:
+	 <example>
+	 <title>foolib.inc (fixed)</title>
+	 <programlisting role="php">
+...
+require_once("utils.inc");
+function showVar($var) {
+...
+	 </programlisting>
+	 </example>
+	 <example>
+	 <title>avoid_error_require_once.php</title>
+	 <programlisting role="php">
+...
+require_once("foolib.inc");
+require_once("utils.inc");
+$foo = array("1",array("complex","quaternion"));
+...
+	 </programlisting>
+	 </example>
+	 And when running the latter, the output will be (using PHP 4.0.1pl2):
+	 <informalexample>
+	 <programlisting>
+GLOBALS ARE NICE
+this is requiring globals.inc again which is also
+required in foolib.inc
+Running showIt: Oolong tea tastes good!
+Array
+(
+    [0] =&gt; 1
+    [1] =&gt; Array
+        (
+            [0] =&gt; complex
+            [1] =&gt; quaternion
+        )
+
+)
+	 </programlisting>
+	 </informalexample>
+   </para>
+   <para>
+     Also note that, analogous to the behavior of the
+	 <literal>#include</literal> of the C preprocessor, this statement
+	 acts at "compile time", e.g. when the script is parsed and before it
+	 is executed, and should not be used for parts of the script that need
+	 to be inserted dynamically during its execution. You should use
+	 <function>include_once</function> or <function>include</function>
+	 for that purpose.
+   </para>
+   <para>
+     For more examples on using <function>require_once</function> and 
+	 <function>include_once</function>, look at the PEAR code included in
+	 the latest PHP source code distributions.
+   </para>
+   <para>
+    See also: <function>require</function>,
     <function>include</function>, <function>include_once</function>,
     <function>get_required_files</function>,
-    <function>get_included_files</function>
+    <function>get_included_files</function>, <function>readfile</function>,
+	and <function>virtual</function>.
    </para>
   </sect1>
   
   <sect1 id="function.include-once">
    <title><function>include_once</function></title>
-   <simpara>
-    TODO: The <function>include_once</function> statement replaces
-    itself with the specified file, much like the C preprocessor's
-    <literal>#include</literal> works.
-   </simpara>
    <para>
-    Seel also: <function>require</function>,
+    The <function>include_once</function> statement includes and evaluates
+    the specified file during the execution of the script.
+	This is a behavior similar to the <function>include</function> statement,
+	with the important difference that if the code from a file has already
+	been included, it will not be included again.
+   </para>
+   <para>
+    As mentioned in the <function>require_once</function> description, the
+	<function>include_once</function> should be used in the cases in which
+	the same file might be included and evaluated more than once during a
+	particular execution of a script, and you want to be sure that it is
+	included exactly once to avoid problems with function redefinitions,
+	variable value reassignments, etc.
+   </para>
+   <para>
+     For more examples on using <function>require_once</function> and 
+	 <function>include_once</function>, look at the PEAR code included in
+	 the latest PHP source code distributions.
+   </para>
+   <para>
+    See also: <function>require</function>,
     <function>include</function>, <function>require_once</function>,
     <function>get_required_files</function>,
-    <function>get_included_files</function>
+    <function>get_included_files</function>, <function>readfile</function>,
+	and <function>virtual</function>.
    </para>
   </sect1>
  
