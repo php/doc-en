@@ -378,7 +378,7 @@
           (process-node-list restch))))   )          
 
 ;; Adding class HTML parameter to examples
-;; having a role parameter, to make PHP exaxmples
+;; having a role parameter, to make PHP examples
 ;; distinguisable from other ones in the manual
 (define ($verbatim-display$ indent line-numbers?)
   (let (
