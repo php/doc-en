@@ -244,11 +244,146 @@ AddHandler php3-script .php3
    <title>Apache module</title>
    <simpara>
     When PHP is used as an Apache module it inherits Apache's user
-    permissions (typically those of the "nobody"
-    user).
+    permissions (typically those of the "nobody" user). This has several
+    impacts on security and authorization. For example, if you are using
+    PHP to access a database, unless that database has built-in access
+    control, you will have to make the database accessable to the
+    "nobody" user. This means a malicious script could access and modify
+    the databse, even without a username and password. It's entirely
+    possible that a web spider could stumble across a database
+    adminisitror's web page, and drop all of your databases. You can
+    protect against this with Apache authorization, or you can design
+    your own access model using LDAP, .htaccess files, etc. and include
+    that code as part of your PHP scripts.
+   </simpara>
+   <simpara>
+    Often, once security is established to the point where the PHP user
+    (in this case, the apache user) has very little risk, it is
+    discovered that PHP now has been prevented from writing virus files
+    to user directories, or accessing or changing a non-public database
+    but it has equally been secured from writing files that it should,
+    or entering database transactions. A frequent security mistake made
+    at this point is to allow apache root permissions.
+   </simpara>
+   <simpara>
+    Escalating the Apache user's permissions to root is extremely
+    dangerous and may compromise the entire system, so sudo'ing,
+    chroot'ing ,or otherwise running as root should not be considered by
+    those who are not security professionals.
    </simpara>
   </sect1>
-    
+
+  <sect1 id="security.filesystem">
+   <title>Filesystem Security</title>
+   <simpara>
+    PHP honors the security built into most server systems with respect
+    to permissions on a file and directory basis. This allows you to
+    control which files in the filesystem may be read. Care should be
+    taken with any files which are world readable to ensure that they
+    are safe for reading by all users who have access to that
+    filesystem.
+   </simpara>
+   <simpara>
+    Since PHP was designed to allow user level access to the filesystem,
+    it's entirely possible to write a PHP script that will allow you
+    to read system files such as /etc/password. This has some obvious
+    implications, in that you need to ensure that the files that you
+    read and write are the appropriate ones.
+   </simpara>
+   <simpara>
+    Since PHP was designed to allow user level access to the filesystem,
+    it's entirely possible to write a PHP script that will allow you
+    to read system files such as /etc/password. This has some obvious
+    implications, in that you need to ensure that the files that you
+    read and write are the appropriate ones. Consider the following
+    script, where a user indicates that they'd like to delete a file
+    in their home directory. This assumes a situation where the web
+    interface is regularly used for file management, so the Apache user
+    is allowed to delete files in the user home directories.
+   </simpara>
+   <simpara>
+    <example>
+     <title>Filesystem attack</title>
+     <programlisting role="php">
+&lt;?php
+// remove a file from the user's home directory
+$username = $user_submitted_name;
+$homedir = "/home/$username";
+$file_to_delete = "$userfile";
+unlink ($homedir/$userfile);
+echo "$file_to_delete has been deleted!";
+?>
+     </programlisting>
+    </example>
+   Since the username is postable from a user form, they can submit
+   a username and file belonging to someone else, and delete files.
+   In this case, you'd want to use some other form of authentication.
+   </simpara>   
+  </sect1>
+  
+  <sect1 id="security.variables">
+   <title>User Submitted Data</title>
+   <simpara>
+    The greatest weakness in many PHP programs is not inherent in the
+    language itself, but merely an issue of code not being written with
+    security in mind. For this reason, you should always take the time
+    to consider the implications of a given piece of code, to ascertain
+    the possible damage if an unexpected variable is submitted to it.
+    <example>
+     <title>Dangerous Variable Usage</title>
+     <programlisting role="php">
+&lt;?php
+// remove a file from the user's home directory... or maybe
+// somebody else's?
+unlink ($evil_var);
+
+// Write logging of their access... or maybe not?
+fputs ($evil_var);
+
+// Execute something trivial.. or rm -rf *?
+system ($evil_var);
+exec ($evil_var);
+
+?>
+     </programlisting>
+    </example>
+    You should always carefully examin your code to make sure that any
+    variables being submitted from a web browser and ask the following
+    questions:
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       Will this script only affect the intended files?
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Can unusual or undesirable data be acted upon?
+      </simpara>
+     <listitem>
+     </listitem>
+     <simpara>
+       Can this script be used in unintended ways?
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Can this be used in conjunction with other scripts in a negative
+       manner?
+      </simpara>
+     </listitem> 
+     <listitem>
+      <simpara>
+       Will any transactions be adequately logged?
+      </simpara>
+     </listitem>
+    </itemizedlist>
+    By adequately asking these questions while writing the script,
+    rather than later, you prevent an unfortunate re-write when you
+    need to oncrease your security.
+   </simpara>
+  </sect1>
+   
  </chapter>
 
 <!-- Keep this comment at the end of the file
