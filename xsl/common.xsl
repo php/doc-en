@@ -3,15 +3,12 @@
 
   common.xsl: Common customizations for all formats
 
-  $Id: common.xsl,v 1.11 2004-10-31 23:53:48 techtonik Exp $
+  $Id: common.xsl,v 1.12 2004-11-01 08:36:04 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0">
 
-
-<!-- Set the LANGUAGE for autom. generated text -->
-<xsl:param name="l10n.gentext.language" select="/book/@lang"/>
 
 <!-- Colorize background for programlisting and screens
      will go into CSS probably in next DocBook version --> 
@@ -61,7 +58,7 @@
 <xsl:template match="methodparam">
   <xsl:if test="preceding-sibling::methodparam=false()">
     <xsl:text> (</xsl:text>
-    <xsl:if test="@choice='opt' or initializer">
+    <xsl:if test="@choice='opt'">
       <xsl:text>[</xsl:text>
     </xsl:if>
   </xsl:if>
@@ -69,7 +66,7 @@
   <xsl:choose>
     <xsl:when test="following-sibling::methodparam">
       <xsl:choose>
-        <xsl:when test="following-sibling::methodparam[position()=1]/attribute::choice[.='opt'] or following-sibling::methodparam[position()=1]/initializer">
+        <xsl:when test="following-sibling::methodparam[position()=1]/attribute::choice[.='opt']">
           <xsl:text> [, </xsl:text>
         </xsl:when>
         <xsl:otherwise>
@@ -79,11 +76,11 @@
     </xsl:when>
     <xsl:otherwise>
       <xsl:for-each select="preceding-sibling::methodparam">
-				<xsl:if test="attribute::choice[.='opt'] or initializer">
+				<xsl:if test="attribute::choice[.='opt']">
 					<xsl:text>]</xsl:text>
 				</xsl:if>
       </xsl:for-each>
-      <xsl:if test="self::methodparam/attribute::choice[.='opt'] or self::methodparam/initializer">
+      <xsl:if test="self::methodparam/attribute::choice[.='opt']">
         <xsl:text>]</xsl:text>
       </xsl:if>
       <xsl:text>)</xsl:text>
