@@ -1,4 +1,4 @@
-#!/bin/sh# 
+#!/bin/sh 
 #
 # +----------------------------------------------------------------------+
 # | PHP Version 4                                                        |
@@ -16,7 +16,7 @@
 # | Authors:    Gabor Hoitsy <goba@php.net>                              |
 # +----------------------------------------------------------------------+
 #
-# $Id: genfuncsummary.sh,v 1.3 2002-01-09 14:50:45 jan Exp $
+# $Id: genfuncsummary.sh,v 1.4 2002-01-27 16:37:44 hholzgra Exp $
 
 if test -f funcsummary.awk; then
   awkscript=funcsummary.awk
