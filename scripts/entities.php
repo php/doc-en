@@ -14,8 +14,8 @@ list used and unused entities.
   path from the phpdoc root) to a file containing
   <!ENTITY...> definitions. Defaults to global.ent.
 
-  <language-code> must be a valid language code
-  used in the repository. Defaults to en.
+  <language-code> must be a valid language code used in the repository, or
+  'all' for all languages. Defaults to en.
 
   The script will generate an entity_usage.txt
   file, containing the entities defined in the
@@ -47,9 +47,12 @@ $filename = "global.ent";
 // Parameter value copying
 if ($argc == 3) { 
     $langcode = $argv[2];
-    $filename = $argv[1];
+	if ($langcode === 'all') {
+		$langcode = '..';
+	}
 }
-elseif ($argc == 2) {
+
+if ($argc >= 2) {
     $filename = $argv[1];
 }
   
