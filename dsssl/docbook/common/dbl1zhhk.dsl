@@ -396,6 +396,10 @@
 
 (define %gentext-zhhk-and% "&and;")
 
+(define %gentext-zhhk-listcomma% "&listcomma;")
+
+(define %gentext-zhhk-lastlistcomma% "&lastlistcomma;")
+
 (define %gentext-zhhk-bibl-pages% "&Pgs;")
 
 (define %gentext-zhhk-endnotes% "&Notes;")
