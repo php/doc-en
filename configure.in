@@ -246,14 +246,18 @@ dnl    DOCBOOK_DOCTYPE="-//Davenport//DTD DocBook V3.0//EN"
 dnl    AC_MSG_RESULT(defaulting to $DOCBOOK_DOCTYPE)
 dnl fi 
 
+dnl if grep -q methodsynopsis $srcdir/en/functions/array.xml; then
+dnl	DOCBOOK_DOCTYPE="-//OASIS//DTD DocBook XML V4.1.2//EN"
+dnl	DOCBOOK_VERSION="4.1.2"
+dnl else
+dnl	DOCBOOK_DOCTYPE="-//Norman Walsh//DTD DocBk XML V3.1.7//EN"
+dnl	DOCBOOK_VERSION="3.1.7"
+dnl fi
 
-if grep -q methodsynopsis $srcdir/en/functions/array.xml; then
-	DOCBOOK_DOCTYPE="-//OASIS//DTD DocBook XML V4.1.2//EN"
-	DOCBOOK_VERSION="4.1.2"
-else
-	DOCBOOK_DOCTYPE="-//Norman Walsh//DTD DocBk XML V3.1.7//EN"
-	DOCBOOK_VERSION="3.1.7"
-fi
+dnl always use DocBook version 4.1.2
+DOCBOOK_DOCTYPE="-//OASIS//DTD DocBook XML V4.1.2//EN"
+DOCBOOK_VERSION="4.1.2"
+
 AC_SUBST(DOCBOOK_DOCTYPE)
 AC_SUBST(DOCBOOK_VERSION)
 
@@ -272,35 +276,38 @@ AC_ARG_WITH(dsssl,
     AC_MSG_RESULT(in $withval)
   fi
 ],[
-  for dir1 in $srcdir/phpdoc-tools/dsssl \
-              $srcdir/../phpdoc-tools/dsssl \
-              /usr/share/sgml \
-              /usr/local/share/sgml \
-              /usr/lib/sgml \
-              /usr/lib/dsssl \
-              /usr/local/lib/sgml \
-              /usr/local/lib/dsssl \
-              /opt/sgml/lib 
-  do
-    for dir2 in docbook \
-                docbook/dsssl-stylesheets-1.59 \
-                docbook/dsssl-stylesheets \
-                docbook/dsssl/modular \
-                docbook/stylesheet/dsssl/modular \
-                docbk30/dsl \
-                docbkdsl \
-                stylesheets/docbook \
-                stylesheets/nwalsh-modular 
-    do
-      if test -f "$dir1/$dir2/html/docbook.dsl"; then
-        DOCBOOK_HTML="$dir1/$dir2/html/docbook.dsl"
-        DOCBOOK_PRINT="$dir1/$dir2/print/docbook.dsl"
-        AC_MSG_RESULT(autodetected: $dir1/$dir2)
-        break
-      fi
-    done
-    if test ! -z "$DOCBOOK_HTML"; then break; fi
-  done
+dnl  for dir1 in $srcdir/phpdoc-tools/dsssl \
+dnl              $srcdir/../phpdoc-tools/dsssl \
+dnl              /usr/share/sgml \
+dnl              /usr/local/share/sgml \
+dnl              /usr/lib/sgml \
+dnl              /usr/lib/dsssl \
+dnl              /usr/local/lib/sgml \
+dnl              /usr/local/lib/dsssl \
+dnl              /opt/sgml/lib 
+dnl  do
+dnl    for dir2 in docbook \
+dnl                docbook/dsssl-stylesheets-1.59 \
+dnl                docbook/dsssl-stylesheets \
+dnl                docbook/dsssl/modular \
+dnl                docbook/stylesheet/dsssl/modular \
+dnl                docbk30/dsl \
+dnl                docbkdsl \
+dnl                stylesheets/docbook \
+dnl                stylesheets/nwalsh-modular 
+dnl    do
+dnl      if test -f "$dir1/$dir2/html/docbook.dsl"; then
+dnl        DOCBOOK_HTML="$dir1/$dir2/html/docbook.dsl"
+dnl        DOCBOOK_PRINT="$dir1/$dir2/print/docbook.dsl"
+dnl        AC_MSG_RESULT(autodetected: $dir1/$dir2)
+dnl        break
+dnl      fi
+dnl    done
+dnl    if test ! -z "$DOCBOOK_HTML"; then break; fi
+dnl  done
+DOCBOOK_HTML="$srcdir/dsssl/docbook/html/docbook.dsl"
+DOCBOOK_PRINT="$srcdir/dsssl/docbook/print/docbook.dsl"
+AC_MSG_RESULT(default: $srcdir/dsssl/docbook)
 ])
 if test -z "$DOCBOOK_HTML"; then
     AC_MSG_RESULT(not found)
@@ -381,10 +388,10 @@ dnl Do something smart to find catalog-files
 CATALOG=""
 
 dnl SuSE 6.2/6.3 need this
-if test -e /usr/share/sgml/CATALOG.docbk30
-then
-  CATALOG="$CATALOG -c /usr/share/sgml/CATALOG.docbk30"
-fi
+dnl if test -e /usr/share/sgml/CATALOG.docbk30
+dnl then
+dnl  CATALOG="$CATALOG -c /usr/share/sgml/CATALOG.docbk30"
+dnl fi
 
 dnl For windows (and maybe *nix too?) users lacking catalog-files
 
@@ -396,15 +403,16 @@ then
 fi
 
 dnl iso-ents catalog file
+dnl The 4.1.2 DocBook DTD also includes entity files, but they cannot be used with Jade!
 if test -e $srcdir/entities/ISO/catalog
 then
   CATALOG="$CATALOG -c $srcdir/entities/ISO/catalog"
 fi
 
-dnl dsssl catalog file
-if test -e ../phpdoc-tools/dsssl/docbook/catalog
+dnl DSSSL catalog file
+if test -e $srcdir/dsssl/docbook/catalog
 then
-  CATALOG="$CATALOG -c ../phpdoc-tools/dsssl/docbook/catalog"
+  CATALOG="$CATALOG -c $srcdir/dsssl/docbook/catalog"
 fi
 
 AC_SUBST(CATALOG)
@@ -698,36 +706,36 @@ dnl }}}
 dnl {{{ check for some common sources of trouble
 
 dnl sanity checks for SuSE 6.x
-if test -e /usr/share/sgml/docbk30/docbook.dcl 
-then
-  if grep -n "NAMELEN.\+44" /usr/share/sgml/docbk30/docbook.dcl /dev/null
-  then
-    AC_MSG_WARN(please change this to e.g. 'NAMELEN 54' in /usr/share/sgml/docbk30/docbook.dcl )
-  fi
-  if grep -n "OMITTAG.\+NO" /usr/share/sgml/docbk30/docbook.dcl /dev/null
-  then
-    AC_MSG_WARN(please change this to 'OMITTAG YES' in /usr/share/sgml/docbk30/docbook.dcl )
-  fi
+dnl if test -e /usr/share/sgml/docbk30/docbook.dcl 
+dnl then
+dnl   if grep -n "NAMELEN.\+44" /usr/share/sgml/docbk30/docbook.dcl /dev/null
+dnl   then
+dnl     AC_MSG_WARN(please change this to e.g. 'NAMELEN 54' in /usr/share/sgml/docbk30/docbook.dcl )
+dnl   fi
+dnl   if grep -n "OMITTAG.\+NO" /usr/share/sgml/docbk30/docbook.dcl /dev/null
+dnl   then
+dnl     AC_MSG_WARN(please change this to 'OMITTAG YES' in /usr/share/sgml/docbk30/docbook.dcl )
+dnl   fi
 
 dnl look for tex bug in print stylesheet
-  if test -e /usr/share/sgml/docbkdsl/print/dbprint.dsl
-  then 
-    if test 2 -eq  `grep -c tex  /usr/share/sgml/docbkdsl/print/dbprint.dsl`
-    then
-      if fgrep -q 'country: (dsssl-country-code)' /usr/share/sgml/docbkdsl/print/dbprint.dsl
-      then  
-        if ! grep -q ';;.*country:' /usr/share/sgml/docbkdsl/print/dbprint.dsl
-        then
-          AC_MSG_WARN(to prevent a tex bug you should comment out )
-          AC_MSG_WARN('country: (dsssl-country-code)' )
-          AC_MSG_WARN(in /usr/share/sgml/docbkdsl/print/dbprint.dsl )
-          AC_MSG_WARN(or update your DSSSL-Stylesheets)
-          AC_MSG_WARN(to at least version 1.54)
-        fi
-      fi
-    fi
-  fi
-fi
+dnl   if test -e /usr/share/sgml/docbkdsl/print/dbprint.dsl
+dnl   then 
+dnl     if test 2 -eq  `grep -c tex  /usr/share/sgml/docbkdsl/print/dbprint.dsl`
+dnl     then
+dnl       if fgrep -q 'country: (dsssl-country-code)' /usr/share/sgml/docbkdsl/print/dbprint.dsl
+dnl       then  
+dnl         if ! grep -q ';;.*country:' /usr/share/sgml/docbkdsl/print/dbprint.dsl
+dnl         then
+dnl           AC_MSG_WARN(to prevent a tex bug you should comment out )
+dnl           AC_MSG_WARN('country: (dsssl-country-code)' )
+dnl           AC_MSG_WARN(in /usr/share/sgml/docbkdsl/print/dbprint.dsl )
+dnl           AC_MSG_WARN(or update your DSSSL-Stylesheets)
+dnl           AC_MSG_WARN(to at least version 1.54)
+dnl         fi
+dnl       fi
+dnl     fi
+dnl   fi
+dnl fi
 
 dnl }}}
 
