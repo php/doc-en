@@ -11,6 +11,16 @@
       1 ; the depth of all other TOCs
       ))
 
+;; re-defining element-id as we need to get the id of the parent
+;; element not only for <title> but also for <question> in the faq
+(define (element-id #!optional (nd (current-node)))
+  (let ((elem (if (equal? (gi nd) (normalize "title")) (parent nd)  
+                   (if (equal? (gi nd) (normalize "question")) (parent nd) 
+                       nd))))
+    (if (attribute-string (normalize "id") elem)
+        (attribute-string (normalize "id") elem)
+        (generate-anchor elem))))
+
 ;; Make function definitions bold
 (element (funcdef function) 
   ($bold-seq$
