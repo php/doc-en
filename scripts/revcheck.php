@@ -332,17 +332,18 @@ function get_file_status($file)
     $trans_name = substr($trans_file, strlen($DOCDIR) + strlen($LANG) + 1);
     
     // Get English file revision for revision computing
-    $en_rev   = get_tag($file);
+    $en_rev = get_tag($file);
     
     // If we have a numeric revision number (not n/a), compute rev. diff
     if (is_numeric($this_rev)) {
-        $rev_diff = intval($en_rev) - intval($this_rev);
+        $rev_diff   = intval($en_rev) - intval($this_rev);
         $trans_rev  = "1.{$this_rev}";
         $en_rev     = "1.{$en_rev}";
     } else {
       // If we have no numeric revision, make all revision
       // columns hold the rev from the translated file
       $rev_diff = $trans_rev = $this_rev;
+      $en_rev   = "1.{$en_rev}";
     }
 
     // Compute sizes, times and diffs
