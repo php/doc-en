@@ -93,6 +93,13 @@ function check_dir($dir, &$defined_entities, $entity_regexp)
     $directories = array();
     $files = array();
     
+    // Skip old and unused functions directories (theoretically
+    // it should only be in the English tree, but we are smart
+    // and check for other language trees too...)
+    if (preg_match("!([a-z]{2}|pt_BR)/functions!", $dir)) {
+        return;
+    }
+    
     // Open and traverse the directory
     $handle = @opendir($dir);
     while ($file = @readdir($handle)) {
