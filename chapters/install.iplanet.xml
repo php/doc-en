@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.4 $ -->
+<!-- $Revision: 1.5 $ -->
   <sect1 id="install.netscape-enterprise">
    <title>Servers-Netscape, iPlanet and SunONE</title>
    <para>
@@ -8,12 +8,19 @@
     and <link linkend="install.netscape.windows">Windows</link> versions.
    </para>
    <para>
+    From PHP 4.3.3 on you can use PHP scripts with the <link linkend="ref.nsapi">NSAPI module</link> to 
+    <link linkend="install.netscape.specialpages">generate custom directory listings and
+    error pages</link>. Additional functions for Apache compatibility are also available.
+    For support in current webservers read the
+    <link linkend="install.netscape.notes">note about subrequests</link>.
+   </para>
+   <para>
     You can find more information about setting up PHP for the Netscape
     Enterprise Server (NES) here:
     <ulink url="&url.netscape.nsapi;">&url.netscape.nsapi;</ulink>
    </para>
    <sect2 id="install.netscape.sun">
-    <title>Installing PHP with Netscape on Sun Solaris</title>
+    <title>Installing PHP with NES/iPlanet/SunONE Webserver on Sun Solaris</title>
     <para>
      To build PHP with NES/iPlanet/SunONE webservers, enter the proper install
      directory for the
@@ -22,12 +29,6 @@
      <filename class="directory">/opt/netscape/suitespot/</filename>.
      Please also read <filename>/php-xxx-version/sapi/nsapi/nsapi-readme.txt</filename>.
     </para>
-    <note>
-     <simpara>
-      These instructions are written for Sun Solaris 2.6 with Netscape
-      Enterprise Server 3.6, conributed by bhager at invacare dot com.
-     </simpara>
-    </note>
     <para>
      <orderedlist>
       <listitem>
@@ -102,11 +103,11 @@
      you may need to perform some additional configuration steps.
     </para>
     <formalpara>
-     <title>Configuration Instructions for NES</title>
+     <title>Configuration Instructions for NES/iPlanet/SunONE</title>
      <para>
       Firstly you may need to add some paths to the LD_LIBRARY_PATH environment
-      for Netscape to find all the shared libs. This can best done in the start
-      script for your Netscape server. Windows users can probably skip this
+      for SunONE to find all the shared libs. This can best done in the start
+      script for your SunONE webserver. Windows users can probably skip this
       step. The start script is often located in: <filename
       class="directory">/path/to/server/https-servername/start</filename>.
       You may also need to edit the configuration files that are
@@ -115,7 +116,8 @@
       <orderedlist>
        <listitem>
         <para>
-         Add the following line to <filename>mime.types</filename>:
+         Add the following line to <filename>mime.types</filename> (you can do
+         that by the administration server):
          <screen>
 <![CDATA[
 type=magnus-internal/x-httpd-php exts=php
@@ -125,17 +127,18 @@ type=magnus-internal/x-httpd-php exts=php
        </listitem>
        <listitem>
         <para>
-         Edit <filename>obj.conf</filename> and add the following, shlib will
+         Edit <filename>magnus.conf</filename> (for servers &gt;= 6) or
+         <filename>obj.conf</filename> (for servers &lt; 6) and add the following, shlib will
          vary depending on your OS, for Unix it will be something like
          <filename>/opt/netscape/suitespot/bin/libphp4.so</filename>. You should
          place the following lines after <literal>mime types init</literal>.
          <programlisting>
 <![CDATA[
 Init fn="load-modules" funcs="php4_init,php4_execute,php4_auth_trans" shlib="/opt/netscape/suitespot/bin/libphp4.so"
-Init fn=php4_init errorString="Failed to initialize PHP!" [php_ini="/path/to/php.ini"]
+Init fn="php4_init" LateInit="yes" errorString="Failed to initialize PHP!" [php_ini="/path/to/php.ini"]
 ]]>
          </programlisting>
-         The <literal>php_ini</literal> parameter is optional but with it you can place your
+         (PHP &gt;= 4.3.3) The <literal>php_ini</literal> parameter is optional but with it you can place your
          &php.ini; in your webserver config directory.
         </para>
        </listitem>
@@ -144,25 +147,26 @@ Init fn=php4_init errorString="Failed to initialize PHP!" [php_ini="/path/to/php
          Configure the default object:
          <programlisting>
 <![CDATA[
-<object name="default">
+<Object name="default">
 .
 .
 .
 .#NOTE this next line should happen after all 'ObjectType' and before all 'AddLog' lines
 Service fn="php4_execute" type="magnus-internal/x-httpd-php" [inikey=value inikey=value ...]
-    .
-    .
-    </Object>
+.
+.
+</Object>
 ]]>
          </programlisting>
-         As additional parameters you can add some special &php.ini;-values, for example you
+         (PHP &gt;= 4.3.3) As additional parameters you can add some special &php.ini;-values, for example you
          can set a <literal>docroot</literal> specific to the context <literal>php4_execute</literal>
          is called.
         </para>
        </listitem>
        <listitem>
         <para>
-         Create a new object for the usage of PHP:
+         This is only needed if you want to configure a directory that only consists of
+         PHP scripts (same like a <filename class="directory">cgi-bin</filename> directory):
          <programlisting>
 <![CDATA[
 <Object name="x-httpd-php">
@@ -171,6 +175,9 @@ Service fn=php4_execute [inikey=value inikey=value ...]
 </Object>
 ]]>
          </programlisting>
+         After that you can configure a directory in the Administration server and assign it
+         the style <literal>x-httpd-php</literal>. All files in it will get executed as PHP.
+         This is nice to hide PHP usage by renaming files to <filename>.html</filename>.
         </para>
        </listitem>
        <listitem>
@@ -206,21 +213,9 @@ AuthTrans fn=php4_auth_trans
       </orderedlist>
      </para>
     </formalpara>
-    <para>
-     If you are running Netscape Enterprise 4.x, then you should use the
-     following: Place these lines after the <literal>mime types init</literal>,
-     and everything else is similar to the example configuration above.
-     (Contributed by Graeme Hoose, GraemeHoose at BrightStation dot com).
-     <programlisting>
-<![CDATA[
-Init fn="load-modules" shlib="/path/to/server4/bin/libphp4.so" funcs="php4_init,php4_execute,php4_auth_trans"
-Init fn="php4_init" LateInit="yes" [php_ini="/path/to/php.ini"]
-]]>
-     </programlisting>
-    </para>
    </sect2>
    <sect2 id="install.netscape.windows">
-    <title>Installing PHP with Netscape on Windows</title>
+    <title>Installing PHP with NES/iPlanet/SunONE on Windows</title>
     <para>
       To Install PHP as CGI (for Netscape Enterprise Server,
       iPlanet, SunONE, perhaps Fastrack), do the following:
@@ -272,7 +267,7 @@ ftype PHPScript=c:\php\php.exe %1 %*
     </para>
     <para>
      To Install PHP as NSAPI (for Netscape Enterprise Server,
-     iPlanet, SunONE, perhaps Fastrack, do the following:
+     iPlanet, SunONE, perhaps Fastrack), do the following:
     </para>
     <itemizedlist>
      <listitem>
@@ -302,22 +297,23 @@ ftype PHPScript=c:\php\php.exe %1 %*
      </listitem>
      <listitem>
       <para>
-       Stop your web service and edit <filename>obj.conf</filename>.
-       At the end of the Init section, place these two lines
-       (necessarily after mime type init!):
+        Edit <filename>magnus.conf</filename> (for servers &gt;= 6) or
+        <filename>obj.conf</filename> (for servers &lt; 6) and add the following:
+        You should
+        place the the lines after <literal>mime types init</literal>.
        <programlisting>
 <![CDATA[
 Init fn="load-modules" funcs="php4_init,php4_execute,php4_auth_trans" shlib="c:/php/sapi/php4nsapi.dll"
-Init fn="php4_init" errorString="Failed to initialise PHP!" [php_ini="c:/path/to/php.ini"]
+Init fn="php4_init" LateInit="yes" errorString="Failed to initialise PHP!" [php_ini="c:/path/to/php.ini"]
 ]]>
        </programlisting>
-       The <literal>php_ini</literal> parameter is optional but with it you can place your
+       (PHP &gt;= 4.3.3) The <literal>php_ini</literal> parameter is optional but with it you can place your
        &php.ini; in your webserver config directory.
       </para>
      </listitem>
      <listitem>
       <para>
-       In The <literal>&lt; Object name="default" &gt;</literal>
+       In the <literal>&lt;Object name="default"&gt;</literal>
        section, place this line necessarily after all 'ObjectType'
        and before all 'AddLog' lines:
        <programlisting>
@@ -325,15 +321,15 @@ Init fn="php4_init" errorString="Failed to initialise PHP!" [php_ini="c:/path/to
 Service fn="php4_execute" type="magnus-internal/x-httpd-php" [inikey=value inikey=value ...]
 ]]>
        </programlisting>
-       As additional parameters you can add some special &php.ini;-values, for example you
+       (PHP &gt;= 4.3.3) As additional parameters you can add some special &php.ini;-values, for example you
        can set a <literal>docroot</literal> specific to the context <literal>php4_execute</literal>
        is called.
       </para>
      </listitem>
      <listitem>
       <para>
-       At the end of the file, create a new object called
-       <literal>x-httpd-php</literal>, by inserting these lines:
+       This is only needed if you want to configure a directory that only consists of
+       PHP scripts (same like a cgi-bin directory):
        <programlisting>
 <![CDATA[
 <Object name="x-httpd-php">
@@ -342,6 +338,9 @@ Service fn=php4_execute [inikey=value inikey=value ...]
 </Object>
 ]]>
        </programlisting>
+       After that you can configure a directory in the Administration server and assign it
+       the style <literal>x-httpd-php</literal>. All files in it will get executed as PHP.
+       This is nice to hide PHP usage by renaming files to <filename>.html</filename>.
       </para>
      </listitem>
      <listitem>
@@ -361,6 +360,79 @@ Service fn=php4_execute [inikey=value inikey=value ...]
      <ulink url="&url.netscape.nsapi;">&url.netscape.nsapi;</ulink>
     </para>
    </sect2>
+   <sect2 id="install.netscape.specialpages">
+    <title>Special use for error pages or self-made directory listings (PHP &gt;= 4.3.3)</title>
+    <para>
+     You can use PHP to generate the error pages for "404 Not Found"
+     or similar. Add the following line to the object in <filename>obj.conf</filename> for
+     every error page you want to overwrite:
+     <programlisting>
+<![CDATA[
+Error fn="php4_execute" code=XXX script="/path/to/script.php" [inikey=value inikey=value...]
+]]>
+     </programlisting>
+     where <literal>XXX</literal> ist the HTTP error code. Please delete any other <literal>Error</literal>
+     directives which could interfere with yours.
+     If you want to place a page for all errors that could exist, leave
+     the <literal>code</literal> parameter out. Your script can get the HTTP status code
+     with <literal>$_SERVER['ERROR_TYPE']</literal>.
+    </para>
+    <para>
+     Another posibility is to generate self-made directory listings.
+     Just create a PHP script which displays a directory listing and
+     replace the corresponding default Service line for
+     <literal>type=&quot;magnus-internal/directory&quot;</literal> in <filename>obj.conf</filename> with the following:
+     <programlisting>
+<![CDATA[
+Service fn="php4_execute" type="magnus-internal/directory" script="/path/to/script.php" [inikey=value inikey=value...]
+]]>
+     </programlisting>
+     For both error and directory listing pages the original URI and
+     translated URI are in the variables <literal>$_SERVER['PATH_INFO']</literal> and
+     <literal>$_SERVER['PATH_TRANSLATED']</literal>.
+    </para>
+   </sect2>
+   <sect2 id="install.netscape.notes">
+    <title>Note about <function>nsapi_virtual</function> and subrequests (PHP &gt;= 4.3.3)</title>
+    <para>
+     The NSAPI module now supports the <function>nsapi_virtual</function> function
+     (alias: <function>virtual</function>)
+     to make subrequests on the webserver and insert the result in the webpage.
+     The problem is, that this function uses some undocumented features from
+     the NSAPI library.
+    </para>
+    <para>
+     Under Unix this is not a problem, because the module automatically looks
+     for the needed functions and uses them if available. If not, <function>nsapi_virtual</function>
+     is disabled.
+    </para>
+    <para>
+     Under Windows limitations in the DLL handling need the use of a automatic
+     detection of the most recent <filename>ns-httpdXX.dll</filename> file. This is tested for servers
+     till version 6.0. If a newer version of the SunONE server is used, the detection
+     fails and <function>nsapi_virtual</function> is disabled.
+    </para>
+    <para>
+     If this is the case, try the following:
+     Add the following parameter to <literal>php4_init</literal> in
+     <filename>magnus.conf</filename>/<filename>obj.conf</filename>:
+     <programlisting>
+<![CDATA[
+Init fn=php4_init ... server_lib="ns-httpdXX.dll"
+]]>
+     </programlisting>
+     where <literal>XX</literal> is the correct DLL version number. To get it, look in the server-root
+     for the correct DLL name. The DLL with the biggest filesize is the right one.
+    </para>
+    <para>
+     You can check the status by using the <function>phpinfo</function> function.
+    </para>
+    <note>
+     <para>
+      But be warned: Support for <function>nsapi_virtual</function> is EXPERIMENTAL!!!
+     </para>
+    </note>
+   </sect2>   
   </sect1>
 
 <!-- Keep this comment at the end of the file
