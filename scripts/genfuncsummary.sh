@@ -16,7 +16,7 @@
 # | Authors:    Gabor Hoitsy <goba@php.net>                              |
 # +----------------------------------------------------------------------+
 #
-# $Id: genfuncsummary.sh,v 1.9 2002-10-22 18:15:42 derick Exp $
+# $Id: genfuncsummary.sh,v 1.10 2004-01-28 16:10:26 nlopess Exp $
 
 if test -f funcsummary.awk; then
   awkscript=funcsummary.awk
@@ -43,7 +43,7 @@ else
 fi
 
 for i in `find $1 -name "*.[ch]" -print -o -name "*.ec" -print | xargs egrep -li "\{\{\{ proto" | sort` ; do
- echo $i | sed -e "s|$1|# php4|"
+ echo $i | sed -e "s|$1|# php-src|"
  $awkprog -f $awkscript < $i | sort +1 | $awkprog -F "---" '{ print $1; print $2; }' | sed -e's/^[[:space:]]+//' -e's/[[:space:]]+/     /'
 done
 if test -f $1/language-scanner.lex # only in PHP3
