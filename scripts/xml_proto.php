@@ -329,7 +329,7 @@ function write_functions_xml()
         "  &reftitle.examples;\n" .
         "  <para>\n" .
         "   <example>\n" .
-        "    <title><function>A " . $fixname . " example</title>\n" .
+        "    <title>A <function>$funcname</function> example</title>\n" .
         "    <para>\n" .
         "     Any text that describes the purpose of the example, or\n" .
         "     what goes on in the example should go here (inside the\n" .
