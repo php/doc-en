@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.18 2004-11-02 19:03:53 techtonik Exp $
+  $Id: common.xsl,v 1.19 2004-11-03 07:18:48 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -353,6 +353,11 @@
         <xsl:copy-of select="$content"/>
     </xsl:otherwise>
   </xsl:choose>
+</xsl:template>
+
+<!-- Do not add markup to FUNCTION when operating in no.anchor.mode (e.g. ToC) -->
+<xsl:template match="function" mode="no.anchor.mode">
+  <xsl:apply-templates/>
 </xsl:template>
 
 
