@@ -200,7 +200,7 @@ function fh_EKeyPress(ev)
     if (f_s.value=="quickref"&&ev) {
         var cc=ev.charCode||ev.keyCode||ev.which;
         if (cc==32) {
-            f_p.value = f_p.value.replace(/ /g, "");
+            f_p.value = f_p.value.replace(/\s/g, "");
             return false;
         }
         //if ((cc>=97&&cc<=122)||(cc>=65&&cc<=90)||(cc>=48&&cc<=57)||cc==95) return true; // a-z A-Z 0-9 _
