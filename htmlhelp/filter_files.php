@@ -14,7 +14,7 @@ $counter = filterFiles();
 // Filter XSL generated files through some refine filters
 function filterFiles()
 {
-    global $HTML_SRC, $HTML_TARGET, $INDEX_FILE;
+    global $HTML_SRC, $HTML_TARGET, $INDEX_FILE, $LANGUAGE;
     
     // How many files were processed
     $counter = 0;
@@ -36,22 +36,19 @@ function filterFiles()
     }
     closedir($handle);
 
-    // Open supplemental files directory, and copy
-    // all files to output directory
-    $handle = opendir("./suppfiles/html/");
-    while (false !== ($filename = readdir($handle))) {
-        if (!in_array($filename, array(".", ".."))) {
-            copy("suppfiles/html/$filename", "$HTML_TARGET/$filename");
-            $counter++;
-            echo "> $counter\r";
-        }
-    }
-    closedir($handle);
-
-    // Copy source Help files from html dir to output dir
-    copy("$HTML_SRC/php_manual_en.hhp", "$HTML_TARGET/php_manual_en.hhp");
-    copy("$HTML_SRC/php_manual_en.hhc", "$HTML_TARGET/php_manual_en.hhc");
-    copy("$HTML_SRC/php_manual_en.hhk", "$HTML_TARGET/php_manual_en.hhk");
+    // Copy all supplemental files to the target directory
+    exec("copy suppfiles\\html $HTML_TARGET /Y");
+    
+    // Copy all HTML Help files to the target directory too
+    exec("copy $HTML_SRC\\php_manual_$LANGUAGE.hh? $HTML_TARGET /Y");
+    
+    // Rewrite script file to include current language and date
+    $script_js = join("", file("$HTML_TARGET/_script.js"));
+    $script_js = str_replace("LANGUAGE_HERE", $LANGUAGE, $script_js);
+    $script_js = str_replace("DATE_HERE", date("Y-m-d"), $script_js);
+    $fp = fopen("$HTML_TARGET/_script.js", "w");
+    fwrite($fp, $script_js);
+    fclose($fp);
     
     return $counter;
 } // filterFiles() function end

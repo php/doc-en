@@ -476,8 +476,8 @@ function defaultDisplayPage() {
 // Main JS program flow
 
 // Default vars for all the pages [generated]
-this_lang = 'en';
-this_date = '2002-11-09';
+this_lang = 'LANGUAGE_HERE';
+this_date = 'DATE_HERE';
 
 // Vars for online menu of this particular page
 this_page     = location.pathname.substring(location.pathname.lastIndexOf("/")+1);
