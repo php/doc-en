@@ -113,15 +113,6 @@
   )
 
 
-;; How to print out void in a funcprototype
-(element (funcprototype void)
- (make sequence ( literal " (void)" )))
-
-;; How to print out varargs in a funcprototype
-(element (funcprototype varargs)
- (make sequence ( literal " (...)" )))
-
-
 ;; Linking types to the correct place
 (element type
   (let* 
@@ -149,7 +140,6 @@
   )
 )
 
-;; Linking of function tags
 (element function
   (let* ((function-name (data (current-node)))
      (linkend 
