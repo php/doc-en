@@ -82,7 +82,7 @@ $CSS = array(
 
 // Option for the link to cvs.php.net: normal: "&f=h"
 // long diff: "&f=h&num=10", unified (text): "&f=u"
-define("CVS_OPT", "&amp;f=u");
+define("CVS_OPT", "&amp;ty=u");
 
 // Initializing variables from parameters
 $LANG = $argv[1];
@@ -772,7 +772,7 @@ foreach ($files_status as $num => $file) {
     $new_dir = dirname($file["full_name"]);
     
     // If this is a new directory, put out old dir lines
-    if ($new_dir != $prev_dir && isset($lines)) {
+    if ($new_dir != $prev_dir) {
         echo $prev_diplay_dir;
         echo " ($line_number)</th></tr>";
 	echo $lines;
