@@ -50,6 +50,10 @@ processor. Run:
 	saxon manual.xml html.xsl
 		- to get HTML version of documentation
 
+	saxon manual.xml htmlhelp.xsl
+		- to get HTML Help version of documentation
+		- after processing you must run HTML Help compiler
+
 	saxon -o bigmanual.html manual.xml bightml.xsl
 		- to get whole documentation in one large HTML file
 
@@ -58,6 +62,12 @@ processor. Run:
 
 For getting PDF from FO file you must run some FO processor on FO file.
 
+Current HTML Help support uses slightly updated version of HTML Help
+stylesheets. Download file http://www.kosek.cz/temp/htmlhelp.zip and
+place its content over directory contrib/htmlhelp in standard
+stylesheets distribution. In near future, this modification will be
+part of standard XSL stylesheet distribution.
+
 
 PERFORMANCE COMMENTS:
 ---------------------
@@ -65,8 +75,7 @@ PERFORMANCE COMMENTS:
 Generating bigmanual.html with Saxon (under JDK 1.3) takes about two
 minutes on Celeron 400 computer. Generating FO files takes about two
 times more + plus time required to run FO processor. Generating
-chunked version of manual is on my machine approximately two times
-slower than with Jade.
+chunked version or HTML Help vesrion of manual takes about 60 minutes.
 
 
 LIMITATIONS:
@@ -78,4 +87,4 @@ does not work for now. Hope, this will change in the near future.
 
 
 Jirka Kosek <jirka@kosek.cz>
-Last modified $Date: 2001-02-11 21:51:24 $
+Last modified $Date: 2001-02-19 11:52:11 $
