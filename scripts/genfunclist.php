@@ -29,8 +29,6 @@
  * information from them to build a list. Replacement for both funcparse.awk
  * and genfunclist.sh
  *
- * Requires PEAR File_Find class.
- *
  * Known limitations:
  * - can't handle multiline comments and precompiler directives
  *
