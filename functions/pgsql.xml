@@ -1,29 +1,61 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.51 $ -->
+<!-- $Revision: 1.52 $ -->
  <reference id="ref.pgsql">
   <title>PostgreSQL functions</title>
   <titleabbrev>PostgreSQL</titleabbrev>
 
   <partintro>
+   <warning>
+    <para>
+     Use of PostgreSQL module with PHP 4.0.6 is not recommended due to
+     a bug in notice message handling.
+    </para>
+   </warning>
    <para>
-    Postgres, developed originally in the UC Berkeley Computer Science 
+    Postgres, developed originally in the UC Berkeley Computer Science
     Department, pioneered many of the object-relational concepts now
     becoming available in some commercial databases.  It provides
-    SQL92/SQL3 language support, transaction integrity, and type
+    SQL92/SQL3 language support, transaction integrity and type
     extensibility.  PostgreSQL is an open source descendant of this
     original Berkeley code.
    </para>
    <para>
-    PostgreSQL is available without cost. The current version is
-    available at <ulink url="&url.pgsql;">www.PostgreSQL.org</ulink>.
+    PostgreSQL database is Open Source product and available without
+    cost. To use PostgreSQL support, you need PostgreSQL 6.5 or
+    later. PostgreSQL 7.0 or later to enable all PostgreSQL module
+    feature. PostgreSQL supports many charactor encoding including
+    multibyte character encoding. The current version and more
+    information about PostgreSQL is available at <ulink
+    url="&url.pgsql;">www.postgresql.org</ulink>.
    </para>
    <para>
-    Since version 6.3 (03/02/1998) PostgreSQL uses unix domain sockets.
-    A table is shown below describing these new connection possibilities.
-    This socket will be found in <filename>/tmp/.s.PGSQL.5432</filename>.
-    This option can be enabled with the '-i' flag to <command>postmaster
-    </command> and it's meaning is: "listen on TCP/IP sockets as well as
-    Unix domain sockets".
+    In order to enable PostgreSQL support,
+    &quot;--enable-pgsql[=DIR]&quot; is required when you compile
+    PHP. If shared object module is available, PostgreSQL module may
+    be loaded using <link linkend="ini.extension">extension</link>
+    directive in php.ini or <function>dl</function>
+    function. Supported ini directives are described in php.ini-dist
+    file which comes with source distribution.
+   </para>
+   <para>
+    Not all functions are supported by all builds. It depends on your
+    libpq (The PostgreSQL C Client interface) versoin and how libpq is
+    compiled. If there is missing function, libpq does not support
+    the feature required for the function. 
+   </para>
+   <para>
+    It is also important that you use newer libpq than PostgreSQL
+    Server to be connected. If you use libpq older than PostgreSQL
+    Server expects, you may have problems.
+   </para>
+   <para>
+    Since version 6.3 (03/02/1998) PostgreSQL uses unix domain sockets
+    by default. TCP port will not be openned by default. A table is
+    shown below describing these new connection possibilities.  This
+    socket will be found in <filename>/tmp/.s.PGSQL.5432</filename>.
+    This option can be enabled with the '-i' flag to
+    <command>postmaster</command> and it's meaning is: "listen on
+    TCP/IP sockets as well as Unix domain sockets".
     <table>
      <title>Postmaster and PHP</title>
      <tgroup cols="3">
@@ -42,7 +74,6 @@
        </row>
        <row>
 	<entry>postmaster -i &amp;</entry>
-<!--	<entry>pg_connect("", "", "", "", "dbname");</entry> -->
 	<entry>pg_connect("dbname=MyDbName");</entry>
 	<entry>OK</entry>
        </row>
@@ -53,7 +84,7 @@
 	 Unable to connect to PostgreSQL server: connectDB() failed:
 	 Is the postmaster running and accepting TCP/IP (with -i)
 	 connection at 'localhost' on port '5432'? in
-	 /path/to/file.php3 on line 20.
+	 /path/to/file.php on line 20.
 	</entry>
        </row>
        <row>
@@ -66,44 +97,60 @@
     </table>
    </para>
    <para>
-    One can establish a connection with the following value pairs
-    set in the command string:
-    <command>$conn = pg_Connect("host=myHost port=myPort tty=myTTY
-    options=myOptions dbname=myDB user=myUser password=myPassword ");
+    A connection to PostgreSQL server can be established with the
+    following value pairs set in the command string: <command>$conn =
+    pg_connect("host=myHost port=myPort tty=myTTY options=myOptions
+    dbname=myDB user=myUser password=myPassword ");
     </command>
    </para>
    <para>
     The previous syntax of:
-    <command>$conn = pg_connect ("host", "port", "options", "tty",
-    "dbname")
+    <command>
+     $conn = pg_connect ("host", "port", "options", "tty", "dbname")
     </command>
     has been deprecated.
    </para>
    <para>
-    To use the large object (lo) interface, it is necessary to enclose
-    it within a transaction block. A transaction block starts with a
-    <command>begin</command> and if the transaction was valid ends
-    with <command>commit</command> or <command>end</command>.  If the
-    transaction fails the transaction should be closed with
-    <command>rollback</command> or <command>abort</command>.
+    Environmental variable affects PostgreSQL server/client
+    behavior. For example, PostgreSQL module will lookup PGHOST
+    environment variable when hostname is omitted in connection
+    string. Supported environment variables are different from version
+    to version. Refer to PostgreSQL Programmer's Manual (libpq -
+    Environment Variables) for details.
+   </para>
+   <para>
+    From PostgreSQL 7.1.0, text data type has 1GB as its max
+    size. Older PostgreSQL's text data type is limitted by block
+    size. (Default 8KB. Max 32KB defined at compile time)
+   </para>
+   <para>
+    To use the large object (lo) interface, it is required to enclose
+    large object functions within a transaction block. A transaction
+    block starts with a SQL statement <command>begin</command> and if
+    the transaction was valid ends with <command>commit</command> or
+    <command>end</command>.  If the transaction fails the transaction
+    should be closed with <command>rollback</command> or
+    <command>abort</command>.
     <example>
      <title>Using Large Objects</title>
      <programlisting role="php">
 <![CDATA[
 <?php
-    $database = pg_Connect ("dbname=jacarta");
+    $database = pg_connect ("dbname=jacarta");
     pg_exec ($database, "begin");
     $oid = pg_locreate ($database);
     echo ("$oid\n");
     $handle = pg_loopen ($database, $oid, "w");
     echo ("$handle\n");
-    pg_lowrite ($handle, "gaga");
+    pg_lowrite ($handle, "large object data");
     pg_loclose ($handle);
     pg_exec ($database, "commit");
 ?>
 ]]>
      </programlisting>
     </example>
+    Do not close connection resource before closing large object
+    resource.
    </para>
   </partintro>
 
@@ -121,26 +168,32 @@
      </funcprototype>
     </funcsynopsis>
     <para>
-     Returns &false; if connection is not a valid connection resource, &true;
-     otherwise.  Closes down the connection to a PostgreSQL database
-     associated with the given connection resource.
+     <function>pg_close</function> closes down the non-persistent
+     connection to a PostgreSQL database associated with the given
+     <parameter>connection</parameter> resource. It returns &true;, if
+     <parameter>connection</parameter> is a valid connection resource,
+     otherwise it return &false;.
     </para>
-    <note><para> 
-     This isn't usually necessary, as non-persistent open
-     links are automatically closed at the end of the script's
-     execution.
-    </para></note>
-    <para> 
-     <function>pg_close</function> will not close persistent links
-     generated by <function>pg_pconnect</function>.
-    </para>	 
+    <note>
+     <para>
+      <function>pg_close</function> is not usually necessary, as
+      non-persistent open links are automatically closed at the end of
+      the script's execution. <function>pg_close</function> will not
+      close persistent links generated by
+      <function>pg_pconnect</function>.
+     </para>
+    </note>
+    <para>
+     If there is open large object resource on the connection, do not
+     close the connection before closing all large object resources.
+    </para>
    </refsect1>
   </refentry>
 
   <refentry id="function.pg-cmdtuples">
    <refnamediv>
     <refname>pg_cmdtuples</refname>
-    <refpurpose>Returns number of affected tuples</refpurpose>
+    <refpurpose>Returns number of affected records(tuples)</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
@@ -152,8 +205,9 @@
     </funcsynopsis>
     <para>
      <function>pg_cmdtuples</function> returns the number of tuples
-     (instances) affected by INSERT, UPDATE, and DELETE queries. If no
-     tuple is affected the function will return 0.
+     (instances/records/rows) affected by INSERT, UPDATE, and DELETE
+     queries executed by <function>pg_exec</function>. If no tuple is
+     affected by this function, it will return 0.
      <example>
       <title><function>pg_cmdtuples</function></title>
       <programlisting role="php">
@@ -161,14 +215,14 @@
 <?php
 $result = pg_exec ($conn, "INSERT INTO publisher VALUES ('Author')");
 $cmdtuples = pg_cmdtuples ($result);
-echo $cmdtuples . " cmdtuples affected.";
+echo $cmdtuples . " tuples are affected.";
 ?>
 ]]>
       </programlisting>
      </example>
     </para>
     <para>
-     See also <function>pg_numfields</function> and
+     See also <function>pg_exec</function> and
      <function>pg_numrows</function>.
     </para>
    </refsect1>
@@ -184,74 +238,64 @@ echo $cmdtuples . " cmdtuples affected.";
     <funcsynopsis>
      <funcprototype>
       <funcdef>resource <function>pg_connect</function></funcdef>
-      <paramdef>string <parameter>host</parameter></paramdef>
-      <paramdef>string <parameter>port</parameter></paramdef>
-      <paramdef>string <parameter>dbname</parameter></paramdef>
-     </funcprototype>
-     <funcprototype>
-      <funcdef>resource <function>pg_connect</function></funcdef>
-      <paramdef>string <parameter>host</parameter></paramdef>
-      <paramdef>string <parameter>port</parameter></paramdef>
-      <paramdef>string <parameter>options</parameter></paramdef>
-      <paramdef>string <parameter>dbname</parameter></paramdef>
-     </funcprototype>
-     <funcprototype>
-      <funcdef>resource <function>pg_connect</function></funcdef>
-      <paramdef>string <parameter>host</parameter></paramdef>
-      <paramdef>string <parameter>port</parameter></paramdef>
-      <paramdef>string <parameter>options</parameter></paramdef>
-      <paramdef>string <parameter>tty</parameter></paramdef>
-      <paramdef>string <parameter>dbname</parameter></paramdef>
-     </funcprototype>
-     <funcprototype>
-      <funcdef>resource <function>pg_connect</function></funcdef>
-      <paramdef>string <parameter>conn_string</parameter></paramdef>
+      <paramdef>string <parameter>connection_string</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
-     Returns a connection resource on success, or &false; if the
-     connection could not be made.  Opens a connection to a PostgreSQL
-     database.  The arguments should be within a quoted string.
+     <function>pg_connect</function> returns a connection resource
+     that is needed by other PostgreSQL functions.
+    </para>
+    <para>
+     <function>pg_connect</function> opens a connection to a
+     PostgreSQL database specified by
+     <parameter>connection_string</parameter>. It returns a connection
+     resource on success. It returns &false;, if the connection could
+     not be made. <parameter>connection_string</parameter> should be
+     a quoted string.
      <example>
-     <title>Using pg_connect arguments</title>
+     <title>Using pg_connect</title>
      <programlisting role="php">
 <![CDATA[
 <?php
-$dbconn = pg_Connect ("dbname=mary");
+$dbconn = pg_connect ("dbname=mary");
 //connect to a database named "mary"
-$dbconn2 = pg_Connect ("host=localhost port=5432 dbname=mary");
-//connect to a database named "mary" on "localhost" at port "5432"
-$dbconn3 = pg_Connect ("host=sheep port=5432 dbname=mary user=lamb password=baaaa");
+$dbconn2 = pg_connect ("host=localhost port=5432 dbname=mary");
+// connect to a database named "mary" on "localhost" at port "5432"
+$dbconn3 = pg_connect ("host=sheep port=5432 dbname=mary user=lamb password=foo");
 //connect to a database named "mary" on the host "sheep" with a username and password
+$conn_string = "host=sheep port=5432 dbname=test user=lamb password=bar";
+$dbconn4 = pg_connect ($conn_string);
+//connect to a database named "test" on the host "sheep" with a username and password
 ?>
 ]]>
      </programlisting>
      </example>
-     The arguments available include <parameter>host</parameter>,
-     <parameter>port</parameter>, <parameter>tty</parameter>,
-     <parameter>options</parameter>, <parameter>dbname</parameter>,
-     <parameter>user</parameter>, and <parameter>password</parameter>.
+     The arguments available for
+     <parameter>connection_string</parameter> includes
+     <parameter>host</parameter>, <parameter>port</parameter>,
+     <parameter>tty</parameter>, <parameter>options</parameter>,
+     <parameter>dbname</parameter>, <parameter>user</parameter>, and
+     <parameter>password</parameter>.
     </para>
     <para>
      If a second call is made to <function>pg_connect</function> with
-     the same arguments, no new connection will be established, but
-     instead, the connection resource of the already opened connection
-     will be returned.
+     the same <parameter>connection_string</parameter> arguments, no
+     new connection will be established, but instead, the connection
+     resource of the already opened connection will be returned. You
+     can have multiple connections to the same database if you use
+     different connection patameters. (i.e. Use different username)
     </para>
     <para>
-     This function returns a connection resource that is needed by other
-     PostgreSQL functions. You can have multiple connections open at
-     once.
-    </para>
-    <para>
-     The previous syntax of:
-     <command>$conn = pg_connect ("host", "port", "options", "tty",
-    "dbname")
+     Syntax supports multiple parameters:
+     <command>$conn = pg_connect ("host", "port", "options", "tty", "dbname")
      </command>
      has been deprecated.
     </para>
     <para>
-     See also <function>pg_pconnect</function>.
+     See also <function>pg_pconnect</function>,
+     <function>pg_close</function>, <function>pg_host</function>,
+     <function>pg_port</function>, <function>pg_tty</function>,
+     <function>pg_options</function> and <function>pg_dbname</function>.
     </para>
    </refsect1>
   </refentry>
@@ -270,9 +314,10 @@ $dbconn3 = pg_Connect ("host=sheep port=5432 dbname=mary user=lamb password=baaa
      </funcprototype>
     </funcsynopsis>
     <para>
-     Returns the name of the database that the given PostgreSQL
-     connection resource is connected to, or &false; if connection is not a
-     valid connection resource.
+     <function>pg_dbname</function> returns the name of the database
+     that the given PostgreSQL <parameter>connection</parameter>
+     resource. It retuns &false;, if <parameter>connection</parameter>
+     is not a valid PostgreSQL connection resource.
     </para>
    </refsect1>
   </refentry>
@@ -293,10 +338,13 @@ $dbconn3 = pg_Connect ("host=sheep port=5432 dbname=mary user=lamb password=baaa
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>pg_end_copy</function> syncs PostgreSQL frontend with
-     the backend after doing a copy operation. It must be issued or
-     the backend may get "out of sync" with the frontend. Returns
-     &true; if successfull, &false; otherwise.
+     <function>pg_end_copy</function> syncs PostgreSQL frontend
+     (usually a web server process) with the PostgreSQL server after
+     doing a copy operation performed by
+     <function>pg_put_line</function>. <function>pg_end_copy</function>
+     must be issued, otherwise the PostgreSQL server may get "out of
+     sync" error with the frontend. It returns &true; for success,
+     otherwise it returns &false;.
     </para>
     <para>
      For further details and an example, see also
@@ -308,7 +356,7 @@ $dbconn3 = pg_Connect ("host=sheep port=5432 dbname=mary user=lamb password=baaa
   <refentry id="function.pg-errormessage">
    <refnamediv>
     <refname>pg_errormessage</refname>
-    <refpurpose>Get the error message string</refpurpose>
+    <refpurpose>Get the last error message string of a connection</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
@@ -319,12 +367,19 @@ $dbconn3 = pg_Connect ("host=sheep port=5432 dbname=mary user=lamb password=baaa
      </funcprototype>
     </funcsynopsis>
     <para>
-     Returns a string containing the error message, &false; on failure.
-     Details about the error probably cannot be retrieved using the
-     <function>pg_errormessage</function> function if an error occured
-     on the last database action for which a valid connection exists,
-     this function will return a string containing the error message
-     generated by the backend server.
+     <function>pg_errormessage</function> returns a string containing
+     the last error message for given
+     <parameter>connection</parameter>. It returns &false; on failure.
+    </para>
+    <para>
+     <function>pg_errormessage</function> returns the last error
+     message for given <parameter>connection</parameter> and error
+     message may be overwritten if other libpq functions are called on
+     the connection. PostgreSQL functions calls libpq functions
+     internally. Therefore, details about the error may not be
+     retrieved using the <function>pg_errormessage</function>
+     function.  pg_result_error_message() will be added from 4.2.0 to
+     get last error for the result resource.
     </para>
    </refsect1>
   </refentry>
@@ -339,20 +394,25 @@ $dbconn3 = pg_Connect ("host=sheep port=5432 dbname=mary user=lamb password=baaa
     <funcsynopsis>
      <funcprototype>
       <funcdef>resource <function>pg_exec</function></funcdef>
-      <paramdef>resource<parameter>connection</parameter></paramdef>
+      <paramdef>resource <parameter>connection</parameter></paramdef>
       <paramdef>string <parameter>query</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
-     Returns a query result resource if query could be executed,
-     &false; on failure or if connection is not a valid connection
-     index. Details about the error can be retrieved using the
-     <function>pg_ErrorMessage</function> function if connection is
-     valid.  Sends an SQL statement to the PostgreSQL database
-     specified by the connection index. The connection must be a valid
-     index that was returned by <function>pg_Connect</function>.  The
-     return value of this function is an index to be used to access
-     the results from other PostgreSQL functions.
+     <function>pg_exec</function> returns a query result resource if
+     query could be executed.  It returns &false; on failure or if
+     connection is not a valid connection. Details about the error can
+     be retrieved using the <function>pg_errormessage</function>
+     function if connection is valid.
+     <function>pg_errormessage</function> sends an SQL statement to
+     the PostgreSQL database specified by the
+     <parameter>connection</parameter> resource. The
+     <parameter>connection</parameter> must be a valid connection that
+     was returned by <function>pg_connect</function> or
+     <function>pg_pconnect</function>. The return value of this
+     function is an query result resource to be used to access the
+     results from other PostgreSQL functions such as
+     <function>pg_fetch_array</function>.
      <note>
       <simpara>
        PHP/FI returned 1 if the query was not expected to return data
@@ -361,6 +421,13 @@ $dbconn3 = pg_Connect ("host=sheep port=5432 dbname=mary user=lamb password=baaa
        made in PHP.  
       </simpara>
      </note>
+    </para>
+    <para>
+     See also <function>pg_fetch_array</function>,
+     <function>pg_fetch_object</function>,
+     <function>pg_result</function>, <function>pg_numrows</function>,
+     <function>pg_cmdtuples</function> and
+     <function>pg_numfields</function>.
     </para>
    </refsect1>
   </refentry>
@@ -382,40 +449,52 @@ $dbconn3 = pg_Connect ("host=sheep port=5432 dbname=mary user=lamb password=baaa
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-    <para> 
-     Returns: An array that corresponds to the fetched row, or &false;
-     if there are no more rows.
+    <para>
+     <function>pg_fetch_array</function> returns an array that
+     corresponds to the fetched row (tuples/records). It returns
+     &false;, if there are no more rows.
     </para>
     <para>
      <function>pg_fetch_array</function> is an extended version of
      <function>pg_fetch_row</function>.  In addition to storing the
-     data in the numeric indices of the result array, it also stores
-     the data in associative indices, using the field names as keys.
+     data in the numeric indices (field index) to the result array, it
+     also stores the data in associative indices (field name) by
+     default.
     </para>
     <para>
-     The third optional argument <parameter>result_type</parameter> in
-     <function>pg_fetch_array</function> is a constant and can take the
+     <parameter>row</parameter> is row (record) number to be
+     retrived. First row is 0.
+    </para>
+    <para>
+     <parameter>result_type</parameter> is optional parameter controls
+     how return value is initilized.
+     <parameter>result_type</parameter> is a constant and can take the
      following values: PGSQL_ASSOC, PGSQL_NUM, and PGSQL_BOTH.
+     <function>pg_fetch_array</function> returns associative array
+     that has field name as key for PGSQL_ASSOC. field index as key
+     with PGSQL_NUM and both field name/index as key with
+     PGSQL_BOTH. Default is PGSQL_BOTH.
      <note>
       <para>
-       <parameter>Result_type</parameter> was added in PHP 4.0.
+       <parameter>result_type</parameter> was added in PHP 4.0.
       </para>
      </note>
     </para>
     <para>
-     An important thing to note is that using
      <function>pg_fetch_array</function> is NOT significantly
      slower than using <function>pg_fetch_row</function>, while it
-     provides a significant added value.
+     provides a significant ease of use.
     </para>
     <para>
-     For further details, see also
-     <function>pg_fetch_row</function>
+     See also <function>pg_fetch_row</function> and
+    <function>pg_fetch_object</function> and
+    <function>pg_result</function>.
     </para>
-    <example>
-     <title>PostgreSQL fetch array</title>
-     <programlisting role="php">
-<![CDATA[
+    <para>
+     <example>
+      <title>PostgreSQL fetch array</title>
+      <programlisting role="php">
+       <![CDATA[
 <?php 
 $conn = pg_pconnect ("dbname=publisher");
 if (!$conn) {
@@ -423,21 +502,22 @@ if (!$conn) {
     exit;
 }
 
-$result = pg_Exec ($conn, "SELECT * FROM authors");
+$result = pg_exec ($conn, "SELECT * FROM authors");
 if (!$result) {
     echo "An error occured.\n";
     exit;
 }
 
-$arr = pg_fetch_array ($result, 0);
+$arr = pg_fetch_array ($result, 0, PGSQL_NUM);
 echo $arr[0] . " <- array\n";
 
-$arr = pg_fetch_array ($result, 1);
+$arr = pg_fetch_array ($result, 1, PGSQL_ASSOC);
 echo $arr["author"] . " <- array\n";
 ?>
 ]]>
-     </programlisting>
-    </example>
+      </programlisting>
+     </example>
+    </para>
    </refsect1>
   </refentry>
 
@@ -458,9 +538,10 @@ echo $arr["author"] . " <- array\n";
       </paramdef>
      </funcprototype>
     </funcsynopsis>
-    <para> 
-     Returns: An object with properties that correspond to the fetched
-     row, or &false; if there are no more rows.
+    <para>
+     <function>pg_fetch_object</function> returns an object with
+     properties that correspond to the fetched row. It returns &false;
+     if there are no more rows or error.
     </para>
     <para> 
      <function>pg_fetch_object</function> is similar to
@@ -470,12 +551,19 @@ echo $arr["author"] . " <- array\n";
      their offsets (numbers are illegal property names).
     </para>
     <para>
-     The third optional argument <parameter>result_type</parameter> in
-     <function>pg_fetch_object</function> is a constant and can take the
+     <parameter>result_type</parameter> is optional parameter controls
+     how return value is initilized.
+     <parameter>result_type</parameter> is a constant and can take the
      following values: PGSQL_ASSOC, PGSQL_NUM, and PGSQL_BOTH.
+     <function>pg_fetch_array</function> returns associative array
+     that has field name as key for PGSQL_ASSOC. field index as key
+     with PGSQL_NUM and both field name/index as key with
+     PGSQL_BOTH. Default is PGSQL_BOTH.
+    </para>
+    <para>
      <note>
       <para>
-       <parameter>Result_type</parameter> was added in PHP 4.0.
+       <parameter>result_type</parameter> was added in PHP 4.0.
       </para>
      </note>
     </para>
@@ -486,8 +574,10 @@ echo $arr["author"] . " <- array\n";
      insignificant).
     </para>
     <para> 
-     See also: <function>pg_fetch_array</function> and
-     <function>pg_fetch_row</function>.
+     See also <function>pg_exec</function>, <function>pg_fetch_array</function>,
+     <function>pg_fetch_row</function> and <function>pg_result</function>.
+    </para>
+    <para>
      <example>
       <title>Postgres fetch object</title>
       <programlisting role="php">
@@ -526,7 +616,7 @@ while ($data = pg_fetch_object ($qu, $row)):
 endwhile;
 echo "----------\n"; ?>
 </PRE> <?php
-pg_freeResult ($qu);
+pg_freeresult ($qu);
 pg_close ($db_conn);
 ?>
 ]]>
@@ -550,20 +640,24 @@ pg_close ($db_conn);
       <paramdef>int <parameter>row</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
+    <para>
+     <function>pg_fetch_row</function> fetches one row of data from
+     the result associated with the specified
+     <parameter>result</parameter> resource.  The row (record) is
+     returned as an array.  Each result column is stored in an array
+     offset, starting at offset 0.
+    </para>
     <para> 
-     Returns: An array that corresponds to the fetched row, or &false;
+     It returns an array that corresponds to the fetched row, or &false;
      if there are no more rows.
     </para>
     <para>
-     <function>pg_fetch_row</function> fetches one row of data from
-     the result associated with the specified result identifier.  The
-     row is returned as an array.  Each result column is stored in an
-     array offset, starting at offset 0.
+     See also: <function>pg_exec</function>,
+     <function>pg_fetch_array</function>,
+     <function>pg_fetch_object</function> and
+     <function>pg_result</function>.
     </para>
     <para>
-     See also: <function>pg_fetch_array</function>,
-     <function>pg_fetch_object</function>,
-     <function>pg_result</function>.
      <example>
       <title>Postgres fetch row</title>
       <programlisting role="php">
@@ -618,9 +712,10 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     Test if a field is &null; or not. Returns 0 if the field in the
-     given row is not &null;. Returns 1 if the field in the given row is
-     &null;. Field can be specified as number or fieldname. Row
+     <function>pg_fieldisnull</function> test if a field is &null; or
+     not. It returns 1 if the field in the given row is &null;. It
+     returns 0 if the field in the given row is NOT &null;. Field can
+     be specified as colum index (number) or fieldname (string). Row
      numbering starts at 0.
     </para>
    </refsect1>
@@ -641,9 +736,13 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>pg_fieldname</function> will return the name of the
-     field occupying the given column number in the given PostgreSQL
-     result identifier.  Field numbering starts from 0.
+     <function>pg_fieldname</function> returns the name of the field
+     occupying the given <parameter>field_number</parameter> in the
+     given PostgreSQL <parameter>result</parameter> resource.  Field
+     numbering starts from 0.
+    </para>
+    <para>
+     See also <function>pg_filednum</function>.
     </para>
    </refsect1>
   </refentry>
@@ -664,9 +763,13 @@ for ($i=0; $i < $num; $i++) {
     </funcsynopsis>
     <para>
      <function>pg_fieldnum</function> will return the number of the
-     column slot that corresponds to the named field in the given
-     PosgreSQL result identifier.  Field numbering starts at 0.  This
-     function will return -1 on error.
+     column (field) slot that corresponds to the
+     <parameter>field_name</parameter> in the given PosgreSQL
+     <parameter>result</parameter> resource.  Field numbering starts
+     at 0.  This function will return -1 on error.
+    </para>
+    <para>
+     See also <function>pg_fieldname</function>.
     </para>
    </refsect1>
   </refentry>
@@ -687,10 +790,13 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>pg_fieldprtlen</function> will return the actual
-     printed length (number of characters) of a specific value in a
-     PostgreSQL result.  Row numbering starts at 0.  This function
-     will return -1 on an error.
+     <function>pg_fieldprtlen</function> returns the actual printed
+     length (number of characters) of a specific value in a PostgreSQL
+     <parameter>result</parameter>.  Row numbering starts at 0.  This
+     function will return -1 on an error.
+    </para>
+    <para>
+     See also <function>pg_fieldsize</function>.
     </para>
    </refsect1>
   </refentry>
@@ -712,11 +818,14 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>pg_fieldsize</function> will return the internal
-     storage size (in bytes) of the field number in the given
-     PostgreSQL result. Field numbering starts at 0. A field size of
-     -1 indicates a variable length field. This function will return
-     &false; on error.
+     <function>pg_fieldsize</function> returns the internal storage
+     size (in bytes) of the field number in the given PostgreSQL
+     <parameter>result</parameter>. Field numbering starts at 0. A
+     field size of -1 indicates a variable length field. This function
+     will return &false; on error.
+    </para>
+    <para>
+     See also <function>pg_fieldlen</function> and <function>pg_fieldtype</function>.
     </para>
    </refsect1>
   </refentry>
@@ -738,9 +847,13 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>pg_fieldtype</function> will return a string containing
-     the type name of the given field in the given PostgreSQL result
-     identifier.  Field numbering starts at 0.
+     <function>pg_fieldtype</function> returns a string containing the
+     type name of the given <parameter>field_number</parameter> in the
+     given PostgreSQL <parameter>result</parameter> resource.  Field
+     numbering starts at 0.
+    </para>
+    <para>
+     See also <function>pg_fieldlen</function> and <function>pg_fieldname</function>.
     </para>
    </refsect1>
   </refentry>
@@ -764,8 +877,12 @@ for ($i=0; $i < $num; $i++) {
      running.  All result memory will automatically be freed when the
      script is finished.  But, if you are sure you are not going to
      need the result data anymore in a script, you may call
-     <function>pg_freeresult</function> with the result identifier as
-     an argument and the associated result memory will be freed.
+     <function>pg_freeresult</function> with the
+     <parameter>result</parameter> resource as an argument and the
+     associated result memory will be freed.
+    </para>
+    <para>
+     See also <function>pg_exec</function>.
     </para>
    </refsect1>
   </refentry>
@@ -773,7 +890,7 @@ for ($i=0; $i < $num; $i++) {
   <refentry id="function.pg-getlastoid">
    <refnamediv>
     <refname>pg_getlastoid</refname> 
-    <refpurpose>Returns the last object identifier</refpurpose>
+    <refpurpose>Returns the last object's oid</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
@@ -784,13 +901,17 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>pg_getlastoid</function> can be used to retrieve the
-     <varname>oid</varname> assigned to an inserted tuple if the result
-     identifier is used from the last command sent via
-     <function>pg_exec</function> and was an SQL INSERT.  Returns a positive
-     integer if there was a valid <varname>oid</varname>.  It returns &false;
-     if an error occurs or the last command sent via
-     <function>pg_exec</function> was not an INSERT.
+     <function>pg_getlastoid</function> is used to retrieve the
+     <varname>oid</varname> assigned to an inserted tuple (record) if
+     the result resource is used from the last command sent via
+     <function>pg_exec</function> and was an SQL INSERT.  Returns a
+     positive integer if there was a valid <varname>oid</varname>.  It
+     returns &false; if an error occurs or the last command sent via
+     <function>pg_exec</function> was not an INSERT or INSERT is
+     failed.
+    </para>
+    <para>
+     See also <function>pg_exec</function>.
     </para>
    </refsect1>
   </refentry>
@@ -811,8 +932,53 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>pg_host</function> will return the host name of the
-     given PostgreSQL connection identifier is connected to.
+     <function>pg_host</function> returns the host name of the given
+     PostgreSQL <parameter>connection</parameter> resource is
+     connected to.
+    </para>
+    <para>
+     See also <function>pg_connect</function> and
+     <function>pg_pconnect</function>.
+    </para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pg-last-notice">
+   <refnamediv>
+    <refname>pg_last_notice</refname> 
+    <refpurpose>
+     Returns the last notice message from PostgreSQL server
+    </refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcprototype>
+      <funcdef>string <function>pg_last_notice</function></funcdef>
+      <paramdef>resource <parameter>connection</parameter></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+    <para>
+     <function>pg_last_notice</function> returns the last notice
+     message from PostgreSQL server specified by
+     <parameter>connection</parameter>. PostgreSQL server set notice
+     message when transaction cannot be continued. There one can avoid
+     issuing useless SQL using <function>pg_exec</function> using
+     <function>pg_last_notice</function>. There are other cases that
+     PostgreSQL server sets notice message. Programmer must check
+     contents of notice message if it is related to transaction or
+     not.
+    </para>
+    <warning>
+     <para>
+      <function>pg_last_notice</function> is added form PHP
+      4.0.6. However, PHP 4.0.6 has problem with notice message
+      handling. Use of PostgreSQL module with PHP 4.0.6 is not recommended
+      even if you are not using <function>pg_last_notice</function>.
+     </para>
+    </warning>
+    <para>
+     See also <function>pg_exec</function> and <function>pg_errormessage</function>.
     </para>
    </refsect1>
   </refentry>
@@ -835,6 +1001,15 @@ for ($i=0; $i < $num; $i++) {
      Object. <parameter>large_object</parameter> is a resource for the
      large object from <function>pg_loopen</function>.
     </para>
+    <para>
+     To use the large object (lo) interface, it is necessary to
+     enclose it within a transaction block.
+    </para>
+    <para>
+     See also <function>pg_loopen</function>,
+     <function>pg_locreate</function> and
+     <function>pg_loimport</function>.
+    </para>
    </refsect1>
   </refentry>
 
@@ -854,11 +1029,19 @@ for ($i=0; $i < $num; $i++) {
     <para>
      <function>pg_locreate</function> creates an Inversion Large
      Object and returns the <varname>oid</varname> of the large
-     object.  <parameter>connection</parameter> specifies a valid database
-     connection.  PostgreSQL access modes INV_READ, INV_WRITE, and
-     INV_ARCHIVE are not supported, the object is created always with
-     both read and write access. INV_ARCHIVE has been removed from
-     PostgreSQL itself (version 6.3 and above).
+     object.  <parameter>connection</parameter> specifies a valid
+     database connection opened by <function>pg_connect</function> or
+     <function>pg_pconnect</function>.  PostgreSQL access modes
+     INV_READ, INV_WRITE, and INV_ARCHIVE are not supported, the
+     object is created always with both read and write
+     access. INV_ARCHIVE has been removed from PostgreSQL itself
+     (version 6.3 and above). It returns large object oid
+     otherwise. It retuns &false;, if an error occurred,
+     
+    </para>
+    <para>
+     To use the large object (lo) interface, it is necessary to
+     enclose it within a transaction block.
     </para>
    </refsect1>
   </refentry>
@@ -877,7 +1060,7 @@ for ($i=0; $i < $num; $i++) {
        <parameter>oid</parameter>
       </paramdef>
       <paramdef>string
-       <parameter>filename</parameter>
+       <parameter>pathname</parameter>
       </paramdef>
       <paramdef>resource
        <parameter><optional>connection</optional></parameter>
@@ -885,12 +1068,17 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     The <parameter>oid</parameter> argument specifies the object id
-     of the large object to export and the
-     <parameter>filename</parameter> argument specifies the pathname
-     of the file. Returns &false; if an error occurred, &true;
-     otherwise. Remember that handling large objects in PostgreSQL
-     must happen inside a transaction.
+     The <parameter>oid</parameter> argument specifies oid of the
+     large object to export and the <parameter>pathname</parameter>
+     argument specifies the pathname of the file. It returns &false; if
+     an error occurred, &true; otherwise. 
+    </para>
+    <para>
+     To use the large object (lo) interface, it is necessary to
+     enclose it within a transaction block.
+    </para>
+    <para>
+     See also <function>pg_loimport</function>.
     </para>
    </refsect1>
   </refentry>
@@ -905,22 +1093,27 @@ for ($i=0; $i < $num; $i++) {
     <funcsynopsis>
      <funcprototype>
       <funcdef>int <function>pg_loimport</function></funcdef>
-      <paramdef>string
-       <parameter>filename</parameter>
-      </paramdef>
-      <paramdef>int
-       <parameter><optional>connection_id</optional></parameter>
+      <paramdef>string <parameter>pathname</parameter></paramdef>
+      <paramdef>resource
+       <parameter><optional>connection</optional></parameter>
       </paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
-     The <parameter>filename</parameter> argument specifies the
-     pathname of the file to be imported as a large object. Returns
-     &false; if an error occurred, object id of the just created large
-     object otherwise. Remember that handling large objects in
-     PostgreSQL must happen inside a transaction.
+     The <parameter>pathname</parameter> argument specifies the
+     pathname of the file to be imported as a large object. It returns
+     &false; if an error occurred, oid of the just created large
+     object otherwise. 
     </para>
-	&note.sm.uidcheck;
+    <para>
+     To use the large object (lo) interface, it is necessary to
+     enclose it within a transaction block.
+    </para>
+    &note.sm.uidcheck;
+    <para>
+     See also <function>pg_loexport</function> and
+     <function>pg_loopen</function>.
+    </para>
    </refsect1>
   </refentry>
 
@@ -933,20 +1126,33 @@ for ($i=0; $i < $num; $i++) {
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>bool <function>pg_loopen</function></funcdef>
+      <funcdef>resource <function>pg_loopen</function></funcdef>
       <paramdef>resource <parameter>connection</parameter></paramdef>
-      <paramdef>int <parameter>objoid</parameter></paramdef>
+      <paramdef>int <parameter>oid</parameter></paramdef>
       <paramdef>string <parameter>mode</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
      <function>pg_loopen</function> open an Inversion Large Object and
-     returns file descriptor of the large object. The file descriptor
-     encapsulates information about the connection. Do not close the
-     connection before closing the large object file descriptor.
-     <parameter>objoid</parameter> specifies a valid large object oid
-     and <parameter>mode</parameter> can be either "r", "w", or
-     "rw". It returns &false; if there is error.
+     returns large object resource. The resource encapsulates
+     information about the connection. 
+     <parameter>oid</parameter> specifies a valid large object oid and
+     <parameter>mode</parameter> can be either "r", "w", or "rw". It
+     returns &false; if there is an error.
+    </para>
+    <warning>
+     <para>
+      Do not close the database connection before closing the large
+      object resource. 
+     </para>
+    </warning>
+    <para>
+     To use the large object (lo) interface, it is necessary to
+     enclose it within a transaction block.
+    </para>
+    <para>
+     See also <function>pg_loclose</function> and
+     <function>pg_locreate</function>.
     </para>
    </refsect1>
   </refentry>
@@ -970,7 +1176,15 @@ for ($i=0; $i < $num; $i++) {
      <parameter>len</parameter> bytes from a large object and returns
      it as a string.  <parameter>large_object</parameter> specifies a
      valid large object resource and<parameter>len</parameter>
-     specifies the maximum allowable size of the large object segment.
+     specifies the maximum allowable size of the large object
+     segment. It returns &false; if there is an error.
+    </para>
+    <para>
+     To use the large object (lo) interface, it is necessary to
+     enclose it within a transaction block.
+    </para>
+    <para>
+     See also <function>pg_loreadall</function>.
     </para>
    </refsect1>
   </refentry>
@@ -986,14 +1200,23 @@ for ($i=0; $i < $num; $i++) {
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>void <function>pg_loreadall</function></funcdef>
+      <funcdef>int <function>pg_loreadall</function></funcdef>
       <paramdef>resource <parameter>large_object</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>pg_loreadall</function> reads a large object and
-     passes it straight through to the browser after sending all pending
-     headers. Mainly intended for sending binary data like images or sound.
+     <function>pg_loreadall</function> reads a large object and passes
+     it straight through to the browser after sending all pending
+     headers. Mainly intended for sending binary data like images or
+     sound. It returns number of bytes read. It returns &false;, if an
+     error occured.
+    </para>
+    <para>
+     To use the large object (lo) interface, it is necessary to
+     enclose it within a transaction block.
+    </para>
+    <para>
+     See also <function>pg_loread</function>.
     </para>
    </refsect1>
   </refentry>
@@ -1007,14 +1230,23 @@ for ($i=0; $i < $num; $i++) {
     <title>Description</title>
     <funcsynopsis>
      <funcprototype>
-      <funcdef>void <function>pg_lounlink</function></funcdef>
+      <funcdef>bool <function>pg_lounlink</function></funcdef>
       <paramdef>resource <parameter>connection</parameter></paramdef>
-      <paramdef>resource <parameter>large_object</parameter></paramdef>
+      <paramdef>int <parameter>oid</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
      <function>pg_lounlink</function> deletes a large object with the
-     <parameter>large_object</parameter> identifier for that large object.
+     <parameter>oid</parameter>. It rreturn &true; on success,
+     otherwise returns &false;.
+    </para>
+    <para>
+     To use the large object (lo) interface, it is necessary to
+     enclose it within a transaction block.
+    </para>
+    <para>
+     See also <function>pg_locreate</function> and
+     <function>pg_loimport</function>.
     </para>
    </refsect1>
   </refentry>
@@ -1030,16 +1262,23 @@ for ($i=0; $i < $num; $i++) {
      <funcprototype>
       <funcdef>int <function>pg_lowrite</function></funcdef>
       <paramdef>resource <parameter>large_object</parameter></paramdef>
-      <paramdef>string <parameter>buf</parameter></paramdef>
+      <paramdef>string <parameter>data</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
      <function>pg_lowrite</function> writes at most to a large object
-     from a variable <parameter>buf</parameter> and returns the number
+     from a variable <parameter>data</parameter> and returns the number
      of bytes actually written, or &false; in the case of an error.
      <parameter>large_object</parameter> is a large object resource
-     from <function>pg_loopen</function>. It returns &false; if there
-     is error.
+     from <function>pg_loopen</function>. 
+    </para>
+    <para>
+     To use the large object (lo) interface, it is necessary to
+     enclose it within a transaction block.
+    </para>
+    <para>
+     See also <function>pg_locreate</function> and
+     <function>pg_loopen</function>.
     </para>
    </refsect1>
   </refentry>
@@ -1058,10 +1297,11 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>pg_numfields</function> will return the number of
-     fields (columns) in a PostgreSQL result.  The argument is a valid
-     result identifier returned by <function>pg_exec</function>. This
-     function will return -1 on error.
+     <function>pg_numfields</function> returns the number of fields
+     (columns) in a PostgreSQL <parameter>result</parameter>. The
+     argument is a result resource returned by
+     <function>pg_exec</function>. This function will return -1 on
+     error.
     </para>
     <para>
      See also <function>pg_numrows</function> and
@@ -1085,7 +1325,7 @@ for ($i=0; $i < $num; $i++) {
     </funcsynopsis>
     <para>
      <function>pg_numrows</function> will return the number of rows in a
-     PostgreSQL result.  The argument is a valid result identifier
+     PostgreSQL result.  The argument is a result resource
      returned by <function>pg_exec</function>. This function will
      return -1 on error.
     </para>
@@ -1111,8 +1351,8 @@ for ($i=0; $i < $num; $i++) {
     </funcsynopsis>
     <para>
      <function>pg_options</function> will return a string containing
-     the options specified on the given PostgreSQL connection
-     identifier.
+     the options specified on the given PostgreSQL
+     <parameter>connection</parameter> resource.
     </para>
    </refsect1>
   </refentry>
@@ -1127,22 +1367,48 @@ for ($i=0; $i < $num; $i++) {
     <funcsynopsis>
      <funcprototype>
       <funcdef>int <function>pg_pconnect</function></funcdef>
-      <paramdef>string <parameter>conn_string</parameter></paramdef>
+      <paramdef>string <parameter>connection_string</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
-     Returns a connection resource on success, or &false; if the
-     connection could not be made.  Opens a connection to a PostgreSQL
-     database.  The arguments should be within a quoted string.  The
-     arguments available include <parameter>host</parameter>,
-     <parameter>port</parameter>, <parameter>tty</parameter>,
-     <parameter>options</parameter>, <parameter>dbname</parameter>,
-     <parameter>user</parameter>, and <parameter>password</parameter>.
+     <function>pg_pconnect</function> opens a connection to a
+     PostgreSQL database.  It returns a connection resource that is
+     needed by other PostgreSQL functions.
     </para>
     <para>
-     This function returns a connection resource that is needed by
-     other PostgreSQL functions. You can have multiple connections
-     open at once.
+     It returns a connection resource on success, or &false; if the
+     connection could not be made. The arguments should be within a
+     quoted string.  The arguments available include
+     <parameter>host</parameter>, <parameter>port</parameter>,
+     <parameter>tty</parameter>, <parameter>options</parameter>,
+     <parameter>dbname</parameter>, <parameter>user</parameter>, and
+     <parameter>password</parameter>.
+    </para>
+     <example>
+     <title>Using pg_connect</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$dbconn = pg_connect ("dbname=mary");
+//connect to a database named "mary"
+$dbconn2 = pg_connect ("host=localhost port=5432 dbname=mary");
+// connect to a database named "mary" on "localhost" at port "5432"
+$dbconn3 = pg_connect ("host=sheep port=5432 dbname=mary user=lamb password=foo");
+//connect to a database named "mary" on the host "sheep" with a username and password
+$conn_string = "host=sheep port=5432 dbname=test user=lamb password=bar";
+$dbconn4 = pg_connect ($conn_string);
+//connect to a database named "test" on the host "sheep" with a username and password
+?>
+]]>
+     </programlisting>
+     </example>
+    <para>
+     If a second call is made to <function>pg_pconnect</function> with
+     the same arguments, no new connection will be established, but
+     instead, the connection resource of the already opened connection
+     will be returned. You can have multiple connections to the same
+     database if you use different connection patameters. (i.e. Use
+     different username)
     </para>
     <para>
      The previous syntax of:
@@ -1150,6 +1416,21 @@ for ($i=0; $i < $num; $i++) {
     "dbname")
      </command>
      has been deprecated.
+    </para>
+    <para>
+     To enable persistent connection, <link
+     linkend="ini.pgsql.allow-persistent">pgsql.allow_persistent</link>
+     php.ini directive must be set to &quot;On&quot;. (Default is On)
+     Max number of persistent connection can be defined by <link
+     linkend="ini.pgsql.max-persistent">pgsql.max_persistent</link>
+     php.ini directive. (Default is -1 which is no limit) Total number
+     of connection can be set by <link
+     linkend="ini.pgsql.max-links">pgsql.max_links</link> php.ini
+     directive.
+    </para>
+    <para>
+     <function>pg_close</function> will not close persistent links
+     generated by <function>pg_pconnect</function>.  
     </para>
     <para>
      See also <function>pg_connect</function>.
@@ -1173,8 +1454,9 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>pg_port</function> will return the port number that the
-     given PostgreSQL connection resource is connected to.
+     <function>pg_port</function> returns the port number that the
+     given PostgreSQL <parameter>connection</parameter> resource is
+     connected to.
     </para>
    </refsect1>
   </refentry>
@@ -1200,7 +1482,7 @@ for ($i=0; $i < $num; $i++) {
      to the PostgreSQL backend server. This is useful for example for
      very high-speed inserting of data into a table, initiated by
      starting a PostgreSQL copy-operation. That final NULL-character
-     is added automatically. Returns &true; if successfull, &false;
+     is added automatically. It returns &true; if successfull, &false;
      otherwise.
     </para>
     <note>
@@ -1235,7 +1517,7 @@ for ($i=0; $i < $num; $i++) {
   <refentry id="function.pg-result">
    <refnamediv>
     <refname>pg_result</refname>
-    <refpurpose>Returns values from a result identifier</refpurpose>
+    <refpurpose>Returns values from a result resource</refpurpose>
    </refnamediv>
    <refsect1>
     <title>Description</title>
@@ -1244,14 +1526,16 @@ for ($i=0; $i < $num; $i++) {
       <funcdef>mixed <function>pg_result</function></funcdef>
       <paramdef>resource <parameter>result</parameter></paramdef>
       <paramdef>int <parameter>row_number</parameter></paramdef>
-      <paramdef>mixed <parameter>fieldname</parameter></paramdef>
+      <paramdef>mixed <parameter>field</parameter></paramdef>
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>pg_result</function> will return values from a result
-     identifier produced by <function>pg_Exec</function>.  The
-     <parameter>row_number</parameter> and
-     <parameter>fieldname</parameter> sepcify what cell in the table
+     <function>pg_result</function> returns values from a
+     <parameter>result</parameter> resource returned by
+     <function>pg_exec</function>. <parameter>row_number</parameter>
+     is integer.  <parameter>field</parameter> is field name(string)
+     or field index (integer). The <parameter>row_number</parameter>
+     and <parameter>field</parameter> sepcify what cell in the table
      of results to return.  Row numbering starts from 0.  Instead of
      naming the field, you may use the field index as an unquoted
      number.  Field indices start from 0.
@@ -1259,15 +1543,18 @@ for ($i=0; $i < $num; $i++) {
     <para>
      PostgreSQL has many built in types and only the basic ones are
      directly supported here.  All forms of <type>integer</type>,
-     <type>boolean</type> and void
-     <!-- FIXME: is that still true? PHP supports boolean&null now... -->
-     types are returned as <type>integer</type> values.  All forms of float,
-     and
-     real types are returned as <type>float</type> values.  All other types,
-     including arrays are returned as strings formatted in the same
-     default PostgreSQL manner that you would see in the
-     <command>psql</command> program.
-    </para>  
+     <type>boolean</type> and void 
+     <!-- FIXME: is that still true? PHP supports boolean&null now... --> 
+     <!-- Yes, supporting boolean&null breaks scripts. pg_fetch_array() 
+          can be used instead. I might take of this issue with additional 
+          ini directive. yohgaki@php.net --> 
+     types are
+     returned as <type>integer</type> values.  All forms of float, and
+     real types are returned as <type>float</type> values.  All other
+     types, including arrays are returned as strings formatted in the
+     same default PostgreSQL manner that you would see in the
+     <command>psql</command> program.  
+    </para>
    </refsect1>
   </refentry>
 
@@ -1290,8 +1577,8 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     The function set the client encoding and return 0 if success or
-     -1 if error.
+     <function>pg_set_client_encoding</function> sets the client
+     encoding and return 0 if success or -1 if error.
     </para>
     <para>
      <parameter>encoding</parameter> is the client
@@ -1303,7 +1590,10 @@ for ($i=0; $i < $num; $i++) {
     <note>
      <para>
       This function requires PHP-4.0.2 or higher and PostgreSQL-7.0 or
-      higher.
+      higher. If libpq is compiled without multibyte encoding support,
+      <function>pg_set_client_encoding</function> will not be
+      included. Refer to PostgreSQL manual to enable multibyte support
+      for PostgreSQL server and libpq.
      </para>
      <para>
       The function used to be called
@@ -1334,11 +1624,11 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     The functions returns the client encoding as the string. The
-     returned string should be either :
+     <function>pg_client_encoding</function> returns the client
+     encoding as the string. The returned string should be either :
      SQL_ASCII, EUC_JP, EUC_CN, EUC_KR, EUC_TW, UNICODE,
-     MULE_INTERNAL, LATINX (X=1...9), KOI8, WIN, ALT,
-     SJIS, BIG5, WIN1250. 
+     MULE_INTERNAL, LATINX (X=1...9), KOI8, WIN, ALT, SJIS, BIG5,
+     WIN1250.
     </para>
     <note>
      <para>
@@ -1367,7 +1657,7 @@ for ($i=0; $i < $num; $i++) {
      <funcprototype>
       <funcdef>bool <function>pg_trace</function></funcdef>
       <paramdef>string
-       <parameter>filename</parameter>
+       <parameter>pathname</parameter>
       </paramdef>
       <paramdef>string
        <parameter><optional>mode</optional></parameter>
@@ -1378,13 +1668,16 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     Enables tracing of the PostgreSQL frontend/backend communication
-     to a debugging file. To fully understand the results one needs to
-     be familiar with the internals of PostgreSQL communication
-     protocol.  For those who are not, it can still be useful for
-     tracing errors in queries sent to the server, you could do for
-     example <command>grep '^To backend' trace.log</command> and see
-     what query actually were sent to the PostgreSQL server.
+     <function>pg_trace</function> enables tracing of the PostgreSQL
+     frontend/backend communication to a debugging file specified as
+     <parameter>pathname</parameter>. To fully understand the results,
+     one needs to be familiar with the internals of PostgreSQL
+     communication protocol.  For those who are not, it can still be
+     useful for tracing errors in queries sent to the server, you
+     could do for example <command>grep '^To backend'
+     trace.log</command> and see what query actually were sent to the
+     PostgreSQL server. For more information, refer to PostgreSQL
+     manual.
     </para>
     <para>
      <parameter>Filename</parameter> and <parameter>mode</parameter>
@@ -1394,7 +1687,7 @@ for ($i=0; $i < $num; $i++) {
      trace and defaults to the last one opened.
     </para>
     <para>
-     Returns &true; if <parameter>filename</parameter> could be opened
+     It returns &true; if <parameter>pathname</parameter> could be opened
      for logging, &false; otherwise.
     </para>
     <para>
@@ -1420,9 +1713,9 @@ for ($i=0; $i < $num; $i++) {
      </funcprototype>
     </funcsynopsis>
     <para>
-     <function>pg_tty</function> will return the tty name that server
+     <function>pg_tty</function> returns the tty name that server
      side debugging output is sent to on the given PostgreSQL
-     connection resource.
+     <parameter>connection</parameter> resource.
     </para>
    </refsect1>
   </refentry>
