@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.4 $ -->
+<!-- $Revision: 1.5 $ -->
 <appendix id="filters">
- <title>List of Built-In Filters</title>
+ <title>List of Available Filters</title>
  <para>
   The following is a list of a few built-in stream filters for
   use with <function>stream_filter_append</function>.
@@ -227,6 +227,132 @@ fwrite($fp, "This is a test.\n");
 ]]>
    </programlisting>
   </example>
+ </section>
+
+ <section id="filters.compression">
+  <title>Compression Filters</title>
+
+  <simpara>
+   While the <xref linkend="wrappers.compression"/> provide a way of creating
+   gzip and bz2 compatable files on the local filesystem, they do not provide a 
+   means for generalized compression over network streams, nor do they provide a 
+   means begin with a non-compressed stream and transition to a compressed one.  
+   For this, a compression filter may be applied to any stream resource at any time.
+  </simpara>
+
+  <note>
+   <simpara>
+    Compression filters do <emphasis>not</emphasis> generate headers and trailers
+    used by commandline utilites such as <literal>gzip</literal>.  They only compress
+    and decompress the payload portions of compressed data streams.
+   </simpara>
+  </note>
+
+  <simpara>
+   <literal>zlib.deflate</literal> (compression) and
+   <literal>zlib.inflate</literal> (decompression) are implementations of
+   the compression methods described in <ulink url="&url.rfc;1951">RFC 1951</ulink>.
+   The <literal>deflate</literal> filter takes up to three parameters passed as
+   an associative array.  
+
+   <parameter>level</parameter> describes the compression
+   strength to use (1-9).  Higher numbers will generally yield smaller payloads at
+   the cost of additional processing time.  Two special compression levels also exist:
+   0 (for no compression at all), and -1 (zlib internal default -- currently 6).
+
+   <parameter>window</parameter> is the base-2 log of the compression loopback window size.
+   Higher values (up to 15 -- 32768 bytes) yield better compression at a cost of memory,
+   while lower values (down to 9 -- 512 bytes) yield worse compression in a smaller memory footprint.
+   Default <parameter>window</parameter> size is currently <constant>15</constant>.
+
+   <parameter>memory</parameter> is a scale indicating how much work memory should be allocated.
+   Valid values range from 1 (minimal allocation) to 9 (maximum allocation).  This memory allocation
+   affects speed only and does not impact the size of the generated payload.
+  </simpara>
+
+  <note>
+   <simpara>
+    Because compression level is the most commonly used parameter, it may be alternatively
+    provided as a simple integer value (rather than an array element).
+   </simpara>
+  </note>
+
+  <note>
+   <simpara>
+    The zlib.* filters are not currently built into the PHP core.  To enable these filters
+    in <literal>PHP 5</literal>, install the <ulink url="&url.pecl.package;zlib_filter">zlib_filter</ulink>
+    package from <ulink url="&url.pecl;">PECL</ulink>.  These filters are <emphasis>not</emphasis>
+    available for <literal>PHP 4</literal>.
+   </simpara>
+  </note>
+
+  <example>
+   <title>
+    <literal>zlib.deflate</literal> and
+    <literal>zlib.inflate</literal>
+   </title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$params = array('level' => 6, 'window' => 15, 'memory' => 9);
+
+$original_text = "This is a test.\nThis is only a test.\nThis is not an important string.\n";
+echo "The original text is " . strlen($original_text) . " characters long.\n";
+
+$fp = fopen('test.deflated', 'w');
+stream_filter_append($fp, 'zlib.deflate', STREAM_FILTER_WRITE, $params);
+fwrite($fp, $original_text);
+fclose($fp);
+
+echo "The compressed file is " . filesize('test.deflated') . " bytes long.\n";
+echo "The original text was:\n";
+/* Use readfile and zlib.inflate to decompress on the fly */
+readfile('php://filter/zlib.inflate/resource=test.deflated');
+
+/* Generates output:
+
+The original text is 70 characters long.
+The compressed file is 56 bytes long.
+The original text was:
+This is a test.
+This is only a test.
+This is not an important string.
+
+ */
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <example>
+   <title>
+    <literal>zlib.deflate</literal> simple
+   </title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$original_text = "This is a test.\nThis is only a test.\nThis is not an important string.\n";
+echo "The original text is " . strlen($original_text) . " characters long.\n";
+
+$fp = fopen('test.deflated', 'w');
+/* Here "6" indicates compression level 6 */
+stream_filter_append($fp, 'zlib.deflate', STREAM_FILTER_WRITE, 6);
+fwrite($fp, $original_text);
+fclose($fp);
+
+echo "The compressed file is " . filesize('test.deflated') . " bytes long.\n";
+
+/* Generates output:
+
+The original text is 70 characters long.
+The compressed file is 56 bytes long.
+
+ */
+?>
+]]>
+   </programlisting>
+  </example>
+
  </section>
 
 </appendix>
