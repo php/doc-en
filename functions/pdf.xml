@@ -1,0 +1,2069 @@
+ <reference id="ref.pdf">
+  <title>PDF functions</title>
+  <titleabbrev>PDF</titleabbrev>
+
+  <partintro>
+
+   <simpara>
+    You can use the PDF functions in PHP to create PDF files if you
+    have the PDF library by Thomas Merz  (available at 
+    <ulink url="http://www.pdflib.com/pdflib/index.html">http://www.pdflib.com/pdflib/index.html</ulink>;
+    you will also need <ulink url="ftp://ftp.uu.net/graphics/jpeg/">the JPEG library</ulink>
+    and <ulink url="http://www.libtiff.org/">the TIFF library</ulink> to
+    compile this. These two libs also quite often make problems when
+    configuring php. Follow the messages of configure to fix possible
+    problems. If you use pdflib 2.01 check how the lib was installed.
+    There should be file or link libpdf.so. Version 2.01 just creates
+    a lib with the name libpdf2.01.so which cannot be found when linking
+    the test programm in configure. You will have to create a symbolic
+    link from libpdf.so to libpdf2.01.so.).
+    Please consult the excellent documentation for
+    pdflib shipped with the source distribution of pdflib.
+    It provides a very good overview of what pdflib capable of doing.
+    Most of the functions in pdflib
+    and the PHP module have the same name. The parameters are also
+    identical.  You should also understand some of the concepts of PDF
+    or Postscript to efficiently use this module.
+    All lengths and coordinates are measured in Postscript points.
+    There are generally 72 PostScript points to an inch, but this
+    depends on the output resolution.</simpara>
+
+   <simpara>
+    There is another PHP module for pdf document creation based on
+    <ulink url="http://www.fastio.com">FastIO's</ulink>.
+    ClibPDF. It has a slightly different API. Check the
+    <link linkend="ref.cpdf">ClibPDF functions</link> section for
+    details.</simpara>
+
+   <simpara>
+    Currently all versions of pdflib are supported. It
+    is recommended that you use the newest version since it has more
+    features and fixes some problems which required a patch for the old
+    version. Unfortunately, the changes of the pdflib API in 2.x
+    compared to 0.6 have
+    been so severe that even some PHP functions had to be altered. Here
+    is a list of changes:</simpara>
+   
+    <itemizedlist>
+     <listitem>
+     <simpara>
+      The Info structure does not exist anymore. Therefore the function
+      <function>pdf_get_info</function> is obsolete and the functions
+      <function>pdf_set_info_creator</function>,
+      <function>pdf_set_info_title</function>,
+      <function>pdf_set_info_author</function>,
+      <function>pdf_set_info_subject</function> and
+      <function>pdf_set_info_keywords</function> do not take the
+      info structure as the first parameter but the pdf document. This
+      also means that the pdf document must be opened before these functions
+      can be called.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara> 
+      The way a new document is opened has changed. The function
+      <function>pdf_open</function> takes only one parameter which is
+      the file handle of a file opened with <function>fopen</function>.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+
+   <simpara>
+    There were some more changes with the release 2.01 of pdflib which
+    should be covered by PHP. Some functions are not required anymore
+    (e.g. <function>pdf_put_image</function>). You will get a warning so
+    don't be shocked.</simpara>
+
+   <simpara> 
+    The pdf module introduces two new types of variables (if pdflib 2.x
+    is used it is only one new type). They are called
+    <parameter>pdfdoc</parameter> and <parameter>pdfinfo</parameter>
+    (<parameter>pdfinfo</parameter> is not existent if pdflib 2.x is used. 
+    <parameter>pdfdoc</parameter> is a pointer to a pdf document and
+    almost all functions need it as its first parameter.
+    <parameter>pdfinfo</parameter> contains meta data about the PDF
+    document. It has to be set before <function>pdf_open</function> is
+    called.</simpara>
+
+   <note><simpara>The following is only true for pdflib 0.6. Read the pdflib
+    manual for newer version</simpara></note>
+   <simpara>
+    In order to output text into a PDF document you will need to provide
+    the afm file for each font. Afm files contain font metrics for a
+    Postscript font. By default these afm files are searched
+    for in a directory named 'fonts' relative to the directory where the
+    PHP script is located. (Again, this was true for pdflib 0.6, newer
+    versions do not not neccessarily need the afm files.)</simpara>
+
+   <simpara>
+    Most of the functions are fairly easy to use. The most difficult part
+    is probably to create a very simple pdf document at all. The following
+    example should help to get started. It uses the PHP functions for
+    pdflib 0.6. It creates the file test.pdf
+    with one page. The page contains the text "Times-Roman" in an
+    outlined 30pt font. The text is also underlined.</simpara>
+     <example>
+      <title>Creating a PDF document with pdflib 0.6</title>
+      <programlisting>
+&lt;?php
+$fp = fopen("test.pdf", "w");
+$info = PDF_get_info();
+pdf_set_info_author($info, "Uwe Steinmann");
+PDF_set_info_title($info, "Test for PHP wrapper of PDFlib 0.6");
+PDF_set_info_author($info, "Name of Author");
+pdf_set_info_creator($info, "See Author");
+pdf_set_info_subject($info, "Testing");
+$pdf = PDF_open($fp, $info);
+PDF_begin_page($pdf, 595, 842);
+PDF_add_outline($pdf, "Page 1");
+pdf_set_font($pdf, "Times-Roman", 30, 4);
+pdf_set_text_rendering($pdf, 1);
+PDF_show_xy($pdf, "Times Roman outlined", 50, 750);
+pdf_moveto($pdf, 50, 740);
+pdf_lineto($pdf, 330, 740);
+pdf_stroke($pdf);
+PDF_end_page($pdf);
+PDF_close($pdf);
+fclose($fp);
+echo "&lt;A HREF=getpdf.php3>finished&lt;/A>";
+?>
+    </programlisting>
+   </example>
+
+   <para>
+
+    The PHP script getpdf.php3 just outputs the pdf document.
+
+    <informalexample>
+     <programlisting>
+&lt;?php
+$fp = fopen("test.pdf", "r");
+header("Content-type: application/pdf");
+fpassthru($fp);
+fclose($fp);
+?>
+     </programlisting>
+    </informalexample>
+
+     Doing the same with pdflib 2.x looks like the following:
+
+    <example>
+     <title>Creating a PDF document with pdflib 2.x</title>
+     <programlisting>
+&lt;?php
+$fp = fopen("test.pdf", "w");
+$pdf = PDF_open($fp);
+pdf_set_info_author($pdf, "Uwe Steinmann");
+PDF_set_info_title($pdf, "Test for PHP wrapper of PDFlib 2.0");
+PDF_set_info_author($pdf, "Name of Author");
+pdf_set_info_creator($pdf, "See Author");
+pdf_set_info_subject($pdf, "Testing");
+PDF_begin_page($pdf, 595, 842);
+PDF_add_outline($pdf, "Page 1");
+pdf_set_font($pdf, "Times-Roman", 30, 4);
+pdf_set_text_rendering($pdf, 1);
+PDF_show_xy($pdf, "Times Roman outlined", 50, 750);
+pdf_moveto($pdf, 50, 740);
+pdf_lineto($pdf, 330, 740);
+pdf_stroke($pdf);
+PDF_end_page($pdf);
+PDF_close($pdf);
+fclose($fp);
+echo "&lt;A HREF=getpdf.php3>finished&lt;/A>";
+?>
+     </programlisting>
+     <para>
+      The PHP script getpdf.php3 is the same as above.</para>
+    </example>
+
+  The pdflib distribution contains a more complex example which
+  creates a serious of pages with an analog clock. This example
+  converted into PHP using pdflib 2.x looks as the following (you
+  can see the same example in the documentation for the
+  <link linkend="ref.cpdf">clibpdf module)</link>:
+
+    <example>
+     <title>pdfclock example from pdflib 2.x distribution</title>
+     <programlisting>
+&lt;?php
+$pdffilename = "clock.pdf";
+$radius = 200;
+$margin = 20;
+$pagecount = 40;
+
+$fp = fopen($pdffilename, "w");
+$pdf = pdf_open($fp);
+pdf_set_info_creator($pdf, "pdf_clock.php3");
+pdf_set_info_author($pdf, "Uwe Steinmann");
+pdf_set_info_title($pdf, "Analog Clock");
+
+while($pagecount-- > 0) {
+    pdf_begin_page($pdf, 2 * ($radius + $margin), 2 * ($radius + $margin));
+
+    pdf_set_transition($pdf, 4);  /* wipe */ 
+    pdf_set_duration($pdf, 0.5);
+  
+    pdf_translate($pdf, $radius + $margin, $radius + $margin);
+    pdf_save($pdf);
+    pdf_setrgbcolor($pdf, 0.0, 0.0, 1.0);
+
+    /* minute strokes */
+    pdf_setlinewidth($pdf, 2.0);
+    for ($alpha = 0; $alpha < 360; $alpha += 6) {
+        pdf_rotate($pdf, 6.0);
+        pdf_moveto($pdf, $radius, 0.0);
+        pdf_lineto($pdf, $radius-$margin/3, 0.0);
+        pdf_stroke($pdf);
+    }
+
+    pdf_restore($pdf);
+    pdf_save($pdf);
+
+    /* 5 minute strokes */
+    pdf_setlinewidth($pdf, 3.0);
+    for ($alpha = 0; $alpha < 360; $alpha += 30) { 
+        pdf_rotate($pdf, 30.0);
+        pdf_moveto($pdf, $radius, 0.0);
+        pdf_lineto($pdf, $radius-$margin, 0.0);
+        pdf_stroke($pdf);
+    }
+
+    $ltime = getdate();
+
+    /* draw hour hand */
+    pdf_save($pdf);
+    pdf_rotate($pdf,-(($ltime['minutes']/60.0)+$ltime['hours']-3.0)*30.0);
+    pdf_moveto($pdf, -$radius/10, -$radius/20);
+    pdf_lineto($pdf, $radius/2, 0.0);
+    pdf_lineto($pdf, -$radius/10, $radius/20);
+    pdf_closepath($pdf);
+    pdf_fill($pdf);
+    pdf_restore($pdf);
+
+    /* draw minute hand */
+    pdf_save($pdf);
+    pdf_rotate($pdf,-(($ltime['seconds']/60.0)+$ltime['minutes']-15.0)*6.0);
+    pdf_moveto($pdf, -$radius/10, -$radius/20);
+    pdf_lineto($pdf, $radius * 0.8, 0.0);
+    pdf_lineto($pdf, -$radius/10, $radius/20);
+    pdf_closepath($pdf);
+    pdf_fill($pdf);
+    pdf_restore($pdf);
+
+    /* draw second hand */
+    pdf_setrgbcolor($pdf, 1.0, 0.0, 0.0);
+    pdf_setlinewidth($pdf, 2);
+    pdf_save($pdf);
+    pdf_rotate($pdf, -(($ltime['seconds'] - 15.0) * 6.0));
+    pdf_moveto($pdf, -$radius/5, 0.0);
+    pdf_lineto($pdf, $radius, 0.0);
+    pdf_stroke($pdf);
+    pdf_restore($pdf);
+
+    /* draw little circle at center */
+    pdf_circle($pdf, 0, 0, $radius/30);
+    pdf_fill($pdf);
+
+    pdf_restore($pdf);
+
+    pdf_end_page($pdf);
+}
+
+$pdf = pdf_close($pdf);
+fclose($fp);
+echo "&lt;A HREF=getpdf.php3?filename=".$pdffilename.">finished&lt;/A>";
+?>
+     </programlisting>
+     <para>
+      The PHP script getpdf.php3 just outputs the pdf document.
+      <programlisting>
+&lt;?php
+$fp = fopen($filename, "r");
+header("Content-type: application/pdf");
+fpassthru($fp);
+fclose($fp);
+?>
+      </programlisting></para>
+    </example></para>
+   </partintro>
+
+  <refentry id="function.pdf-get-info">
+   <refnamediv>
+    <refname>PDF_get_info</refname>
+    <refpurpose>Returns an empty info structure for a pdf document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>info <function>pdf_get_info</function></funcdef>
+     <paramdef>string <parameter>filename</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_get_info</function> function returns an
+     empty info structure for the pdf document. It should be filled
+     with appropriate information like the author, subject etc. of
+     the document.
+
+    <note><simpara>
+     This functions is not available if pdflib 2.x support is activated.
+    </simpara></note></para>
+
+    <para>
+     See also <function>PDF_set_info_creator</function>,
+              <function>PDF_set_info_author</function>,
+              <function>PDF_set_info_keywords</function>,
+              <function>PDF_set_info_title</function>,
+              <function>PDF_set_info_subject</function>.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-info-creator">
+   <refnamediv>
+    <refname>PDF_set_info_creator</refname>
+    <refpurpose>Fills the creator field of the info structure</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_info_creator</function></funcdef>
+     <paramdef>info <parameter>info</parameter></paramdef>
+     <paramdef>string <parameter>creator</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_info_creator</function> function sets the
+     creator field of a pdf document. It has to be called after
+     <function>PDF_get_info</function> and before
+     <function>PDF_open</function>. Calling it after <function>PDF_open</function>
+     will have no effect on the document.
+
+    <note><simpara>
+     This function is not part of the pdf library.
+    </simpara></note>
+
+    <note><simpara>
+     This function takes a different first parameter if pdflib 2.x support
+     is activated. The first parameter has to be the identifier of the
+     pdf document as returned by <function>pdf_open</function>. Consequently,
+     <function>pdf_open</function> has to be called before this function.
+    </simpara></note></para>
+
+    <para>
+     See also <function>PDF_get_info</function>,
+              <function>PDF_set_info_keywords</function>,
+              <function>PDF_set_info_title</function>,
+              <function>PDF_set_info_subject</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-info-title">
+   <refnamediv>
+    <refname>PDF_set_info_title</refname>
+    <refpurpose>Fills the title field of the info structure</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_info_title</function></funcdef>
+     <paramdef>info <parameter>info</parameter></paramdef>
+     <paramdef>string <parameter>title</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_info_title</function> function sets the
+     title of a pdf document. It has to be called after
+     <function>PDF_get_info</function> and before
+     <function>PDF_open</function>. Calling it after
+     <function>PDF_open</function> will have no effect on the document.
+
+     <note><simpara>
+       This function is not part of the pdf library.
+      </simpara></note>
+
+    <note><simpara>
+     This function takes a different first parameter if pdflib 2.0 support
+     is activated. The first parameter has to be the identifier of the
+     pdf document as returned by <function>pdf_open</function>. Consequently,
+     <function>pdf_open</function> has to be called before this function.
+    </simpara></note></para>
+
+    <para>
+     See also <function>PDF_get_info</function>,
+              <function>PDF_set_info_creator</function>,
+              <function>PDF_set_info_author</function>,
+              <function>PDF_set_info_keywords</function>,
+              <function>PDF_set_info_subject</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-info-subject">
+   <refnamediv>
+    <refname>PDF_set_info_subject</refname>
+    <refpurpose>Fills the subject field of the info structure</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_info_subject</function></funcdef>
+     <paramdef>info <parameter>info</parameter></paramdef>
+     <paramdef>string <parameter>subject</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_info_subject</function> function sets the
+     subject of a pdf document. It has to be called after
+     <function>PDF_get_info</function> and before
+     <function>PDF_open</function>. Calling it after
+     <function>PDF_open</function> will have no effect on the document.
+
+     <note><simpara>
+       This function is not part of the pdf library.
+      </simpara></note>
+
+    <note><simpara>
+     This function takes a different first parameter if pdflib 2.0 support
+     is activated. The first parameter has to be the identifier of the
+     pdf document as returned by <function>pdf_open</function>. Consequently,
+     <function>pdf_open</function> has to be called before this function.
+    </simpara></note></para>
+
+    <para>
+     See also <function>PDF_get_info</function>,
+              <function>PDF_set_info_creator</function>,
+              <function>PDF_set_info_author</function>,
+              <function>PDF_set_info_title</function>,
+              <function>PDF_set_info_keywords</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-info-keywords">
+   <refnamediv>
+    <refname>PDF_set_info_keywords</refname>
+    <refpurpose>Fills the keywords field of the info structure</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_info_keywords</function></funcdef>
+     <paramdef>info <parameter>info</parameter></paramdef>
+     <paramdef>string <parameter>keywords</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_info_keywords</function> function sets the
+     keywords of a pdf document. It has to be called after
+     <function>PDF_get_info</function> and before
+     <function>PDF_open</function>. Calling it after <function>PDF_open</function>
+     will have no effect on the document.
+
+     <note><simpara>
+       This function is not part of the pdf library.
+      </simpara></note>
+
+    <note><simpara>
+     This function takes a different first parameter if pdflib 2.0 support
+     is activated. The first parameter has to be the identifier of the
+     pdf document as returned by <function>pdf_open</function>. Consequently,
+     <function>pdf_open</function> has to be called before this function.
+    </simpara></note></para>
+
+    <para>
+     See also <function>PDF_get_info</function>,
+              <function>PDF_set_info_creator</function>,
+              <function>PDF_set_info_author</function>,
+              <function>PDF_set_info_title</function>,
+              <function>PDF_set_info_subject</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-info-author">
+   <refnamediv>
+    <refname>PDF_set_info_author</refname>
+    <refpurpose>Fills the author field of the info structure</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_info_author</function></funcdef>
+     <paramdef>info <parameter>info</parameter></paramdef>
+     <paramdef>string <parameter>author</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_info_author</function> function sets the
+     author of a pdf document. It has to be called after
+     <function>PDF_get_info</function> and before
+     <function>PDF_open</function>. Calling it after <function>PDF_open</function>
+     will have no effect on the document.
+
+     <note><simpara>
+       This function is not part of the pdf library.
+      </simpara></note>
+
+    <note><simpara>
+     This function takes a different first parameter if pdflib 2.0 support
+     is activated. The first parameter has to be the identifier of the
+     pdf document as returned by <function>pdf_open</function>. Consequently,
+     <function>pdf_open</function> has to be called before this function.
+    </simpara></note></para>
+
+    <para>
+     See also <function>PDF_get_info</function>,
+              <function>PDF_set_info_creator</function>,
+              <function>PDF_set_info_keywords</function>,
+              <function>PDF_set_info_title</function>,
+              <function>PDF_set_info_subject</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-open">
+   <refnamediv>
+    <refname>PDF_open</refname>
+    <refpurpose>Opens a new pdf document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>pdf_open</function></funcdef>
+     <paramdef>int <parameter>file</parameter></paramdef>
+     <paramdef>int <parameter>info</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_open</function> function opens
+     a new pdf document. The corresponding file has to be opened
+     with <function>fopen</function> and the file descriptor passed
+     as argument <parameter>file</parameter>. <parameter>info</parameter>
+     is the info structure that has to be created with
+     <function>pdf_get_info</function>. The info structure will be deleted
+     within this function.
+
+    <note><simpara>
+     The return value is needed as the first parameter in all other
+     functions writing to the pdf document.
+    </simpara></note>
+
+    <note><simpara>
+     This function does not allow the second parameter if pdflib 2.0 support
+     is activated.
+    </simpara></note></para>
+
+    <para>
+     See also <function>fopen</function>,
+              <function>PDF_get_info</function>,
+              <function>PDF_close</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-close">
+   <refnamediv>
+    <refname>PDF_close</refname>
+    <refpurpose>Closes a pdf document</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_close</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_close</function> function closes the pdf document.
+
+    <note><simpara>Due to an unclean implementation of the pdflib 0.6 the
+     internal closing of the document also closes the file. This should
+     not be done because pdflib did not open the file, but expects an
+     already open file when <function>PDF_open</function> is called.
+     Consequently it shouldn't close the file. In order to fix this
+     just take out line 190 of the file p_basic.c in the pdflib 0.6
+     source distribution until the next release of pdflib will fix
+     this.
+    </simpara></note>
+
+    <note><simpara>
+     This function works properly without any patches to pdflib if 
+     pdflib 2.0 support is activated.
+    </simpara></note></para>
+
+    <para>
+     See also <function>PDF_open</function>,
+              <function>fclose</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-begin-page">
+   <refnamediv>
+    <refname>PDF_begin_page</refname>
+    <refpurpose>Starts new page</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_begin_page</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>height</parameter></paramdef>
+     <paramdef>double <parameter>width</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_begin_page</function> function starts a new
+     page with height <parameter>height</parameter> and width
+     <parameter>width</parameter>. In order to create a valid
+     document you must call this function and
+     <function>PDF_end_page</function>.</para>
+
+    <para>
+     See also <function>PDF_end_page</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-end-page">
+   <refnamediv>
+    <refname>PDF_end_page</refname>
+    <refpurpose>Ends a page</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_end_page</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_end_page</function> function ends a page.
+     Once a page is ended it cannot be modified anymore.</para>
+
+    <para>
+     See also <function>PDF_begin_page</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-show">
+   <refnamediv>
+    <refname>PDF_show</refname>
+    <refpurpose>Output text at current position</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_show</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>string <parameter>text</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_show</function> function outputs the
+     string <parameter>text</parameter> at the current position
+     using the current font.</para>
+
+    <para>
+     See also <function>PDF_show_xy</function>,
+              <function>PDF_set_text_pos</function>,
+              <function>PDF_set_font</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-show-xy">
+   <refnamediv>
+    <refname>PDF_show_xy</refname>
+    <refpurpose>Output text at given position</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_show_xy</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>string <parameter>text</parameter></paramdef>
+     <paramdef>double <parameter>x-koor</parameter></paramdef>
+     <paramdef>double <parameter>y-koor</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_show_xy</function> function outputs the
+     string <parameter>text</parameter> at position
+     (<parameter>x-koor</parameter>, <parameter>y-koor</parameter>).</para>
+
+    <para>
+     See also <function>PDF_show</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-font">
+   <refnamediv>
+    <refname>PDF_set_font</refname>
+    <refpurpose>Selects a font face and size</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_font</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>string <parameter>font name</parameter></paramdef>
+     <paramdef>double <parameter>size</parameter></paramdef>
+     <paramdef>int <parameter>encoding</parameter></paramdef>
+     <paramdef>int <parameter>embed</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_font</function> function sets the
+     current font face, font size and encoding. You will need to
+     provide the Adobe Font Metrics (afm-files) for the font in the
+     font path (default is ./fonts). The last parameter
+     <parameter>encoding</parameter> can take the following values:
+     0 = builtin, 1 = pdfdoc, 2 = macroman, 3 = macexpert, 4 = winansi.
+     An encoding greater than 4 and less than 0 will default to winansi.
+     winansi is often a good choice. If the last parameter is set to
+     1 the font is embedded into the pdf document otherwise it is not.
+
+    <note><simpara>
+     This function has to be called after
+     <function>PDF_begin_page</function> in order to create a
+     valid pdf document.
+    </simpara></note>
+
+    <note><simpara>
+     This function does not need the afm files for winansi encoding if 
+     pdflib 2.0 support is activated.
+    </simpara></note></para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-leading">
+   <refnamediv>
+    <refname>PDF_set_leading</refname>
+    <refpurpose>Sets distance between text lines</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set leading</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>distance</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_leading</function> function sets the distance
+     between text lines. This will be used if text is output by
+     <function>PDF_continue_text</function>.</para>
+
+    <para>
+     See also <function>PDF_continue_text</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-text-rendering">
+   <refnamediv>
+    <refname>PDF_set_text_rendering</refname>
+    <refpurpose>Determines how text is rendered</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_text_rendering</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>int <parameter>mode</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_text_rendering</function> function determines
+     how text is rendered. The possible values for <parameter>mode</parameter>
+     are 0=fill text, 1=stroke text, 2=fill and stroke text, 3=invisible,
+     4=fill text and add it to cliping path, 5=stroke text and add it to
+     clipping path, 6=fill and stroke text and add
+     it to cliping path, 7=add it to clipping path.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-horiz-scaling">
+   <refnamediv>
+    <refname>PDF_set_horiz_scaling</refname>
+    <refpurpose>Sets horizontal scaling of text</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_horiz_scaling</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>scale</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_horiz_scaling</function> function sets the
+     horizontal scaling to <parameter>scale</parameter> percent.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-text-rise">
+   <refnamediv>
+    <refname>PDF_set_text_rise</refname>
+    <refpurpose>Sets the text rise</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_text_rise</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>value</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_text_rise</function> function sets the
+     text rising to <parameter>value</parameter> points.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-text-matrix">
+   <refnamediv>
+    <refname>PDF_set_text_matrix</refname>
+    <refpurpose>Sets the text matrix</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_text_matrix</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>array <parameter>matrix</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_text_matrix</function> function sets
+     a matrix which describes a transformation applied on the current
+     text font. The matrix has to passed as an array with six elements.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-text-pos">
+   <refnamediv>
+    <refname>PDF_set_text_pos</refname>
+    <refpurpose>Sets text position</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_text_pos</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>x-koor</parameter></paramdef>
+     <paramdef>double <parameter>y-koor</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_text_pos</function> function sets the
+     position of text for the next <function>pdf_show</function> 
+     function call.</para>
+    <para>
+     See also <function>PDF_show</function>,
+              <function>PDF_show_xy</function>.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-char-spacing">
+   <refnamediv>
+    <refname>PDF_set_char_spacing</refname>
+    <refpurpose>Sets character spacing</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_char_spacing</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>space</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_char_spacing</function> function sets the
+     spacing between characters.</para>
+    <para>
+     See also <function>PDF_set_word_spacing</function>,
+              <function>PDF_set_leading</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-word-spacing">
+   <refnamediv>
+    <refname>PDF_set_word_spacing</refname>
+    <refpurpose>Sets spacing between words</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_word_spacing</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>space</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_word_spacing</function> function sets the
+     spacing between words.</para>
+
+    <para>
+     See also <function>PDF_set_char_spacing</function>,
+              <function>PDF_set_leading</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-continue-text">
+   <refnamediv>
+    <refname>PDF_continue_text</refname>
+    <refpurpose>Outputs text in next line</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_continue_text</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>string <parameter>text</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_continue_text</function> function outputs the
+     string in <parameter>text</parameter> in the next line.
+     The distance between the lines can be set with
+     <function>PDF_set_leading</function>.</para>
+
+    <para>
+     See also <function>PDF_show_xy</function>,
+              <function>PDF_set_leading</function>,
+              <function>PDF_set_text_pos</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-stringwidth">
+   <refnamediv>
+    <refname>PDF_stringwidth</refname>
+    <refpurpose>Returns width of text using current font</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>double <function>pdf_stringwidth</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>string <parameter>text</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_stringwidth</function> function returns the
+     width of the string in <parameter>text</parameter>. It requires
+     a font to be set before.</para>
+
+    <para>
+     See also <function>PDF_set_font</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-save">
+   <refnamediv>
+    <refname>PDF_save</refname>
+    <refpurpose>Saves the current environment</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_save</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_save</function> function saves the current
+     environment. It works like the postscript command gsave. Very
+     useful if you want to translate or rotate an object without effecting
+     other objects. <function>PDF_save</function> should always be
+     followed by <function>PDF_restore</function>.</para>
+
+    <para>
+     See also <function>PDF_restore</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-restore">
+   <refnamediv>
+    <refname>PDF_restore</refname>
+    <refpurpose>Restores formerly saved environment</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_restore</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_restore</function> function restores the
+     environment saved with <function>PDF_save</function>. It works
+     like the postscript command grestore. Very
+     useful if you want to translate or rotate an object without effecting
+     other objects.
+
+     <example>
+      <title>Save and Restore</title>
+      <programlisting>
+&lt;?php PDF_save($pdf);
+// do all kinds of rotations, transformations, ...
+PDF_restore($pdf) ?>
+</programlisting></example></para>
+
+    <para>
+     See also <function>PDF_save</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-translate">
+   <refnamediv>
+    <refname>PDF_translate</refname>
+    <refpurpose>Sets origin of coordinate system</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_translate</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>x-koor</parameter></paramdef>
+     <paramdef>double <parameter>y-koor</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_translate</function> function set the origin of
+     coordinate system to the point (<parameter>x-koor</parameter>,
+     <parameter>y-koor</parameter>). The following example draws
+     a line from (0, 0) to (200, 200) relative to the initial coordinate
+     system. You have to set the current point after
+     <function>PDF_translate</function> and before you start drawing
+     more objects.
+
+     <example>
+      <title>Translation</title>
+      <programlisting>
+&lt;?php PDF_moveto($pdf, 0, 0);
+PDF_lineto($pdf, 100, 100);
+PDF_stroke($pdf);
+PDF_translate($pdf, 100, 100);
+PDF_moveto($pdf, 0, 0);
+PDF_lineto($pdf, 100, 100);
+PDF_stroke($pdf);
+?>
+</programlisting></example></para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-scale">
+   <refnamediv>
+    <refname>PDF_scale</refname>
+    <refpurpose>Sets scaling</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_scale</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>x-scale</parameter></paramdef>
+     <paramdef>double <parameter>y-scale</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_scale</function> function set the scaling factor
+     in both directions. The following example scales x and y direction
+     by 72. The following line will therefore be drawn one inch in both
+     directions.
+
+     <example>
+      <title>Scaling</title>
+      <programlisting>
+&lt;?php PDF_scale($pdf, 72.0, 72.0);
+PDF_lineto($pdf, 1, 1);
+PDF_stroke($pdf);
+?>
+</programlisting></example></para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-rotate">
+   <refnamediv>
+    <refname>PDF_rotate</refname>
+    <refpurpose>Sets rotation</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_rotate</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>angle</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_rotate</function> function set the rotation in
+     degress to <parameter>angle</parameter>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-setflat">
+   <refnamediv>
+    <refname>PDF_setflat</refname>
+    <refpurpose>Sets flatness</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_setflat</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>value</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_setflat</function> function set the flatness to
+     a value between 0 and 100.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-setlinejoin">
+   <refnamediv>
+    <refname>PDF_setlinejoin</refname>
+    <refpurpose>Sets linejoin parameter</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_setlinejoin</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>long <parameter>value</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_setlinejoin</function> function set the linejoin
+     parameter between a value of 0 and 2.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-setlinecap">
+   <refnamediv>
+    <refname>PDF_setlinecap</refname>
+    <refpurpose>Sets linecap parameter</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_setlinecap</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>int <parameter>value</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_setlinecap</function> function set the linecap
+     parameter between a value of 0 and 2.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-setmiterlimit">
+   <refnamediv>
+    <refname>PDF_setmiterlimit</refname>
+    <refpurpose>Sets miter limit</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_setmiterlimit</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>value</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_setmiterlimit</function> function set the miter limit
+     to a value greater of equal than 1.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-setlinewidth">
+   <refnamediv>
+    <refname>PDF_setlinewidth</refname>
+    <refpurpose>Sets line width</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_setlinewidth</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>width</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_setlinewidth</function> function set the line width
+     to <parameter>width</parameter>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-setdash">
+   <refnamediv>
+    <refname>PDF_setdash</refname>
+    <refpurpose>Sets dash pattern</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_setdash</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>white</parameter></paramdef>
+     <paramdef>double <parameter>black</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_setdash</function> function set the dash pattern
+     <parameter>white</parameter> white points and <parameter>black</parameter>
+     black points. If both are 0 a solid line is set.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-moveto">
+   <refnamediv>
+    <refname>PDF_moveto</refname>
+    <refpurpose>Sets current point</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_moveto</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>x-koor</parameter></paramdef>
+     <paramdef>double <parameter>y-koor</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_moveto</function> function set the current point
+     to the coordinates <parameter>x-koor</parameter> and
+     <parameter>y-koor</parameter>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-curveto">
+   <refnamediv>
+    <refname>PDF_curveto</refname>
+    <refpurpose>Draws a curve</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_curveto</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>x1</parameter></paramdef>
+     <paramdef>double <parameter>y1</parameter></paramdef>
+     <paramdef>double <parameter>x2</parameter></paramdef>
+     <paramdef>double <parameter>y2</parameter></paramdef>
+     <paramdef>double <parameter>x3</parameter></paramdef>
+     <paramdef>double <parameter>y3</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_curveto</function> function draws a Bezier curve
+     from the current point to the point
+     (<parameter>x3</parameter>, <parameter>y3</parameter>) using
+     (<parameter>x1</parameter>, <parameter>y1</parameter>) and
+     (<parameter>x2</parameter>, <parameter>y2</parameter>) as control
+     points.</para>
+
+    <para>
+     See also <function>PDF_moveto</function>,
+              <function>PDF_lineto</function>,
+              <function>PDF_stroke</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-lineto">
+   <refnamediv>
+    <refname>PDF_lineto</refname>
+    <refpurpose>Draws a line</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_lineto</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>x-koor</parameter></paramdef>
+     <paramdef>double <parameter>y-koor</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_lineto</function> function draws a line from
+     the current point to the point with coordinates
+     (<parameter>x-koor</parameter>, <parameter>y-koor</parameter>).</para>
+
+    <para>
+     See also <function>PDF_moveto</function>,
+              <function>PDF_curveto</function>,
+              <function>PDF_stroke</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-circle">
+   <refnamediv>
+    <refname>PDF_circle</refname>
+    <refpurpose>Draws a circle</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_circle</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>x-koor</parameter></paramdef>
+     <paramdef>double <parameter>y-koor</parameter></paramdef>
+     <paramdef>double <parameter>radius</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_circle</function> function draws a circle with
+     center at point 
+     (<parameter>x-koor</parameter>, <parameter>y-koor</parameter>)
+     and radius <parameter>radius</parameter>.</para>
+
+    <para>
+     See also <function>PDF_arc</function>,
+              <function>PDF_stroke</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-arc">
+   <refnamediv>
+    <refname>PDF_arc</refname>
+    <refpurpose>Draws an arc</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_arc</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>x-koor</parameter></paramdef>
+     <paramdef>double <parameter>y-koor</parameter></paramdef>
+     <paramdef>double <parameter>radius</parameter></paramdef>
+     <paramdef>double <parameter>start</parameter></paramdef>
+     <paramdef>double <parameter>end</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_arc</function> function draws an arc with
+     center at point 
+     (<parameter>x-koor</parameter>, <parameter>y-koor</parameter>)
+     and radius <parameter>radius</parameter>, starting at angle
+     <parameter>start</parameter> and ending at angle
+     <parameter>end</parameter>.</para>
+
+    <para>
+     See also <function>PDF_circle</function>,
+              <function>PDF_stroke</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-rect">
+   <refnamediv>
+    <refname>PDF_rect</refname>
+    <refpurpose>Draws a rectangle</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_rect</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>x-koor</parameter></paramdef>
+     <paramdef>double <parameter>y-koor</parameter></paramdef>
+     <paramdef>double <parameter>width</parameter></paramdef>
+     <paramdef>double <parameter>height</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_rect</function> function draws a rectangle with
+     its lower left corner at point 
+     (<parameter>x-koor</parameter>, <parameter>y-koor</parameter>).
+     This width is set to <parameter>widgth</parameter>.
+     This height is set to <parameter>height</parameter>.</para>
+
+    <para>
+     See also <function>PDF_stroke</function>.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-closepath">
+   <refnamediv>
+    <refname>PDF_closepath</refname>
+    <refpurpose>Closes path</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_closepath</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_closepath</function> function closes the
+     current path. This means, it draws a line from current point to
+     the point where the first line was started. Many functions like
+     <function>PDF_moveto</function>, <function>PDF_circle</function>
+     and <function>PDF_rect</function> start a new path.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-stroke">
+   <refnamediv>
+    <refname>PDF_stroke</refname>
+    <refpurpose>Draws line along path</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_stroke</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_stroke</function> function draws a line along
+     current path. The current path is the sum of all line drawing.
+     Without this function the line would not be drawn.</para>
+
+    <para>
+     See also <function>PDF_closepath</function>,
+              <function>PDF_closepath_stroke</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-closepath-stroke">
+   <refnamediv>
+    <refname>PDF_closepath_stroke</refname>
+    <refpurpose>Closes path and draws line along path</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_closepath_stroke</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_closepath_stroke</function> function is a
+     combination of <function>PDF_closepath</function> and
+     <function>PDF_stroke</function>. Than clears the path.</para>
+
+    <para>
+     See also <function>PDF_closepath</function>,
+              <function>PDF_stroke</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-fill">
+   <refnamediv>
+    <refname>PDF_fill</refname>
+    <refpurpose>Fills current path</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_fill</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_fill</function> function fills the interior of
+     the current path with the current fill color.</para>
+
+    <para>
+     See also <function>PDF_closepath</function>,
+              <function>PDF_stroke</function>,
+              <function>PDF_setgray_fill</function>,
+              <function>PDF_setgray</function>,
+              <function>PDF_setrgbcolor_fill</function>,
+              <function>PDF_setrgbcolor</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-fill-stroke">
+   <refnamediv>
+    <refname>PDF_fill_stroke</refname>
+    <refpurpose>Fills and strokes current path</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_fill_stroke</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_fill_stroke</function> function fills the interior of
+     the current path with the current fill color and draws current path.</para>
+
+    <para>
+     See also <function>PDF_closepath</function>,
+              <function>PDF_stroke</function>,
+              <function>PDF_fill</function>,
+              <function>PDF_setgray_fill</function>,
+              <function>PDF_setgray</function>,
+              <function>PDF_setrgbcolor_fill</function>,
+              <function>PDF_setrgbcolor</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-closepath-fill-stroke">
+   <refnamediv>
+    <refname>PDF_closepath_fill_stroke</refname>
+    <refpurpose>Closes, fills and strokes current path</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_closepath_fill_stroke</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_closepath_fill_stroke</function> function closes,
+     fills the interior of
+     the current path with the current fill color and draws current path.</para>
+
+    <para>
+     See also <function>PDF_closepath</function>,
+              <function>PDF_stroke</function>,
+              <function>PDF_fill</function>,
+              <function>PDF_setgray_fill</function>,
+              <function>PDF_setgray</function>,
+              <function>PDF_setrgbcolor_fill</function>,
+              <function>PDF_setrgbcolor</function>.</para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-endpath">
+   <refnamediv>
+    <refname>PDF_endpath</refname>
+    <refpurpose>Ends current path</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_endpath</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_endpath</function> function ends
+     the current path but does not close it.</para>
+
+    <para>
+     See also <function>PDF_closepath</function>.</para>
+
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.pdf-clip">
+   <refnamediv>
+    <refname>PDF_clip</refname>
+    <refpurpose>Clips to current path</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_clip</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_clip</function> function clips all drawing
+     to the current path.</para>
+
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.pdf-setgray-fill">
+   <refnamediv>
+    <refname>PDF_setgray_fill</refname>
+    <refpurpose>Sets filling color to gray value</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_setgray_fill</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>value</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_setgray_fill</function> function sets the current
+     gray value to fill a path.</para>
+
+    <para>
+     See also <function>PDF_setrgbcolor_fill</function>.</para>
+
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.pdf-setgray-stroke">
+   <refnamediv>
+    <refname>PDF_setgray_stroke</refname>
+    <refpurpose>Sets drawing color to gray value</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_setgray_stroke</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>gray value</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_setgray_stroke</function> function sets the current
+     drawing color to the given gray value.</para>
+
+    <para>
+     See also <function>PDF_setrgbcolor_stroke</function>.</para>
+
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.pdf-setgray">
+   <refnamediv>
+    <refname>PDF_setgray</refname>
+    <refpurpose>Sets drawing and filling color to gray value</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_setgray</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>gray value</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_setgray_stroke</function> function sets the current
+     drawing and filling color to the given gray value.</para>
+
+    <para>
+     See also <function>PDF_setrgbcolor_stroke</function>,
+              <function>PDF_setrgbcolor_fill</function>.</para>
+
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.pdf-setrgbcolor-fill">
+   <refnamediv>
+    <refname>PDF_setrgbcolor_fill</refname>
+    <refpurpose>Sets filling color to rgb color value</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_setrgbcolor_fill</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>red value</parameter></paramdef>
+     <paramdef>double <parameter>green value</parameter></paramdef>
+     <paramdef>double <parameter>blue value</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_setrgbcolor_fill</function> function sets the current
+     rgb color value to fill a path.</para>
+
+    <para>
+     See also <function>PDF_setrgbcolor_fill</function>.</para>
+
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.pdf-setrgbcolor-stroke">
+   <refnamediv>
+    <refname>PDF_setrgbcolor_stroke</refname>
+    <refpurpose>Sets drawing color to rgb color value</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_setrgbcolor_stroke</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>red value</parameter></paramdef>
+     <paramdef>double <parameter>green value</parameter></paramdef>
+     <paramdef>double <parameter>blue value</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_setrgbcolor_stroke</function> function sets the current
+     drawing color to the given rgb color value.</para>
+
+    <para>
+     See also <function>PDF_setrgbcolor_stroke</function>.</para>
+
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.pdf-setrgbcolor">
+   <refnamediv>
+    <refname>PDF_setrgbcolor</refname>
+    <refpurpose>Sets drawing and filling color to rgb color value</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_setrgbcolor</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>red value</parameter></paramdef>
+     <paramdef>double <parameter>green value</parameter></paramdef>
+     <paramdef>double <parameter>blue value</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_setrgbcolor_stroke</function> function sets the current
+     drawing and filling color to the given rgb color value.</para>
+
+    <para>
+     See also <function>PDF_setrgbcolor_stroke</function>,
+              <function>PDF_setrgbcolor_fill</function>.</para>
+
+   </refsect1>
+  </refentry>
+  
+  <refentry id="function.pdf-add-outline">
+   <refnamediv>
+    <refname>PDF_add_outline</refname>
+    <refpurpose>Adds bookmark for current page</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_add_outline</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>string <parameter>text</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_add_outline</function> function adds a bookmark
+     with text <parameter>text</parameter> that points to the current page.</para>
+
+    <simpara>
+     Unfortunately pdflib does not make a copy of the string, which forces
+     PHP to allocate the memory. Currently this piece of memory is not
+     been freed by any PDF function but it will be taken care of by the
+     PHP memory manager.</simpara>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-transition">
+   <refnamediv>
+    <refname>PDF_set_transition</refname>
+    <refpurpose>Sets transition between pages</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_transition</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>int <parameter>transition</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_transition</function> function set the transition
+     between following pages. The value of <parameter>transition</parameter>
+     can be
+
+     <simplelist>
+      <member>
+        0 for none,
+      </member>
+      <member>
+        1 for two lines sweeping across the screen reveal the page,
+      </member>
+      <member>
+        2 for multiple lines sweeping across the screen reveal the page,
+      </member>
+      <member>
+        3 for a box reveals the page,
+      </member>
+      <member>
+        4 for a single line sweeping across the screen reveals the page,
+      </member>
+      <member>
+        5 for the old page dissolves to reveal the page,
+      </member>
+      <member>
+        6 for the dissolve effect moves from one screen edge to another,
+      </member>
+      <member>
+        7 for the old page is simply replaced by the new page (default)
+      </member>
+     </simplelist></para>
+    <para>
+     See also <function>PDF_set_duration</function>.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-set-duration">
+   <refnamediv>
+    <refname>PDF_set_duration</refname>
+    <refpurpose>Sets duration between pages</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_set_duration</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>duration</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_set_duration</function> function set the duration
+     between following pages in seconds.</para>
+    <para>
+     See also <function>PDF_set_transition</function>.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-open-gif">
+   <refnamediv>
+    <refname>PDF_open_gif</refname>
+    <refpurpose>Opens a GIF image</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>pdf_open_gif</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>string <parameter>filename</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_open_gif</function> function opens an image stored
+     in the file with the name <parameter>filename</parameter>.
+     The format of the image has to be gif. The function returns a pdf
+     image identifier.
+
+     <example>
+      <title>Including a gif image</title>
+      <programlisting>
+&lt;?php
+$im = PDF_open_gif($pdf, "test.gif");
+pdf_place_image($pdf, $im, 100, 100, 1);
+pdf_close_image($pdf, $im);
+?>
+      </programlisting>
+     </example></para>
+
+    <para>
+     See also <function>PDF_close_image</function>,
+              <function>PDF_open_jpeg</function>,
+              <function>PDF_open_memory_image</function>,
+              <function>PDF_execute_image</function>,
+              <function>PDF_place_image</function>,
+              <function>PDF_put_image</function>.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-open-memory-image">
+   <refnamediv>
+    <refname>PDF_open_memory_image</refname>
+    <refpurpose>Opens an image created with PHP's image functions</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>pdf_open_memory_image</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>string <parameter>int image</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_open_memory_image</function> function takes
+     an image created with the PHP's image functions and makes it available
+     for the pdf document. The function returns a pdf
+     image identifier.
+
+     <example>
+      <title>Including a memory image</title>
+      <programlisting>
+&lt;?php
+$im = ImageCreate(100, 100);
+$col = ImageColorAllocate($im, 80, 45, 190);
+ImageFill($im, 10, 10, $col);
+$pim = PDF_open_memory_image($pdf, $im);
+ImageDestroy($im);
+pdf_place_image($pdf, $pim, 100, 100, 1);
+pdf_close_image($pdf, $pim);
+?>
+     </programlisting>
+    </example></para>
+
+    <para>
+     See also <function>PDF_close_image</function>,
+              <function>PDF_open_jpeg</function>,
+              <function>PDF_open_gif</function>,
+              <function>PDF_execute_image</function>,
+              <function>PDF_place_image</function>,
+              <function>PDF_put_image</function>.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-open-jpeg">
+   <refnamediv>
+    <refname>PDF_open_jpeg</refname>
+    <refpurpose>Opens a JPEG image</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>int <function>pdf_open_jpeg</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>string <parameter>filename</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_open_jpeg</function> function opens an image stored
+     in the file with the name <parameter>filename</parameter>.
+     The format of the image has to be jpeg. The function returns a pdf
+     image identifier.</para>
+    <para>
+     See also <function>PDF_close_image</function>,
+              <function>PDF_open_gif</function>,
+              <function>PDF_open_memory_image</function>,
+              <function>PDF_execute_image</function>,
+              <function>PDF_place_image</function>,
+              <function>PDF_put_image</function>.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-close-image">
+   <refnamediv>
+    <refname>PDF_close_image</refname>
+    <refpurpose>Closes an image</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_close_image</function></funcdef>
+     <paramdef>int <parameter>image</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_close_image</function> function closes an image
+     which has been opened with any of the <function>PDF_open_xxx</function>
+     functions.</para> 
+    <para>
+     See also <function>PDF_open_jpeg</function>,
+              <function>PDF_open_gif</function>,
+              <function>PDF_open_memory_image</function>.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-place-image">
+   <refnamediv>
+    <refname>PDF_place_image</refname>
+    <refpurpose>Places an image on the page</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_place_image</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>int <parameter>image</parameter></paramdef>
+     <paramdef>double <parameter>x-koor</parameter></paramdef>
+     <paramdef>double <parameter>y-koor</parameter></paramdef>
+     <paramdef>double <parameter>scale</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>PDF_place_image</function> function places an image
+     on the page at postion (<parameter>x-koor</parameter>,
+     <parameter>x-koor</parameter>). The image can be scaled at the same
+     time.</para>
+    <para>
+     See also <function>PDF_put_image</function>.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-put-image">
+   <refnamediv>
+    <refname>PDF_put_image</refname>
+    <refpurpose>Stores an image in the PDF for later use</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_put_image</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>int <parameter>image</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The PDF_put_image function places an image
+     in the PDF file without showing it. The stored image can be
+     displayed with the <function>PDF_execute_image</function>
+     function as many times as needed. This is useful when using the same
+     image multiple times in order to keep the file size small. Using
+     <function>PDF_put_image</function> and
+     <function>PDF_execute_image</function> is highly recommended for
+     larger images (several kb) if they show up more than once in the
+     document.
+    <note><simpara>This function has become meaningless with version
+     2.01 of pdflib. It will just output a warning.</simpara>
+     </note></para>
+    <para>
+     See also <function>PDF_put_image</function>,
+              <function>PDF_place_image</function>,
+              <function>PDF_execute_image</function>.</para>
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-execute-image">
+   <refnamediv>
+    <refname>PDF_execute_image</refname>
+    <refpurpose>Places a stored image on the page</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_execute_image</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>int <parameter>image</parameter></paramdef>
+     <paramdef>double <parameter>x-coor</parameter></paramdef>
+     <paramdef>double <parameter>y-coor</parameter></paramdef>
+     <paramdef>double <parameter>scale</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The PDF_execute_image function displays an image that has been
+     put in the PDF file with the <function>PDF_put_image</function>
+     function on the current page at the given coordinates.</para>
+    <para>
+     The image can be scaled while displaying it. A scale of 1.0
+     will show the image in the original size.
+    <note><simpara>This function has become meaningless with version
+     2.01 of pdflib. It will just output a warning.</simpara>
+     </note>
+
+     <example>
+      <title>Multiple show of an image</title>
+      <programlisting>
+&lt;?php
+$im = ImageCreate(100, 100);
+$col1 = ImageColorAllocate($im, 80, 45, 190);
+ImageFill($im, 10, 10, $col1);
+$pim = PDF_open_memory_image($pdf, $im);
+pdf_put_image($pdf, $pim);
+pdf_execute_image($pdf, $pim, 100, 100, 1);
+pdf_execute_image($pdf, $pim, 200, 200, 2);
+pdf_close_image($pdf, $pim);
+?>
+     </programlisting>
+    </example></para>
+
+   </refsect1>
+  </refentry>
+
+  <refentry id="function.pdf-add-annotation">
+   <refnamediv>
+    <refname>pdf_add_annotation</refname>
+    <refpurpose>Adds annotation</refpurpose>
+   </refnamediv>
+   <refsect1>
+    <title>Description</title>
+    <funcsynopsis>
+     <funcdef>void <function>pdf_add_annotation</function></funcdef>
+     <paramdef>int <parameter>pdf document</parameter></paramdef>
+     <paramdef>double <parameter>llx</parameter></paramdef>
+     <paramdef>double <parameter>lly</parameter></paramdef>
+     <paramdef>double <parameter>urx</parameter></paramdef>
+     <paramdef>double <parameter>ury</parameter></paramdef>
+     <paramdef>string <parameter>title</parameter></paramdef>
+     <paramdef>string <parameter>content</parameter></paramdef>
+    </funcsynopsis>
+    <para>
+     The <function>pdf_add_annotation</function> adds a note with
+     the lower left corner at (<parameter>llx</parameter>,
+     <parameter>lly</parameter>) and the upper right corner at
+     (<parameter>urx</parameter>, <parameter>ury</parameter>).</para>
+
+   </refsect1>
+  </refentry>
+
+ </reference>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->
