@@ -1,12 +1,216 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
  <sect1 id="language.oop5.iterations">
   <title>Object Iteration</title>
   <para>
-   .
+   PHP 5 provides a way for objects to to be defined so it is possible
+   to iterate through a list of items, with, for example a <xref 
+   linkend="control-structures.foreach" /> statement. By default, all
+   public properties will be used for the iteration.
   </para>
 
+  <example>
+   <title>Simple Object Iteration</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
 
+class MyClass {
+  public $var1 = 'value 1';
+  public $var2 = 'value 2';
+  public $var3 = 'value 3';
+
+  protected $protected = 'protected';
+  private   $private   = 'private';
+
+}
+
+$class = new MyClass();
+
+foreach($class as $key => $value) {
+  print "$key => $value\n";
+}
+]]>
+   </programlisting>
+   <para>
+     Will output:
+   </para>
+   <screen role="php">
+<![CDATA[
+var1 => value 1
+var2 => value 2
+var3 => value 3
+]]>
+   </screen>
+
+  </example>
+
+ <para>
+  As the output shows, the <xref linkend="control-structures.foreach" />
+  iterated through each public variable that is defined. To take it 
+  a step further you can <varname>implement</varname> one of PHP 5's 
+  internal <xref linkend="language.oop5.interfaces" /> named
+  <varname>Iterator</varname>. This allows the object to decide what
+  and how the object will be iterated.
+ </para>
+
+  <example>
+   <title>Object Iteration implenting Iterator</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class MyIterator implements Iterator {
+
+  private $var = array();
+
+  public function __construct($array) {
+    if (is_array($array) ) {
+      $this->var = $array;
+    }
+  }
+
+  public function rewind() {
+    echo "rewinding\n";
+    reset($this->var);
+  }
+
+  public function current() {
+    $var = current($this->var);
+    echo "current: $var\n";
+    return $var;
+  }
+
+  public function key() {
+    $var = key($this->var);
+    echo "key: $var\n";
+    return $var;
+  }
+
+  public function next() {
+    $var = next($this->var);
+    echo "next: $var\n";
+    return $var;
+  }
+
+  public function valid() {
+    $var = $this->current() !== false;
+    echo "valid: {$var}\n";
+    return $var;
+  }
+
+}
+
+$values = array(1,2,3);
+$it = new MyIterator($values);
+
+foreach ($it as $a => $b) {
+  print "$a: $b\n";
+}
+]]>
+   </programlisting>
+   <para>
+     Will output:
+   </para>
+   <screen role="php">
+<![CDATA[
+rewinding
+current: 1
+valid: 1
+current: 1
+key: 0
+0: 1
+next: 2
+current: 2
+valid: 1
+current: 2
+key: 1
+1: 2
+next: 3
+current: 3
+valid: 1
+current: 3
+key: 2
+2: 3
+next:
+current:
+valid:
+]]>
+   </screen>
+
+  </example>
+
+  <para>
+   You can also define your class so that it doesn't have to define
+   all the <varname>Iterator</varname> functions by simply implementing
+   the PHP 5 <varname>IteratorAggregate</varname> interface.
+  </para>
+
+  <example>
+   <title>Object Iteration implenting IteratorAggregate</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class MyCollection implements IteratorAggregate {
+  private $items = array();
+  private $count = 0;
+
+  /* Required definition of interface IteratorAggregate */
+  public function getIterator() {
+    return new MyIterator($this->items);
+  }
+
+  public function add($value) {
+    $this->items[$this->count++] = $value;
+  }
+
+}
+
+$coll = new MyCollection();
+$coll->add('value 1');
+$coll->add('value 2');
+$coll->add('value 3');
+
+foreach ($coll as $key => $val) {
+  echo "key/value: [$key -> $val]\n\n";
+}
+
+?>
+</pre>
+]]>
+   </programlisting>
+   <para>
+     Will output:
+   </para>
+   <screen role="php">
+<![CDATA[
+rewinding
+current: value 1
+valid: 1
+current: value 1
+key: 0
+key/value: [0 -> value 1]
+
+next: value 2
+current: value 2
+valid: 1
+current: value 2
+key: 1
+key/value: [1 -> value 2]
+
+next: value 3
+current: value 3
+valid: 1
+current: value 3
+key: 2
+key/value: [2 -> value 3]
+
+next:
+current:
+valid:
+]]>
+   </screen>
+
+  </example>
  </sect1>
  
 <!-- Keep this comment at the end of the file
