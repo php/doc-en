@@ -51,7 +51,7 @@
 
 <style-sheet>
 <style-specification id="docbook" 
-    use="af ca cs da de el en es et eu fi fr hu id it ja ko nl nn no pl pt ptbr ro ru sk sl sr sv tr uk xh zhcn zhtw dbparam dblib">
+    use="af ca cs da de el en es et eu fi fr hu id it ja ko nl nn no pl pt ptbr ro ru sk sl sr sv tr uk xh zhcn zhtw zhhk dbparam dblib">
 
 <style-specification-body>
 
@@ -234,6 +234,7 @@
 <external-specification id="xh" document="dbl1xh">
 <external-specification id="zhcn" document="dbl1zhcn">
 <external-specification id="zhtw" document="dbl1zhtw">
+<external-specification id="zhhk" document="dbl1zhhk">
 
 </style-sheet>
 
