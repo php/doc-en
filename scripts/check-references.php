@@ -134,7 +134,7 @@ $difficult_arg_count = array(
 $source_refs = array(); // array("function_name" => number_ref, ...)
 $source_types = array(); // array("function_name" => array("type_spec", filename, lineno), ...)
 $source_arg_counts = array(); // array("function_name" => array(disallowed_count => true, ...), ...)
-foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glob("$pecl_dir/*/*.c*")) as $filename) {
+foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glob("$phpsrc_dir/sapi/*/*.c*"), glob("$pecl_dir/*/*.c*")) as $filename) {
 	$file = file_get_contents($filename);
 	
 	// references
@@ -238,10 +238,10 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 		
 		// references
 		$source_ref = (isset($source_refs[$function_name]) ? $source_refs[$function_name] : null);
-		preg_match_all('~<parameter>(&amp;)?~S', $methodsynopsis, $matches);
+		preg_match_all('~<parameter( role="reference")?>(&amp;)?~S', $methodsynopsis, $matches);
 		$byref = array();
 		foreach ($matches[1] as $key => $val) {
-			if ($val) {
+			if ($val || $matches[2][$key]) {
 				$byref[] = $key + 1;
 			}
 		}
@@ -255,7 +255,7 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 		}
 		
 		// parameter types and optional
-		preg_match_all('~<methodparam(\\s+choice=[\'"]opt[\'"])?>\\s*<type>([^<]+)</type>\\s*<parameter>([^<]+)~i', $methodsynopsis, $matches); // (PREG_OFFSET_CAPTURE can be used to get precise line numbers)
+		preg_match_all('~<methodparam(\\s+choice=[\'"]opt[\'"])?>\\s*<type>([^<]+)</type>\\s*<parameter(?: role="reference")?>([^<]+)~i', $methodsynopsis, $matches); // (PREG_OFFSET_CAPTURE can be used to get precise line numbers)
 		foreach ($matches[2] as $i => $val) {
 			if (!preg_match("~callback|$valid_types~", $val)) {
 				echo "Parameter #" . ($i+1) . " has wrong type '$val' in $filename on line " . ($lineno + $i + 1) . ".\n";
