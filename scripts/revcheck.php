@@ -88,11 +88,15 @@ if ($argc == 3) {
     $MAINT = "";
 }
 
-// Main directory of the PHP documentation (one dir up
-// in cvs). We do need the trailing slash!
-$DOCDIR = "../";
+// Main directory of the PHP documentation (depends on the
+// sapi used). We do need the trailing slash!
+$sapi_type = php_sapi_name();
+if ($sapi_type === "cli"){
+    $DOCDIR = "./";
+ }else {
+    $DOCDIR = "../";
+}
 
-  
 // =========================================================================
 // Functions to get revision info and credits from a file
 // =========================================================================
