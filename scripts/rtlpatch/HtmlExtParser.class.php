@@ -45,7 +45,9 @@ class CHtmlExtParse extends CHtmlParse{
 				$elem = &$this->ATE[$this->EBT[$b][$a]];
 				if($this->comp_properties($elem,$ar)){
 					$elem["dir"] = "ltr";
-					$this->ATE[$this->EBT[$b][$a]+1]["data"] = "&nbsp;".$this->ATE[$this->EBT[$b][$a]+1]["data"];
+					if(isset($this->ATE[$this->EBT[$b][$a]+1]["data"])){
+						$this->ATE[$this->EBT[$b][$a]+1]["data"] = "&nbsp;".$this->ATE[$this->EBT[$b][$a]+1]["data"];
+					}
 				}
 			}
 		}
