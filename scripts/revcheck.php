@@ -127,7 +127,7 @@ function get_tag($file, $val = "en-rev")
     
     // Check for the translations "revision tag"
     preg_match ("/<!--\s*EN-Revision:\s*\d+\.(\d+)\s*Maintainer:\s*("
-                . $val . ")\s*Status:\s*(.+)\s*-->/", 
+                . $val . ")\s*Status:\s*(.+)\s*-->/U", 
                 $line,
                 $match
     );
@@ -136,7 +136,7 @@ function get_tag($file, $val = "en-rev")
     // for n/a revision comment (comment where revision is not known)
     if (count($match) == 0) {
         preg_match ("'<!--\s*EN-Revision:\s*(n/a)\s*Maintainer:\s*("
-                    . $val . ")\s*Status:\s*(.+)\s*-->'",
+                    . $val . ")\s*Status:\s*(.+)\s*-->'U",
                     $line,
                     $match
         );
@@ -205,7 +205,7 @@ function missing_file()
     // Compute new index for missing file (name without language dir)
     $index = substr($trans_file, strlen($DOCDIR) + strlen($LANG) + 1);
     
-    // Compute new valie for missing file (size and EN revision)
+    // Compute new value for missing file (size and EN revision)
     $value = array(
         round(filesize($en_file)/1024, 1),
         "1." . get_tag($en_file)
