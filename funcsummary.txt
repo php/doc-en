@@ -27,25 +27,25 @@ string bcsqrt(string operand [, int scale])
 string bcsub(string left_operand, string right_operand [, int scale]) 
      Returns the difference between two arbitrary precision numbers  
 # ../php4/ext/bz2/bz2.c
-int bzclose(resouce bzp) 
+int bzclose(int bz) 
      Closes a BZip2 stream  
 string bzcompress(string source [, int blocksize100k [, int workfactor]]) 
      Compresses a string into BZip2 encoded data  
 string bzdecompress(string source [, int small]) 
      Decompresses BZip2 compressed data  
-int bzerrno(resouce bzp) 
+int bzerrno(int bz) 
      Returns the error number  
-array bzerror(resouce bzp) 
+array bzerror(int bz) 
      Returns the error number and error string in an associative array  
-string bzerrstr(resouce bzp) 
+string bzerrstr(int bz) 
      Returns the error string  
-int bzflush(resouce bzp) 
+int bzflush(int bz) 
      Flushes a BZip2 stream  
-resource bzopen(string fn|resource fp, string mode) 
+int bzopen(string|int file|fp, string mode) 
      Opens a new BZip2 stream  
-string bzread(resouce bzp [, int len]) 
+string bzread(int bz [, int len]) 
      Reads len bytes from the BZip2 stream given by bz  
-int bzwrite(resouce bzp, string data [, int len]) 
+int bzwrite(int bz, string data [, int len]) 
      Writes data to the BZip2 stream given by bz  
 # ../php4/ext/calendar/cal_unix.c
 int jdtounix(int jday) 
@@ -447,8 +447,12 @@ array domxml_doctype_name(void)
      Returns name of DocumentType  
 object domxml_dtd(void) 
      Returns DTD of document  
-string domxml_dumpmem([object doc_handle]) 
+string domxml_dump_mem([object doc_handle]) 
      Dumps document into string  
+int domxml_dump_mem_file([object doc_handle],filename,compressmode) 
+     Dumps document into file and uses compression if specified     Returns false on error, otherwise the length of the xml-document (uncompressed)      
+string domxml_dump_node([object doc_handle],object node_handle[,int format[,int level]]) 
+     Dumps node into string  
 string domxml_elem_get_attribute(string attrname) 
      Returns value of given attribute  
 string domxml_elem_get_attribute_node(string attrname) 
@@ -483,6 +487,8 @@ array domxml_node_children(void)
      Returns list of children nodes  
 object domxml_node_first_child(void) 
      Returns first child from list of children  
+string domxml_node_get_content() 
+     Gets content of a node.          "Read the value of a node, this can be either the text carried directly by  this node if it's a TEXT node or the aggregate string of the values carried by  this node child's (TEXT and ENTITY_REF). Entity references are substituted."      
 object domxml_node_has_attributes(void) 
      Returns true if node has attributes  
 object domxml_node_has_child_nodes(void) 
@@ -527,15 +533,23 @@ array domxml_pi_data(void)
      Returns data of pi  
 array domxml_pi_target(void) 
      Returns target of pi  
+bool domxml_substitute_entities_default(bool enable) 
+     Set and return the previous value for default entity support  
 int domxml_test(int id) 
      Unity function for testing  
 string domxml_version(void) 
      Get XML library version  
-object domxml_xslt_process(int xsldoc_handle, int xmldoc_handle, [array xslt_parameters]) 
+object domxml_xslt_process(object xslstylesheet, object xmldoc [, array xslt_parameters [, bool xpath_parameters]]) 
      Perform an XSLT transformation  
-string domxslt_version(void) 
+object domxml_xslt_stylesheet(string xsltstylesheet) 
+     Creates XSLT Stylesheet object from string  
+object domxml_xslt_stylesheet_doc(object xmldoc) 
+     Creates XSLT Stylesheet object from DOM Document object  
+object domxml_xslt_stylesheet_file(string filename) 
+     Creates XSLT Stylesheet object from file  
+string domxml_xslt_version(void) 
      Get XSLT library version  
-object html_doc(string html_doc) 
+object html_doc(string html_doc [, bool from_file]) 
      Creates DOM object of HTML document  
 object html_doc_file(string filename) 
      Creates DOM object of HTML document in file  
@@ -551,17 +565,19 @@ object xmldocfile(string filename)
      Creates DOM object of XML document in file  
 object xmltree(string xmltree) 
      Creates a tree of PHP objects from an XML document  
-int xpath_eval([int xpathctx_handle,] string str) 
+object xpath_eval([object xpathctx_handle,] string str) 
      Evaluates the XPath Location Path in the given string  
-int xpath_eval_expression([int xpathctx_handle,] string str) 
+object xpath_eval_expression([object xpathctx_handle,] string str) 
      Evaluates the XPath expression in the given string  
 bool xpath_init(void) 
      Initializing XPath environment  
-string xpath_new_context([int doc_handle]) 
+object xpath_new_context([int doc_handle]) 
      Creates new XPath context  
+bool xpath_register_ns([object xpathctx_handle,] string namespace_prefix, string namespace_uri) 
+  	Registeres the given namespace in the passed XPath context  
 int xptr_eval([int xpathctx_handle,] string str) 
      Evaluates the XPtr Location Path in the given string  
-string xptr_new_context([int doc_handle]) 
+object xptr_new_context([int doc_handle]) 
      Creates new XPath context  
 # ../php4/ext/exif/exif.c
 string read_exif_data(string filename [, int readall]) 
@@ -2263,7 +2279,7 @@ int ocifetch(int stmt)
      Prepare a new row of data for reading  
 int ocifetchinto(int stmt, array &output [, int mode]) 
      Fetch a row of result data into an array  
-int ocifetchstatement(int stmt, array &output) 
+int ocifetchstatement(int stmt, array &output[, int skip][, int maxrows][, int flags]) 
      Fetch all rows of result data into an array  
 string ocifreecollection(object lob) 
      Deletes collection object 
@@ -2850,10 +2866,10 @@ bool pg_connection_reset(resource connection)
      Reset connection (reconnect)  
 int pg_connection_status(resource connnection) 
      Get connection status  
-int pg_copy_from(int connection, string table_name , array rows [, string delimiter [, string null_as]]) 
-      
-int pg_copy_to(int connection, string table_name [, string delimiter [, string null_as]]) 
-     Send null-terminated string to backend server 
+bool pg_copy_from(int connection, string table_name , array rows [, string delimiter [, string null_as]]) 
+     Copy table from array  
+array pg_copy_to(int connection, string table_name [, string delimiter [, string null_as]]) 
+     Copy table to array  
 string pg_dbname([resource connection]) 
      Get the database name  
 bool pg_end_copy([resource connection]) 
@@ -3447,8 +3463,8 @@ string getservbyport(int port, string protocol)
      Returns service name associated with port. Protocol must be "tcp" or "udp"  
 bool highlight_file(string file_name) 
      Syntax highlight a source file  
-bool highlight_string(string string) 
-     Syntax highlight a string  
+bool highlight_string(string string [, int return] ) 
+     Syntax highlight a string or optionally return it  
 int ignore_user_abort(boolean value) 
      Set whether we want to ignore a user abort event or not  
 bool import_request_variables(string types [, string prefix]) 
@@ -4446,6 +4462,8 @@ int yaz_errno(int id)
      Return last error number (>0 for bib-1 diagnostic, <0 for other error, 0 for no error  
 string yaz_error(int id) 
      Return last error message  
+int yaz_es_result(int id) 
+     Inspects Extended Services Result  
 int yaz_hits(int id) 
      Return number of hits (result count) for last search  
 int yaz_itemorder(int id, array package) 
@@ -4694,8 +4712,12 @@ int fbsql_affected_rows([resource link_identifier])
      Get the number of rows affected by the last statement  
 bool fbsql_autocommit(resource link_identifier [, bool OnOff]) 
      Turns on auto-commit  
+string fbsql_blob_size(string blob_handle [, resource link_identifier]) 
+     Get the size of a BLOB identified by blob_handle  
 int fbsql_change_user(string user, string password [, string database [, resource link_identifier]]) 
      Change the user for a session  
+string fbsql_clob_size(string clob_handle [, resource link_identifier]) 
+     Get the size of a CLOB identified by clob_handle  
 int fbsql_close([resource link_identifier]) 
      Close a connection to a database server  
 bool fbsql_commit([resource link_identifier]) 
@@ -4775,11 +4797,7 @@ resource fbsql_pconnect([string hostname [, string username [, string password]]
 resource fbsql_query(string query [, resource link_identifier]) 
      Send one or more SQL statements to the server and execute them  
 string fbsql_read_blob(string blob_handle [, resource link_identifier]) 
-     Get the size of a BLOB identified by blob_handle  
-string fbsql_read_blob(string blob_handle [, resource link_identifier]) 
      Read the BLOB data identified by blob_handle  
-string fbsql_read_clob(string clob_handle [, resource link_identifier]) 
-     Get the size of a CLOB identified by clob_handle  
 string fbsql_read_clob(string clob_handle [, resource link_identifier]) 
      Read the CLOB data identified by clob_handle  
 mixed fbsql_result(int result [, int row [, mixed field]]) 
