@@ -3,7 +3,7 @@
 
   Common HTML customizations
 
-  $Id: html-common.xsl,v 1.8 2002-02-10 10:13:33 goba Exp $
+  $Id: html-common.xsl,v 1.9 2002-02-10 11:01:57 goba Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -152,6 +152,14 @@
       <xsl:copy-of select="$content"/>
     </xsl:otherwise>
   </xsl:choose>
+</xsl:template>
+
+<!-- Call title printout code - this was not working in
+     the 1.48 DBXML distribution -->
+<xsl:template name="refentry.titlepage">
+  <div class="titlepage">
+    <xsl:call-template name="refentry.title"/>
+  </div>
 </xsl:template>
 
 </xsl:stylesheet>
