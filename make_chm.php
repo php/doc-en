@@ -2,35 +2,20 @@
 
 	// USE ONLY PHP 4.x TO RUN THIS SCRIPT!!!
 	// IT WONT WORK WITH PHP 3
-	
-	/* input :::::: we need three env params
-		
-		  PHP_HELP_COMPILER
-		    hcc.exe path including hcc.exe (eg. d:\hhw\hcc.exe)
-		  PHP_HELP_COMPILE_DIR
-		    dir where the html manual resides (eg. html)
-		  PHP_HELP_COMPILE_LANG
-		    the actual manual language (eg. hu)
-		
-		output :::::: we write out four files needed to compile
-		
-		  manual_lang.hhp :: manual project file (lang comes from env)
-			manual_lang.hhc :: manual contents file
-			index.hhk       :: just a dummy epmty index file
-			compile.bat     :: a call to the compiler (lang used)
 
-	*/
-	
+  // SEE make_chm.README FOR INFORMATION!!!	
+
 	ob_start();
 	
-	$htmldir = getenv("PHP_HELP_COMPILE_DIR");
+	$fancydir = getenv("PHP_HELP_COMPILE_FANCYDIR");
+	if (empty($fancydir)) { $fancydir = getenv("PHP_HELP_COMPILE_DIR"); }
 	$language = getenv("PHP_HELP_COMPILE_LANG");
 
 	MakeProjectFile();
 
 	function MakeProjectFile () {
 
-		global $htmldir, $language, $manual_title;
+		global $fancydir, $language, $manual_title, $fancyindex, $indexfile;
 
 		// define language array (manual code -> HTML Help Code)
 		$languages = Array (
@@ -47,6 +32,11 @@
 		
 		);
 
+		if (file_exists("$fancydir/index.html")) { 
+			$fancyindex = TRUE;
+			$indexfile = "index.html";
+		} else { $indexfile = "manual.html"; }
+		
 		// Start writing the project file
 		$f = fopen ("manual_$language.hhp", "w");
 		fputs ($f, "[OPTIONS]\n");
@@ -56,7 +46,7 @@
 		fputs ($f, "Compiled file=manual_$language.chm\n");
 		fputs ($f, "Contents file=manual_$language.hhc\n");
 		fputs ($f, "Default Font=Arial,10,0\n");
-		fputs ($f, "Default topic=$htmldir\manual.html\n");
+		fputs ($f, "Default topic=$fancydir\\$indexfile\n");
 		fputs ($f, "Display compile progress=Yes\n");
 		fputs ($f, "Full-text search=Yes\n");
 		fputs ($f, "Index file=index.hhk\n");
@@ -66,20 +56,19 @@
 		
 		// now try to find out how the manual named in the actual language
 		// this must be in the manual.html file as the title (DSSSL generated)
-		$content = join("", file("$htmldir/manual.html"));
-		$content = preg_replace("/[\\r|\\n]/", "", $content);
-		if (preg_match("|<TITLE>(.*)</TITLE>|U", $content, $found)) {
+		$content = join("", file("$fancydir/manual.html"));
+		if (preg_match("|>(.*)</TITLE|U", $content, $found)) {
 			$manual_title = $found[1];
 		} else { $manual_title = "PHP Manual"; }
 		
 		fputs ($f, "Title=$manual_title\n");
 		
-		// write out all the filenames as in $htmldir		
+		// write out all the filenames as in $fancydir		
 		fputs ($f, "\n[FILES]\n");
-		$handle=opendir($htmldir);
+		$handle=opendir($fancydir);
 		while (false!==($file = readdir($handle))) { 
 			if ($file != "." && $file != "..") { 
-				 fputs ($f, "$htmldir\\$file\n"); 
+				 fputs ($f, "$fancydir\\$file\n"); 
 			} 
 		}
 		closedir($handle); 
@@ -89,10 +78,10 @@
 	
 	function SiteMapObj ($name, $local, $tabs, $imgnum = 'auto') {
 
-		global $htmldir;
+		global $fancydir;
 		echo "\n$tabs<LI> <OBJECT type=\"text/sitemap\">
 $tabs	<param name=\"Name\" value=\"$name\">
-$tabs	<param name=\"Local\" value=\"$htmldir\\$local\">";
+$tabs	<param name=\"Local\" value=\"$fancydir\\$local\">";
 
 		if ($imgnum != 'auto') { 
 			echo "\n$tabs <param name=\"ImageNumber\" value=\"$imgnum\">";
@@ -103,34 +92,32 @@ $tabs	<param name=\"Local\" value=\"$htmldir\\$local\">";
 
 	function DoFile ($filename) {
 
-		global $htmldir;
+		global $fancydir;
 		echo "		<UL>";
-		if (file_exists("$htmldir/$filename")) { 
-			$content = file ("$htmldir/$filename");
-			for ($i = 0; $i < count ($content); $i++) {
-	
-				if (ereg ("><DT", $content[$i]) &&
-				    ereg ("><A", $content[$i+1]) &&
-				    ereg ("HREF=\"([a-z0-9-]+\.)+html(\#[0-9a-z\.-]+)?\"", $content[$i+2])) {
-	
-					preg_match ("/HREF=\"(([0-9a-z-]+\.)+html)(\#[0-9a-z\.-]+)?\"/", $content[$i+2], $matches);
-					$param["html"] = $matches[1];
-					if (isset($matches[3])) { $param["html"] .= $matches[3]; }
+		$content = file ("$fancydir/$filename");
+		for ($i = 0; $i < count ($content); $i++) {
 
-					if (ereg ("CLASS=\"literal\"", $content[$i+4])) {
-						preg_match ("/>([^<]+)/", $content[$i+5], $matches);
-					}
-					elseif ($content[$i+2] == $content[$i+4]) {
-						preg_match ("/>([^<]+)/", $content[$i+7], $matches);
-					}
-					else {
-						preg_match ("/>([^<]+)/", $content[$i+3], $matches);
-					}
-					$param["title"] = $matches[1];
-					SiteMapObj($param["title"], $param["html"], "			");
+			if (ereg ("><DT", $content[$i]) &&
+			    ereg ("><A", $content[$i+1]) &&
+			    ereg ("HREF=\"([a-z0-9-]+\.)+html(\#[0-9a-z\.-]+)?\"", $content[$i+2])) {
+
+				preg_match ("/HREF=\"(([0-9a-z-]+\.)+html)(\#[0-9a-z\.-]+)?\"/", $content[$i+2], $matches);
+				$param["html"] = $matches[1];
+				if (isset($matches[3])) { $param["html"] .= $matches[3]; }
+
+				if (ereg ("CLASS=\"literal\"", $content[$i+4])) {
+					preg_match ("/>([^<]+)/", $content[$i+5], $matches);
 				}
-	
+				elseif ($content[$i+2] == $content[$i+4]) {
+					preg_match ("/>([^<]+)/", $content[$i+7], $matches);
+				}
+				else {
+					preg_match ("/>([^<]+)/", $content[$i+3], $matches);
+				}
+				$param["title"] = $matches[1];
+				SiteMapObj($param["title"], $param["html"], "			");
 			}
+
 		}
 		echo "		</UL>\n";
 	}	
@@ -149,15 +136,19 @@ $tabs	<param name=\"Local\" value=\"$htmldir\\$local\">";
 <UL>
 <?php
 	
-	$index_a = file ("html/manual.html");
+	$index_a = file ("$fancydir/manual.html");
 	$ijoin = join("", $index_a);
 	$ijoin = preg_replace("/[\r|\n]/", " ", $ijoin);
 	
-	// print out the objects autoparsing didnt find
-	// some automation may there in the future
+	// print out the objects, that autoparsing wont find
+	// some automation may be there in the future
 	
-	preg_match('|<DIV CLASS="TOC" ><DL ><DT ><B >(.*)</B >|U', $ijoin, $match);
-	SiteMapObj($match[1], "manual.html", "	", 21);
+	SiteMapObj($manual_title, $indexfile, "	", 21);
+
+	if ($fancyindex) {
+		preg_match('|CLASS=\"title\" ><A NAME=\"manual\" >(.*)</A|U', $ijoin, $match);
+		SiteMapObj($match[1], "manual.html", "	", 21);
+	}
 
 	preg_match('|<A HREF="preface.html" >(.*)</A >|U', $ijoin, $match);
 	SiteMapObj($match[1], "preface.html", "	");
@@ -211,7 +202,9 @@ $tabs	<param name=\"Local\" value=\"$htmldir\\$local\">";
 	echo "	</UL>\n";
 
 	// link in directly the copyright page
-	preg_match('|<A HREF="copyright.html" >(.*)</A > &copy;|U', $ijoin, $match);
+	$cjoin = join("", file ("$fancydir/copyright.html"));
+	$cjoin = preg_replace("/[\r|\n]/", " ", $cjoin);
+	preg_match('|<A NAME="copyright" ></A ><P ><B >(.*)</B|U', $cjoin, $match);
 	SiteMapObj($match[1], "copyright.html", "	", 17);
 
 ?>
@@ -247,5 +240,5 @@ $tabs	<param name=\"Local\" value=\"$htmldir\\$local\">";
 	$fp = fopen("index.hhk", "w");
 	fputs($fp, $index_hhk);
 	fclose($fp);
-
+	
 ?>
