@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 <!-- splitted from ./en/functions/bcompiler.xml, last change in rev 1.5 -->
   <refentry id="function.bcompiler-write-exe-footer">
    <refnamediv>
@@ -20,36 +20,41 @@
     <para>
      <simplelist>
       <member>
-       The Executable code (eg. a compiled C program that can initiate call
-       the PHP bcompiler)
+       The stub (executable code, e.g. a compiled C program) that loads PHP
+       interpreter, bcompiler extension, stored Bytecodes and initiates a call
+       for the specified function (e.g. main) or class method (e.g. main::main)
       </member>
-      <member>The Bzip encoded Bytecodes</member>
-      <member>The bcompiler exe footer</member>
+      <member>The Bytecodes (uncompressed only for the moment)</member>
+      <member>The bcompiler EXE footer</member>
      </simplelist>
-     The <parameter>startpos</parameter> is the position of in the file at
-     which the Bzip encoded bytecodes start, and can be obtained using 
-     ftell($fh).
+     The <parameter>startpos</parameter> is the file position at
+     which the Bytecodes start, and can be obtained using ftell($fh).
+    </para>
+    <para>
+     To obtain a suitable stub you can compile php_embed-based stub phpe.c
+     located in the examples/embed directory on bcompiler's CVS.
     </para>
     <example>
      <title><function>bcompiler_write_footer</function> example</title>
      <programlisting role="php">
 <![CDATA[
 <?php
-$fh = fopen("/tmp/example.exe","w");
-$size = filesize("/tmp/base.exe");
-$fr = fopen("/tmp/base.exe","r");
-fwrite($fh,fread($fr,$size),$size);
+/* creating the output file (example.exe) */
+$fh = fopen("example.exe", "w");
+/* 1) writing a stub (phpe.exe) */
+$size = filesize("phpe.exe");
+$fr = fopen("phpe.exe", "r");
+fwrite($fh, fread($fr, $size), $size);
 $startpos = ftell($fh);
-/* write bytecodes compressed */
-$fz = bzopen($fh,"w");
-bcompiler_write_header($fz);
-bcompiler_write_class($fz,"DB");
-bcompiler_write_class($fz,"DB_common");
-bcompiler_write_footer($fz);
-/* write footer exe uncompressed */
-bcompiler_write_exe_footer($fh,$startpos);
+/* 2) writing bytecodes */
+bcompiler_write_header($fh);
+bcompiler_write_class($fh, "myclass");
+bcompiler_write_function($fh, "main");
+bcompiler_write_footer($fh);
+/* 3) writing EXE footer */
+bcompiler_write_exe_footer($fh, $startpos);
+/* closing the output file */
 fclose($fh);
-
 ?>
 ]]>
      </programlisting>
