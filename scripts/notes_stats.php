@@ -71,7 +71,7 @@ $line = fgets($s, 4096);
  * note ID moved from SECTION to SECTION by EDITOR (not matched yet)
  */
 
-$reg = '/^note (\d*) (.*) (?:from|in) ([^ ]*) by ([a-z]*)/';
+$reg = '/^note (\d*) (.*) (?:from|in) (\S*) by (\w*)/';
 
 if (preg_match($reg, $subj, $d)) {
     if ($d[2] == 'rejected and deleted')
@@ -128,7 +128,7 @@ echo '
 <table border='0' cellspacing="10"><tr valign="top"><td valign="top">
 <table border='1'>
     <tr>
-        <td colspan="5" align="center">Editors Stats with more then <?php echo $minact; ?> actions</td>
+        <td colspan="5" align="center">Editors Stats with more than <?php echo $minact; ?> actions</td>
     </tr>
     <tr>
         <td>user</td>
@@ -165,7 +165,7 @@ foreach ($tmp as $user => $total) {
 </table>
 
 </td><td valign="top">
-Last half year (with more then <?php echo $minact; ?> actions counted)
+Last half year (with more than <?php echo $minact; ?> actions counted)
 <table border='1'>
     <tr>
         <td colspan="5" align="center">Recent Editors stats</td>
@@ -204,7 +204,7 @@ foreach ($tmp['n'] as $user => $total) {
 </table>
 
 <br />
-Before the last half year (with more then <?php echo $minact; ?> actions counted)
+Before the last half year (with more than <?php echo $minact; ?> actions counted)
 <table border='1'>
     <tr>
         <td colspan="5" align="center">Older Editors Stats</td>
