@@ -27,7 +27,7 @@ Find entity usage in phpdoc xml files and
 list used and unused entities.
 
   Usage:
-  <?=$argv[0]?> [<entity-file>] [<language-code>]
+  <?php echo $argv[0];?> [<entity-file>] [<language-code>]
 
   <entity-file> must be a file name (with relative
   path from the phpdoc root) to a file containing

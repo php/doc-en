@@ -25,7 +25,7 @@ if ($argc > 2 || in_array($argv[1], array('--help', '-help', '-h', '-?'))) {
 Check documented functions in phpdoc
 
   Usage:
-  <?=$argv[0]?> [missing]
+  <?php echo $argv[0];?> [missing]
 
   By providing the optional "missing" parameter,
   only a list of undocumented functions is listed,

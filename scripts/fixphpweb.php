@@ -25,7 +25,7 @@ if ($argc < 2 || $argc > 3) { ?>
 Deletes the HTML !DOCTYPE lines from 'phpweb_xsl' generated files
 
   Usage:
-  <?=$argv[0]?> <dir>
+  <?php echo $argv[0];?> <dir>
 
   <dir> is the folder, where the phpweb_xsl output
   files are located. The files will be rewritten to

@@ -25,7 +25,7 @@ if ($argc < 2 || $argc > 3) { ?>
 Process the manual to do some replacements.
 
   Usage:
-  <?=$argv[0]?> <apply-script> [<startdir>]
+  <?php echo $argv[0]; ?> <apply-script> [<startdir>]
 
   <apply-script> must contain the function apply($input),
   which recieves a whole xml-file, and should return

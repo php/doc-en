@@ -100,5 +100,5 @@ for (;isset($lines[$nr]); $nr++) {
 fclose($out);
 ?>
 Done!
-(you you still need to copy <?=$filename?>.sorted
-on top of <?=$filename?> after a quick check)
+(you you still need to copy <?php echo $filename;?>.sorted
+on top of <?php echo $filename;?> after a quick check)

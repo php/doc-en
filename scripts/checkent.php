@@ -27,7 +27,7 @@ if ($argc > 1 || in_array($argv[1], array('--help', '-help', '-h', '-?'))) {
 Check entities in entities/global.ent (HTTP and FTP schemes)
 
   Usage:
-  <?=$argv[0]?>
+  <?php echo $argv[0];?>
 
   This script checks FTP and HTTP URLs listed
   in entities/global.ent. Grab the output, to put it in

@@ -27,7 +27,7 @@ Process XML files for used DocBook tags
 and give statistics
 
   Usage:
-  <?=$argv[0]?> [<language-code>]
+  <?php echo $argv[0];?> [<language-code>]
 
   <language-code> can be a valid language code
   used in the repository, or 'all' for all

@@ -24,7 +24,7 @@ if ($argc > 3 || $argc < 2 || in_array($argv[1], array('--help', '-help', '-h', 
   Find which files use the specified entity.
 
   Usage:
-  <?=$argv[0]?> <entity> [<language-code>]
+  <?php echo $argv[0];?> <entity> [<language-code>]
 
   <entity> is the entity you want to search.
 
