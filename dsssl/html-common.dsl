@@ -305,7 +305,9 @@
 ;; not function pages themselfs)
 (element (refnamediv refname)
   (let ((refid (attribute-string (normalize "id") (parent (parent (current-node))))))
-    (if (not (string=? (substring refid 0 14) "reference.pcre")) 
+    (if (not (string=? 
+	   (substring refid 0 (if (<= (string-length refid) 14) (string-length refid) 14))
+	   "reference.pcre"))
       (make sequence
         (make element gi: "P"
           (literal "    (")
