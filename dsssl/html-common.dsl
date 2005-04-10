@@ -300,18 +300,24 @@
 )
 
 
-;; Put version info where the refname part in the refnamediv is
+;; Put version info where the refname part in the refnamediv is, except
+;; on pcre reference pages (these are masked as function pages, but are
+;; not function pages themselfs)
 (element (refnamediv refname)
-  (make sequence
-    (make element gi: "P"
-      (literal "    (")
-      (version-info (current-node))
-      (literal ")")
+  (let ((refid (attribute-string (normalize "id") (parent (parent (current-node))))))
+    (if (not (string=? (substring refid 0 14) "reference.pcre")) 
+      (make sequence
+        (make element gi: "P"
+          (literal "    (")
+          (version-info (current-node))
+          (literal ")")
+        )
+        (process-children)
       )
-    (process-children)
+	  (process-children)
     )
   )
-
+)
 
 ;; Display of question tags, link targets
 (element question
