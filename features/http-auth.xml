@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.41 $ -->
+<!-- $Revision: 1.42 $ -->
  <chapter id="features.http-auth">
   <title>HTTP authentication with PHP</title>
 
@@ -16,9 +16,9 @@
    and <varname>AUTH_TYPE</varname> set to the user name, password and 
    authentication type respectively.  These predefined variables are found 
    in the <link linkend="reserved.variables.server">$_SERVER</link> and 
-   <varname>$HTTP_SERVER_VARS</varname> arrays.  Only "Basic" authentication 
-   is supported. See the <function>header</function> function for more 
-   information.
+   <varname>$HTTP_SERVER_VARS</varname> arrays. Both "Basic" and "Digest"
+   (since PHP 5.1.0) authentication methods are supported. See the
+   <function>header</function> function for more information.
   </simpara>
 
   <note>
@@ -37,7 +37,7 @@
   </para>
   <para>
    <example>
-    <title>HTTP Authentication example</title>
+    <title>Basic HTTP Authentication example</title>
     <programlisting role="php">
 <![CDATA[
 <?php
@@ -50,6 +50,55 @@
     echo "<p>Hello {$_SERVER['PHP_AUTH_USER']}.</p>";
     echo "<p>You entered {$_SERVER['PHP_AUTH_PW']} as your password.</p>";
   }
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Digest HTTP Authentication example</title>
+    <para>
+     This example shows you how to implement a simple Digest HTTP
+     authentication script. For more information read the <ulink
+      url="&url.rfc;2617">RFC 2617</ulink>.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$realm = 'Restricted area';
+
+//user => password
+$users = array('admin' => 'mypass', 'guest' => 'guest');
+
+
+if (!isset($_SERVER['PHP_AUTH_DIGEST'])) {
+    header('HTTP/1.1 401 Unauthorized');
+    header('WWW-Authenticate: Digest realm="'.$realm.
+           '" qop="auth" nonce="'.uniqid().'" opaque="'.md5($realm).'"');
+
+    die('Text to send if user hits Cancel button');
+}
+
+// analise the PHP_AUTH_DIGEST variable
+preg_match('/username="(?P<username>.*)",\s*realm="(?P<realm>.*)",\s*nonce="(?P<nonce>.*)",\s*uri="(?P<uri>.*)",\s*response="(?P<response>.*)",\s*opaque="(?P<opaque>.*)",\s*qop=(?P<qop>.*),\s*nc=(?P<nc>.*),\s*cnonce="(?P<cnonce>.*)"/', $_SERVER['PHP_AUTH_DIGEST'], $digest);
+
+if (!isset($users[$digest['username']]))
+    die('Username not valid!');
+
+
+// generate the valid response
+$A1 = md5($digest['username'] . ':' . $realm . ':' . $users[$digest['username']]);
+$A2 = md5($_SERVER['REQUEST_METHOD'].':'.$digest['uri']);
+$valid_response = md5($A1.':'.$digest['nonce'].':'.$digest['nc'].':'.$digest['cnonce'].':'.$digest['qop'].':'.$A2);
+
+if ($digest['response'] != $valid_response)
+    die('Wrong Credentials!');
+
+// ok, valid username & password
+echo 'Your are logged in as: ' . $digest['username'];
+
 ?>
 ]]>
     </programlisting>
