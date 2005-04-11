@@ -61,7 +61,7 @@ if ($argc != 2 ||
     echo "Usage:\n";
     echo "      $argv[0] <php source dir>\n\n";
     echo "      --help, -help, -h, -?\n";
-    echo "          to get this help.";
+    echo "          to get this help\n";
 
 } else {
 
@@ -164,7 +164,7 @@ if ($argc != 2 ||
     }
 
     if ( $PHP3_lex ) {
-        echo str_replace($argv[1], "# php-src", $PHP3_lex)."\n";
+        echo preg_replace("|^[./]+|", "# ", $PHP3_lex)."\n";
 
         // worst case <IN_PHP>"highlight_file"|"show_source" {
         $LEX_regex = "|<IN_PHP>\"([\w\d_]+)\"(?:\|\"([\w\d_]+)\")? \{|";
