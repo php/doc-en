@@ -57,7 +57,9 @@ foreach (glob("*/functions/*.xml") as $filename) {
 		$line_no_en = (substr_count(substr($file_en, 0, $matches_en[1][$key][1]), "\n") + 1);
 		$methodsynopsis = $val[0];
 		$methodsynopsis_en = $matches_en[1][$key][0];
-		if (!preg_match('~<type>([^<]*)</type>\\s*<methodname>~', $methodsynopsis, $match)) {
+		if (preg_match('~<replaceable>~', $methodsynopsis)) {
+			// ignored
+		} elseif (!preg_match('~<type>([^<]*)</type>\\s*<methodname>~', $methodsynopsis, $match)) {
 			echo "Return type not found in $filename on line " . ($line_no + 1) . ".\n";
 			echo ": source in $filename_en on line " . ($line_no_en + 1) . ".\n";
 		} elseif (!preg_match('~<type>' . preg_quote($match[1], '~') . '</type>\\s*<methodname>~', $methodsynopsis_en)) {
