@@ -268,12 +268,12 @@ function write_functions_xml()
             $tmp .= '' .
             "    <varlistentry>\n" .
             "     <term><parameter>{$argname}</parameter></term>\n" .
-            "      <listitem>\n" .
-            "       <para>\n" .
-            "        Its description\n" .
-            "       </para>\n" .
-            "      </listitem>\n" .
-            "     </varlistentry>\n";
+            "     <listitem>\n" .
+            "      <para>\n" .
+            "       Its description\n" .
+            "      </para>\n" .
+            "     </listitem>\n" .
+            "    </varlistentry>\n";
         }
         $tmp .= "   </variablelist>\n";
         fwrite($fp, $tmp);
