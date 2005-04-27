@@ -209,7 +209,7 @@ function findDeeperLinks ($filename, $toc, $index)
     $contents = oneLiner("$HTML_PATH/$filename");
     
     // Find all sublinks
-    if (preg_match_all("!<DT\\s*><A\\s+HREF=\"(([\\w\\.-]+\\.)+html)(\\#[\\w\\.-]+)?\"\\s*>([^<]*)</A\\s*>!U", $contents, $matches, PREG_SET_ORDER)) {
+    if (preg_match_all("!<DT\\s*><A\\s+HREF=\"(([\\w\\.-]+\\.)+html)(\\#[\\w\\.-]+)?\"\\s*>(.*)</A\\s*>!U", $contents, $matches, PREG_SET_ORDER)) {
         
         // Print out the file informations for all the links
         fputs_wrapper($toc, "\n        <ul>");
