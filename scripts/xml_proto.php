@@ -118,6 +118,10 @@ function function_add_arg($num, $type, $argname, $isopt)
 {
   global $funclist, $num_funcs;
 
+  /* Avoid common mistake in parameter return types */
+  if ($type == 'long') {
+    $type = 'int';
+  }
   $num_args=$funclist[$num]["num_args"];
   $funclist[$num]["args"][$num_args]["type"]=$type;
   $funclist[$num]["args"][$num_args]["variable"]=$argname;
