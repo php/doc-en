@@ -130,6 +130,7 @@ function function_add_arg($num, $type, $argname, $isopt)
 function write_reference_xml()
 {
   global $extension_name, $constant_dir, $version;
+  global $num_const;
 
   $filename= $constant_dir. "reference.xml";
   $fp=fopen($filename, "wb");
@@ -895,6 +896,9 @@ if ($generate_constants && $generate_functions) {
       mkdir("./" . $extension_name . "/functions");
   }
 }
+
+/* Extension names may contain undesirable characters for element IDs */
+$extension_name = fix_name($extension_name);
 
 create_xml_docs();
 
