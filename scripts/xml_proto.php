@@ -812,10 +812,6 @@ function usage($progname)
   echo "       This will generate <extension name>/ directory which reference.xml and contents.xml\n";
   echo "       will be created in, and a subdirectory  <extension name>/functions/ which all\n";
   echo "       function xml reference files will be generated in\n\n";
-  echo "Note: If you are documenting a new extension, you will need to add a new line\n";
-  echo "      to the /manual.xml.in file under the <part id=\"funcref\"> section following\n";
-  echo "      the format \"&reference.<extension name>.reference;\", but please try\n";
-  echo "      to maintain the alphabetical order!\n\n";
 }
 
 function parse_cli($progargc, $progargv)
@@ -907,11 +903,6 @@ $extension_name = fix_name($extension_name);
 create_xml_docs();
 
 echo <<<NOTES
-
-Note: If you are documenting a new extension, you will need to add a new line
-      to the /manual.xml.in file under the <part id="funcref"> section following
-      the format "&reference.<extension name>.reference;", but please try
-      to maintain the alphabetical order!
 
 Note: Also be sure to double check the documentation before commit as this
       script is still being tested.  Things to check:
