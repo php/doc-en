@@ -188,7 +188,7 @@ function refineFile($filename)
         } else {
             $content = preg_replace(
                 $headend_regex,
-                '</h1>\1<div id="pageText">',
+                '</h1>\1</div><div id="pageText">',
                 $content
             );
         }
