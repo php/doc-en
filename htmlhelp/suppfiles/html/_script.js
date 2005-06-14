@@ -1,3 +1,4 @@
+// $Id: _script.js,v 1.9 2005-06-14 14:47:47 techtonik Exp $
 // =============================================================================
 // Preference handling
 
@@ -74,7 +75,8 @@ function getCHMFile()
         chmfile_page = unescape(location.href.substring(Y+3));
     }
 
-    // RAQ : Wednesday, 16 March 2005 01:56 pm : If this page has been loaded because the notes were selected from the search results, then remove the hash.
+    // RAQ : Wednesday, 16 March 2005 01:56 pm : If this page has been loaded because
+    //       the notes were selected from the search results, then remove the hash.
     if (location.hash == '#userNotes')
         chmfile_page = chmfile_page.substring(0, chmfile_page.lastIndexOf('#'));
 
@@ -144,7 +146,8 @@ function _displayNotes()
     // If we have that element, copy notes here [4+]
     if (element) {
         element.innerHTML = parent.nbuff.document.body.innerHTML;
-        // RAQ : Wednesday, 16 March 2005 01:58 pm : Bring the notes into view if the hash has been supplied
+        // RAQ : Wednesday, 16 March 2005 01:58 pm : Bring the notes into view
+        //       if the hash has been supplied
         if (location.hash == '#userNotes')
             {
             setTimeout('element.scrollIntoView(true);',200);
@@ -213,10 +216,10 @@ function contextMenuRewrite(first)
                 case "_GoogleSearch_":
                     if (prefs_online) {
                         menuHTML +=
-                            '<tr><td style="background-color: #f5f5f5;"><form action="http://www.google.com/search" class="thin"' +
-                            'onsubmit="contextMenuClose()" method="GET" target="_blank">' +
-                            '<img src="_google.gif" align="absmiddle" alt="Google"><input type="text" name="q" ' +
-                            'style="width:120px;"></form></td></tr>';
+'<tr><td style="background-color: #f5f5f5;"><form action="http://www.google.com/search" class="thin"' +
+'onsubmit="contextMenuClose()" method="GET" target="_blank">' +
+'<img src="_google.gif" align="absmiddle" alt="Google"><input type="text" name="q" ' +
+'style="width:120px;"></form></td></tr>';
                     }
                     break;
     
@@ -224,10 +227,10 @@ function contextMenuRewrite(first)
                 case "_ATWSearch_":
                     if (prefs_online) {
                         menuHTML +=
-                            '<tr><td style="background-color: #f5f5f5;"><form action="http://www.alltheweb.com/search" class="thin"' +
-                            'onsubmit="contextMenuClose()" method="GET" target="_blank">' +
-                            '<img src="_atw.gif" align="absmiddle" alt="AlltheWeb"><input name="cat" type="hidden" value="web">' +
-                            '<input type="text" name="query" style="width:120px;"></form></td></tr>';
+'<tr><td style="background-color: #f5f5f5;"><form action="http://www.alltheweb.com/search" class="thin"' +
+'onsubmit="contextMenuClose()" method="GET" target="_blank">' +
+'<img src="_atw.gif" align="absmiddle" alt="AlltheWeb"><input name="cat" type="hidden" value="web">' +
+'<input type="text" name="query" style="width:120px;"></form></td></tr>';
                     }
                     break;
                     
