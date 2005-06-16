@@ -69,6 +69,9 @@ $number_refs = array(
 	"all_args_by_ref" => 1,
 	"http_request_info_ref_3" => array(3),
 	"http_request_info_ref_4" => array(4),
+	"http_arg_pass_ref_3" => array(3),
+	"http_arg_pass_ref_4" => array(4),
+	"http_arg_pass_ref_5" => array(5),
 );
 
 $valid_types = "int|float|string|bool|resource|array|object|mixed|number";
@@ -107,10 +110,15 @@ function params_source_to_doc($type_spec)
 }
 
 // some parameters should be passed only by reference but they are not forced to
-$wrong_refs = array("dbplus_info", "dbplus_next");
+$wrong_refs = array(
+	"dbplus_curr", "dbplus_first", "dbplus_info", "dbplus_last", "dbplus_next", "dbplus_prev", "dbplus_tremove",
+	"preg_replace",
+);
+
 $difficult_params = array(
 	"ibase_blob_import", "ibase_execute",
 	"imagefilter",
+	"maxdb_stmt_bind_result",
 	"mt_rand", "rand",
 	"mcrypt_get_block_size", "mcrypt_get_key_size", "mcrypt_get_cipher_name", // inverse order
 	"mysql_ping",
@@ -131,7 +139,10 @@ $difficult_arg_count = array(
 	"getdate", "min", "max", "implode", "strtok", "sybase_fetch_object",
 	"cpdf_text", "pdf_get_parameter", "pg_fetch_assoc", "odbc_exec", "odbc_result_all", "yaz_wait",
 	// take account of multiple methodsynopsis:
-	"crack_check", "ibase_prepare", "mysqli_stmt_bind_param", "pg_fetch_result", "pg_put_line", "pg_query", "pg_set_client_encoding", "strtr", "yaz_set_option",
+	"crack_check", "ibase_prepare", "maxdb_stmt_bind_param", "mysqli_stmt_bind_param", "strtr", "yaz_set_option",
+	"pg_fetch_result", "pg_put_line", "pg_query", "pg_set_client_encoding", "pg_execute", "pg_query_params", "pg_prepare", "pg_set_error_verbosity",
+	// better to fix in sources:
+	"ora_error", "ora_errorcode",
 );
 
 // read referenced parameters from sources
