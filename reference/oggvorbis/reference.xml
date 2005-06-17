@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+<reference id="ref.oggvorbis">
+ <title>oggvorbis</title>
+ <titleabbrev>OGG/Vorbis</titleabbrev>
+
+ <partintro>
+  <section id="oggvorbis.intro">
+   &reftitle.intro;
+   <simpara>
+    The OGG/Vorbis file format, as defined by <ulink url="&url.ogg;">&url.ogg;</ulink>
+    and <ulink url="&url.ogg.vorbis;">&url.ogg.vorbis;</ulink>, is a scheme
+    for compressing audio streams by multiple factors with a minimum of
+    quality loss. This extension adds oggvorbis support to PHP&apos;s
+    <link linkend="wrappers">URL Wrappers</link>. When used in read mode,
+    compressed OGG/Vorbis data is expanded to raw PCM audio in one of six PCM
+    encoding formats listed below.
+   </simpara>
+  </section>
+
+  <section id="oggvorbis.requirements">
+   &reftitle.required;
+   <para>
+    This extensiion requires <literal>PHP &gt;= 4.3.0</literal>,
+    <ulink url="&url.ogg.vorbis.downloads;">libogg</ulink> &gt;= 1.0, and
+    <ulink url="&url.ogg.vorbis.downloads;">libvorbis</ulink> &gt;= 1.0.
+   </para>
+  </section>
+
+   <section id="oggvorbis.configuration">
+    &reftitle.runtime;
+    &no.config;
+   </section>
+
+<!--
+   &reference.oggvorbis.configure;
+
+   &reference.oggvorbis.contexts;
+
+   &reference.oggvorbis.constants;
+-->
+ </partintro>  
+ <refentry>
+  <refnamediv>
+   <refname>Usage</refname>
+   <refpurpose>
+    Examples on using the ogg:// wrapper.
+   </refpurpose>
+  </refnamediv>
+
+  <refsect1 role="examples"> 
+  &reftitle.examples;
+   <para>
+    <example>
+     <title>Reading an OGG/Vorbis file</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+dl("oggvorbis.so");
+
+/* By default, ogg:// will decode to Signed 16-bit Little Endian */
+$fp = fopen('ogg://myaudio.ogg', 'r');
+
+/* Collect some information about the file. */
+$metadata = stream_get_meta_data($fp);
+
+/* Inspect the first song (usually the only song, 
+   but OGG/Vorbis files may be chained) */
+$songdata = $metadata['wrapper_data'][0];
+
+echo "OGG/Vorbis file encoded by: {$songdata['vendor']}\n.";
+echo "  {$songdata['channels']} channels of {$songdata['rate']}Hz sampling encoded at {$songdata['bitrate_nominal']}bps.\n";
+foreach($songdata['comments'] as $comment) {
+    echo "  $comment\n";
+}
+
+while ($audio_data = fread($fp, 8192)) {
+  /* Do something with the PCM audio we're extracting from the OGG.
+     Copying to /dev/dsp is a good target on linux systems, 
+     just remember to setup the device for your sampling mode first. */
+}
+
+fclose($fp);
+
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+
+   <para>
+    <example>
+     <title>Encode an audio file to OGG/Vorbis</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+dl('oggvorbis.so');
+
+$context = stream_context_create(array('ogg'=>array(
+             'pcm_mode' => OGGVORBIS_PCM_S8,  /* Signed 8bit audio */
+             'rate' => 44100,                 /* 44kHz CD quality */
+             'bitrate' => 0.5,                /* Midquality VBR */
+             'channels' => 1,                 /* Mono */
+             'serialno' => 12345)));          /* Unique within our stream */
+
+/* Open file for appending.  This will "chain" a second OGG stream at the end of the first. */
+$ogg = fopen('ogg://mysong.ogg', 'a', false, $context);
+
+$pcm = fopen('mysample.pcm', 'r');
+
+/* Compress the raw PCM audio from mysample.pcm into mysong.ogg */
+stream_copy_to_stream($pcm, $ogg);
+
+fclose($pcm);
+fclose($ogg);
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+  </refsect1>
+ </refentry>
+</reference>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+
