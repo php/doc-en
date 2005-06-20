@@ -1,4 +1,4 @@
-<?php
+<?php // $Id$
 
 /* 
    This file is part of the Windows Compiled HTML Help
@@ -30,8 +30,9 @@ function filterFiles()
         // Only process html files
         if (strpos($filename, ".html")) {
             $counter++;
+            echo "\r                                                                       \r";
+            echo "> $counter $filename";
             refineFile($filename);
-            echo "> $counter\r";
         }
     }
     closedir($handle);
