@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.19 2005-01-08 18:30:48 hsc Exp $
+  $Id: htmlhelp.xsl,v 1.20 2005-06-21 12:33:25 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -14,18 +14,19 @@
                 exclude-result-prefixes="doc exsl set">
 <!-- 
   xCHM HTMLHELP customizations include:
-  - output directory for HH files is 'htmlhelp/html/'
-  - DOCTYPE in output HTML defines DOM standard for browser to handle JS correctly
-  - project files for HTML Help are written into 'htmlhelp/html/'
+  - output directory for HTML and project Help files is 'htmlhelp/html/'
   - open ulinks in _blank window
   - CHM buttons settings
   - custom .hhk file with index.html split in two files (titlepage and toc)
   - custom .hhc file with same changes
   - .hhk and .hhc are processed in html mode unlike native DocBook XSL templates
   - proper escaping in .hhk and .hhc to reflect transition from text to html mode
+
+  - DOCTYPE in output HTML defines DOM standard for browser to handle JS correctly
   - strip <link> tags from HTML headers
   - add javascript handlers in body attributes
   - header off, footer on (also custom with some js handlers and custom ids)
+
   - turn on function index page building (in appendixes) and turn off ToC for it
   - output formal object titles enclosed in <h3> tags 
     (abstract title, examples, tables, ...?)
@@ -35,6 +36,9 @@
     "seealso", move <refname> along with function prototype to page header and
     render it appropriately
     TODO: need convenient reference page skeleton
+
+    NOTE: custom HTML xCHM layout described in phpdoc/en/chmonly/skins.xml or 
+          http://wiki.phpdoc.info/xCHM
 -->
 
 <!-- - BASED ON 1.66.1 HTMLHELP.XSL DOCBOOK XSL STYLESHEET - -->
@@ -391,7 +395,7 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
 
 <xsl:template name="user.head.content">
   <xsl:param name="node" select="."/>
-  <script language="JavaScript1.2" src="_script.js"></script>
+  <script type="text/javascript" language="JavaScript1.2" src="_script.js"></script>
 </xsl:template>
 
 <!-- We need quite different body attributes than the defaults -->
@@ -404,17 +408,20 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
 <xsl:param name="suppress.navigation" select="0"/>
 <xsl:param name="suppress.header.navigation" select="1"/>
 
+<!-- DIV place for user notes to be inserted dynamically -->
+<xsl:template name="user.footer.content">
+  <a id="user_notes"></a>
+  <div id="pageNotes"></div>
+  <script type="text/javascript" language="JavaScript1.2">
+   function displayNotes() { _displayNotes(); }
+   loadNotes();
+  </script>
+</xsl:template>
+
 <!-- Footer part with special table for our special needs ;) -->
 <xsl:template name="footer.navigation">
   <xsl:param name="prev" select="/foo"/>
   <xsl:param name="next" select="/foo"/>
-  
-  <a name="_user_notes"></a>
-  <div id="pageNotes"></div>
-  <script language="JavaScript1.2">
-   function displayNotes() { _displayNotes(); }
-   loadNotes();
-  </script>
   
   <div id="pageNav">
   <table width="100%" border="0" cellspacing="10" cellpadding="0" class="navigation">
