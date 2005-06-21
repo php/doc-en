@@ -199,7 +199,7 @@ function refineFile($filename)
     // End that pageText div before the user notes
     $content = str_replace(
         '<a id="user_notes">',
-        '</div><a name="_user_notes">',
+        '</div><a id="user_notes">',
         $content
     );
     
