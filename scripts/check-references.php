@@ -134,6 +134,12 @@ $difficult_params = array(
 	"wddx_packet_end",
 	"apd_echo",
 	"fdf_set_on_import_javascript",
+	"easter_date",
+	"fbsql_fetch_assoc", "fbsql_fetch_row",
+	"msql_fetch_object", "msql_fetch_row",
+	"mssql_fetch_assoc", "mssql_fetch_object", "mssql_fetch_row",
+	"mysql_pconnect",
+	"pg_fetch_assoc", "pg_fetch_row",
 );
 $difficult_arg_count = array(
 	"getdate", "min", "max", "implode", "strtok", "sybase_fetch_object",
@@ -165,19 +171,22 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 	}
 	
 	// read parameters
-	preg_match_all('~^(?:ZEND|PHP)(?:_NAMED)?_FUNCTION\\(([^)]+)\\)(.*)^\\}~msU', $file, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE); // }}} is not in all sources so ^} is used instead
+	preg_match_all('~^(?:ZEND|PHP)(?:_NAMED)?_(?:FUNCTION|METHOD)\\(([^)]+)\\)(.*)^\\}~msU', $file, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE); // }}} is not in all sources so ^} is used instead
 	foreach ($matches as $val) {
-		$function_name = strtolower(trim($val[1][0]));
+		$function_name = strtolower(trim(preg_replace('~\\s*,\\s*~', '::', $val[1][0])));
+		if (preg_match('~(\\w+)\\(INTERNAL_FUNCTION_PARAM_PASSTHRU~', $val[2][0], $matches2)) {
+			preg_match('~(' . preg_quote($matches2[1], '~') . ')\\(INTERNAL_FUNCTION_PARAMETERS(.*)^\\}~msU', $file, $val, PREG_OFFSET_CAPTURE);
+		}
+		
 		$lineno = substr_count(substr($file, 0, $val[2][1]), "\n") + 1;
 		$function_body = $val[2][0];
 		
 		// types and optional
 		if (!in_array($function_name, $difficult_params)
 		&& strpos($function_body, 'zend_parse_parameters_ex') === false // indicate difficulty
-		&& preg_match('~.*zend_parse_parameters\\([^,]*,\\s*"([^"]*)"~s', $function_body, $matches2) // .* to catch last occurence
-		// zend_parse_method_parameters is not yet supported
+		&& preg_match('~.*zend_parse(_method)?_parameters\\([^,]*,\\s*"([^"]*)"~s', $function_body, $matches2) // .* to catch last occurence
 		) {
-			$source_types[$function_name] = array($matches2[1], $filename, $lineno);
+			$source_types[$function_name] = array(($matches2[1] ? substr($matches2[2], 1) : $matches2[2]), $filename, $lineno);
 		} elseif (!in_array($function_name, $difficult_arg_count)) {
 		
 			// arguments count
@@ -231,20 +240,33 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 			}
 		}
 	}
+	preg_match_all('~INIT(?:_OVERLOADED)?_CLASS_ENTRY\\(.*"([^"]+)"\\s*,\\s*([^)]+)~', $file, $matches, PREG_SET_ORDER);
+	foreach ($matches as $val) {
+		if (preg_match('~' . preg_quote($val[2], '~') . '\\[\\](.*)\\}~sU', $file, $matches2)) {
+			preg_match_all('~PHP_FALIAS\\((\\w+)\\s*,\\s*(\\w+)~', $matches2[1], $matches2, PREG_SET_ORDER);
+			foreach ($matches2 as $val2) {
+				$function_name = strtolower($val2[2]);
+				$method_name = strtolower("$val[1]::$val2[1]");
+				if (isset($source_types[$function_name])) {
+					$source_types[$method_name] = $source_types[$function_name];
+				}
+				if ($source_arg_counts[$function_name]) {
+					$source_arg_counts[$method_name] = $source_arg_counts[$function_name];
+				}
+			}
+		}
+	}
 }
 echo "Sources were read.\n";
 
 // compare with documentation
 $counts = array("refs" => 0, "types" => 0, "arg_counts" => 0);
 foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
-	if (preg_match('~^(.*<methodsynopsis>(.*))<methodname>([^<]+)<(.*)</methodsynopsis>~sU', file_get_contents($filename), $matches)) {
+	if (preg_match('~^(.*(?:(\\w+)</classname></ooclass>\\s*)?<methodsynopsis>(.*))<methodname>([^<]+)<(.*)</methodsynopsis>~sU', file_get_contents($filename), $matches)) {
 		$lineno = substr_count($matches[1], "\n") + 1;
-		$return_type = $matches[2];
-		$function_name = strtolower(trim($matches[3]));
-		if (strpos($function_name, '-') || strpos($function_name, ':')) {
-			continue; // methods are not supported
-		}
-		$methodsynopsis = $matches[4];
+		$return_type = $matches[3];
+		$function_name = strtolower(($matches[2] ? "$matches[2]::" : "") . trim(preg_replace('~-(>|&gt;)~', '::', $matches[4])));
+		$methodsynopsis = $matches[5];
 		
 		// return type
 		if (preg_match("~<type>(callback|$invalid_types)</type>~", $return_type)) {
