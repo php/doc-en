@@ -121,25 +121,15 @@ $difficult_params = array(
 	"maxdb_stmt_bind_result",
 	"mt_rand", "rand",
 	"mcrypt_get_block_size", "mcrypt_get_key_size", "mcrypt_get_cipher_name", // inverse order
-	"mysql_ping",
 	"pdf_get_parameter",
-	"tidy_getopt", // uses zend_parse_method_parameters
+	"tidy_get_opt_doc", "tidy_getopt",
 	// better to fix in sources:
-	"imagepstext",
 	"ncurses_keyok", "ncurses_use_env", "ncurses_use_extended_names",
 	"openssl_x509_export_to_file", "openssl_x509_export",
 	"snmp_set_quick_print",
-	"tcpwrap_check",
-	"get_headers",
-	"wddx_packet_end",
 	"apd_echo",
-	"fdf_set_on_import_javascript",
 	"easter_date",
-	"fbsql_fetch_assoc", "fbsql_fetch_row",
-	"msql_fetch_object", "msql_fetch_row",
-	"mssql_fetch_assoc", "mssql_fetch_object", "mssql_fetch_row",
 	"mysql_pconnect",
-	"pg_fetch_assoc", "pg_fetch_row",
 );
 $difficult_arg_count = array(
 	"getdate", "min", "max", "implode", "strtok", "sybase_fetch_object",
@@ -217,11 +207,6 @@ foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glo
 						}
 						unset($source_arg_count[$number]);
 						break;
-					/* old version
-					case "=":
-						$source_arg_count[$number] = true;
-						break;
-					*/
 					case "<":
 						for ($i=0; $i < $number; $i++) {
 							$source_arg_count[$i] = true;
