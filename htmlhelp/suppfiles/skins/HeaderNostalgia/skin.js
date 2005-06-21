@@ -84,7 +84,7 @@ function skinBuildHeader(funcpage, skinpath)
         '<map name="phpdoc_menu">' +
         '<area shape="poly" coords="3,4,41,4,41,20,3,20,3,4" href="#" alt="Path to this page" onclick="skinShowMenu(navLinkPath, this)">' +
         '<area shape="poly" coords="44,4,92,4,92,20,44,20,44,4" href="#" alt="Online functions" onclick="skinShowMenu(navOnlineMenu, this)">' +
-        '<area shape="poly" coords="96,4,141,4,141,20,96,20,96,4" href="#_user_notes" alt="User notes">' +
+        '<area shape="poly" coords="96,4,141,4,141,20,96,20,96,4" href="#user_notes" alt="User notes">' +
         '</map>';
         
     // If this is a function page, show those headers too

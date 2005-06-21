@@ -198,7 +198,7 @@ function refineFile($filename)
 
     // End that pageText div before the user notes
     $content = str_replace(
-        '<a name="_user_notes">',
+        '<a id="user_notes">',
         '</div><a name="_user_notes">',
         $content
     );
@@ -259,7 +259,7 @@ function newIndex ($content)
     
     // Get contents we need to build the _index.html file
     preg_match("!^(.+)<hr>!s", $content, $_index1);
-    preg_match("!(</div></div><a name=\"_user_notes\">.+</html>)!s", $content, $_index2);
+    preg_match("!(</div></div><a id=\"user_notes\">.+</html>)!s", $content, $_index2);
     
     // Write out the two components to form a complete file
     $fp = fopen("$HTML_TARGET/_index.html", "w");
