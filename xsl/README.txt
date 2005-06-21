@@ -27,7 +27,7 @@ will need to copy whole big template to make a minor customization. Next time
 DocBook templates upgrade you must merge these modifications. This becomes even
 worse if there will be major structural changes in XSL DocBook (not likely, but
 still possible) - that way you will have to start customizations almost from
-scratch. Sometimes it is much more easier to patch output code with PHP scripts.
+scratch. Sometimes it is much more easier to patch output HTML with PHP scripts.
 
 So, the first layer is "minor" customizations of DocBook XSL templates, where
 .html and HTMLHELP project files are created without major templates redefining.
