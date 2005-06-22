@@ -112,7 +112,10 @@ function params_source_to_doc($type_spec)
 // some parameters should be passed only by reference but they are not forced to
 $wrong_refs = array(
 	"dbplus_curr", "dbplus_first", "dbplus_info", "dbplus_last", "dbplus_next", "dbplus_prev", "dbplus_tremove",
-	"preg_replace",
+	"php_check_syntax",
+	"pdostatement::bindcolumn", "pdostatement::bindparam",
+	"preg_replace", "preg_replace_callback",
+	"soapclient::__soapcall",
 );
 
 $difficult_params = array(
@@ -145,98 +148,118 @@ $difficult_arg_count = array(
 $source_refs = array(); // array("function_name" => number_ref, ...)
 $source_types = array(); // array("function_name" => array("type_spec", filename, lineno), ...)
 $source_arg_counts = array(); // array("function_name" => array(disallowed_count => true, ...), ...)
-foreach (array_merge(glob("$zend_dir/*.c*"), glob("$phpsrc_dir/ext/*/*.c*"), glob("$phpsrc_dir/sapi/*/*.c*"), glob("$pecl_dir/*/*.c*")) as $filename) {
-	$file = file_get_contents($filename);
-	
-	// references
-	preg_match_all("~^[ \t]*(?:ZEND|PHP)_FE\\((\\w+)\\s*,\\s*(\\w+)\\s*[,)]~m", $file, $matches, PREG_SET_ORDER);
-	preg_match_all("~^[ \t]*(?:ZEND|PHP)_FALIAS\\((\\w+)\\s*,[^,]+,\\s*(\\w+)\\s*[,)]~m", $file, $matches2, PREG_SET_ORDER);
-	foreach (array_merge($matches, $matches2) as $val) {
-		if ($val[2] != "NULL") {
-			if (empty($number_refs[$val[2]])) {
-				echo "! $val[2] from $filename is not defined.\n";
-			}
-			$source_refs[strtolower($val[1])] = $number_refs[$val[2]];
+foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*"), glob("$phpsrc_dir/sapi/*"), glob("$pecl_dir/*")) as $dirname) {
+	$files = array();
+	$aliases = array(); // php_function => sources_function
+	foreach ((array) glob("$dirname/*.c*") as $filename) {
+		$files[$filename] = file_get_contents($filename);
+		
+		// named functions
+		preg_match_all('~PHP_NAMED_FE\\((\\w*)\\s*,\\s*(\\w*)~', $files[$filename], $matches, PREG_SET_ORDER);
+		foreach ($matches as $val) {
+			$aliases[$val[2]] = $val[1];
 		}
 	}
 	
-	// read parameters
-	preg_match_all('~^(?:ZEND|PHP)(?:_NAMED)?_(?:FUNCTION|METHOD)\\(([^)]+)\\)(.*)^\\}~msU', $file, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE); // }}} is not in all sources so ^} is used instead
-	foreach ($matches as $val) {
-		$function_name = strtolower(trim(preg_replace('~\\s*,\\s*~', '::', $val[1][0])));
-		if (preg_match('~(\\w+)\\(INTERNAL_FUNCTION_PARAM_PASSTHRU~', $val[2][0], $matches2)) {
-			preg_match('~(' . preg_quote($matches2[1], '~') . ')\\(INTERNAL_FUNCTION_PARAMETERS(.*)^\\}~msU', $file, $val, PREG_OFFSET_CAPTURE);
+	foreach ($files as $filename => $file) {
+		// references
+		preg_match_all("~^[ \t]*(?:ZEND|PHP)_FE\\((\\w+)\\s*,\\s*(\\w+)\\s*[,)]~m", $file, $matches, PREG_SET_ORDER);
+		preg_match_all("~^[ \t]*(?:ZEND|PHP)_FALIAS\\((\\w+)\\s*,[^,]+,\\s*(\\w+)\\s*[,)]~m", $file, $matches2, PREG_SET_ORDER);
+		foreach (array_merge($matches, $matches2) as $val) {
+			if ($val[2] != "NULL") {
+				if (empty($number_refs[$val[2]])) {
+					echo "! $val[2] from $filename is not defined.\n";
+				}
+				$source_refs[strtolower($val[1])] = $number_refs[$val[2]];
+			}
 		}
 		
-		$lineno = substr_count(substr($file, 0, $val[2][1]), "\n") + 1;
-		$function_body = $val[2][0];
-		
-		// types and optional
-		if (!in_array($function_name, $difficult_params)
-		&& strpos($function_body, 'zend_parse_parameters_ex') === false // indicate difficulty
-		&& preg_match('~.*zend_parse(_method)?_parameters\\([^,]*,\\s*"([^"]*)"~s', $function_body, $matches2) // .* to catch last occurence
-		) {
-			$source_types[$function_name] = array(($matches2[1] ? substr($matches2[2], 1) : $matches2[2]), $filename, $lineno);
-		} elseif (!in_array($function_name, $difficult_arg_count)) {
-		
-			// arguments count
-			$zend_num_args = "ZEND_NUM_ARGS()";
-			if (preg_match('~([a-zA-Z0-9_.]+)\\s*=\\s*ZEND_NUM_ARGS()~', $function_body, $matches2)) { // int argc = ZEND_NUM_ARGS();
-				$zend_num_args = $matches2[1];
+		// read parameters
+		preg_match_all('~^(?:ZEND|PHP)(_NAMED)?_(?:FUNCTION|METHOD)\\(([^)]+)\\)(.*)^\\}~msU', $file, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE); // }}} is not in all sources so ^} is used instead
+		foreach ($matches as $val) {
+			$function_name = strtolower(trim(preg_replace('~\\s*,\\s*~', '::', ($val[1][0] ? $aliases[$val[2][0]] : $val[2][0]))));
+			if (preg_match('~(\\w+)\\(INTERNAL_FUNCTION_PARAM_PASSTHRU~', $val[3][0], $matches2)
+			&& !preg_match('~ZEND_NUM_ARGS\\(\\)~', $val[3][0]) && $matches2[1] != "php_exec_ex"
+			&& preg_match('~' . preg_quote($matches2[1], '~') . '\\(INTERNAL_FUNCTION_PARAMETERS(.*)^\\}~msU', $file, $matches2, PREG_OFFSET_CAPTURE)
+			&& !preg_match('~^.*\\b(?:expected_args|behavior|st)\\b~', $matches2[1][0])
+			) {
+				$val[3] = $matches2[1];
 			}
-			$zend_num_args = preg_quote($zend_num_args, "~");
-			if (preg_match("~^([ \t]+)switch\\s*\\(\\s*$zend_num_args\\s*\\)(.*)^\\1\\}~msU", $function_body, $matches2) && preg_match('~\\bdefault\\s*:.*WRONG_PARAM_COUNT~s', $matches2[2])) {
-				$source_arg_counts[$function_name] = array(array_fill(0, $max_args+1, true), $filename, $lineno);
-				$source_arg_count =& $source_arg_counts[$function_name][0];
-				$switch = $matches2[2];
-				preg_match_all('~\\bcase\\s+([0-9]+)\\s*:~', $switch, $matches2);
-				foreach ($matches2[1] as $val) {
-					unset($source_arg_count[$val]);
+			
+			$lineno = substr_count(substr($file, 0, $val[3][1]), "\n") + 1;
+			$function_body = $val[3][0];
+			
+			// types and optional
+			if (!in_array($function_name, $difficult_params)
+			&& strpos($function_body, 'zend_parse_parameters_ex') === false // indicate difficulty
+			&& preg_match('~.*zend_parse(_method)?_parameters\\([^,]*,\\s*"([^"]*)"~s', $function_body, $matches2) // .* to catch last occurence
+			) {
+				$source_types[$function_name] = array(($matches2[1] ? substr($matches2[2], 1) : $matches2[2]), $filename, $lineno);
+			} elseif (!in_array($function_name, $difficult_arg_count)) {
+			
+				// arguments count
+				$zend_num_args = "ZEND_NUM_ARGS()";
+				if (preg_match('~([a-zA-Z0-9_.]+)\\s*=\\s*ZEND_NUM_ARGS()~', $function_body, $matches2)) { // int argc = ZEND_NUM_ARGS();
+					$zend_num_args = $matches2[1];
 				}
-			} elseif (preg_match_all("~(?:([0-9]+)\\s*($operators)\\s*$zend_num_args|$zend_num_args\\s*($operators)\\s*([0-9]+))(?=[^}]+WRONG_PARAM_COUNT)~", $function_body, $matches2, PREG_SET_ORDER)) { //! should differentiate between || and &&
-				$source_arg_counts[$function_name] = array(array(), $filename, $lineno);
-				$source_arg_count =& $source_arg_counts[$function_name][0];
-				foreach ($matches2 as $val) {
-					$number = $val[1] . $val[4];
-					$operator = strtr($val[2], "><", "<>") . $val[3]; // unify to $zend_num_args $operator $number
-					switch ($operator{0}) {
-					case "=":
-					case "!":
-						if (!$source_arg_count) {
-							$source_arg_count = array_fill(0, $max_args+1, true);
-						}
-						unset($source_arg_count[$number]);
-						break;
-					case "<":
-						for ($i=0; $i < $number; $i++) {
-							$source_arg_count[$i] = true;
-						}
-						break;
-					case ">":
-						for ($i=$number+1; $i <= $max_args; $i++) {
-							$source_arg_count[$i] = true;
-						}
-						break;
+				$zend_num_args = preg_quote($zend_num_args, "~");
+				if (preg_match("~^([ \t]+)switch\\s*\\(\\s*$zend_num_args\\s*\\)(.*)^\\1\\}~msU", $function_body, $matches2) && preg_match('~\\bdefault\\s*:.*WRONG_PARAM_COUNT~s', $matches2[2])) {
+					$source_arg_counts[$function_name] = array(array_fill(0, $max_args+1, true), $filename, $lineno);
+					$source_arg_count =& $source_arg_counts[$function_name][0];
+					$switch = $matches2[2];
+					preg_match_all('~\\bcase\\s+([0-9]+)\\s*:~', $switch, $matches2);
+					foreach ($matches2[1] as $val) {
+						unset($source_arg_count[$val]);
 					}
-					if ($operator == "<=" || $operator == ">=") {
-						$source_arg_count[$number] = true;
+				} elseif (preg_match_all("~(?:([0-9]+)\\s*($operators)\\s*$zend_num_args|$zend_num_args\\s*($operators)\\s*([0-9]+))(?=[^}]+WRONG_PARAM_COUNT)~", $function_body, $matches2, PREG_SET_ORDER)) { //! should differentiate between || and &&
+					$source_arg_counts[$function_name] = array(array(), $filename, $lineno);
+					$source_arg_count =& $source_arg_counts[$function_name][0];
+					foreach ($matches2 as $val) {
+						$number = $val[1] . $val[4];
+						$operator = strtr($val[2], "><", "<>") . $val[3]; // unify to $zend_num_args $operator $number
+						switch ($operator{0}) {
+						case "=":
+						case "!":
+							if (!$source_arg_count) {
+								$source_arg_count = array_fill(0, $max_args+1, true);
+							}
+							unset($source_arg_count[$number]);
+							break;
+						case "<":
+							for ($i=0; $i < $number; $i++) {
+								$source_arg_count[$i] = true;
+							}
+							break;
+						case ">":
+							for ($i=$number+1; $i <= $max_args; $i++) {
+								$source_arg_count[$i] = true;
+							}
+							break;
+						}
+						if ($operator == "<=" || $operator == ">=") {
+							$source_arg_count[$number] = true;
+						}
 					}
 				}
 			}
 		}
 	}
-	preg_match_all('~INIT(?:_OVERLOADED)?_CLASS_ENTRY\\(.*"([^"]+)"\\s*,\\s*([^)]+)~', $file, $matches, PREG_SET_ORDER);
-	foreach ($matches as $val) {
-		if (preg_match('~' . preg_quote($val[2], '~') . '\\[\\](.*)\\}~sU', $file, $matches2)) {
-			preg_match_all('~PHP_FALIAS\\((\\w+)\\s*,\\s*(\\w+)~', $matches2[1], $matches2, PREG_SET_ORDER);
-			foreach ($matches2 as $val2) {
-				$function_name = strtolower($val2[2]);
-				$method_name = strtolower("$val[1]::$val2[1]");
-				if (isset($source_types[$function_name])) {
-					$source_types[$method_name] = $source_types[$function_name];
-				}
-				if ($source_arg_counts[$function_name]) {
-					$source_arg_counts[$method_name] = $source_arg_counts[$function_name];
+	
+	foreach ($files as $filename => $file) {
+		// methods
+		preg_match_all('~INIT(?:_OVERLOADED)?_CLASS_ENTRY\\(.*"([^"]+)"\\s*,\\s*([^)]+)~', $file, $matches, PREG_SET_ORDER);
+		foreach ($matches as $val) {
+			if (preg_match('~' . preg_quote($val[2], '~') . '\\[\\](.*)\\}~sU', $file, $matches2)) {
+				preg_match_all('~PHP_FALIAS\\((\\w+)\\s*,\\s*(\\w+)~', $matches2[1], $matches2, PREG_SET_ORDER);
+				foreach ($matches2 as $val2) {
+					$function_name = strtolower($val2[2]);
+					$method_name = strtolower("$val[1]::$val2[1]");
+					if (isset($source_types[$function_name])) {
+						$source_types[$method_name] = $source_types[$function_name];
+					}
+					if ($source_arg_counts[$function_name]) {
+						$source_arg_counts[$method_name] = $source_arg_counts[$function_name];
+					}
 				}
 			}
 		}
