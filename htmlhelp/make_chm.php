@@ -111,7 +111,7 @@ echo "
 ";
 $counter = 0;
 require_once "filter_files.php";
-echo "> $counter files are converted in previous step.
+echo "\r> $counter files are converted in previous step.
 ";
 
 if ($USE_NOTES) {
