@@ -176,7 +176,7 @@ $source_refs = array(); // array("function_name" => number_ref, ...)
 $source_types = array(); // array("function_name" => array("type_spec", filename, lineno), ...)
 $return_types = array(); // array("function_name" => array("doc_type", filename, lineno), ...)
 $source_arg_counts = array(); // array("function_name" => array(disallowed_count => true, ...), ...)
-//~ foreach (array("$pecl_dir/standard") as $dirname) {
+//~ foreach (array("$phpsrc_dir/ext/standard") as $dirname) {
 foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), glob("$pecl_dir/*", GLOB_ONLYDIR), glob("$phpsrc_dir/sapi/*", GLOB_ONLYDIR)) as $dirname) {
 	if (dirname($dirname) == $pecl_dir && !file_exists("$phpdoc_dir/reference/" . strtolower(basename($dirname)))) {
 		continue; // skip undocumented PECL extensions
@@ -208,7 +208,9 @@ foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), 
 	}
 	
 	foreach ($files as $filename => $file) {
-		$file = preg_replace_callback('~\\b(' . implode('|', array_keys($macros)) . ')\\b(\\(.*\\))?~', 'expand_macros', $file);
+		if ($macros) {
+			$file = preg_replace_callback('~\\b(' . implode('|', array_keys($macros)) . ')\\b(\\(.*\\))?~', 'expand_macros', $file);
+		}
 		
 		// references
 		preg_match_all("~^[ \t]*(?:ZEND|PHP)_FE\\((\\w+)\\s*,\\s*(\\w+)\\s*[,)]~m", $file, $matches, PREG_SET_ORDER);
