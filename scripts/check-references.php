@@ -28,9 +28,10 @@ if (isset($_SERVER["argv"][1])) {
 }
 
 if (!isset($_SERVER["argv"][1]) || !is_dir($phpdoc_dir)) {
-	echo "Purpose: Check parameters (types, optional, reference, count) from PHP sources.\n";
+	echo "Purpose: Check parameters (types, optional, reference, count) and return types.\n";
 	echo "Usage: check-references.php language\n";
 	echo "Notes:\n";
+	echo "- Compares documentation with PHP sources (Zend, extensions, PECL, SAPI).\n";
 	echo "- Functions not found in sources are checked as without references.\n";
 	echo "- Types and optional params are checked only in some functions.\n";
 	exit();
@@ -76,7 +77,7 @@ $number_refs = array(
 
 $valid_types = "int|float|string|bool|resource|array|object|mixed|number";
 $invalid_types = "integer|long|double|boolean|class"; // objects are written as appropriate class name so there is no complete list of valid types
-$retval_mapping = array("TRUE" => "bool", "BOOL" => "bool", "LONG" => "int", "DOUBLE" => "float", "STRING" => "string", "STRINGL" => "string", "ARRAY" => "array", "OBJECT" => "object", "RESOURCE" => "resource"); // FALSE and NULL omitted because they are used for errors
+$retval_mapping = array("TRUE" => "bool", "BOOL" => "bool", "LONG" => "int", "DOUBLE" => "float", "STRING" => "string", "STRINGL" => "string", "ARRAY" => "array", "OBJECT" => "object", "RESOURCE" => "resource", "ZVAL" => "mixed"); // FALSE and NULL omitted because they are used for errors
 $retval_types = implode('|', array_keys($retval_mapping));
 $operators = "!=|<=?|>=?|==";
 $max_args = 12; // maximum number of regular function arguments
@@ -111,6 +112,17 @@ function params_source_to_doc($type_spec)
 	return $return;
 }
 
+// expand macros defined in $GLOBALS['macros'] (callback for preg_replace_callback)
+function expand_macros($matches)
+{
+	$macro = $GLOBALS['macros'][$matches[1]];
+	if ($matches[2]) {
+		$params = explode(",", trim($matches[2], '()'), count($macro[1]));
+		return str_replace($macro[1], $params, $macro[0]);
+	}
+	return $macro[0];
+}
+
 // some parameters should be passed only by reference but they are not forced to
 $wrong_refs = array(
 	"dbplus_curr", "dbplus_first", "dbplus_info", "dbplus_last", "dbplus_next", "dbplus_prev", "dbplus_tremove",
@@ -122,6 +134,7 @@ $wrong_refs = array(
 
 $difficult_retvals = array(
 	"set_error_handler", "set_exception_handler", "highlight_file", "highlight_string", "pg_cancel_query", "pg_connection_busy", "mysqli_query",
+	"mb_send_mail",
 	// better to fix in sources:
 	"debug_print_backtrace", // array instead of void
 	"dbmopen", // int instead of resource
@@ -163,21 +176,40 @@ $source_refs = array(); // array("function_name" => number_ref, ...)
 $source_types = array(); // array("function_name" => array("type_spec", filename, lineno), ...)
 $return_types = array(); // array("function_name" => array("doc_type", filename, lineno), ...)
 $source_arg_counts = array(); // array("function_name" => array(disallowed_count => true, ...), ...)
-//~ foreach (array("$phpsrc_dir/ext/dbx") as $dirname) {
-foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*"), glob("$phpsrc_dir/sapi/*"), glob("$pecl_dir/*")) as $dirname) {
+//~ foreach (array("$pecl_dir/standard") as $dirname) {
+foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), glob("$pecl_dir/*", GLOB_ONLYDIR), glob("$phpsrc_dir/sapi/*", GLOB_ONLYDIR)) as $dirname) {
+	if (dirname($dirname) == $pecl_dir && !file_exists("$phpdoc_dir/reference/" . strtolower(basename($dirname)))) {
+		continue; // skip undocumented PECL extensions
+	}
 	$files = array();
 	$aliases = array(); // php_function => sources_function
-	foreach ((array) glob("$dirname/*.c*") as $filename) {
-		$files[$filename] = file_get_contents($filename);
+	$macros = array(); // MACRO => array(body, array(params))
+	$largedir = ($dirname == $zend_dir || $dirname == "$phpsrc_dir/ext/standard");
+	foreach (array_merge((array) glob("$dirname/*.c*"), (array) glob("$dirname/*.h")) as $filename) {
+		$file = file_get_contents($filename);
+		// macros
+		if (!$largedir) {
+			preg_match_all("~^#define[ \t]+(\\w+)(\\([^)]+\\))?([ \t]+.+[^\\\\])\$~msU", $file, $matches, PREG_SET_ORDER);
+			foreach ($matches as $val) {
+				$params = preg_split('~,\\s*~', trim($val[2], '()'));
+				$macros[$val[1]] = array(trim(str_replace(array("\r", "\\\n"), "", $val[3])), $params);
+			}
+		}
 		
-		// named functions
-		preg_match_all('~(?:PHP|ZEND)_NAMED_FE\\((\\w*)\\s*,\\s*(\\w*)~', $files[$filename], $matches, PREG_SET_ORDER);
-		foreach ($matches as $val) {
-			$aliases[$val[2]] = $val[1];
+		if (substr($filename, -2) != ".h") {
+			$files[$filename] = $file;
+			
+			// named functions
+			preg_match_all('~(?:PHP|ZEND)_NAMED_FE\\((\\w*)\\s*,\\s*(\\w*)~', $file, $matches, PREG_SET_ORDER);
+			foreach ($matches as $val) {
+				$aliases[$val[2]] = $val[1];
+			}
 		}
 	}
 	
 	foreach ($files as $filename => $file) {
+		$file = preg_replace_callback('~\\b(' . implode('|', array_keys($macros)) . ')\\b(\\(.*\\))?~', 'expand_macros', $file);
+		
 		// references
 		preg_match_all("~^[ \t]*(?:ZEND|PHP)_FE\\((\\w+)\\s*,\\s*(\\w+)\\s*[,)]~m", $file, $matches, PREG_SET_ORDER);
 		preg_match_all("~^[ \t]*(?:ZEND|PHP)_FALIAS\\((\\w+)\\s*,[^,]+,\\s*(\\w+)\\s*[,)]~m", $file, $matches2, PREG_SET_ORDER);
@@ -220,12 +252,14 @@ foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*"), glob("$phpsrc_
 						}
 					}
 					$return_types[$function_name] = array($type, $filename, $lineno);
+				} elseif (!$largedir && !preg_match('~INTERNAL_FUNCTION_PARAM_PASSTHRU|return_value~', $function_body)) {
+					$return_types[$function_name] = array("void", $filename, $lineno);
 				}
 			}
 			
 			// other function call
-			if (preg_match('~(\\w+)\\(INTERNAL_FUNCTION_PARAM_PASSTHRU~', $val[3][0], $matches2)
-			&& !preg_match('~ZEND_NUM_ARGS\\(\\)~', $val[3][0]) && $matches2[1] != "php_exec_ex"
+			if (preg_match('~(\\w+)\\(INTERNAL_FUNCTION_PARAM_PASSTHRU~', $function_body, $matches2)
+			&& !preg_match('~ZEND_NUM_ARGS\\(\\)~', $function_body) && $matches2[1] != "php_exec_ex"
 			&& preg_match('~' . preg_quote($matches2[1], '~') . '\\(INTERNAL_FUNCTION_PARAMETERS(.*)^\\}~msU', $file, $matches2, PREG_OFFSET_CAPTURE)
 			&& !preg_match('~^.*\\b(?:expected_args|behavior|st)\\b~', $matches2[1][0])
 			) {
@@ -326,7 +360,6 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 				echo "Wrong return type in $filename on line $lineno.\n";
 				echo ": (" . $return_types[$function_name][0] . ") in " . $return_types[$function_name][1] . " on line " . $return_types[$function_name][2] . ".\n";
 			}
-			unset($return_types[$function_name]);
 		} elseif (preg_match("~<type>(callback|$invalid_types)</type>~", $return_type)) {
 			echo "Wrong return type in $filename on line $lineno.\n";
 		}
