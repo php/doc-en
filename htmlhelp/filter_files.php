@@ -9,6 +9,10 @@
    be converted to XSL templates, but not all.
 */
 
+if (!isset($HTML_SRC)) {
+    die("This script is called from make_chm.php to filter output from XSL DocBook templates");
+}
+
 $counter = filterFiles();
 
 // Filter XSL generated files through some refine filters
