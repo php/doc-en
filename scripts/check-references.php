@@ -76,6 +76,8 @@ $number_refs = array(
 
 $valid_types = "int|float|string|bool|resource|array|object|mixed|number";
 $invalid_types = "integer|long|double|boolean|class"; // objects are written as appropriate class name so there is no complete list of valid types
+$retval_mapping = array("TRUE" => "bool", "BOOL" => "bool", "LONG" => "int", "DOUBLE" => "float", "STRING" => "string", "STRINGL" => "string", "ARRAY" => "array", "OBJECT" => "object", "RESOURCE" => "resource"); // FALSE and NULL omitted because they are used for errors
+$retval_types = implode('|', array_keys($retval_mapping));
 $operators = "!=|<=?|>=?|==";
 $max_args = 12; // maximum number of regular function arguments
 
@@ -118,6 +120,17 @@ $wrong_refs = array(
 	"soapclient::__soapcall",
 );
 
+$difficult_retvals = array(
+	"set_error_handler", "set_exception_handler", "highlight_file", "highlight_string", "pg_cancel_query", "pg_connection_busy", "mysqli_query",
+	// better to fix in sources:
+	"debug_print_backtrace", // array instead of void
+	"dbmopen", // int instead of resource
+	"pg_lo_open", // int instead of resource
+	"ircg_pconnect", // int instead of resource
+	"notes_search", // RETURN_LONG commented out
+	"exif_tagname", // RETURN_BOOL(FALSE) instead of RETURN_FALSE
+);
+
 $difficult_params = array(
 	"ibase_blob_import", "ibase_execute",
 	"imagefilter",
@@ -132,8 +145,9 @@ $difficult_params = array(
 	"snmp_set_quick_print",
 	"apd_echo",
 	"easter_date",
-	"mysql_pconnect",
+	"tidy_repair_string",
 );
+
 $difficult_arg_count = array(
 	"getdate", "min", "max", "implode", "strtok", "sybase_fetch_object",
 	"cpdf_text", "pdf_get_parameter", "pg_fetch_assoc", "odbc_exec", "odbc_result_all", "yaz_wait",
@@ -147,7 +161,9 @@ $difficult_arg_count = array(
 // read referenced parameters from sources
 $source_refs = array(); // array("function_name" => number_ref, ...)
 $source_types = array(); // array("function_name" => array("type_spec", filename, lineno), ...)
+$return_types = array(); // array("function_name" => array("doc_type", filename, lineno), ...)
 $source_arg_counts = array(); // array("function_name" => array(disallowed_count => true, ...), ...)
+//~ foreach (array("$phpsrc_dir/ext/dbx") as $dirname) {
 foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*"), glob("$phpsrc_dir/sapi/*"), glob("$pecl_dir/*")) as $dirname) {
 	$files = array();
 	$aliases = array(); // php_function => sources_function
@@ -155,7 +171,7 @@ foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*"), glob("$phpsrc_
 		$files[$filename] = file_get_contents($filename);
 		
 		// named functions
-		preg_match_all('~PHP_NAMED_FE\\((\\w*)\\s*,\\s*(\\w*)~', $files[$filename], $matches, PREG_SET_ORDER);
+		preg_match_all('~(?:PHP|ZEND)_NAMED_FE\\((\\w*)\\s*,\\s*(\\w*)~', $files[$filename], $matches, PREG_SET_ORDER);
 		foreach ($matches as $val) {
 			$aliases[$val[2]] = $val[1];
 		}
@@ -178,16 +194,44 @@ foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*"), glob("$phpsrc_
 		preg_match_all('~^(?:ZEND|PHP)(_NAMED)?_(?:FUNCTION|METHOD)\\(([^)]+)\\)(.*)^\\}~msU', $file, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE); // }}} is not in all sources so ^} is used instead
 		foreach ($matches as $val) {
 			$function_name = strtolower(trim(preg_replace('~\\s*,\\s*~', '::', ($val[1][0] ? $aliases[$val[2][0]] : $val[2][0]))));
+			$function_body = $val[3][0];
+			$lineno = substr_count(substr($file, 0, $val[3][1]), "\n") + 1;
+			
+			// return type
+			if (!in_array($function_name, $difficult_retvals)) {
+				preg_match_all("~\\b(?:RETURN|RETVAL|(?:return_value->type|Z_TYPE_P\\(return_value\\))\\s*=\\s*IS)_($retval_types)|(?:ZVAL_|convert_to_)((?i)$retval_types)(?:_ex)?\\(return_value~", $function_body, $types, PREG_SET_ORDER);
+				if (preg_match_all('~()(array|object)(?:_and_properties)?_init\\(return_value~', $function_body, $matches, PREG_SET_ORDER)) {
+					$types = array_merge($types, $matches);
+				}
+				if (preg_match('~(?:ZEND_REGISTER_RESOURCE\\(|php_stream_to_zval.*)return_value~', $function_body)) {
+					$types[] = array("", "RESOURCE", "");
+				}
+				if ($types) {
+					$type = $retval_mapping[$types[0][1] . strtoupper($types[0][2])];
+					for ($i=1; $i < count($types); $i++) {
+						$type1 = $retval_mapping[$types[$i][1] . strtoupper($types[$i][2])];
+						if ($type1 != $type) {
+							if (($type1 == "int" || $type1 == "float") && ($type == "int" || $type == "float" || $type == "number")) {
+								$type = "number";
+							} else {
+								$type = "mixed";
+								break;
+							}
+						}
+					}
+					$return_types[$function_name] = array($type, $filename, $lineno);
+				}
+			}
+			
+			// other function call
 			if (preg_match('~(\\w+)\\(INTERNAL_FUNCTION_PARAM_PASSTHRU~', $val[3][0], $matches2)
 			&& !preg_match('~ZEND_NUM_ARGS\\(\\)~', $val[3][0]) && $matches2[1] != "php_exec_ex"
 			&& preg_match('~' . preg_quote($matches2[1], '~') . '\\(INTERNAL_FUNCTION_PARAMETERS(.*)^\\}~msU', $file, $matches2, PREG_OFFSET_CAPTURE)
 			&& !preg_match('~^.*\\b(?:expected_args|behavior|st)\\b~', $matches2[1][0])
 			) {
-				$val[3] = $matches2[1];
+				$function_body = $matches2[1][0];
+				$lineno = substr_count(substr($file, 0, $matches2[1][1]), "\n") + 1;
 			}
-			
-			$lineno = substr_count(substr($file, 0, $val[3][1]), "\n") + 1;
-			$function_body = $val[3][0];
 			
 			// types and optional
 			if (!in_array($function_name, $difficult_params)
@@ -254,11 +298,10 @@ foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*"), glob("$phpsrc_
 				foreach ($matches2 as $val2) {
 					$function_name = strtolower($val2[2]);
 					$method_name = strtolower("$val[1]::$val2[1]");
-					if (isset($source_types[$function_name])) {
-						$source_types[$method_name] = $source_types[$function_name];
-					}
-					if ($source_arg_counts[$function_name]) {
-						$source_arg_counts[$method_name] = $source_arg_counts[$function_name];
+					foreach (array("source_types", "source_arg_counts", "return_types") as $var) {
+						if (isset($GLOBALS[$var][$function_name])) {
+							$GLOBALS[$var][$method_name] = $GLOBALS[$var][$function_name];
+						}
 					}
 				}
 			}
@@ -268,7 +311,7 @@ foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*"), glob("$phpsrc_
 echo "Sources were read.\n";
 
 // compare with documentation
-$counts = array("refs" => 0, "types" => 0, "arg_counts" => 0);
+$counts = array("refs" => 0, "types" => 0, "arg_counts" => 0, "return" => 0);
 foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 	if (preg_match('~^(.*(?:(\\w+)</classname></ooclass>\\s*)?<methodsynopsis>(.*))<methodname>([^<]+)<(.*)</methodsynopsis>~sU', file_get_contents($filename), $matches)) {
 		$lineno = substr_count($matches[1], "\n") + 1;
@@ -277,7 +320,14 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 		$methodsynopsis = $matches[5];
 		
 		// return type
-		if (preg_match("~<type>(callback|$invalid_types)</type>~", $return_type)) {
+		if (isset($return_types[$function_name])) {
+			$counts["return"]++;
+			if (!preg_match("~<type>(" . $return_types[$function_name][0] . ")</type>~", $return_type) && ($return_types[$function_name][0] != "object" || preg_match("~<type>($valid_types|$invalid_types)</type>~", $return_type))) {
+				echo "Wrong return type in $filename on line $lineno.\n";
+				echo ": (" . $return_types[$function_name][0] . ") in " . $return_types[$function_name][1] . " on line " . $return_types[$function_name][2] . ".\n";
+			}
+			unset($return_types[$function_name]);
+		} elseif (preg_match("~<type>(callback|$invalid_types)</type>~", $return_type)) {
 			echo "Wrong return type in $filename on line $lineno.\n";
 		}
 		
@@ -366,4 +416,4 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 echo "$counts[refs]/". count($source_refs) ." references checked.\n";
 echo "$counts[types]/". count($source_types) ." types checked.\n";
 echo "$counts[arg_counts]/". count($source_arg_counts) ." arg counts checked.\n";
-?>
+echo "$counts[return]/". count($return_types) ." return types checked.\n";
