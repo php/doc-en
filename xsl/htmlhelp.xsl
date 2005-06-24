@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.20 2005-06-21 12:33:25 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.21 2005-06-24 09:22:40 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -25,6 +25,7 @@
   - DOCTYPE in output HTML defines DOM standard for browser to handle JS correctly
   - strip <link> tags from HTML headers
   - add javascript handlers in body attributes
+  - add root DHTML div with id ="PageContent" for skinning purposes
   - header off, footer on (also custom with some js handlers and custom ids)
 
   - turn on function index page building (in appendixes) and turn off ToC for it
@@ -384,7 +385,53 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
 
 <xsl:param name="label.from.part" select="1"/>
 
-<!-- *extra* slim HTML head from older templates to strip <link> tags -->
+<!-- custom HTML xCHM layout described in phpdoc/en/chmonly/skins.xml or 
+     http://wiki.phpdoc.info/xCHM -->
+<!-- Add "pageContent" div for skinning support -->
+<xsl:template name="chunk-element-content">
+  <xsl:param name="prev"/>
+  <xsl:param name="next"/>
+  <xsl:param name="nav.context"/>
+  <xsl:param name="content">
+    <xsl:apply-imports/>
+  </xsl:param>
+
+  <html>
+    <xsl:call-template name="html.head">
+      <xsl:with-param name="prev" select="$prev"/>
+      <xsl:with-param name="next" select="$next"/>
+    </xsl:call-template>
+
+    <body>
+      <xsl:call-template name="body.attributes"/>
+      <div id="pageContent" style="display:none;">
+            <xsl:call-template name="user.header.navigation"/>
+
+            <xsl:call-template name="header.navigation">
+      	<xsl:with-param name="prev" select="$prev"/>
+      	<xsl:with-param name="next" select="$next"/>
+      	<xsl:with-param name="nav.context" select="$nav.context"/>
+            </xsl:call-template>
+
+            <xsl:call-template name="user.header.content"/>
+
+            <xsl:copy-of select="$content"/>
+
+            <xsl:call-template name="user.footer.content"/>
+
+            <xsl:call-template name="footer.navigation">
+      	<xsl:with-param name="prev" select="$prev"/>
+      	<xsl:with-param name="next" select="$next"/>
+      	<xsl:with-param name="nav.context" select="$nav.context"/>
+            </xsl:call-template>
+
+            <xsl:call-template name="user.footer.navigation"/>
+      </div>
+    </body>
+  </html>
+</xsl:template>
+
+<!-- *extra* slim HTML head to strip <link> tags -->
 <xsl:template name="html.head">
   <head>
     <xsl:call-template name="system.head.content"/>

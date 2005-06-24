@@ -118,93 +118,69 @@ function refineFile($filename)
     );
     
     //------------------------------------------------------------------
-    // Add divisions for skin support
+    // Additional divisions for skin support
 
-    // Make the document invisible by default, adding a new first div
-    // with id="pageContent" and opening div with id="pageHeaders"
-    $bodystart_regex = '!(<div class="(\w+)"( lang=\"\w+\")?>)!Us';
-    if (!preg_match($bodystart_regex, $content)) {
-        echo "Can't add first div. No match in $filename\n";
-
-    } else {
-        $content = preg_replace(
-            $bodystart_regex,
-            '<div id="pageContent" style="display:none;">\1<div id="pageHeaders">',
-            $content,
-            1
-        );
+    // Adding div id="pageHeaders" instead of titlepage div
+    $content = str_replace('<div class="titlepage">', '<div id="pageHeaders">', $content);
     
-        // Put there the end of this pageContent
-        $content = str_replace(
-            '</body></html>',
-            '</div></body></html>',
-            $content
-        );
-    }
-    
-    // For headers we have several possibilities to close div id="pageHeaders"
+    // For headers we have several possibilities how to close div id="pageHeaders"
     // and open div with id="pageText"
     if (strpos($content, '<div class="refnamediv">') !== FALSE) {
         
         // A function page
-        if (!strpos($content, "refsynopsisdiv")) {
-            $content = str_replace(
-                '</h2></div><div class="refsect1"',
-                '</h2></div></div><div id="pageText"><div class="refsect1"',
-                $content
-            );
-        }
         
-        // The COM or VARIANT classes page (which contain refsynopsisdiv)
-        else {
-            $content = str_replace(
-                '<div class="refsynopsisdiv"',
-                '</div><div id="pageText"><div class="refsynopsisdiv"',
-                $content
-            );
-        }
-        
+        // extend pageHeaders div (former titlepage) to cover refnamediv with funcAvail, 
+        // funcUsage and funcPurpose spans
+        $content = str_replace('</h1></div><div class="refnamediv">', '</h1>', $content);
+
+        // insert pageText div before first text division like refsect1, sect1 and so on
+        // i.e. just after former titlepage end
+        $content = preg_replace(
+            '!(</h2></div>)(<div class="([^"]+)")!i',
+            '\1<div id="pageText">\2',
+            $content,
+            1
+        );
     }
 
     // The index page
     elseif ($filename == $INDEX_FILE)  {
         
-        // Delete titlepage div and
-        // add pageHeader end and pageText start
+        // Need to close one more div on this page before adding pageHeader end and pageText start
         $content = str_replace(
-            array("<div class=\"titlepage\">", "<hr></div>"),
-            array("", "<hr>"),
+            "</h1></div>",
+            '</h1></div></div></div><div id="pageText"><div>',
             $content
         );
-        $content = preg_replace(
-            '!</h1></div><div>!',
-            '</h1></div></div><div id="pageText"><div>',
-            $content
-        );
+
+        $content = str_replace("<hr></div>","</div><hr>", $content);
     }
     
     // Normal page
     else {
         
-        $headend_regex = '!</h1>((</div>)+)!';
-        if (!preg_match($headend_regex, $content)) {
-            echo "Impossible to close pageHeaders div. No match in $filename\n";
+        // Remove empty wrapping divs for pageHeaders
+        $content = preg_replace(
+            '!<div id="pageHeaders">((<div>)+)(<h1.+?</h1>)((</div>)+)!is',
+            '<div id="pageHeaders">\3</div>',
+            $content,
+            1
+        );
 
-        } else {
-            $content = preg_replace(
-                $headend_regex,
-                '</h1>\1</div><div id="pageText">',
-                $content
-            );
-        }
-
+        // Insert pageText like in function page
+        $content = preg_replace(
+            '!(</h1></div>)(<div class="([^"]+)"|<p>)!is',
+            '\1<div id="pageText">\2',
+            $content,
+            1
+        );
     }
 
-    // End that pageText div before the user notes
-    $content = str_replace(
-        '<a id="user_notes">',
-        '</div><a id="user_notes">',
-        $content
+    // Instead of closing pageText div right before div with id="pageNotes" we delete start
+    // tag of top level div with class="refentry", "sect1" or any other chunkable class name.
+    // This div ends just where we need our pageText to end and is not overlapped by pageHeaders
+    $content = preg_replace(
+        '!<div class="[^"]+" lang="[^"]+">!i', "", $content, 1
     );
     
     // If this is the index file, correct it
@@ -263,7 +239,7 @@ function newIndex ($content)
     
     // Get contents we need to build the _index.html file
     preg_match("!^(.+)<hr>!s", $content, $_index1);
-    preg_match("!(</div></div><a id=\"user_notes\">.+</html>)!s", $content, $_index2);
+    preg_match("!</div></div>(<a id=\"user_notes\">.+</html>)!s", $content, $_index2);
     
     // Write out the two components to form a complete file
     $fp = fopen("$HTML_TARGET/_index.html", "w");
