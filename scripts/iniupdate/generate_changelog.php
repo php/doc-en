@@ -105,7 +105,6 @@ function generate_changelog($array) {
 }
 
 
-$error = '';
 
 if (!$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {
     die("Couldn't open the DB: $error");

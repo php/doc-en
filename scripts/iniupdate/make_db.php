@@ -17,7 +17,6 @@
   +----------------------------------------------------------------------+
 */
 
-$error = '';
 $db_open = isset($idx) ? true : false;
 
 if (!$db_open && !$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {

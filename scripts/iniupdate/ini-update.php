@@ -27,61 +27,7 @@ $phpdoc_dir  = '../..';            //phpdoc path
 
 /******* END of configurations *****/
 
-
-/* Search for INI entrys and C macros in php-src/pecl directory */
-
-function recurse($dir) {
-    global $array, $replace;
-
-    if (!$dh = opendir($dir)) {
-        die ("couldn't open the specified dir ($dir)");
-    }
-
-    while (($file = readdir($dh)) !== false) {
-
-        if($file == '.' || $file == '..') {
-            continue;
-        }
-
-        $path = $dir . '/' .$file;
-
-        if(is_dir($path)) {
-            recurse($path);
-        } else {
-            $file = file_get_contents($path);
-
-            /* delete comments */
-            $file = preg_replace('@(//.*$)|(/\*.*\*/)@SmsU', '', $file);
-
-            /* The MAGIC Regexp :) */
-            if(preg_match_all('/(?:PHP|ZEND)_INI_(?:ENTRY(?:_EX)?|BOOLEAN)\s*\(\s*"([^"]+)"\s*,((?:".*"|[^,])+)\s*,\s*([^,]+)/S', $file, $matches)) {
-
-                $count = count($matches[0]);
-                for($i=0;$i<$count;$i++) {
-
-                    $default = htmlspecialchars(trim($matches[2][$i]), ENT_NOQUOTES);
-
-                    $permissions = preg_replace(array('/\s+/', '/ZEND/'), array('', 'PHP'), $matches[3][$i]);
-                    $permissions =  ($permissions == 'PHP_INI_PERDIR|PHP_INI_SYSTEM' || $permissions == 'PHP_INI_SYSTEM|PHP_INI_PERDIR') ? 'PHP_INI_PERDIR' : $permissions;
-
-                    $array[] = $matches[1][$i] . '-!!-' . $default . '-!!-' . $permissions;
-                }
-            } //end of the magic regex
-
-            /* search for C macros */
-            if(preg_match_all('/#\s*define\s+(\S{5,})[ \t]+(.+)/S', $file, $matches)) {
-                $count = count($matches[0]);
-                for($i=0;$i<$count;$i++) {
-                    $replace[$matches[1][$i]] = rtrim($matches[2][$i]);
-                }
-            } // end of macros
-
-        } //!is_dir()
-    } //while() loop
-
-    closedir($dh);
-}
-
+require './ini_search_lib.php';
 
 
 /* Fix ini.xml files */
@@ -138,13 +84,11 @@ function fix_ini_xml($filename) {
 
 $array = array();
 $replace = array();
+recurse(array($php_src_dir, $pecl_dir), true);
 
-recurse($php_src_dir);
-recurse($pecl_dir);
-
-natcasesort($array);
 $string = '';
 
+echo 'Found ' . count($array) . " entries\n";
 
 // get the changelog info
 $included = true;
@@ -175,23 +119,19 @@ foreach ($ini_files as $filename) {
 }
 
 /* Generate the XML code */
-foreach($array as $key => $value) {
-    $arr   = explode('-!!-', $value);
-    $entry = $arr[0];
+foreach($array as $entry => $arr) {
 
-    if(isset($info[$entry])) {
-        continue;
-    }
+    $oldentry = $entry;
 
     /* link entries */
     if (isset($links[$entry])) {
         $entry = '<link linkend="' . $links[$entry] . '">' . $entry . '</link>';
-        unset($link_files[$arr[0]]);
+        unset($link_files[$oldentry]);
     }
 
 
     /* replace macros and make the $default var */
-    $new = $arr[1];
+    $new = $arr[0];
 
     do {
         $old = $new;
@@ -215,19 +155,19 @@ foreach($array as $key => $value) {
 
     /* end of $default stuff */
 
-    $permissions = isset($special[$arr[0]]) ? '&php.ini; only' : $arr[2];
+    $permissions = isset($special[$oldentry]) ? '&php.ini; only' : $arr[1];
 
 
-    $info[$arr[0]]['default']     = $default;
-    $info[$arr[0]]['permissions'] = $permissions;
-    $info[$arr[0]]['changelog']   = isset($changelog[$arr[0]]) ? $changelog[$arr[0]] : '';
+    $info[$oldentry]['default']     = $default;
+    $info[$oldentry]['permissions'] = $permissions;
+    $info[$oldentry]['changelog']   = isset($changelog[$oldentry]) ? $changelog[$oldentry] : '';
 
 
     $string .= '      <row>' . PHP_EOL.
                "       <entry>$entry</entry>" . PHP_EOL.
                "       <entry>$default</entry>" . PHP_EOL.
                "       <entry>$permissions</entry>" . PHP_EOL.
-               "       <entry>{$info[$arr[0]]['changelog']}</entry>" . PHP_EOL.
+               "       <entry>{$info[$oldentry]['changelog']}</entry>" . PHP_EOL.
                '      </row>'.PHP_EOL;
 }
 

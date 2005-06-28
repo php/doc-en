@@ -23,20 +23,13 @@ function insert_in_db($tag) {
     global $array, $idx;
 
     $sql = '';
-    $sanity = array();
 
-    foreach ($array as $entry) {
+    foreach ($array as $key => $data) {
 
-        if (isset($sanity[$entry[0]])) {
-            continue;
-        }
-
-        $sanity[$entry[0]] = 1;
-
-        if ($a= sqlite_single_query($idx, "SELECT name FROM changelog WHERE name='{$entry[0]}'")) {
-            $sql .= "UPDATE changelog SET $tag='{$entry[1]}' WHERE name='{$entry[0]}';";
+        if (sqlite_single_query($idx, "SELECT name FROM changelog WHERE name='$key'")) {
+            $sql .= "UPDATE changelog SET $tag='{$data[1]}' WHERE name='$key';";
         } else {
-            $sql .= "INSERT INTO changelog (name, $tag) VALUES ('{$entry[0]}', '{$entry[1]}');";
+            $sql .= "INSERT INTO changelog (name, $tag) VALUES ('$key', '{$data[1]}');";
         }
 
     }
@@ -46,7 +39,6 @@ function insert_in_db($tag) {
 
 
 
-$error = '';
 $db_open = isset($idx) ? true : false;
 
 if (!$db_open && !$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {

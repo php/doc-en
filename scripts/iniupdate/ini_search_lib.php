@@ -17,8 +17,33 @@
   +----------------------------------------------------------------------+
 */
 
-function recurse($dir) {
+function recurse($dirs, $search_macros = false) {
     global $array;
+
+    $cfg_get = array();
+
+    if (is_array($dirs)) {
+        foreach($dirs as $dir)
+            recurse_aux($dir, $search_macros);
+    } else {
+        recurse_aux($dirs, $search_macros);
+    }
+
+    /* insert only if the key doesn't exist, as will probably have
+       more accurant data in $array than here */
+    foreach($cfg_get as $entry) {
+        if (!isset($array[$entry[0]]))
+            $array[$entry[0]] = array($entry[1], 'PHP_INI_ALL');
+
+    }
+
+    uksort($array, 'strnatcasecmp');
+}
+
+
+// recurse through the dirs and do the 'dirty work'
+function recurse_aux($dir, $search_macros) {
+    global $array, $replace, $cfg_get;
 
     if (!$dh = opendir($dir)) {
         die ("couldn't open the specified dir ($dir)");
@@ -51,9 +76,39 @@ function recurse($dir) {
                     $permissions = preg_replace(array('/\s+/', '/ZEND/'), array('', 'PHP'), $matches[3][$i]);
                     $permissions =  ($permissions == 'PHP_INI_PERDIR|PHP_INI_SYSTEM' || $permissions == 'PHP_INI_SYSTEM|PHP_INI_PERDIR') ? 'PHP_INI_PERDIR' : $permissions;
 
-                    $array[] = array($matches[1][$i], $permissions);
+                    $array[$matches[1][$i]] = array($default, $permissions);
                 }
+
             } //end of the magic regex
+
+
+            // find the nasty cfg_get_*() stuff
+            if(preg_match_all('/cfg_get_([^(]+)\s*\(\s*"([^"]+)",\s*&([^\s=]+)\s*\)/S', $file, $match, PREG_SET_ORDER)) {
+
+                foreach($match as $arr) {
+                    preg_match('/(?:(FAILURE|SUCCESS)\s*==\s*)?'.preg_quote($arr[0]).'(?:\s*==\s*(FAILURE|SUCCESS))?(?:(?:.|[\r\n]){1,30}'.preg_quote($arr[3]).'\s*=\s*(.+);)?/', $file, $m);
+
+                    if ($m[1] == 'FAILURE' || $m[2] == 'FAILURE') {
+                        $cfg_get[] = array($arr[2], $arr[1] == 'string' ? $m[3] : '"'.$m[3].'"');
+
+                    } else { //$m[1] == 'SUCCESS'
+                        if ($arr[1] == 'string')
+                            $cfg_get[] = array($arr[2], '""');
+                        else
+                            $cfg_get[] = array($arr[2], '"0"');
+                    }
+                } //foreach cfg_get_*()
+            } //end of nasty cfg_get_*() regex
+
+
+            /* search for C macros */
+            if($search_macros && preg_match_all('/#\s*define\s+(\S{5,})[ \t]+(.+)/S', $file, $matches)) {
+                $count = count($matches[0]);
+                for($i=0;$i<$count;$i++) {
+                    $replace[$matches[1][$i]] = rtrim($matches[2][$i]);
+                }
+            } // end of macros
+
 
         } //!is_dir()
     } //while() loop

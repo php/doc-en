@@ -17,15 +17,15 @@
   +----------------------------------------------------------------------+
 */
 
-$error = '';
 copy('ini_changelog.sqlite', 'backup.sqlite');
 
 if (!$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {
-    die("Couldn't create the DB: $error");
+    die("Couldn't open the DB: $error");
 }
 
 $olddata = sqlite_fetch_all(sqlite_query($idx, 'SELECT * FROM changelog'), SQLITE_ASSOC);
-$columns = sqlite_fetch_array(sqlite_query($idx, 'SELECT * FROM changelog LIMIT 1'), SQLITE_ASSOC);
+$columns = array_keys($olddata[0]);
+$columns_str = implode(',', $columns);
 
 sqlite_query($idx, 'DROP TABLE changelog; VACUUM;');
 
@@ -35,14 +35,7 @@ include './make_db.php';
 $sql = '';
 
 foreach ($olddata as $row) {
-    $keys = '';
-
-    foreach ($row as $key => $val) {
-        $keys .= ",$key";
-    }
-    $keys = substr($keys, 1);
-
-    $sql .= "INSERT INTO changelog ($keys) VALUES (\"" . implode('", "', $row) . '");';
+    $sql .= "INSERT INTO changelog ($columns_str) VALUES (\"" . implode('", "', $row) . '");';
 }
 
 sqlite_query($idx, $sql);
@@ -55,6 +48,8 @@ foreach($tmp as $tag) {
         $tags[] = $tag;
     }
 }
+
+unset($tmp, $columns, $sql);
 
 // finally recurse through the new PHP versions
 include './insert_db.php';
