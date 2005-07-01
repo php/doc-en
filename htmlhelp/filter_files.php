@@ -121,7 +121,7 @@ function refineFile($filename)
     // Additional divisions for skin support
 
     // Adding div id="pageHeaders" instead of titlepage div
-    $content = str_replace('<div class="titlepage">', '<div id="pageHeaders">', $content);
+    $content = preg_replace('|<div class="titlepage">|', '<div id="pageHeaders">', $content, 1);
     
     // For headers we have several possibilities how to close div id="pageHeaders"
     // and open div with id="pageText"
