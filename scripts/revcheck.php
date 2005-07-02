@@ -1062,7 +1062,7 @@ if ($count > 0) {
             $prev_dir = $new_dir;
         }
 
-        print "<tr class=wip><td><a href=\"http://cvs.php.net/co.php/phpdoc/en/$file\">$short_file</a></td>" .
+        print "<tr class=wip><td>$short_file</td>" .
               "<td class=r>$info[0]</td></tr>\n";
     }
     print "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
