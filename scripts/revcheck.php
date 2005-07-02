@@ -373,6 +373,85 @@ function get_dir_status($dir)
 
 } // get_dir_status() function end
 
+
+// Check for files removed in the EN tree, but still living in the translation
+function get_old_files($dir)
+{
+
+    global $DOCDIR, $LANG;
+
+    // Collect files and diretcories in these arrays
+    $directories = array();
+    $files       = array();
+
+    $special_files = array(
+      // french
+      'LISEZ_MOI.txt',
+      'TRADUCTIONS.txt',
+      'Translators',
+      'translation.xml'
+
+      // todo: add all missing languages
+    );
+
+    // Open the directory
+    $handle = @opendir($dir);
+
+    // Walk through all names in the directory
+    while ($file = @readdir($handle)) {
+
+      // If we found a file with one or two point as a name,
+      // or a CVS directory, skip the file
+      if (preg_match("/^\.{1,2}/", $file) || $file == 'CVS')
+        continue;
+
+      // skip this files
+      if (in_array($file, $special_files)) {
+        continue;
+      }
+
+      // Collect files and directories
+      if (is_dir($dir.$file)) {
+        $directories[] = $file;
+      } else {
+        $files[] = $file;
+      }
+
+    }
+
+    // Close the directory
+    @closedir($handle);
+
+    // Sort files and directories
+    sort($directories);
+    sort($files);
+
+    // Go through files first
+    $old_files_status = array();
+    foreach ($files as $file) {
+
+      $en_dir = preg_replace("'^".$DOCDIR.$LANG."/'", $DOCDIR."en/", $dir);
+
+      if (!@file_exists($en_dir.$file) ) {
+        $old_files_status[$dir.$file] = array(0=>intval(filesize($dir.$file)/1024));
+      }
+
+    }
+
+    // Then go through subdirectories, merging all the info
+    // coming from subdirs to one array
+    foreach ($directories as $file) {
+        $old_files_status = array_merge(
+            $old_files_status, 
+            get_old_files($dir.$file.'/')
+        );
+    }
+
+    return $old_files_status;
+
+} // get_old_files() function end
+
+
 // =========================================================================
 // Functions to read in the translation.xml file and process contents
 // =========================================================================
@@ -515,6 +594,8 @@ foreach ($translation["files"] as $num => $fileinfo) {
 // Get all files status
 $files_status = get_dir_status($DOCDIR."en/");
 
+// Get all old files in <lang> directory
+$old_files = get_old_files($DOCDIR.$LANG."/");
 
 $navbar = "<p class=c><a href=\"#intro\">Introduction</a> | " .
           "<a href=\"#translators\">Translators</a> | " .
@@ -523,7 +604,8 @@ $navbar = "<p class=c><a href=\"#intro\">Introduction</a> | " .
 if (count($translation["files"]) != 0)
 	$navbar .= "<a href=\"#wip\">Work in progress</a> | ";
 $navbar .= "<a href=\"#misstags\">Missing revision numbers</a> | " .
-           "<a href=\"#missfiles\">Untranslated files</a></p>\n";
+           "<a href=\"#missfiles\">Untranslated files</a> | " .
+           "<a href=\"#oldfiles\">Old files</a></p>\n";
 
 
 // Figure out generation date
@@ -954,6 +1036,42 @@ if ($count > 0) {
     print "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
 
 }
+
+// Files not in EN tree
+$count = count($old_files);
+if ($count > 0) {
+    print "<a name=\"oldfiles\"></a>" .
+          "<table width=\"400\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n" .
+          "<tr class=blue><th><a name=\"avail\" class=\"ref\">" .
+          " Not in EN Tree</a> ($count files):</th><th>kB</th></tr>\n";
+
+    foreach($old_files as $file => $info) {
+        // Shorten the filename (we have directory headers)
+        $short_file = basename($file);
+
+        // Guess the new directory from the full name of the file
+        $new_dir = dirname($file);
+    
+        // If this is a new directory, put out dir headline
+        if ($new_dir != $prev_dir) {
+        
+            // Print out directory header if not "."
+            print "<tr class=blue><th colspan=2>$new_dir</th></tr>\n";
+        
+            // Store the new actual directory
+            $prev_dir = $new_dir;
+        }
+
+        print "<tr class=wip><td><a href=\"http://cvs.php.net/co.php/phpdoc/en/$file\">$short_file</a></td>" .
+              "<td class=r>$info[0]</td></tr>\n";
+    }
+    print "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
+
+
+
+
+}
+
 
 // All OK, end the file
 print "</body>\n</html>\n";
