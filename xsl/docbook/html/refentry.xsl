@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: refentry.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: refentry.xsl,v 1.4 2005-07-04 17:04:31 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -17,9 +17,12 @@
 <xsl:template match="reference">
   <div class="{name(.)}">
     <xsl:call-template name="language.attribute"/>
-    <xsl:call-template name="anchor">
-      <xsl:with-param name="conditional" select="0"/>
-    </xsl:call-template>
+    <xsl:if test="$generate.id.attributes != 0">
+      <xsl:attribute name="id">
+        <xsl:call-template name="object.id"/>
+      </xsl:attribute>
+    </xsl:if>
+
     <xsl:call-template name="reference.titlepage"/>
 
     <xsl:variable name="toc.params">
