@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.8 $ -->
+<!-- $Revision: 1.9 $ -->
 <!-- splitted from ./en/functions/pgsql.xml, last change in rev 1.82 -->
 <refentry id="function.pg-last-oid">
  <refnamediv>
   <refname>pg_last_oid</refname> 
-  <refpurpose>Returns the last object's oid</refpurpose>
+  <refpurpose>Returns the last row's OID</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -15,25 +15,76 @@
   </methodsynopsis>
   <para>
    <function>pg_last_oid</function> is used to retrieve the
-   <varname>oid</varname> assigned to an inserted tuple (record) if
-   the result resource is used from the last command sent via
-   <function>pg_query</function> and was an SQL INSERT.  Returns a
-   positive number if there was a valid <varname>oid</varname>.  It
-   returns &false; if an error occurs or the last command sent via
-   <function>pg_query</function> was not an INSERT or INSERT is
-   failed.
+   <varname>OID</varname> assigned to an inserted row.
   </para>
   <para>
-   OID field became an optional field from PostgreSQL 7.2. When 
-   OID field is not defined in a table, programmer must use 
-   <function>pg_result_status</function> to check if record
-   is inserted successfully or not.
+   OID field became an optional field from PostgreSQL 7.2 and will
+   not be present by default in PostgreSQL 8.1. When the
+   OID field is not present in a table, the programmer must use 
+   <function>pg_result_status</function> to check for successful
+   insertion.
+  </para>
+  <para>
+   To get the value of a <literal>SERIAL</literal> field in an inserted
+   row, it is necessary to use the PostgreSQL <literal>CURRVAL</literal>
+   function, naming the sequence whose last value is required.  If the
+   name of the sequence is unknown, the <literal>pg_get_serial_sequence</literal>
+   PostgreSQL 8.0 function is necessary.
   </para>
   <note>
    <para>
     This function used to be called <function>pg_getlastoid</function>.
    </para>
   </note>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>result</parameter></term>
+     <listitem>
+      <para>
+       PostgreSQL query result resource, returned by <function>pg_query</function>,
+       <function>pg_query_params</function> or <function>pg_execute</function>
+       (among others).
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   A <type>string</type> containing the OID assigned to the most recently inserted
+   row in the specified <parameter>connection</parameter>, or &false; on error or
+   no available OID.
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>pg_last_error</function> example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+  $pgsql_conn = pg_connect("dbname=mark host=localhost");
+  
+  $res1 = pg_query("CREATE TABLE test (a INTEGER) WITH OIDS");
+
+  $res2 = pg_query("INSERT INTO test VALUES (1)");
+  
+  $oid = pg_last_oid($res2);
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
  </refsect1>
 
  <refsect1 role="seealso">
