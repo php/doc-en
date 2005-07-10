@@ -19,11 +19,11 @@ if (empty($FANCY_PATH)) { $FANCY_PATH = $HTML_PATH; }
 // Files on the top level of the TOC
 $MAIN_FILES = array(
     "getting-started.html",
+    "install.html",
     "langref.html",
     "security.html",
     "features.html",
     "funcref.html",
-    "zend.html",
     "api.html",
     "faq.html",
     "appendixes.html"
@@ -51,8 +51,8 @@ function makeContentFiles()
     global $LANGUAGE, $MANUAL_TITLE, $HEADER, $MAIN_FILES,
            $HTML_PATH, $INDEX_IN_HTML, $FIRST_PAGE;
 
-    $toc   = fopen("php_manual_$LANGUAGE.hhc", "w");
-    $index = fopen("php_manual_$LANGUAGE.hhk", "w");
+    $toc   = fopen("chm/php_manual_$LANGUAGE.hhc", "w");
+    $index = fopen("chm/php_manual_$LANGUAGE.hhk", "w");
 
     // Write out file headers
     fputs_wrapper($toc,   $HEADER);
@@ -131,16 +131,18 @@ function makeProjectFile()
     } else {
         $FIRST_PAGE = $INDEX_IN_HTML;
     }
-           
+
+    $FIRST_PAGEP = substr($FANCY_PATH, 4) . "\\$FIRST_PAGE";
+
     // Start writing the project file
-    $project = fopen("php_manual_$LANGUAGE.hhp", "w");
+    $project = fopen("chm/php_manual_$LANGUAGE.hhp", "w");
     fputs_wrapper($project, "[OPTIONS]\n");
     fputs_wrapper($project, "Compatibility=1.1 or later\n");
     fputs_wrapper($project, "Compiled file=php_manual_$LANGUAGE.chm\n");
     fputs_wrapper($project, "Contents file=php_manual_$LANGUAGE.hhc\n");
     fputs_wrapper($project, "Index file=php_manual_$LANGUAGE.hhk\n");
     fputs_wrapper($project, "Default Window=phpdoc\n");
-    fputs_wrapper($project, "Default topic=$FANCY_PATH\\$FIRST_PAGE\n");
+    fputs_wrapper($project, "Default topic=$FIRST_PAGEP\n");
     fputs_wrapper($project, "Display compile progress=Yes\n");
     fputs_wrapper($project, "Full-text search=Yes\n");
 
@@ -161,14 +163,14 @@ function makeProjectFile()
 
     // Define the phpdoc window style (adds more functionality)
     fputs_wrapper($project, "\n[WINDOWS]\nphpdoc=\"$MANUAL_TITLE\",\"php_manual_$LANGUAGE.hhc\",\"php_manual_$LANGUAGE.hhk\"," .
-          "\"$FANCY_PATH\\$FIRST_PAGE\",\"$FANCY_PATH\\$FIRST_PAGE\",,,,,0x23520,,0x386e,,,,,,,,0\n");
+          "\"$FIRST_PAGEP\",\"$FIRST_PAGEP\",,,,,0x23520,,0x386e,,,,,,,,0\n");
 
     // Write out all the filenames as in FANCY_PATH
     fputs_wrapper($project, "\n[FILES]\n");
     $handle = opendir($FANCY_PATH);
     while (false !== ($file = readdir($handle))) {
         if ($file != "." && $file != "..") {
-            fputs_wrapper($project, "$FANCY_PATH\\$file\n");
+            fputs_wrapper($project, substr($FANCY_PATH, 4)."\\$file\n");
         }
     }
     closedir($handle);
@@ -184,17 +186,17 @@ function mapAndIndex($name, $local, $tabs, $toc, $index, $imgnum = "auto")
     fputs_wrapper($toc, "
 $tabs<li><object type=\"text/sitemap\">
 $tabs  <param name=\"Name\" value=\"$name\">
-$tabs  <param name=\"Local\" value=\"$FANCY_PATH\\$local\">
+$tabs  <param name=\"Local\" value=\"".substr($FANCY_PATH, 4)."\\$local\">
 ");
 
     if ($imgnum != "auto") {
-        fputs_wrapper($toc, "$tabs  <param name=\"ImageNumber\" value=\"$imgnum\">\n");
+        fputs_wrapper($toc, "$tabs  <param name=\"ImageNumber\" value=\"$imgnum\">\r\n");
     }
-    fputs_wrapper($toc, "$tabs  </object>\n");
+    fputs_wrapper($toc, "$tabs  </object>\r\n");
 
     fputs_wrapper($index, "
     <li><object type=\"text/sitemap\">
-      <param name=\"Local\" value=\"$FANCY_PATH\\$local\">
+      <param name=\"Local\" value=\"".substr($FANCY_PATH, 4)."\\$local\">
       <param name=\"Name\" value=\"$name\">
     </object></li>
 ");
@@ -207,10 +209,10 @@ function findDeeperLinks ($filename, $toc, $index)
 {
     global $HTML_PATH;
     $contents = oneLiner("$HTML_PATH/$filename");
-    
+
     // Find all sublinks
     if (preg_match_all("!<DT\\s*><A\\s+HREF=\"(([\\w\\.-]+\\.)+html)(\\#[\\w\\.-]+)?\"\\s*>(.*)</A\\s*>!U", $contents, $matches, PREG_SET_ORDER)) {
-        
+
         // Print out the file informations for all the links
         fputs_wrapper($toc, "\n        <ul>");
         foreach ($matches as $onematch) {

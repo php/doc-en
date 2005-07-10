@@ -5,18 +5,6 @@ $FANCY_PATH    = getenv("PHP_HELP_COMPILE_FANCYDIR");
 $LANGUAGE      = getenv("PHP_HELP_COMPILE_LANG");
 $INTERNAL_CHARSET = "UTF-8";
 
-// backwards compatibility
-if (!function_exists("file_get_contents")) {
-    function file_get_contents($file)
-    {
-        $cnt = file($file);
-        if ($cnt !== false) {
-            return join('', $cnt);
-        }
-        return false;
-    }
-}
-
 // Return a file joined on one line
 function oneLiner($filename, $only_tags = false)
 {
@@ -73,7 +61,7 @@ function convertCharset($buf)
 // Returns the name of character set in the given document
 function detectDocumentCharset($doc)
 {
-    if (preg_match("/<META\\s+HTTP-EQUIV=\"CONTENT-TYPE\"\\s+CONTENT=\"TEXT\\/HTML;\\s+CHARSET=([\\w\\d-]*)\"\\s*>/iU", $doc, $reg)) {
+    if (preg_match('/<META[^>]+CHARSET=["\'\s]?([\w\d-]+)["\'\s]?\s*>/iS', $doc, $reg)) {
         return $reg[1];
     }
     return false;

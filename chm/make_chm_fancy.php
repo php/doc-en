@@ -39,12 +39,8 @@ while (false !== ($filename = readdir($handle))) {
 closedir($handle);
 
 // Look for CHM index file (snap-downloader, cvs-usr with/without lang-support) 
-if (false == ($content = oneLiner("make_chm_index_$LANGUAGE.html", true))) {
-    if (false == ($content = oneLiner("$LANGUAGE/make_chm_index_$LANGUAGE.html", true))) {
-        if (false == ($content = oneLiner("$HTML_PATH/../$LANGUAGE/make_chm_index_$LANGUAGE.html", true))) {
-            $content = oneLiner("en/make_chm_index_en.html", true);
-        }
-    }
+if (false == ($content = oneLiner("$LANGUAGE/make_chm_index.html", true))) {
+    $content = oneLiner("en/make_chm_index.html", true);
 }
 
 // Make GENTIME the actual date/time

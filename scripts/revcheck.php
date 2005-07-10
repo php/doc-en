@@ -326,8 +326,7 @@ function get_dir_status($dir)
       // If we found a file functions.xml in the
       // <lang>/reference/ tree, skip the file
       if (
-          $file == "make_chm_index_en.html"
-	  || $file == "rsusi.txt"
+	   $file == "rsusi.txt"
 	  || $file == "README"
 	  || $file == "contributors.xml"
 	  || $file == "contributors.ent"
