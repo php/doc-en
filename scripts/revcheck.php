@@ -849,11 +849,15 @@ END_OF_MULTILINE;
         // If we have a 'numeric' revision diff and it is not zero,
         // make a link to the CVS repository's diff script
         if ($file["revision"][2] != "n/a" && $file["revision"][2] !== 0) {
-            $file["short_name"] = "<a href=\"http://cvs.php.net/diff.php/" .
-                                  preg_replace( "'^".$DOCDIR."'", "phpdoc/", $file["full_name"]) .
-                                  "?r1=" . $file["revision"][1] . 
-                                  "&amp;r2=" . $file["revision"][0] .
-                                  CVS_OPT . "\">" . $file["short_name"] . "</a>";
+            $url = 'http://cvs.php.net/diff.php/' .
+                   preg_replace( "'^".$DOCDIR."'", 'phpdoc/', $file['full_name']) .
+                   '?r1=' . $file['revision'][1] . 
+                   '&amp;r2=' . $file['revision'][0] .
+                   CVS_OPT;
+            $url_ws = $url . '&amp;ws=0';
+
+            $file['short_name'] = '<a href="' . $url . '">'. $file["short_name"] . '</a> '.
+                                  '<a href="' . $url_ws . '">[NoWS]</a>';
         }
     
         // Guess the new directory from the full name of the file
