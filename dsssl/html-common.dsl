@@ -304,9 +304,10 @@
 ;; on pcre reference pages (these are masked as function pages, but are
 ;; not function pages themselfs)
 (element (refnamediv refname)
-  (let ((refid (attribute-string (normalize "id") (parent (parent (current-node))))))
+  (let* ((refid (attribute-string (normalize "id") (parent (parent (current-node)))))
+	 (refid-length (if (string? refid) (string-length refid) 0)))
     (if (not (string=? 
-	   (substring refid 0 (if (<= (string-length refid) 14) (string-length refid) 14))
+	   (substring refid 0 (if (<= refid-length 14) refid-length 14))
 	   "reference.pcre"))
       (make sequence
         (make element gi: "P"
