@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.21 2005-06-24 09:22:40 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.22 2005-07-14 13:42:28 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -70,7 +70,7 @@ article   toc
 book      toc,title
 chapter   toc,title
 part      toc,title
-preface   toc,title
+preface   toc
 qandadiv  toc
 qandaset  toc
 reference toc,title
