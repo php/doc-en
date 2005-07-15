@@ -12,7 +12,7 @@
 <xsl:include href="../common/table.xsl"/>
 
 <!-- ********************************************************************
-     $Id: table.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
+     $Id: table.xsl,v 1.5 2005-07-15 09:18:39 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -24,7 +24,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: table.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
+$Id: table.xsl,v 1.5 2005-07-15 09:18:39 techtonik Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>
@@ -283,8 +283,20 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 <xsl:template match="row">
   <xsl:param name="spans"/>
 
+  <xsl:variable name="bgcolor">
+    <xsl:call-template name="dbfo-attribute">
+      <xsl:with-param name="pis" select="processing-instruction('dbfo')"/>
+      <xsl:with-param name="attribute" select="'bgcolor'"/>
+    </xsl:call-template>
+  </xsl:variable>
+
   <fo:table-row>
     <xsl:call-template name="anchor"/>
+    <xsl:if test="$bgcolor != ''">
+      <xsl:attribute name="background-color">
+        <xsl:value-of select="$bgcolor"/>
+      </xsl:attribute>
+    </xsl:if>
 
     <xsl:apply-templates select="(entry|entrytbl)[1]">
       <xsl:with-param name="spans" select="$spans"/>
@@ -540,31 +552,17 @@ to be incomplete. Don't forget to read the source, too :-)</para>
       </xsl:variable>
 
       <fo:table-cell xsl:use-attribute-sets="table.cell.padding">
-        <xsl:call-template name="table.cell.properties"/>
-        <xsl:if test="$xep.extensions != 0">
-          <!-- Suggested by RenderX to workaround a bug in their implementation -->
-          <!--          <xsl:attribute name="keep-together.within-column">always</xsl:attribute> -->
-        </xsl:if>
-
-        <xsl:if test="$bgcolor != ''">
-          <xsl:attribute name="background-color">
-            <xsl:value-of select="$bgcolor"/>
-          </xsl:attribute>
-        </xsl:if>
+        <xsl:call-template name="table.cell.properties">
+          <xsl:with-param name="bgcolor.pi" select="$bgcolor"/>
+          <xsl:with-param name="rowsep.inherit" select="$rowsep"/>
+          <xsl:with-param name="colsep.inherit" select="$colsep"/>
+          <xsl:with-param name="col" select="$col"/>
+          <xsl:with-param name="valign.inherit" select="$valign"/>
+          <xsl:with-param name="align.inherit" select="$align"/>
+          <xsl:with-param name="char.inherit" select="$char"/>
+        </xsl:call-template>
 
         <xsl:call-template name="anchor"/>
-
-        <xsl:if test="$rowsep &gt; 0">
-          <xsl:call-template name="border">
-            <xsl:with-param name="side" select="'bottom'"/>
-          </xsl:call-template>
-        </xsl:if>
-
-        <xsl:if test="$colsep &gt; 0 and $col &lt; ancestor::tgroup/@cols">
-          <xsl:call-template name="border">
-            <xsl:with-param name="side" select="'right'"/>
-          </xsl:call-template>
-        </xsl:if>
 
         <xsl:if test="@morerows">
           <xsl:attribute name="number-rows-spanned">
@@ -575,36 +573,6 @@ to be incomplete. Don't forget to read the source, too :-)</para>
         <xsl:if test="$entry.colspan &gt; 1">
           <xsl:attribute name="number-columns-spanned">
             <xsl:value-of select="$entry.colspan"/>
-          </xsl:attribute>
-        </xsl:if>
-
-        <xsl:if test="$valign != ''">
-          <xsl:attribute name="display-align">
-            <xsl:choose>
-              <xsl:when test="$valign='top'">before</xsl:when>
-              <xsl:when test="$valign='middle'">center</xsl:when>
-              <xsl:when test="$valign='bottom'">after</xsl:when>
-              <xsl:otherwise>
-                <xsl:message>
-                  <xsl:text>Unexpected valign value: </xsl:text>
-                  <xsl:value-of select="$valign"/>
-                  <xsl:text>, center used.</xsl:text>
-                </xsl:message>
-                <xsl:text>center</xsl:text>
-              </xsl:otherwise>
-            </xsl:choose>
-          </xsl:attribute>
-        </xsl:if>
-
-        <xsl:if test="$align != ''">
-          <xsl:attribute name="text-align">
-            <xsl:value-of select="$align"/>
-          </xsl:attribute>
-        </xsl:if>
-
-        <xsl:if test="$char != ''">
-          <xsl:attribute name="text-align">
-            <xsl:value-of select="$char"/>
           </xsl:attribute>
         </xsl:if>
 
@@ -654,6 +622,63 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 
 <!-- Expand this template to add properties to any fo:table-cell -->
 <xsl:template name="table.cell.properties">
+  <xsl:param name="bgcolor.pi" select="''"/>
+  <xsl:param name="rowsep.inherit" select="1"/>
+  <xsl:param name="colsep.inherit" select="1"/>
+  <xsl:param name="col" select="1"/>
+  <xsl:param name="valign.inherit" select="''"/>
+  <xsl:param name="align.inherit" select="''"/>
+  <xsl:param name="char.inherit" select="''"/>
+
+        <xsl:if test="$bgcolor.pi != ''">
+          <xsl:attribute name="background-color">
+            <xsl:value-of select="$bgcolor.pi"/>
+          </xsl:attribute>
+        </xsl:if>
+
+        <xsl:if test="$rowsep.inherit &gt; 0">
+          <xsl:call-template name="border">
+            <xsl:with-param name="side" select="'bottom'"/>
+          </xsl:call-template>
+        </xsl:if>
+
+        <xsl:if test="$colsep.inherit &gt; 0 and 
+	              $col &lt; ancestor::tgroup/@cols">
+          <xsl:call-template name="border">
+            <xsl:with-param name="side" select="'right'"/>
+          </xsl:call-template>
+        </xsl:if>
+
+        <xsl:if test="$valign.inherit != ''">
+          <xsl:attribute name="display-align">
+            <xsl:choose>
+              <xsl:when test="$valign.inherit='top'">before</xsl:when>
+              <xsl:when test="$valign.inherit='middle'">center</xsl:when>
+              <xsl:when test="$valign.inherit='bottom'">after</xsl:when>
+              <xsl:otherwise>
+                <xsl:message>
+                  <xsl:text>Unexpected valign value: </xsl:text>
+                  <xsl:value-of select="$valign.inherit"/>
+                  <xsl:text>, center used.</xsl:text>
+                </xsl:message>
+                <xsl:text>center</xsl:text>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:attribute>
+        </xsl:if>
+
+        <xsl:if test="$align.inherit != ''">
+          <xsl:attribute name="text-align">
+            <xsl:value-of select="$align.inherit"/>
+          </xsl:attribute>
+        </xsl:if>
+
+        <xsl:if test="$char.inherit != ''">
+          <xsl:attribute name="text-align">
+            <xsl:value-of select="$char.inherit"/>
+          </xsl:attribute>
+        </xsl:if>
+
 </xsl:template>
 
 <!-- Expand this template to add properties to any cell's block -->

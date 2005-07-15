@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: l10n.xsl,v 1.3 2004-10-01 16:32:09 techtonik Exp $
+     $Id: l10n.xsl,v 1.4 2005-07-15 09:18:39 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -32,7 +32,7 @@
         <!-- can't do this one step: attributes are unordered! -->
         <xsl:variable name="lang-scope"
                       select="$target/ancestor-or-self::*
-                              [@lang or @xml:lang][last()]"/>
+                              [@lang or @xml:lang][1]"/>
         <xsl:variable name="lang-attr"
                       select="($lang-scope/@lang | $lang-scope/@xml:lang)[1]"/>
         <xsl:choose>
@@ -49,7 +49,7 @@
         <!-- can't do this one step: attributes are unordered! -->
         <xsl:variable name="lang-scope"
                       select="$target/ancestor-or-self::*
-                              [@lang or @xml:lang][last()]"/>
+                              [@lang or @xml:lang][1]"/>
         <xsl:variable name="lang-attr"
                       select="($lang-scope/@lang | $lang-scope/@xml:lang)[1]"/>
 
@@ -119,7 +119,7 @@
         <!-- can't do this one step: attributes are unordered! -->
         <xsl:variable name="lang-scope"
                       select="$node/ancestor-or-self::*
-                              [@lang or @xml:lang][last()]"/>
+                              [@lang or @xml:lang][1]"/>
         <xsl:variable name="lang-attr"
                       select="($lang-scope/@lang | $lang-scope/@xml:lang)[1]"/>
 

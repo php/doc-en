@@ -9,7 +9,7 @@
             indent="no"/>
 
 <!-- ********************************************************************
-     $Id: docbook.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: docbook.xsl,v 1.4 2005-07-15 09:18:33 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -70,6 +70,7 @@
 <xsl:include href="docbookng.xsl"/>
 
 <xsl:param name="stylesheet.result.type" select="'html'"/>
+<xsl:param name="htmlhelp.output" select="0"/>
 
 <!-- ==================================================================== -->
 

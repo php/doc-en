@@ -6,7 +6,7 @@
 <xsl:output method="html" encoding="ISO-8859-1" indent="no"/>
 
 <!-- ********************************************************************
-     $Id: profile-docbook.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: profile-docbook.xsl,v 1.4 2005-07-15 09:18:34 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -67,6 +67,7 @@
 <xsl:include href="docbookng.xsl"/>
 
 <xsl:param name="stylesheet.result.type" select="'html'"/>
+<xsl:param name="htmlhelp.output" select="0"/>
 
 <!-- ==================================================================== -->
 

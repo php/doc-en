@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: sections.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: sections.xsl,v 1.4 2005-07-15 09:18:34 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -380,7 +380,16 @@
   </xsl:variable>
 
   <!-- HTML H level is one higher than section level -->
-  <xsl:variable name="hlevel" select="$level + 1"/>
+  <xsl:variable name="hlevel">
+    <xsl:choose>
+      <!-- highest valid HTML H level is H6; so anything nested deeper
+           than 5 levels down just becomes H6 -->
+      <xsl:when test="$level &gt; 5">6</xsl:when>
+      <xsl:otherwise>
+	<xsl:value-of select="$level + 1"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
   <xsl:element name="h{$hlevel}">
     <xsl:attribute name="class"><xsl:value-of select="$class"/></xsl:attribute>
     <xsl:if test="$css.decoration != '0'">
@@ -481,6 +490,10 @@
 </xsl:template>
 
 <xsl:template match="section/subtitle" mode="titlepage.mode" priority="2">
+  <xsl:call-template name="section.subtitle"/>
+</xsl:template>
+
+<xsl:template match="simplesect/subtitle" mode="titlepage.mode" priority="2">
   <xsl:call-template name="section.subtitle"/>
 </xsl:template>
 

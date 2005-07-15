@@ -4,7 +4,7 @@
                 exclude-result-prefixes="doc">
 
 <!-- ********************************************************************
-     $Id: manifest.xsl,v 1.4 2005-07-15 08:27:50 techtonik Exp $
+     $Id: manifest.xsl,v 1.5 2005-07-15 09:18:33 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -42,7 +42,6 @@
                      |section
                      |book/glossary|article/glossary|part/glossary
                      |book/bibliography|article/bibliography|part/bibliography
-                     |book/index|article/index|part/index
                      |colophon"
               mode="enumerate-files">
   <xsl:variable name="ischunk"><xsl:call-template name="chunk"/></xsl:variable>
@@ -60,6 +59,27 @@
     <xsl:text>&#10;</xsl:text>
   </xsl:if>
   <xsl:apply-templates select="*" mode="enumerate-files"/>
+</xsl:template>
+
+<xsl:template match="book/index|article/index|part/index"
+              mode="enumerate-files">
+  <xsl:if test="$htmlhelp.output != 1">
+    <xsl:variable name="ischunk"><xsl:call-template name="chunk"/></xsl:variable>
+    <xsl:if test="$ischunk='1'">
+      <xsl:call-template name="make-relative-filename">
+        <xsl:with-param name="base.dir">
+          <xsl:if test="$manifest.in.base.dir = 0">
+            <xsl:value-of select="$base.dir"/>
+          </xsl:if>
+        </xsl:with-param>
+        <xsl:with-param name="base.name">
+          <xsl:apply-templates mode="chunk-filename" select="."/>
+        </xsl:with-param>
+      </xsl:call-template>
+      <xsl:text>&#10;</xsl:text>
+    </xsl:if>
+    <xsl:apply-templates select="*" mode="enumerate-files"/>
+  </xsl:if>
 </xsl:template>
 
 <xsl:template match="legalnotice" mode="enumerate-files">

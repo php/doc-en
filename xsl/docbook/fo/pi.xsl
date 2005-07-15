@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: pi.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
+     $Id: pi.xsl,v 1.5 2005-07-15 09:18:39 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -193,7 +193,7 @@
 
   <xsl:variable name="spacer">
     <fo:block-container width="100%" height="{$height}">
-      <fo:block/>
+      <fo:block><fo:leader leader-length="0pt"/></fo:block>
     </fo:block-container>
   </xsl:variable>
 

@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: autotoc.xsl,v 1.4 2005-07-15 08:27:50 techtonik Exp $
+     $Id: autotoc.xsl,v 1.5 2005-07-15 09:18:33 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -154,7 +154,9 @@
   <xsl:call-template name="make.toc">
     <xsl:with-param name="toc-context" select="$toc-context"/>
     <xsl:with-param name="toc.title.p" select="$toc.title.p"/>
-    <xsl:with-param name="nodes" select="section|sect1|refentry
+    <xsl:with-param name="nodes" select="section|sect1
+                                         |simplesect[$simplesect.in.toc != 0]
+                                         |refentry
                                          |article|bibliography|glossary
                                          |appendix|index
                                          |bridgehead[not(@renderas)
@@ -336,7 +338,9 @@
 
   <xsl:call-template name="subtoc">
     <xsl:with-param name="toc-context" select="$toc-context"/>
-    <xsl:with-param name="nodes" select="section|sect1|simplesect|refentry
+    <xsl:with-param name="nodes" select="section|sect1
+                                         |simplesect[$simplesect.in.toc != 0]
+                                         |refentry
                                          |glossary|bibliography|index
                                          |bridgehead[$bridgehead.in.toc != 0]"/>
   </xsl:call-template>
@@ -382,6 +386,14 @@
 </xsl:template>
 
 <xsl:template match="sect5" mode="toc">
+  <xsl:param name="toc-context" select="."/>
+
+  <xsl:call-template name="subtoc">
+    <xsl:with-param name="toc-context" select="$toc-context"/>
+  </xsl:call-template>
+</xsl:template>
+
+<xsl:template match="simplesect" mode="toc">
   <xsl:param name="toc-context" select="."/>
 
   <xsl:call-template name="subtoc">

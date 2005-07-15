@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: common.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: common.xsl,v 1.4 2005-07-15 09:18:39 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -19,7 +19,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: common.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+$Id: common.xsl,v 1.4 2005-07-15 09:18:39 techtonik Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>
@@ -1724,6 +1724,13 @@ node location.</para>
 <xsl:template name="strippath">
   <xsl:param name="filename" select="''"/>
   <xsl:choose>
+    <!-- Leading .. are not eliminated -->
+    <xsl:when test="starts-with($filename, '../')">
+      <xsl:value-of select="'../'"/>
+      <xsl:call-template name="strippath">
+        <xsl:with-param name="filename" select="substring-after($filename, '../')"/>
+      </xsl:call-template>
+    </xsl:when>
     <xsl:when test="contains($filename, '/../')">
       <xsl:call-template name="strippath">
         <xsl:with-param name="filename">

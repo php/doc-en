@@ -4,7 +4,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:doc="http://nwalsh.com/xsl/documentation/1.0" xmlns:exsl="http://exslt.org/common" xmlns:set="http://exslt.org/sets" xmlns:h="urn:x-hex" xmlns:exslt="http://exslt.org/common" exslt:dummy="dummy" extension-element-prefixes="exslt" version="1.0" exclude-result-prefixes="doc exsl set h exslt">
 
 <!-- ********************************************************************
-     $Id: profile-htmlhelp-common.xsl,v 1.2 2005-07-04 16:54:22 techtonik Exp $
+     $Id: profile-htmlhelp-common.xsl,v 1.3 2005-07-15 09:18:39 techtonik Exp $
      ******************************************************************** -->
 
 <!-- ==================================================================== -->
@@ -15,6 +15,9 @@
 <!-- ==================================================================== -->
 
 <xsl:variable name="htmlhelp.generate.index" select="//indexterm[1]"/>
+
+<!-- Set up HTML Help flag -->
+<xsl:variable name="htmlhelp.output" select="1"/>
 
 <xsl:variable name="raw.help.title">
   <xsl:choose>

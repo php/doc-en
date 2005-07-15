@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: titlepage.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
+     $Id: titlepage.xsl,v 1.5 2005-07-15 09:18:39 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -180,9 +180,11 @@
 
 <xsl:template match="abstract" mode="titlepage.mode">
   <fo:block>
-    <xsl:if test="title"> <!-- FIXME: add param for using default title? -->
-      <xsl:call-template name="formal.object.heading"/>
-    </xsl:if>
+    <xsl:call-template name="formal.object.heading">
+      <xsl:with-param name="title">
+        <xsl:apply-templates select="." mode="title.markup"/>
+      </xsl:with-param>
+    </xsl:call-template>
     <xsl:apply-templates mode="titlepage.mode"/>
   </fo:block>
 </xsl:template>

@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: sections.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
+     $Id: sections.xsl,v 1.5 2005-07-15 09:18:39 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -17,6 +17,11 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="section">
+  <xsl:choose>
+    <xsl:when test="$rootid = @id">
+      <xsl:call-template name="section.page.sequence"/>
+    </xsl:when>
+    <xsl:otherwise>
   <xsl:variable name="id">
     <xsl:call-template name="object.id"/>
   </xsl:variable>
@@ -82,6 +87,8 @@
       </fo:block>
     </xsl:otherwise>
   </xsl:choose>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 <xsl:template name="section.content">
@@ -104,7 +111,7 @@
   <xsl:apply-templates/>
 </xsl:template>
 
-<xsl:template match="/section">
+<xsl:template match="section[not(parent::*)]" name="section.page.sequence">
   <xsl:variable name="id">
     <xsl:call-template name="object.id">
       <xsl:with-param name="object" select="ancestor::reference"/>

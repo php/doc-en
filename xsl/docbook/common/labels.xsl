@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: labels.xsl,v 1.4 2005-07-15 08:27:51 techtonik Exp $
+     $Id: labels.xsl,v 1.5 2005-07-15 09:18:39 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -485,15 +485,17 @@ element label.</para>
 
   <xsl:variable name="prefix">
     <xsl:if test="$qanda.inherit.numeration != 0">
-      <xsl:if test="$lparent.prefix != ''">
-        <xsl:apply-templates select="$lparent" mode="label.markup"/>
-        <xsl:apply-templates select="$lparent" mode="intralabel.punctuation"/>
-      </xsl:if>
-      <xsl:if test="ancestor::qandadiv">
+      <xsl:choose>
+	<xsl:when test="ancestor::qandadiv">
         <xsl:apply-templates select="ancestor::qandadiv[1]" mode="label.markup"/>
         <xsl:apply-templates select="ancestor::qandadiv[1]"
                              mode="intralabel.punctuation"/>
-      </xsl:if>
+	</xsl:when>
+	<xsl:when test="$lparent.prefix != ''">
+	  <xsl:apply-templates select="$lparent" mode="label.markup"/>
+	  <xsl:apply-templates select="$lparent" mode="intralabel.punctuation"/>
+	</xsl:when>
+      </xsl:choose>
     </xsl:if>
   </xsl:variable>
 

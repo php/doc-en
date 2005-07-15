@@ -4,7 +4,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:src="http://nwalsh.com/xmlns/litprog/fragment" exclude-result-prefixes="src" version="1.0">
 
 <!-- ********************************************************************
-     $Id: param.xsl,v 1.4 2005-07-15 08:27:51 techtonik Exp $
+     $Id: param.xsl,v 1.5 2005-07-15 09:18:34 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -181,6 +181,7 @@ set       toc,title
 <xsl:param name="img.src.path"/>
 <xsl:param name="index.on.role" select="0"/>
 <xsl:param name="index.on.type" select="0"/>
+<xsl:param name="index.prefer.titleabbrev" select="0"/>
 <xsl:param name="ignore.image.scaling" select="0"/>
 <xsl:param name="inherit.keywords" select="'1'"/>
 <xsl:param name="l10n.gentext.default.language" select="'en'"/>
@@ -269,6 +270,7 @@ set       toc,title
 
 <xsl:param name="show.comments">1</xsl:param>
 <xsl:param name="show.revisionflag">0</xsl:param>
+<xsl:param name="simplesect.in.toc" select="0"/>
 <xsl:param name="spacing.paras" select="'0'"/>
 <xsl:param name="suppress.footer.navigation">0</xsl:param>
 <xsl:param name="suppress.header.navigation">0</xsl:param>

@@ -43,7 +43,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: autoidx.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: autoidx.xsl,v 1.4 2005-07-15 09:18:33 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -369,7 +369,14 @@
     <xsl:otherwise>
       <a>
         <xsl:variable name="title">
+          <xsl:choose>
+            <xsl:when test="&section;/titleabbrev and $index.prefer.titleabbrev != 0">
+              <xsl:apply-templates select="&section;" mode="titleabbrev.markup"/>
+            </xsl:when>
+            <xsl:otherwise>
           <xsl:apply-templates select="&section;" mode="title.markup"/>
+            </xsl:otherwise>
+          </xsl:choose>
         </xsl:variable>
 
         <xsl:attribute name="href">

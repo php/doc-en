@@ -8,7 +8,7 @@
                 exclude-result-prefixes="doc exsl set h">
 
 <!-- ********************************************************************
-     $Id: htmlhelp-common.xsl,v 1.2 2005-07-04 16:53:26 techtonik Exp $
+     $Id: htmlhelp-common.xsl,v 1.3 2005-07-15 09:18:39 techtonik Exp $
      ******************************************************************** -->
 
 <!-- ==================================================================== -->
@@ -19,6 +19,9 @@
 <!-- ==================================================================== -->
 
 <xsl:variable name="htmlhelp.generate.index" select="//indexterm[1]"/>
+
+<!-- Set up HTML Help flag -->
+<xsl:variable name="htmlhelp.output" select="1"/>
 
 <xsl:variable name="raw.help.title">
   <xsl:choose>

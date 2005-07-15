@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: component.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: component.xsl,v 1.5 2005-07-15 09:18:37 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -58,12 +58,7 @@
     </fotex:bookmark>
   </xsl:if>
 
-  <fo:block keep-with-next.within-column="always"
-            space-before.optimum="{$body.font.master}pt"
-            space-before.minimum="{$body.font.master * 0.8}pt"
-            space-before.maximum="{$body.font.master * 1.2}pt"
-            hyphenate="false"
-            xsl:use-attribute-sets="component.title.properties">
+  <fo:block xsl:use-attribute-sets="component.title.properties">
     <xsl:if test="$pagewide != 0">
       <!-- Doesn't work to use 'all' here since not a child of fo:flow -->
       <xsl:attribute name="span">inherit</xsl:attribute>

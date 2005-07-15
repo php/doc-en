@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: autotoc.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: autotoc.xsl,v 1.5 2005-07-15 09:18:37 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -314,7 +314,9 @@
 
   <xsl:call-template name="toc.line"/>
 
-  <xsl:variable name="nodes" select="section|sect1|simplesect|refentry"/>
+  <xsl:variable name="nodes" select="section|sect1
+				     |simplesect[$simplesect.in.toc != 0]
+				     |refentry"/>
 
   <xsl:if test="$toc.section.depth &gt; 0 and $nodes">
     <fo:block id="toc.{$cid}.{$id}"
