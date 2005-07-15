@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.27 2005-01-08 18:30:48 hsc Exp $
+  $Id: common.xsl,v 1.28 2005-07-15 09:20:44 techtonik Exp $
 
   What is done in this stylesheet as common to all HTML output formats:
 
@@ -39,8 +39,6 @@
 <!-- Turn off separators on reference and refentry pages -->
 <xsl:param name="refentry.separator" select="'0'"/>
 <xsl:template name="reference.titlepage.separator"/>
-<!-- FIX: temporary till also this is in std.-distrib. -->
-<xsl:template match="reference/titleabbrev"/>
 
 <!-- Load VERSION INFORMATION into variable -->
 <xsl:param name="version" select="document('version.xml')/versions"/>
