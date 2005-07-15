@@ -11,7 +11,7 @@
 <xsl:output method="xml" indent="no"/>
 
 <!-- ********************************************************************
-     $Id: docbook.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
+     $Id: docbook.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -219,11 +219,11 @@
     <xsl:call-template name="setup.pagemasters"/>
 
     <xsl:if test="$fop.extensions != 0">
-      <xsl:apply-templates mode="fop.outline"/>
+      <xsl:apply-templates select="$document.element" mode="fop.outline"/>
     </xsl:if>
     <xsl:if test="$xep.extensions != 0">
       <xsl:variable name="bookmarks">
-        <xsl:apply-templates mode="xep.outline"/>
+        <xsl:apply-templates select="$document.element" mode="xep.outline"/>
       </xsl:variable>
       <xsl:if test="string($bookmarks) != ''">
         <rx:outline xmlns:rx="http://www.renderx.com/XSL/Extensions">

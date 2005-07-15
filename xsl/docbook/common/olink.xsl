@@ -516,9 +516,6 @@
     </xsl:variable>
   
     <!-- Form the href information -->
-    <xsl:if test="$olink.base.uri != ''">
-      <xsl:value-of select="$olink.base.uri"/>
-    </xsl:if>
     <xsl:if test="$baseuri != ''">
       <xsl:value-of select="$baseuri"/>
       <xsl:if test="substring($target.href,1,1) != '#'">

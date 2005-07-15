@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: biblio.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: biblio.xsl,v 1.4 2005-07-15 08:27:50 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -76,6 +76,10 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="biblioentry">
+  <xsl:param name="label">
+    <xsl:call-template name="biblioentry.label"/>
+  </xsl:param>
+
   <xsl:variable name="id">
     <xsl:call-template name="object.id"/>
   </xsl:variable>
@@ -86,7 +90,16 @@
       <xsl:variable name="entry" select="$bib/bibliography/*[@id=$id][1]"/>
       <xsl:choose>
         <xsl:when test="$entry">
+	  <xsl:choose>
+	    <xsl:when test="$bibliography.numbered != 0">
+	      <xsl:apply-templates select="$entry">
+		<xsl:with-param name="label" select="$label"/>
+	      </xsl:apply-templates>
+	    </xsl:when>
+	    <xsl:otherwise>
           <xsl:apply-templates select="$entry"/>
+	    </xsl:otherwise>
+	  </xsl:choose>
         </xsl:when>
         <xsl:otherwise>
           <xsl:message>
@@ -98,7 +111,7 @@
           <div class="{name(.)}">
             <xsl:call-template name="anchor"/>
             <p>
-              <xsl:call-template name="biblioentry.label"/>
+	      <xsl:copy-of select="$label"/>
               <xsl:text>Error: no bibliography entry: </xsl:text>
               <xsl:value-of select="$id"/>
               <xsl:text> found in </xsl:text>
@@ -112,7 +125,7 @@
       <div class="{name(.)}">
         <xsl:call-template name="anchor"/>
         <p>
-          <xsl:call-template name="biblioentry.label"/>
+	  <xsl:copy-of select="$label"/>
           <xsl:apply-templates mode="bibliography.mode"/>
         </p>
       </div>
@@ -121,6 +134,10 @@
 </xsl:template>
 
 <xsl:template match="bibliomixed">
+  <xsl:param name="label">
+    <xsl:call-template name="biblioentry.label"/>
+  </xsl:param>
+
   <xsl:variable name="id">
     <xsl:call-template name="object.id"/>
   </xsl:variable>
@@ -131,7 +148,16 @@
       <xsl:variable name="entry" select="$bib/bibliography/*[@id=$id][1]"/>
       <xsl:choose>
         <xsl:when test="$entry">
+	  <xsl:choose>
+	    <xsl:when test="$bibliography.numbered != 0">
+	      <xsl:apply-templates select="$entry">
+		<xsl:with-param name="label" select="$label"/>
+	      </xsl:apply-templates>
+	    </xsl:when>
+	    <xsl:otherwise>
           <xsl:apply-templates select="$entry"/>
+	    </xsl:otherwise>
+	  </xsl:choose>
         </xsl:when>
         <xsl:otherwise>
           <xsl:message>
@@ -143,7 +169,7 @@
           <div class="{name(.)}">
             <xsl:call-template name="anchor"/>
             <p>
-              <xsl:call-template name="biblioentry.label"/>
+	      <xsl:copy-of select="$label"/>
               <xsl:text>Error: no bibliography entry: </xsl:text>
               <xsl:value-of select="$id"/>
               <xsl:text> found in </xsl:text>
@@ -157,7 +183,7 @@
       <div class="{name(.)}">
         <xsl:call-template name="anchor"/>
         <p class="{name(.)}">
-          <xsl:call-template name="biblioentry.label"/>
+	  <xsl:copy-of select="$label"/>
           <xsl:apply-templates mode="bibliomixed.mode"/>
         </p>
       </div>

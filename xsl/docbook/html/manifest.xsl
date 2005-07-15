@@ -4,7 +4,7 @@
                 exclude-result-prefixes="doc">
 
 <!-- ********************************************************************
-     $Id: manifest.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: manifest.xsl,v 1.4 2005-07-15 08:27:50 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -40,9 +40,9 @@
                      |reference|refentry
                      |sect1|sect2|sect3|sect4|sect5
                      |section
-                     |book/glossary|article/glossary
-                     |book/bibliography|article/bibliography
-                     |book/index|article/index
+                     |book/glossary|article/glossary|part/glossary
+                     |book/bibliography|article/bibliography|part/bibliography
+                     |book/index|article/index|part/index
                      |colophon"
               mode="enumerate-files">
   <xsl:variable name="ischunk"><xsl:call-template name="chunk"/></xsl:variable>

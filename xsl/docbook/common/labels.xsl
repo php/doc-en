@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: labels.xsl,v 1.3 2004-10-01 16:32:09 techtonik Exp $
+     $Id: labels.xsl,v 1.4 2005-07-15 08:27:51 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -638,7 +638,11 @@ element label.</para>
     </xsl:choose>
   </xsl:variable>
 
-  <xsl:number count="listitem" format="{$type}"/>
+  <xsl:variable name="item-number">
+    <xsl:call-template name="orderedlist-item-number"/>
+  </xsl:variable>
+
+  <xsl:number value="$item-number" format="{$type}"/>
 </xsl:template>
 
 <xsl:template match="abstract" mode="label.markup">

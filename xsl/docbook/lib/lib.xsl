@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ********************************************************************
-     $Id: lib.xsl,v 1.3 2004-10-01 16:32:09 techtonik Exp $
+     $Id: lib.xsl,v 1.4 2005-07-15 08:27:53 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -199,7 +199,7 @@
   </xsl:choose>
 </xsl:template>
 <xsl:template name="pi-attribute">
-  <xsl:param name="pis" select="processing-instruction('')"/>
+  <xsl:param name="pis" select="processing-instruction('BOGUS_PI')"/>
   <xsl:param name="attribute">filename</xsl:param>
   <xsl:param name="count">1</xsl:param>
 

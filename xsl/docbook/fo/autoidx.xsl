@@ -20,7 +20,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: autoidx.xsl,v 1.3 2004-10-01 16:32:06 techtonik Exp $
+     $Id: autoidx.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
      ********************************************************************
 
      This file is part of the DocBook XSL Stylesheet distribution.

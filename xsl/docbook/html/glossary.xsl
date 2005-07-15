@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: glossary.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: glossary.xsl,v 1.4 2005-07-15 08:27:50 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -193,7 +193,12 @@ GlossEntry ::=
       </xsl:call-template>
       <xsl:choose>
         <xsl:when test="$target">
-          <a href="#{@otherterm}">
+          <a>
+            <xsl:attribute name="href">
+              <xsl:call-template name="href.target">
+                <xsl:with-param name="object" select="$target"/>
+              </xsl:call-template>
+            </xsl:attribute>
             <xsl:apply-templates select="$target" mode="xref-to"/>
           </a>
         </xsl:when>
@@ -235,7 +240,12 @@ GlossEntry ::=
 
   <xsl:choose>
     <xsl:when test="$target">
-      <a href="#{@otherterm}">
+      <a>
+        <xsl:attribute name="href">
+          <xsl:call-template name="href.target">
+            <xsl:with-param name="object" select="$target"/>
+          </xsl:call-template>
+        </xsl:attribute>
         <xsl:apply-templates select="$target" mode="xref-to"/>
       </a>
     </xsl:when>

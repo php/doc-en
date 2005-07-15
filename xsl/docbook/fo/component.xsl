@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: component.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
+     $Id: component.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -19,18 +19,35 @@
 <xsl:template name="component.title">
   <xsl:param name="node" select="."/>
   <xsl:param name="pagewide" select="0"/>
+
   <xsl:variable name="id">
     <xsl:call-template name="object.id">
       <xsl:with-param name="object" select="$node"/>
     </xsl:call-template>
   </xsl:variable>
+
   <xsl:variable name="title">
     <xsl:apply-templates select="$node" mode="object.title.markup">
       <xsl:with-param name="allow-anchors" select="1"/>
     </xsl:apply-templates>
   </xsl:variable>
+
   <xsl:variable name="titleabbrev">
     <xsl:apply-templates select="$node" mode="titleabbrev.markup"/>
+  </xsl:variable>
+
+  <xsl:variable name="level">
+    <xsl:choose>
+      <xsl:when test="ancestor::section">
+	<xsl:value-of select="count(ancestor::section)+1"/>
+      </xsl:when>
+      <xsl:when test="ancestor::sect5">6</xsl:when>
+      <xsl:when test="ancestor::sect4">5</xsl:when>
+      <xsl:when test="ancestor::sect3">4</xsl:when>
+      <xsl:when test="ancestor::sect2">3</xsl:when>
+      <xsl:when test="ancestor::sect1">2</xsl:when>
+      <xsl:otherwise>1</xsl:otherwise>
+    </xsl:choose>
   </xsl:variable>
 
   <xsl:if test="$passivetex.extensions != 0">
@@ -75,7 +92,43 @@
         <xsl:value-of select="$title"/>
       </xsl:attribute>
     </xsl:if>
-    <xsl:copy-of select="$title"/>
+
+    <!-- Let's handle the case where a component (bibliography, for example)
+         occurs inside a section; will we need parameters for this?
+         Danger Will Robinson: using section.title.level*.properties here
+         runs the risk that someone will set something other than
+         font-size there... -->
+    <xsl:choose>
+      <xsl:when test="$level=2">
+	<fo:block xsl:use-attribute-sets="section.title.level2.properties">
+	  <xsl:copy-of select="$title"/>
+	</fo:block>
+      </xsl:when>
+      <xsl:when test="$level=3">
+        <fo:block xsl:use-attribute-sets="section.title.level3.properties">
+          <xsl:copy-of select="$title"/>
+        </fo:block>
+      </xsl:when>
+      <xsl:when test="$level=4">
+        <fo:block xsl:use-attribute-sets="section.title.level4.properties">
+          <xsl:copy-of select="$title"/>
+        </fo:block>
+      </xsl:when>
+      <xsl:when test="$level=5">
+        <fo:block xsl:use-attribute-sets="section.title.level5.properties">
+          <xsl:copy-of select="$title"/>
+        </fo:block>
+      </xsl:when>
+      <xsl:when test="$level=6">
+	<fo:block xsl:use-attribute-sets="section.title.level6.properties">
+	  <xsl:copy-of select="$title"/>
+	</fo:block>
+      </xsl:when>
+      <xsl:otherwise>
+	<!-- not in a section: do nothing special -->
+	<xsl:copy-of select="$title"/>
+      </xsl:otherwise>
+    </xsl:choose>
   </fo:block>
 </xsl:template>
 

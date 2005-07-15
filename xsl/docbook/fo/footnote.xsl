@@ -6,7 +6,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: footnote.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
+     $Id: footnote.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -47,7 +47,6 @@
               <xsl:apply-templates select="." mode="footnote.number"/>
             </xsl:with-param>
           </xsl:call-template>
-          <xsl:text> </xsl:text>
         </fo:inline>
         <fo:footnote-body font-family="{$body.fontset}"
                           font-size="{$footnote.font.size}"

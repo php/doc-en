@@ -4,7 +4,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: task.xsl,v 1.1 2004-10-01 16:32:07 techtonik Exp $
+     $Id: task.xsl,v 1.2 2005-07-15 08:27:49 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.

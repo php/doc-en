@@ -4,7 +4,7 @@
                 exclude-result-prefixes="exsl">
 
 <!-- ********************************************************************
-     $Id: chunk-code.xsl,v 1.1 2004-10-01 16:32:08 techtonik Exp $
+     $Id: chunk-code.xsl,v 1.2 2005-07-15 08:27:50 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -242,10 +242,10 @@
              |preceding::refentry[1]
              |preceding::colophon[1]
              |preceding::article[1]
-             |preceding::bibliography[parent::article or parent::book][1]
-             |preceding::glossary[parent::article or parent::book][1]
+             |preceding::bibliography[parent::article or parent::book or parent::part][1]
+             |preceding::glossary[parent::article or parent::book or parent::part][1]
              |preceding::index[$generate.index != 0]
-	                       [parent::article or parent::book][1]
+	                       [parent::article or parent::book or parent::part][1]
              |preceding::setindex[$generate.index != 0][1]
              |ancestor::set
              |ancestor::book[1]
@@ -327,10 +327,10 @@
              |following::reference[1]
              |following::refentry[1]
              |following::colophon[1]
-             |following::bibliography[parent::article or parent::book][1]
-             |following::glossary[parent::article or parent::book][1]
+             |following::bibliography[parent::article or parent::book or parent::part][1]
+             |following::glossary[parent::article or parent::book or parent::part][1]
              |following::index[$generate.index != 0]
-	                       [parent::article or parent::book][1]
+	                       [parent::article or parent::book or parent::part][1]
              |following::article[1]
              |following::setindex[$generate.index != 0][1]
              |descendant::book[1]
@@ -338,10 +338,10 @@
              |descendant::chapter[1]
              |descendant::appendix[1]
              |descendant::article[1]
-             |descendant::bibliography[parent::article or parent::book][1]
-             |descendant::glossary[parent::article or parent::book][1]
+             |descendant::bibliography[parent::article or parent::book or parent::part][1]
+             |descendant::glossary[parent::article or parent::book or parent::part][1]
              |descendant::index[$generate.index != 0]
-	                       [parent::article or parent::book][1]
+	                       [parent::article or parent::book or parent::part][1]
              |descendant::colophon[1]
              |descendant::setindex[$generate.index != 0][1]
              |descendant::part[1]
@@ -388,10 +388,10 @@
              |preceding::refentry[1]
              |preceding::colophon[1]
              |preceding::article[1]
-             |preceding::bibliography[parent::article or parent::book][1]
-             |preceding::glossary[parent::article or parent::book][1]
+             |preceding::bibliography[parent::article or parent::book or parent::part][1]
+             |preceding::glossary[parent::article or parent::book or parent::part][1]
              |preceding::index[$generate.index != 0]
-	                       [parent::article or parent::book][1]
+	                       [parent::article or parent::book or parent::part][1]
              |preceding::setindex[$generate.index != 0][1]
              |ancestor::set
              |ancestor::book[1]
@@ -430,8 +430,8 @@
              |following::reference[1]
              |following::refentry[1]
              |following::colophon[1]
-             |following::bibliography[parent::article or parent::book][1]
-             |following::glossary[parent::article or parent::book][1]
+             |following::bibliography[parent::article or parent::book or parent::part][1]
+             |following::glossary[parent::article or parent::book or parent::part][1]
              |following::index[$generate.index != 0]
 	                       [parent::article or parent::book][1]
              |following::article[1]
@@ -442,7 +442,7 @@
              |descendant::appendix[1]
              |descendant::article[1]
              |descendant::bibliography[parent::article or parent::book][1]
-             |descendant::glossary[parent::article or parent::book][1]
+             |descendant::glossary[parent::article or parent::book or parent::part][1]
              |descendant::index[$generate.index != 0]
 	                       [parent::article or parent::book][1]
              |descendant::colophon[1]
@@ -523,7 +523,7 @@
                      |article
                      |reference|refentry
                      |book/glossary|article/glossary|part/glossary
-                     |book/bibliography|article/bibliography
+                     |book/bibliography|article/bibliography|part/bibliography
                      |colophon">
   <xsl:choose>
     <xsl:when test="$onechunk != 0 and parent::*">
@@ -555,7 +555,8 @@
 
 <xsl:template match="setindex
                      |book/index
-                     |article/index">
+                     |article/index
+                     |part/index">
   <!-- some implementations use completely empty index tags to indicate -->
   <!-- where an automatically generated index should be inserted. so -->
   <!-- if the index is completely empty, skip it. -->

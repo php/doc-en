@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: admon.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: admon.xsl,v 1.4 2005-07-15 08:27:50 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -12,7 +12,7 @@
 
      ******************************************************************** -->
 
-<xsl:template name="admon.graphic.width">
+<xsl:template match="*" mode="admon.graphic.width">
   <xsl:param name="node" select="."/>
   <xsl:text>25</xsl:text>
 </xsl:template>
@@ -78,7 +78,7 @@
       <tr>
         <td rowspan="2" align="center" valign="top">
           <xsl:attribute name="width">
-            <xsl:call-template name="admon.graphic.width"/>
+            <xsl:apply-templates select="." mode="admon.graphic.width"/>
           </xsl:attribute>
           <img alt="[{$alt}]">
             <xsl:attribute name="src">

@@ -21,7 +21,7 @@
                 xmlns:i="urn:cz-kosek:functions:index">
 
 <!-- ********************************************************************
-     $Id: autoidx-ng.xsl,v 1.1 2004-10-01 16:32:06 techtonik Exp $
+     $Id: autoidx-ng.xsl,v 1.2 2005-07-15 08:27:48 techtonik Exp $
      ********************************************************************
 
      This file is part of the DocBook XSL Stylesheet distribution.

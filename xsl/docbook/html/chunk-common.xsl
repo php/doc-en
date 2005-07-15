@@ -3,7 +3,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: chunk-common.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: chunk-common.xsl,v 1.4 2005-07-15 08:27:50 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -24,12 +24,12 @@
        The root element
        appendix
        article
-       bibliography  in article or book
+       bibliography  in article or part or book
        book
        chapter
        colophon
-       glossary      in article or book
-       index         in article or book
+       glossary      in article or part or book
+       index         in article or part or book
        part
        preface
        refentry
@@ -118,13 +118,19 @@
     <xsl:when test="name($node)='refentry'">1</xsl:when>
     <xsl:when test="name($node)='index' and $generate.index != 0
                     and (name($node/parent::*) = 'article'
-                         or name($node/parent::*) = 'book')">1</xsl:when>
+                    or name($node/parent::*) = 'book'
+                    or name($node/parent::*) = 'part'
+                    )">1</xsl:when>
     <xsl:when test="name($node)='bibliography'
                     and (name($node/parent::*) = 'article'
-                         or name($node/parent::*) = 'book')">1</xsl:when>
+                    or name($node/parent::*) = 'book'
+                    or name($node/parent::*) = 'part'
+                    )">1</xsl:when>
     <xsl:when test="name($node)='glossary'
                     and (name($node/parent::*) = 'article'
-                         or name($node/parent::*) = 'book')">1</xsl:when>
+                    or name($node/parent::*) = 'book'
+                    or name($node/parent::*) = 'part'
+                    )">1</xsl:when>
     <xsl:when test="name($node)='colophon'">1</xsl:when>
     <xsl:when test="name($node)='book'">1</xsl:when>
     <xsl:when test="name($node)='set'">1</xsl:when>
@@ -819,7 +825,8 @@
               </td>
               <td width="20%" align="center">
                 <xsl:choose>
-                  <xsl:when test="count($up)>0">
+                  <xsl:when test="count($up)&gt;0
+		                  and generate-id($up) != generate-id($home)">
                     <a accesskey="u">
                       <xsl:attribute name="href">
                         <xsl:call-template name="href.target">

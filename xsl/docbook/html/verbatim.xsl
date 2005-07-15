@@ -8,7 +8,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: verbatim.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: verbatim.xsl,v 1.4 2005-07-15 08:27:51 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -28,7 +28,18 @@
 
   <xsl:call-template name="anchor"/>
 
-  <xsl:variable name="content">
+  <xsl:if test="$shade.verbatim != 0">
+    <xsl:message>
+      <xsl:text>The shade.verbatim parameter is deprecated. </xsl:text>
+      <xsl:text>Use CSS instead,</xsl:text>
+    </xsl:message>
+    <xsl:message>
+      <xsl:text>for example: pre.</xsl:text>
+      <xsl:value-of select="local-name(.)"/>
+      <xsl:text> { background-color: #E0E0E0; }</xsl:text>
+    </xsl:message>
+  </xsl:if>
+
     <xsl:choose>
       <xsl:when test="$suppress-numbers = '0'
                       and @linenumbering = 'numbered'
@@ -49,22 +60,6 @@
         </pre>
       </xsl:otherwise>
     </xsl:choose>
-  </xsl:variable>
-
-  <xsl:choose>
-    <xsl:when test="$shade.verbatim != 0">
-      <table xsl:use-attribute-sets="shade.verbatim.style">
-        <tr>
-          <td>
-            <xsl:copy-of select="$content"/>
-          </td>
-        </tr>
-      </table>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:copy-of select="$content"/>
-    </xsl:otherwise>
-  </xsl:choose>
 </xsl:template>
 
 <xsl:template match="literallayout">
@@ -74,7 +69,18 @@
     <xsl:apply-templates/>
   </xsl:variable>
 
-  <xsl:variable name="content">
+  <xsl:if test="$shade.verbatim != 0 and @class='monospaced'">
+    <xsl:message>
+      <xsl:text>The shade.verbatim parameter is deprecated. </xsl:text>
+      <xsl:text>Use CSS instead,</xsl:text>
+    </xsl:message>
+    <xsl:message>
+      <xsl:text>for example: pre.</xsl:text>
+      <xsl:value-of select="local-name(.)"/>
+      <xsl:text> { background-color: #E0E0E0; }</xsl:text>
+    </xsl:message>
+  </xsl:if>
+
     <xsl:choose>
       <xsl:when test="$suppress-numbers = '0'
                       and @linenumbering = 'numbered'
@@ -99,7 +105,6 @@
           </xsl:otherwise>
         </xsl:choose>
       </xsl:when>
-
       <xsl:otherwise>
         <xsl:choose>
           <xsl:when test="@class='monospaced'">
@@ -117,22 +122,6 @@
             </div>
           </xsl:otherwise>
         </xsl:choose>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:variable>
-
-  <xsl:choose>
-    <xsl:when test="$shade.verbatim != 0 and @class='monospaced'">
-      <table xsl:use-attribute-sets="shade.verbatim.style">
-        <tr>
-          <td>
-            <xsl:copy-of select="$content"/>
-          </td>
-        </tr>
-      </table>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:copy-of select="$content"/>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>

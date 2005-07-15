@@ -4,7 +4,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:src="http://nwalsh.com/xmlns/litprog/fragment" exclude-result-prefixes="src" version="1.0">
 
 <!-- ********************************************************************
-     $Id: param.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: param.xsl,v 1.4 2005-07-15 08:27:51 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -32,7 +32,7 @@
 <xsl:param name="callout.defaultcolumn" select="'60'"/>
 <xsl:param name="callout.graphics.extension" select="'.png'"/>
 <xsl:param name="callout.graphics" select="'1'"/>
-<xsl:param name="callout.graphics.number.limit" select="'10'"/>
+<xsl:param name="callout.graphics.number.limit" select="'15'"/>
 <xsl:param name="callout.graphics.path" select="'images/callouts/'"/>
 <xsl:param name="callout.list.table" select="'1'"/>
 <xsl:param name="callout.unicode" select="0"/>
@@ -59,7 +59,7 @@
 <xsl:param name="ebnf.table.bgcolor" select="'#F5DCB3'"/>
 <xsl:param name="ebnf.table.border" select="1"/>
 <xsl:param name="ebnf.assignment">
-<tt>::=</tt>
+<code>::=</code>
 </xsl:param>
 
 <xsl:param name="ebnf.statement.terminator"/>

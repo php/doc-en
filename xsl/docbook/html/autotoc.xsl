@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: autotoc.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: autotoc.xsl,v 1.4 2005-07-15 08:27:50 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -448,16 +448,20 @@
   </xsl:variable>
 
   <xsl:element name="{$toc.listitem.type}">
+    <span class='refentrytitle'>
     <a>
       <xsl:attribute name="href">
         <xsl:call-template name="href.target"/>
       </xsl:attribute>
       <xsl:copy-of select="$title"/>
     </a>
+    </span>
+    <span class='refpurpose'>
     <xsl:if test="$annotate.toc != 0">
       <xsl:text> - </xsl:text>
       <xsl:value-of select="refnamediv/refpurpose"/>
     </xsl:if>
+    </span>
   </xsl:element>
 </xsl:template>
 

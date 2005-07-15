@@ -12,7 +12,7 @@
 <xsl:include href="../common/table.xsl"/>
 
 <!-- ********************************************************************
-     $Id: table.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
+     $Id: table.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -24,7 +24,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: table.xsl,v 1.3 2004-10-01 16:32:07 techtonik Exp $
+$Id: table.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>
@@ -146,11 +146,22 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   </xsl:if>
 
   <xsl:variable name="explicit.table.width">
-    <xsl:call-template name="dbfo-attribute">
-      <xsl:with-param name="pis"
-                      select="../processing-instruction('dbfo')"/>
-      <xsl:with-param name="attribute" select="'table-width'"/>
-    </xsl:call-template>
+    <xsl:choose>
+      <xsl:when test="self::entrytbl">
+        <xsl:call-template name="dbfo-attribute">
+          <xsl:with-param name="pis" 
+                          select="processing-instruction('dbfo')"/>
+          <xsl:with-param name="attribute" select="'table-width'"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="dbfo-attribute">
+          <xsl:with-param name="pis" 
+                          select="../processing-instruction('dbfo')"/>
+          <xsl:with-param name="attribute" select="'table-width'"/>
+        </xsl:call-template>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:variable>
 
   <xsl:variable name="table.width">
