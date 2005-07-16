@@ -4,7 +4,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: htmltbl.xsl,v 1.2 2005-07-15 08:27:48 techtonik Exp $
+     $Id: htmltbl.xsl,v 1.3 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -15,11 +15,11 @@
 
 <!-- ==================================================================== -->
 
-  <xsl:attribute-set name="th.style">
+<xsl:attribute-set name="th.style">
     <xsl:attribute name="font-weight">bold</xsl:attribute>
-  </xsl:attribute-set>
+</xsl:attribute-set>
 
-  <xsl:template match="table|informaltable" mode="htmlTable">
+<xsl:template match="table|informaltable" mode="htmlTable">
     <xsl:if test="tgroup/tbody/row
                   |tgroup/thead/row
                   |tgroup/tfoot/row">
@@ -38,9 +38,16 @@
 
     <xsl:choose>
       <xsl:when test="caption">
-        <fo:table-and-caption id="{$id}">
+      <fo:table-and-caption id="{$id}" 
+                            xsl:use-attribute-sets="table.properties">
           <xsl:apply-templates select="caption" mode="htmlTable"/>
-          <fo:table table-layout="fixed">
+        <fo:table xsl:use-attribute-sets="table.table.properties">
+          <xsl:choose>
+            <xsl:when test="$fop.extensions != 0 or
+                            $passivetex.extensions != 0">
+              <xsl:attribute name="table-layout">fixed</xsl:attribute>
+            </xsl:when>
+          </xsl:choose>
             <xsl:attribute name="width">
               <xsl:choose>
                 <xsl:when test="@width">
@@ -52,12 +59,26 @@
             <xsl:call-template name="make-html-table-columns">
               <xsl:with-param name="count" select="$numcols"/>
             </xsl:call-template>
-            <xsl:apply-templates select="tbody|thead|tfoot" mode="htmlTable"/>
+          <xsl:apply-templates select="thead" mode="htmlTable"/>
+          <xsl:apply-templates select="tfoot" mode="htmlTable"/>
+          <xsl:choose>
+            <xsl:when test="tbody">
+              <xsl:apply-templates select="tbody" mode="htmlTable"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <fo:table-body>
+                <xsl:apply-templates select="tr" mode="htmlTable"/>
+              </fo:table-body>
+            </xsl:otherwise>
+          </xsl:choose>
           </fo:table>
         </fo:table-and-caption>
       </xsl:when>
       <xsl:otherwise>
-        <fo:table table-layout="fixed" id="{$id}">
+      <fo:block id="{$id}"
+                xsl:use-attribute-sets="informaltable.properties">
+        <fo:table table-layout="fixed"
+                  xsl:use-attribute-sets="table.table.properties">
           <xsl:attribute name="width">
             <xsl:choose>
               <xsl:when test="@width">
@@ -71,11 +92,12 @@
           </xsl:call-template>
           <xsl:apply-templates mode="htmlTable"/>
         </fo:table>
+      </fo:block>
       </xsl:otherwise>
     </xsl:choose>
-  </xsl:template>
+</xsl:template>
 
-  <xsl:template match="caption" mode="htmlTable">
+<xsl:template match="caption" mode="htmlTable">
     <fo:table-caption>
       <fo:block>
         <xsl:apply-templates select=".." mode="object.title.markup">
@@ -83,9 +105,9 @@
         </xsl:apply-templates>
       </fo:block>
     </fo:table-caption>
-  </xsl:template>
+</xsl:template>
 
-  <xsl:template name="widest-html-row">
+<xsl:template name="widest-html-row">
     <xsl:param name="rows" select="''"/>
     <xsl:param name="count" select="0"/>
     <xsl:choose>
@@ -109,9 +131,9 @@
         </xsl:choose>
       </xsl:otherwise>
     </xsl:choose>
-  </xsl:template>
+</xsl:template>
 
-  <xsl:template name="make-html-table-columns">
+<xsl:template name="make-html-table-columns">
     <xsl:param name="count" select="0"/>
     <xsl:param name="number" select="1"/>
 
@@ -141,51 +163,84 @@
         </xsl:if>
       </xsl:when>
     </xsl:choose>
-  </xsl:template>
+</xsl:template>
 
-  <xsl:template match="tbody" mode="htmlTable">
+<xsl:template match="tbody" mode="htmlTable">
     <fo:table-body border-bottom-width="0.25pt"
                    border-bottom-style="solid"
                    border-bottom-color="black">
       <xsl:apply-templates mode="htmlTable"/>
     </fo:table-body>
-  </xsl:template>
+</xsl:template>
 
-  <xsl:template match="td" mode="htmlTable">
-    <fo:table-cell>
+<xsl:template match="td" mode="htmlTable">
+  <xsl:variable name="bgcolor">
+    <xsl:call-template name="dbfo-attribute">
+      <xsl:with-param name="pis" select="processing-instruction('dbfo')"/>
+      <xsl:with-param name="attribute" select="'bgcolor'"/>
+    </xsl:call-template>
+  </xsl:variable>
+  <fo:table-cell xsl:use-attribute-sets="table.cell.padding">
+    <xsl:call-template name="table.cell.properties">
+      <xsl:with-param name="bgcolor.pi" select="$bgcolor"/>
+    </xsl:call-template>
       <fo:block>
+      <xsl:call-template name="table.cell.block.properties"/>
         <xsl:apply-templates/>
       </fo:block>
     </fo:table-cell>
-  </xsl:template>
+</xsl:template>
 
-  <xsl:template match="tfoot" mode="htmlTable">
+<xsl:template match="tfoot" mode="htmlTable">
     <fo:table-footer>
       <xsl:apply-templates mode="htmlTable"/>
     </fo:table-footer>
-  </xsl:template>
+</xsl:template>
 
-  <xsl:template match="th" mode="htmlTable">
-    <fo:table-cell xsl:use-attribute-sets="th.style">
+<xsl:template match="th" mode="htmlTable">
+  <xsl:variable name="bgcolor">
+    <xsl:call-template name="dbfo-attribute">
+      <xsl:with-param name="pis" select="processing-instruction('dbfo')"/>
+      <xsl:with-param name="attribute" select="'bgcolor'"/>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <fo:table-cell xsl:use-attribute-sets="th.style table.cell.padding">
+    <xsl:call-template name="table.cell.properties">
+      <xsl:with-param name="bgcolor.pi" select="$bgcolor"/>
+    </xsl:call-template>
       <fo:block>
+      <xsl:call-template name="table.cell.block.properties"/>
         <xsl:apply-templates/>
       </fo:block>
     </fo:table-cell>
-  </xsl:template>
+</xsl:template>
 
-  <xsl:template match="thead" mode="htmlTable">
+<xsl:template match="thead" mode="htmlTable">
     <fo:table-header border-bottom-width="0.25pt"
                      border-bottom-style="solid"
                      border-bottom-color="black"
                      font-weight="bold">
       <xsl:apply-templates mode="htmlTable"/>
     </fo:table-header>
-  </xsl:template>
+</xsl:template>
 
-  <xsl:template match="tr" mode="htmlTable">
+<xsl:template match="tr" mode="htmlTable">
+  <xsl:variable name="bgcolor">
+    <xsl:call-template name="dbfo-attribute">
+      <xsl:with-param name="pis" select="processing-instruction('dbfo')"/>
+      <xsl:with-param name="attribute" select="'bgcolor'"/>
+    </xsl:call-template>
+  </xsl:variable>
+
     <fo:table-row>
+    <xsl:if test="$bgcolor != ''">
+      <xsl:attribute name="background-color">
+        <xsl:value-of select="$bgcolor"/>
+      </xsl:attribute>
+    </xsl:if>
       <xsl:apply-templates mode="htmlTable"/>
     </fo:table-row>
-  </xsl:template>
+</xsl:template>
 
 </xsl:stylesheet>

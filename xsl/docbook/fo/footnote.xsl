@@ -6,7 +6,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: footnote.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: footnote.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -17,7 +17,7 @@
 
 <xsl:template name="format.footnote.mark">
   <xsl:param name="mark" select="'?'"/>
-  <fo:inline xsl:use-attribute-sets="superscript.properties">
+  <fo:inline xsl:use-attribute-sets="footnote.mark.properties">
     <xsl:choose>
       <xsl:when test="$fop.extensions != 0">
         <xsl:attribute name="vertical-align">super</xsl:attribute>
@@ -48,12 +48,7 @@
             </xsl:with-param>
           </xsl:call-template>
         </fo:inline>
-        <fo:footnote-body font-family="{$body.fontset}"
-                          font-size="{$footnote.font.size}"
-                          font-weight="normal"
-                          font-style="normal"
-                          text-align="{$alignment}"
-                          margin-left="0pc">
+        <fo:footnote-body xsl:use-attribute-sets="footnote.properties">
           <xsl:apply-templates/>
         </fo:footnote-body>
       </fo:footnote>

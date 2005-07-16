@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: component.xsl,v 1.5 2005-07-15 09:18:37 techtonik Exp $
+     $Id: component.xsl,v 1.6 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -186,6 +186,11 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
       <fo:block id="{$id}">
         <xsl:call-template name="dedication.titlepage"/>
       </fo:block>
@@ -256,6 +261,11 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
       <fo:block id="{$id}">
         <xsl:call-template name="colophon.titlepage"/>
       </fo:block>
@@ -327,6 +337,11 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
       <fo:block id="{$id}">
         <xsl:call-template name="preface.titlepage"/>
       </fo:block>
@@ -409,6 +424,11 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
       <fo:block id="{$id}">
         <xsl:call-template name="chapter.titlepage"/>
       </fo:block>
@@ -490,6 +510,11 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
       <fo:block id="{$id}">
         <xsl:call-template name="appendix.titlepage"/>
       </fo:block>
@@ -572,6 +597,11 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
       <fo:block id="{$id}">
         <xsl:call-template name="article.titlepage"/>
       </fo:block>

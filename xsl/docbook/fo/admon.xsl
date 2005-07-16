@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: admon.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: admon.xsl,v 1.5 2005-07-16 23:38:31 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -102,12 +102,7 @@
     <xsl:call-template name="object.id"/>
   </xsl:variable>
 
-  <fo:block space-before.minimum="0.8em"
-            space-before.optimum="1em"
-            space-before.maximum="1.2em"
-            start-indent="0.25in"
-            end-indent="0.25in"
-            id="{$id}">
+  <fo:block id="{$id}">
     <xsl:if test="$admon.textlabel != 0 or title">
       <fo:block keep-with-next='always'
                 xsl:use-attribute-sets="admonition.title.properties">

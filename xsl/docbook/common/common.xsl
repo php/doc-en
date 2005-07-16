@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: common.xsl,v 1.4 2005-07-15 09:18:39 techtonik Exp $
+     $Id: common.xsl,v 1.5 2005-07-16 23:38:35 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -19,7 +19,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: common.xsl,v 1.4 2005-07-15 09:18:39 techtonik Exp $
+$Id: common.xsl,v 1.5 2005-07-16 23:38:35 techtonik Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>
@@ -1403,7 +1403,7 @@ pointed to by the link is one of the elements listed in
   <xsl:choose>
     <!-- Change this list if you want to change the order of symbols -->
     <xsl:when test="$itemsymbol = 'disc'">circle</xsl:when>
-    <xsl:when test="$itemsymbol = 'round'">square</xsl:when>
+    <xsl:when test="$itemsymbol = 'circle'">square</xsl:when>
     <xsl:otherwise>disc</xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -1412,6 +1412,9 @@ pointed to by the link is one of the elements listed in
   <xsl:param name="node" select="."/>
 
   <xsl:choose>
+    <xsl:when test="@override">
+      <xsl:value-of select="@override"/>
+    </xsl:when>
     <xsl:when test="$node/@mark">
       <xsl:value-of select="$node/@mark"/>
     </xsl:when>

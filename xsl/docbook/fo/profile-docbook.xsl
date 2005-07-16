@@ -9,7 +9,7 @@
 <xsl:output method="xml" indent="no"/>
 
 <!-- ********************************************************************
-     $Id: profile-docbook.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
+     $Id: profile-docbook.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -79,7 +79,7 @@
 
 <!-- ==================================================================== -->
 
-<xsl:key name="id" match="*" use="@id"/>
+<xsl:key name="id" match="*" use="@id|@xml:id"/>
 
 <!-- ==================================================================== -->
 
@@ -192,6 +192,11 @@
     </xsl:choose>
   </xsl:variable>
   
+  <!-- Include all id values in XEP output -->
+  <xsl:if test="$xep.extensions != 0">
+    <xsl:processing-instruction name="xep-pdf-drop-unused-destinations">false</xsl:processing-instruction>
+  </xsl:if>
+
   <fo:root xsl:use-attribute-sets="root.properties">
     <xsl:attribute name="language">
       <xsl:call-template name="l10n.language">

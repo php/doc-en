@@ -9,7 +9,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: verbatim.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
+     $Id: verbatim.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -397,6 +397,11 @@
     <!-- Place soft-hyphen after space or non-breakable space. -->
     <xsl:when test="$head = ' ' or $head = '&#160;'">
       <xsl:text>&#160;</xsl:text>
+      <xsl:text>&#x00AD;</xsl:text>
+    </xsl:when>
+    <xsl:when test="$hyphenate.verbatim.characters != '' and
+                    translate($hyphenate.verbatim.characters, $head, '') = ''">
+      <xsl:value-of select="$head"/>
       <xsl:text>&#x00AD;</xsl:text>
     </xsl:when>
     <xsl:otherwise>

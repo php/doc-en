@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: admon.xsl,v 1.4 2005-07-15 08:27:50 techtonik Exp $
+     $Id: admon.xsl,v 1.5 2005-07-16 23:38:34 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -94,7 +94,7 @@
         </th>
       </tr>
       <tr>
-        <td colspan="2" align="left" valign="top">
+        <td align="left" valign="top">
           <xsl:apply-templates/>
         </td>
       </tr>

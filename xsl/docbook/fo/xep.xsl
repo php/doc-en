@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: xep.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
+     $Id: xep.xsl,v 1.5 2005-07-16 23:38:33 techtonik Exp $
      ********************************************************************
      (c) Stephane Bline Peregrine Systems 2001
      Implementation of xep extensions:
@@ -13,27 +13,28 @@
        * Document information (XEP 2.5 meta information extensions)
      ******************************************************************** -->
 
-<!-- ********************************************************************
-     Document information
-     In PDF bookmarks can't be used characters with code>255. This version of file
-     translates characters with code>255 back to ASCII.
-
-        Pavel Zampach (zampach@volny.cz)
-
-     ********************************************************************-->
-
 <!-- FIXME: Norm, I changed things so that the top-level element (book or set)
      does not appear in the TOC. Is this the right thing? -->
 
 <xsl:template name="xep-document-information">
   <rx:meta-info>
-    <xsl:if test="(//author)[1]">
+    <xsl:variable name="authors" select="(//author|//editor|//authorgroup)[1]"/>
+    <xsl:if test="$authors">
       <xsl:element name="rx:meta-field">
         <xsl:attribute name="name">author</xsl:attribute>
         <xsl:attribute name="value">
+          <xsl:choose>
+            <xsl:when test="$authors[self::authorgroup]">
+              <xsl:call-template name="person.name.list">
+                <xsl:with-param name="person.list" select="$authors/*[self::author|self::corpauthor|self::othercredit|self::editor]"/>
+              </xsl:call-template>
+            </xsl:when>
+            <xsl:otherwise>
           <xsl:call-template name="person.name">
-            <xsl:with-param name="node" select="(//author)[1]"/>
+                <xsl:with-param name="node" select="$authors"/>
           </xsl:call-template>
+            </xsl:otherwise>
+          </xsl:choose>
         </xsl:attribute>
       </xsl:element>
     </xsl:if>

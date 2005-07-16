@@ -4,7 +4,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: pagesetup.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: pagesetup.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the DocBook XSL Stylesheet distribution.
@@ -2070,6 +2070,28 @@
   </xsl:choose>
 </xsl:template>
 
+<xsl:template name="set.flow.properties">
+  <xsl:param name="element" select="local-name(.)"/>
+  <xsl:param name="master-reference" select="''"/>
+
+  <!-- This template is called after each <fo:flow> starts. -->
+  <!-- Customize this template to set attributes on fo:flow -->
+
+  <xsl:choose>
+    <xsl:when test="$master-reference = 'body' or
+                    $element = 'preface' or
+                    ($master-reference = 'back' and
+                    $element = 'appendix')">
+      <xsl:attribute name="start-indent">
+        <xsl:value-of select="$body.start.indent"/>
+      </xsl:attribute>
+      <xsl:attribute name="end-indent">
+        <xsl:value-of select="$body.end.indent"/>
+      </xsl:attribute>
+    </xsl:when>
+  </xsl:choose>
+
+</xsl:template>
 <!-- ==================================================================== -->
 
 </xsl:stylesheet>

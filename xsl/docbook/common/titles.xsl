@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: titles.xsl,v 1.4 2005-07-15 08:27:52 techtonik Exp $
+     $Id: titles.xsl,v 1.5 2005-07-16 23:38:36 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -191,11 +191,15 @@ title of the element. This does not include the label.
   <xsl:variable name="refentrytitle" select="$refmeta//refentrytitle"/>
   <xsl:variable name="refnamediv" select=".//refnamediv"/>
   <xsl:variable name="refname" select="$refnamediv//refname"/>
+  <xsl:variable name="refdesc" select="$refnamediv//refdescriptor"/>
 
   <xsl:variable name="title">
     <xsl:choose>
       <xsl:when test="$refentrytitle">
         <xsl:apply-templates select="$refentrytitle[1]" mode="title.markup"/>
+      </xsl:when>
+      <xsl:when test="$refdesc">
+        <xsl:apply-templates select="$refdesc" mode="title.markup"/>
       </xsl:when>
       <xsl:when test="$refname">
         <xsl:apply-templates select="$refname[1]" mode="title.markup"/>
@@ -207,7 +211,7 @@ title of the element. This does not include the label.
   <xsl:copy-of select="$title"/>
 </xsl:template>
 
-<xsl:template match="refentrytitle|refname" mode="title.markup">
+<xsl:template match="refentrytitle|refname|refdescriptor" mode="title.markup">
   <xsl:param name="allow-anchors" select="0"/>
   <xsl:choose>
     <xsl:when test="$allow-anchors != 0">
@@ -352,7 +356,7 @@ title of the element. This does not include the label.
 
 <xsl:template match="figure|example|equation" mode="title.markup">
   <xsl:param name="allow-anchors" select="0"/>
-  <xsl:apply-templates select="title" mode="title.markup">
+  <xsl:apply-templates select="title|info/title" mode="title.markup">
     <xsl:with-param name="allow-anchors" select="$allow-anchors"/>
   </xsl:apply-templates>
 </xsl:template>
@@ -652,12 +656,6 @@ title of the element. This does not include the label.
 
     <xsl:otherwise>
       <xsl:apply-templates select="$target" mode="xref-to-prefix"/>
-
-      <xsl:if test="$target/title or $target/*/title">
-	<xsl:attribute name="title">
-	  <xsl:apply-templates select="$target" mode="xref-title"/>
-	</xsl:attribute>
-      </xsl:if>
 
       <xsl:apply-templates select="$target" mode="xref-to">
 	<xsl:with-param name="referrer" select="."/>

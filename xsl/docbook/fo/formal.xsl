@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: formal.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: formal.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -275,10 +275,13 @@
   </xsl:variable>
 
   <xsl:choose>
-    <xsl:when test="@float and @float != '0'">
+    <xsl:when test="(@float and @float != '0') or @floatstyle != ''">
       <fo:float>
         <xsl:attribute name="float">
           <xsl:choose>
+            <xsl:when test="@floatstyle != ''">
+              <xsl:value-of select="@floatstyle"/>
+            </xsl:when>
             <xsl:when test="@float = '1'">
               <xsl:value-of select="$default.float.class"/>
             </xsl:when>
@@ -582,7 +585,9 @@
             <xsl:attribute name="space-before.optimum">0pt</xsl:attribute>
             <xsl:attribute name="space-before.maximum">0pt</xsl:attribute>
           </xsl:if>
-          <xsl:if test="count($prop-columns) != 0">
+          <xsl:if test="count($prop-columns) != 0 or
+                        $fop.extensions != 0 or
+                        $passivetex.extensions != 0">
             <xsl:attribute name="table-layout">fixed</xsl:attribute>
           </xsl:if>
           <xsl:apply-templates select="."/>
@@ -608,8 +613,14 @@
   </xsl:variable>
 
   <xsl:choose>
-    <xsl:when test="@orient='land'">
-      <fo:block-container reference-orientation="90">
+    <xsl:when test="@orient='land' and 
+                    $fop.extensions = 0 and 
+                    $passivetex.extensions = 0" >
+      <fo:block-container reference-orientation="90"
+            xsl:use-attribute-sets="list.block.spacing">
+        <xsl:attribute name="width">
+          <xsl:call-template name="table.width"/>
+        </xsl:attribute>
         <fo:block>
           <!-- Such spans won't work in most FO processors since it does
                not follow the XSL spec, which says it must appear on
@@ -724,7 +735,9 @@
             <xsl:attribute name="space-before.optimum">0pt</xsl:attribute>
             <xsl:attribute name="space-before.maximum">0pt</xsl:attribute>
           </xsl:if>
-          <xsl:if test="count($prop-columns) != 0">
+          <xsl:if test="count($prop-columns) != 0 or
+                        $fop.extensions != 0 or
+                        $passivetex.extensions != 0">
             <xsl:attribute name="table-layout">fixed</xsl:attribute>
           </xsl:if>
           <xsl:apply-templates select="."/>

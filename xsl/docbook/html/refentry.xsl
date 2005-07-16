@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: refentry.xsl,v 1.5 2005-07-15 09:18:34 techtonik Exp $
+     $Id: refentry.xsl,v 1.6 2005-07-16 23:38:35 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -56,10 +56,14 @@
   <xsl:variable name="refentrytitle" select="$refmeta//refentrytitle"/>
   <xsl:variable name="refnamediv" select="$node//refnamediv"/>
   <xsl:variable name="refname" select="$refnamediv//refname"/>
+  <xsl:variable name="refdesc" select="$refnamediv//refdescriptor"/>
   <xsl:variable name="title">
     <xsl:choose>
       <xsl:when test="$refentrytitle">
         <xsl:apply-templates select="$refentrytitle[1]" mode="title"/>
+      </xsl:when>
+      <xsl:when test="$refdesc">
+	<xsl:apply-templates select="$refdesc[1]" mode="title"/>
       </xsl:when>
       <xsl:when test="$refname">
         <xsl:apply-templates select="$refname[1]" mode="title"/>
@@ -92,7 +96,7 @@
 
 <xsl:template match="refentry/docinfo|refentry/refentryinfo"></xsl:template>
 
-<xsl:template match="refentrytitle|refname" mode="title">
+<xsl:template match="refentrytitle|refname|refdescriptor" mode="title">
   <xsl:apply-templates/>
 </xsl:template>
 
@@ -117,7 +121,11 @@
 <xsl:template match="refnamediv">
   <div class="{name(.)}">
     <xsl:call-template name="anchor"/>
+
     <xsl:choose>
+      <xsl:when test="preceding-sibling::refnamediv">
+	<!-- no title on secondary refnamedivs! -->
+      </xsl:when>
       <xsl:when test="$refentry.generate.name != 0">
         <h2>
           <xsl:call-template name="gentext">
@@ -138,6 +146,7 @@
         </h2>
       </xsl:when>
     </xsl:choose>
+
     <p>
       <xsl:apply-templates/>
     </p>
@@ -145,9 +154,11 @@
 </xsl:template>
 
 <xsl:template match="refname">
+  <xsl:if test="not(preceding-sibling::refdescriptor)">
   <xsl:apply-templates/>
   <xsl:if test="following-sibling::refname">
     <xsl:text>, </xsl:text>
+  </xsl:if>
   </xsl:if>
 </xsl:template>
 
@@ -161,7 +172,7 @@
 </xsl:template>
 
 <xsl:template match="refdescriptor">
-  <!-- todo: finish this -->
+  <xsl:apply-templates/>
 </xsl:template>
 
 <xsl:template match="refclass">
@@ -218,11 +229,15 @@
 <xsl:template match="refsection/title">
   <!-- the ID is output in the block.object call for refsect1 -->
   <xsl:variable name="level" select="count(ancestor-or-self::refsection)"/>
+  <xsl:variable name="refsynopsisdiv">
+    <xsl:text>0</xsl:text>
+    <xsl:if test="ancestor::refsynopsisdiv">1</xsl:if>
+  </xsl:variable>
   <xsl:variable name="hlevel">
     <xsl:choose>
-      <xsl:when test="$level &gt; 5">6</xsl:when>
+      <xsl:when test="$level+$refsynopsisdiv &gt; 5">6</xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="$level+1"/>
+        <xsl:value-of select="$level+1+$refsynopsisdiv"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>

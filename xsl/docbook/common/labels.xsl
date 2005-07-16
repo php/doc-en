@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: labels.xsl,v 1.5 2005-07-15 09:18:39 techtonik Exp $
+     $Id: labels.xsl,v 1.6 2005-07-16 23:38:35 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -247,6 +247,7 @@ element label.</para>
     </xsl:call-template>
   </xsl:variable>
 
+  <xsl:variable name="component.label">
   <xsl:if test="$section.label.includes.component.label != 0
                 and $parent.is.component != 0">
     <xsl:variable name="parent.label">
@@ -257,6 +258,8 @@ element label.</para>
       <xsl:apply-templates select=".." mode="intralabel.punctuation"/>
     </xsl:if>
   </xsl:if>
+  </xsl:variable>
+
 
   <xsl:variable name="is.numbered">
     <xsl:call-template name="label.this.section"/>
@@ -267,6 +270,7 @@ element label.</para>
       <xsl:value-of select="@label"/>
     </xsl:when>
     <xsl:when test="$is.numbered != 0">
+      <xsl:copy-of select="$component.label"/>
       <xsl:number count="sect1"/>
     </xsl:when>
   </xsl:choose>

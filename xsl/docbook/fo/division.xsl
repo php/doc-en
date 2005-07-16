@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: division.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: division.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -131,6 +131,12 @@
       </xsl:apply-templates>
 
       <fo:flow flow-name="xsl-region-body">
+        <xsl:call-template name="set.flow.properties">
+          <xsl:with-param name="element" select="local-name(.)"/>
+          <xsl:with-param name="master-reference" 
+                          select="$titlepage-master-reference"/>
+        </xsl:call-template>
+
         <fo:block id="{$id}">
           <xsl:call-template name="set.titlepage"/>
         </fo:block>
@@ -195,6 +201,12 @@
       </xsl:apply-templates>
 
       <fo:flow flow-name="xsl-region-body">
+        <xsl:call-template name="set.flow.properties">
+          <xsl:with-param name="element" select="local-name(.)"/>
+          <xsl:with-param name="master-reference" 
+                          select="$lot-master-reference"/>
+        </xsl:call-template>
+
         <xsl:call-template name="set.toc"/>
       </fo:flow>
     </fo:page-sequence>
@@ -284,6 +296,12 @@
       </xsl:apply-templates>
 
       <fo:flow flow-name="xsl-region-body">
+        <xsl:call-template name="set.flow.properties">
+          <xsl:with-param name="element" select="local-name(.)"/>
+          <xsl:with-param name="master-reference" 
+                          select="$titlepage-master-reference"/>
+        </xsl:call-template>
+
         <fo:block id="{$id}">
           <xsl:call-template name="book.titlepage"/>
         </fo:block>
@@ -353,6 +371,12 @@
       </xsl:apply-templates>
 
       <fo:flow flow-name="xsl-region-body">
+        <xsl:call-template name="set.flow.properties">
+          <xsl:with-param name="element" select="local-name(.)"/>
+          <xsl:with-param name="master-reference" 
+                          select="$lot-master-reference"/>
+        </xsl:call-template>
+
         <xsl:call-template name="division.toc"/>
       </fo:flow>
     </fo:page-sequence>
@@ -412,6 +436,12 @@
       </xsl:apply-templates>
 
       <fo:flow flow-name="xsl-region-body">
+        <xsl:call-template name="set.flow.properties">
+          <xsl:with-param name="element" select="local-name(.)"/>
+          <xsl:with-param name="master-reference" 
+                          select="$lot-master-reference"/>
+        </xsl:call-template>
+
         <xsl:call-template name="list.of.titles">
           <xsl:with-param name="titles" select="'figure'"/>
           <xsl:with-param name="nodes" select=".//figure"/>
@@ -474,6 +504,12 @@
       </xsl:apply-templates>
 
       <fo:flow flow-name="xsl-region-body">
+        <xsl:call-template name="set.flow.properties">
+          <xsl:with-param name="element" select="local-name(.)"/>
+          <xsl:with-param name="master-reference" 
+                          select="$lot-master-reference"/>
+        </xsl:call-template>
+
         <xsl:call-template name="list.of.titles">
           <xsl:with-param name="titles" select="'table'"/>
           <xsl:with-param name="nodes" select=".//table"/>
@@ -536,6 +572,12 @@
       </xsl:apply-templates>
 
       <fo:flow flow-name="xsl-region-body">
+        <xsl:call-template name="set.flow.properties">
+          <xsl:with-param name="element" select="local-name(.)"/>
+          <xsl:with-param name="master-reference" 
+                          select="$lot-master-reference"/>
+        </xsl:call-template>
+
         <xsl:call-template name="list.of.titles">
           <xsl:with-param name="titles" select="'example'"/>
           <xsl:with-param name="nodes" select=".//example"/>
@@ -599,6 +641,12 @@
       </xsl:apply-templates>
 
       <fo:flow flow-name="xsl-region-body">
+        <xsl:call-template name="set.flow.properties">
+          <xsl:with-param name="element" select="local-name(.)"/>
+          <xsl:with-param name="master-reference" 
+                          select="$lot-master-reference"/>
+        </xsl:call-template>
+
         <xsl:call-template name="list.of.titles">
           <xsl:with-param name="titles" select="'equation'"/>
           <xsl:with-param name="nodes" select=".//equation[title]"/>
@@ -661,6 +709,12 @@
       </xsl:apply-templates>
 
       <fo:flow flow-name="xsl-region-body">
+        <xsl:call-template name="set.flow.properties">
+          <xsl:with-param name="element" select="local-name(.)"/>
+          <xsl:with-param name="master-reference" 
+                          select="$lot-master-reference"/>
+        </xsl:call-template>
+
         <xsl:call-template name="list.of.titles">
           <xsl:with-param name="titles" select="'procedure'"/>
           <xsl:with-param name="nodes" select=".//procedure[title]"/>
@@ -751,6 +805,12 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" 
+                        select="$titlepage-master-reference"/>
+      </xsl:call-template>
+
       <fo:block id="{$id}">
         <xsl:call-template name="part.titlepage"/>
       </fo:block>
@@ -833,6 +893,12 @@
       </xsl:apply-templates>
 
       <fo:flow flow-name="xsl-region-body">
+        <xsl:call-template name="set.flow.properties">
+          <xsl:with-param name="element" select="local-name(.)"/>
+          <xsl:with-param name="master-reference" 
+                          select="$lot-master-reference"/>
+        </xsl:call-template>
+
         <xsl:call-template name="division.toc">
           <xsl:with-param name="toc-context" select="$part"/>
         </xsl:call-template>

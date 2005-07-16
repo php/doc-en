@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: biblio.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: biblio.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -70,6 +70,11 @@
         </xsl:apply-templates>
 
         <fo:flow flow-name="xsl-region-body">
+          <xsl:call-template name="set.flow.properties">
+            <xsl:with-param name="element" select="local-name(.)"/>
+            <xsl:with-param name="master-reference" select="$master-reference"/>
+          </xsl:call-template>
+
           <fo:block id="{$id}">
             <xsl:call-template name="bibliography.titlepage"/>
           </fo:block>

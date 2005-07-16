@@ -10,7 +10,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: index.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: index.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -111,6 +111,11 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
       <fo:block id="{$id}">
         <xsl:call-template name="index.titlepage"/>
       </fo:block>
@@ -207,6 +212,11 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
       <fo:block id="{$id}">
         <xsl:call-template name="setindex.titlepage"/>
       </fo:block>
@@ -249,14 +259,7 @@
   <xsl:param name="title"/>
   <xsl:param name="titlecontent"/>
 
-  <fo:block margin-left="0pt"
-	    font-size="14.4pt"
-            font-family="{$title.fontset}"
-            font-weight="bold"
-            keep-with-next.within-column="always"
-            space-before.optimum="{$body.font.master}pt"
-            space-before.minimum="{$body.font.master * 0.8}pt"
-            space-before.maximum="{$body.font.master * 1.2}pt">
+  <fo:block xsl:use-attribute-sets="index.div.title.properties">
     <xsl:choose>
       <xsl:when test="$title">
         <xsl:apply-templates select="." mode="object.title.markup">

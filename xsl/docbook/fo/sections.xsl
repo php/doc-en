@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: sections.xsl,v 1.5 2005-07-15 09:18:39 techtonik Exp $
+     $Id: sections.xsl,v 1.6 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -168,6 +168,11 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
       <fo:block id="{$id}" 
             xsl:use-attribute-sets="section.level1.properties">
         <xsl:call-template name="section.titlepage"/>
@@ -364,6 +369,11 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
       <fo:block id="{$id}" 
                 xsl:use-attribute-sets="section.level1.properties">
         <xsl:call-template name="sect1.titlepage"/>

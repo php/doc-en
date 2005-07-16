@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: toc.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
+     $Id: toc.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -79,6 +79,12 @@
           </xsl:apply-templates>
 
           <fo:flow flow-name="xsl-region-body">
+            <xsl:call-template name="set.flow.properties">
+              <xsl:with-param name="element" select="local-name(.)"/>
+              <xsl:with-param name="master-reference" 
+                              select="$master-reference"/>
+            </xsl:call-template>
+
             <fo:block xsl:use-attribute-sets="toc.margin.properties">
               <xsl:call-template name="table.of.contents.titlepage"/>
               <xsl:apply-templates/>

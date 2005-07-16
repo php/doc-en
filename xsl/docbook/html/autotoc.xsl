@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: autotoc.xsl,v 1.5 2005-07-15 09:18:33 techtonik Exp $
+     $Id: autotoc.xsl,v 1.6 2005-07-16 23:38:34 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -447,15 +447,21 @@
   <xsl:variable name="refentrytitle" select="$refmeta//refentrytitle"/>
   <xsl:variable name="refnamediv" select=".//refnamediv"/>
   <xsl:variable name="refname" select="$refnamediv//refname"/>
+  <xsl:variable name="refdesc" select="$refnamediv//refdescriptor"/>
   <xsl:variable name="title">
     <xsl:choose>
       <xsl:when test="$refentrytitle">
-        <xsl:apply-templates select="$refentrytitle[1]" mode="titleabbrev.markup"/>
+        <xsl:apply-templates select="$refentrytitle[1]"
+			     mode="titleabbrev.markup"/>
+      </xsl:when>
+      <xsl:when test="$refdesc">
+        <xsl:apply-templates select="$refdesc"
+			     mode="titleabbrev.markup"/>
       </xsl:when>
       <xsl:when test="$refname">
-        <xsl:apply-templates select="$refname[1]" mode="titleabbrev.markup"/>
+        <xsl:apply-templates select="$refname[1]"
+			     mode="titleabbrev.markup"/>
       </xsl:when>
-      <xsl:otherwise></xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
 

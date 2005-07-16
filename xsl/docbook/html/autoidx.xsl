@@ -43,7 +43,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: autoidx.xsl,v 1.4 2005-07-15 09:18:33 techtonik Exp $
+     $Id: autoidx.xsl,v 1.5 2005-07-16 23:38:34 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -382,6 +382,7 @@
         <xsl:attribute name="href">
           <xsl:call-template name="href.target">
             <xsl:with-param name="object" select="&section;"/>
+            <xsl:with-param name="context" select="//index[&scope;][1]"/>
           </xsl:call-template>
         </xsl:attribute>
 
@@ -416,6 +417,7 @@
         <xsl:attribute name="href">
           <xsl:call-template name="href.target">
             <xsl:with-param name="object" select="$target[1]"/>
+            <xsl:with-param name="context" select="//index[&scope;][1]"/>
           </xsl:call-template>
         </xsl:attribute>
         <xsl:apply-templates select="$target[1]" mode="index-title-content"/>
@@ -436,6 +438,7 @@
         <xsl:attribute name="href">
           <xsl:call-template name="href.target">
             <xsl:with-param name="object" select="$target[1]"/>
+            <xsl:with-param name="context" select="//index[&scope;][1]"/>
           </xsl:call-template>
         </xsl:attribute>
         <xsl:apply-templates select="$target[1]" mode="index-title-content"/>

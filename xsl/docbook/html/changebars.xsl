@@ -3,7 +3,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: changebars.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: changebars.xsl,v 1.4 2005-07-16 23:38:34 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -18,6 +18,8 @@
 <xsl:param name="show.revisionflag" select="'1'"/>
 
 <xsl:template name="system.head.content">
+<xsl:param name="node" select="."/>
+
 <style type="text/css">
 <xsl:text>
 div.added    { background-color: #ffff99; }

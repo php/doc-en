@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: refentry.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
+     $Id: refentry.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -72,6 +72,11 @@
       </xsl:apply-templates>
 
       <fo:flow flow-name="xsl-region-body">
+        <xsl:call-template name="set.flow.properties">
+          <xsl:with-param name="element" select="local-name(.)"/>
+          <xsl:with-param name="master-reference" select="$master-reference"/>
+        </xsl:call-template>
+
         <fo:block id="{$id}">
           <xsl:call-template name="reference.titlepage"/>
         </fo:block>
@@ -142,6 +147,11 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
       <xsl:apply-templates select=".." mode="reference.titlepage.mode"/>
       <xsl:if test="title">
         <fo:block id="{$id}">
@@ -226,6 +236,11 @@
         </xsl:apply-templates>
 
         <fo:flow flow-name="xsl-region-body">
+          <xsl:call-template name="set.flow.properties">
+            <xsl:with-param name="element" select="local-name(.)"/>
+            <xsl:with-param name="master-reference" select="$master-reference"/>
+          </xsl:call-template>
+
           <xsl:copy-of select="$refentry.content"/>
         </fo:flow>
       </fo:page-sequence>
@@ -289,6 +304,9 @@
   <!-- xsl:use-attribute-sets takes only a Qname, not a variable -->
   <fo:block>
     <xsl:choose>
+      <xsl:when test="preceding-sibling::refnamediv">
+	<!-- no title on secondary refnamedivs! -->
+      </xsl:when>
       <xsl:when test="$section.level = 1">
         <fo:block xsl:use-attribute-sets="refentry.title.properties">
           <fo:block xsl:use-attribute-sets="section.title.level1.properties">
@@ -333,11 +351,17 @@
       </xsl:otherwise>
     </xsl:choose>
 
-    <fo:block space-after="1em">
+    <fo:block>
+      <xsl:if test="not(following-sibling::refnamediv)">
+	<xsl:attribute name="space-after">1em</xsl:attribute>
+      </xsl:if>
       <xsl:choose>
         <xsl:when test="../refmeta/refentrytitle">
           <xsl:apply-templates select="../refmeta/refentrytitle"/>
         </xsl:when>
+	<xsl:when test="refdescriptor">
+          <xsl:apply-templates select="refdescriptor[1]"/>
+	</xsl:when>
         <xsl:otherwise>
           <xsl:apply-templates select="refname[1]"/>
         </xsl:otherwise>
@@ -345,17 +369,25 @@
       <xsl:apply-templates select="refpurpose"/>
     </fo:block>
 
+    <!-- what was this for?
     <fo:block>
+      <xsl:choose>
+	<xsl:when test="refdescriptor">
+	  <xsl:apply-templates select="refdescriptor"/>
+	</xsl:when>
+	<xsl:otherwise>
       <xsl:for-each select="refname">
         <xsl:apply-templates select="."/>
         <xsl:if test="following-sibling::refname">
           <xsl:text>, </xsl:text>
         </xsl:if>
       </xsl:for-each>
+	</xsl:otherwise>
+      </xsl:choose>
     </fo:block>
+    -->
   </fo:block>
 </xsl:template>
-
 
 <xsl:template match="refname">
   <xsl:apply-templates/>
@@ -371,7 +403,7 @@
 </xsl:template>
 
 <xsl:template match="refdescriptor">
-  <!-- todo: finish this -->
+  <xsl:apply-templates/>
 </xsl:template>
 
 <xsl:template match="refclass">

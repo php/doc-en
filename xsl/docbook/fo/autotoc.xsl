@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: autotoc.xsl,v 1.5 2005-07-15 09:18:37 techtonik Exp $
+     $Id: autotoc.xsl,v 1.6 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -185,6 +185,7 @@
   </xsl:variable>
 
   <fo:block text-align-last="justify"
+            text-align="start"
             end-indent="{$toc.indent.width}pt"
             last-line-end-indent="-{$toc.indent.width}pt">
     <fo:inline keep-with-next.within-line="always">
@@ -255,7 +256,9 @@
 
   <xsl:call-template name="toc.line"/>
 
-  <xsl:variable name="nodes" select="chapter|appendix|preface|reference"/>
+  <xsl:variable name="nodes" select="chapter|appendix|preface|reference|
+                                     refentry|article|index|glossary|
+				     bibliography"/>
 
   <xsl:if test="$toc.section.depth &gt; 0 and $nodes">
     <fo:block id="toc.{$cid}.{$id}"
@@ -437,7 +440,7 @@
   </xsl:if>
 </xsl:template>
 
-<xsl:template match="sect5" mode="toc">
+<xsl:template match="sect5|simplesect" mode="toc">
   <xsl:param name="toc-context" select="."/>
 
   <xsl:call-template name="toc.line"/>

@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: glossary.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: glossary.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -164,6 +164,11 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
       <xsl:call-template name="make-glossary"/>
     </fo:flow>
   </fo:page-sequence>
@@ -455,6 +460,11 @@
     </xsl:apply-templates>
 
     <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
       <xsl:call-template name="make-auto-glossary"/>
     </fo:flow>
   </fo:page-sequence>
@@ -602,7 +612,12 @@ GlossEntry ::=
 </xsl:template>
 
 <xsl:template match="glossentry/glossterm" mode="glossary.as.list">
+  <xsl:variable name="id">
+    <xsl:call-template name="object.id"/>
+  </xsl:variable>
+  <fo:inline id="{$id}">
   <xsl:apply-templates/>
+  </fo:inline>
   <xsl:if test="following-sibling::glossterm">, </xsl:if>
 </xsl:template>
 
@@ -631,7 +646,10 @@ GlossEntry ::=
     </xsl:call-template>
     <xsl:choose>
       <xsl:when test="$target">
+        <fo:basic-link internal-destination="{$otherterm}"
+                       xsl:use-attribute-sets="xref.properties">
         <xsl:apply-templates select="$target" mode="xref-to"/>
+        </fo:basic-link>
       </xsl:when>
       <xsl:when test="$otherterm != '' and not($target)">
         <xsl:message>
@@ -675,7 +693,10 @@ GlossEntry ::=
 
   <xsl:choose>
     <xsl:when test="$target">
+      <fo:basic-link internal-destination="{$otherterm}"
+                     xsl:use-attribute-sets="xref.properties">
       <xsl:apply-templates select="$target" mode="xref-to"/>
+      </fo:basic-link>
     </xsl:when>
     <xsl:when test="$otherterm != '' and not($target)">
       <xsl:message>
@@ -781,7 +802,12 @@ GlossEntry ::=
 </xsl:template>
 
 <xsl:template match="glossentry/glossterm" mode="glossary.as.blocks">
+  <xsl:variable name="id">
+    <xsl:call-template name="object.id"/>
+  </xsl:variable>
+  <fo:inline id="{$id}">
   <xsl:apply-templates/>
+  </fo:inline>
   <xsl:if test="following-sibling::glossterm">, </xsl:if>
 </xsl:template>
 
@@ -806,7 +832,10 @@ GlossEntry ::=
   </xsl:call-template>
   <xsl:choose>
     <xsl:when test="$target">
+      <fo:basic-link internal-destination="{$otherterm}"
+                     xsl:use-attribute-sets="xref.properties">
       <xsl:apply-templates select="$target" mode="xref-to"/>
+      </fo:basic-link>
     </xsl:when>
     <xsl:when test="$otherterm != '' and not($target)">
       <xsl:message>
@@ -855,7 +884,10 @@ GlossEntry ::=
 
   <xsl:choose>
     <xsl:when test="$target">
+      <fo:basic-link internal-destination="{$otherterm}"
+                     xsl:use-attribute-sets="xref.properties">
       <xsl:apply-templates select="$target" mode="xref-to"/>
+      </fo:basic-link>
     </xsl:when>
     <xsl:when test="$otherterm != '' and not($target)">
       <xsl:message>

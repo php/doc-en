@@ -1,7 +1,8 @@
 <?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+		xmlns:db="http://docbook.org/docbook-ng"
                 xmlns:exsl="http://exslt.org/common"
-                exclude-result-prefixes="exsl"
+                exclude-result-prefixes="db exsl"
                 version='1.0'>
 
 <xsl:output method="html"
@@ -9,7 +10,7 @@
             indent="no"/>
 
 <!-- ********************************************************************
-     $Id: docbook.xsl,v 1.4 2005-07-15 09:18:33 techtonik Exp $
+     $Id: docbook.xsl,v 1.5 2005-07-16 23:38:34 techtonik Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -74,7 +75,7 @@
 
 <!-- ==================================================================== -->
 
-<xsl:key name="id" match="*" use="@id"/>
+<xsl:key name="id" match="*" use="@id|@xml:id"/>
 
 <!-- ==================================================================== -->
 
@@ -296,9 +297,11 @@ body { background-image: url('</xsl:text>
       <!-- and continue. Someday we may reverse this logic and add the namespace -->
       <!-- to documents that don't have one. But not before the whole stylesheet -->
       <!-- has been converted to use namespaces. i.e., don't hold your breath -->
+      <xsl:message>Stripping NS from DocBook-NG document.</xsl:message>
       <xsl:variable name="nons">
 	<xsl:apply-templates mode="stripNS"/>
       </xsl:variable>
+      <xsl:message>Processing stripped document.</xsl:message>
       <xsl:apply-templates select="exsl:node-set($nons)"/>
     </xsl:when>
     <xsl:otherwise>
@@ -406,6 +409,39 @@ body { background-image: url('</xsl:text>
 	<xsl:copy-of select="@*"/>
 	<xsl:apply-templates mode="stripNS"/>
       </xsl:copy>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="db:link" mode="stripNS">
+  <xsl:variable xmlns:xlink="http://www.w3.org/1999/xlink"
+		name="href" select="@xlink:href|@href"/>
+  <xsl:choose>
+    <xsl:when test="$href != '' and not(starts-with($href,'#'))">
+      <ulink url="{$href}">
+	<xsl:for-each select="@*">
+	  <xsl:if test="local-name(.) != 'href'">
+	    <xsl:copy/>
+	  </xsl:if>
+	</xsl:for-each>
+	<xsl:apply-templates mode="stripNS"/>
+      </ulink>
+    </xsl:when>
+    <xsl:when test="$href != '' and starts-with($href,'#')">
+      <link linkend="{substring-after($href,'#')}">
+	<xsl:for-each select="@*">
+	  <xsl:if test="local-name(.) != 'href'">
+	    <xsl:copy/>
+	  </xsl:if>
+	</xsl:for-each>
+	<xsl:apply-templates mode="stripNS"/>
+      </link>
+    </xsl:when>
+    <xsl:otherwise>
+      <link>
+	<xsl:copy-of select="@*"/>
+	<xsl:apply-templates mode="stripNS"/>
+      </link>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>

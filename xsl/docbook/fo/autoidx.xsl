@@ -20,7 +20,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: autoidx.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: autoidx.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
      ********************************************************************
 
      This file is part of the DocBook XSL Stylesheet distribution.
@@ -141,7 +141,7 @@
           </xsl:with-param>
         </xsl:call-template>
       </xsl:if>
-      <fo:block>
+      <fo:block xsl:use-attribute-sets="index.entry.properties">
         <xsl:apply-templates select="key('letter', $key)[&scope;]
                                      [count(.|key('primary', &primary;)[&scope;][1])=1]"
                              mode="index-primary">
