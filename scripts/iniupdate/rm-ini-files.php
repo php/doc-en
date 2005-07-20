@@ -14,4 +14,6 @@ foreach ($ini_files as $file) {
     echo "Deleted $file\n";
 }
 
+echo "fetch files from CVS again...\n";
+system('cvs up ' . implode(' ', $ini_files));
 ?>
