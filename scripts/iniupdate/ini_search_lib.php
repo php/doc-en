@@ -24,9 +24,9 @@ function recurse($dirs, $search_macros = false) {
 
     if (is_array($dirs)) {
         foreach($dirs as $dir)
-            recurse_aux($dir, $search_macros);
+            recurse_aux($dir, $search_macros, $cfg_get);
     } else {
-        recurse_aux($dirs, $search_macros);
+        recurse_aux($dirs, $search_macros, $cfg_get);
     }
 
     /* insert only if the key doesn't exist, as will probably have
@@ -41,8 +41,8 @@ function recurse($dirs, $search_macros = false) {
 
 
 // recurse through the dirs and do the 'dirty work'
-function recurse_aux($dir, $search_macros) {
-    global $array, $replace, $cfg_get;
+function recurse_aux($dir, $search_macros, &$cfg_get) {
+    global $array, $replace;
 
     if (is_file($dir)) {
         $files = array(basename($dir));
@@ -59,7 +59,7 @@ function recurse_aux($dir, $search_macros) {
         $path = $dir . '/' .$file;
 
         if(is_dir($path)) {
-            recurse_aux($path, $search_macros);
+            recurse_aux($path, $search_macros, $cfg_get);
         } else {
             $file = file_get_contents($path);
 
