@@ -84,7 +84,7 @@ function fix_ini_xml($filename) {
 
 $array = array();
 $replace = array();
-recurse(array($php_src_dir, $pecl_dir), true);
+recurse(array($pecl_dir, $php_src_dir), true);
 
 $string = '';
 

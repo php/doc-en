@@ -34,7 +34,6 @@ function recurse($dirs, $search_macros = false) {
     foreach($cfg_get as $entry) {
         if (!isset($array[$entry[0]]))
             $array[$entry[0]] = array($entry[1], 'PHP_INI_ALL');
-
     }
 
     uksort($array, 'strnatcasecmp');
@@ -45,20 +44,22 @@ function recurse($dirs, $search_macros = false) {
 function recurse_aux($dir, $search_macros) {
     global $array, $replace, $cfg_get;
 
-    if (!$dh = opendir($dir)) {
-        die ("couldn't open the specified dir ($dir)");
+    if (is_file($dir)) {
+        $files = array(basename($dir));
+        $dir   = dirname($dir);
+    } else {
+        if (!is_file($dir) && !$files = scandir($dir)) {
+            die ("couldn't open the specified dir ($dir)");
+        }
+        unset($files[0], $files[1]); //remove the . and ..
     }
 
-    while (($file = readdir($dh)) !== false) {
-
-        if($file == '.' || $file == '..') {
-            continue;
-        }
+    foreach ($files as $file) {
 
         $path = $dir . '/' .$file;
 
         if(is_dir($path)) {
-            recurse($path);
+            recurse_aux($path, $search_macros);
         } else {
             $file = file_get_contents($path);
 
@@ -112,7 +113,5 @@ function recurse_aux($dir, $search_macros) {
 
         } //!is_dir()
     } //while() loop
-
-    closedir($dh);
 }
 ?>
