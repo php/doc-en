@@ -55,14 +55,14 @@ function fix_ini_xml($filename) {
 
                 // create changelog column
                 if (count($val) == 3) {
-                    $file = preg_replace("@(<row>\s*$val[0]\s*$val[1](\s*)$val[2])(\s*</row>)@", '\1\2<entry></entry>\3', $file);
+                    $file = preg_replace("@(<row>\s*$val[0]\s*$val[1](\s*)".preg_quote($val[2]).')(\s*</row>)@', '\1\2<entry></entry>\3', $file);
                     $val[3] = '<entry></entry>';
                 }
 
                 // now update the info
                 $entry = substr($val[0], 7, -8);
                 if (isset($info[$entry])) {
-                    $file = preg_replace("@(<row>\s*$val[0]\s*)$val[1](\s*)$val[2](\s*)$val[3](\s*</row>)@", "\\1<entry>{$info[$entry]['default']}</entry>\\2<entry>{$info[$entry]['permissions']}</entry>\\3<entry>{$info[$entry]['changelog']}</entry>\\4", $file);
+                    $file = preg_replace("@(<row>\s*$val[0]\s*)$val[1](\s*)".preg_quote($val[2])."(\s*)$val[3](\s*</row>)@", "\\1<entry>{$info[$entry]['default']}</entry>\\2<entry>{$info[$entry]['permissions']}</entry>\\3<entry>{$info[$entry]['changelog']}</entry>\\4", $file);
                 }
             }
 
