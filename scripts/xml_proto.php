@@ -313,7 +313,7 @@ function write_functions_xml()
         "     <thead>\n" .
         "      <row>\n" .
         "       <entry>&Version;</entry>\n" .
-        "       <entry>&Description</entry>\n" .
+        "       <entry>&Description;</entry>\n" .
         "      </row>\n" .
         "     </thead>\n" .
         "     <tbody>\n" .
