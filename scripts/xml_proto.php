@@ -318,8 +318,8 @@ function write_functions_xml()
         "     </thead>\n" .
         "     <tbody>\n" .
         "      <row>\n" .
-        "       <entry>Enter the PHP version of change here\n" .
-        "       <entry>Description of change\n" .
+        "       <entry>Enter the PHP version of change here</entry>\n" .
+        "       <entry>Description of change</entry>\n" .
         "      </row>\n" .
         "     </tbody>\n" .
         "    </tgroup>\n" .
