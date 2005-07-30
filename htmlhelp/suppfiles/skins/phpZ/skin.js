@@ -1,4 +1,4 @@
-// phpZ version 1.0.2 PHP Manual CHM version skin by Gonzalo De la Peña <gnz@pistonbroke.com>
+// phpZ version 1.0.3 PHP Manual CHM version skin by Gonzalo De la Peña <gnz@pistonbroke.com>
 // Based partially on the PHP CHM base skin by Gabor Hojtsy 
 // Minor enhancements by Richard Quadling <richard.quadling@bandvulc.co.uk>
 // 
@@ -25,7 +25,7 @@ function setGlobals() {
 		functionPage = true;
 	else
 		functionPage = false;
-	manualVersion = 'phpZ skin<BR>ver 1.0.2';
+	manualVersion = 'phpZ skin<BR>ver 1.0.3';
 	manualDate = '';
 }
 
@@ -276,34 +276,29 @@ function getFooter() {
 	var prev = document.all('navPrev');
 	var next = document.all('navNext');
 	var html = '';
-	var prevText, nextText;
 	// RAQ : Friday, 18 February 2005 09:32 am : Initialise variables
 	var prevURL = '';
 	var prevText = '';
 	var nextURL = '';
 	var nextText = '';
 	
-	if ( ! prev || ! next )
-	{
-		next = document.createElement('DIV');
-		next.innerHTML = '&nbsp;';
+	if ( ! prev ) {
 		prev = document.createElement('DIV');
 		prev.innerHTML = '&nbsp;';
-	}
-	else
-	{
-		if ( ie_version_major >= 6 )
-		{
-			prevText = prev.childNodes[0].childNodes[0];
-			prevText.data = prevText.substringData(3, prevText.length - 3);
-			nextText = next.childNodes[0].childNodes[0];
-			nextText.data = nextText.substringData(0, nextText.length - 3);
-		}
+	} else {
 	// RAQ : Friday, 18 February 2005 09:33 am : Retrieve URL and Text for next and previous.
 		prevURL = prev.all.tags('A')(0).href;
 		prevText = prev.all.tags('A')(0).innerText;
+		prevText = prevText.substring(3);
+        }
+
+	if ( ! next ) {
+		next = document.createElement('DIV');
+		next.innerHTML = '&nbsp;';
+	} else {
 		nextURL = next.all.tags('A')(0).href;
 		nextText = next.all.tags('A')(0).innerText;
+		nextText = nextText.substring(0, nextText.length - 3);
 	}
 	
 	html += '<DIV style="background-color:#BABFD4; border-top:2px solid #000000; margin-top:4; height:42; overflow:hidden;">';
