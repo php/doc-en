@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.22 2005-07-14 13:42:28 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.23 2005-07-30 18:30:40 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -447,7 +447,7 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
 
 <!-- We need quite different body attributes than the defaults -->
 <xsl:template name="body.attributes">
-  <xsl:attribute name="onload">displayPage();</xsl:attribute>
+  <xsl:attribute name="onload">if (typeof displayPage == 'function') { displayPage(); } else {document.all['pageContent'].style.display = 'block';}</xsl:attribute>
   <xsl:attribute name="oncontextmenu">if(prefs_context_override){return false;}</xsl:attribute>
 </xsl:template>
 
@@ -461,7 +461,7 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
   <div id="pageNotes"></div>
   <script type="text/javascript" language="JavaScript1.2">
    function displayNotes() { _displayNotes(); }
-   loadNotes();
+   if (typeof loadNotes == "function") { loadNotes(); }
   </script>
 </xsl:template>
 
