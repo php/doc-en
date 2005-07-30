@@ -1,4 +1,4 @@
-// $Id: _script.js,v 1.9 2005-06-14 14:47:47 techtonik Exp $
+// $Id: _script.js,v 1.10 2005-07-30 19:26:43 techtonik Exp $
 // =============================================================================
 // Preference handling
 
@@ -461,7 +461,7 @@ function contextMenuCloseTimeout()
 {
     // Support for form focus event (form in context menu)
     if (document.activeElement.tagName != 'INPUT') {
-        setTimeout('contextMenuClose()', 100);
+        setTimeout('contextMenuClose()', 200);
     }
 }
 
