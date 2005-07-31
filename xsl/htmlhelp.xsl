@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.24 2005-07-30 19:42:41 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.25 2005-07-31 11:43:45 techtonik Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -404,7 +404,7 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
 
     <body>
       <xsl:call-template name="body.attributes"/>
-      <div id="pageContent" style="display:none;">
+      <div id="pageContent">
             <xsl:call-template name="user.header.navigation"/>
 
             <xsl:call-template name="header.navigation">
@@ -442,12 +442,26 @@ htmlhelp.autolabel - chapter and section numbers in ToC - off
 
 <xsl:template name="user.head.content">
   <xsl:param name="node" select="."/>
+<xsl:text disable-output-escaping="yes"><![CDATA[
+  <style type="text/css">
+      #pageContent {display:none}
+      @media print {
+          #pageContent {display:block}
+      }
+  </style>
   <script type="text/javascript" language="JavaScript1.2" src="_script.js"></script>
+]]></xsl:text>
 </xsl:template>
 
 <!-- We need quite different body attributes than the defaults -->
 <xsl:template name="body.attributes">
-  <xsl:attribute name="onload">if (typeof displayPage == 'function') { displayPage(); } else {document.all['pageContent'].style.display = 'block';}</xsl:attribute>
+  <xsl:attribute name="onload">
+     if (typeof displayPage == 'function') {
+        displayPage(); 
+     } else if (typeof document.all['pageContent'].style != 'undefined') {
+         document.all['pageContent'].style.display = 'block';
+     }
+  </xsl:attribute>
   <xsl:attribute name="oncontextmenu">if(prefs_context_override){return false;}</xsl:attribute>
 </xsl:template>
 
