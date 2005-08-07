@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.10 $ -->
+<!-- $Revision: 1.11 $ -->
  <sect1 id="language.oop5.overloading">
   <title>Overloading</title>
 
@@ -8,8 +8,13 @@
    __call, __get and __set methods. These methods will only be
    triggered when your object or inherited object doesn't contain the 
    member or method you're trying to access.
-   All overloading methods must be defined as
-   <link linkend="language.oop5.visibility">public</link>.
+   All overloading methods must not be defined as
+   <link linkend="language.oop5.visibility">static</link>.
+  </para>
+  <para>
+   Since PHP 5.1.0 it is also possible to overload the
+   <function>isset</function> and <function>unset</function> functions via the
+   __isset and __unset methods respectively.
   </para>
 
   <sect2 id="language.oop5.overloading.members">
@@ -24,6 +29,14 @@
     <type>mixed</type><methodname>__get</methodname>
     <methodparam><type>string</type><parameter>name</parameter></methodparam>
    </methodsynopsis>
+   <methodsynopsis>
+    <type>bool</type><methodname>__isset</methodname>
+    <methodparam><type>string</type><parameter>name</parameter></methodparam>
+   </methodsynopsis>
+   <methodsynopsis>
+    <type>void</type><methodname>__unset</methodname>
+    <methodparam><type>string</type><parameter>name</parameter></methodparam>
+   </methodsynopsis>
 
    <para>
     Class members can be overloaded to run custom code defined in your class
@@ -34,7 +47,7 @@
    </para>
 
    <example>
-    <title>overloading with __get and __set example</title>
+    <title>overloading with __get, __set, __isset and __unset example</title>
     <programlisting role="php">
 <![CDATA[
 <?php
@@ -43,9 +56,9 @@ class Setter
     public $n;
     private $x = array("a" => 1, "b" => 2, "c" => 3);
 
-    public function __get($nm)
+    private function __get($nm)
     {
-        print "Getting [$nm]\n";
+        echo "Getting [$nm]\n";
 
         if (isset($this->x[$nm])) {
             $r = $this->x[$nm];
@@ -56,9 +69,9 @@ class Setter
         }
     }
 
-    public function __set($nm, $val)
+    private function __set($nm, $val)
     {
-        print "Setting [$nm] to $val\n";
+        echo "Setting [$nm] to $val\n";
 
         if (isset($this->x[$nm])) {
             $this->x[$nm] = $val;
@@ -67,6 +80,20 @@ class Setter
             echo "Not OK!\n";
         }
     }
+
+    private function __isset($nm)
+    {
+        echo "Checking if $nm is set\n";
+
+        return isset($this->x[$nm]);
+    }
+
+    private function __unset($nm)
+    {
+        echo "Unsetting $nm\n";
+
+        unset($this->x[$nm]);
+    }
 }
 
 $foo = new Setter();
@@ -74,6 +101,15 @@ $foo->n = 1;
 $foo->a = 100;
 $foo->a++;
 $foo->z++;
+
+var_dump(isset($foo->a)); //true
+unset($foo->a);
+var_dump(isset($foo->a)); //false
+
+// this doesn't pass through the __isset() method
+// because 'n' is a public property
+var_dump(isset($foo->n));
+
 var_dump($foo);
 ?>
 ]]>
@@ -91,18 +127,24 @@ Getting [z]
 Nothing!
 Setting [z] to 1
 Not OK!
+
+Checking if a is set
+bool(true)
+Unsetting a
+Checking if a is set
+bool(false)
+bool(true)
+
 object(Setter)#1 (2) {
-    ["n"]=>
-    int(1)
-    ["x:private"]=>
-    array(3) {
-        ["a"]=>
-        int(101)
-        ["b"]=>
-        int(2)
-        ["c"]=>
-        int(3)
-    }
+  ["n"]=>
+  int(1)
+  ["x:private"]=>
+  array(2) {
+    ["b"]=>
+    int(2)
+    ["c"]=>
+    int(3)
+  }
 }
 ]]>
     </screen>
