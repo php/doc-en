@@ -53,6 +53,7 @@
 		 - Usage is totally different
    05/06/04 v2.1 - Corrected filenames for OO functions
    01/03/05 v2.2 - Implemented the new doc style
+   08/08/05 v2.3 - Refpurpose is on one line
 */
 
 $version="2.2";
@@ -234,9 +235,7 @@ function write_functions_xml()
                "<refentry id=\"function." . $fixname . "\">\n" .
                " <refnamediv>\n" .
                "  <refname>$funcname</refname>\n" .
-               "  <refpurpose>\n" .
-               "   $purpose\n" . 
-               "  </refpurpose>\n" .
+               "  <refpurpose>$purpose</refpurpose>\n" .
                " </refnamediv>\n" .
                " <refsect1 role=\"description\">\n" .
                "  &reftitle.description;\n" .
