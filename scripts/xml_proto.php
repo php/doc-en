@@ -288,7 +288,7 @@ function write_functions_xml()
         "  &reftitle.returnvalues;\n" .
         "  <para>\n" .
         "   What the function returns, first on success, then on failure. See\n" .
-        "   also the &return.success; entity\n" .
+        "   also the &amp;return.success; entity\n" .
         "  </para>\n" .
         " </refsect1>\n"
     );
