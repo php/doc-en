@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.24 $ -->
+<!-- $Revision: 1.25 $ -->
  <chapter id="faq.misc">
   <title>Miscellaneous Questions</title>
   <titleabbrev>Miscellaneous Questions</titleabbrev>
@@ -146,24 +146,43 @@ if (!ini_get('register_globals')) {
 ]]>
        </programlisting>
        <para>
-        This will emulate register_globals Off.
+        This will emulate register_globals Off. Keep in mind, that this code should be called in the very beginning of your script.
        </para>
        <programlisting role="php">
 <![CDATA[
 <?php
 // Emulate register_globals off
-if (ini_get('register_globals')) {
-    $superglobals = array($_SERVER, $_ENV,
-        $_FILES, $_COOKIE, $_POST, $_GET);
-    if (isset($_SESSION)) {
-        array_unshift($superglobals, $_SESSION);
+function unregister_GLOBALS()
+{
+    if (!ini_get('register_globals')) {
+        return;
     }
-    foreach ($superglobals as $superglobal) {
-        foreach ($superglobal as $global => $value) {
-            unset($GLOBALS[$global]);
+
+    // Might want to change this perhaps to a nicer error
+    if (isset($_REQUEST['GLOBALS'])) {
+        die('GLOBALS overwrite attempt detected');
+    }
+
+    // Variables that shouldn't be unset
+    $noUnset = array('GLOBALS',  '_GET',
+                     '_POST',    '_COOKIE',
+                     '_REQUEST', '_SERVER',
+                     '_ENV',     '_FILES');
+
+    $input = array_merge($_GET,    $_POST,
+                         $_COOKIE, $_SERVER,
+                         $_ENV,    $_FILES,
+                         isset($_SESSION) && is_array($_SESSION) ? $_SESSION : array());
+    
+    foreach ($input as $k => $v) {
+        if (!in_array($k, $noUnset) && isset($GLOBALS[$k])) {
+            unset($GLOBALS[$k]);
         }
     }
 }
+
+unregister_GLOBALS();
+
 ?>
 ]]>
        </programlisting>
