@@ -132,6 +132,20 @@ function function_add_arg($num, $type, $argname, $isopt)
   return(1);
 }
 
+function write_cvsignore()
+{
+  $filename = "{$GLOBALS['constant_dir']}.cvsignore";
+  if (!$fp = fopen($filename, 'w')) {
+    echo "Failed writing: $filename\n";
+    return(0);
+  }
+  fwrite($fp, "functions.xml\n");
+  fclose($fp);
+  echo "Wrote: $filename\n";
+  return(1);
+  
+}
+
 function write_reference_xml()
 {
   global $extension_name, $constant_dir, $version;
@@ -775,6 +789,7 @@ function create_xml_docs()
   if ($generate_functions) {
     echo "Writing function XML files\n";
     write_functions_xml();
+    write_cvsignore();
   }
 
   if ($generate_constants) {
