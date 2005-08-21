@@ -1,0 +1,1206 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+ <!-- $Revision: 1.1 $ -->
+ <sect1 id="zend.variables"> 
+  <title>Creating Variables</title>
+  <para>
+   When exchanging data from your own extensions with PHP scripts, one
+   of the most important issues is the creation of variables. This
+   section shows you how to deal with the variable types that PHP
+   supports.
+  </para> 
+  <sect2 id="zend.variables.overview"> 
+   <title>Overview</title> 
+   <para>
+    To create new variables that can be seen "from the outside" by the
+    executing script, you need to allocate a new <envar>zval</envar>
+    container, fill this container with meaningful values, and then
+    introduce it to Zend's internal symbol table. This basic process
+    is common to all variable creations: 
+   </para>
+   <programlisting> 
+zval *new_variable; 
+
+/* allocate and initialize new container */
+MAKE_STD_ZVAL(new_variable); 
+
+/* set type and variable contents here, see the following sections */ 
+
+/* introduce this variable by the name "new_variable_name" into the symbol table */
+ZEND_SET_SYMBOL(EG(active_symbol_table), "new_variable_name", new_variable); 
+
+/* the variable is now accessible to the script by using $new_variable_name */ 
+   </programlisting>
+   <para>
+    The macro <literal>MAKE_STD_ZVAL</literal> allocates a new
+    <envar>zval</envar> container using <literal>ALLOC_ZVAL</literal>
+    and initializes it using <literal>INIT_ZVAL</literal>. As
+    implemented in Zend at the time of this writing,
+    <emphasis>initializing</emphasis> means setting the reference
+    count to <literal>1</literal> and clearing the
+    <envar>is_ref</envar> flag, but this process could be extended
+    later - this is why it's a good idea to keep using
+    <literal>MAKE_STD_ZVAL</literal> instead of only using
+    <literal>ALLOC_ZVAL</literal>. If you want to optimize for speed
+    (and you don't have to explicitly initialize the
+    <envar>zval</envar> container here), you can use
+    <literal>ALLOC_ZVAL</literal>, but this isn't recommended because
+    it doesn't ensure data integrity.
+   </para> 
+   <para>
+    <literal>ZEND_SET_SYMBOL</literal> takes care of introducing the
+    new variable to Zend's symbol table. This macro checks whether the
+    value already exists in the symbol table and converts the new
+    symbol to a reference if so (with automatic deallocation of the
+    old <envar>zval</envar> container). This is the preferred method
+    if speed is not a crucial issue and you'd like to keep memory
+    usage low.
+   </para> 
+   <para>
+    Note that <literal>ZEND_SET_SYMBOL</literal> makes use of the Zend
+    executor globals via the macro <literal>EG</literal>. By
+    specifying <literal>EG(active_symbol_table)</literal>, you get access to the
+    currently active symbol table, dealing with the active, local scope. The local
+    scope may differ depending on whether the function was invoked from
+    within a function.
+   </para> 
+   <para>
+    If you need to optimize for speed and don't care about optimal memory
+    usage, you can omit the check for an existing variable with the same value and instead
+    force insertion into the symbol table by using
+    <function>zend_hash_update</function>: 
+    <programlisting>
+zval *new_variable;
+
+/* allocate and initialize new container */
+MAKE_STD_ZVAL(new_variable);
+
+/* set type and variable contents here, see the following sections */
+
+/* introduce this variable by the name "new_variable_name" into the symbol table */
+zend_hash_update(
+    EG(active_symbol_table),
+    "new_variable_name",
+    strlen("new_variable_name") + 1,
+    &amp;new_variable,
+    sizeof(zval *),
+    NULL
+);
+    </programlisting>
+    This is actually the standard method used in most modules.
+   </para> 
+   <para>
+    The variables generated with the snippet above will always be of local
+    scope, so they reside in the context in which the function has been called. To
+    create new variables in the global scope, use the same method
+    but refer to another symbol table: 
+    <programlisting>
+zval *new_variable;
+     
+// allocate and initialize new container
+MAKE_STD_ZVAL(new_variable);
+
+//
+// set type and variable contents here
+//
+
+// introduce this variable by the name "new_variable_name" into the global symbol table
+ZEND_SET_SYMBOL(&amp;EG(symbol_table), "new_variable_name", new_variable);
+    </programlisting>
+    The macro <literal>ZEND_SET_SYMBOL</literal> is now being
+    called with a reference to the main, global symbol table by referring
+    <literal>EG(symbol_table)</literal>.
+   </para>
+   <para>
+    <emphasis>Note:</emphasis> The <envar>active_symbol_table</envar>
+    variable is a pointer, but <envar>symbol_table</envar> is not.
+    This is why you have to use
+    <literal>EG(active_symbol_table)</literal> and
+    <literal>&amp;EG(symbol_table)</literal> as parameters to
+    <literal>ZEND_SET_SYMBOL</literal> - it requires a pointer.
+   </para> 
+   <para>
+    Similarly, to get a more efficient version, you can hardcode the
+    symbol table update: 
+    <programlisting>
+zval *new_variable;
+
+// allocate and initialize new container
+MAKE_STD_ZVAL(new_variable);
+
+//
+// set type and variable contents here
+//
+
+// introduce this variable by the name "new_variable_name" into the global symbol table
+zend_hash_update(
+    &amp;EG(symbol_table),
+    "new_variable_name",
+    strlen("new_variable_name") + 1,
+    &amp;new_variable,
+    sizeof(zval *),
+    NULL
+);
+    </programlisting>
+    <xref linkend='example.variable-scopes'/> shows a sample source that
+    creates two variables - <envar>local_variable</envar> with a local scope
+    and <envar>global_variable</envar> with a global scope (see Figure 9.7). 
+    The full example can be found on the CD-ROM.
+   </para>
+   <para>
+    Note: You can see that the global variable is actually not accessible from
+    within the function. This is because it's not imported into the local scope
+    using <literal>global $global_variable;</literal> in the PHP source. 
+   </para> 
+   <example id='example.variable-scopes'> 
+    <title>Creating variables with different scopes.</title> 
+    <programlisting>
+ZEND_FUNCTION(variable_creation)
+{
+    zval *new_var1, *new_var2;
+
+    MAKE_STD_ZVAL(new_var1);
+    MAKE_STD_ZVAL(new_var2);
+
+    ZVAL_LONG(new_var1, 10);
+    ZVAL_LONG(new_var2, 5);
+
+    ZEND_SET_SYMBOL(EG(active_symbol_table), "local_variable", new_var1);
+    ZEND_SET_SYMBOL(&amp;EG(symbol_table), "global_variable", new_var2);
+
+    RETURN_NULL();
+
+}
+    </programlisting>
+    <graphic fileref="figures/zend.06-variable-creation.png"/> 
+   </example> 
+  </sect2> 
+
+  <sect2 id="zend.variables.long"> 
+   <title>Longs (Integers)</title> 
+   <para>Now let's get to the assignment of data to variables, starting with
+    longs. Longs are PHP's integers and are very simple to store. Looking at
+    the <envar>zval.value</envar> container structure discussed earlier in this
+    chapter, you can see that the long data type is directly contained in the union,
+    namely in the <envar>lval</envar> field. The corresponding 
+    <envar>type</envar> value for longs is <literal>IS_LONG</literal> 
+    (see <xref linkend='example.create-long'/>). 
+    <example id='example.create-long'> 
+     <title>Creation of a long.</title> 
+     <programlisting>
+zval *new_long;
+
+MAKE_STD_ZVAL(new_long);
+
+new_long-&gt;type = IS_LONG;
+new_long-&gt;value.lval = 10;
+     </programlisting> 
+    </example>
+    Alternatively, you can use the macro <literal>ZVAL_LONG</literal>:
+    <programlisting>
+zval *new_long;
+
+MAKE_STD_ZVAL(new_long);
+ZVAL_LONG(new_long, 10);
+    </programlisting>
+   </para> 
+  </sect2> 
+
+  <sect2 id="zend.variables.float"> 
+   <title>Doubles (Floats)</title> 
+   <para>
+    Doubles are PHP's floats and are as easy to assign as longs, because their value
+    is also contained directly in the union. The member in the 
+    <envar>zval.value</envar> container is <envar>dval</envar>; 
+    the corresponding type is <literal>IS_DOUBLE</literal>. 
+    <programlisting>
+zval *new_double;
+
+MAKE_STD_ZVAL(new_double);
+
+new_double-&gt;type = IS_DOUBLE;
+new_double-&gt;value.dval = 3.45;
+    </programlisting>
+    Alternatively, you can use the macro <literal>ZVAL_DOUBLE</literal>:
+    <programlisting>
+zval *new_double;
+
+MAKE_STD_ZVAL(new_double);
+ZVAL_DOUBLE(new_double, 3.45);
+    </programlisting>
+   </para> 
+  </sect2> 
+
+  <sect2 id="zend.variables.string"> 
+   <title>Strings</title> 
+   <para>
+    Strings need slightly more effort. As mentioned earlier, all strings
+    that will be associated with Zend's internal data structures need to be
+    allocated using Zend's own memory-management functions. Referencing of static
+    strings or strings allocated with standard routines is not allowed. To assign
+    strings, you have to access the structure <envar>str</envar> in
+    the <envar>zval.value</envar> container. The corresponding type
+    is <literal>IS_STRING</literal>:
+<programlisting>
+zval *new_string;
+char *string_contents = "This is a new string variable";
+
+MAKE_STD_ZVAL(new_string);
+
+new_string-&gt;type = IS_STRING;
+new_string-&gt;value.str.len = strlen(string_contents);
+new_string-&gt;value.str.val = estrdup(string_contents);
+    </programlisting>
+    Note the usage of Zend's <function>estrdup</function> here.
+    Of course, you can also use the predefined macro
+    <literal>ZVAL_STRING</literal>:
+    <programlisting>
+zval *new_string;
+char *string_contents = "This is a new string variable";
+
+MAKE_STD_ZVAL(new_string);
+ZVAL_STRING(new_string, string_contents, 1);
+    </programlisting>
+    <literal>ZVAL_STRING</literal> accepts a third parameter that
+    indicates whether the supplied string contents should be duplicated (using
+    <function>estrdup</function>). Setting this parameter
+    to <literal>1</literal> causes the string to be
+    duplicated; <literal>0</literal> simply uses the supplied pointer for the
+    variable contents. This is most useful if you want to create a new variable
+    referring to a string that's already allocated in Zend internal memory.
+   </para> 
+   <para>
+    If you want to truncate the string at a certain position or you
+    already know its length, you can use <literal>ZVAL_STRINGL(zval,
+     string, length, duplicate)</literal>, which accepts an explicit
+    string length to be set for the new string. This macro is faster
+    than <literal>ZVAL_STRING</literal> and also binary-safe.
+   </para> 
+   <para>
+    To create empty strings, set the string length to <literal>0</literal> and
+    use <literal>empty_string</literal> as contents: 
+    <programlisting>
+new_string-&gt;type = IS_STRING;
+new_string-&gt;value.str.len = 0;
+new_string-&gt;value.str.val = empty_string;
+    </programlisting>
+    Of course, there's a macro for this as
+    well (<literal>ZVAL_EMPTY_STRING</literal>):
+    <programlisting>
+MAKE_STD_ZVAL(new_string);
+ZVAL_EMPTY_STRING(new_string);
+    </programlisting>
+   </para> 
+  </sect2> 
+
+  <sect2 id="zend.variables.boolean"> 
+   <title>Booleans</title> 
+   <para>
+    Booleans are created just like longs, but have the
+    type <literal>IS_BOOL</literal>. Allowed values in
+    <envar>lval</envar> are <literal>0</literal> and <literal>1</literal>:
+    <programlisting>
+zval *new_bool;
+
+MAKE_STD_ZVAL(new_bool);
+
+new_bool-&gt;type = IS_BOOL;
+new_bool-&gt;value.lval = 1;
+    </programlisting>
+    The corresponding macros for this type
+    are <literal>ZVAL_BOOL</literal> (allowing specification of the value) as well
+    as <literal>ZVAL_TRUE</literal> and <literal>ZVAL_FALSE</literal> (which
+    explicitly set the value to <literal>TRUE</literal> and <literal>FALSE</literal>,
+    respectively).
+   </para> 
+  </sect2> 
+
+  <sect2 id="zend.variables.array"> 
+   <title>Arrays</title> 
+   <para>
+    Arrays are stored using Zend's internal hash tables, which can be
+    accessed using the <function>zend_hash_*</function> API. For every
+    array that you want to create, you need a new hash table handle,
+    which will be stored in the <envar>ht</envar> member of the
+    <envar>zval.value</envar> container.
+   </para> 
+   <para>
+    There's a whole API solely for the creation of arrays, which is extremely
+    handy. To start a new array, you call
+    <function>array_init</function>. 
+    <programlisting>
+zval *new_array;
+
+MAKE_STD_ZVAL(new_array);
+
+array_init(new_array);
+</programlisting>
+    <function>array_init</function> always returns <literal>SUCCESS</literal>.
+   </para> 
+   <para>
+    To add new elements to the array, you can use numerous functions,
+    depending on what you want to do. 
+    <xref linkend='tab.api-assoc-arrays'/>,
+    <xref linkend='tab.api-indexed-arrays'/> and
+    <xref linkend='tab.api-indexed-array-2'/>
+    describe these functions. All functions return
+    <literal>FAILURE</literal> on failure and
+    <literal>SUCCESS</literal> on success.
+   </para>
+   <table id='tab.api-assoc-arrays'> 
+    <title>Zend's API for Associative Arrays</title>
+<!--
+    <programlisting>
+Note: The functions in this table all operate on the array "array" with the key "key". 
+The key string doesn't have to reside in Zend internal memory; it will be duplicated by the API.
+    </programlisting>
+-->
+     <tgroup cols="2">
+      <colspec colnum="1" colname="col1" colwidth="*"/>
+      <colspec colnum="2" colname="col2" colwidth="*"/> 
+      <tbody> 
+       <row> 
+        <entry colname="col1">Function</entry> 
+        <entry colname="col2">Description</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1">
+         <function>add_assoc_long(zval *array, char *key, long n);</function>
+        </entry> 
+        <entry colname="col2">Adds an element of type <literal>long</literal>.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1">
+         <function>add_assoc_unset(zval *array, char *key);</function></entry> 
+        <entry colname="col2">Adds an unset element.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1">
+         <function>add_assoc_bool(zval *array, char *key, int b);</function>
+        </entry> 
+        <entry colname="col2">Adds a Boolean element.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1">
+         <function>add_assoc_resource(zval *array, char *key, int r);</function>
+        </entry> 
+        <entry colname="col2">Adds a resource to the array.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1">
+         <function>add_assoc_double(zval *array, char *key, double d);</function>
+        </entry> 
+        <entry colname="col2">Adds a floating-point value.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1">
+         <function>add_assoc_string(zval *array, char *key, char *str, int duplicate);</function>
+        </entry> 
+        <entry colname="col2">
+         Adds a string to the array. The
+         flag <envar>duplicate</envar> specifies whether the string contents have to be
+         copied to Zend internal memory.
+        </entry> 
+       </row> 
+       <row> 
+        <entry colname="col1">
+         <function>
+          add_assoc_stringl(zval *array, char *key, char *str, uint length, int duplicate);
+         </function>
+        </entry> 
+        <entry colname="col2">
+         Adds a string with the desired length <envar>length</envar>
+         to the array. Otherwise, behaves like
+         <function>add_assoc_string</function>.
+        </entry> 
+       </row> 
+       <row>
+        <entry colname="col1"><function>add_assoc_zval(zval *array, char *key, zval *value);</function></entry>
+        <entry colname="col2">Adds a zval to the array.  Useful for adding other arrays, objects, streams, etc...</entry>
+       </row>
+      </tbody> 
+     </tgroup> 
+   </table> 
+   <table id='tab.api-indexed-arrays'> 
+    <title>Zend's API for Indexed Arrays, Part 1</title> 
+<!--
+    <programlisting>
+Note: The functions in this table all operate on the array "array" with the index "idx".
+The index is always an integer.
+    </programlisting> 
+-->
+     <tgroup cols="2">
+      <colspec colnum="1" colname="col1" colwidth="*"/>
+      <colspec colnum="2" colname="col2" colwidth="*"/> 
+      <tbody> 
+       <row> 
+        <entry colname="col1">Function</entry> 
+        <entry colname="col2">Description</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_index_long(zval *array, uint idx, long
+          n);</function></entry> 
+        <entry colname="col2">Adds an element of type <literal>long</literal>.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_index_unset(zval *array, uint
+          idx);</function></entry> 
+        <entry colname="col2">Adds an unset element.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_index_bool(zval *array, uint idx, int
+          b);</function></entry> 
+        <entry colname="col2">Adds a Boolean element.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_index_resource(zval *array, uint idx, int
+          r);</function></entry> 
+        <entry colname="col2">Adds a resource to the array.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_index_double(zval *array, uint idx, double
+          d);</function></entry> 
+        <entry colname="col2">Adds a floating-point value.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_index_string(zval *array, uint idx, char
+          *str, int duplicate);</function></entry> 
+        <entry colname="col2">Adds a string to the array. The
+         flag <envar>duplicate</envar> specifies whether the string contents have to be
+         copied to Zend internal memory.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_index_stringl(zval *array, uint idx, char
+          *str, uint length, int duplicate);</function></entry> 
+        <entry colname="col2">Adds a string with the desired
+         length <envar>length</envar> to the array. This function is faster and binary-safe. Otherwise, behaves like <function>add_index_string()</function>.</entry> 
+       </row> 
+       <row>
+        <entry colname="col1"><function>add_index_zval(zval *array, uint idx, zval *value);</function></entry>
+        <entry colname="col2">Adds a zval to the array.  Useful for adding other arrays, objects, streams, etc...</entry>
+       </row>
+      </tbody> 
+     </tgroup> 
+   </table> 
+   <table id='tab.api-indexed-array-2'> 
+    <title>Zend's API for Indexed Arrays, Part 2</title> 
+<!--
+    <programlisting>
+Note: The functions in this table all operate on the array "array".
+These functions automatically generate a new index based on the highest index found in the array.
+    </programlisting> 
+-->
+     <tgroup cols="2">
+      <colspec colnum="1" colname="col1" colwidth="*"/>
+      <colspec colnum="2" colname="col2" colwidth="*"/> 
+      <tbody> 
+       <row> 
+        <entry colname="col1">Function</entry> 
+        <entry colname="col2">Description</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_next_index_long(zval *array, long
+          n);</function></entry> 
+        <entry colname="col2">Adds an element of type <literal>long</literal>.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_next_index_unset(zval
+          *array);</function></entry> 
+        <entry colname="col2">Adds an unset element.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_next_index_bool(zval *array, int
+          b);</function></entry> 
+        <entry colname="col2">Adds a Boolean element.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_next_index_resource(zval *array, int
+          r);</function></entry> 
+        <entry colname="col2">Adds a resource to the array.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_next_index_double(zval *array, double
+          d);</function></entry> 
+        <entry colname="col2">Adds a floating-point value.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_next_index_string(zval *array, char *str,
+          int duplicate);</function></entry> 
+        <entry colname="col2">Adds a string to the array. The
+         flag <envar>duplicate</envar> specifies whether the string contents have to be
+         copied to Zend internal memory.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_next_index_stringl(zval *array, char *str,
+          uint length, int duplicate);</function></entry> 
+        <entry colname="col2">Adds a string with the desired
+         length <envar>length</envar> to the array. This function is faster and binary-safe. Otherwise, behaves like <function>add_index_string()</function>.</entry> 
+       </row> 
+       <row>
+        <entry colname="col1"><function>add_next_index_zval(zval *array, zval *value);</function></entry>
+        <entry colname="col2">Adds a zval to the array.  Useful for adding other arrays, objects, streams, etc...</entry>
+       </row>
+      </tbody> 
+     </tgroup> 
+   </table> 
+   <para>
+    All these functions provide a handy abstraction to Zend's internal hash
+    API. Of course, you can also use the hash functions directly - for example, if
+    you already have a <envar>zval</envar> container allocated that you want to 
+    insert into an array. This is done using <function>zend_hash_update()</function>
+    for associative arrays (see <xref linkend='example.array-add-assoc'/>) and 
+    <function>zend_hash_index_update</function> for indexed arrays 
+    (see <xref linkend='example.array-add-indexed'/>): 
+    <example id='example.array-add-assoc'> 
+     <title>Adding an element to an associative array.</title> 
+     <programlisting>
+zval *new_array, *new_element;
+char *key = "element_key";
+      
+MAKE_STD_ZVAL(new_array);
+MAKE_STD_ZVAL(new_element);
+
+array_init(new_array);
+
+ZVAL_LONG(new_element, 10);
+
+if(zend_hash_update(new_array-&gt;value.ht, key, strlen(key) + 1, (void *)&amp;new_element, sizeof(zval *), NULL) == FAILURE)
+{
+    // do error handling here
+}
+     </programlisting> 
+    </example> 
+    <example id='example.array-add-indexed'> 
+     <title>Adding an element to an indexed array.</title> 
+     <programlisting>
+zval *new_array, *new_element;
+int key = 2;
+
+MAKE_STD_ZVAL(new_array);
+MAKE_STD_ZVAL(new_element);
+
+array_init(new_array);
+
+ZVAL_LONG(new_element, 10);
+
+if(zend_hash_index_update(new_array-&gt;value.ht, key, (void *)&amp;new_element, sizeof(zval *), NULL) == FAILURE)
+{
+    // do error handling here
+}
+     </programlisting> 
+    </example>
+   </para> 
+   <para>
+    To emulate the functionality of
+    <function>add_next_index_*</function>, you can use this:
+   </para>
+   <programlisting>
+zend_hash_next_index_insert(ht, zval **new_element, sizeof(zval *), NULL)
+   </programlisting> 
+   <para>
+    <emphasis>Note:</emphasis> To return arrays from a function, use <function>array_init</function> and
+    all following actions on the predefined variable <envar>return_value</envar>
+    (given as argument to your exported function; see the earlier discussion of the call interface). You do not have to use
+    <literal>MAKE_STD_ZVAL</literal> on this.
+   </para> 
+   <para>
+    <emphasis>Tip:</emphasis> To avoid having to
+    write <literal>new_array-&gt;value.ht</literal> every time, you can
+    use <literal>HASH_OF(new_array)</literal>, which is also recommended for
+    compatibility and style reasons.
+   </para> 
+  </sect2> 
+
+  <sect2 id="zend.variables.object"> 
+   <title>Objects</title> 
+   <para>
+    Since objects can be converted to arrays (and vice versa), you
+    might have already guessed that they have a lot of similarities to
+    arrays in PHP. Objects are maintained with the same hash
+    functions, but there's a different API for creating them.
+   </para> 
+   <para>
+    To initialize an object, you use the
+    function <function>object_init</function>: 
+    <programlisting>
+zval *new_object;
+
+MAKE_STD_ZVAL(new_object);
+
+if(object_init(new_object) != SUCCESS)
+{
+    // do error handling here
+}
+    </programlisting>
+    You can use the functions described in 
+    <xref linkend='tab.object-creation'/> 
+    to add members to your object.
+   </para> 
+   <table id='tab.object-creation'> 
+    <title>Zend's API for Object Creation</title> 
+<!--
+   <programlisting>
+     Note: All functions in this table work on the object "object" with the key "key". The key forms the member name,
+     so the resulting member can be accessed via $object-&gt;key.
+    </programlisting> 
+-->
+     <tgroup cols="2">
+      <colspec colnum="1" colname="col1" colwidth="1.24*"/>
+      <colspec colnum="2" colname="col2" colwidth="1.00*"/> 
+      <tbody> 
+       <row> 
+        <entry colname="col1">Function</entry> 
+        <entry colname="col2">Description</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_property_long(zval *object, char *key, long
+          l);</function></entry> 
+        <entry colname="col2">Adds a long to the object.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_property_unset(zval *object, char
+          *key);</function></entry> 
+        <entry colname="col2">Adds an unset property to the object.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_property_bool(zval *object, char *key, int
+          b);</function></entry> 
+        <entry colname="col2">Adds a Boolean to the object.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_property_resource(zval *object, char *key,
+          long r);</function></entry> 
+        <entry colname="col2">Adds a resource to the object.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_property_double(zval *object, char *key,
+          double d);</function></entry> 
+        <entry colname="col2">Adds a double to the object.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_property_string(zval *object, char *key,
+          char *str, int duplicate);</function></entry> 
+        <entry colname="col2">Adds a string to the object.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>add_property_stringl(zval *object, char *key,
+          char *str, uint length, int duplicate);</function></entry> 
+        <entry colname="col2">Adds a string of the specified length to the object. This
+         function is faster than <function>add_property_string</function> and also
+         binary-safe.</entry> 
+       </row> 
+
+       <row>
+        <entry colname="col1">
+         <function>add_property_zval(zval *obect, char *key, zval *container):</function>
+        </entry>
+        <entry colname="col2">
+         Adds a <literal>zval</literal> container to the object. This is useful if you
+         have to add properties which aren't simple types like integers or strings but
+         arrays or other objects.
+        </entry>
+       </row>
+
+      </tbody> 
+     </tgroup> 
+   </table> 
+  </sect2> 
+  
+  <sect2 id="zend.variables.resource">
+   <title>Resources</title>
+   <para>
+		Resources are a special kind of data type in PHP. The term
+		<emphasis>resources</emphasis> doesn't really refer to any special
+		kind of data, but to an abstraction method for maintaining any kind
+		of information. Resources are kept in a special resource list within
+		Zend. Each entry in the list has a correspondending type definition
+		that denotes the kind of resource to which it refers. Zend then
+		internally manages all references to this resource. Access to a
+		resource is never possible directly - only via a provided API. As soon
+		as all references to a specific resource are lost, a corresponding
+		shutdown function is called.
+	</para>
+	<para>
+		For example, resources are used to store database links and file
+		descriptors. The <emphasis>de facto</emphasis> standard implementation
+		can be found in the MySQL module, but other modules such as the Oracle
+		module also make use of resources.
+		<note>
+     <para>
+      In fact, a resource can be a pointer to anything you need to
+      handle in your functions (e.g. pointer to a structure) and the
+      user only has to pass a single resource variable to your
+      function.
+     </para>
+		</note>
+   </para>
+   <para>
+		To create a new resource you need to register a resource
+		destruction handler for it. Since you can store any kind of data as a
+		resource, Zend needs to know how to free this resource if its not longer
+		needed. This works by registering your own resource destruction handler
+		to Zend which in turn gets called by Zend whenever your resource can be
+		freed (whether manually or automatically).  Registering your resource
+		handler within Zend returns you the <emphasis role="strong">resource
+		type handle</emphasis> for that resource.  This handle is needed
+		whenever you want to access a resource of this type later and is most
+		of time stored in a global static variable within your extension.
+		There is no need to worry about thread safety here because you only
+		register your resource handler once during module initialization.
+   </para>
+   <para>
+		The Zend function to register your resource handler is defined as:
+		<programlisting>
+ZEND_API int zend_register_list_destructors_ex(rsrc_dtor_func_t ld, rsrc_dtor_func_t pld, char *type_name, int module_number);
+		</programlisting>
+   </para>
+   <para>
+		There are two different kinds of resource destruction handlers you can
+		pass to this function: a handler for normal resources and a handler
+		for persistent resources. Persistent resources are for example used
+		for database connection. When registering a resource, either of these
+		handlers must be given. For the other handler just pass
+		<literal>NULL</literal>.
+   </para>
+   <para>
+		<function>zend_register_list_destructors_ex</function> accepts the
+		following parameters:
+		<informaltable>
+     <tgroup cols="2">
+      <colspec colnum="1" colname="col1" colwidth="1.00*"/>
+      <colspec colnum="2" colname="col2" colwidth="5.00*"/>
+      <tbody>
+       <row>
+        <entry colname="col1"><literal>ld</literal></entry>
+        <entry colname="col2">Normal resource destruction
+         handler callback</entry>
+       </row>
+       <row>
+        <entry colname="col1"><literal>pld</literal></entry>
+        <entry colname="col2">Pesistent resource destruction
+         handler callback</entry>
+       </row>
+       <row>
+        <entry colname="col1"><literal>type_name</literal></entry>
+        <entry colname="col2">A string specifying the name of
+         your resource. It's always a good thing to
+         specify an unique name within PHP for the resource type
+         so when the user for example calls
+         <literal>var_dump($resource);</literal>
+         he also gets the name of the resource.</entry>
+       </row>
+       <row>
+        <entry colname="col1"><literal>module_number</literal></entry>
+        <entry colname="col2">The <literal>module_number</literal>
+         is automatically available in your
+         <literal>PHP_MINIT_FUNCTION</literal>
+         function and therefore you just pass it over.</entry>
+       </row>
+      </tbody>
+     </tgroup>
+		</informaltable>
+		The return value is an unique integer ID for your
+		<emphasis role="strong">resource type</emphasis>.
+   </para>
+   <para>
+		The resource destruction handler (either normal or persistent
+		resources) has the following prototype:
+		<programlisting>void resource_destruction_handler(zend_rsrc_list_entry *rsrc TSRMLS_DC);</programlisting>
+		The passed <literal>rsrc</literal> is a pointer to the following structure:
+		<programlisting>
+typedef struct _zend_rsrc_list_entry {
+     
+    void *ptr;
+    int type;
+    int refcount;
+
+} zend_rsrc_list_entry;
+    </programlisting>
+		The member <literal>void *ptr</literal> is the actual pointer to
+		your resource.
+   </para>
+   <para>
+		Now we know how to start things, we define our own resource we want
+		register within Zend. It is only a simple structure with two integer
+		members:
+		<programlisting>
+typedef struct {
+     
+    int resource_link;
+    int resource_type;
+
+} my_resource;
+    </programlisting>
+		Our resource destruction handler is probably going to look something like this:
+		<programlisting>
+void my_destruction_handler(zend_rsrc_list_entry *rsrc TSRMLS_DC) {
+
+    // You most likely cast the void pointer to your structure type
+
+    my_resource *my_rsrc = (my_resource *) rsrc->ptr;
+
+    // Now do whatever needs to be done with you resource. Closing
+    // Files, Sockets, freeing additional memory, etc.
+    // Also, don't forget to actually free the memory for your resource too!
+
+    do_whatever_needs_to_be_done_with_the_resource(my_rsrc);
+}
+    </programlisting>
+		<note>
+     <para>One important thing to mention: If your resource
+		is a rather complex structure which also contains pointers to
+		memory you allocated during runtime you have to free them
+		<emphasis role="strong">before</emphasis> freeing
+		the resource itself!
+     </para>
+    </note>
+   </para>
+   <para>
+		Now that we have defined
+		<orderedlist>
+     <listitem><para>what our resource is and</para></listitem>
+     <listitem><para>our resource destruction handler</para></listitem>
+		</orderedlist>
+		we can go on and do the rest of the steps:
+		<orderedlist>
+     <listitem><para>create a global variable within the extension holding
+       the resource ID so it can be accessed from every function
+       which needs it</para></listitem>
+     <listitem><para>define the resource name</para></listitem>
+     <listitem><para>write the resource destruction handler</para></listitem>
+     <listitem><para>and finally register the handler</para></listitem>
+		</orderedlist>
+		<programlisting>
+    // Somewhere in your extension, define the variable for your registered resources.
+    // If you wondered what 'le' stands for: it simply means 'list entry'.
+    static int le_myresource;
+
+    // It's nice to define your resource name somewhere
+    #define le_myresource_name  "My type of resource"
+
+    [...]
+
+    // Now actually define our resource destruction handler
+    void my_destruction_handler(zend_rsrc_list_entry *rsrc TSRMLS_DC) {
+
+        my_resource *my_rsrc = (my_resource *) rsrc->ptr;
+        do_whatever_needs_to_be_done_with_the_resource(my_rsrc);
+    }
+
+    [...]
+
+    PHP_MINIT_FUNCTION(my_extension) {
+
+        // Note that 'module_number' is already provided through the
+        // PHP_MINIT_FUNCTION() function definition.
+
+        le_myresource = zend_register_list_destructors_ex(my_destruction_handler, NULL, le_myresource_name, module_number);
+
+        // You can register additional resources, initialize
+        // your global vars, constants, whatever.
+    }
+    </programlisting>
+   </para>
+   <para>
+		To actually register a new resource you use can either use
+		the <function>zend_register_resource</function> function or
+		the <function>ZEND_REGISTER_RESOURE</function> macro, both
+		defined in zend_list.h . Although the arguments for both map
+		1:1 it's a good idea to always use macros to be upwards
+		compatible:
+		<programlisting>    
+int ZEND_REGISTER_RESOURCE(zval *rsrc_result, void *rsrc_pointer, int rsrc_type);
+    </programlisting>
+		<informaltable>
+     <tgroup cols="2">
+      <colspec colnum="1" colname="col1" colwidth="1.00*"/>
+      <colspec colnum="2" colname="col2" colwidth="5.00*"/>
+      <tbody>
+       <row>
+        <entry colname="col1"><literal>rsrc_result</literal></entry>
+        <entry colname="col2">This is an already initialized
+         <literal>zval *</literal> container.</entry>
+       </row>
+       <row>
+        <entry colname="col1"><literal>rsrc_pointer</literal></entry>
+        <entry colname="col2">Your resource pointer you want to
+         store.</entry>
+       </row>
+       <row>
+        <entry colname="col1"><literal>rsrc_type</literal></entry>
+        <entry colname="col2">The type which you received when
+         you registered the resource destruction handler. If you
+         followed the naming scheme this would be
+         <literal>le_myresource</literal>.</entry>
+       </row>
+      </tbody>
+     </tgroup>
+		</informaltable>
+		The return value is an unique integer identifier for that resource.
+   </para>
+   <para>
+		What is really going on when you register a new resource is it gets
+		inserted in an internal list in Zend and the result is just stored
+		in the given <literal>zval *</literal> container:
+		<programlisting>    
+    rsrc_id = zend_list_insert(rsrc_pointer, rsrc_type);
+     
+    if (rsrc_result) {
+        rsrc_result->value.lval = rsrc_id;
+        rsrc_result->type = IS_RESOURCE;
+    }
+
+    return rsrc_id;
+    </programlisting>
+    The returned <literal>rsrc_id</literal> uniquly identifies the newly
+    registered resource. You can use the macro
+    <literal>RETURN_RESOURE</literal> to return it to the user:
+    <programlisting>    RETURN_RESOURCE(rsrc_id)</programlisting>
+    <note><para>It is common practice that if you want to return the resource
+      immidiately to the user you specify the <literal>return_value</literal>
+      as the <literal>zval *</literal> container.
+     </para>
+    </note>
+   </para>
+   <para>
+		Zend now keeps track of all references to this resource. As soon as
+		all references to the resource are lost, the destructor that you
+		previously registered for this resource is called. The nice thing
+		about this setup is that you don't have to worry about memory leakages
+		introduced by allocations in your module - just register all memory
+		allocations that your calling script will refer to as resources. As
+		soon as the script decides it doesn't need them anymore, Zend will
+		find out and tell you.
+   </para>
+   <para>
+		Now that the user got his resource, at some point he is passing it
+		back to one of your functions. The <envar>value.lval</envar> inside
+		the <literal>zval *</literal> container contains the key to your
+		resource and thus can be used to fetch the resource with the following
+		macro:
+		<literal>ZEND_FETCH_RESOURCE</literal>:
+		<programlisting>    
+ZEND_FETCH_RESOURCE(rsrc, rsrc_type, rsrc_id, default_rsrc_id, resource_type_name, resource_type)
+</programlisting>
+		<informaltable>
+     <tgroup cols="2">
+      <colspec colnum="1" colname="col1" colwidth="1.00*"/>
+      <colspec colnum="2" colname="col2" colwidth="5.00*"/>
+      <tbody>
+       <row>
+        <entry colname="col1"><literal>rsrc</literal></entry>
+        <entry colname="col2">This is your pointer which will
+         point to your previously registered resource.</entry>
+       </row>
+       <row>
+        <entry colname="col1"><literal>rsrc_type</literal></entry>
+        <entry colname="col2">This is the typecast argument for
+         your pointer, e.g. <literal>myresource *</literal>.</entry>
+       </row>
+       <row>
+        <entry colname="col1"><literal>rsrc_id</literal></entry>
+        <entry colname="col2">This is the address of the
+         <literal>zval *</literal>container the user passed to
+         your function, e.g. <literal>&amp;z_resource</literal> if
+         <literal>zval *z_resource</literal> is given.</entry>
+       </row>
+       <row>
+        <entry colname="col1"><literal>default_rsrc_id</literal></entry>
+        <entry colname="col2">This integer specifies the default
+         resource <literal>ID</literal> if no resource could be fetched
+         or -1.</entry>
+       </row>
+       <row>
+        <entry colname="col1"><literal>resource_type_name</literal></entry>
+        <entry colname="col2">This is the name of the requested resource.
+         It's a string and is used when the resource can't be
+         found or is invalid to form a meaningful error
+         message.</entry>
+       </row>
+       <row>
+        <entry colname="col1"><literal>resource_type</literal></entry>
+        <entry colname="col2">The <literal>resource_type</literal>
+         you got back when registering the resource destruction handler.
+         In our example this was <envar>le_myresource</envar>.</entry>
+       </row>
+      </tbody>
+     </tgroup>
+		</informaltable>
+		This macro has no return value.
+		It is for the developers convenience and takes care
+		of TSRMLS arguments passing and also does check if the resource
+		could be fetched.
+		It throws a warning message and returns the current PHP function
+		with <literal>NULL</literal> if there was a problem retrieving the
+		resource.
+   </para>
+   <para>
+		To force removal of a resource from the list, use the function
+		<function>zend_list_delete</function>. You can also force the
+		reference count to increase if you know that you're creating another
+		reference for a previously allocated value (for example, if you're
+		automatically reusing a default database link). For this case, use the
+		function <function>zend_list_addref</function>. To search for
+		previously allocated resource entries, use
+		<function>zend_list_find</function>. The complete API can be found
+		in <filename>zend_list.h</filename>.
+   </para>
+  </sect2>
+
+  <sect2 id="zend.variables.global"> 
+   <title>Macros for Automatic Global Variable Creation</title> 
+   <para>
+    In addition to the macros discussed earlier, a few macros allow
+    easy creation of simple global variables. These are nice to know
+    in case you want to introduce global flags, for example. This is
+    somewhat bad practice, but Table <xref linkend='tab.macros-global-vars'/> 
+    describes macros that do
+    exactly this task. They don't need any <envar>zval</envar>
+    allocation; you simply have to supply a variable name and value.
+   </para> 
+   <table id='tab.macros-global-vars'> 
+    <title>Macros for Global Variable Creation</title>
+<!--    
+ <programlisting>
+     Note: All macros in this table create a global variable of the name "name" with the value "value".
+    </programlisting> 
+-->
+     <tgroup cols="2">
+      <colspec colnum="1" colname="col1" colwidth="*"/>
+      <colspec colnum="2" colname="col2" colwidth="*"/> 
+      <tbody> 
+       <row> 
+        <entry colname="col1">Macro</entry> 
+        <entry colname="col2">Description</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><literal>SET_VAR_STRING(name, value)</literal></entry> 
+        <entry colname="col2">Creates a new string.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><literal>SET_VAR_STRINGL(name, value,
+          length)</literal></entry> 
+        <entry colname="col2">Creates a new string of the specified length. This macro
+         is faster than <literal>SET_VAR_STRING</literal> and also binary-safe.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><literal>SET_VAR_LONG(name, value)</literal></entry> 
+        <entry colname="col2">Creates a new long.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><literal>SET_VAR_DOUBLE(name, value)</literal></entry> 
+        <entry colname="col2">Creates a new double.</entry> 
+       </row> 
+      </tbody> 
+     </tgroup> 
+   </table> 
+  </sect2> 
+
+  <sect2 id="zend.variables.constant"> 
+   <title>Creating Constants</title> 
+   <para>
+    Zend supports the creation of true constants (as opposed to
+    regular variables). Constants are accessed without the typical
+    dollar sign (<literal>$</literal>) prefix and are available in all
+    scopes. Examples include <literal>TRUE</literal> and
+    <literal>FALSE</literal>, to name just two.
+   </para> 
+   <para>
+    To create your own constants, you can use the macros in
+    <xref linkend='tab.create-const'/>. 
+    All the macros create a constant with the specified name and value.
+   </para>
+   <para>
+    You can also specify flags for each constant: 
+    <itemizedlist> 
+     <listitem> 
+      <para>
+       <literal>CONST_CS</literal> - This constant's name is to be
+       treated as case sensitive.
+      </para> 
+     </listitem> 
+     <listitem> 
+      <para>
+       <literal>CONST_PERSISTENT</literal> - This constant is
+       persistent and won't be "forgotten" when the current process
+       carrying this constant shuts down.
+      </para> 
+     </listitem> 
+    </itemizedlist> To use the flags, combine them using a inary OR:
+    <programlisting> // register a new constant of type "long"
+     REGISTER_LONG_CONSTANT("NEW_MEANINGFUL_CONSTANT", 324, CONST_CS |
+     CONST_PERSISTENT); </programlisting> There are two types of
+    macros -      	 	<literal>REGISTER_*_CONSTANT</literal>
+    and<literal>REGISTER_MAIN_*_CONSTANT</literal>. The first type
+    creates constants bound to the current module. These constants are
+    dumped from the symbol table as soon as the module that registered
+    the constant is unloaded from memory. The second type creates
+    constants that remain in the symbol table independently of the
+    module.
+   </para> 
+   <table id='tab.create-const'> 
+    <title>Macros for Creating Constants</title> 
+     <tgroup cols="2">
+      <colspec colnum="1" colname="col1" colwidth="1.53*"/>
+      <colspec colnum="2" colname="col2" colwidth="1.00*"/> 
+      <tbody> 
+       <row> 
+        <entry colname="col1">Macro</entry> 
+        <entry colname="col2">Description</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"> 
+         <literal>REGISTER_LONG_CONSTANT(name, value, flags)</literal>
+         <literal>REGISTER_MAIN_LONG_CONSTANT(name, value, flags)</literal>
+        </entry> 
+        <entry colname="col2">Registers a new constant of type long.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"> 
+         <literal>REGISTER_DOUBLE_CONSTANT(name, value, flags)</literal>
+         <literal>REGISTER_MAIN_DOUBLE_CONSTANT(name, value, flags)</literal>
+        </entry> 
+        <entry colname="col2">Registers a new constant of type double.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"> 
+         <literal>REGISTER_STRING_CONSTANT(name, value, flags)</literal>
+         <literal>REGISTER_MAIN_STRING_CONSTANT(name, value, flags)</literal>
+        </entry> 
+        <entry colname="col2"> Registers a new constant of type string. The specified
+         string must reside in Zend's internal memory.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"> 
+         <literal>REGISTER_STRINGL_CONSTANT(name, value, length, flags)</literal> 
+         <literal>REGISTER_MAIN_STRINGL_CONSTANT(name, value, length,
+          flags)</literal>
+        </entry> 
+        <entry colname="col2">Registers a new constant of type string. The string length
+         is explicitly set to <envar>length</envar>. The specified string must reside
+         in Zend's internal memory.</entry> 
+       </row> 
+      </tbody> 
+     </tgroup> 
+   </table> 
+  </sect2> 
+ </sect1> 
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

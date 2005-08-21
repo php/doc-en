@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+ <!-- $Revision: 1.1 $ -->
+
+ <sect1 id="zend.layout"> 
+  <title>Source Layout</title>
+  <note>
+   <para>
+    Prior to working through the rest of this chapter, you should retrieve
+    clean, unmodified source trees of your favorite Web server. We're working with
+    Apache (available at 
+    <ulink url="http://www.apache.org/">http://www.apache.org/</ulink>)
+    and, of course, with PHP (available at 
+    <ulink url="http://www.php.net/">http://www.php.net/</ulink> - does
+    it need to be said?).
+   </para>
+   <para>
+    Make sure that you can compile a working PHP environment by
+    yourself! We won't go into this issue here, however, as you should
+    already have this most basic ability when studying this chapter.
+   </para>
+  </note> 
+  <para>
+   Before we start discussing code issues, you should familiarize
+   yourself with the source tree to be able to quickly navigate
+   through PHP's files. This is a must-have ability to implement and
+   debug extensions.
+  </para> 
+<!--  <para>
+   After extracting the PHP archive, you'll see a directory layout similar to that in <xref linkend='fig.dir-layout'/>.
+  </para> 
+  <figure id='fig.dir-layout'> 
+   <title>Main directory layout of the PHP source tree.</title>
+   <graphic fileref="figures/Extending_Zend_1a_Directory_Layout.png"/> 
+  </figure> -->
+  <para>
+   The following table describes the contents of the major directories.
+  </para>
+  <informaltable> 
+   <tgroup cols="2">
+    <colspec colnum="1" colname="col1" colwidth="1.00*"/>
+    <colspec colnum="2" colname="col2" colwidth="3.74*"/> 
+    <tbody> 
+     <row> 
+      <entry colname="col1">Directory</entry> 
+      <entry colname="col2">Contents</entry> 
+     </row> 
+     <row> 
+      <entry colname="col1"><filename>php-src</filename></entry> 
+      <entry colname="col2">
+       Main PHP source files and main header files; here you'll find
+       all of PHP's API definitions, macros, etc. (important). 
+       Everything else is below this directory.
+      </entry> 
+     </row> 
+     <row> 
+      <entry colname="col1"><filename>php-src/ext</filename></entry> 
+      <entry colname="col2">
+       Repository for dynamic and built-in modules; by default, these
+       are the "official" PHP modules that have been integrated into
+       the main source tree. From PHP 4.0, it's possible to compile
+       these standard extensions as dynamic loadable modules (at
+       least, those that support it).
+      </entry> 
+     </row> 
+     <row>
+      <entry colname="col1"><filename>php-src/main</filename></entry>
+      <entry colname="col2">
+       This directory contains the main php macros and definitions. (important)
+      </entry>
+     </row>
+     <row> 
+      <entry colname="col1"><filename>php-src/pear</filename></entry> 
+      <entry colname="col2">
+       Directory for the PHP Extension and Application Repository. This directory contains
+       core PEAR files.
+      </entry> 
+     </row> 
+     <row> 
+      <entry colname="col1"><filename>php-src/sapi</filename></entry> 
+      <entry colname="col2">
+       Contains the code for the different server abstraction layers.
+      </entry> 
+     </row> 
+     <row> 
+      <entry colname="col1"><filename>TSRM</filename></entry>
+      <entry colname="col2">
+       Location of the "Thread Safe Resource Manager" (TSRM) for Zend
+       and PHP.
+      </entry> 
+     </row> 
+     <row> 
+      <entry colname="col1"><filename>ZendEngine2</filename></entry>
+      <entry colname="col2">
+       Location of the Zend Engine files; here you'll
+       find all of Zend's API definitions, macros, etc. (important).
+      </entry> 
+     </row> 
+    </tbody> 
+   </tgroup> 
+  </informaltable> 
+  <para>
+   Discussing all the files included in the PHP package is beyond the
+   scope of this chapter. However, you should take a close look at the
+   following files:<itemizedlist> 
+    <listitem> 
+     <para>
+      <filename>php-src/main/php.h</filename>, located in the main PHP directory.
+      This file contains most of PHP's macro and API definitions.
+     </para> 
+    </listitem> 
+    <listitem> 
+     <para>
+      <filename>php-src/Zend/zend.h</filename>, located in the main Zend directory.
+      This file contains most of Zend's macros and definitions.
+     </para> 
+    </listitem> 
+    <listitem> 
+     <para>
+      <filename>php-src/Zend/zend_API.h</filename>, also located in the Zend
+      directory, which defines Zend's API.
+     </para> 
+    </listitem> 
+   </itemizedlist> You should also follow some sub-inclusions from
+   these files; for example, the ones relating to the Zend executor,
+   the PHP initialization file support, and such. After reading these
+   files, take the time to navigate around the package a little to see
+   the interdependencies of all files and modules - how they relate to
+   each other and especially how they make use of each other. This
+   also helps you to adapt to the coding style in which PHP is
+   authored. To extend PHP, you should quickly adapt to this style.
+  </para>
+  
+  <sect2 id="zend.layout.conventions"> 
+   <title>Extension Conventions</title> 
+   <para>
+    Zend is built using certain conventions; to avoid breaking its
+    standards, you should follow the rules described in the following
+    sections.
+   </para> 
+  </sect2> 
+
+  <sect2 id="zend.layout.macros"> 
+   <title>Macros</title> 
+   <para>
+    For almost every important task, Zend ships predefined macros that
+    are extremely handy. The tables and figures in the following
+    sections describe most of the basic functions, structures, and
+    macros. The macro definitions can be found mainly in
+    <filename>zend.h</filename> and <filename>zend_API.h</filename>.
+    We suggest that you take a close look at these files after having
+    studied this chapter. (Although you can go ahead and read them
+    now, not everything will make sense to you yet.)
+   </para> 
+  </sect2> 
+  
+  <sect2 id="zend.layout.memory-management"> 
+   <title>Memory Management</title> 
+   <para>
+    Resource management is a crucial issue, especially in server
+    software. One of the most valuable resources is memory, and memory
+    management should be handled with extreme care. Memory management
+    has been partially abstracted in Zend, and you should stick to
+    this abstraction for obvious reasons: Due to the abstraction, Zend
+    gets full control over all memory allocations. Zend is able to
+    determine whether a block is in use, automatically freeing unused
+    blocks and blocks with lost references, and thus prevent memory
+    leaks. The functions to be used are described in the following
+    table: 
+    <informaltable> 
+     <tgroup cols="2">
+      <colspec colnum="1" colname="col1" colwidth="1.00*"/>
+      <colspec colnum="2" colname="col2" colwidth="1.62*"/> 
+      <tbody> 
+       <row> 
+        <entry colname="col1">Function</entry> 
+        <entry colname="col2">Description</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>emalloc</function></entry> 
+        <entry colname="col2">Serves as replacement for
+         <function>malloc</function>.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>efree</function></entry> 
+        <entry colname="col2">Serves as replacement for
+         <function>free</function>.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>estrdup</function></entry> 
+        <entry colname="col2">Serves as replacement for
+         <function>strdup</function>.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>estrndup</function></entry>
+        <entry colname="col2">Serves as replacement for
+         <function>strndup</function>. Faster than
+         <function>estrdup</function> and binary-safe. This is the
+         recommended function to use if you know the string length
+         prior to duplicating it.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>ecalloc</function></entry> 
+        <entry colname="col2">Serves as replacement for
+         <function>calloc</function>.</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>erealloc</function></entry>
+        <entry colname="col2">Serves as replacement for
+         <function>realloc</function>.</entry> 
+       </row> 
+      </tbody> 
+     </tgroup> 
+    </informaltable> <function>emalloc</function>,
+    <function>estrdup</function>,  <function>estrndup</function>,
+    <function>ecalloc</function>, and <function>erealloc</function>
+    allocate internal memory; <function>efree</function> frees these
+    previously allocated blocks. Memory handled by the
+    <function>e*</function> functions is considered local to the
+    current process and is discarded as soon as the script executed by
+    this process is terminated. 
+    <warning> 
+     <para>
+      To allocate resident memory that survives termination of
+      the current script, you can use <function>malloc</function> and
+      <function>free</function>. This should only be done with extreme
+      care, however, and only in conjunction with demands of the Zend
+      API; otherwise, you risk memory leaks.
+     </para> 
+    </warning>
+    Zend also features a thread-safe resource manager to
+    provide better native support for multithreaded Web servers. This
+    requires you to allocate local structures for all of your global
+    variables to allow concurrent threads to be run. Because the
+    thread-safe mode of Zend was not finished back when this was written, 
+    it is not yet extensively covered here.
+   </para> 
+  </sect2> 
+
+  <sect2 id="zend.layout.dir-and-file"> 
+   <title>Directory and File Functions</title> 
+   <para>
+    The following directory and file functions should be used in Zend
+    modules. They behave exactly like their C counterparts, but
+    provide virtual working directory support on the thread level. 
+    <informaltable> 
+     <tgroup cols="2">
+      <colspec colnum="1" colname="col1" colwidth="*"/>
+      <colspec colnum="2" colname="col2" colwidth="*"/> 
+      <tbody> 
+       <row> 
+        <entry colname="col1">Zend Function</entry> 
+        <entry colname="col2">Regular C Function</entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>V_GETCWD</function></entry>
+        <entry colname="col2"><function>getcwd</function></entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>V_FOPEN</function></entry> 
+        <entry colname="col2"><function>fopen</function></entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>V_OPEN</function></entry> 
+        <entry colname="col2"><function>open</function></entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>V_CHDIR</function></entry> 
+        <entry colname="col2"><function>chdir</function></entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>V_GETWD</function></entry> 
+        <entry colname="col2"><function>getwd</function></entry> 
+       </row> 
+       <row> 
+        <entry
+               colname="col1"><function>V_CHDIR_FILE</function></entry> 
+        <entry colname="col2">
+         Takes a file path as an argument and changes the current
+         working directory to that file's directory.
+        </entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>V_STAT</function></entry> 
+        <entry colname="col2"><function>stat</function></entry> 
+       </row> 
+       <row> 
+        <entry colname="col1"><function>V_LSTAT</function></entry> 
+        <entry colname="col2"><function>lstat</function></entry> 
+       </row> 
+      </tbody> 
+     </tgroup> 
+    </informaltable></para> 
+  </sect2> 
+
+  <sect2 id="zend.layout.string-handling"> 
+   <title>String Handling</title> 
+   <para>
+    Strings are handled a bit differently by the Zend engine
+    than other values such as integers, Booleans, etc., which don't require
+    additional memory allocation for storing their values. If you want to
+    return a string from a function, introduce a new string variable to the symbol
+    table, or do something similar, you have to make sure that the memory the
+    string will be occupying has previously been allocated, using the
+    aforementioned <function>e*</function> functions for allocation. (This might
+    not make much sense to you yet; just keep it somewhere in your head for now - we'll get
+    back to it shortly.)
+   </para> 
+  </sect2> 
+
+  <sect2 id="zend.layout.complex-types"> 
+   <title>Complex Types</title> 
+   <para>
+    Complex types such as arrays and objects require
+    different treatment. Zend features a single API for these types - they're
+    stored using hash tables.
+   </para> 
+   <note>
+    <para>
+     To reduce complexity in the following source examples, we're only
+     working with simple types such as integers at first. A discussion about
+     creating more advanced types follows later in this chapter.
+    </para>
+   </note>
+  </sect2> 
+ </sect1> 
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
