@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+ <!-- $Revision: 1.1 $ -->
+ <sect1 id="zend.creating"> 
+  <title>Creating Extensions</title> 
+  <para>
+   We'll start with the creation of a very simple extension at first, which
+   basically does nothing more than implement a function that returns the
+   integer it receives as parameter. <xref linkend='example.simple'/> shows the source.
+  </para> 
+  <example id='example.simple'> 
+   <title>A simple extension.</title> 
+   <programlisting role="C">
+/* include standard header */
+#include "php.h"
+
+/* declaration of functions to be exported */
+ZEND_FUNCTION(first_module);
+
+/* compiled function list so Zend knows what's in this module */
+zend_function_entry firstmod_functions[] =
+{
+    ZEND_FE(first_module, NULL)
+    {NULL, NULL, NULL}
+};
+
+/* compiled module information */
+zend_module_entry firstmod_module_entry =
+{
+    STANDARD_MODULE_HEADER,
+    "First Module",
+    firstmod_functions,
+    NULL, 
+    NULL, 
+    NULL, 
+    NULL, 
+    NULL,
+    NO_VERSION_YET,
+    STANDARD_MODULE_PROPERTIES
+};
+
+/* implement standard "stub" routine to introduce ourselves to Zend */
+#if COMPILE_DL_FIRST_MODULE
+ZEND_GET_MODULE(firstmod)
+#endif
+
+/* implement function that is meant to be made available to PHP */
+ZEND_FUNCTION(first_module)
+{
+    long parameter;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &amp;parameter) == FAILURE) {
+        return;
+    }
+
+    RETURN_LONG(parameter);
+}
+   </programlisting> 
+  </example> 
+  <para>
+   This code contains a complete PHP module. We'll explain the source
+   code in detail shortly, but first we'd like to discuss the build
+   process. (This will allow the impatient to experiment before we
+   dive into API discussions.)
+  </para> 
+  <note>
+   <para>
+    The example source makes use of some features introduced with the Zend version
+    used in PHP 4.1.0 and above, it won't compile with older PHP 4.0.x versions.
+   </para>
+  </note>
+  <sect2 id="zend.creating.compiling"> 
+   <title>Compiling Modules</title> 
+   <para>
+    There are basically two ways to compile modules: 
+    <itemizedlist> 
+     <listitem> 
+      <para>
+       Use the provided "make" mechanism in the
+       <filename>ext</filename> directory, which also allows building
+       of dynamic loadable modules.
+      </para> 
+     </listitem> 
+     <listitem> 
+      <para>Compile the sources manually.</para> 
+     </listitem> 
+    </itemizedlist> 
+    The first method should definitely be favored,
+    since, as of PHP 4.0, this has been standardized into a
+    sophisticated build process. The fact that it is so sophisticated
+    is also its drawback, unfortunately - it's hard to understand at
+    first. We'll provide a more detailed introduction to this later in
+    the chapter, but first let's work with the default files.
+   </para> 
+   <para>
+    The second method is good for those who (for some reason) don't
+    have the full PHP source tree available, don't have access to all
+    files, or just like to juggle with their keyboard. These cases
+    should be extremely rare, but for the sake of completeness we'll
+    also describe this method.
+   </para> 
+   <formalpara> 
+    <title>Compiling Using Make</title> 
+    <para>
+     To compile the sample sources using the standard mechanism, copy
+     all their subdirectories to the <filename>ext</filename>
+     directory of your PHP source tree. Then run
+     <filename>buildconf</filename>, which will create an updated
+     <filename>configure</filename> script containing appropriate
+     options for the new extension. By default, all the sample sources
+     are disabled, so you don't have to fear breaking your build
+     process.
+    </para> 
+   </formalpara> 
+   <para>
+    After you run <filename>buildconf</filename>, <filename>configure
+     --help</filename> shows the following additional modules: 
+   </para>
+   <screen>
+  --enable-array_experiments   BOOK: Enables array experiments
+  --enable-call_userland       BOOK: Enables userland module
+  --enable-cross_conversion    BOOK: Enables cross-conversion module
+  --enable-first_module        BOOK: Enables first module
+  --enable-infoprint           BOOK: Enables infoprint module
+  --enable-reference_test      BOOK: Enables reference test module
+  --enable-resource_test       BOOK: Enables resource test module
+  --enable-variable_creation   BOOK: Enables variable-creation module
+   </screen>
+   <para>
+    The module shown earlier in <xref linkend='example.simple'/>  
+    can be enabled with
+    <literal>--enable-first_module</literal> or
+    <literal>--enable-first_module=yes</literal>.
+   </para> 
+   <formalpara> 
+    <title>Compiling Manually</title> 
+    <para>
+     To compile your modules manually, you need the following commands:
+     <informaltable> 
+      <tgroup cols="2">
+       <colspec colnum="1" colname="col1" colwidth="1.00*"/>
+       <colspec colnum="2" colname="col2" colwidth="3.94*"/> 
+       <tbody> 
+        <row> 
+         <entry colname="col1">Action</entry> 
+         <entry colname="col2">Command</entry> 
+        </row> 
+        <row> 
+         <entry colname="col1">Compiling</entry> 
+         <entry colname="col2">cc -fpic -DCOMPILE_DL=1 -I/usr/local/include -I.
+     -I.. -I../Zend -c -o <filename>&lt;your_object_file&gt;</filename>
+     <filename>&lt;your_c_file&gt;</filename></entry> 
+		</row> 
+     <row> 
+		  <entry colname="col1">Linking</entry> 
+		  <entry colname="col2">cc -shared -L/usr/local/lib -rdynamic -o
+			 <filename>&lt;your_module_file&gt;</filename>
+			 <filename>&lt;your_object_file(s)&gt;</filename></entry> 
+		</row> 
+    </tbody> 
+    </tgroup> 
+    </informaltable>
+     The command to compile the module simply instructs the compiler
+     to generate position-independent code (<literal>-fpic</literal> shouldn't be
+     omitted) and additionally defines the constant <literal>COMPILE_DL</literal> to
+     tell the module code that it's compiled as a dynamically loadable module (the
+     test module above checks for this; we'll discuss it shortly). After these
+     options, it specifies a number of standard include paths that should be used
+     as the minimal set to compile the source files. 
+    </para> 
+   </formalpara> 
+   <para>
+    <emphasis>Note:</emphasis> All include paths in the example are
+    relative to the directory <filename>ext</filename>. If you're
+    compiling from another directory, change the pathnames
+    accordingly. Required items are the PHP directory, the
+    <filename>Zend</filename> directory, and (if necessary), the
+    directory in which your module resides.
+   </para>
+	 <para>
+    The link command is also a plain vanilla command instructing linkage as a dynamic module.
+   </para>
+	 <para>
+    You can include optimization options in the compilation
+    command, although these have been omitted in this example (but some are included in the makefile
+    template described in an earlier section).
+   </para>
+   <para>
+    <emphasis>Note:</emphasis> Compiling and linking manually as a
+    static module into the PHP binary involves very long instructions
+    and thus is not discussed here. (It's not very efficient to type
+    all those commands.)
+   </para> 
+  </sect2> 
+ </sect1> 
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
