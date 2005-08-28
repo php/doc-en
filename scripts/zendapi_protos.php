@@ -35,6 +35,10 @@
 					if (empty($name)) {
 						$params[] = $type;
 					} else {
+						if ($name{0} == '*') {
+							$type.= "*";
+							$name = substr($name, 1);
+						}
 						$params[$type] = $name;
 					}
 				}
@@ -44,8 +48,9 @@
  				ob_start();
 				
 				echo '<?xml version="1.0" encoding="iso-8859-1"?>'."\n";
+                echo "<!-- $"."Revision: 1.1 $ -->\n";
+
 ?>
-<!-- $Revision$ -->
 <refentry id="zend-api.<?php echo str_replace("_","-",$function); ?>">
  <refnamediv>
   <refname><?php echo $function; ?></refname>
