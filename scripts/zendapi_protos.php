@@ -1,6 +1,18 @@
-	<?php
-		// just read from standard input right now
-		$in = fopen("php://stdin", "r");
+<?php
+$zend_include_dir = "../../php-src/Zend";
+
+$zend_include_files = array("zend_API.h", "zend_objects_API.h");
+
+$functions_dir = "../en/internals/zendapi/functions/";
+
+foreach ($zend_include_files as $infile) {
+	echo "processing $zend_include_dir/$infile\n";
+
+	$in = fopen("$zend_include_dir/$infile", "r");
+
+	if (!$in) {
+		die("can't open $zend_include_dir/$infile");
+	}
 
 	// loop over all lines in the file
 	while (!feof($in)) {
@@ -23,6 +35,8 @@
 					$return_type.= "*";
 					$function = substr($function, 1);
 				}
+
+				echo "  $function\n";
 
 				// the parameters are spearated by commas
 				// TODO find a better way to handle TSRMLS_D and TSRMLS_DC
@@ -59,6 +73,7 @@
 
  <refsect1 role="description">
   &reftitle.description;
+  <literallayout>#include &lt;<?php echo basename($infile); ?>&gt;</literallayout>
   <methodsynopsis>
    <type><?php echo $return_type; ?></type><methodname><?php echo $function; ?></methodname>
 <?php
@@ -127,10 +142,11 @@ vi: ts=1 sw=1
 -->
 <?php
 	   
-	   file_put_contents("../en/internals/zendapi/functions/".$function.".xml", ob_get_clean());
+	   file_put_contents($functions_dir."/".$function.".xml", ob_get_clean());
 			}
 
 		}
 											
 	}
+}
 ?>
