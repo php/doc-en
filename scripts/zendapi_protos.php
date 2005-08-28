@@ -77,7 +77,7 @@
 	   if (is_numeric($type)) $type = "";
 ?>
     <varlistentry>
-     <term><parameter><?php $name; ?></parameter></term>
+     <term><parameter><?php echo $name; ?></parameter></term>
      <listitem>
       <para>
        ...
