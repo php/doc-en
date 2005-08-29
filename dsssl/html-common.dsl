@@ -21,6 +21,17 @@
         (attribute-string (normalize "id") elem)
         (generate-anchor elem))))
 
+
+;; convert to lower case unless all characters are upper case
+(define (case-fold-updown str)
+  (let (
+		(upstr (case-fold-up   str))
+		(downstr (case-fold-down str))
+		)
+    (if (equal? upstr str) upstr downstr )
+    )
+)
+
 ;; Make function definitions bold
 (element (funcdef function) 
   ($bold-seq$
@@ -140,16 +151,24 @@
   )
 )
 
+
+
+
 (element function
-  (let* ((function-name (data (current-node)))
-     (linkend 
-      (string-append
-       "function." 
-       (case-fold-down (string-replace
-                        (string-replace function-name "_" "-")
-                        "::" "."))))
-     (target (element-with-id linkend))
-     (parent-gi (gi (parent))))
+    (let* (
+           (function-name (data (current-node)))
+           (id-base (string-replace
+                     (string-replace function-name "_" "-")
+                     "::" "."))
+           (linkend (string-append "function." (case-fold-down id-base )))
+           (target (element-with-id linkend))
+           (linkend2 (string-append "zend-api." (case-fold-down id-base )))
+           (target2 (element-with-id linkend2))
+           (linkend3 (string-append "zend-api-macro." id-base ))
+           (target3 (element-with-id linkend3))
+           (parent-gi (gi (parent)))
+           )
+         
     (cond
      ;; function names should be plain in FUNCDEF
      ((equal? parent-gi "funcdef")
@@ -158,8 +177,8 @@
      ;; If a valid ID for the target function is not found, or if the
      ;; FUNCTION tag is within the definition of the same function,
      ;; make it bold, add (), but don't make a link
-     ((or (node-list-empty? target)
-      (equal? (case-fold-down
+     ((or (and (node-list-empty? target) (node-list-empty? target2) (node-list-empty? target3))
+      (equal? (case-fold-updown
            (data (node-list-first
               (select-elements
                (node-list-first
@@ -169,7 +188,7 @@
                    (ancestor-member (parent) (list "refentry")))
                   "refnamediv")))
                "refname"))))
-          (case-fold-down function-name)))
+          (case-fold-updown function-name)))
       ($bold-seq$
        (make sequence
      (process-children)
@@ -178,14 +197,20 @@
      ;; Else make a link to the function and add ()
      (else
       (make element gi: "A"
-        attributes: (list
-             (list "HREF" (href-to target)))
-        ($bold-seq$
-         (make sequence
-           (process-children)
-           (literal
-        )
-           (literal "()"))))))))
+            attributes: (list
+                         (list "HREF" (href-to (cond ((not (node-list-empty? target3)) (case-fold-down target3))  
+                                                     ((not (node-list-empty? target2)) target2)
+                                                     ((not (node-list-empty? target)) target)
+                                             ))
+                               )
+                         )
+            ($bold-seq$
+             (make sequence
+                   (process-children)
+                   (literal
+                    )
+                   (literal "()")))))
+     )))
 
 
 ;; Link for classnames
