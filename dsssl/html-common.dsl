@@ -244,7 +244,7 @@
      ;; If a valid ID for the target constant is not found
      ;; make it bold, but don't make a link
      ((or (node-list-empty? target)(attribute-string (normalize "id")(current-node)))
-			($bold-mono-seq$
+            ($bold-mono-seq$
        (process-children)))
      
      ;; Else make a link to the constant
@@ -306,9 +306,9 @@
 (element (refnamediv refname)
   (let ((refid (attribute-string (normalize "id") (parent (parent (current-node))))))
     (if (or (not (string? refid))
-	    (not (string=?
-		  (substring refid 0 (min (string-length refid) 14))
-		  "reference.pcre")))
+        (not (string=?
+          (substring refid 0 (min (string-length refid) 14))
+          "reference.pcre")))
       (make sequence
         (make element gi: "P"
           (literal "    (")
@@ -317,7 +317,7 @@
         )
         (process-children)
       )
-	  (process-children)
+      (process-children)
     )
   )
 )
@@ -370,27 +370,27 @@
 ;; Special handling of note role="seealso"
 (define ($admonpara$)
   (let* ((title     (select-elements 
-		     (children (parent (current-node))) (normalize "title")))
-	 (has-title (not (node-list-empty? title)))
-	 (adm-title (if has-title 
-			(make sequence
-			  (with-mode title-sosofo-mode
-			    (process-node-list (node-list-first title)))
-			  (literal (gentext-label-title-sep 
-				    (gi (parent (current-node))))))
-			(literal
-			 (gentext-element-name 
-			  (if (equal? (normalize "seealso") (attribute-string (normalize "role") (parent (current-node))))
-			   (normalize "seealsoie")
-			   (parent (current-node))))
-			 (gentext-label-title-sep 
-			  (gi (parent (current-node))))))))
+             (children (parent (current-node))) (normalize "title")))
+     (has-title (not (node-list-empty? title)))
+     (adm-title (if has-title 
+            (make sequence
+              (with-mode title-sosofo-mode
+                (process-node-list (node-list-first title)))
+              (literal (gentext-label-title-sep 
+                    (gi (parent (current-node))))))
+            (literal
+             (gentext-element-name 
+              (if (equal? (normalize "seealso") (attribute-string (normalize "role") (parent (current-node))))
+               (normalize "seealsoie")
+               (parent (current-node))))
+             (gentext-label-title-sep 
+              (gi (parent (current-node))))))))
     (make element gi: "P"
-	  (if (and (not %admon-graphics%) (= (child-number) 1))
-	      (make element gi: "B"
-		    adm-title)
-	      (empty-sosofo))
-	  (process-children))))
+      (if (and (not %admon-graphics%) (= (child-number) 1))
+          (make element gi: "B"
+            adm-title)
+          (empty-sosofo))
+      (process-children))))
 
 
 
