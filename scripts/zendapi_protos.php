@@ -26,43 +26,47 @@ foreach ($zend_include_files as $infile) {
             // parse prototypes, step #1
             if (preg_match('|^ZEND_API\s+(\S+)\s+(\S+)\((.*)\);$|', $line, $matches)) {
 
+                // now write the template file to phpdoc/en/internals/zendapi/functions
+                ob_start();
+                
+                echo '<?xml version="1.0" encoding="iso-8859-1"?>'."\n";
+                echo "<!-- $"."Revision: 1.3 $ -->\n";
+
                 $return_type = $matches[1];
                 $function    = $matches[2];
 
                 // the pointer '*' is usually next to the function name, not the type 
                 // TODO what if there is whitespace on both sides of the '*'?
-                if ($function{0} == '*') {
+                while ($function{0} == '*') {
                     $return_type.= "*";
                     $function = substr($function, 1);
                 }
-
-                echo "  $function\n";
 
                 // the parameters are spearated by commas
                 // TODO find a better way to handle TSRMLS_D and TSRMLS_DC
                 // TODO handle ...
                 $params = array();
                 foreach (explode(",", trim($matches[3])) as $param) {
+					$new_param = array();
+
                     $tokens = preg_split("/\s+/", trim($param));
                     $type   = array_shift($tokens);
                     $name   = implode(" ", $tokens);
+
                     if (empty($name)) {
-                        $params[] = $type;
+                        $new_param['type'] = "";
+                        $new_param['name'] = $type;
                     } else {
-                        if ($name{0} == '*') {
+                        while ($name{0} == '*') {
                             $type.= "*";
                             $name = substr($name, 1);
                         }
-                        $params[$type] = $name;
+                        $new_param['type'] = $type;
+						$new_param['name'] = $name;
                     }
+					$params[] = $new_param;
                 }
 
-
-                // now write the template file to phpdoc/en/internals/zendapi/functions
-                ob_start();
-                
-                echo '<?xml version="1.0" encoding="iso-8859-1"?>'."\n";
-                echo "<!-- $"."Revision: 1.1 $ -->\n";
 
 ?>
 <refentry id="zend-api.<?php echo str_replace("_","-",$function); ?>">
@@ -77,9 +81,8 @@ foreach ($zend_include_files as $infile) {
   <methodsynopsis>
    <type><?php echo $return_type; ?></type><methodname><?php echo $function; ?></methodname>
 <?php
-   foreach($params as $type => $name) {
-       if (is_numeric($type)) $type = "";
-       echo "    <methodparam><type>$type</type><parameter>$name</parameter></methodparam>\n";
+   foreach($params as $param) {
+       echo "    <methodparam><type>$param[type]</type><parameter>$param[name]</parameter></methodparam>\n";
    }
 ?>
   </methodsynopsis>
@@ -93,11 +96,10 @@ foreach ($zend_include_files as $infile) {
   <para>
    <variablelist>
 <?php
-   foreach($params as $type => $name) {
-       if (is_numeric($type)) $type = "";
+   foreach($params as $param) {
 ?>
     <varlistentry>
-     <term><parameter><?php echo $name; ?></parameter></term>
+     <term><parameter><?php echo $param["name"]; ?></parameter></term>
      <listitem>
       <para>
        ...
