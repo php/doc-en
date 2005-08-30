@@ -1,7 +1,7 @@
 <?php
 $zend_include_dir = "../../php-src/Zend";
 
-$zend_include_files = array("zend_API.h", "zend_objects_API.h", "zend_hash.h");
+$zend_include_files = array("zend.h", "zend_API.h", "zend_objects_API.h", "zend_hash.h");
 
 $functions_dir = "../en/internals/zendapi/functions/";
 
