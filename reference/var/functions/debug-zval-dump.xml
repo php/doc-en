@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.3 $ -->
+<!-- $Revision: 1.4 $ -->
 <refentry id="function.debug-zval-dump">
  <refnamediv>
   <refname>debug_zval_dump</refname>
@@ -49,18 +49,106 @@ $var2 = '';
 
 $var2 =& $var1;
 
-debug_zval_dump($var1);
+debug_zval_dump(&$var1);
 ?>
 ]]>
     </programlisting>
     &example.outputs;
     <screen>
 <![CDATA[
-string(11) "Hello World" refcount(1)
+string(11) "Hello World" refcount(3)
 ]]>
     </screen>
    </example>
   </para>
+  <note>
+   <title>Beware the <literal>refcount</literal></title>
+   <para>
+    The <literal>refcount</literal> value returned by this function is
+    non-obvious in certain circumstances. For example, a developer might
+    expect the above example to indicate a <literal>refcount</literal> of
+    <literal>2</literal>. The third reference is created when actually
+    calling <function>debug_zval_dump</function>.
+   </para>
+   <para>
+    This behavior is further compounded when a variable is not passed to
+    <function>debug_zval_dump</function> by reference. To illustrate, consider
+    a slightly modified version of the above example:
+   </para>
+   <para>
+    <example>
+     <title/>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$var1 = 'Hello World';
+$var2 = '';
+
+$var2 =& $var1;
+
+debug_zval_dump($var1); // not passed by reference, this time
+?>
+]]>
+     </programlisting>
+     &example.outputs;
+     <screen>
+<![CDATA[
+string(11) "Hello World" refcount(1)
+]]>
+     </screen>
+    </example>
+   </para>
+   <para>
+    Why <literal>refcount(1)</literal>? Because a copy of <literal>$var1</literal> is
+    being made, when the function is called.
+   </para>
+   <para>
+    This function becomes even <emphasis>more</emphasis> confusing when a
+    variable with a <literal>refcount</literal> of <literal>1</literal> is
+    passed (by copy/value):
+   </para>
+   <para>
+    <example>
+     <title/>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$var1 = 'Hello World';
+
+debug_zval_dump($var1);
+?>
+]]>
+     </programlisting>
+     &example.outputs;
+     <screen>
+<![CDATA[
+string(11) "Hello World" refcount(2)
+]]>
+     </screen>
+    </example>
+   </para>
+   <para>
+    A <literal>refcount</literal> of <literal>2</literal>, here, is extremely
+    non-obvious. Especially considering the above examples. So what's
+    happening?
+   </para>
+   <para>
+    When a variable has a single reference (as did <literal>$var1</literal>
+    before it was used as an argument to <function>debug_zval_dump</function>),
+    PHP's engine optimizes the manner in which it is passed to a function.
+    Internally, PHP treats <literal>$var1</literal> like a reference (in that
+    the <literal>refcount</literal> is increased for the scope of this
+    function, with the caveat that <emphasis>if</emphasis> the passed reference
+    happens to be written to, a copy is made, but only at the moment of
+    writing. This is known as "copy on write."
+   </para>
+   <para>
+    So, if <function>debug_zval_dump</function> happened to write to its sole
+    parameter (and it doesn't), then a copy would be made. Until then, the
+    parameter remains a reference, causing the <literal>refcount</literal> to
+    be incremented to <literal>2</literal> for the scope of the function call.
+   </para>
+  </note>
  </refsect1>
  <refsect1 role="seealso">
   &reftitle.seealso;
@@ -69,6 +157,7 @@ string(11) "Hello World" refcount(1)
     <member><function>var_dump</function></member>
     <member><function>debug_backtrace</function></member>
     <member><link linkend="language.references">References Explained</link></member>
+    <member><ulink url="http://www.zend.com/zend/art/ref-count.php">Reference Counting and Aliasing (by Andi Gutmans)</ulink></member>
    </simplelist>
   </para>
  </refsect1>
