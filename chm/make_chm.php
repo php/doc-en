@@ -18,13 +18,14 @@ if (empty($FANCY_PATH)) { $FANCY_PATH = $HTML_PATH; }
 
 // Files on the top level of the TOC
 $MAIN_FILES = array(
+    "preface.html",
     "getting-started.html",
     "install.html",
     "langref.html",
     "security.html",
     "features.html",
     "funcref.html",
-    "api.html",
+    "internals.html",
     "faq.html",
     "appendixes.html"
 );
