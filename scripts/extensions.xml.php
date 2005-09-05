@@ -38,14 +38,16 @@ $Purpose = $Membership = $State = $debug = array();
 // read the files and save the tags' info
 foreach ($files as $file) {
 
-	$tmp  = explode('/', $file, -1);
 	$file = file_get_contents($file);
-	$ext  = array_pop($tmp);
-
 	$miss = array('Purpose'=>1, 'Membership'=>1);
 
+	// get the extension's name
+	preg_match('/<reference\s+id=[\'"]([^\'"]+)[\'"]>/S', $file, $match);
+	$ext = $match[1];
+
+
 	if (preg_match_all('/<!--\s*(\w+):\s*([^-]+)-->/S', $file, $matches, PREG_SET_ORDER)) {
-		//print_r($matches);
+
 		foreach ($matches as $match) {
 			switch($match[1]) {
 				case 'Purpose':
@@ -93,7 +95,7 @@ foreach ($files as $file) {
 
 }
 
-uksort($Purpose, sort_purpose);
+uksort($Purpose, 'sort_purpose');
 ksort($Membership);
 ksort($State);
 
@@ -169,12 +171,10 @@ XML;
 
 
 	foreach ($exts as $ext => $dummy) {
-		$write .= indent($level, "    <listitem><para><xref linkend=\"ref.$ext\"/></para></listitem>" . PHP_EOL);
+		$write .= indent($level, "    <listitem><para><xref linkend=\"$ext\"/></para></listitem>" . PHP_EOL);
 	}
 
 	$write .= indent($level, '   </itemizedlist>' . PHP_EOL);
-		//indent($level, '  </section>'.PHP_EOL);
-
 }
 
 $write .= close_tags($level) . ' </section>' . PHP_EOL;
@@ -203,7 +203,7 @@ foreach ($State as $type => $exts) {
 XML;
 
 	foreach ($exts as $ext => $dummy) {
-		$write .= "    <listitem><para><xref linkend=\"ref.$ext\"/></para></listitem>".PHP_EOL;
+		$write .= "    <listitem><para><xref linkend=\"$ext\"/></para></listitem>".PHP_EOL;
 	}
 
 	$write .= <<< XML
@@ -240,7 +240,7 @@ foreach ($Membership as $type => $exts) {
 XML;
 
 	foreach ($exts as $ext => $dummy) {
-		$write .= "    <listitem><para><xref linkend=\"ref.$ext\"/></para></listitem>".PHP_EOL;
+		$write .= "    <listitem><para><xref linkend=\"$ext\"/></para></listitem>".PHP_EOL;
 	}
 
 	$write .= <<< XML
