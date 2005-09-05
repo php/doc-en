@@ -95,195 +95,64 @@ foreach ($files as $file) {
 
 }
 
-uksort($Purpose, 'sort_purpose');
-ksort($Membership);
-ksort($State);
 
 // ---------- generate the text to write -------------
 
-$write = <<< XML
-<?xml version="1.0" encoding="utf-8"?>
-<!-- \$Revision$ -->
+$simplexml = simplexml_load_file("$basedir/en/appendices/extensions.xml", null, ~LIBXML_DTDVALID);
 
-<!--
-  DO NOT TRANSLATE THIS FILE! All the content that is displayed
-  on the extension categorization page in your translated manual
-  can be translated in extensions.ent
--->
+foreach ($simplexml as &$node) {
 
-<appendix id="extensions">
- &extcat.intro;
+	$tmp = explode('.', (string)$node->attributes());
+	$section = ucfirst($tmp[1]); // Purpose, State or Membership
 
- <section id="extensions.purpose">
-  &extcat.purpose;
+	foreach ($node as &$topnode) {
+		$tmp     = explode('.', (string)$topnode->attributes());
+		$topname = $tmp[count($tmp)-1];
 
-XML;
+		// this means that we have 2 levels (e.g. basic.*)
+		if ((bool)$topnode->children()) {
+			foreach ($topnode as &$lastnode) {
+				$tmp  = explode('.', (string)$lastnode->attributes());
+				$name = $tmp[1].'.'.$tmp[2];
 
+				$lastnode->itemizedlist = PHP_EOL; // clean the list
 
-// purpose
-$old_toplevel = '';
-$level = 0;
-
-foreach ($Purpose as $name => $exts) {
-
-	$tmp      = explode('.', $name);
-	$toplevel = $tmp[0];
-
-	// 1 level purpose
-	if (count($tmp) == 1) {
-		$old_toplevel = '';
-		$write .= close_tags($level == 2 ? 3 : $level);
-		$write .= <<< XML
-
-  <section id="refs.$name">
-   &extcat.purpose.$name;
-   <itemizedlist>
+				foreach ($Purpose[$name] as $ext => $dummy) {
+					$lastnode->itemizedlist .= <<< XML
+     <listitem><para><xref linkend="$ext"/></para></listitem>
 
 XML;
+				}
 
-		$level = 1;
+				$lastnode->itemizedlist .= '    '; // make the output prettier
 
-	// 2 level purpose
-	} else {
+			}
 
-		if ($old_toplevel != $toplevel) {
-			$write .= close_tags($level == 2 ? 3 : $level);
-			$write .= <<< XML
+		} else { // just 1 level
 
-  <section id="refs.$toplevel">
-   &extcat.purpose.$toplevel;
+			$tmp = $$section;
 
-XML;
-		} else {
-			$write .= close_tags($level);
-		}
+			// we can get here as a father of 2 levels childs
+			if (empty($tmp[$topname])) continue;
 
-			$write .= <<< XML
+			$topnode->itemizedlist = PHP_EOL; // clean the list
 
-   <section id="refs.$name">
-    &extcat.purpose.$name;
-    <itemizedlist>
+			foreach($tmp[$topname] as $ext => $dummy) {
+				$topnode->itemizedlist .= <<< XML
+    <listitem><para><xref linkend="$ext"/></para></listitem>
 
 XML;
-		$old_toplevel = $toplevel;
-		$level = 2;
+			}
+
+			$topnode->itemizedlist .= '   '; // make the output prettier
+
+		} //end of 1 level handling
 	}
-
-
-	foreach ($exts as $ext => $dummy) {
-		$write .= indent($level, "    <listitem><para><xref linkend=\"$ext\"/></para></listitem>" . PHP_EOL);
-	}
-
-	$write .= indent($level, '   </itemizedlist>' . PHP_EOL);
 }
 
-$write .= close_tags($level) . ' </section>' . PHP_EOL;
 
-
-
-///--------end of purpose
-// membership
-
-$write .= <<< XML
-
- <section id="extensions.state">
-  &extcat.state;
-
-XML;
-
-
-foreach ($State as $type => $exts) {
-
-	$write .= <<< XML
-
-  <section id="extensions.state.$type">
-   &extcat.state.$type;
-   <itemizedlist>
-
-XML;
-
-	foreach ($exts as $ext => $dummy) {
-		$write .= "    <listitem><para><xref linkend=\"$ext\"/></para></listitem>".PHP_EOL;
-	}
-
-	$write .= <<< XML
-   </itemizedlist>
-  </section>
-
-XML;
-
-}
-
-$write .= " </section>".PHP_EOL;
-
-
-
-///--------end of membership
-// state
-
-$write .= <<< XML
-
- <section id="extensions.membership">
-  &extcat.membership;
-
-XML;
-
-
-foreach ($Membership as $type => $exts) {
-
-	$write .= <<< XML
-
-  <section id="extensions.membership.$type">
-   &extcat.membership.$type;
-   <itemizedlist>
-
-XML;
-
-	foreach ($exts as $ext => $dummy) {
-		$write .= "    <listitem><para><xref linkend=\"$ext\"/></para></listitem>".PHP_EOL;
-	}
-
-	$write .= <<< XML
-   </itemizedlist>
-  </section>
-
-XML;
-
-}
-
-$write .= " </section>".PHP_EOL;
-
-
-// the end :)
-
-$write .= <<< XML
-
-</appendix>
-
-<!-- Keep this comment at the end of the file
-Local variables:
-mode: sgml
-sgml-omittag:t
-sgml-shorttag:t
-sgml-minimize-attributes:nil
-sgml-always-quote-attributes:t
-sgml-indent-step:1
-sgml-indent-data:t
-indent-tabs-mode:nil
-sgml-parent-document:nil
-sgml-default-dtd-file:"../../manual.ced"
-sgml-exposed-tags:nil
-sgml-local-catalogs:nil
-sgml-local-ecat-files:nil
-End:
-vim600: syn=xml fen fdm=syntax fdl=2 si
-vim: et tw=78 syn=sgml
-vi: ts=1 sw=1
--->
-
-XML;
-
-file_put_contents("$basedir/en/appendices/extensions.xml", $write);
+$xml = strtr(html_entity_decode($simplexml->asXML()), array("\r\n" => "\n", "\r" => PHP_EOL, "\n" => PHP_EOL));
+file_put_contents("$basedir/en/appendices/extensions.xml", $xml);
 
 
 // print the debug messages:
@@ -302,54 +171,4 @@ if (isset($debug['bogus-membership'])) {
 	print_r($debug['bogus-membership']);
 }
 
-
-
-
-function indent($i, $txt) {
-	return ($i==2 ? ' ' : '') . $txt;
-}
-
-
-// close XML tags, based on the level
-function close_tags($i) {
-
-	if ($i == 1) {
-		return <<< XML
-  </section>
-
-XML;
-
-	} elseif ($i == 2) {
-		return <<< XML
-   </section>
-
-XML;
-	} elseif ($i == 3) {
-		return <<< XML
-   </section>
-
-  </section>
-
-XML;
-	}
-}
-
-
-// use this special function to sort the purpose to put the 'xx.other' at last
-function sort_purpose($a, $b) {
-
-	if ($a == $b) return 0;
-	$aa = explode('.', $a);
-	$bb = explode('.', $b);
-
-	if (count($aa) == 1 || count($bb) == 1)
-		return strcmp($a, $b);
-
-	// put .other at last
-	if ($aa[1] == 'other' && $aa[0] == $bb[0]) return 1;
-	if ($bb[1] == 'other' && $aa[0] == $bb[0]) return -1;
-
-	return strcmp($a, $b);
-
-}
 ?>
