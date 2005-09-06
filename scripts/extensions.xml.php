@@ -51,6 +51,7 @@ foreach ($files as $file) {
 		foreach ($matches as $match) {
 			switch($match[1]) {
 				case 'Purpose':
+					$ext_list[$ext] = rtrim($match[2]); // for debugging purposes
 				case 'State':
 					${$match[1]}[rtrim($match[2])][$ext] = 1;
 					unset($miss[$match[1]]); // for the debug part below
@@ -116,7 +117,7 @@ foreach ($simplexml as &$node) {
 		$topname = $tmp[count($tmp)-1];
 
 		// this means that we have 2 levels (e.g. basic.*)
-		if ($topnode->section->itemizedlist->listitem->para->xref) {
+		if ($topnode->section->itemizedlist) {
 			foreach ($topnode as &$lastnode) {
 				$tmp  = explode('.', (string)$lastnode->attributes());
 				$name = $tmp[1].'.'.$tmp[2];
@@ -124,6 +125,8 @@ foreach ($simplexml as &$node) {
 				$lastnode->itemizedlist = PHP_EOL; // clean the list
 
 				foreach ($Purpose[$name] as $ext => $dummy) {
+					unset($ext_list[$ext]); // to generate the debug messages later
+
 					$lastnode->itemizedlist .= <<< XML
      <listitem><para><xref linkend="$ext"/></para></listitem>
 
@@ -144,6 +147,12 @@ XML;
 			$topnode->itemizedlist = PHP_EOL; // clean the list
 
 			foreach($tmp[$topname] as $ext => $dummy) {
+
+				// to generate the debug messages later
+				if ($section == 'Purpose') {
+					unset($ext_list[$ext]);
+				}
+
 				$topnode->itemizedlist .= <<< XML
     <listitem><para><xref linkend="$ext"/></para></listitem>
 
@@ -167,6 +176,14 @@ file_put_contents("$basedir/en/appendices/extensions.xml", $xml);
 if (isset($debug['purpose'])) {
 	echo "\nExtensions Missing Purpose:\n";
 	print_r($debug['purpose']);
+}
+
+if (count($ext_list)) {
+	echo "\nExtensions with bogus Purpose:\n";
+
+	foreach ($ext_list as $ext => $bug) {
+		echo "$ext \t => '$bug'\n";
+	}
 }
 
 if (isset($debug['membership'])) {
