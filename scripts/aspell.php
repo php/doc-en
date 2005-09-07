@@ -56,7 +56,7 @@ function recurse($dir) {
 			//~ echo "$filename\n";
 			$file = file_get_contents($filename);
 			$file = preg_replace_callback('~(<!\\[CDATA\\[)(.*)(\\]\\]>)~sU', "callback_htmlentities", $file);
-			$file = preg_replace_callback('~(<!--)(.*)(-->)~sU', "callback_htmlentities", $file); // isn't in one function as is can match !CDATA[[...-->
+			$file = preg_replace_callback('~(<!--)(.*)(-->)~sU', "callback_htmlentities", $file); // isn't in one function as it can match !CDATA[[...-->
 			if ($GLOBALS["MODE"] == "escape") {
 				$file = preg_replace_callback('~<(' . $GLOBALS['GOOD_TAGS'] . ')( [^>]*)?>(.*)</\\1>~sU', "callback_make_value", $file);
 			} else { // "unescape"
