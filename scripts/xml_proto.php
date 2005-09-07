@@ -929,7 +929,8 @@ Note: Also be sure to double check the documentation before commit as this
       d) If you're writing over files in CVS, be 100% sure to check unified
          diffs before commit!
       e) Run script check-references.php and add role="reference" where required.
-      f) Categorize the extension in appendices/extensions.xml.
+      f) Fill-in the Purpose and Membership comments in reference.xml and run
+         extensions.xml.php.
 
 Report problems to phpdoc@lists.php.net
 
