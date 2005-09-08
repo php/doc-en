@@ -49,8 +49,8 @@
                  - Generation of references.xml template
                  - functions with optional arguments would not parse properly, now it does
                  - Wildcard scanning is now allowed
-		 - Requires PHP 4.3.0-pre1 or higher now
-		 - Usage is totally different
+                 - Requires PHP 4.3.0-pre1 or higher now
+                 - Usage is totally different
    05/06/04 v2.1 - Corrected filenames for OO functions
    01/03/05 v2.2 - Implemented the new doc style
    08/08/05 v2.3 - Refpurpose is on one line
@@ -443,19 +443,19 @@ function parse_desc($func_num, $data)
       case '\n':
       case ' ':
         if (!$spaces) {
-	  $spaces=1;
+          $spaces=1;
           $temp .= ' ';
-	  $temp_len++;
+          $temp_len++;
         }
-      break;
+        break;
 
       default:
         if ($c != '\r' && $c != '\n') {
           $spaces=0;
-	  $temp .= $c;
-	  $temp_len++;
+          $temp .= $c;
+          $temp_len++;
         }
-      break;
+        break;
     }
   }
   function_add_purpose($func_num, $temp);
@@ -464,129 +464,129 @@ function parse_desc($func_num, $data)
 
 function parse_proto($proto)
 {
-  $len=0;
-  $i=0;
-  $c=0;
-  $done=0;
-  $start=0;
-  $func_number=-1;
-  $got_proto_def=0;
-  $got_proto_type=0;
-  $got_proto_name=0;
-  $got_arg_type=0;
-  $start_args=0;
-  $temp="";
-  $temp2="";
-  $temp_len=0;
-  $isopt=0;
+    $len=0;
+    $i=0;
+    $c=0;
+    $done=0;
+    $start=0;
+    $func_number=-1;
+    $got_proto_def=0;
+    $got_proto_type=0;
+    $got_proto_name=0;
+    $got_arg_type=0;
+    $start_args=0;
+    $temp="";
+    $temp2="";
+    $temp_len=0;
+    $isopt=0;
 
-  $len=strlen($proto);
+    $len=strlen($proto);
 
-  for ($i=0; $i<$len; $i++) {
-    $c=substr($proto, $i, 1);
-    switch ($c) {
-      case '\r':
-      case '\n':
-      case ' ':
-        if ($temp_len) {
-	  if (!$got_proto_def) {
-	    if (strcasecmp($temp, "proto") != 0) {
-	      // Possibly just a comment, don't output error info
-	      // echo "Not a proper proto definition: $proto\n";
-	      return(0);
-	    } else {
-	      $got_proto_def=1;
-	    }
-	  } else if (!$got_proto_type) {
-	    $func_number=new_function();
-            function_add_type($func_number, $temp);
-	    $got_proto_type=1;
-	  } else if (!$got_proto_name) {
-            function_add_name($func_number, $temp);
-	    $got_proto_name=1;
-	  } else if ($start_args && !$got_arg_type) {
-            $got_arg_type=1;
-	    $temp2=$temp;
-	  } else if ($start_args && $got_arg_type) {
-	    $got_arg_type=0;
-            function_add_arg($func_number, $temp2, $temp, $isopt);
-	    $temp2="";
-	  }
-	  $temp_len=0;
-	  $temp="";
+    for ($i=0; $i<$len; $i++) {
+        $c=substr($proto, $i, 1);
+        switch ($c) {
+        case '\r':
+        case '\n':
+        case ' ':
+            if ($temp_len) {
+              if (!$got_proto_def) {
+                if (strcasecmp($temp, "proto") != 0) {
+                  // Possibly just a comment, don't output error info
+                  // echo "Not a proper proto definition: $proto\n";
+                  return(0);
+                } else {
+                    $got_proto_def=1;
+                }
+              } else if (!$got_proto_type) {
+                  $func_number=new_function();
+                  function_add_type($func_number, $temp);
+                  $got_proto_type=1;
+              } else if (!$got_proto_name) {
+                  function_add_name($func_number, $temp);
+                  $got_proto_name=1;
+              } else if ($start_args && !$got_arg_type) {
+                  $got_arg_type=1;
+                  $temp2=$temp;
+              } else if ($start_args && $got_arg_type) {
+                  $got_arg_type=0;
+                  function_add_arg($func_number, $temp2, $temp, $isopt);
+                  $temp2="";
+              }
+              $temp_len=0;
+              $temp="";
+            }
+            break;
+      
+        case '[':
+            if ($got_proto_name) {
+              $isopt=1;
+            } else {
+                echo "Not a proper proto definition -5: $proto\n";
+            }
+            break;
+      
+        case ']':
+            if ($got_proto_name && $isopt) {
+            } else {
+                echo "Not a proper proto definition -6: $proto\n";
+            }
+            break;
+
+        case '(':
+            if ($got_proto_type && $got_proto_def &&!$got_proto_name) {
+              function_add_name($func_number, $temp);
+              $temp="";
+              $temp_len=0;
+              $start_args=1;
+              $got_proto_name=1;
+            } else {
+                echo "Not a proper proto definition -2: $proto\n";
+                return(0);
+            }
+
+            break;
+
+        case ')':
+            if ($start_args) {
+              if ($got_arg_type && $temp_len) {
+                function_add_arg($func_number, $temp2, $temp, $isopt);
+                $temp="";
+                $temp_len=0;
+              }
+              $done=1;
+            } else {
+                echo "Not a proper proto definition -4: $proto\n";
+                return(0);
+            }
+            break;
+
+        case ',':
+            if ($start_args && $got_arg_type) {
+              $got_arg_type=0;
+              function_add_arg($func_number, $temp2, $temp, $isopt);
+              $temp2="";
+              $temp="";
+              $temp_len=0;
+            } else if ($temp && !$temp2) {
+                echo "Not a proper proto definition -3: $temp2 : $temp : $proto\n";
+                return(0);
+            }
+            break;
+
+        default:
+            if ($c != '\r' && $c != '\n') {
+              $temp .= $c;
+              $temp_len++;
+            }
+            break;
         }
-      break;
-      
-      case '[':
-        if ($got_proto_name) {
-          $isopt=1;
-	} else {
-	  echo "Not a proper proto definition -5: $proto\n";
-	}
-      break;
-      
-      case ']':
-        if ($got_proto_name && $isopt) {
-	} else {
-	  echo "Not a proper proto definition -6: $proto\n";
-	}
-      break;
-
-      case '(':
-        if ($got_proto_type && $got_proto_def &&!$got_proto_name) {
-          function_add_name($func_number, $temp);
-	  $temp="";
-	  $temp_len=0;
-	  $start_args=1;
-	  $got_proto_name=1;
-	} else {
-	  echo "Not a proper proto definition -2: $proto\n";
-	  return(0);
-	}
-
-      break;
-
-      case ')':
-        if ($start_args) {
-	  if ($got_arg_type && $temp_len) {
-	    function_add_arg($func_number, $temp2, $temp, $isopt);
-	    $temp="";
-	    $temp_len=0;
-	  }
-          $done=1;
-	} else {
-	  echo "Not a proper proto definition -4: $proto\n";
-	  return(0);
-	}
-      break;
-
-      case ',':
-        if ($start_args && $got_arg_type) {
-	  $got_arg_type=0;
-          function_add_arg($func_number, $temp2, $temp, $isopt);
-	  $temp2="";
-	  $temp="";
-	  $temp_len=0;
-	} else if ($temp && !$temp2) {
-	  echo "Not a proper proto definition -3: $temp2 : $temp : $proto\n";
-	  return(0);
-	}
-      break;
-
-      default:
-        if ($c != '\r' && $c != '\n') {
-          $temp .= $c;
-	  $temp_len++;
-	}
-      break;
+        if ($done) {
+          $start=$i+1;
+          break;
+        }
     }
-    if ($done) {
-      $start=$i+1;
-      break;
-    }
-  }
-  parse_desc($func_number, substr($proto, $start));
-  return(1);
+    parse_desc($func_number, substr($proto, $start));
+    return(1);
 }
 
 function parse_file($buffer)
@@ -625,35 +625,35 @@ function add_constant_to_list($name, $type)
 
 function add_constant($varlist, $type)
 {
-  $on_name=0;
-  $len=strlen($varlist);
-  for ($i=0; $i<$len; $i++) {
-    $c=substr($varlist, $i, 1);
-    switch($c) {
-      case '"';
-        if (!$on_name) {
-          $on_name=1;
-          $name="";
-        } else {
-          $on_name=0;
-	  add_constant_to_list($name, $type);
-	  return(1);
+    $on_name=0;
+    $len=strlen($varlist);
+    for ($i=0; $i<$len; $i++) {
+        $c=substr($varlist, $i, 1);
+        switch($c) {
+        case '"';
+            if (!$on_name) {
+              $on_name=1;
+              $name="";
+            } else {
+                $on_name=0;
+                add_constant_to_list($name, $type);
+                return(1);
+            }
+            break;
+
+        case ',':
+            return(0);
+            break;
+
+        default:
+            if ($on_name) {
+              $name .= $c;
+            }
+            break;
+
         }
-      break;
-
-      case ',':
-        return(0);
-      break;
-
-      default:
-        if ($on_name) {
-	  $name .= $c;
-        }
-      break;
-
-    }
-  }
-  return(0);
+     }
+     return(0);
 }
 
 function scan_for_constants_byref($buffer, $string, $type)
@@ -856,13 +856,13 @@ function parse_cli($progargc, $progargv)
         }
       } else {
         $temp_source_files=glob($progargv[$i]);
-	$num=count($source_files);
-	$new_num=count($temp_source_files);
-	for ($j=0; $j<$new_num; $j++) {
-	  $source_files[$num+$j]=$temp_source_files[$j];
-	}
-	$total=count($source_files);
-	  
+        $num=count($source_files);
+        $new_num=count($temp_source_files);
+        for ($j=0; $j<$new_num; $j++) {
+            $source_files[$num+$j]=$temp_source_files[$j];
+        }
+        $total=count($source_files);
+
         if ($total == 0) {
             die("FATAL ERROR: Could not find any PHP source files to parse\n");
         }
