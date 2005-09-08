@@ -56,7 +56,7 @@
    08/08/05 v2.3 - Refpurpose is on one line
 */
 
-$version="2.2";
+$version="2.3";
 
 $funclist=array();
 $num_funcs=0;
