@@ -114,7 +114,8 @@ make: *** [test] Error 1
    <command>xmllint</command> check on the entire phpdoc tree.  This
    will find problems <command>make test</command> ignores, problems like a
    missing ; or &amp; for an entity.  <command>xmllint</command> is much
-   slower than the SGML check and will take roughly 4 times longer to execute.
+   slower than the SGML check and will take roughly 4 times longer to execute
+   (and will consume much more memory).
   </para>
   <para>
    <informalexample>
@@ -229,6 +230,15 @@ $ scripts/xml-check.php en/reference/mysql/functions/mysql-connect.xml
   </para>
 
   <para>
+   There are also XSL stylesheets available, that are equivalents to the above
+   DSSSL sheets. The list includes: <literal>html_xsl</literal>,
+   <literal>bightml_xsl</literal>, <literal>phpweb_xsl</literal>,
+   <literal>howto_xsl</literal>, <literal>chm_xsl</literal> and
+   <literal>fo</literal> (produces a FO file, that can be later transformed to
+   PDF using a FO processor, like Apache FOP)
+  </para>
+
+  <para>
    To generate a viewable copy of the documentation,
    <command>cd</command> to the <filename>phpdoc</filename> directory
    and issue one of the following commands:
@@ -237,14 +247,14 @@ $ scripts/xml-check.php en/reference/mysql/functions/mysql-connect.xml
 $ make html
 $ make bightml
 $ make phpweb
-$ make pdf
-$ make rtf
     </programlisting>
    </informalexample>
    To make an actual copy of this HOWTO:
    <informalexample>
     <programlisting>
 $ make howto
+ -or-
+$ make howto_xsl
     </programlisting>
    </informalexample>
    The plain text version of the PHP documentation is made
@@ -255,7 +265,7 @@ $ make howto
    <para>
     Generating viewable documentation is CPU intensive and can take a
     little while to complete. E.g. generating the simple HTML 
-    manual takes about 7m 30s on a 700MHz box.
+    manual takes about 1 hour on a normal computer.
    </para>
   </note>
 
@@ -273,116 +283,16 @@ $ make howto
    documentation, including any changes you've made.
   </para>
 
- </chapter>
+  <tip>
+   <para>
+    Instead of generating the whole manual (which takes too much time), you
+    can generate just a single senction, by issuing the following command:
+    <command>xsltproc --stringparam rootid "&lt;ID&gt;" xsl/html.xsl
+    manual.xml</command> (replacing <literal>&lt;ID&gt;</literal> by the ID of
+    the file/section you want to build.
+   </para>
+  </tip>
 
- <chapter id="chapter-using-xsl">
-  <title>Using XSL Stylesheets</title>
-
-  <para>
-   Currently using XSL stylesheets to generate output
-   of XML files is not as well supported as using DSSSL
-   style sheets. This is because XSL stylesheets are not
-   as customized as DSSSL ones, and XSL tools are not as
-   widely used, and standardized.
-  </para>
-  
-  <para>
-   At this time there are no XSL specific targets in
-   <filename>Makefile</filename>. This is because there
-   are not standardized ways to invoke XSLT processors.
-   To use XSL stylesheets you must run the
-   <filename>configure</filename> script and tell it,
-   where your copy of XSL DocBook Stylesheets is placed.
-   The majority of XSLT processors require an URL instead
-   of a filename, so be sure to prepend
-   the <literal>file:///</literal> schema before path:
-   <informalexample>
-    <programlisting>
-$ autoconf
-$ ./configure --with-xsl=file:///path/to/docbook/xsl/styles
-    </programlisting>
-   </informalexample>
-  </para>
-  
-  <note>
-   <para>
-    The above <literal>--with-xsl=file:///path/to/docbook/xsl/styles</literal>
-    form won't work with cygwin, because it tries to check for the existance
-    of the style sheet, and cygwin cannot interpret this kind of file path.
-    So there is a temporary <literal>--with-mxsl=file:///path/to/docbook/xsl/styles</literal>
-    method to use under cygwin, as long as we are unable to find the common
-    right method. Please also note, that the file path values generated
-    into <filename>entities/file-entities.ent</filename> by configure will
-    also be problematic with current XSLT tools, so you need to convert them
-    to use this <filename>file:///absolute/path/filename.xml</filename> form
-    before running any XSLT processors... After going through all these your
-    XSLT tool will be able to generate the output correctly under cygwin.
-   </para>
-  </note>
-  
-  <para>
-   Configure will create four files:
-   <filename>html.xsl</filename>,
-   <filename>bightml.xsl</filename>,
-   <filename>htmlhelp.xsl</filename>,
-   <filename>print.xsl</filename> among others. These files
-   can be used to generate the desired output.
-   <filename>html.xsl</filename> generates a set of small
-   HTML files, <filename>bightml.xsl</filename> generates
-   one large HTML file, <filename>htmlhelp.xsl</filename>
-   generates source files processable by HTML Help Workshop
-   and <filename>print.xsl</filename> generates a file
-   with FO objects suitable for further processing with
-   some FO processor.
-  </para>
-  
-  <note>
-   <para>
-    The <filename>htmlhelp.xsl</filename> is currently not too
-    useful alone, as it's used by the new CHM build system which
-    is not available in CVS right now.
-   </para>
-  </note>
-  
-  <para>
-   Invocation of XSLT processor is processor dependent,
-   for now suppose that you have a shell script called
-   <filename>saxon</filename> which is able to invoke the
-   Saxon processor. Some examples:
-   <informalexample>
-    <programlisting>
-$ mkdir html
-$ saxon manual.xml html.xsl
-$ saxon manual.xml htmlhelp.xsl
-$ saxon -o bigmanual.html manual.xml bightml.xsl
-$ saxon -o manual.fo manual.xml print.xsl
-    </programlisting>
-   </informalexample>
-   Use the appropriate command from the examples above
-   to generate the desired output as described above.
-   To get a PDF from the FO file, you must run some FO
-   processor on the <filename>manual.fo</filename> file.
-  </para>
-  
-  <note>
-   <para>
-    Generating <filename>bigmanual.html</filename> with Saxon
-    (using JDK 1.3) takes about two minutes on a Celeron 400
-    computer. Generating FO files takes about two times more
-    + plus time required to run the FO processor. Generating
-    chunked version or HTML Help version of manual takes about
-    60 minutes.
-   </para>
-  </note>
-  
-  <note>
-   <para>
-    Not all customization from DSSSL are ported to XSL,
-    so some things are not as pretty as in DSSSL output
-    <emphasis>currently</emphasis>, but development is
-    underway to migrate the system to use XSL only.
-   </para>
-  </note>
  </chapter>
 
  <chapter id="chapter-online-generation">
