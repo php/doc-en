@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='iso-8859-1'?>
-<!-- $Revision: 1.35 $ -->
+<!-- $Revision: 1.36 $ -->
 <!-- Purpose: database.abstract -->
 <!-- Membership: pecl, bundled -->
 <!-- State:experimental -->
@@ -19,6 +19,14 @@
      perform any database functions using the PDO extension by
      itself; you must use a <link linkend="pdo.drivers">database-specific
      PDO driver</link> to access a database server.
+    </para>
+    <para>
+     PDO provides a <emphasis>data-access</emphasis> abstraction layer, which
+     means that, regardless of which database you're using, you use the same
+     functions to issue queries and fetch data.  PDO does
+     <emphasis>not</emphasis> provide a <emphasis>database</emphasis>
+     abstraction; it doesn't rewrite SQL or emulate missing features.  You
+     should use a full-blown abstraction layer for PDO.
     </para>
     <para>
      PDO ships with PHP 5.1, and is available as a PECL extension for PHP 5.0;
@@ -213,6 +221,522 @@ extension=php_pdo_sqlite.dll
        </tbody>
       </tgroup>
      </informaltable>
+    </para>
+   </section>
+
+   <section id='pdo.connections'>
+    <title>Connections and Connection management</title>
+    <para>
+     Connections are established by creating instances of the PDO base class.
+     It doesn't matter which driver you want to use; you always use the PDO
+     class name. The constructor accepts parameters for specifying the
+     database source (known as the DSN) and optionally for the username and
+     password (if any).
+    </para>
+    <para>
+     <example><title>Connecting to mysql</title>
+      <programlisting role='php'>
+<![CDATA[
+<?php
+$dbh = new PDO('mysql:host=localhost;dbname=test', $user, $pass);
+?>
+]]> 
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     If there are any connection errors, a <literal>PDOException</literal>
+     object will be thrown.  You may catch the exception if you want to handle
+     the error condition, or you may opt to leave it for an application
+     global exception handler that you set up via
+     <function>set_exception_handler</function>.
+    </para>
+    <para>
+     <example><title>Handling connection errors</title>
+      <programlisting role='php'>
+<![CDATA[
+<?php
+try {
+   $dbh = new PDO('mysql:host=localhost;dbname=test', $user, $pass);
+   foreach ($dbh->query('SELECT * from FOO') as $row) {
+      print_r($row);
+   }
+   $dbh = null;
+} catch (PDOException $e) {
+   print "Error!: " . $e->getMessage() . "<br/>";
+   die();
+}
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     Upon successful connection to the database, an instance of the PDO class
+     is returned to your script.  The connection remains active for the
+     lifetime of that PDO object.  To close the connection, you need to
+     destroy the object by ensuring that all remaining references to it are
+     deleted--you do this by assigning &null; to the variable that holds the
+     object.  If you don't do this explicitly, PHP will automatically close
+     the connection when your script ends.
+    </para>
+    <para>
+     <example><title>Closing a connection</title>
+     <programlisting role='php'>
+<![CDATA[
+<?php
+$dbh = new PDO('mysql:host=localhost;dbname=test', $user, $pass);
+// use the connection here
+
+
+// and now we're done; close it
+$dbh = null;
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+   <para>
+    Many web applications will benefit from making persistent connections to
+    database servers.  Persistent connections are not closed at the end of the
+    script, but are cached and re-used when another script requests a
+    connection using the same credentials.  The persistent connection cache
+    allows you to avoid the overhead of establishing a new connection every
+    time a script needs to talk to a database, resulting in a faster web
+    application.
+   </para>
+   <para>
+    <example><title>Persistent connections</title>
+     <programlisting role='php'>
+<![CDATA[
+<?php
+$dbh = new PDO('mysql:host=localhost;dbname=test', $user, $pass, array(
+  PDO_ATTR_PERSISTENT => true
+));
+]]>
+     </programlisting>
+     </example>
+    </para>
+    <note>
+     <para>
+      If you're using the PDO ODBC driver and your ODBC libraries support ODBC
+      Connection Pooling (unixODBC and Windows are two that do; there may be
+      more), then it's recommended that you don't use persistent PDO
+      connections, and instead leave the connection caching to the ODBC
+      Connection Pooling layer.  The ODBC Connection Pool is shared with other
+      modules in the process; if PDO is told to cache the connection, then
+      that connection would never be returned to the ODBC connection pool,
+      resulting in additional connections being created to service those other
+      modules.
+     </para>
+    </note>
+   </section>
+
+   <section id='pdo.transactions'>
+    <title>Transactions and auto-commit</title>
+    <para>
+     Now that you're connected via PDO, you should to understand how PDO
+     manages transactions before you start issuing queries. If you've never
+     encountered transactions before, they offer 4 major features: Atomicity,
+     Consistency, Isolation and Durability (ACID). In layman's terms, any work
+     carried out in a transaction, even if it is carried out in stages, is
+     guaranteed to be applied to the database safely, and without interference
+     from other connections, when it is committed. Transactional work can also
+     be automatically undone at your request (provided you haven't already
+     committed it), which makes error handling in your scripts easier.
+    </para>
+    <para>
+     Transactions are typically implemented by "saving-up" your batch of
+     changes to be applied all at once; this has the nice side effect of
+     drastically improving the efficiency of those updates. In other words,
+     transactions can make your scripts faster and potentially more robust
+     (you still need to use them correctly to reap that benefit).
+    </para>
+    <para>
+     Unfortunately, not every database supports transactions, so PDO needs to
+     run in what is known as "auto-commit" mode when you first open the
+     connection.  Auto-commit mode means that every query that you run has its
+     own implicit transaction, if the database supports it, or no transaction
+     if the database doesn't support transactions. If you need a transaction,
+     you must use the <function>PDO::beginTransaction</function> method to
+     initiate one. If the underlying driver does not support transactions, a
+     PDOException will be thrown (regardless of your error handling settings:
+     this is always a serious error condition). Once you are in a transaction,
+     you may use <function>PDO::commit</function> or
+     <function>PDO::rollBack</function> to finish it, depending on the success
+     of the code you run during the transaction.
+
+    </para>
+    <para>
+     When the script ends or when a connection is about to be closed, if you
+     have an outstanding transaction, PDO will automatically roll it back.
+     This is a safety measure to help avoid inconsistency in the cases where
+     the script terminates unexpectedly--if you didn't explicitly commit the
+     transaction, then it is assumed that something went awry, so the rollback
+     is performed for the safety of your data.
+    </para>
+    <warning>
+     <para>
+      The automatic rollback only happens if you initiate the transaction via
+      <function>PDO::beginTransaction</function>. If you manually issue a
+      query that begins a transaction PDO has no way of knowing about it and
+      thus cannot roll it back if something bad happens.
+     </para>
+    </warning>
+    <para>
+     <example><title>Executing a batch in a transaction</title>
+      <para>
+       In the following sample, let's assume that we are creating a set of
+       entries for a new employee, who has been assigned an ID number of 23.
+       In addition to entering the basic data for that person, we also need to
+       record their salary. It's pretty simple to make two separate updates,
+       but by enclosing them within the
+       <function>PDO::beginTransaction</function> and
+       <function>PDO::commit</function> calls, we are guaranteeing that no one
+       else will be able to see those changes until they are complete. If
+       something goes wrong, the catch block rolls back all changes made
+       since the transaction was started, and then prints out an error
+       message.
+      </para>
+      <programlisting role='php'>
+<![CDATA[
+<?php
+try {
+  $dbh = new PDO('odbc:SAMPLE', 'db2inst1', 'ibmdb2', 
+      array(PDO_ATTR_PERSISTENT => true));
+  echo "Connected\n";
+  $dbh->setAttribute(PDO_ATTR_ERRMODE, PDO_ERRMODE_EXCEPTION);
+
+  $dbh->beginTransaction();
+  $dbh->exec("insert into staff (id, first, last) values (23, 'Joe', 'Bloggs')");
+  $dbh->exec("insert into salarychange (id, amount, changedate) 
+      values (23, 50000, NOW())");
+  $dbh->commit();
+  
+} catch (Exception $e) {
+  $dbh->rollBack();
+  echo "Failed: " . $e->getMessage();
+}
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     You're not limited to making updates in a transaction; you can also issue
+     complex queries to extract data, and possibly use that information to
+     build up more updates and queries; while the transaction is active, you
+     are guaranteed that no one else can make changes while you are in the
+     middle of your work. In truth, this isn't 100% correct, but it is a
+     good-enough introduction, if you've never heard of transactions before.
+    </para>
+   </section>
+
+   <section id='pdo.prepared-statements'>
+    <title>Prepared statements and stored procedures</title>
+    <para>
+     Many of the more mature databases support the concept of prepared
+     statements.  What are they? You can think of them as a kind of compiled
+     template for the SQL that you want to run, that can be customized using
+     variable parameters.  Prepared statements offer two major benefits:
+    </para>
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       The query only needs to be parsed (or prepared) once, but can be
+       executed multiple times with the same or different parameters. When the
+       query is prepared, the database will analyze, compile and optimize it's
+       plan for executing the query. For complex queries this process can take
+       up enough time that it will noticably slow down your application if you
+       need to repeat the same query many times with different parameters. By
+       using a prepared statement you avoid repeating the
+       analyze/compile/optimize cycle. In short, prepared statements use fewer
+       resources and thus run faster.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       The parameters to prepared statements don't need to be quoted; the
+       driver handles it for you. If your application exclusively uses
+       prepared statements, you can be sure that no SQL injection will occur.
+       (However, if you're still building up other parts of the query based on
+       untrusted input, you're still at risk).
+      </simpara>
+     </listitem>
+    </itemizedlist>
+    <para>
+     Prepared statements are so useful that they are the only feature that PDO
+     will emulate for drivers that don't support them.  This ensures that you
+     will be able to use the same data access paradigm regardless of the
+     capabilities of the database.
+    </para>
+    <para>
+     <example><title>Repeated inserts using prepared statements</title>
+     <simpara>
+      This example performs an INSERT query by substituting a <literal>name</literal>
+      and a <literal>value</literal> for the named placeholders.
+     </simpara>
+     <programlisting role='php'>
+<![CDATA[
+<?php
+$stmt = $dbh->prepare("INSERT INTO REGISTRY (name, value) VALUES (:name, :value)");
+$stmt->bindParam(':name', $name);
+$stmt->bindParam(':value', $value);
+
+// insert one row
+$name = 'one';
+$value = 1;
+$stmt->execute();
+
+// insert another row with different values
+$name = 'two';
+$value = 2;
+$stmt->execute();
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+    <para>
+     <example><title>Repeated inserts using prepared statements</title>
+     <simpara>
+      This example performs an INSERT query by substituting a <literal>name</literal>
+      and a <literal>value</literal> for the positional <literal>?</literal> placeholders.
+     </simpara>
+     <programlisting role='php'>
+<![CDATA[
+<?php
+$stmt = $dbh->prepare("INSERT INTO REGISTRY (name, value) VALUES (?, ?)");
+$stmt->bindParam(1, $name);
+$stmt->bindParam(2, $value);
+
+// insert one row
+$name = 'one';
+$value = 1;
+$stmt->execute();
+
+// insert another row with different values
+$name = 'two';
+$value = 2;
+$stmt->execute();
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+    <para>
+     <example><title>Fetching data using prepared statements</title>
+     <simpara>
+      This example fetches data based on a key value supplied by a form.
+      The user input is automatically quoted, so there is no risk of a
+      SQL injection attack.
+     </simpara>
+     <programlisting role='php'>
+<![CDATA[
+<?php
+$stmt = $dbh->prepare("SELECT * FROM REGISTRY where name = ?");
+if ($stmt->execute(array($_GET['name']))) {
+  while ($row = $stmt->fetch()) {
+    print_r($row);
+  }
+}
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+   <para>
+    If the database driver supports it, you may also bind parameters for
+    output as well as input. Output parameters are typically used to retrieve
+    values from stored procedures. Output parameters are slightly more complex
+    to use than input parameters, in that you must know how large a given
+    parameter might be when you bind it. If the value turns out to be larger
+    than the size you suggested, an error is raised.
+   </para>
+
+   <para>
+    <example><title>Calling a stored procedure with an output parameter</title>
+     <programlisting role='php'>
+<![CDATA[
+<?php
+$stmt = $dbh->prepare("CALL sp_returns_string(?)");
+$stmt->bindParam(1, $return_value, PDO_PARAM_STR, 4000); 
+
+// call the stored procedure
+$stmt->execute();
+
+print "procedure returned $return_value\n";
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+
+   <para>
+    You may also specify parameters that hold values both input and output;
+    the syntax is similar to output parameters. In this next example, the
+    string 'hello' is passed into the stored procedure, and when it returns,
+    hello is replaced with the return value of the procedure.
+   </para>
+
+   <para>
+    <example><title>Calling a stored procedure with an input/output parameter</title>
+     <programlisting role='php'>
+<![CDATA[
+<?php
+$stmt = $dbh->prepare("CALL sp_takes_string_returns_string(?)");
+$value = 'hello';
+$stmt->bindParam(1, $value, PDO_PARAM_STR|PDO_PARAM_INPUT_OUTPUT, 4000); 
+
+// call the stored procedure
+$stmt->execute();
+
+print "procedure returned $value\n";
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+  </section>
+
+  <section id='pdo.error-handling'>
+   <title>Errors and error handling</title>
+    <para>
+     PDO offers you a choice of 3 different error handling strategies, to fit
+     your style of application development.
+    </para>
+    <itemizedlist>
+     <listitem>
+      <para>
+       PDO_ERRMODE_SILENT
+      </para>
+      <para>
+        This is the default mode. PDO will simply set the error code for you
+        to inspect using the <function>PDO::errorCode</function> and
+        <function>PDO::errorInfo</function> methods on both the
+        statement and database objects; if the error resulted from a call on a
+        statement object, you would invoke the
+        <function>PDOStatement::errorCode</function> or
+        <function>PDOStatement::errorInfo</function>
+        method on that object. If the error resulted from a call on the
+        database object, you would invoke those methods on the database object
+        instead.
+       </para>
+     </listitem>
+     <listitem>
+      <para>
+       PDO_ERRMODE_WARNING
+      </para>
+      <para>
+        In addition to setting the error code, PDO will emit a traditional
+        E_WARNING message. This setting is useful during debugging/testing, if
+        you just want to see what problems occurred without interrupting the
+        flow of the application.
+       </para>
+      </listitem>
+      <listitem>
+       <para>
+        PDO_ERRMODE_EXCEPTION
+       </para>
+       <para>
+        In addition to setting the error code, PDO will throw a PDOException
+        and set its properties to reflect the error code and error
+        information. This setting is also useful during debugging, as it will
+        effectively "blow up" the script at the point of the error, very
+        quickly pointing a finger at potential problem areas in your code
+        (remember: transactions are automatically rolled back if the exception
+        causes the script to terminate).
+      </para>
+      <para>
+        Exception mode is also useful because you can structure your error
+        handling more clearly than with traditional PHP-style warnings, and
+        with less code/nesting than by running in silent mode and explicitly
+        checking the return value of each database call.
+       </para>
+      </listitem>
+    </itemizedlist>
+    <para>
+     PDO standardizes on using SQL-92 SQLSTATE error code strings; individual
+     PDO drivers are responsible for mapping their native codes to the
+     appropriate SQLSTATE codes.   The <function>PDO::errorCode</function>
+     method returns a single SQLSTATE code. If you need more specific
+     information about an error, PDO also offers an
+     <function>PDO::errorInfo</function> method which returns an array
+     containing the SQLSTATE code, the driver specific error code and driver
+     specific error string.
+    </para>
+   </section>
+
+   <section id='pdo.lobs'>
+    <title>Large Objects (LOBs)</title>
+    <para>
+      At some point in your application, you might find that you need to store
+      "large" data in your database. Large typically means "around 4kb or
+      more", although some databases can happily handle up to 32kb before data becomes
+      "large". Large objects can be either textual or binary in nature. PDO
+      allows you to work with this large data type by using the PDO_PARAM_LOB
+      type code in your <function>PDOStatement::bindParam</function> or
+      <function>PDOStatement::bindColumn</function> calls. PDO_PARAM_LOB tells
+      PDO to map the data as a stream, so that you can manipulate it using the
+      <link linkend='ref.stream'>PHP Streams API</link>.
+    </para>
+    <para>
+     
+    </para>
+    <para>
+     <example><title>Displaying an image from a database</title>
+     <para>
+      This example binds the LOB into the variable named $lob and then sends
+      it to the browser using <function>fpassthru</function>.  Since the LOB
+      is represented as a stream, functions such as
+      <function>fgets</function>, <function>fread</function> and
+      <function>stream_get_contents</function> can be used on it.
+     </para>
+     <programlisting role='php'>
+<![CDATA[
+<?php
+$db = new PDO('odbc:SAMPLE', 'db2inst1', 'ibmdb2');
+$stmt = $db->prepare("select contenttype, imagedata from images where id=?");
+$stmt->execute(array($_GET['id']));
+$stmt->bindColumn(1, $type, PDO_PARAM_STR, 256);
+$stmt->bindColumn(2, $lob, PDO_PARAM_LOB);
+$stmt->fetch(PDO_FETCH_BOUND);
+
+header("Content-Type: $type");
+fpassthru($lob);
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+   <para>
+    <example><title>Inserting an image into a database</title>
+     <para>
+      This example opens up a file and passes the file handle to PDO to insert
+      it as a LOB.  PDO will do its best to get the contents of the file up
+      to the database in the most efficient manner possible.
+     </para>
+     <programlisting role='php'>
+<![CDATA[
+<?php
+$db = new PDO('odbc:SAMPLE', 'db2inst1', 'ibmdb2');
+$stmt = $db->prepare("insert into images (id, contenttype, imagedata) values (?, ?, ?)");
+$id = get_new_id(); // some function to allocate a new ID
+
+// assume that we are running as part of a file upload form
+// You can find more information in the PHP documentation
+
+$fp = fopen($_FILES['file']['tmp_name'], 'rb');
+
+$stmt->bindParam(1, $id);
+$stmt->bindParam(2, $_FILES['file']['type']);
+$stmt->bindParam(3, $fp, PDO_PARAM_LOB);
+
+$stmt->execute();
+?>
+]]>
+     </programlisting>
+     </example>
     </para>
    </section>
 
