@@ -1,6 +1,7 @@
 #!/usr/bin/env php
 <?php
 /** vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4:
+ *
  * Script to trigger partial builds of the PEAR manual
  *
  * LICENSE: This source file is subject to version 3.0 of the PHP license
@@ -17,14 +18,43 @@
 // NOTE: originally from peardoc:/make-partial.php ;
 // these files should be kept in sync
 
+if (substr(PHP_VERSION, 0, 1) == "4") {
+    require_once "PHP/Compat.php";
+    $components = PHP_Compat::loadVersion('5.0.0');
+}
+
 require_once "Console/Getopt.php";
 $console = new Console_Getopt;
 $args = $console->getopt($console->readPHPArgv(), array(), 
-                         array("format=", "include="));
+                         array("format=", "include=", "help"));
 
+// {{{ gather arguments
+
+$format = "html";
+$sections = array();
+
+foreach ($args[0] as $arg) {
+    if ($arg[0] == "--help") {
+        showHelp();
+        exit(0);
+    } elseif ($arg[0] == "--format") {
+        $format = $arg[1];
+    } elseif ($arg[0] == '--include') {
+        $sections[] = $arg[1];
+    }
+}
+
+// }}}
+
+$hasReadline = true;
 if (!function_exists("readline")) {
-    echo "Error: The readline extension could not be found!";
-    exit(1);
+    $hasReadline = false;
+    echo "Warning: The readline extension could not be found!\n";
+    if (count($sections) == 0) {
+        showHelp();
+        echo "Exiting because no --include parameters were specified.\n";
+        exit(1);
+    }
 }
 
 $file = file("manual.xml.in");
@@ -34,23 +64,7 @@ if (!$file) {
 }
 
 copy("manual.xml.in", "manual.xml.in.partial-backup");
-register_shutdown_function("restoreFile");
-
-// {{{ gather arguments
-
-$format = "html";
-$sections = array();
-
-foreach ($args[0] as $arg) {
-    if ($arg[0] == "--format") {
-        $format = $arg[1];
-    } elseif ($arg[0] == '--include') {
-        $sections[] = $arg[1];
-    }
-}
-
-// }}}
-
+register_shutdown_function("restoreFile", filemtime("manual.xml.in"));
 
 $newFile = "";
 $partStack = array();
@@ -68,12 +82,12 @@ foreach ($file as $line) {
 
         if ($sections) {
             echo "Including ". $matches[1] ."? ";
-            if ($includePart = in_string($sections, $matches[1])) {
+            if ($includePart = inString($sections, $matches[1])) {
                 echo "YES\n";
             } else {
                 echo "NO\n";
             }
-        } else {
+        } else if ($hasReadline) {
             $include = readline("Include " . $matches[1] . "? [NO] ");
             $includePart = evaluate($include);
         }
@@ -117,12 +131,12 @@ foreach ($file as $line) {
 
             if ($sections) {
                 echo "Including ". $matches[2] ."? ";
-                if ($include = in_string($sections, $matches[2])) {
+                if ($include = inString($sections, $matches[2])) {
                     echo "YES\n";
                 } else {
                     echo "NO\n";
                 }
-            } else {
+            } else if ($hasReadline) {
                 $include = evaluate(readline("Include " . $matches[2] . "? [NO] "));
             }
             
@@ -148,12 +162,14 @@ passthru($cmd);
 /**
  * Restores the original manual.xml.in file
  */
-function restoreFile() {
+function restoreFile($savedmtime) {
     if (!is_file("manual.xml.in.partial-backup")) {
         return;
     }
 
+    unlink("manual.xml.in");
     rename("manual.xml.in.partial-backup", "manual.xml.in");
+    touch("manual.xml.in", $savedmtime);
 }
 
 /**
@@ -170,17 +186,39 @@ function evaluate($str) {
 }
 
 /**
- * $needle (array) is in $haystack?
+ * Checks if one element of the first parameter is part of the second parameter
  *
+ * @param  array List of needles
+ * @param  string Haystack
+ * @return boolean True if one of the needles is in the haystack,
+ *                 false otherwise.
  */
-function in_string($needle, $haystack)
+function inString($needle, $haystack)
 {
-    foreach ((array) $needle AS $n) {
+    foreach ((array) $needle as $n) {
         if (stripos($haystack, $n) !== false) {
             return true;
         }
     }
     return false;
+}
+
+/**
+ * Prints a usage notice for the script
+ *
+ * @return void
+ */
+function showHelp()
+{
+    echo "Usage: make-partial.php [--format <format>] [--include <section1>] [--include <section2>] ...\n";
+    echo "       make-partial.php --help\n";
+    echo "\n";
+    echo "  --format <format>    Which format to build. Can be one of 'html', 'pearweb'.\n";
+    echo "                       Default is 'html'.\n";
+    echo "  --include <section>  Automatically include certain sections of the manual\n";
+    echo "                       without asking for them explicitely.  This also works\n";
+    echo "                       on setups where the readline extension is not available.\n";
+    echo "  --help               Prints this help text.\n\n";
 }
 
 // }}}
