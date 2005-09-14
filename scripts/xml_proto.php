@@ -189,7 +189,7 @@ function write_reference_xml()
        "   &reftitle.resources;\n" .
        "   <para>\n" .
        "    Type of resource types (link id, etc.) this extension returns.\n" .
-       "    &no.resources;\n" .
+       "    &no.resource;\n" .
        "   </para>\n" .
        "  </section>\n");
        if ($num_const > 0) {
