@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 <!-- Purpose: basic.session -->
 <!-- Membership: pecl, external -->
-<!-- State: experimental-->
 <!-- Author: Yasuo Ohgaki <yohgaki@php.net> -->
 <reference id="ref.session-pgsql">
  <title>PostgreSQL Session Save Handler</title>
@@ -11,35 +10,99 @@
   <partintro>
    <section id="session-pgsql.intro">
     &reftitle.intro;
-    &warn.experimental;
     &note.no-windows.extension;
     <para>
-     This module provide additional session save handler for session module
-     using PostgreSQL as a storage. <literal>user</literal> session save
-     handler may be used, but this module is written in C. Therefore, this
-     module is roughly 2 times faster than save handler written in PHP script.
+     This module provides an additional session save handler for the
+     <link linkend="ref.session">session</link>
+     module using <ulink url="&url.pgsql;">PostgreSQL</ulink>PostgreSQL as a
+     storage system. A <literal>user</literal> session save handler may be
+     used (<function>(session_set_save_handler</function>, but this module is
+     written in C. Therefore, this module could be twice as fast, compared to
+     a session save handler written in PHP.
     </para>
     <para>
-     Fail-over and load balance is planned to be implemented, but they are not
-     available now.
+     Session PgSQL is designed to scale any size of web sites and offers some
+     advanced features:
+     <simplelist>
+      <member>session tables are created automatically</member>
+      <member>automatic session table vacuum</member>
+      <member>better garbage collection</member>
+      <member>multiple PostgreSQL servers support</member>
+      <member>automatic database server failover (switching)</member>
+      <member>
+       automatic database server load balancing if there are multiple
+       PostgreSQL servers.
+      </member>
+      <member>short circuit UPDATE</member>
+     </simplelist> 
     </para>
-    <note>
-     <simpara>
-      There will be functions for this module, but it is not available now.
-     </simpara>
-    </note>
    </section>
 
    <section id="session-pgsql.requirements">
     &reftitle.required;
     <para>
-     You need at least PHP 4.1, PostgreSQL 7.1 and MM 1.1.3
+     You need at least PHP &gt;= 4.3.0, and PostgreSQL &gt;=7.2.0 as database
+     server. <literal>libpq</literal> that comes with PostgreSQL 7.2.0 or
+     later (and header files to build) and <ulink url="&url.mm;">libmm</ulink>
+     (and header files).
     </para>
    </section>
 
    &reference.session-pgsql.configure;
 
    &reference.session-pgsql.ini;
+
+   <section id="session-pgsql.tables">
+    <title>Table definitions</title>
+    <para>Session table definition
+     <programlisting role="sql">
+<![CDATA[
+CREATE TABLE php_session (
+  sess_id            text,
+  sess_name          text,
+  sess_data          text,
+  sess_created       integer,
+  sess_modified      integer,
+  sess_expire        integer,
+  sess_addr_created  text,
+  sess_addr_modified text,
+  sess_counter       integer,
+  sess_error         integer,
+  sess_warning       integer,
+  sess_notice        integer,
+  sess_err_message   text,
+  sess_custom        text
+);
+
+CREATE INDEX php_session_idx ON php_session USING BTREE (sess_id);
+]]>
+     </programlisting>
+    </para>
+    <warning>
+     <para>
+      If you use <literal>HASH</literal> for <literal>INDEX</literal>, you'll
+      have a deadlock problem when the server load is
+      <emphasis>very</emphasis> high. Even if it's unlikely to have a deadlock
+      under normal operation, it can occur. <emphasis>Do not use
+      <literal>HASH</literal> for <literal>INDEX</literal></emphasis>.
+     </para>
+    </warning>
+    <para>
+     You may change the session table as long as all fields are defined.
+    </para>
+    <para>
+     Application variables table definition
+     <programlisting role="sql">
+<![CDATA[
+CREATE TABLE php_app_vars (
+  app_modified       integer,
+  app_name           text,
+  app_vars           text
+);
+]]>
+     </programlisting>
+    </para>
+   </section>
 
 
    <section id="session-pgsql.contact">
