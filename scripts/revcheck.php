@@ -661,7 +661,7 @@ print ($navbar);
 if (!empty($translation["intro"])) {
     print '<a name="intro"></a>';
     print '<table width="800" align="center"><tr><td class=c>' .
-           $translation['intro'] . '</td></tr></table><p></p>';
+           $translation['intro'] . '</td></tr></table>';
 }
 
 // =========================================================================
@@ -1046,7 +1046,7 @@ $count = count($old_files);
 if ($count > 0) {
     print "<a name=\"oldfiles\"></a>" .
           "<table width=\"400\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n" .
-          "<tr class=blue><th><a name=\"avail\" class=\"ref\">" .
+          "<tr class=blue><th><a name=\"notEn\" class=\"ref\">" .
           " Not in EN Tree</a> ($count files):</th><th>kB</th></tr>\n";
 
     foreach($old_files as $file => $info) {
