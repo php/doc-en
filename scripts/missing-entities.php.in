@@ -38,26 +38,25 @@ $NSGMLS_OUTPUT = "missing-entities.out";
 // Support for Windows systems
 $windows = (strpos(PHP_OS, 'WIN') !== false);
 
-// If PHP wasn't compiled on Cygwin, the path needs to be fixed.
-// cygwin's path is hardcoded to C:\cygwin. change it if needed
-if ($windows && (strpos(php_uname(), 'CYGWIN') === false)) {
-    $NSGMLS = preg_replace('@/usr/bin/(.+)@', 'C:\cygwin\bin\\\\\1.exe', $NSGMLS);
+// If PHP wasn't compiled on Cygwin, then the path to NSGMLS (if it is
+// *nix path in case NSGMLS is installed via Cygwin setup) should be
+// fixed for exec command to work
+if ($windows 
+    && (strpos(php_uname(), 'CYGWIN') === false)
+    && (strncmp($NSGMLS, "/usr/bin/", 9) === 0)) 
+{
+	$cygbin = exec("cygpath -d /usr/bin/");
+    $NSGMLS = preg_replace("!^/usr/bin/!", $cygbin, $NSGMLS);
 }
 
 
 // Execute a test of the manual
-if("@SP_OPTIONS@" == "" || substr(PHP_OS, 0, 3) == 'WIN') {
-    exec(
-        "$NSGMLS -f $NSGMLS_OUTPUT -i lang-@LANG@ -D . " .
-        "-s @SRCDIR@/dtds/dbxml-4.1.2/phpdocxml.dcl manual.xml"
-    );
-}
-else {
-    exec(
-        "@SP_OPTIONS@ $NSGMLS -f $NSGMLS_OUTPUT -i lang-@LANG@ -D . " .
-        "-s @SRCDIR@/dtds/dbxml-4.1.2/phpdocxml.dcl manual.xml"
-    );
-}
+$envy = explode(" ", "@SP_OPTIONS@");
+array_map('putenv', $envy);
+exec(
+    "$NSGMLS -f $NSGMLS_OUTPUT -i lang-@LANG@ -D . " .
+    "-s @SRCDIR@/dtds/dbxml-4.1.2/phpdocxml.dcl manual.xml"
+);
 
 // Try to open files for rewriting
 $ment = fopen("entities/missing-entities.ent", "w");
