@@ -33,6 +33,7 @@ $args = $console->getopt($console->readPHPArgv(), array(),
 $format = "html";
 $sections = array();
 
+$incflag = false;
 foreach ($args[0] as $arg) {
     if ($arg[0] == "--help") {
         showHelp();
@@ -41,6 +42,14 @@ foreach ($args[0] as $arg) {
         $format = $arg[1];
     } elseif ($arg[0] == '--include') {
         $sections[] = $arg[1];
+        $incflag = true;
+    }    
+}
+
+if ($incflag) {
+    // collect other space delimited names as section names
+    foreach ($args[1] as $arg) {
+        $sections[] = $arg;
     }
 }
 
@@ -57,14 +66,17 @@ if (!function_exists("readline")) {
     }
 }
 
+// recover manual.xml.in if the script was terminated unexpectedly
+restoreFile();
+
+copy("manual.xml.in", "manual.xml.in.partial-backup");
+register_shutdown_function("restoreFile", filemtime("manual.xml.in"));
+
 $file = file("manual.xml.in");
 if (!$file) {
     echo "Error: Unable to read manual.xml.in!";
     exit(1);
 }
-
-copy("manual.xml.in", "manual.xml.in.partial-backup");
-register_shutdown_function("restoreFile", filemtime("manual.xml.in"));
 
 $newFile = "";
 $partStack = array();
@@ -162,14 +174,14 @@ passthru($cmd);
 /**
  * Restores the original manual.xml.in file
  */
-function restoreFile($savedmtime) {
+function restoreFile($savedmtime = null) {
     if (!is_file("manual.xml.in.partial-backup")) {
         return;
     }
 
     unlink("manual.xml.in");
     rename("manual.xml.in.partial-backup", "manual.xml.in");
-    touch("manual.xml.in", $savedmtime);
+    if ($savedmtime) touch("manual.xml.in", $savedmtime);
 }
 
 /**
