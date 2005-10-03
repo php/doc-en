@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 <!-- 
   Authors:
     Bill Abt and Rick McGuire of IBM
@@ -9,22 +9,76 @@
 -->
 
 <chapter id="internals.pdo">
+ <chapterinfo>
+  <author>
+   <firstname>Bill</firstname>
+   <surname>Abt</surname>
+   <affiliation>
+    <shortaffil>IBM</shortaffil>
+   </affiliation>
+  </author>
+  <author>
+   <firstname>Rick</firstname>
+   <surname>McGuire</surname>
+   <affiliation>
+    <shortaffil>IBM</shortaffil>
+   </affiliation>
+  </author>
+  <author>
+   <firstname>Wez</firstname>
+   <surname>Furlong</surname>
+   <affiliation>
+    <shortaffil>OmniTI</shortaffil>
+   </affiliation>
+  </author>
+  <copyright>
+   <year>2005</year>
+   <holder>IBM Corporation</holder>
+  </copyright>
+  <copyright>
+   <year>2005</year>
+   <holder>the PHP Documentation Group</holder>
+  </copyright>
+  <abstract>
+   <para>
+    The purpose of this How-To is to provide a basic understanding of the steps
+    required to write a database driver that interfaces with the PDO layer.
+    Please note that this is still an evolving API and as such, subject to
+    change. This document was prepared based on version 0.3 of PDO.
+    The learning curve is steep; expect to spend a lot of time on the
+    pre-requisites.
+   </para>
+  </abstract>
+ </chapterinfo>
+
  <title>PDO Driver How-To</title>
 
  <sect1>
-  <para>Purpose</para>
-  <para>The purpose of this How-To is to provide a basic understanding of the steps required to write a database driver that interfaces with the PDO driver. Please note that this is still an evolving API and as such, subject to change. This document was prepared based on version 0.3 of the PDO driver. The learning curve is steep; expect to spend a lot of time on the pre-requisites.</para>
-  <para/>
-  <para/>
-  <para>Pre-requisites</para>
-  <para>The following is list of pre-requisites and assumptions needed for writing a PDO database driver:</para>
-  <orderedlist continuation="restarts" numeration="arabic">
-    <listitem>
-      <para>A working target database, examples, demos, etc. working as per vendor specifications;</para>
-    </listitem>
+   <title>A brief note about this How-To</title>
+   <para>
+    The original version of this PDO driver specification was written by
+    Bill Abt and Rick McGuire of IBM and contributed to the PHP community
+    to assist in the development of drivers for more databases and to
+    encourage the emerging standard for database access in PHP.
+   </para>
+ </sect1>
+
+ <sect1>
+  <title>Pre-requisites</title>
+  <para>
+   The following is list of pre-requisites and assumptions needed for writing
+   a PDO database driver:
+  </para>
+  <orderedlist>
+   <listitem>
+    <para>
+     A working target database, examples, demos, etc. working as per vendor
+     specifications;
+    </para>
+   </listitem>
     <listitem>
       <para>A working development environment:</para>
-      <orderedlist continuation="restarts" numeration="arabic">
+      <orderedlist>
         <listitem>
           <para>Other Unix: standard development tools supplied by vendor plus the GNU development tool set; </para>
         </listitem>
@@ -40,58 +94,110 @@
       <para>A working PHP environment version 5.0.3 or higher with a working PEAR extension version 1.3.5 or higher;</para>
     </listitem>
     <listitem>
-      <para>A working PDO driver environment (can be installed using 'sudo pear install PDO'), including the headers which will be needed to access the PDO type definitions and function declarations;</para>
+      <para>A working PDO environment (can be installed using 'sudo pear install PDO'), including the headers which will be needed to access the PDO type definitions and function declarations;</para>
     </listitem>
     <listitem>
       <para>A good working knowledge of the 'C' programming language;</para>
     </listitem>
     <listitem>
-      <para>A good working knowledge of the way to write a PHP extension (I recommend <emphasis role="strong">Advanced PHP Programming</emphasis> by <emphasis>George Schlossnagle </emphasis>published by Developer's Library, chapters 21 and 22);</para>
+      <para>A good working knowledge of the way to write a PHP extension
+      <emphasis>George Schlossnagle's</emphasis> <emphasis
+      role="strong">Advanced PHP Programming</emphasis> (published by
+      Developer's Library, chapters 21 and 22) is recommended;</para>
     </listitem>
     <listitem>
-      <para>Finally, a familiarity with the Zend API that forms the heart of PHP in particular paying attention to the memory management aspects.</para>
+     <para>
+      Finally, a familiarity with the Zend API that forms the heart of PHP, in
+      particular paying attention to the memory management aspects.
+     </para>
     </listitem>
   </orderedlist>
-  <para/>
-  <para>Preparation and Housekeeping</para>
-  <para>Source directory layout</para>
-  <para>The source directory for a PDO is laid out as follows:</para>
-  <para>./PDO_&lt;DB&gt;-x.x</para>
-  <para>config.m4</para>
-  <para>config.w32</para>
-  <para>CREDITS</para>
-  <para>pdo_&lt;db&gt;.c</para>
-  <para>php_pdo_&lt;db&gt;.h</para>
-  <para>php_pdo_&lt;db&gt;_int.h</para>
-  <para>&lt;db&gt;_driver.c</para>
-  <para>&lt;db&gt;_statement.c</para>
-  <para>where :</para>
-  <orderedlist continuation="restarts" numeration="arabic">
-    <listitem>
-      <para>&lt;DB&gt; is a capitalized short name for the db this driver is for;</para>
-    </listitem>
-    <listitem>
-      <para>&lt;db&gt; is a lowercase short name for the db this driver is for and</para>
-    </listitem>
-    <listitem>
-      <para>x.x is the version number of the driver.</para>
-    </listitem>
-  </orderedlist>
-  <para>The purpose and contents of these files are defined later in this document.</para>
-  <para/>
-  <para>Creating a skeleton</para>
-  <para>The easiest way to get started is to use the ext_skel shell script found in the PHP build tree in the 'ext' directory. This will build a skeleton directory containing a lot of the files listed above. It can be build by executing the following command from within the 'ext' directory:</para>
-  <para>./ext_skel --extname=pdo_&lt;db&gt;</para>
-  <para>This will generate a directory called pdo_&lt;db&gt; containing the skeleton files that you can then modify. This directory should then be moved out of the php extension directory . PDO is a PECL extension and should not be included in the standard extension directory. As long as you have PHP and PDO installed, you should be able to build from any directory.</para>
-  <para/>
-  <para/>
-  <para>Standard Includes</para>
-  <para>Build Specific Headers</para>
-  <para>The header file config.h is generated by the configure process for the platform for the which the driver is being built. If this header is present, the HAVE_CONFIG_H compiler variable is set. This variable should be tested for and if set, the file config.h should be included in the compilation unit.</para>
-  <para/>
-  <para>PHP Headers</para>
+ </sect1>
+ <sect1>
+  <title>Preparation and Housekeeping</title>
+  <sect2>
+   <title>Source directory layout</title>
+
+  <para>
+   The source directory for a typical PDO driver is laid out as follows, where
+   <literal>SKEL</literal> represents a shortened form of the name of the
+   database that the driver is going to connect to.  Even though SKEL is
+   presented here in uppercase (for clarity), the convention is to use
+   lowercase characters.
+  </para>
+  <screen>
+pdo_SKEL/          
+  config.m4                  <co id="internals.pdo.layout.co.m4"/>
+  config.w32                 <co id="internals.pdo.layout.co.w32"/>
+  CREDITS
+  package.xml                <co id="internals.pdo.layout.co.cred"/>
+  pdo_SKEL.c           <co id="internals.pdo.layout.co.glue"/>
+  php_pdo_SKEL.h
+  php_pdo_SKEL_int.h   <co id="internals.pdo.layout.co.priv"/>
+  SKEL_dbh.c           <co id="internals.pdo.layout.co.dbh"/>
+  SKEL_stmt.c          <co id="internals.pdo.layout.co.stmt"/>
+</screen>
+  <calloutlist>
+   <callout arearefs="internals.pdo.layout.co.m4">
+    <simpara>unix build script</simpara>
+   </callout>
+   <callout arearefs="internals.pdo.layout.co.w32">
+    <simpara>win32 build script</simpara>
+   </callout>
+   <callout arearefs="internals.pdo.layout.co.cred">
+    <simpara>meta information about the package</simpara>
+   </callout>
+   <callout arearefs="internals.pdo.layout.co.glue">
+    <simpara>standard PHP extension glue</simpara>
+   </callout>
+   <callout arearefs="internals.pdo.layout.co.priv">
+    <simpara>driver private header</simpara>
+   </callout>
+   <callout arearefs="internals.pdo.layout.co.dbh">
+    <simpara>contains the implementation of the PDO driver interface</simpara>
+   </callout>
+   <callout arearefs="internals.pdo.layout.co.stmt">
+    <simpara>contains the implementation of the PDO statement interface</simpara>
+   </callout>
+  </calloutlist>
+  <para>The contents of these files are defined later in this document.</para>
+ </sect2>
+ <sect2>
+  <title>Creating a skeleton</title>
+
+  <para>
+   The easiest way to get started is to use the <command>ext_skel</command>
+   shell script found in the PHP build tree in the <filename>ext</filename>
+   directory. This will build a skeleton directory containing a lot of the
+   files listed above. It can be build by executing the following command from
+   within the <filename>ext</filename> directory:
+  </para>
+  <screen>./ext_skel --extname=pdo_SKEL</screen>
+  <para>
+   This will generate a directory called pdo_SKEL containing the
+   skeleton files that you can then modify. This directory should then be
+   moved out of the php extension directory . PDO is a PECL extension and
+   should not be included in the standard extension directory. As long as you
+   have PHP and PDO installed, you should be able to build from any directory.
+  </para>
+ </sect2>
+ <sect2>
+  <title>Standard Includes</title>
+  <sect3>
+  <title>Build Specific Headers</title>
+
+  <para>
+   The header file config.h is generated by the configure process for the
+   platform for the which the driver is being built. If this header is
+   present, the HAVE_CONFIG_H compiler variable is set. This variable should
+   be tested for and if set, the file config.h should be included in the
+   compilation unit.
+  </para>
+  </sect3>
+  <sect3>
+  <title>PHP Headers</title>
   <para>The following standard public php headers should be included in each source module:</para>
-  <orderedlist continuation="restarts" numeration="arabic">
+  <orderedlist>
     <listitem>
       <para>php.h</para>
     </listitem>
@@ -102,2067 +208,2022 @@
       <para>ext/standard/info.h</para>
     </listitem>
   </orderedlist>
-  <para>PDO Interface Headers</para>
+  </sect3>
+  <sect3>
+  <title>PDO Interface Headers</title>
+
   <para>The following standard public pdo header files are also included in each source module:</para>
-  <orderedlist continuation="restarts" numeration="arabic">
+  <variablelist>
+   <varlistentry>
+    <term>pdo/php_pdo.h</term>
     <listitem>
-      <para>pdo/php_pdo.h</para>
-      <orderedlist continuation="restarts" numeration="arabic">
-        <listitem>
-          <para>This header file contains definitions of the initialization and shutdown functions in the main driver as well as definitions of global PDO variables..</para>
-        </listitem>
-      </orderedlist>
+     <para>
+      This header file contains definitions of the initialization and shutdown
+      functions in the main driver as well as definitions of global PDO
+      variables.
+     </para>
     </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>pdo/php_pdo_driver.h</term>
     <listitem>
-      <para>pdo/php_pdo_driver.h</para>
-      <orderedlist continuation="restarts" numeration="arabic">
-        <listitem>
-          <para>This header contains the types and API contracts that are used to write a PDO driver. It also contains method signature for calling back into the main PDO driver and registering/unregistering your driver with the main PDO driver. Most importantly, this header file contains the type definitions for PDO database handles and statements. The two main structures a driver has to deal with, pdo_dbh_t and pdo_stmt_t, are described in more detail in Appendix A and B.</para>
-        </listitem>
-      </orderedlist>
+     <para>
+      This header contains the types and API contracts that are used to write
+      a PDO driver. It also contains method signature for calling back into
+      the PDO layer and registering/unregistering your driver with 
+      PDO. Most importantly, this header file contains the type
+      definitions for PDO database handles and statements. The two main
+      structures a driver has to deal with, pdo_dbh_t and pdo_stmt_t, are
+      described in more detail in Appendix A and B.
+    </para>
     </listitem>
-  </orderedlist>
-  <para/>
-  <para>Driver Specific Headers</para>
-  <para>The typical pdo driver has two header files that are specific to the database implementation. This does not preclude the use of more depending on the implementation. The following two headers are, by convention, standard:</para>
-  <orderedlist continuation="restarts" numeration="arabic">
-    <listitem>
-      <para>php_pdo_&lt;db&gt;.h</para>
-      <orderedlist continuation="restarts" numeration="arabic">
-        <listitem>
-          <para>This header file is virtually an exact duplicate in functionality and content of the previously defined pdo/php_pdo.h that has been specifically tailored for your database. If your driver requires the use of global variables they should be defined using the ZEND_BEGIN_MODULE_GLOBALS and ZEND_END_MODULE_GLOBALS macros. Macros are then used to access these variables. This macro is usually named PDO_&lt;DB&gt;_G(v) where v is global variable to be accessed. Consult the Zend programmer documentation for more information.</para>
-        </listitem>
-      </orderedlist>
-    </listitem>
-    <listitem>
-      <para>php_pdo_&lt;db&gt;_int.h</para>
-      <orderedlist continuation="restarts" numeration="arabic">
-        <listitem>
-          <para>This header file typically contains type definitions and function declarations specific to the driver implementation. It also should contain the db specicfic definitions of a pdo_&lt;db&gt;_handle and pdo_&lt;db&gt;_stmt structures. These are the names of the private data structures that are then referenced by the driver_data members of the handle and statement structures.</para>
-        </listitem>
-      </orderedlist>
-    </listitem>
-  </orderedlist>
-  <para/>
-  <para>Optional Headers</para>
-  <para>Depending on the implementation details for a particular driver it may be necessary to include the following header:</para>
-  <orderedlist continuation="restarts" numeration="arabic">
-    <listitem>
-      <para>zend_exceptions.h</para>
-    </listitem>
-  </orderedlist>
-  <para/>
-  <para>Major Structures and Attributes</para>
-  <para>The major structures, pdo_dbh_t and pdo_stmt_t are defined and explained in Appendix A and B respectively. Database and Statement attributes are defined in Appendix C. Error handling is explained in Appendix D.</para>
-  <para>Housekeeping unit -- pdo_&lt;db&gt;.c</para>
-  <para>Entry functions</para>
-  <para>A structure of type function_entry, called pdo_&lt;db&gt;_functions should be declared and initialized to all NULL.</para>
-  <para/>
-  <para>Module entry</para>
-  <para>A structure of type zend_module_entry (typically called pdo_&lt;db&gt;_module_entry should be declared and should include reference to the pdo_&lt;db&gt;_functions table defined previously.</para>
-  <para/>
-  <para/>
-  <para>Standard PHP Module Extension Functions</para>
-  <para>PHP_MINIT_FUNCTION</para>
-  <para>This standard PHP extension function should be used to register your driver with the PDO main driver. This is done by calling the php_pdo_register_driver function passing a pointer to a structure of type pdo_driver_t typically named pdo_&lt;db&gt;_driver. A pdo_driver_t contains a header that is generated using the PDO_DRIVER_HEADER(&lt;db&gt;) macro and pdo_&lt;db&gt;_handle_factory function pointer. The actual function is described during the discussion of the &lt;db&gt;_driver.c unit.</para>
-  <para/>
-  <para>PHP_MSHUTDOWN_FUNCTION</para>
-  <para>This standard PHP extension function is used to unregister your driver with the main PDO driver. This is done by calling the php_pdo_unregister_driver function passing the same pdo_&lt;db&gt;_driver structure that was passed in the init function above.</para>
-  <para/>
-  <para>PHP_MINFO_FUNCTION</para>
-  <para>This is again a standard PHP extension function. It's purpose is to display information regarding the module. You should include the version of the module and also what version of the db you are dependent on.</para>
-  <para>Driver unit -- &lt;db&gt;_driver.c</para>
-  <para>This unit implements all of the database handling methods that support the PDO database handle object. It also contains the error fetching routines. All of these functions will typically need to access the global variable pool. Therefore, it is necessary to use the Zend macro TSRMLS_DC macro at the end of each of these statements. Consult the Zend programmer documentation for more information on this macro.</para>
-  <para/>
-  <para>static int pdo_&lt;db&gt;_error(</para>
-  <para>pdo_dbh_t *dbh, </para>
-  <para>pdo_stmt_t *stmt, </para>
-  <para>const char *file, </para>
-  <para>int line </para>
-  <para>TSRMLS_DC)</para>
-  <para>The purpose of this function is to be used as a generic error handling function within the driver. It is called by the driver when an error occurs within the driver. If an error occurs that is not related to SQLSTATE, the driver should set either dbh-&gt;error_code or stmt-&gt;error_code to an SQLSTATE that most closely matches the error or the generic SQLSTATE error &#x201C;HY000&#x201D;. The PDO driver file pdo_sqlstate.c contains a table of commonly used SQLSTATE codes that the PDO code explicitly recognizes. This setting of the error code should be done prior to calling this function.; This function should set the global <emphasis role="strong">pdo_err</emphasis> variable to the error found in either the dbh or the stmt (if the variable stmt is not NULL).</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>stmt</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to the most current statement or NULL. If NULL, the error is derived by error code found in the dbh.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>file</para>
-          </entry>
-          <entry valign="top">
-            <para>The source file where the error occurred or NULL if not available.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>line</para>
-          </entry>
-          <entry valign="top">
-            <para>The line number within the source file if available.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>If the dbh member methods is NULL, this function should call the zend_throw_exception_ex() function otherwise it should return the error code. This function is usually called using a helper macro that customizes the calling sequence for either database handling errors or statement handling errors.</para>
-  <para><emphasis role="strong">Example macros</emphasis>:</para>
-  <para>#define pdo_&lt;db&gt;_drv_error(what) pdo_&lt;db&gt;_error(dbh, NULL, what, __FILE__, __LINE__, TSRMLS_CC)</para>
-  <para>#define pdo_&lt;db&gt;_drv_error(what) pdo_&lt;db&gt;_error(dbh, NULL, what, __FILE__, __LINE__, TSRMLS_CC)</para>
-  <para/>
-  <para>For more info on error handling, see Appendix C.</para>
-  <para/>
-  <para>static int pdo_&lt;db&gt;_fetch_error_func(</para>
-  <para>pdo_dbh_t *dbh,</para>
-  <para>pdo_stmt_t *stmt,</para>
-  <para>zval *info</para>
-  <para>TSRMLS_DC)</para>
-  <para>The purpose of this function is to translate the database specific error code into an human readable string. </para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>stmt</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to the most current statement or NULL. If NULL, the error translated is derived by error code found in the dbh.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>info</para>
-          </entry>
-          <entry valign="top">
-            <para>A hash table containing error codes and messages.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>This function's sole purpose is retrieve the current error code and corresponding message and add it to the hash table pointed to by info.</para>
-  <para/>
-  <para>The error_func should return two pieces of information as successive array elements. The first item is expected to be a numeric error code, the second item is a descriptive string. The best way to set this item is by using add_next_index</para>
-  <para/>
-  <para>// now add the error information. </para>
-  <para>// These need to be added in a specific order</para>
-  <para>add_next_index_long(info, error_code);</para>
-  <para>add_next_index_string(info, message, 0);</para>
-  <para/>
-  <para>This function should return 1 if information is available, 0 if the driver does not have additional info. </para>
-  <para/>
-  <para>static int &lt;db&gt;_handle_closer(</para>
+    </varlistentry>
+   </variablelist>
+  </sect3>
+
+  <sect3>
+  <title>Driver Specific Headers</title>
   <para>
-    <emphasis role="strong"/>
-    <emphasis role="strong">pdo_dbh_t *dbh</emphasis>
+   The typical pdo driver has two header files that are specific to the
+   database implementation. This does not preclude the use of more depending
+   on the implementation. The following two headers are, by convention,
+   standard:
+   </para>
+  <variablelist>
+    <varlistentry>
+      <term>php_pdo_SKEL.h</term>
+    <listitem>
+          <para>
+           This header file is virtually an exact duplicate in functionality
+           and content of the previously defined pdo/php_pdo.h that has been
+           specifically tailored for your database. If your driver requires
+           the use of global variables they should be defined using the
+           ZEND_BEGIN_MODULE_GLOBALS and ZEND_END_MODULE_GLOBALS macros.
+           Macros are then used to access these variables. This macro is
+           usually named PDO_SKEL_G(v) where v is global variable to be
+           accessed. Consult the Zend programmer documentation for more
+           information.
+           </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+      <term>php_pdo_SKEL_int.h</term>
+    <listitem>
+          <para>
+           This header file typically contains type definitions and function
+           declarations specific to the driver implementation. It also should
+           contain the db specicfic definitions of a pdo_SKEL_handle and
+           pdo_SKEL_stmt structures. These are the names of the private
+           data structures that are then referenced by the driver_data members
+           of the handle and statement structures.
+           </para>
+    </listitem>
+    </varlistentry>
+   </variablelist>
+  </sect3>
+  <sect3>
+  <title>Optional Headers</title>
+  <para>
+   Depending on the implementation details for a particular driver it may be
+   necessary to include the following header:
   </para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to close an open database.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>This should do whatever database specific activity that needs to be accomplished to close the open database. The PDO driver ignores the return value from this function. </para>
-  <para/>
-  <para>static int &lt;db&gt;_handle_preparer(</para>
-  <para>pdo_dbh_t *dbh,</para>
-  <para>const char *sql,</para>
-  <para>long sql_len,</para>
-  <para>pdo_stmt_t *stmt,</para>
-  <para>zval *driver_options</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to convert raw SQL into a pdo_stmt_t which can then be executed.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>sql</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to a character string containing the SQL statement to be prepared.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>sql_len</para>
-          </entry>
-          <entry valign="top">
-            <para>The length of the SQL statement.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>Stmt</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to the returned statement or NULL if an error occurs.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>driver_options</para>
-          </entry>
-          <entry valign="top">
-            <para>Any driver specific/defined options.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para/>
-  <para>This function is essentially the constructor for a stmt object. This function is responsible for processing statement options, and setting driver-specific option fields in the pdo_stmt_t control block. </para>
-  <para/>
-  <para>The PDO driver does not process any statement options on the driver's behalf before calling the preparer function. </para>
-  <para/>
-  <para>One very important responsibility of this function is the processing of SQL statement parameters. At the time of this call, the PDO driver does not know how the driver supports positional parameters in the SQL statements. Depending on the placeholder option used, the statement string may need to reformatted into the form required by the database driver. The PDO driver implements a special function, pdo_parse_params(), which will reformat the statement string, if necessary, based on the setting of the supports_placeholders field. In particular, if a driver only supports PDO_PLACEHOLDER_NAMED or PDO_PLACEHOLDER_POSITIONAL, pdo_parse_params() should be used to obtain a correctly formatted statement string. This parsing process also will mapped named parameters into positional parameters for the driver. </para>
-  <para/>
+  <synopsis>
+#include &lt;zend_exceptions.h&gt;
+</synopsis>
+  </sect3>
+  </sect2>
+  </sect1>
+  <sect1>
+   <title>Fleshing out your skeleton</title>
+
+  <sect2>
+  <title>Major Structures and Attributes</title>
+  <para>
+   The major structures, pdo_dbh_t and pdo_stmt_t are defined and explained in
+   Appendix A and B respectively. Database and Statement attributes are
+   defined in Appendix C. Error handling is explained in Appendix D.
+  </para>
+  </sect2>
+
+  <sect2>
+  <title>pdo_SKEL.c: PHP extension glue</title>
+  <sect3><title>function entries</title>
+  <synopsis>
+static function_entry pdo_SKEL_functions[] = {
+  { NULL, NULL, NULL }
+};
+  </synopsis>
+  <para>
+   This structure is used to register functions into the global php function
+   namespace.  PDO drivers should try to avoid doing this, so it is
+   recommended that you leave this structure initialized to NULL, as shown in
+   the synopsis above.
+  </para>
+  </sect3>
+  <sect3>
+  <title>Module entry</title>
+  <synopsis><![CDATA[
+/* {{{ pdo_SKEL_module_entry */
+#if ZEND_EXTENSION_API_NO >= 220050617
+static zend_module_dep pdo_SKEL_deps[] = {
+    ZEND_MOD_REQUIRED("pdo")
+    {NULL, NULL, NULL}
+};
+#endif
+/* }}} */
+
+zend_module_entry pdo_SKEL_module_entry = {
+#if ZEND_EXTENSION_API_NO >= 220050617
+    STANDARD_MODULE_HEADER_EX, NULL,
+    pdo_SKEL_deps,
+#else
+    STANDARD_MODULE_HEADER,
+#endif
+    "pdo_SKEL",
+    pdo_SKEL_functions,
+    PHP_MINIT(pdo_SKEL),
+    PHP_MSHUTDOWN(pdo_SKEL),
+    NULL,
+    NULL,
+    PHP_MINFO(pdo_SKEL),
+    PHP_PDO_<DB>_MODULE_VERSION,
+    STANDARD_MODULE_PROPERTIES
+};
+/* }}} */
+
+#ifdef COMPILE_DL_PDO_<DB>
+ZEND_GET_MODULE(pdo_db)
+#endif]]></synopsis>
+  <para>
+   A structure of type zend_module_entry called
+pdo_SKEL_module_entry must be declared and should include reference to
+the pdo_SKEL_functions table defined previously.
+  </para>
+</sect3>
+
+<sect3>
+  <title>Standard PHP Module Extension Functions</title>
+  <sect4>
+  <title>PHP_MINIT_FUNCTION</title>
+  <synopsis><![CDATA[
+/* {{{ PHP_MINIT_FUNCTION */
+PHP_MINIT_FUNCTION(pdo_SKEL)
+{
+    return php_pdo_register_driver(&pdo_SKEL_driver);
+}
+/* }}} */]]></synopsis>
+  <para>
+   This standard PHP extension function should be used to register your driver
+   with the PDO layer. This is done by calling the
+   <function>php_pdo_register_driver</function> function passing a pointer to
+   a structure of type <type>pdo_driver_t</type> typically named
+   <literal>pdo_SKEL_driver</literal>.  A <type>pdo_driver_t</type>
+   contains a header that is generated using the
+   <literal>PDO_DRIVER_HEADER(SKEL)</literal> macro and
+   <function>pdo_SKEL_handle_factory</function> function pointer. The
+   actual function is described during the discussion of the
+   <filename>SKEL_dbh.c</filename> unit.
+  </para>
+  </sect4>
+
+  <sect4>
+   <title>PHP_MSHUTDOWN_FUNCTION</title>
+  <synopsis><![CDATA[
+/* {{{ PHP_MSHUTDOWN_FUNCTION */
+PHP_MSHUTDOWN_FUNCTION(pdo_SKEL)
+{
+    php_pdo_unregister_driver(&pdo_SKEL_driver);
+    return SUCCESS;
+}
+/* }}} */]]></synopsis>
+   <para>
+    This standard PHP extension function is used to unregister your driver
+    from the PDO layer. This is done by calling the
+    <function>php_pdo_unregister_driver</function> function, passing the same
+    <literal>pdo_SKEL_driver</literal> structure that was passed in the
+    init function above.
+   </para>
+  </sect4>
+  <sect4>
+   <title>PHP_MINFO_FUNCTION</title>
+   <para>
+    This is again a standard PHP extension function. Its purpose is to
+    display information regarding the module when the
+    <function>phpinfo</function> is called from a script.  The convention is
+    to display the version
+    of the module and also what version of the db you are dependent on, along
+    with any other configuration style information that might be relevant.
+   </para>
+  </sect4>
+ </sect3>
+</sect2>
+<sect2>
+  <title>SKEL_driver.c: Driver implementation</title>
+
+  <para>
+   This unit implements all of the database handling methods that support the
+   PDO database handle object. It also contains the error fetching routines.
+   All of these functions will typically need to access the global variable
+   pool. Therefore, it is necessary to use the Zend macro TSRMLS_DC macro at
+   the end of each of these statements. Consult the Zend programmer
+   documentation for more information on this macro.
+  </para>
+
+  <sect3>
+   <title>pdo_SKEL_error</title>
+
+  <synopsis>static int pdo_SKEL_error(pdo_dbh_t *dbh,
+  pdo_stmt_t *stmt, const char *file, int line TSRMLS_DC)</synopsis>
+
+  <para>
+   The purpose of this function is to be used as a generic error handling
+   function within the driver. It is called by the driver when an error occurs
+   within the driver. If an error occurs that is not related to SQLSTATE, the
+   driver should set either <literal>dbh-&gt;error_code</literal> or
+   <literal>stmt-&gt;error_code</literal> to an
+   SQLSTATE that most closely matches the error or the generic SQLSTATE error
+   <quote>HY000</quote>. The file pdo_sqlstate.c in the PDO source contains a table
+   of commonly used SQLSTATE codes that the PDO code explicitly recognizes.
+   This setting of the error code should be done prior to calling this
+   function.; This function should set the global
+   <parameter>pdo_err</parameter> variable to the error found in either the
+   dbh or the stmt (if the variable stmt is not NULL).
+  </para>
+
+  <variablelist>
+   <varlistentry>
+    <term>dbh</term>
+    <listitem>
+     <para>Pointer to the database handle initialized by the handle factory</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>stmt</term>
+    <listitem>
+     <para>Pointer to the current statement or NULL. If NULL, the error is derived by error code found in the dbh.</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+            <term>file</term>
+    <listitem>
+            <para>The source file where the error occurred or NULL if not available.</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+            <term>line</term>
+    <listitem>
+            <para>The line number within the source file if available.</para>
+    </listitem>
+   </varlistentry>
+   </variablelist>
+
+  <para>
+   If the dbh member methods is NULL (which implies that the error is being
+   raised from within the PDO constructor), this function should call the
+   zend_throw_exception_ex() function otherwise it should return the error
+   code.  This function is usually called using a helper macro that customizes
+   the calling sequence for either database handling errors or statement
+   handling errors.
+  </para>
+
+  <example>
+   <title>Example macros for invoking pdo_SKEL_error</title>
+   <programlisting role="c">
+#define pdo_SKEL_drv_error(what) \
+    pdo_SKEL_error(dbh, NULL, what, __FILE__, __LINE__ TSRMLS_CC)
+#define pdo_SKEL_drv_error(what) \
+    pdo_SKEL_error(dbh, NULL, what, __FILE__, __LINE__ TSRMLS_CC)
+   </programlisting>
+  </example>
+  <para>
+   For more info on error handling, see <xref
+   linkend="internals.pdo.error-handling"/>.
+  </para>
+  <note>
+   <para>
+    Despite being documented here, the PDO driver interface does not specify
+    that his function be present; it is merely a convenient way to handle
+    errors, and it just happens to be equally convenient for the majority of
+    database client library APIs to structure your driver implementation in
+    this way.
+   </para>
+  </note>
+ </sect3>
+ <sect3>
+  <title>pdo_SKEL_fetch_error_func</title>
+  <synopsis>static int pdo_SKEL_fetch_error_func(pdo_dbh_t *dbh, pdo_stmt_t *stmt,
+    zval *info TSRMLS_DC)</synopsis>
+
+  <para>
+   The purpose of this function is to obtain additional information about the
+   last error that was triggered.  This includes the driver specific error
+   code and a human readable string.  It may also include additional
+   information if appropriate.  This function is called as a result of the PHP
+   script calling the <function>PDO::errorInfo</function> method.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+            <term>dbh</term>
+    <listitem>
+            <para>Pointer to the database handle initialized by the handle factory</para>
+    </listitem>
+    </varlistentry>
+   <varlistentry>
+            <term>stmt</term>
+    <listitem>
+            <para>Pointer to the most current statement or NULL. If NULL, the error translated is derived by error code found in the dbh.</para>
+    </listitem>
+    </varlistentry>
+   <varlistentry>
+            <term>info</term>
+    <listitem>
+            <para>A hash table containing error codes and messages.</para>
+    </listitem>
+    </varlistentry>
+  </variablelist>
+
+  <para>
+   The error_func should return two pieces of information as successive array
+   elements. The first item is expected to be a numeric error code, the second
+   item is a descriptive string. The best way to set this item is by using
+   add_next_index.  Note that the type of the first argument need not be
+   <type>long</type>; use whichever type most closely matches the error code
+   returned by the underlying database API.
+  </para>
+
+  <programlisting role="c"><![CDATA[
+/* now add the error information. */
+/* These need to be added in a specific order */
+add_next_index_long(info, error_code);   /* driver specific error code */
+add_next_index_string(info, message, 0); /* readable error message */
+]]></programlisting>
+
+  <para>
+   This function should return 1 if information is available, 0 if the driver
+   does not have additional info.
+  </para>
+ </sect3>
+ <sect3>
+  <title>SKEL_handle_closer</title>
+  <synopsis>static int SKEL_handle_closer(pdo_dbh_t *dbh TSRMLS_DC)</synopsis>
+
+  <para>
+   This function will be called by PDO to close an open
+   database.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+    <term>dbh</term>
+    <listitem>
+            <para>Pointer to the database handle initialized by the handle factory</para>
+    </listitem>
+    </varlistentry>
+  </variablelist>
+  <para>
+   This should do whatever database specific activity that needs to be
+   accomplished to close the open database. PDO ignores the return
+   value from this function.
+  </para>
+  </sect3>
+
+  <sect3 id="internals.pdo.preparer">
+   <title>SKEL_handle_preparer</title>
+   <synopsis>static int SKEL_handle_preparer(pdo_dbh_t *dbh, const char *sql,
+long sql_len, pdo_stmt_t *stmt, zval *driver_options TSRMLS_DC)</synopsis>
+
+   <para>
+    This function will be called by PDO in response to
+    <function>PDO::query</function> and <function>PDO::prepare</function>
+    calls from the PHP script.  The purpose of the function is to prepare
+    raw SQL for execution, storing whatever state is appropriate into the
+    <parameter>stmt</parameter> that is passed in.
+   </para>
+
+   <variablelist>
+    <varlistentry>
+    <term>dbh</term>
+    <listitem>
+    <para>Pointer to the database handle initialized by the handle factory</para>
+    </listitem>
+    </varlistentry>
+    <varlistentry>
+    <term>sql</term>
+    <listitem>
+    <para>Pointer to a character string containing the SQL statement to be prepared.</para>
+    </listitem>
+    </varlistentry>
+    <varlistentry>
+    <term>sql_len</term>
+    <listitem>
+    <para>The length of the SQL statement.</para>
+    </listitem>
+    </varlistentry>
+    <varlistentry>
+    <term>Stmt</term>
+    <listitem>
+    <para>Pointer to the returned statement or NULL if an error occurs.</para>
+    </listitem>
+    </varlistentry>
+    <varlistentry>
+    <term>driver_options</term>
+    <listitem>
+    <para>Any driver specific/defined options.</para>
+    </listitem>
+    </varlistentry>
+  </variablelist>
+  <para>
+   This function is essentially the constructor for a stmt object. This
+   function is responsible for processing statement options, and setting
+   driver-specific option fields in the pdo_stmt_t structure.
+  </para>
+  <para>
+   PDO does not process any statement options on the driver's
+   behalf before calling the preparer function.  It is your responsibility to
+   process them before you return, raising an error for any unknown options that
+   are passed.
+  </para>
+  <para>
+   One very important responsibility of this function is the processing of SQL
+   statement parameters. At the time of this call, PDO does not if your driver
+   supports binding parameters into prepared statements, nor does it know if
+   it supports named or positional parameter naming conventions.
+  </para>
+  <para>
+   Your driver is responsible for setting
+   <literal>stmt-&gt;supports_placeholders</literal> as appropriate for the
+   underlying database.  This may involved some run-time determination on the
+   part of your driver, if this setting depends on the version of the database
+   server to which it is connected.  If your driver doesn't directly support
+   both named and positional parameter conventions, you should use the
+   <function>pdo_parse_params</function> API to have PDO rewrite the query to
+   take advantage of the support provided by your database.
+  </para>
+  <example>
+   <title>using pdo_parse_params</title>
+   <programlisting role="c"><![CDATA[
+    int ret;
+    char *nsql = NULL;
+    int nsql_len = 0;
+
+    /* before we prepare, we need to peek at the query; if it uses named parameters,
+     * we want PDO to rewrite them for us */
+    stmt->supports_placeholders = PDO_PLACEHOLDER_POSITIONAL;
+    ret = pdo_parse_params(stmt, (char*)sql, sql_len, &nsql, &nsql_len TSRMLS_CC);
+
+    if (ret == 1) {
+        /* query was re-written */
+        sql = nsql;
+    } else if (ret == -1) {
+        /* couldn't grok it */
+        strcpy(dbh->error_code, stmt->error_code);
+        return 0;
+    }
+
+    /* now proceed to prepare the query in "sql" */
+]]></programlisting>
+   </example>
+   <para>
+    Possible values for <literal>supports_placeholders</literal> are:
+    <constant>PDO_PLACEHOLDER_NAMED</constant>,
+    <constant>PDO_PLACEHOLDER_POSITIONAL</constant> and
+    <constant>PDO_PLACEHOLDER_NONE</constant>.  If the driver doesn't support prepare statements at all, then this function should simply allocate any state that it might need, and then return:
+   </para>
+   <example>
+    <title>implementing preparer for drivers that don't support native prepared statements</title>
+    <programlisting role="c"><![CDATA[
+static int SKEL_handle_preparer(pdo_dbh_t *dbh, const char *sql,
+    long sql_len, pdo_stmt_t *stmt, zval *driver_options TSRMLS_DC)
+{
+    pdo_SKEL_db_handle *H = (pdo_SKEL_db_handle *)dbh->driver_data;
+    pdo_SKEL_stmt *S = ecalloc(1, sizeof(pdo_SKEL_stmt));
+
+    S->H = H;
+    stmt->driver_data = S;
+    stmt->methods = &SKEL_stmt_methods;
+    stmt->supports_placeholders = PDO_PLACEHOLDER_NONE;
+
+    return 1;
+}
+]]></programlisting>
+   </example>
+
   <para>This function returns 1 on success or 0 on failure.</para>
-  <para/>
-  <para>static long &lt;db&gt;_handle_doer(</para>
-  <para>pdo_dbh_t *dbh,</para>
-  <para>const char *sql,</para>
-  <para>long sql_len</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to execute a raw SQL statement. No pdo_stmt_t is created.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>sql</para>
-          </entry>
-          <entry valign="top">
+ </sect3>
+ <sect3>
+ <title>SKEL_handle_doer</title>
+  <synopsis>static long SKEL_handle_doer(pdo_dbh_t *dbh, const char *sql, long sql_len TSRMLS_DC)</synopsis>
+
+  <para>
+   This function will be called by PDO to execute a raw SQL
+   statement. No pdo_stmt_t is created.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+            <term>dbh</term>
+            <listitem>
+            <para>Pointer to the database handle initialized by the handle factory</para>
+            </listitem>
+            </varlistentry>
+            <varlistentry>
+            <term>sql</term>
+            <listitem>
             <para>Pointer to a character string containing the SQL statement to be prepared.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>sql_len</para>
-          </entry>
-          <entry valign="top">
+            </listitem>
+            </varlistentry>
+            <varlistentry>
+            <term>sql_len</term>
+            <listitem>
             <para>The length of the SQL statement.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para/>
-  <para>This function returns 1 on success or 0 on failure.</para>
-  <para/>
-  <para>static int &lt;db&gt;_handle_quoter(</para>
-  <para>pdo_dbh_t *dbh,</para>
-  <para>const char *unquoted,</para>
-  <para>int unquoted_len,</para>
-  <para>char **quoted,</para>
-  <para>int quoted_len,</para>
-  <para>enum pdo_param_type param_type</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to turn a unquoted string into a quoted string for use in a query.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>unquoted</para>
-          </entry>
-          <entry valign="top">
+            </listitem>
+            </varlistentry>
+  </variablelist>
+
+  <para>
+   This function returns 1 on success or 0 on failure.
+  </para>
+
+ </sect3>
+ <sect3>
+  <title>SKEL_handle_quoter</title>
+  <synopsis>static int SKEL_handle_quoter(pdo_dbh_t *dbh, const char *unquoted,
+  int unquoted_len, char **quoted, int quoted_len, enum pdo_param_type param_type TSRMLS_DC)</synopsis>
+
+  <para>
+   This function will be called by PDO to turn an unquoted
+   string into a quoted string for use in a query.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+            <term>dbh</term>
+            <listitem>
+            <para>Pointer to the database handle initialized by the handle factory</para>
+            </listitem>
+            </varlistentry>
+            <varlistentry>
+            <term>unquoted</term>
+            <listitem>
             <para>Pointer to a character string containing the string to be quoted.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>unquoted_len</para>
-          </entry>
-          <entry valign="top">
+            </listitem>
+            </varlistentry>
+            <varlistentry>
+            <term>unquoted_len</term>
+            <listitem>
             <para>The length of the string to be quoted.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>quoted</para>
-          </entry>
-          <entry valign="top">
+            </listitem>
+            </varlistentry>
+            <varlistentry>
+            <term>quoted</term>
+            <listitem>
             <para>Pointer to the address where a pointer to the newly quoted string will be returned.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>quoted_len</para>
-          </entry>
-          <entry valign="top">
+            </listitem>
+            </varlistentry>
+            <varlistentry>
+            <term>quoted_len</term>
+            <listitem>
             <para>The length of the new string.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>param_type</para>
-          </entry>
-          <entry valign="top">
+            </listitem>
+            </varlistentry>
+            <varlistentry>
+            <term>param_type</term>
+            <listitem>
             <para>A driver specific hint for driver that have alternate quoting styles</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para/>
-  <para>This function is only required if the supports_placeholder value is PDO_PLACEHOLDER_NONE. For database drivers without placeholder support, the PDO code will reformat statement with all parameters replaced by quoted strings directly containing the parameter values. The quoter() function is used to transform a string value into a quoted string appropriate for the driver. If the driver supports parameter placeholders, it is not necessary to implement this function. </para>
-  <para/>
-  <para>This function returns 1 if the quoting process reformatted the string, and 0 if it was not necessary to change the string. The original string will be used unchanged with a 0 return. </para>
-  <para>.</para>
-  <para>static int &lt;db&gt;_handle_begin(</para>
-  <para>pdo_dbh_t *dbh</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to begin a database transaction.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>This should do whatever database specific activity that needs to be accomplished to begin a transaction. This function returns 1 for success or 0 if an error occurred.</para>
-  <para/>
-  <para>static int &lt;db&gt;_handle_commit(</para>
-  <para>pdo_dbh_t *dbh</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to end a database transaction.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>This should do whatever database specific activity that needs to be accomplished to end a transaction. This function returns 1 for success or 0 if an error occurred.</para>
-  <para/>
-  <para>static int &lt;db&gt;_handle_rollback(</para>
-  <para>pdo_dbh_t *dbh</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to rollback a database transaction.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
+            </listitem>
+            </varlistentry>
+  </variablelist>
+  <para>
+   This function is called in response to a call to
+   <function>PDO::quote</function> or when the driver has set
+   <literal>supports_placeholder</literal> to
+   <constant>PDO_PLACEHOLDER_NONE</constant>. The purpose is to quote a
+   parameter when building SQL statements.
+  </para>
+  <para>
+   If your driver does not support native prepared statements, implementation
+   of this function is required.
+  </para>
+  <para>
+   This function returns 1 if the quoting process reformatted the string, and
+   0 if it was not necessary to change the string. The original string will be
+   used unchanged with a 0 return.
+  </para>
+  </sect3>
+  <sect3>
+  <title>SKEL_handle_begin</title>
+  <synopsis>static int SKEL_handle_begin(pdo_dbh_t *dbh TSRMLS_DC)</synopsis>
+
+  <para>
+   This function will be called by PDO to begin a database transaction.
+  </para>
+    <variablelist>
+    <varlistentry>
+            <term>dbh</term>
+            <listitem>
+            <para>Pointer to the database handle initialized by the handle factory</para>
+            </listitem>
+            </varlistentry>
+            </variablelist>
+  <para>
+   This should do whatever database specific activity that needs to be
+   accomplished to begin a transaction. This function returns 1 for success or
+   0 if an error occurred.
+  </para>
+ </sect3>
+ <sect3>
+  <title>SKEL_handle_commit</title>
+  <synopsis>static int SKEL_handle_commit(pdo_dbh_t *dbh TSRMLS_DC)</synopsis>
+  <para>
+   This function will be called by PDO to end a database
+   transaction.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+    <term>dbh</term>
+    <listitem>
+     <para>Pointer to the database handle initialized by the handle factory</para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+
+  <para>This should do whatever database specific activity that needs to be
+  accomplished to commit a transaction. This function returns 1 for success or 0 if an error occurred.
+  </para>
+ </sect3>
+ <sect3>
+  <title>SKEL_handle_rollback</title>
+  <synopsis>static int SKEL_handle_rollback( pdo_dbh_t *dbh TSRMLS_DC)</synopsis>
+  <para>This function will be called by PDO to rollback a database transaction.</para>
+  <variablelist>
+   <varlistentry>
+    <term>dbh</term>
+    <listitem>
+     <para>Pointer to the database handle initialized by the handle factory</para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
   <para>This should do whatever database specific activity that needs to be accomplished to rollback a transaction. This function returns 1 for success or 0 if an error occurred.</para>
-  <para/>
-  <para>static int &lt;db&gt;_handle_get_attribute(</para>
-  <para>pdo_dbh_t *dbh,</para>
-  <para>long attr,</para>
-  <para>zval *return_value</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to retrieve a database attribute.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>attr</para>
-          </entry>
-          <entry valign="top">
-            <para>Long value of one of the PDO_ATTR_xxxx types.</para>
-            <para>(see table below for valid attributes)</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>return_value</para>
-          </entry>
-          <entry valign="top">
-            <para>The returned value for the attribute.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para/>
-  <para>It is up to the driver to decide which attributes will be supported for a particular implementation. It is not necessary for a driver to supply this function. The PDO driver handles the PDO_ATTR_PERSISTENT, PDO_ATTR_CASE, PDO_ATTR_ORACLE_NULLS, and PDO_ATTR_ERRMODE attributes directly. </para>
-  <para/>
+  </sect3>
+  <sect3>
+  <title>SKEL_handle_get_attribute</title>
+  <synopsis>static int SKEL_handle_get_attribute(pdo_dbh_t *dbh, long attr, zval *return_value TSRMLS_DC)</synopsis>
+  <para>This function will be called by PDO to retrieve a database attribute.</para>
+
+  <variablelist>
+   <varlistentry>
+    <term>dbh</term>
+    <listitem>
+     <para>Pointer to the database handle initialized by the handle factory</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>attr</term>
+    <listitem>
+     <para>
+      <type>long</type> value of one of the PDO_ATTR_xxxx types.  See <xref
+      linkend="internals.pdo.table.attributes"/> for valid attributes.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>return_value</term>
+    <listitem>
+     <para>The returned value for the attribute.</para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+  <para>
+   It is up to the driver to decide which attributes will be supported for a
+   particular implementation. It is not necessary for a driver to supply this
+   function. PDO driver handles the PDO_ATTR_PERSISTENT, PDO_ATTR_CASE,
+   PDO_ATTR_ORACLE_NULLS, and PDO_ATTR_ERRMODE attributes directly. 
+  </para>
   <para>This function returns 1 on success or 0 on failure.<emphasis role="strong"> </emphasis></para>
-  <para/>
-  <para>static int &lt;db&gt;_handle_set_attribute(</para>
-  <para>pdo_dbh_t *dbh,</para>
-  <para>long attr,</para>
-  <para>zval *val</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to set a database attribute.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>attr</para>
-          </entry>
-          <entry valign="top">
-            <para>Long value of one of the PDO_ATTR_xxxx types.</para>
-            <para>(see table below for valid attributes)</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>val</para>
-          </entry>
-          <entry valign="top">
-            <para>The new value for the attribute.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para/>
-  <para>It is up to the driver to decide which attributes will be supported for a particular implementation. It is not necessary for a driver to provide this function if it does not need to support additional attributes. The PDO driver handles the PDO_ATTR_CASE, PDO_ATTR_ORACLE_NULLS, and PDO_ATTR_ERRMODE attributes directly. </para>
-  <para/>
-  <para>This function returns 1 on success or 0 on failure.<emphasis role="strong"> </emphasis></para>
-  <para/>
-  <para>static char * &lt;db&gt;_handle_last_id(</para>
-  <para>pdo_dbh_t *dbh,</para>
-  <para>const char *name,</para>
-  <para>unsigned int len</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to retrieve the ID of the last inserted row.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>name</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to a character string representing the table name if required by the database.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>len</para>
-          </entry>
-          <entry valign="top">
-            <para>The length of the SQL statement.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>This function returns a character string containing the id of the last inserted row on success or NULL on failure. This is an optional function. </para>
-  <para/>
-  <para>static int &lt;db&gt;_check_liveness(</para>
-  <para>pdo_dbh_t *dbh</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to test whether or not a persistent connection to a database is alive and ready for use.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>This function returns 1 if the database connection is alive and ready for use, otherwise it should return 0 to indicate failure or lack of support.<emphasis role="strong"> This is an optional function. </emphasis></para>
-  <para/>
-  <para>static function_entry &lt;db&gt;_get_driver_methods(</para>
-  <para>pdo_dbh_t *dbh,</para>
-  <para>int kind</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to retrieve a pointer to either the database or statement handling method table.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>kind</para>
-          </entry>
-          <entry valign="top">
-            <para>One of the following:</para>
-            <para>PDO_DBH_DRIVER_METHOD_KIND_DBH</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Return a pointer to the database handling method table;</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_DBH_DRIVER_METHOD_KIND_STMT</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Return a pointer to the statement handling method table.</para>
-              </listitem>
-            </orderedlist>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>This function returns a pointer to the method handling requested if successful or NULL if the method table cannot be found.<emphasis role="strong"> </emphasis></para>
-  <para/>
-  <para>static int &lt;db&gt;_handle_factory(</para>
-  <para>pdo_dbh_t *dbh,</para>
-  <para>zval *driver_options</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to create a database handle. For most databases this involves establishing a connection to the database. In some cases, a persistent connection may be requested, in other cases connection pooling may be requested. All of these are database/driver dependent.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to database handle returned by the handle factory</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>driver_options</para>
-          </entry>
-          <entry valign="top">
-            <para>DB specific options.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>This function should fill in the passed database handle structure with its' driver specific information on success and return 1, otherwise it should return 0 to indicate failure.</para>
-  <para/>
-  <para>The PDO driver processes the AUTOCOMMIT and PERSISTENT driver options before calling the handle_factory. It is the handle factory's responsibility to process other options. </para>
-  <para/>
-  <para/>
-  <para>Driver method table</para>
-  <para>A static structure of type pdo_dbh_methods named &lt;db&gt;_methods must be declared and initialized to the function pointers for each defined function. If a function is not supported or not implemented the value for that function pointer should be set to NULL.</para>
-  <para/>
-  <para/>
-  <para>pdo_&lt;db&gt;_driver</para>
-  <para>A structure of type pdo_driver_t named pdo_&lt;db&gt;_driver should be declared. The PDO_DRIVER_HEADER(&lt;db&gt;) macro should be used to declare the header and the function pointer to the handle factory function should set.</para>
-  <para>Statement handling unit -- &lt;db&gt;_statement.c</para>
-  <para>This unit implements all of the database statement handling methods that support the PDO statement object.</para>
-  <para/>
-  <para>static int &lt;db&gt;_stmt_dtor(</para>
-  <para>pdo_stmt_t *stmt</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to destroy a previously constructed statement object.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>stmt</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to statement structure returned by the statement constructor.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>This should do whatever is necessary to free up any driver specific storage allocated for the statement. The return value from this function is ignored. </para>
-  <para/>
-  <para>static int &lt;db&gt;_stmt_execute(</para>
-  <para>pdo_stmt_t *stmt</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to execute the prepared SQL statement in the passed statement object.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>stmt</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to statement structure returned by the statement constructor.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>This function returns 1 for success or 0 in the event of failure.</para>
-  <para/>
-  <para>static int &lt;db&gt;_stmt_fetch(</para>
-  <para>pdo_stmt_t *stmt,</para>
-  <para>enum pdo_fetch_orientation ori,</para>
-  <para>long offset</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to fetch a row from a previously executed statement object.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>stmt</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to statement structure returned by the statement constructor.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>ori</para>
-          </entry>
-          <entry valign="top">
-            <para>One of PDO_FETCH_ORI_xxx which will determine which row will be fetched.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>offset</para>
-          </entry>
-          <entry valign="top">
-            <para>If ori is set to PDO_FETCH_ORI_ABS or PDO_FETCH_ORI_REL, offset represents the row desired or the row relative to the current position, respectively. Otherwise, this value is ignored.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>The results of this fetch are driver dependent and the data is usually stored in the driver_data member of pdo_stmt_t object. The ori and offset parameters are only meaningful if the statement represents a scrollable cursor. This function returns 1 for success or 0 in the event of failure.</para>
-  <para/>
-  <para>static int &lt;db&gt;_stmt_param_hook(</para>
-  <para>pdo_stmt_t *stmt,</para>
-  <para>struct pdo_bound_param_data *param,</para>
-  <para>enum pdo_param_event event_type</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver for handling of both bound parameters and bound columns. </para>
-  <para/>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>stmt</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to statement structure returned by the statement constructor.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>param</para>
-          </entry>
-          <entry valign="top">
-            <para>The structure describing which statement variable will be bound to what variable name.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>event_type</para>
-          </entry>
-          <entry valign="top">
-            <para>The type of event to occur for this parameter, one of the following:</para>
-            <para>PDO_PARAM_EVT_ALLOC -- allocate the binding; Only called once, when the binding is created.</para>
-            <para>PDO_PARAM_EVT_FREE -- free the allocated binding; Only called once as part of cleanup. </para>
-            <para>PDO_PARAM_EXEC_PRE -- bind the variable before execution; </para>
-            <para>PDO_PARAM_EXEC_POST -- bind the variable after execution;</para>
-            <para>PDO_PARAM_FETCH_PRE -- bind the variable prior to the fetch;</para>
-            <para>PDO_PARAM_FETCH_POST -- bind the variable after the fetch.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para/>
-  <para>This hook will be called for each bound parameter and bound column in the statement. For ALLOC and FREE events, a single call will be made for each parameter or column. The param structure contains a driver_data field that the driver can use to store implementation specific information about each of the parameters. </para>
-  <para/>
-  <para>For all other events, the PDO driver will loop, calling the hook for each of the parameters and colums. </para>
-  <para/>
-  <para>If this is a bound parameter, the is_param flag in the param structure</para>
-  <para/>
-  <para>This function returns 1 for success or 0 in the event of failure.</para>
-  <para/>
-  <para>static int &lt;db&gt;_stmt_describe_col(</para>
-  <para>pdo_stmt_t *stmt,</para>
-  <para>int colno</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to query information about a particular column.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>stmt</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to statement structure returned by the statement constructor.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>colno</para>
-          </entry>
-          <entry valign="top">
-            <para>The column number to be queried.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>The driver should populate the pdo_stmt_t member columns(colno) with the appropriate information. This function returns 1 for success or 0 in the event of failure.</para>
-  <para/>
-  <para>static int &lt;db&gt;_stmt_get_col_data(</para>
-  <para>pdo_stmt_t *stmt,</para>
-  <para>int colno,</para>
-  <para>char **ptr,</para>
-  <para>unsigned long *len,</para>
-  <para>int *caller_frees</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to retrieve data from the specified column.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>stmt</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to statement structure returned by the statement constructor.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>colno</para>
-          </entry>
-          <entry valign="top">
-            <para>The column number for which data is to be retrieved.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>ptr</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to the retrieved data.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>len</para>
-          </entry>
-          <entry valign="top">
-            <para>The length of the data pointed to by ptr.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>caller_frees</para>
-          </entry>
-          <entry valign="top">
-            <para>If set, ptr should point to emalloc'd memory and the main PDO driver will free it as soon as it is done with it. Otherwise, it will be the responsibility of the driver to free any allocated memory as a result of this call.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>The driver should return the resultant data and length of that data in the ptr and len variables respectively. It should be noted that the main PDO driver expects the driver to manage the lifetime of the data. This function returns 1 for success or 0 in the event of failure.</para>
-  <para/>
-  <para>static int &lt;db&gt;_stmt_set_attr(</para>
-  <para>pdo_stmt_t *stmt,</para>
-  <para>long attr,</para>
-  <para>zval *val</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to allow the setting of driver specific attributes for a statement object.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>stmt</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to statement structure returned by the statement constructor.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>attr</para>
-          </entry>
-          <entry valign="top">
-            <para>The attribute to be set (DRIVER DEFINED AND SPECIFIC).</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>val</para>
-          </entry>
-          <entry valign="top">
-            <para>New value for the attribute.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>This function is driver dependent and allows the driver the capability to set database specific attributes for a statement. This function returns 1 for success or 0 in the event of failure. This is an optional function. If the driver does not support additional settable attributes, it can be NULLed in the method table. The PDO driver does not handle any settable attributes on the database driver's behalf.</para>
-  <para/>
-  <para>static int &lt;db&gt;_stmt_get_attr(</para>
-  <para>pdo_stmt_t *stmt,</para>
-  <para>long attr,</para>
-  <para>zval *val</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to allow the retrieval of driver specific attributes for a statement object.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>stmt</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to statement structure returned by the statement constructor.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>attr</para>
-          </entry>
-          <entry valign="top">
-            <para>The attribute to be retrieved, one of:</para>
-            <para>PDO_ATTR_CURSOR</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>The type of cursor this statement refers to.</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_ATTR_CURSOR_NAME</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>The name of the cursor this statement refers to.</para>
-              </listitem>
-            </orderedlist>
-            <para>(Others are DRIVER DEFINED AND SPECIFIC).</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>val</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to the retrieved attribute.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>This function is driver dependent and allows the driver the capability to retrieve a previously set database specific attribute for a statement. This function returns 1 for success or 0 in the event of failure. This is an optional function. If the driver does not support additional gettable attributes, it can be NULLed in the method table. The PDO driver does not handle any settable attributes on the database driver's behalf.</para>
-  <para/>
-  <para>THE FOLLOWING FUNCTION IS A ROUGH FIRST CUT AND SUBJECT TO CHANGE.</para>
-  <para>static int &lt;db&gt;_stmt_get_col_meta(</para>
-  <para>pdo_stmt_t *stmt,</para>
-  <para>int colno,</para>
-  <para>zval *return_value</para>
-  <para>TSRMLS_DC)</para>
-  <para>This function will be called by the main PDO driver to retrieve meta-data from the specified column.</para>
-  <informaltable>
-    <tgroup cols="2">
-      <colspec colname="c1" colwidth="1.1inch"/>
-      <colspec colname="c2" colwidth="3.6inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>stmt</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to statement structure returned by the statement constructor.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>colno</para>
-          </entry>
-          <entry valign="top">
-            <para>The column number for which data is to be retrieved.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>return_value</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to the retrieved data.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para>The driver should consult the documentation for this function that can be found in the php_pdo_driver.h header as this will be the most current. This function returns 1 for success or 0 in the event of failure. The database driver does not need to provide this function.</para>
-  <para/>
-  <para>Statement handling method table</para>
-  <para>A static structure of type pdo_stmt_methods named &lt;db&gt;_stmt_methods should be declared and initialized to the function pointers for each defined function. If a function is not supported or not implemented the value for that function pointer should be set to NULL.</para>
-  <para>Building</para>
-  <para>The build process is designed to work with PEAR (see <ulink url="http://pear.php.net/index.php" type="">http://pear.php.net/index.php</ulink> for more information about PEAR). There are two files that are used to assist in configuring your package for building. The first is config.m4 which is the autoconf configuration file for all platforms except Win32. The second is config.w32 which an autoconf configuration file for use on Win32. Skeleton files for these are built for you when you first set up your project. You then need to customize them to fit the needs of your project. Once you've customized your config files, you can build your driver using the following sequence of commands:</para>
-  <para>Before first build:</para>
-  <orderedlist continuation="restarts" numeration="arabic">
+ </sect3>
+ <sect3>
+  <title>SKEL_handle_set_attribute</title>
+  <synopsis>static int SKEL_handle_set_attribute(pdo_dbh_t *dbh, long attr, zval *val TSRMLS_DC)</synopsis>
+  <para>
+   This function will be called by PDO to set a database attribute, usually in
+   response to a script calling <function>PDO::setAttribute</function>.
+  </para>
+  <variablelist>
+   <varlistentry>
+    <term>dbh</term>
     <listitem>
-      <para>sudo pear install PDO</para>
+     <para>Pointer to the database handle initialized by the handle factory</para>
     </listitem>
-  </orderedlist>
-  <para>For each build:</para>
-  <orderedlist continuation="restarts" numeration="arabic">
+   </varlistentry>
+   <varlistentry>
+    <term>attr</term>
     <listitem>
-      <para>cd pdo_&lt;db&gt;</para>
+     <para>
+      <type>long</type> value of one of the PDO_ATTR_xxxx types.  See <xref
+      linkend="internals.pdo.table.attributes"/> for valid attributes.
+     </para>
     </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>val</term>
     <listitem>
-      <para>phpize</para>
+     <para>The new value for the attribute.</para>
     </listitem>
+   </varlistentry>
+  </variablelist>
+
+  <para>
+   It is up to the driver to decide which attributes will be supported for a
+   particular implementation. It is not necessary for a driver to provide this
+   function if it does not need to support additional attributes. The PDO
+   driver handles the PDO_ATTR_CASE, PDO_ATTR_ORACLE_NULLS, and
+   PDO_ATTR_ERRMODE attributes directly. 
+  </para>
+
+  <para>
+   This function returns 1 on success or 0 on failure.
+  </para>
+ </sect3>
+
+ <sect3>
+  <title>SKEL_handle_last_id</title>
+  <synopsis>static char * SKEL_handle_last_id(pdo_dbh_t *dbh, const char *name, unsigned int len TSRMLS_DC)</synopsis>
+  <para>
+   This function will be called by PDO to retrieve the ID of the last inserted
+   row.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+    <term>dbh</term>
     <listitem>
-      <para>./configure</para>
+     <para>Pointer to the database handle initialized by the handle factory</para>
     </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>name</term>
     <listitem>
-      <para>make</para>
+     <para>
+      string representing a table or sequence name.
+     </para>
     </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>len</term>
     <listitem>
-      <para>sudo make install</para>
+     <para>the length of the <parameter>name</parameter> parameter.</para>
     </listitem>
-  </orderedlist>
-  <para>The process can then be repeated as necessary during the development process.</para>
-  <para/>
-  <para/>
-  <para>Package format</para>
-  <para>PDO drivers are released in compress tar format. The following layout should be observed:</para>
-  <para>./</para>
-  <para>package.xml</para>
-  <para>PDO_&lt;DB&gt;-xx.xx</para>
-  <para>&#x2026; driver build tree</para>
-  <para>where DB is the capitalized short name for the database and xx.xx is the major and minor version numbers.</para>
-  <para>Assuming the directory structure above you then create the release package with the following command:</para>
-  <para>tar cfz pdo_&lt;db&gt;-xx.xx.tar.gz package.xml PDO_&lt;DB&gt;-xx.xx</para>
-  <para>The resultant tar file is then ready for release. The contents of the package.xml file are described in the PEAR Programmer's documentation (<ulink url="http://pear.php.net/manual/index.php" type="">http://pear.php.net/manual/index.php</ulink>).</para>
-  <para/>
-  <para/>
-  <para>Releasing</para>
-  <para>A PDO driver is released using the PHP Extension Community Library (PECL) mechanism. Information about PECL and the coding standards currently in force can be found at <ulink url="http://pecl.php.net/index.php" type="">http://pecl.php.net/index.php</ulink>.</para>
-  <para/>
-  <para/>
-  <para>Testing</para>
-  <para>To be determined. The testing scheme for PDO is still being developed. </para>
-  <para>Appendix A -- pdo_dbh_t</para>
-  <informaltable>
-    <tgroup cols="3">
-      <colspec colname="c1" colwidth="1.9inch"/>
-      <colspec colname="c2" colwidth="2.3inch"/>
-      <colspec colname="c3" colwidth="2inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>Variable name</para>
-          </entry>
-          <entry valign="top">
-            <para>Function</para>
-          </entry>
-          <entry valign="top">
-            <para>Responsibility</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>ce</para>
-          </entry>
-          <entry valign="top">
-            <para>Required for casting as Zend object.</para>
-          </entry>
-          <entry valign="top">
-            <para>Zend engine. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>properties</para>
-          </entry>
-          <entry valign="top">
-            <para>Required for casting as Zend object.</para>
-          </entry>
-          <entry valign="top">
-            <para>Zend engine. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>in_get</para>
-          </entry>
-          <entry valign="top">
-            <para>Required for casting as Zend object.</para>
-          </entry>
-          <entry valign="top">
-            <para>Zend engine. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>in_set</para>
-          </entry>
-          <entry valign="top">
-            <para>Required for casting as Zend object.</para>
-          </entry>
-          <entry valign="top">
-            <para>Zend engine. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>methods</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to the methods function pointer for db handling.</para>
-          </entry>
-          <entry valign="top">
-            <para>Driver must set this during the handle factory method.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>driver_data</para>
-          </entry>
-          <entry valign="top">
-            <para>Opaque pointer containing driver specific data.</para>
-          </entry>
-          <entry valign="top">
-            <para>Driver can store driver specific data and structures for database handling. This field should be allocated and set during handle factory method.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>username</para>
-          </entry>
-          <entry valign="top">
-            <para>Database user on behalf access is to be granted.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set by the PDO main driver before the factory method is called. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>password</para>
-          </entry>
-          <entry valign="top">
-            <para>Password for the database user.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set by the PDO main driver before the factory method is called. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>is_persistent</para>
-          </entry>
-          <entry valign="top">
-            <para>If true, data stored and pointed to by this handle must be persistently allocated.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set by the PDO main driver before the factory method is called. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>auto_commit</para>
-          </entry>
-          <entry valign="top">
-            <para>If true, the driver should ensure that a COMMIT is processed at the end of each executed statement. Otherwise, COMMIT will only be done at user request.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set by the PDO main driver before the factory method is called. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>is_closed</para>
-          </entry>
-          <entry valign="top">
-            <para>If true, this handle is closed and is no longer valid for operations.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is NOT initialized and does NOT appear to be used at present.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>alloc_own_columns</para>
-          </entry>
-          <entry valign="top">
-            <para>If true, the driver requires that memory be explicitly allocated for all columns returned. Setting this will cause the PDO driver to call the stmt describer() function after the first statement execute and before the first fetch. </para>
-          </entry>
-          <entry valign="top">
-            <para>Driver should set this during the handle factory method.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>in_txn</para>
-          </entry>
-          <entry valign="top">
-            <para>If true, a COMMIT or ROLLBACK is allowed to be called. A transaction is in progress.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver and should be treated as read-only by the driver. </para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>max_escaped_char_length</para>
-          </entry>
-          <entry valign="top">
-            <para>This is the maximum length a single character can become after correct quoting. This is only needed if supports_placeholders is PDO_PLACEHOLDER_NONE.</para>
-          </entry>
-          <entry valign="top">
-            <para>Driver should set this during the handle factory method.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>oracle_nulls</para>
-          </entry>
-          <entry valign="top">
-            <para>If true, convert all empty strings to NULL.</para>
-          </entry>
-          <entry valign="top">
-            <para>Driver should set this during the handle factory method.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>_reserved_flags</para>
-          </entry>
-          <entry valign="top">
-            <para>Reserved for PDO main driver.</para>
-          </entry>
-          <entry valign="top">
-            <para>These are reserved for future use by the main PDO driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>data_source</para>
-          </entry>
-          <entry valign="top">
-            <para>A string representing the data source used to open this handle.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is initially set by the main PDO driver. It can be modified, if necessary, by the driver. For example, a driver may need to pre-pend a directory path to filename passed or may need to add a qualifier as required by a particular database implementation.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>data_source_len</para>
-          </entry>
-          <entry valign="top">
-            <para>The length of the string in the data_source field.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is initially set by the PDO main driver. If a driver modifies the data_source field such that the length changes, this field can be modified by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>error_code</para>
-          </entry>
-          <entry valign="top">
-            <para>This is the latest error code. It is the SQLSTATE expressed as 6 character ASCIIZ field. </para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver. Drivers should set the global variable pdo_err whenever an error occurs and the driver will set this field when appropriate. </para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>error_mode</para>
-          </entry>
-          <entry valign="top">
-            <para>This field contains the mode in which PDO reports errors. This field is set to one of the following:</para>
-            <para>PDO_ERRMODE_SILENT</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Fail silently</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_ERRMODE_WARNING</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Treat all errors as warnings.</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_ERRMODE_EXCEPTION</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Throw exceptions instead of returning error codes.</para>
-              </listitem>
-            </orderedlist>
-            <para/>
-          </entry>
-          <entry valign="top">
-            <para>This field is initially set to PDO_ERR_MODE_SILENT by the PDO main driver. It can be subsequently modified by the driver via a call to change the attribute.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>native_case</para>
-          </entry>
-          <entry valign="top">
-            <para>This is set to native case for the database being accessed. It can be one of:</para>
-            <para>PDO_CASE_NATURAL</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Mixed case</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_CASE_UPPER</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>All upper case</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_CASE_LOWER</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>All lower case</para>
-              </listitem>
-            </orderedlist>
-            <para/>
-          </entry>
-          <entry valign="top">
-            <para>This field is set during the handle factory method by the driver to appropriate value. The default value is PDO_CASE_NATURAL.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>desired_case</para>
-          </entry>
-          <entry valign="top">
-            <para>This is set to the case conversion requested by the caller. It can be one of the following:</para>
-            <para>PDO_CASE_NATURAL</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Don't do case conversion</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_CASE_UPPER</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Convert strings to uppercase</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_CASE_LOWER</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Convert strings to lowercase</para>
-              </listitem>
-            </orderedlist>
-            <para/>
-          </entry>
-          <entry valign="top">
-            <para>This field is set during the handle factory by the driver based on options passed and can be subsequently modified with a call to change the attribute. The default value for this field is PDO_CASE_NATURAL.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>persistent_id</para>
-          </entry>
-          <entry valign="top">
-            <para>This a hash key that is associated with the handle this structure represents.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set by the PDO main driver before the factory method is called. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>persistent_id_len</para>
-          </entry>
-          <entry valign="top">
-            <para>This is the length of the hash key represented by the persistent_id field.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set by the PDO main driver before the factory method is called. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>refcount</para>
-          </entry>
-          <entry valign="top">
-            <para>This field contains the count of how many times this handle is currently referenced. If a handle is persistent, this field is increased when a persistent object is created. It is decremented each time the destructor is called. When the count reaches zero, the handle can be safely destructed.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set initially by the main PDO driver to one when the handle is constructed. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>cls_methods</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is an array of hashtables containing (at present) driver methods for database handling and statement handling.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver and should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para/>
-  <para/>
-  <para>Appendix B -- pdo_stmt_t</para>
-  <informaltable>
-    <tgroup cols="3">
-      <colspec colname="c1" colwidth="1.9inch"/>
-      <colspec colname="c2" colwidth="3inch"/>
-      <colspec colname="c3" colwidth="1.9inch"/>
-      <tbody>
-        <row>
-          <entry valign="top">
-            <para>Variable name</para>
-          </entry>
-          <entry valign="top">
-            <para>Function</para>
-          </entry>
-          <entry valign="top">
-            <para>Responsibility</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>ce</para>
-          </entry>
-          <entry valign="top">
-            <para>Required for casting as Zend object.</para>
-          </entry>
-          <entry valign="top">
-            <para>Zend engine. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>properties</para>
-          </entry>
-          <entry valign="top">
-            <para>Required for casting as Zend object.</para>
-          </entry>
-          <entry valign="top">
-            <para>Zend engine. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>in_get</para>
-          </entry>
-          <entry valign="top">
-            <para>Required for casting as Zend object.</para>
-          </entry>
-          <entry valign="top">
-            <para>Zend engine. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>in_set</para>
-          </entry>
-          <entry valign="top">
-            <para>Required for casting as Zend object.</para>
-          </entry>
-          <entry valign="top">
-            <para>Zend engine. It should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>methods</para>
-          </entry>
-          <entry valign="top">
-            <para>Pointer to the methods function pointer for SQL statement handling.</para>
-          </entry>
-          <entry valign="top">
-            <para>Driver should set this during the call to &lt;db&gt;_handle_preparer function.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>driver_data</para>
-          </entry>
-          <entry valign="top">
-            <para>Opaque pointer containing driver specific data.</para>
-          </entry>
-          <entry valign="top">
-            <para>Driver can store driver specific data and structures for database handling. This field is typically allocated and set during the call to &lt;db&gt;_handle_preparer.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>executed</para>
-          </entry>
-          <entry valign="top">
-            <para>If true, the statement represented by this object has been executed at least once, otherwise, it's never been executed. This is set automatically after the first call to the stmt executor() function.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver and should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>supports_placeholders</para>
-          </entry>
-          <entry valign="top">
-            <para>This field determines whether the driver support placeholders. It can be any one or combination of the following values:</para>
-            <para>PDO_PLACEHOLDER_NONE</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Driver has no placeholder support</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_PLACEHOLDER_NAMED</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Driver supports named placeholders</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_PLACEHOLDER_POSITIONAL</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Driver supports positional placeholders</para>
-              </listitem>
-            </orderedlist>
-            <para>If both named and positional are supported the field should be set to the OR'd value the two values.</para>
-          </entry>
-          <entry valign="top">
-            <para>The driver should set this field to the appropriate value during the call to &lt;db&gt;_handler_preparer.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>_reserved</para>
-          </entry>
-          <entry valign="top">
-            <para>Reserved for PDO main driver.</para>
-          </entry>
-          <entry valign="top">
-            <para>These are reserved for future use by the main PDO driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>column_count</para>
-          </entry>
-          <entry valign="top">
-            <para>This field contains the number of columns in the result set. The contents of this field is not valid until the &#x201C;executed&#x201D; field is set to true and the statement has been executed. There may be cases (driver specific) where this value is not valid until the drivers fetch method has been called at least once.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is maintained by the driver. It is normally set during &lt;db&gt;_stmt_execute but can be reset in &lt;db_stmt_next_rowset as well. </para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>columns</para>
-          </entry>
-          <entry valign="top">
-            <para>This is a pointer to the column description data. It contains column_count number of elements. A column is represented by the pdo_column_data structure. This structure contains the following members:</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>name -- the name of the column</para>
-              </listitem>
-              <listitem>
-                <para>namelen -- the length of name</para>
-              </listitem>
-              <listitem>
-                <para>maxlen -- the maximum length of the data this column can handle</para>
-              </listitem>
-              <listitem>
-                <para>param_type -- the type of data this column contains</para>
-              </listitem>
-              <listitem>
-                <para>precision -- if numeric data, the precision of data contained.</para>
-              </listitem>
-            </orderedlist>
-          </entry>
-          <entry valign="top">
-            <para>This field is allocated and freed by the PDO main driver. However, the driver is responsible for populating the contents during the call to &lt;db&gt;_stmt_describe.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>database_object_handle</para>
-          </entry>
-          <entry valign="top">
-            <para>This is the Zend object representation of the database handle. This field is kept so that a reference to the database handle object is always referenced while as statement object exists.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver and should be treated as read-only by the driver. There are no known instances where a driver needs to access this variable.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>dbh</para>
-          </entry>
-          <entry valign="top">
-            <para>This is a pointer to pdo_dbh_t representation of the database handle. It is valid so long as the database_object_handle is valid.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver and should be treated as read-only by the driver.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>bound_params</para>
-          </entry>
-          <entry valign="top">
-            <para>This is a hashtable of bound input parameters. This is kept because not all drivers support both input and out parameters.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver and should be treated as read-only by the driver. There are no known instances where a driver needs to access this variable.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>bound_param_map</para>
-          </entry>
-          <entry valign="top">
-            <para>This hashtable contains a mapping of positions to names when rewriting from named to positional.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver and should be treated as read-only by the driver. There are no known instances where a driver needs to access this variable.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>bound_columns</para>
-          </entry>
-          <entry valign="top">
-            <para>This hashtable is used to keep track of PHP variables that are bound to named or positional columns in the result set.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver and should be treated as read-only by the driver. There are no known instances where a driver needs to access this variable.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>row_count</para>
-          </entry>
-          <entry valign="top">
-            <para>This field represents the count of rows available in the result set.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is initialized to zero by the PDO main driver and CAN be set by the driver during the &lt;db&gt;_handle_doer method call. Note: not all drivers have this information available at this time so the reliability of this field is driver specific.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>query_string</para>
-          </entry>
-          <entry valign="top">
-            <para>This character string holds the current raw SQL query associated with this statement.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver and should be treated as read-only by the driver. There are no known instances where a driver needs to access this variable.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>query_stringlen</para>
-          </entry>
-          <entry valign="top">
-            <para>This field represents the length of the raw SQL query string.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver and should be treated as read-only by the driver. There are no known instances where a driver needs to access this variable.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>error_code</para>
-          </entry>
-          <entry valign="top">
-            <para>This is the latest error code for this statement. It is the SQLSTATE expressed as 6 character field.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver. Drivers should set the global variable pdo_err whenever an error occurs and the driver will set this field when appropriate. </para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>lazy_object_ref</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is used to store the lazy object handle (fetch type is equal to PDO_FETCH_LAZY) that is returned for each lazy fetch.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver. It should not be used by drivers.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>refcount</para>
-          </entry>
-          <entry valign="top">
-            <para>This is count of how many lazy fetches have been done.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver. It should not be used by drivers.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>default_fetch_type</para>
-          </entry>
-          <entry valign="top">
-            <para>This is the default fetch type. It can be any one of the following:</para>
-            <para>PDO_FETCH_USE_DEFAULT</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Use the default fetch mode</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_FETCH_LAZY</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Specifies that the fetch method shall return each row as an object with variable names that correspond to the column names returned in the result set. PDO_FETCH_LAZY creates the object variable names as they are accessed.</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_FETCH_ASSOC</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Specifies that the fetch method shall return each row as an array indexed by column name as returned in the corresponding result set.</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_FETCH_NUM</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Specifies that the fetch method shall return each row as an array indexed by column number as returned in the corresponding result set, starting at column 0.</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_FETCH_BOTH</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Specifies that the fetch method shall return each row as an array indexed by both column name and number as returned in the corresponding result set, starting at column 0.</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_FETCH_OBJ</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Specifies that the fetch method shall return each row as an object with property names that correspond to the column names returned in the result set.</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_FETCH_BOUND</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Specifies that the fetch method shall return TRUE and assign the values of the columns in the result set to the variables to which they were bound.</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_FETCH_COLUMN</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Specifies that the fetch method shall return only a single requested column from the next row in the result set.</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_FETCH_CLASS</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Specifies that the fetch method shall return a new instance of the requested class, mapping the columns to named properties in the class.</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_FETCH_INTO</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Specifies that the fetch method shall update an existing instance of the requested class, mapping the columns to named properties in the class.</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_FETCH_FUNC</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Fetch into function and return result of function.</para>
-              </listitem>
-            </orderedlist>
-            <para/>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver. It should not be used by drivers. The default value for this field is PDO_FETCH_BOTH.</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>fetch</para>
-          </entry>
-          <entry valign="top">
-            <para>This union is used to contain fetch information used by the PDO main driver.</para>
-          </entry>
-          <entry valign="top">
-            <para>This field is set and maintained by the PDO main driver. It should not be used by drivers.</para>
-          </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </informaltable>
-  <para/>
-  <para/>
-  <para>Appendix C - Database and Statement Attributes Table</para>
-  <informaltable>
+   </varlistentry>
+  </variablelist>
+
+  <para>
+   This function returns a character string containing the id of the last
+   inserted row on success or NULL on failure. This is an optional function. 
+  </para>
+ </sect3>
+
+ <sect3>
+  <title>SKEL_check_liveness</title>
+
+  <synopsis>static int SKEL_check_liveness(pdo_dbh_t *dbh TSRMLS_DC)</synopsis>
+
+  <para>
+   This function will be called by PDO to test whether or not a persistent
+   connection to a database is alive and ready for use.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+    <term>dbh</term>
+    <listitem>
+     <para>Pointer to the database handle initialized by the handle factory</para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+
+  <para>
+   This function returns 1 if the database connection is alive and ready for use, otherwise it should return 0 to indicate failure or lack of support.
+  </para>
+  
+  <note>
+   <para>
+    This is an optional function.
+   </para>
+  </note>
+
+  </sect3>
+
+  <sect3>
+  <title>SKEL_get_driver_methods</title>
+  <synopsis>static function_entry *SKEL_get_driver_methods(pdo_dbh_t *dbh, int kind TSRMLS_DC)</synopsis>
+  <para>
+   This function will be called by PDO in response to a call to any method
+   that is not a part of either the <classname>PDO</classname> or
+   <classname>PDOStatement</classname> classes.  It's purpose is to allow the
+   driver to provide additional driver specific methods to those classes.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+    <term>dbh</term>
+    <listitem>
+     <para>Pointer to the database handle initialized by the handle factory</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>kind</term>
+    <listitem>
+     <para>One of the following:</para>
+     <variablelist>
+      <varlistentry>
+       <term>PDO_DBH_DRIVER_METHOD_KIND_DBH</term>
+       <listitem>
+        <para>
+         Set when the method call was attempted on an instance of the
+         <classname>PDO</classname> class.  The driver should return a pointer
+         a function_entry table for any methods it wants to add to that class,
+         or NULL if there are none.
+        </para>
+       </listitem>
+      </varlistentry>
+      <varlistentry>
+       <term>PDO_DBH_DRIVER_METHOD_KIND_STMT</term>
+       <listitem>
+        <para>
+         Set when the method call was attempted on an instance of the
+         <classname>PDOStatement</classname> class.  The driver should return
+         a pointer to a function_entry table for any methods it wants to add
+         to that class, or NULL if there are none.
+        </para>
+       </listitem>
+      </varlistentry>
+     </variablelist>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+
+  <para>
+   This function returns a pointer to the function_entry table requested,
+   or NULL there are no driver specific methods.
+  </para>
+  </sect3>
+
+  <sect3>
+  <title>SKEL_handle_factory</title>
+  <synopsis>static int SKEL_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSRMLS_DC)</synopsis>
+  <para>
+   This function will be called by PDO to create a database handle. For most
+   databases this involves establishing a connection to the database. In some
+   cases, a persistent connection may be requested, in other cases connection
+   pooling may be requested. All of these are database/driver dependent.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+    <term>dbh</term>
+    <listitem>
+     <para>Pointer to the database handle initialized by the handle factory</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>driver_options</term>
+    <listitem>
+     <para>
+      An array of driver options, keyed by integer option number. See <xref
+      linkend="internals.pdo.table.attributes"/> for a list of possible attributes.
+     </para>
+    </listitem>
+   </varlistentry>
+
+  </variablelist>
+
+  <para>
+   This function should fill in the passed database handle structure with its'
+   driver specific information on success and return 1, otherwise it should
+   return 0 to indicate failure.
+  </para>
+  <para>
+   PDO processes the AUTOCOMMIT and PERSISTENT driver options
+   before calling the handle_factory. It is the handle factory's
+   responsibility to process other options.
+  </para>
+ </sect3>
+
+ <sect3>
+  <title>Driver method table</title>
+  <para>
+   A static structure of type pdo_dbh_methods named SKEL_methods must be
+   declared and initialized to the function pointers for each defined
+   function. If a function is not supported or not implemented the value for
+   that function pointer should be set to NULL.
+  </para>
+ </sect3>
+ 
+ <sect3>
+  <title>pdo_SKEL_driver</title>
+  <para>
+   A structure of type pdo_driver_t named pdo_SKEL_driver should be declared.
+   The PDO_DRIVER_HEADER(SKEL) macro should be used to declare the header and
+   the function pointer to the handle factory function should set.
+  </para>
+ </sect3>
+ </sect2>
+ <sect2>
+  <title>SKEL_statement.c: Statement implementation</title>
+  <para>
+   This unit implements all of the database statement handling methods that
+   support the PDO statement object.
+  </para>
+
+  <sect3>
+   <title>SKEL_stmt_dtor</title>
+
+  <synopsis>static int SKEL_stmt_dtor(pdo_stmt_t *stmt TSRMLS_DC)</synopsis>
+  <para>
+   This function will be called by PDO to destroy a previously constructed statement object.
+  </para>
+  <variablelist>
+   <varlistentry>
+    <term>stmt</term>
+    <listitem>
+     <para>Pointer to the statement structure initialized by SKEL_handle_preparer.</para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+
+  <para>
+   This should do whatever is necessary to free up any driver specific storage
+   allocated for the statement. The return value from this function is
+   ignored.
+  </para>
+  </sect3>
+
+  <sect3>
+   <title>SKEL_stmt_execute</title>
+  <synopsis>static int SKEL_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)</synopsis>
+  <para>
+   This function will be called by PDO to execute the prepared SQL statement
+   in the passed statement object.
+  </para>
+  <variablelist>
+   <varlistentry>
+    <term>stmt</term>
+    <listitem>
+     <para>Pointer to the statement structure initialized by SKEL_handle_preparer.</para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+
+  <para>
+   This function returns 1 for success or 0 in the event of failure.
+  </para>
+  </sect3>
+  <sect3>
+  <title>SKEL_stmt_fetch</title>
+  <synopsis>static int SKEL_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation ori,
+  long offset TSRMLS_DC)</synopsis>
+  
+  <para>
+   This function will be called by PDO to fetch a row from a previously
+   executed statement object.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+    <term>stmt</term>
+    <listitem>
+     <para>Pointer to the statement structure initialized by SKEL_handle_preparer.</para>
+    </listitem>
+   </varlistentry>
+
+   <varlistentry>
+    <term>ori</term>
+    <listitem>
+     <para>One of PDO_FETCH_ORI_xxx which will determine which row will be fetched.</para>
+    </listitem>
+   </varlistentry>
+
+   <varlistentry>
+    <term>offset</term>
+    <listitem>
+     <para>
+      If ori is set to PDO_FETCH_ORI_ABS or PDO_FETCH_ORI_REL, offset
+      represents the row desired or the row relative to the current position,
+      respectively. Otherwise, this value is ignored.
+     </para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+
+  <para>
+   The results of this fetch are driver dependent and the data is usually
+   stored in the driver_data member of pdo_stmt_t object. The ori and offset
+   parameters are only meaningful if the statement represents a scrollable
+   cursor. This function returns 1 for success or 0 in the event of failure.
+  </para>
+  </sect3>
+  <sect3>
+   <title>SKEL_stmt_param_hook</title>
+  <synopsis>static int SKEL_stmt_param_hook(pdo_stmt_t *stmt,
+  struct pdo_bound_param_data *param, enum pdo_param_event event_type TSRMLS_DC)</synopsis>
+
+  <para>
+   This function will be called by PDO for handling of both bound parameters and bound columns.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+    <term>stmt</term>
+    <listitem>
+     <para>Pointer to the statement structure initialized by SKEL_handle_preparer.</para>
+    </listitem>
+   </varlistentry>
+
+   <varlistentry>
+    <term>param</term>
+    <listitem>
+     <para>
+      The structure describing either a statement parameter or a bound column.
+     </para>
+    </listitem>
+   </varlistentry>
+
+   <varlistentry>
+    <term>event_type</term>
+    <listitem>
+     <para>The type of event to occur for this parameter, one of the following:</para>
+     <variablelist>
+
+      <varlistentry>
+       <term>PDO_PARAM_EVT_ALLOC</term>
+       <listitem>
+        <para>Called when PDO allocates the binding.  Occurs as part of
+        <function>PDOStatement::bindParam</function>,
+        <function>PDOStatement::bindValue</function> or as part of an implicit bind
+        when calling <function>PDOStatement::execute</function>.  This is your
+        opportunity to take some action at this point; drivers that implement
+        native prepared statements will typically want to query the parameter
+        information, reconcile the type with that requested by the script,
+        allocate an appropriately sized buffer and then bind the parameter to
+        that buffer.  You should not rely on the type or value of the zval at
+        <literal>param-&gt;parameter</literal> at this point in time.
+        </para>
+       </listitem>
+      </varlistentry>
+      <varlistentry>
+       <term>PDO_PARAM_EVT_FREE</term>
+       <listitem>
+        <para>Called once per parameter as part of cleanup.  You should
+        release any resources associated with that parameter now.</para>
+       </listitem>
+      </varlistentry>
+      <varlistentry>
+       <term>PDO_PARAM_EXEC_PRE</term>
+       <listitem>
+        <para>Called once for each parameter immediately before calling
+        SKEL_stmt_execute; take this opportunity to make any final adjustments
+        ready for execution.  In particular, you should note that variables
+        bound via <function>PDOStatement::bindParam</function> are only legal
+        to touch now, and not any sooner.
+        </para>
+       </listitem>
+      </varlistentry>
+      <varlistentry>
+       <term>PDO_PARAM_EXEC_POST</term>
+       <listitem>
+        <para>Called once for each parameter immediately after calling
+        SKEL_stmt_execute; take this opportunity to make any post-execution
+        actions that might be required by your driver.</para>
+       </listitem>
+      </varlistentry>
+      <varlistentry>
+       <term>PDO_PARAM_FETCH_PRE</term>
+       <listitem>
+        <para>Called once for each parameter immediately prior to calling
+        SKEL_stmt_fetch.</para>
+       </listitem>
+      </varlistentry>
+      <varlistentry>
+       <term>PDO_PARAM_FETCH_POST</term>
+       <listitem>
+        <para>Called once for each parameter immediately after calling
+         SKEL_stmt_fetch.</para>
+       </listitem>
+      </varlistentry>
+
+      </variablelist>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+
+  <para>
+   This hook will be called for each bound parameter and bound column in the
+   statement. For ALLOC and FREE events, a single call will be made for each
+   parameter or column. The param structure contains a driver_data field that
+   the driver can use to store implementation specific information about each
+   of the parameters.
+  </para>
+  <para>
+   For all other events, PDO may call you multple times as the script issues
+   <function>PDOStatement::execute</function> and
+   <function>PDOStatement::fetch</function> calls.
+  </para>
+  <para>
+   If this is a bound parameter, the is_param flag in the param structure,
+   otherwise, the param structure refers to a bound column.
+  </para>
+  <para>
+   This function returns 1 for success or 0 in the event of failure.
+  </para>
+  </sect3>
+
+  <sect3>
+   <title>SKEL_stmt_describe_col</title>
+  <synopsis>static int SKEL_stmt_describe_col(pdo_stmt_t *stmt, int colno TSRMLS_DC)</synopsis>
+
+  <para>
+   This function will be called by PDO to query information about a particular
+   column.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+    <term>stmt</term>
+    <listitem>
+     <para>Pointer to the statement structure initialized by SKEL_handle_preparer.</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>colno</term>
+    <listitem>
+     <para>The column number to be queried.</para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+  <para>
+   The driver should populate the pdo_stmt_t member columns(colno) with the
+   appropriate information. This function returns 1 for success or 0 in the
+   event of failure.
+  </para>
+  </sect3>
+
+  <sect3>
+   <title>SKEL_stmt_get_col_data</title>
+  <synopsis>static int SKEL_stmt_get_col_data(pdo_stmt_t *stmt, int colno,
+  char **ptr, unsigned long *len, int *caller_frees TSRMLS_DC)</synopsis>
+  <para>
+   This function will be called by PDO to retrieve data from the specified column.
+  </para>
+  <variablelist>
+   <varlistentry>
+    <term>stmt</term>
+    <listitem>
+     <para>Pointer to the statement structure initialized by SKEL_handle_preparer.</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>colno</term>
+    <listitem>
+     <para>The column number to be queried.</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>ptr</term>
+    <listitem>
+     <para>Pointer to the retrieved data.</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>len</term>
+    <listitem>
+     <para>The length of the data pointed to by ptr.</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>caller_frees</term>
+    <listitem>
+     <para>If set, ptr should point to emalloc'd memory and the main PDO driver will free it as soon as it is done with it. Otherwise, it will be the responsibility of the driver to free any allocated memory as a result of this call.</para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+  <para>
+   The driver should return the resultant data and length of that data in the
+   ptr and len variables respectively. It should be noted that the main PDO
+   driver expects the driver to manage the lifetime of the data. This function
+   returns 1 for success or 0 in the event of failure.
+  </para>
+  </sect3>
+  <sect3>
+  <title>SKEL_stmt_set_attr</title>
+  <synopsis>static int SKEL_stmt_set_attr(pdo_stmt_t *stmt, long attr, zval *val TSRMLS_DC)</synopsis>
+
+  <para>
+   This function will be called by PDO to allow the setting of driver specific
+   attributes for a statement object.
+  </para>
+
+  <variablelist>
+   <varlistentry>
+    <term>stmt</term>
+    <listitem>
+     <para>Pointer to the statement structure initialized by SKEL_handle_preparer.</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>attr</term>
+    <listitem>
+     <para>
+      <type>long</type> value of one of the PDO_ATTR_xxxx types.  See <xref
+      linkend="internals.pdo.table.attributes"/> for valid attributes.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>val</term>
+    <listitem>
+     <para>The new value for the attribute.</para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+
+
+  <para>
+   This function is driver dependent and allows the driver the capability to
+   set database specific attributes for a statement. This function returns 1
+   for success or 0 in the event of failure. This is an optional function. If
+   the driver does not support additional settable attributes, it can be
+   NULLed in the method table. The PDO driver does not handle any settable
+   attributes on the database driver's behalf.
+  </para>
+  </sect3>
+  <sect3>
+   <title>SKEL_stmt_get_attr</title>
+  <synopsis>static int SKEL_stmt_get_attr(pdo_stmt_t *stmt, long attr, zval
+  *return_value TSRMLS_DC)</synopsis>
+  <para>
+   This function will be called by PDO to allow the retrieval of driver
+   specific attributes for a statement object.
+   </para>
+
+  <variablelist>
+   <varlistentry>
+    <term>stmt</term>
+    <listitem>
+     <para>Pointer to the statement structure initialized by SKEL_handle_preparer.</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>attr</term>
+    <listitem>
+     <para>
+      <type>long</type> value of one of the PDO_ATTR_xxxx types.  See <xref
+      linkend="internals.pdo.table.attributes"/> for valid attributes.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>return_value</term>
+    <listitem>
+     <para>The returned value for the attribute.</para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+
+  <para>
+   This function is driver dependent and allows the driver the capability to
+   retrieve a previously set database specific attribute for a statement. This
+   function returns 1 for success or 0 in the event of failure. This is an
+   optional function. If the driver does not support additional gettable
+   attributes, it can be NULLed in the method table. The PDO driver does not
+   handle any settable attributes on the database driver's behalf.
+   </para>
+ </sect3>
+ <sect3>
+  <title>SKEL_stmt_get_col_meta</title>
+  <synopsis>static int SKEL_stmt_get_col_meta(pdo_stmt_t *stmt, int colno,
+  zval *return_value TSRMLS_DC)</synopsis>
+  <warning>
+   <para>
+    This function is not well defined and is subject to change.
+   </para>
+  </warning>
+
+  <para>
+   This function will be called by PDO to retrieve meta-data from the
+   specified column.
+  </para>
+  <variablelist>
+   <varlistentry>
+    <term>stmt</term>
+    <listitem>
+     <para>Pointer to the statement structure initialized by SKEL_handle_preparer.</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>colno</term>
+    <listitem>
+     <para>The column number for which data is to be retrieved.</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>return_value</term>
+    <listitem>
+     <para>Holds the returned meta data.</para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+
+  <para>
+   The driver author should consult the documentation for this function that can be
+   found in the php_pdo_driver.h header as this will be the most current. This
+   function returns 1 for success or 0 in the event of failure. The database
+   driver does not need to provide this function.
+  </para>
+ </sect3>
+
+  <sect3>
+  <title>Statement handling method table</title>
+  <para>
+   A static structure of type pdo_stmt_methods named SKEL_stmt_methods should
+   be declared and initialized to the function pointers for each defined
+   function. If a function is not supported or not implemented the value for
+   that function pointer should be set to NULL.
+  </para>
+ </sect3>
+ </sect2>
+ </sect1>
+ 
+ <sect1>
+  <title>Building</title>
+  <para>
+   The build process is designed to work with PEAR (see <ulink
+   url="http://pear.php.net/index.php">http://pear.php.net/index.php</ulink> for more information about
+   PEAR). There are two files that are used to assist in configuring your
+   package for building. The first is config.m4 which is the autoconf
+   configuration file for all platforms except Win32. The second is config.w32
+   which a build configuration file for use on Win32. Skeleton files for
+   these are built for you when you first set up your project. You then need
+   to customize them to fit the needs of your project.  Once you've customized
+   your config files, you can build your driver using the following sequence
+   of commands:
+  </para>
+
+  <para>
+   Before first build:
+  </para>
+  
+  <screen>
+$ sudo pear install PDO
+</screen>
+  
+  <para>
+   For each build:
+  </para>
+
+<screen>
+$ cd pdo_SKEL
+$ phpize
+$ ./configure
+$ make
+$ sudo make install
+</screen>
+
+  <para>
+   The process can then be repeated as necessary during the development
+   process.
+  </para>
+  </sect1>
+
+<sect1>
+  <title>Testing</title>
+  <para>
+   PDO has a set of "core" tests that all drivers should pass before being
+   released.  They're designed to run from the PHP source distribution, so
+   running the tests for your driver requires moving things around a bit.
+   The suggested procedure is to obtain the latest PHP 5.1 snapshot and
+   perform the following step:
+   </para>
+
+<screen>
+$ cp -r pdo_SKEL /path/to/php-5.1/ext
+</screen>
+  <para>
+   This will allow the test harness to run your tests.  The next thing you
+   need to do is create a test that will redirect into the PDO common core tests.
+   The convention is to name this file <filename>common.phpt</filename>; it
+   should be placed in the tests subdirectory that was created by
+   <command>ext_skel</command> when you created your extension skeleton.
+   The content of this file should look something like the following:
+  </para>
+  <programlisting role="phptest"><![CDATA[
+--TEST--
+SKEL
+--SKIPIF--
+<?php # vim:ft=php
+if (!extension_loaded('pdo_SKEL')) print 'skip'; ?>
+--REDIRECTTEST--
+if (false !== getenv('PDO_SKEL_TEST_DSN')) {
+# user set them from their shell
+    $config['ENV']['PDOTEST_DSN'] = getenv('PDO_SKEL_TEST_DSN');
+    $config['ENV']['PDOTEST_USER'] = getenv('PDO_SKEL_TEST_USER');
+    $config['ENV']['PDOTEST_PASS'] = getenv('PDO_SKEL_TEST_PASS');
+    if (false !== getenv('PDO_SKEL_TEST_ATTR')) {
+       $config['ENV']['PDOTEST_ATTR'] = getenv('PDO_SKEL_TEST_ATTR');
+    }
+    return $config;
+}
+return array(
+    'ENV' => array(
+            'PDOTEST_DSN' => 'SKEL:dsn',
+            'PDOTEST_USER' => 'username',
+            'PDOTEST_PASS' => 'password'
+        ),
+    'TESTS' => 'ext/pdo/tests'
+    );
+]]></programlisting>
+
+   <para>
+    This will cause the common core tests to be run, passing the values of
+    <literal>PDOTEST_DSN</literal>, <literal>PDOTEST_USER</literal> and
+    <literal>PDOTEST_PASS</literal> to the PDO constructor as the
+    <parameter>dsn</parameter>, <parameter>username</parameter> and
+    <parameter>password</parameter> parameters.  It will first check the environment, so
+    that appropriate values can be passed in when the test harness is run,
+    rather than hard-coding the database credentials into the test file.
+   </para>
+
+   <para>
+    The test harness can be invoked as follows:
+   </para>
+
+   <screen>
+$ cd /path/to/php-5.1
+$ make TESTS=ext/pdo_SKEL/tests PDO_SKEL_TEST_DSN="skel:dsn" \
+  PDO_SKEL_TEST_USER=user PDO_SKEL_TEST_PASS=pass test
+</screen>
+
+</sect1>
+
+  <sect1>
+  <title>Packaging and distribution</title>
+  <sect2>
+   <title>Creating a package</title>
+  <para>
+   PDO drivers are released via PECL; all the usual rules for PECL extensions
+   apply.  Packaging is accomplished by creating a valid
+   <filename>package.xml</filename> file and then running:
+  </para>
+  <screen>
+$ pear package
+</screen>
+  <para>
+   This will create a tarball named <filename>PDO_SKEL-X.Y.Z.tgz</filename>.
+  </para>
+  <para>
+   Before releasing the package, you should test that it builds correctly; if
+   you've made a mistake in your <filename>config.m4</filename> or
+   <filename>package.xml</filename> files, the package may not function
+   correctly.  You can test the build, without installing anything, using the
+   following invocation:
+  </para>
+  <screen>
+$ pear build package.xml
+  </screen>
+  <para>
+   Once this is proven to work, you can test installation:
+  </para>
+  <screen>
+$ pear package
+$ sudo pear install PDO_SKEL-X.Y.X.tgz
+  </screen>
+
+  <para>
+   Full details about <filename>package.xml</filename> can be found in the PEAR
+   Programmer's documentation (<ulink
+   url="http://pear.php.net/manual/index.php">http://pear.php.net/manual/index.php</ulink>).
+  </para>
+  </sect2>
+  <sect2>
+   <title>Releasing the package</title>
+  <para>
+   A PDO driver is released via the PHP Extension Community Library (PECL).
+   Information about PECL can be found at <ulink url="http://pecl.php.net/index.php">http://pecl.php.net/index.php</ulink>.
+   </para>
+  </sect2>
+  </sect1>
+
+<sect1>
+  <title>pdo_dbh_t definition</title>
+  <para>
+   All fields should be treated as read-only by the driver, unless explicitly
+   stated otherwise.
+  </para>
+  <figure>
+   <title>pdo_dbh_t</title>
+  <programlisting role="c">
+/* represents a connection to a database */
+struct _pdo_dbh_t {
+    /* driver specific methods */
+    struct pdo_dbh_methods *methods;    <co id="internals.pdo.dbh.co.methods" linkends="internals.pdo.dbh.co.methods-co"/>
+    /* driver specific data */
+    void *driver_data;                  <co id="internals.pdo.dbh.co.driver-data" linkends="internals.pdo.dbh.co.driver-data-co"/>
+
+    /* credentials */
+    char *username, *password;          <co
+    id="internals.pdo.dbh.co.credentials"
+    linkends="internals.pdo.dbh.co.credentials-co"/>
+
+    /* if true, then data stored and pointed at by this handle must all be
+     * persistently allocated */
+    unsigned is_persistent:1;           <co
+    id="internals.pdo.dbh.co.is-persist"
+    linkends="internals.pdo.dbh.co.is-persist-co"/>
+
+    /* if true, driver should act as though a COMMIT were executed between
+     * each executed statement; otherwise, COMMIT must be carried out manually
+     * */
+    unsigned auto_commit:1;             <co
+    id="internals.pdo.dbh.co.auto-commit"
+    linkends="internals.pdo.dbh.co.auto-commit-co"/>
+
+    /* if true, the driver requires that memory be allocated explicitly for
+     * the columns that are returned */
+    unsigned alloc_own_columns:1;       <co
+    id="internals.pdo.dbh.co.alloc-own"
+    linkends="internals.pdo.dbh.co.alloc-own-co"/>
+
+    /* if true, commit or rollBack is allowed to be called */
+    unsigned in_txn:1;                  
+
+    /* max length a single character can become after correct quoting */
+    unsigned max_escaped_char_length:3;   <co
+    id="internals.pdo.dbh.co.max-esc"
+    linkends="internals.pdo.dbh.co.max-esc-co"/>
+
+    /* data source string used to open this handle */
+    const char *data_source;            <co id="internals.pdo.dbh.co.dsn"
+    linkends="internals.pdo.dbh.co.dsn-co"/>
+    unsigned long data_source_len;
+
+    /* the global error code. */
+    pdo_error_type error_code;          <co
+    id="internals.pdo.dbh.co.error-code"
+    linkends="internals.pdo.dbh.co.error-code-co"/>
+
+    enum pdo_case_conversion native_case<co id="internals.pdo.dbh.co-ncase"
+    linkends="internals.pdo.dbh.co-ncase-co"/>, desired_case;
+};
+  </programlisting>
+  </figure>
+  <calloutlist>
+   <callout arearefs="internals.pdo.dbh.co.methods"
+   id="internals.pdo.dbh.co.methods-co">
+    <para>
+     The driver <emphasis>must</emphasis> set this during
+     <function>SKEL_handle_factory</function>.
+    </para>
+   </callout>
+   <callout arearefs="internals.pdo.dbh.co.driver-data"
+   id="internals.pdo.dbh.co.driver-data-co">
+    <para>
+     This item is for use by the driver; the intended usage is to store a
+     pointer (during <function>SKEL_handle_factory</function>) 
+     to whatever instance data is required to maintain a connection to
+     the database.
+    </para>
+   </callout>
+   <callout arearefs="internals.pdo.dbh.co.credentials"
+   id="internals.pdo.dbh.co.credentials-co">
+    <para>
+     The username and password that were passed into the PDO constructor.
+     The driver should use these values when it initiates a connection to the
+     database.
+    </para>
+   </callout>
+   <callout arearefs="internals.pdo.dbh.co.is-persist"
+   id="internals.pdo.dbh.co.is-persist-co">
+    <para>
+     If this is set to 1, then any data that is referenced by the
+     dbh, including whatever structure your driver allocates,
+     <emphasis>MUST</emphasis> be allocated persistently.  This is easy to
+     achieve; rather than using the usual <function>emalloc</function> simply
+     use <function>pemalloc</function> and pass the value of this flag as the
+     last parameter.  Failure to use the appropriate kind of memory can lead
+     to serious memory faults, resulting (in the best case) a hard crash, and
+     in the worst case, an exploitable memory problem.
+    </para>
+    <para>
+     If, for whatever reason, your driver is not suitable to run persistently,
+     you <emphasis>MUST</emphasis> check this flag in your
+     <function>SKEL_handle_factory</function> and raise an appropriate error.
+    </para>
+   </callout>
+   <callout arearefs="internals.pdo.dbh.co.auto-commit"
+   id="internals.pdo.dbh.co.auto-commit-co">
+    <para>
+     You should check this value in your <function>SKEL_handle_doer</function>
+     and <function>SKEL_stmt_execute</function> functions; if it evaluates to
+     true, you must attempt to commit the query now.  Most database
+     implementations offer an auto-commit mode that handles this automatically.
+    </para>
+   </callout>
+   <callout arearefs="internals.pdo.dbh.co.alloc-own"
+   id="internals.pdo.dbh.co.alloc-own-co">
+     <para>
+      If your database client library API operates by fetching data into a
+      caller-supplied buffer, you should set this flag to 1 during your
+      <function>SKEL_handle_factory</function>.  When set, PDO will call your
+      <function>SKEL_stmt_describer</function> earlier that it would
+      otherwise.  This early call allows you to determine those buffer sizes
+      and issue appropriate calls to the database client library.
+     </para>
+     <para>
+      If your database client library API simply returns pointers to its own
+      internal buffers for you to copy after each fetch call, you should leave
+      this value set to 0.
+     </para>
+    </callout>
+    <callout arearefs="internals.pdo.dbh.co.max-esc"
+    id="internals.pdo.dbh.co.max-esc-co">
+     <para>
+      If your driver doesn't support native prepared statements
+      (<parameter>supports_placeholders</parameter> is set to
+      <constant>PDO_PLACEHOLDER_NONE</constant>), you must set
+      this value to the maximum length that can be taken up by a single
+      character when it is quoted by your
+      <function>SKEL_handle_quoter</function> function.  This value is used to
+      calculate the amount of buffer space required when PDO it executes the
+      statement.
+     </para>
+    </callout>
+    <callout arearefs="internals.pdo.dbh.co.dsn"
+    id="internals.pdo.dbh.co.dsn-co">
+     <para>
+      This holds the value of the DSN that was passed into the PDO
+      constructor.  If your driver implementation needed to modify the DSN for
+      whatever reason, it should update this member during
+      <function>SKEL_handle_factory</function>.  Modifying this member should
+      be avoided.  If you do change it, you must ensure that
+      <parameter>data_source_len</parameter> is also correct.
+     </para>
+    </callout>
+    <callout arearefs="internals.pdo.dbh.co.error-code"
+     id="internals.pdo.dbh.co.error-code-co">
+     <para>
+      Whenever an error occurs during a call to one of your driver methods,
+      you should set this member to the SQLSTATE code that best describes the
+      error and return an error.  In this HOW-TO, the suggested practice is to
+      call <function>SKEL_handle_error</function> when an error is detected,
+      and have it set the error code.
+     </para>
+    </callout>
+    <callout arearefs="internals.pdo.dbh.co-ncase"
+    id="internals.pdo.dbh.co-ncase-co">
+     <para>
+      Your driver should set this during
+      <function>SKEL_handle_factory</function>; the value should reflect how
+      the database returns the names of the columns in result sets.  If the
+      name matches the case that was used in the query, set it to
+      <constant>PDO_CASE_NATURAL</constant> (this is actually the default).
+      If the column names are always returned in upper case, set it to
+      <constant>PDO_CASE_UPPER</constant>.  If the column names are always
+      return in lower case, set it to <constant>PDO_CASE_LOWER</constant>.
+      The value you set it used to determine if PDO should perform case
+      folding when the user sets the <constant>PDO_ATTR_CASE</constant>
+      attribute.
+     </para>
+    </callout>
+  </calloutlist>
+ </sect1>
+ <sect1>
+  <title>pdo_stmt_t definition</title>
+  <para>
+   All fields should be treated as read-only unless explicitly stated
+   otherwise.
+  </para>
+  <figure>
+   <title>pdo_stmt_t</title>
+   <programlisting role="c">
+/* represents a prepared statement */
+struct _pdo_stmt_t {
+    /* driver specifics */
+    struct pdo_stmt_methods *methods;   <co id="internals.pdo.stmt.co.methods" linkends="internals.pdo.stmt.co.methods-co"/>
+    void *driver_data;                  <co
+    id="internals.pdo.stmt.co.driver-data"
+    linkends="internals.pdo.stmt.co.driver-data-co"/>
+
+    /* if true, we've already successfully executed this statement at least
+     * once */
+    unsigned executed:1;                <co
+    id="internals.pdo.stmt.co.executed"
+    linkends="internals.pdo.stmt.co.executed-co"/>
+    /* if true, the statement supports placeholders and can implement
+     * bindParam() for its prepared statements, if false, PDO should
+     * emulate prepare and bind on its behalf */
+    unsigned supports_placeholders:2;   <co id="internals.pdo.stmt.co.holder"
+    linkends="internals.pdo.stmt.co.holder-co"/>
+
+    /* the number of columns in the result set; not valid until after
+     * the statement has been executed at least once.  In some cases, might
+     * not be valid until fetch (at the driver level) has been called at least once.
+     * */
+    int column_count;                   <co
+    id="internals.pdo.stmt.co.colcount"
+    linkends="internals.pdo.stmt.co.colcount-co"/>
+    struct pdo_column_data *columns;    <co
+    id="internals.pdo.stmt.co.cols" linkends="internals.pdo.stmt.co.cols-co"/>
+
+    /* points at the dbh that this statement was prepared on */
+    pdo_dbh_t *dbh;
+
+    /* keep track of bound input parameters.  Some drivers support
+     * input/output parameters, but you can't rely on that working */
+    HashTable *bound_params;
+    /* When rewriting from named to positional, this maps positions to names */
+    HashTable *bound_param_map; 
+    /* keep track of PHP variables bound to named (or positional) columns
+     * in the result set */
+    HashTable *bound_columns;
+
+    /* not always meaningful */
+    long row_count;
+
+    /* used to hold the statement's current query */
+    char *query_string;
+    int query_stringlen;
+
+    /* the copy of the query with expanded binds ONLY for emulated-prepare drivers */
+    char *active_query_string;
+    int active_query_stringlen;
+
+    /* the cursor specific error code. */
+    pdo_error_type error_code;
+
+    /* used by the query parser for driver specific
+     * parameter naming (see pgsql driver for example) */
+    const char *named_rewrite_template;
+};
+   </programlisting>
+  </figure>
+  <calloutlist>
+   <callout id="internals.pdo.stmt.co.methods-co"
+    arearefs="internals.pdo.stmt.co.methods">
+    <para>
+     The driver <emphasis>must</emphasis> set this during
+     <function>SKEL_handle_preparer</function>.
+    </para>
+   </callout>
+   <callout arearefs="internals.pdo.stmt.co.driver-data"
+    id="internals.pdo.stmt.co.driver-data-co">
+    <para>
+     This item is for use by the driver; the intended usage is to store a
+     pointer (during <function>SKEL_handle_factory</function>) 
+     to whatever instance data is required to maintain a connection to
+     the database.
+    </para>
+   </callout>
+   <callout arearefs="internals.pdo.stmt.co.executed"
+    id="internals.pdo.stmt.co.executed-co">
+    <para>
+     This is set by PDO after the statement has been executed for the first
+     time.  Your driver can inspect this value to determine if it can skip
+     one-time actions as an optimization.
+    </para>
+   </callout>
+   <callout arearefs="internals.pdo.stmt.co.holder"
+    id="internals.pdo.stmt.co.holder-co">
+    <para>
+     Discussed in more detail in <xref linkend="internals.pdo.preparer"/>
+    </para>
+   </callout>
+   <callout arearefs="internals.pdo.stmt.co.colcount"
+    id="internals.pdo.stmt.co.colcount-co">
+    <para>
+     Your driver is responsible for setting this field to the number of
+     columns available in a result set.  This is usually set during
+     <function>SKEL_stmt_execute</function> but with some database
+     implementations, the column count may not be available until
+     <function>SKEL_stmt_fetch</function> has been called at least once.
+     Drivers that <function>SKEL_stmt_next_rowset</function> should update the
+     column count when a new rowset is available.
+    </para>
+   </callout>
+   <callout arearefs="internals.pdo.stmt.co.cols"
+    id="internals.pdo.stmt.co.cols-co">
+    <para>
+     PDO will allocate this field based on the value that you set for the
+     column count.  You are responsible for populating each column during
+     <function>SKEL_stmt_describe</function>.  You must set the
+     <parameter>precision</parameter>, <parameter>maxlen</parameter>,
+     <parameter>name</parameter>, <parameter>namelen</parameter> and
+     <parameter>param_type</parameter> members for each column.
+     The <parameter>name</parameter> is expected to be allocated using
+     <function>emalloc</function>; PDO will <function>efree</function> at the
+     appropriate time.
+    </para>
+   </callout>
+  </calloutlist>
+  </sect1>
+
+  <sect1>
+  <title>Constants</title>
+  <table id="internals.pdo.table.attributes">
+  <title>Database and Statement Attributes Table</title>
     <tgroup cols="2">
       <colspec colname="c1" colwidth="3inch"/>
       <colspec colname="c2" colwidth="2.7inch"/>
       <tbody>
         <row>
-          <entry valign="top">
+          <entry>
             <para>Attribute</para>
           </entry>
-          <entry valign="top">
+          <entry>
             <para>Valid value(s)</para>
           </entry>
         </row>
         <row>
-          <entry valign="top">
+          <entry>
             <para>PDO_ATTR_AUTOCOMMIT</para>
           </entry>
-          <entry valign="top">
-            <para>ZVAL_BOOL</para>
+          <entry>
+            <para>BOOL</para>
             <para>TRUE if autocommit is set, FALSE otherwise. </para>
-            <para>Dbh-&gt;auto_commit contains value. Processed by the PDO driver directly.</para>
+            <para>dbh-&gt;auto_commit contains value. Processed by PDO directly.</para>
           </entry>
         </row>
         <row>
-          <entry valign="top">
+          <entry>
             <para>PDO_ATTR_PREFETCH</para>
           </entry>
-          <entry valign="top">
-            <para>ZVAL_LONG</para>
+          <entry>
+            <para>LONG</para>
             <para>Value of the prefetch size in drivers that support it.</para>
           </entry>
         </row>
         <row>
-          <entry valign="top">
+          <entry>
             <para>PDO_ATTR_TIMEOUT</para>
           </entry>
-          <entry valign="top">
-            <para>ZVAL_LONG</para>
+          <entry>
+            <para>LONG</para>
             <para>How long to wait for a db operation before timing out.</para>
           </entry>
         </row>
         <row>
-          <entry valign="top">
+          <entry>
             <para>PDO_ATTR_ERRMODE</para>
           </entry>
-          <entry valign="top">
-            <para>ZVAL_LONG</para>
-            <para>PDO_ERRMODE_SILENT</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Fail silently</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_ERRMODE_WARNING</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Treat all errors as warnings.</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_ERRMODE_EXCEPTION</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Throw exceptions instead of returning error codes.</para>
-              </listitem>
-            </orderedlist>
-            <para/>
+          <entry>
+            <para>LONG</para>
+            <para>Processed and handled by PDO</para>
           </entry>
         </row>
         <row>
-          <entry valign="top">
+          <entry>
             <para>PDO_ATTR_SERVER_VERSION</para>
           </entry>
-          <entry valign="top">
-            <para>ZVAL_STRING</para>
-            <para>The &#x201C;human-readable&#x201D; string representing the Server/Version this driver supports.</para>
+          <entry>
+            <para>STRING</para>
+            <para>The <quote>human-readable</quote> string representing the
+            Server/Version this driver is currently connected to.</para>
           </entry>
         </row>
         <row>
-          <entry valign="top">
+          <entry>
             <para>PDO_ATTR_CLIENT_VERSION</para>
           </entry>
-          <entry valign="top">
-            <para>ZVAL_STRING</para>
-            <para>The &#x201C;human-readable&#x201D; string representing the Client/Version this driver supports.</para>
+          <entry>
+            <para>STRING</para>
+            <para>The <quote>human-readable</quote> string representing the Client/Version this driver supports.</para>
           </entry>
         </row>
         <row>
-          <entry valign="top">
+          <entry>
             <para>PDO_ATTR_SERVER_INFO</para>
           </entry>
-          <entry valign="top">
-            <para>ZVAL_STRING</para>
-            <para>The &#x201C;human-readable&#x201D; description of the Server.</para>
+          <entry>
+            <para>STRING</para>
+            <para>The <quote>human-readable</quote> description of the Server.</para>
           </entry>
         </row>
         <row>
-          <entry valign="top">
+          <entry>
             <para>PDO_ATTR_CONNECTION_STATUS</para>
           </entry>
-          <entry valign="top">
-            <para>ZVAL_LONG</para>
+          <entry>
+            <para>LONG</para>
             <para>Values not yet defined</para>
           </entry>
         </row>
         <row>
-          <entry valign="top">
+          <entry>
             <para>PDO_ATTR_CASE</para>
           </entry>
-          <entry valign="top">
-            <para>ZVAL_LONG</para>
-            <para>PDO_CASE_NATURAL</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Don't do case conversion</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_CASE_UPPER</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Convert strings to uppercase</para>
-              </listitem>
-            </orderedlist>
-            <para>PDO_CASE_LOWER</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
-                <para>Convert strings to lowercase</para>
-              </listitem>
-              <listitem>
-                <para/>
-              </listitem>
-            </orderedlist>
+          <entry>
+            <para>LONG</para>
+            <para>Processed and handled by PDO.</para>
           </entry>
         </row>
         <row>
-          <entry valign="top">
+          <entry>
             <para>PDO_ATTR_CURSOR_NAME</para>
           </entry>
-          <entry valign="top">
-            <para>ZVAL_STRING</para>
-            <para>String representing the name for a database cursor for use in &#x201C;where current in &lt;name&gt;&#x201D; SQL statements</para>
+          <entry>
+            <para>STRING</para>
+            <para>
+             String representing the name for a database cursor for use in
+             <quote>where current in &lt;name&gt;</quote> SQL statements.
+            </para>
           </entry>
         </row>
         <row>
-          <entry valign="top">
+          <entry>
             <para>PDO_ATTR_CURSOR</para>
           </entry>
-          <entry valign="top">
-            <para>ZVAL_LONG</para>
-            <para>PDO_CURSOR_FWDONLY</para>
-            <orderedlist continuation="restarts" numeration="arabic">
-              <listitem>
+          <entry>
+            <para>LONG</para>
+            <variablelist>
+            <varlistentry>
+             <term>PDO_CURSOR_FWDONLY</term>
+             <listitem>
                 <para>Forward only cursor</para>
               </listitem>
-            </orderedlist>
-            <para>PDO_CURSOR_SCROLL</para>
-            <orderedlist continuation="restarts" numeration="arabic">
+            </varlistentry>
+            <varlistentry>
+            <term>PDO_CURSOR_SCROLL</term>
               <listitem>
                 <para>Scrollable cursor</para>
               </listitem>
-            </orderedlist>
-            <para/>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>PDO_ATTR_ORACLE_NULLS</para>
-          </entry>
-          <entry valign="top">
-            <para>ZVAL_LONG</para>
-            <para>(For Oracle Driver)</para>
-            <para>dbh-&gt;oracle_nulls is set the result of Z_LVAL_P(value) ? 1 : 0</para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>PDO_ATTR_PERSISTENT</para>
-          </entry>
-          <entry valign="top">
-            <para>ZVAL_BOOL</para>
-            <para>True if persistent connection, false if not. Processed directly by the PDO driver. </para>
-          </entry>
-        </row>
-        <row>
-          <entry valign="top">
-            <para>PDO_ATTR_STATEMENT_CLASS</para>
-          </entry>
-          <entry valign="top">
-            <para>ZVAL_LONG</para>
-            <para>Values not yet defined.</para>
+             </varlistentry>
+            </variablelist>
           </entry>
         </row>
       </tbody>
     </tgroup>
-  </informaltable>
-  <para/>
-  <para>The values for the attributes above are all defined in terms of the Zend API. The Zend API contains macros that can be used to convert a *zval to a value. These macros are defined in the Zend header file, zend_API.h in the Zend directory of your PHP build directory. Some of these attributes can be used with the statement attribute handlers such as the PDO_ATTR_CURSOR and PDO_ATTR_CURSOR_NAME. See the statement attribute handling functions for more information.</para>
-  <para/>
-  <para>Appendix D -- Error handling</para>
-  <para/>
-  <para>Error handling is implemented using a hand-shaking protocol between the main PDO driver and the database driver code. The database driver code signals the PDO driver than an error has occurred via a failure (&#x201C;0&#x201D;) return from any of the interface functions. If a zero is returned, the field error_code in the control block appropriate to the context (either the pdo_dbh_t or pdo_stmt_t block). In practice, it is probably a good idea to set the field in both blocks to the same value to ensure the correct one is getting used. </para>
-  <para/>
-  <para>The error_mode field is a six-field field containing a 5 character ASCIIZ SQLSTATE identifier code. This code drives the error message process. The SQLSTATE code is used to look up an error message in the internal PDO error message table (see pdo_sqlstate.c for a list of error codes and their messages). If the code is not known to the PDO driver, a default &#x201C;Unknown Message&#x201D; value will be used. </para>
-  <para/>
-  <para>In addition to the SQLSTATE code and error message, the PDO driver will call the driver-specific fetch-err() routine to obtain supplemental data for the particular error condition. This routine is passed an array into which the driver may place additional information. This array has slot positions assigned to particular types of supplemental info:</para>
-  <para/>
-  <orderedlist continuation="restarts" numeration="arabic">
+  </table>
+  <para>
+   The values for the attributes above are all defined in terms of the Zend
+   API. The Zend API contains macros that can be used to convert a *zval to a
+   value. These macros are defined in the Zend header file, zend_API.h in the
+   Zend directory of your PHP build directory. Some of these attributes can be
+   used with the statement attribute handlers such as the PDO_ATTR_CURSOR and
+   PDO_ATTR_CURSOR_NAME. See the statement attribute handling functions for
+   more information.
+  </para>
+ </sect1>
+ <sect1 id="internals.pdo.error-handling">
+  <title>Error handling</title>
+  <para>
+   Error handling is implemented using a hand-shaking protocol between 
+   PDO and the database driver code. The database driver code
+   signals PDO than an error has occurred via a failure
+   (<literal>0</literal>) return from any of the interface functions. If a zero
+   is returned, the field <parameter>error_code</parameter> in the control block appropriate to the
+   context (either the pdo_dbh_t or pdo_stmt_t block). In practice, it is
+   probably a good idea to set the field in both blocks to the same value to
+   ensure the correct one is getting used.
+  </para>
+
+  <para>
+   The error_mode field is a six-byte field containing a 5 character ASCIIZ
+   SQLSTATE identifier code. This code drives the error message process. The
+   SQLSTATE code is used to look up an error message in the internal PDO error
+   message table (see pdo_sqlstate.c for a list of error codes and their
+   messages). If the code is not known to PDO, a default
+   <quote>Unknown Message</quote> value will be used.
+  </para>
+
+  <para>
+   In addition to the SQLSTATE code and error message, PDO will
+   call the driver-specific fetch_err() routine to obtain supplemental data
+   for the particular error condition. This routine is passed an array into
+   which the driver may place additional information. This array has slot
+   positions assigned to particular types of supplemental info:
+  </para>
+
+  <orderedlist>
     <listitem>
-      <para>A native error code. This will frequently be an error code obtained from the database API. </para>
+      <para>
+       A native error code. This will frequently be an error code obtained
+       from the database API.
+      </para>
     </listitem>
     <listitem>
-      <para>A descriptive string. This string can contain anything additional information related to the failure. Database drivers typically include information such as an error message, code location of the failure, and any additional descriptive information the driver developer feels worthy of inclusion. It is generally a good idea to include all diagnostic information<emphasis role="strong"> </emphasis>obtainable from the database interface at the time of the failure. For driver-detected errors (such as memory allocation problems), the driver developer can define whatever error information that seems appropriate.</para>
+      <para>
+       A descriptive string. This string can contain anything additional
+       information related to the failure. Database drivers typically include
+       information such as an error message, code location of the failure, and
+       any additional descriptive information the driver developer feels
+       worthy of inclusion. It is generally a good idea to include all
+       diagnostic information<emphasis role="strong"> </emphasis>obtainable
+       from the database interface at the time of the failure. For
+       driver-detected errors (such as memory allocation problems), the driver
+       developer can define whatever error information that seems appropriate.
+       </para>
     </listitem>
   </orderedlist>
-  <para/>
-  <para/>
-
  </sect1>
 
 
