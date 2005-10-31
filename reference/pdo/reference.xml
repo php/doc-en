@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='iso-8859-1'?>
-<!-- $Revision: 1.43 $ -->
+<!-- $Revision: 1.44 $ -->
 <!-- Purpose: database.abstract -->
 <!-- Membership: pecl, bundled -->
 <!-- State:experimental -->
@@ -751,12 +751,49 @@ $stmt->bindParam(1, $id);
 $stmt->bindParam(2, $_FILES['file']['type']);
 $stmt->bindParam(3, $fp, PDO::PARAM_LOB);
 
+$stmt->beginTransaction();
 $stmt->execute();
+$stmt->commit();
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+   <para>
+    <example><title>Inserting an image into a database: Oracle</title>
+     <para>
+      Oracle requires a slightly different syntax for inserting a lob from a
+      file.  It's also essential that you perform the insert under a
+      transaction, otherwise your newly inserted LOB will be committed with a
+      zero-length as part of the implicit commit that happens when the query
+      is executed:
+     </para>
+     <programlisting role='php'>
+<![CDATA[
+<?php
+$db = new PDO('oci:', 'scott', 'tiger');
+$stmt = $db->prepare("insert into images (id, contenttype, imagedata) " .
+  "VALUES (?, ?, EMPTY_BLOB()) RETURNING imagedata INTO ?");
+$id = get_new_id(); // some function to allocate a new ID
+
+// assume that we are running as part of a file upload form
+// You can find more information in the PHP documentation
+
+$fp = fopen($_FILES['file']['tmp_name'], 'rb');
+
+$stmt->bindParam(1, $id);
+$stmt->bindParam(2, $_FILES['file']['type']);
+$stmt->bindParam(3, $fp, PDO::PARAM_LOB);
+
+$stmt->beginTransaction();
+$stmt->execute();
+$stmt->commit();
 ?>
 ]]>
      </programlisting>
      </example>
     </para>
+
    </section>
 
    <section id='pdo.classes'>
