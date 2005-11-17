@@ -100,7 +100,7 @@ function params_source_to_doc($type_spec)
 	);
 	$return = array();
 	for ($i=0; $i < strlen($type_spec); $i++) {
-		$ch = $type_spec{$i};
+		$ch = $type_spec[$i];
 		if ($ch != "/" && $ch != "!") {
 			if (!isset($zend_params[$ch])) {
 				echo "! Unknown formatting specifier '$ch' in '$type_spec'.\n";
@@ -297,7 +297,7 @@ foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), 
 					foreach ($matches2 as $val) {
 						$number = $val[1] . $val[4];
 						$operator = strtr($val[2], "><", "<>") . $val[3]; // unify to $zend_num_args $operator $number
-						switch ($operator{0}) {
+						switch ($operator[0]) {
 						case "=":
 						case "!":
 							if (!$source_arg_count) {

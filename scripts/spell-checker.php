@@ -102,13 +102,13 @@ function check_data($xml, $data)
                 echo "$current_file:" . xml_get_current_line_number($xml) . ": $word   (in element $element)\n";
                 do {
                     $response = read_line("Add this word to personal wordlist? (yes/no/save): ");
-                    if ($response{0} == 's') {
+                    if ($response[0] == 's') {
                         pspell_save_wordlist($dict);
                         echo "Wordlist saved.\n";
                     }
-                } while ($response{0} != 'y' && $response{0} != 'n');
+                } while ($response[0] != 'y' && $response[0] != 'n');
 
-                if ($response{0} == 'y') {
+                if ($response[0] == 'y') {
                     pspell_add_to_personal($dict, $word);
                     echo "Added '$word' to personal wordlist.\n";
                 }

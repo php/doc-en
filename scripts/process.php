@@ -105,7 +105,7 @@ function all_xml_files($startdir)
         //echo "$file\n";
         if (ereg('\.xml$',$file))
             $entries[] = $ffile;
-        if ($file{0} != '.' && is_dir($ffile))
+        if ($file[0] != '.' && is_dir($ffile))
             $entries = array_merge($entries,all_xml_files($ffile));
     }
     closedir($handle);

@@ -37,7 +37,7 @@ foreach ($zend_include_files as $infile) {
 
                 // the pointer '*' is usually next to the function name, not the type 
                 // TODO what if there is whitespace on both sides of the '*'?
-                while ($function{0} == '*') {
+                while ($function[0] == '*') {
                     $return_type.= "*";
                     $function = substr($function, 1);
                 }
@@ -57,7 +57,7 @@ foreach ($zend_include_files as $infile) {
                         $new_param['type'] = "";
                         $new_param['name'] = $type;
                     } else {
-                        while ($name{0} == '*') {
+                        while ($name[0] == '*') {
                             $type.= "*";
                             $name = substr($name, 1);
                         }
