@@ -49,9 +49,14 @@ function fix_ini_xml($filename) {
         preg_match_all('@<row>.+</row>@USs', $match, $matches_row);
 
         foreach ($matches_row[0] as $match_row) {
-            preg_match_all('@<entry>.+</entry>@USs', $match_row, $matches_entry);
+            preg_match_all('@<entry>.*</entry>@USs', $match_row, $matches_entry);
 
             foreach ($matches_entry as $val) {
+
+		if (count($val) < 3) {
+			echo "problem in $filename:\n" . print_r($val, 1) . "\n";
+			continue;
+		}
 
                 // create changelog column
                 if (count($val) == 3) {
