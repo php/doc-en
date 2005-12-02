@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='iso-8859-1'?>
-<!-- $Revision: 1.17 $ -->
+<!-- $Revision: 1.18 $ -->
 <!-- Purpose: database.abstract -->
 <!-- Membership: pecl -->
 <!-- State: experimental -->
@@ -50,12 +50,12 @@
     <title>The Structure of a Service Data Object</title>
     <para>
      A Service Data Object instance is made up of a tree of data objects.
-     The tree is defined by containment references between the data objects.
-     For example, a Company data object might consist of a number of 
-     Department data objects and therefore the Company would have 
-     a containment reference to the Departments.  
-     Deleting a data object which has a containment reference to another
-     data object will delete the referenced data object.  For example, 
+     The tree is defined by containment relationships between the data 
+     objects.  For example, a Company data object might consist of a number 
+     of Department data objects and therefore the Company would have 
+     a containment relationship to the Departments.  
+     Deleting a data object which has a containment relationship to another
+     data object will also delete the contained data object.  For example, 
      deleting the Company data object will also delete the Departments.
     </para>
     <para>
@@ -121,10 +121,11 @@
          <itemizedlist>
           <listitem>
            <para>
-            The latest DLLs for the SDO core and the XML DAS can be downloaded from 
-            <ulink url='&url.pecl.win.ext;php_sdo.dll'>php_sdo
+            The latest DLLs for the SDO core and the XML DAS can be 
+            downloaded from 
+           <ulink url='&url.pecl.win.ext;php_sdo.dll'>php_sdo
            </ulink> and 
-             <ulink url='&url.pecl.win.ext;php_sdo_das_xml.dll'>php_sdo_das_xml
+           <ulink url='&url.pecl.win.ext;php_sdo_das_xml.dll'>php_sdo_das_xml
            </ulink> respectively.
            </para>
           </listitem>
@@ -207,8 +208,8 @@
             <varname>sdo-0.5.2</varname>, in the command above.
            </para>
            <para> 
-            This command will build the SDO and XML shared libraries as well as 
-            installing the PHP files that make the Relational DAS.
+            This command will build the SDO and XML shared libraries as well 
+            as installing the PHP files that make the Relational DAS.
            </para>
           </listitem>
          </itemizedlist>
@@ -372,11 +373,6 @@ extension=sdo_das_xml.so
     </step>
     <step>
      <para>
-      Model introspection.
-     </para>
-    </step>
-    <step>
-     <para>
       XMLHelper/XSDHelper (the XML DAS provide a lot of this functionality)
      </para>
     </step>
@@ -416,14 +412,16 @@ extension=sdo_das_xml.so
   <xsd:element name="company" type="company:CompanyType"/>
   <xsd:complexType name="CompanyType">
     <xsd:sequence>
-      <xsd:element name="departments" type="company:DepartmentType" maxOccurs="unbounded"/>
+      <xsd:element name="departments" type="company:DepartmentType" 
+       maxOccurs="unbounded"/>
     </xsd:sequence>
     <xsd:attribute name="name" type="xsd:string"/>
     <xsd:attribute name="employeeOfTheMonth" type="xsd:IDREF" 
 sdoxml:propertyType="company:EmployeeType"/> </xsd:complexType>
   <xsd:complexType name="DepartmentType">
     <xsd:sequence>
-      <xsd:element name="employees" type="company:EmployeeType"  maxOccurs="unbounded"/>
+      <xsd:element name="employees" type="company:EmployeeType"  
+       maxOccurs="unbounded"/>
     </xsd:sequence>
     <xsd:attribute name="name" type="xsd:string"/>
     <xsd:attribute name="location" type="xsd:string"/>
@@ -452,7 +450,8 @@ sdoxml:propertyType="company:EmployeeType"/> </xsd:complexType>
     <programlisting role="xml">
 <![CDATA[
 <?xml version="1.0" encoding="UTF-8" ?> 
-<company xmlns="companyNS" name="MegaCorp" employeeOfTheMonth="#/departments.0/employees.1">
+<company xmlns="companyNS" name="MegaCorp" 
+ employeeOfTheMonth="#/departments.0/employees.1">
   <departments name="Advanced Technologies" location="NY" number="123">
     <employees name="John Jones" SN="E0001"/>
     <employees name="Jane Doe" SN="E0003"/>
@@ -677,7 +676,8 @@ sdoxml:propertyType="company:EmployeeType"/> </xsd:complexType>
      <programlisting role="php" id="sdo.examples.xpathquery">
 <![CDATA[
 <?php
-  $ad_tech_mgr = $company["departments[name=\"Advanced Technologies\"]/employees[manager=\"true\"]"]; 
+ $ad_tech_mgr = 
+  $company["departments[name=\"Advanced Technologies\"]/employees[manager=\"true\"]"];
 ?>
 ]]>
      </programlisting>
@@ -717,7 +717,7 @@ sdoxml:propertyType="company:EmployeeType"/> </xsd:complexType>
      </para>
      <para>
       The following removes the 'employeeOfTheMonth' from the company.
-      If this were a containment reference then the
+      If this were a containment relationship then the
       employee would be removed from the company 
       (probably not a good idea to sack your best employee each month!), 
       but since this is a non-containment reference, 
@@ -1026,16 +1026,116 @@ sdoxml:propertyType="company:EmployeeType"/> </xsd:complexType>
 
   </section>
 
+
+  <section id="sdo.sample.reflection">
+   <title>Reflecting on Service Data Objects</title>
+   <para>
+    SDOs have a knowledge of the structure they have been created to 
+    represent (the model).  For example, a Company SDO created using 
+    <link linkend="sdo.examples">the Company XML schema</link> above
+    would only be permitted to contain DepartmentType data objects 
+    which in turn could only contain EmployeeType data objects.
+   </para>
+   <para>
+    Sometimes it is useful to be able to access this model information at 
+    runtime.  For example, this could be used to automatically generate 
+    a user interface for populating a data object.  The model information 
+    is accessed using reflection.  
+   </para>
+
+   <para>
+    <example>
+     <title>Reflecting on a Data Object</title>
+     <para>
+      The following example shows how we can reflect on an empty Employee 
+      data object.
+     </para>
+     <programlisting role="php" id="sdo.examples.reflection">
+<![CDATA[ 
+<?php
+  // Create the employee data object (e.g. from an XML Data Access Service)
+  $employee = ...;
+  $reflection = new SDO_Model_ReflectionDataObject($employee);
+  print($reflection);
+?>
+]]>
+     </programlisting>
+     &example.outputs;
+
+     <screen>
+<![CDATA[
+object(SDO_Model_ReflectionDataObject)#4 { - ROOT OBJECT - Type { 
+companyNS:EmployeeType[3] { commonj.sdo:String $name; 
+commonj.sdo:String $SN; commonj.sdo:Boolean $manager; } }
+]]>
+     </screen>
+     <para>
+      Using print on the SDO_Model_ReflectionDataObject writes out the data 
+      object's model.  We can see from the output how the type 
+      companyNS:EmployeeType has three properties and we can see the names 
+      of the properties along with their types.  Note, the primitive types
+      are listed as SDO types (e.g. commonj.sdo namespace, String type).  
+      It is worth noting that this is the SDO model and when these are 
+      surfaced to an application they can be treated as the PHP equivalent 
+      types (e.g. string and boolean).
+     </para>
+    </example>
+   </para>
+
+   <para>
+    <example>
+     <title>Accessing the type information</title>
+     <para>
+      We can query the type information of a data object using reflection.  
+      The following example checks the type corresponds to a data object
+      rather than a primitive and then iterates through the properties of
+      the type, writing out the name of each property ($type and $property 
+      are SDO_Model_Type and SDO_Model_Property objects, respectively).
+     </para>
+     <programlisting role="php" id="sdo.examples.reflection.type">
+<![CDATA[ 
+<?php
+    // Create the employee data object (e.g. from an XML Data Access Service)
+    $employee = ...;
+    $reflection = new SDO_Model_ReflectionDataObject($employee);
+    $type = $reflection->getType();
+    if (! $type->isDataType()) {
+        foreach ($type->getProperties() as $property) {
+            print $property->getName() . "\n";
+        }
+    }
+?>
+]]>
+     </programlisting>
+     &example.outputs;
+     <screen>
+<![CDATA[
+name
+SN
+manager
+]]>
+     </screen>
+    </example>
+   </para>
+
+  </section>
+
+
+
+
+
   <!-- class definition section -->
   <section id='sdo.classes'>
    &reftitle.classes;
    <para>
-    SDO consists of two sets of interfaces.  The first set covers those
-    interfaces for use by SDO client applications.  These are identified by
-    the package prefix 'SDO_'.  The second set is those for use by Data
-    Access Service implementations and are identified by the package prefix
-    'SDO_DAS_'.  The majority of SDO users will not need to use or understand
-    the 'SDO_DAS_' interfaces.
+    SDO consists of three sets of interfaces.  The first set covers those
+    interfaces for use by typical SDO applications.  These are identified 
+    by the package prefix 'SDO_'.  The second set is those used to reflect 
+    on, and work with, the model of a data object.  These are identified 
+    by the package prefix 'SDO_Model_'.  Finally, the third set are those 
+    use by Data Access Service implementations and are identified by the 
+    package prefix 'SDO_DAS_'.  The majority of SDO users will not need to 
+    use or understand the 'SDO_Model_ and 'SDO_DAS_' interfaces.
    </para>
 
    <section id='sdo.class.sdo-apis'>
@@ -1054,12 +1154,6 @@ sdoxml:propertyType="company:EmployeeType"/> </xsd:complexType>
      </para>
      <section id='sdo.class.SDO_DataObject.methods'> &reftitle.methods;
       <itemizedlist>
-       <listitem>
-        <para>
-         <link linkend='function.SDO-DataObject-getType'>getType</link> 
-         - get the type of a data object
-        </para>
-       </listitem>
        <listitem>
         <para>
          <link linkend='function.SDO-DataObject-getSequence'>
@@ -1086,14 +1180,6 @@ sdoxml:propertyType="company:EmployeeType"/> </xsd:complexType>
           getContainer
          </link>
          - get the container (also known as 'parent') of this data object
-        </para>
-       </listitem>
-       <listitem>
-        <para>
-         <link linkend='function.SDO-DataObject-getContainmentPropertyName'>
-          getContainmentPropertyName
-         </link> 
-         - get the name by which the parent refers to this data object
         </para>
        </listitem>
       </itemizedlist>
@@ -1196,6 +1282,200 @@ sdoxml:propertyType="company:EmployeeType"/> </xsd:complexType>
       </itemizedlist>
      </section>
     </section>
+   </section>
+
+
+
+   <section id='sdo.class.sdo-model-apis'>
+    <title>SDO Reflection Application Programmer Interfaces</title>
+
+    <section id='sdo.class.sdo-reflectiondataobject'>
+     <title>
+      <classname>SDO_Model_ReflectionDataObject</classname>
+     </title>
+     <para>
+      The main interface used to reflect on a data object instance 
+      to obtain its model type and property information.  
+      It is designed to follow the reflection pattern introduced in PHP 5.
+     </para>
+     <section id='sdo.class.SDO_Model_ReflectionDataObject.methods'> 
+       &reftitle.methods;
+      <itemizedlist>
+       <listitem>
+        <para>
+         <link linkend='function.SDO-Model-ReflectionDataObject-construct'>
+          __construct
+         </link> - construct a new SDO_Model_ReflectionDataObject.
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         <link linkend='function.SDO-Model-ReflectionDataObject-getType'>
+          getType
+         </link> - get the SDO_Model_Type for the data object.
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         <link linkend=
+          'function.SDO-Model-ReflectionDataObject-getInstanceProperties'>
+          getInstanceProperties
+         </link> - get the instance properties of the data object.
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         <link linkend=
+          'function.SDO-Model-ReflectionDataObject-getContainmentProperty'>
+          getContainmentProperty
+         </link> - get the parent's SDO_Model_Property which defines the 
+         containment relationship to the reflected data object.
+        </para>
+       </listitem>
+      </itemizedlist>
+     </section>
+    </section>
+
+    <section id='sdo.class.sdo-type'>
+     <title>
+      <classname>SDO_Model_Type</classname>
+     </title>
+     <para>
+      The interface through which a data object's type information can be 
+      retrieved.  This interface can be used to find out the type name and 
+      namespace URI of the type, whether the type allow open content, and so 
+      on.
+     </para>
+     <section id='sdo.class.SDO_Model_Type.methods'> &reftitle.methods;
+      <itemizedlist>
+       <listitem>
+        <para>
+         <link linkend='function.SDO-Model-Type-getName'>
+          getName
+         </link> - get the name of the type.
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         <link linkend='function.SDO-Model-Type-getNamespaceURI'>
+          getNamespaceURI
+         </link> - get the namespace URI of the type.
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         <link linkend='function.SDO-Model-Type-isInstance'>
+          isInstance
+         </link> - test for a data object being an instance of the type.
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         <link linkend='function.SDO-Model-Type-getProperties'>
+          getProperties
+         </link> - get the properties of the type.
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         <link linkend='function.SDO-Model-Type-getProperty'>
+          getProperty
+         </link> - get a property of the type.
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         <link linkend='function.SDO-Model-Type-isDataType'>
+          isDataType
+         </link> - test to see if this type is a primitive scalar type.
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         <link linkend='function.SDO-Model-Type-isSequencedType'>
+          isSequencedType
+         </link> - test to see if this is a sequenced type.
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         <link linkend='function.SDO-Model-Type-isOpenType'>
+          isOpenType
+         </link> - test to see if this is an open type.
+        </para>
+       </listitem>
+       <listitem>
+        <para>
+         <link linkend='function.SDO-Model-Type-getBaseType'>
+          getBaseType
+         </link> - get the base type of this type (if one exists).
+        </para>
+       </listitem>
+      </itemizedlist>
+     </section>
+    </section>
+
+    <section id='sdo.class.sdo-property'>
+     <title>
+      <classname>SDO_Model_Property</classname>
+     </title>
+     <para>
+      The interface through which a data object's property information can 
+      be retrieved.  This interface can be used to find out the type of a 
+      property, whether a property has a default value, whether the 
+      property is contained or reference by its parent, its cardinality, 
+      and so on.
+     </para>
+     <section id='sdo.class.SDO_Model_Property.methods'> &reftitle.methods;
+      <itemizedlist>
+        <listitem>
+         <para>
+          <link linkend='function.SDO-Model-Property-getName'>
+           getName
+          </link> - get the name of the property.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          <link linkend='function.SDO-Model-Property-getType'>
+           getType
+          </link> - get the type of the property.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          <link linkend='function.SDO-Model-Property-isMany'>
+           isMany
+          </link> - test to see if the property is many-valued..
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          <link linkend='function.SDO-Model-Property-isContainment'>
+           isContainment
+          </link> - test to see if the property describes a containment relationship.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          <link linkend='function.SDO-Model-Property-getContainingType'>
+           getContainingType
+          </link> - get the type which contains this property.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          <link linkend='function.SDO-Model-Property-getDefault'>
+           getDefault
+          </link> - get the default value for a property.
+         </para>
+        </listitem>
+      </itemizedlist>
+     </section>
+    </section>
+
+
+
    </section>
 
    <section id='sdo.class.sdo-das-spis'>
