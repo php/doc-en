@@ -17,6 +17,7 @@
   +----------------------------------------------------------------------+
 */
 
+require_once './cvs-versions.php';
 $db_open = isset($idx) ? true : false;
 
 if (!$db_open && !$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {
@@ -25,10 +26,6 @@ if (!$db_open && !$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {
 
 $sql = 'CREATE TABLE changelog (
 name TEXT PRIMARY KEY,';
-
-$tags[] = 'php_4_cvs';
-$tags[] = 'php_5_cvs';
-$tags = array_merge($tags, array_map('rtrim', array_merge(file('version4.tags'), file('version5.tags'))));
 
 foreach($tags as $tag) {
     $sql .= "$tag TEXT,";

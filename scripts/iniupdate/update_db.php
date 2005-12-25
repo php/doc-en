@@ -17,6 +17,8 @@
   +----------------------------------------------------------------------+
 */
 
+require_once './cvs-versions.php';
+
 copy('ini_changelog.sqlite', 'backup.sqlite');
 
 if (!$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {
@@ -40,8 +42,9 @@ foreach ($olddata as $row) {
 
 sqlite_query($idx, $sql);
 
+// check which versions need to be updated
 $tmp = $tags;
-$tags = array('php_4_cvs', 'php_5_cvs');
+$tags = array_keys($cvs_versions); //always update cvs versions
 
 foreach($tmp as $tag) {
     if (!isset($columns[$tag])) {
@@ -49,7 +52,7 @@ foreach($tmp as $tag) {
     }
 }
 
-unset($tmp, $columns, $sql);
+unset($tmp, $columns, $sql, $olddata);
 
 // finally recurse through the new PHP versions
 include './insert_db.php';

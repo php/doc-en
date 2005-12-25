@@ -17,18 +17,16 @@
   +----------------------------------------------------------------------+
 */
 
-// replaces php5-cvs with the following version
-$cvs_version = '5.1.0';
-
+require_once './cvs-versions.php';
 
 /** converts a tag like php_5_0_0 into a version like 5.0.0 */
 function tag2version($tag) {
-    $version = strtr(substr($tag, 4), '_', '.');
+    global $cvs_versions;
 
-    if ($version == '5.cvs')
-        return $GLOBALS['cvs_version'];
+    if (isset($cvs_versions[$tag]))
+        return $cvs_versions[$tag];
 
-    return $version;
+    return strtr(substr($tag, 4), '_', '.');
 }
 
 

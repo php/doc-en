@@ -18,6 +18,7 @@
 */
 
 require './ini_search_lib.php';
+require_once './cvs-versions.php';
 
 function insert_in_db($tag) {
     global $array, $idx;
@@ -43,12 +44,6 @@ $db_open = isset($idx) ? true : false;
 
 if (!$db_open && !$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {
     die("Couldn't create the DB: $error");
-}
-
-if (!isset($tags)) {
-    $tags[] = 'php_4_cvs';
-    $tags[] = 'php_5_cvs';
-    $tags = array_merge($tags, array_map('rtrim', array_merge(file('version4.tags'), file('version5.tags'))));
 }
 
 foreach($tags as $tag) {
