@@ -62,7 +62,8 @@ function make_cvs_version($tag) {
         }
     }
 
-    die("ERROR: couldn't map $tag to a specific version!\n");
+    // new branch (5.5.0)
+    return "$tag[0].$tag[2].0";
 }
 
 unset($file, $data, $last_versions);
