@@ -87,7 +87,7 @@ function recurse_aux($dir, $search_macros, &$cfg_get) {
             if(preg_match_all('/cfg_get_([^(]+)\s*\(\s*"([^"]+)",\s*&([^\s=]+)\s*\)/S', $file, $match, PREG_SET_ORDER)) {
 
                 foreach($match as $arr) {
-                    preg_match('/(?:(FAILURE|SUCCESS)\s*==\s*)?'.preg_quote($arr[0]).'(?:\s*==\s*(FAILURE|SUCCESS))?(?:(?:.|[\r\n]){1,30}'.preg_quote($arr[3]).'\s*=\s*(.+);)?/', $file, $m);
+                    preg_match('/(?:(FAILURE|SUCCESS)\s*==\s*)?'.preg_quote($arr[0]).'(?:\s*==\s*(FAILURE|SUCCESS))?(?:(?:[^=]|==){1,40}'.preg_quote($arr[3]).'\s*=\s*(.+);)?/', $file, $m);
 
                     if ($m[1] == 'FAILURE' || $m[2] == 'FAILURE') {
                         $cfg_get[] = array($arr[2], $arr[1] == 'string' ? $m[3] : '"'.$m[3].'"');
