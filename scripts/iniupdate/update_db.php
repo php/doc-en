@@ -26,8 +26,8 @@ if (!$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {
 }
 
 $olddata = sqlite_fetch_all(sqlite_query($idx, 'SELECT * FROM changelog'), SQLITE_ASSOC);
-$columns = array_keys($olddata[0]);
-$columns_str = implode(',', $columns);
+$columns = $olddata[0];
+$columns_str = implode(',', array_keys($columns));
 
 sqlite_query($idx, 'DROP TABLE changelog; VACUUM;');
 
