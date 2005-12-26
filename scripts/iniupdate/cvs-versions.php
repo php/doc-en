@@ -33,9 +33,9 @@ preg_match_all('/PHP_(\d)_CVS=(\w+)/', $file, $data, PREG_SET_ORDER);
 $cvs_versions = array();
 foreach ($data as $v) {
 	if ($v[2] == 'HEAD') {
-		$version = "PHP $v[1].0.0";
+		$version = "$v[1].0.0";
 	} else {
-		$version = 'PHP ' . make_cvs_version(substr($v[2], 4));
+		$version = make_cvs_version(substr($v[2], 4));
 	}
 	$cvs_versions["php_$v[1]_cvs"] = $version;
 }
