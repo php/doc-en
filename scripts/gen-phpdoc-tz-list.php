@@ -65,10 +65,9 @@
   <note>
    <simpara>
     The latest version of the timezone database can be installed via PECL's
-    <ulink linkend="&url.pecl.package.get;timezonedb">timezonedb</ulink>.
+    <ulink url="&url.pecl.package.get;timezonedb">timezonedb</ulink>.
     For Windows users, a pre-compiled DLL can be downloaded from the PECL4Win
-    site: <ulink
-    linkend="&url.pecl.timezonedb.dll;">php_timezonedb.dll</ulink>.
+    site: <ulink url="&url.pecl.timezonedb.dll;">php_timezonedb.dll</ulink>.
    </simpara>
   </note>
  </sect1>
