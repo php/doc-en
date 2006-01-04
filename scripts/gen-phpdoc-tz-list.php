@@ -68,7 +68,7 @@
     <ulink linkend="&url.pecl.package.get;timezonedb">timezonedb</ulink>.
     For Windows users, a pre-compiled DLL can be downloaded from the PECL4Win
     site: <ulink
-    linkend="&url.pecl.timezonedb.dll;">php_timezonedb.dll</unlink>.
+    linkend="&url.pecl.timezonedb.dll;">php_timezonedb.dll</ulink>.
    </simpara>
   </note>
  </sect1>
