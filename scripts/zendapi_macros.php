@@ -34,7 +34,7 @@ foreach ($zend_include_files as $infile) {
     // now check for all known macro prefixes
     foreach ($macro_prefixes as $prefix) {
       // does this line match a macro definition?
-      if (preg_match("|#define\\s*($prefix\\w+)\\s*\\((.*)\\)|U", $line, $matches)) {
+      if (preg_match("|#define\\s*($prefix\\w+)\\((.*)\\)|U", $line, $matches)) {
         // get macro name and parameter list from the matches
         $macro  = $matches[1];
         $params = preg_split('|,\s+|', $matches[2]);
