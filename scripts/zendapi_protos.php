@@ -1,7 +1,12 @@
 <?php
 $zend_include_dir = "../../php-src/Zend";
 
-$zend_include_files = array("zend.h", "zend_API.h", "zend_objects_API.h", "zend_hash.h");
+$zend_include_files = array("zend.h", 
+                            "zend_API.h", 
+                            "zend_objects_API.h", 
+                            "zend_hash.h", 
+                            "zend_list.h", 
+                            "zend_variables.h");
 
 $functions_dir = "../en/internals/zendapi/functions/";
 
@@ -47,7 +52,7 @@ foreach ($zend_include_files as $infile) {
                 // TODO handle ...
                 $params = array();
                 foreach (explode(",", trim($matches[3])) as $param) {
-					$new_param = array();
+                    $new_param = array();
 
                     $tokens = preg_split("/\s+/", trim($param));
                     $type   = array_shift($tokens);
@@ -62,9 +67,9 @@ foreach ($zend_include_files as $infile) {
                             $name = substr($name, 1);
                         }
                         $new_param['type'] = $type;
-						$new_param['name'] = $name;
+                        $new_param['name'] = $name;
                     }
-					$params[] = $new_param;
+                    $params[] = $new_param;
                 }
 
 
