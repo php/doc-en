@@ -10,9 +10,11 @@ $zend_include_files = array("zend.h",
                             "zend_list.h", 
                             "zend_variables.h",
                             "zend_unicode.h",
-                            "zend_modules.h");
+                            "zend_modules.h",
+                            "../TSRM/TSRM.h");
 
-$functions_dir = "../en/internals/zendapi/functions/";
+$functions_dir = array("ZEND"=>"../en/internals/zendapi/functions",
+                       "TSRM"=>"../en/internals/tsrm/functions");
 
 foreach ($zend_include_files as $infile) {
     echo "processing $zend_include_dir/$infile\n";
@@ -30,14 +32,15 @@ foreach ($zend_include_files as $infile) {
 
         // we look for prototypes marked with ZEND_API 
         // TODO prototypes may be indented by whitespace?
-        if (!strncmp("ZEND_API", $line, 8)) {
+        if (preg_match("/^(ZEND|TSRM)_API/", $line)) {
 
             // parse prototypes, step #1
-            if (preg_match('|^ZEND_API\s+(\S+)\s+(\S+)\((.*)\);$|U', $line, $matches)) {
+            if (preg_match('/^(ZEND|TSRM)_API\s+(\S+)\s+(\S+)\((.*)\);$/U', $line, $matches)) {
                 
                 // extract return type and function name 
-                $return_type = $matches[1];
-                $function    = $matches[2];
+                $api_type    = $matches[1];
+                $return_type = $matches[2];
+                $function    = $matches[3];
 
                 // the pointer '*' is usually next to the function name, not the type 
                 // TODO what if there is whitespace on both sides of the '*'?
@@ -47,11 +50,13 @@ foreach ($zend_include_files as $infile) {
                 }
 
                 // now generate the doc filename for this function
-                $filename = $functions_dir."/".$function.".xml";
+                $filename = $functions_dir[$api_type]."/".$function.".xml";
 
                 // only proceed it fhe file doesn't exist yet (no overwrites)
                 // and do not expose functions staring with '_'
                 if (($function[0] != '_') && ($overwrite || !file_exists($filename))) {
+                    echo "... writing $filename\n";
+
                     // now write the template file to phpdoc/en/internals/zendapi/functions
                     ob_start();
                 
@@ -73,7 +78,7 @@ foreach ($zend_include_files as $infile) {
                     // TODO find a better way to handle TSRMLS_D and TSRMLS_DC
                     // TODO handle ...
                     $params = array();
-                    foreach (explode(",", trim($matches[3])) as $param) {
+                    foreach (explode(",", trim($matches[4])) as $param) {
                         $new_param = array();
                       
                         $tokens = preg_split("/\s+/", trim($param));

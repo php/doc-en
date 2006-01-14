@@ -12,11 +12,12 @@ $zend_include_files = array("zend.h",
                             "zend_unicode.h",
                             "zend_operators.h",
                             "zend_execute.h",
-                            "zend_modules.h");
+                            "zend_modules.h",
+                            "../TSRM/TSRM.h",
+							"../TSRM/tsrm_virtual_cwd.h");
 
-$macro_prefixes = array("ZEND_", "Z_", "RETURN_");
-
-$output_dir = "../en/internals/zendapi/macros/";
+$output_dirs = array("../en/internals/zendapi/macros" => array("ZEND_", "Z_", "RETURN_"), 
+					 "../en/internals/tsrm/macros" => array("VCWD_"));
 
 foreach ($zend_include_files as $infile) {
   echo "processing $zend_include_dir/$infile\n";
@@ -32,6 +33,7 @@ foreach ($zend_include_files as $infile) {
     $line = trim(fgets($in));
 
     // now check for all known macro prefixes
+    foreach ($output_dirs as $output_dir => $macro_prefixes) {
     foreach ($macro_prefixes as $prefix) {
       // does this line match a macro definition?
       if (preg_match("|#define\\s*($prefix\\w+)\\((.*)\\)|U", $line, $matches)) {
@@ -41,7 +43,7 @@ foreach ($zend_include_files as $infile) {
 
         // path to output file
         $outfile = $output_dir."/".$macro.".xml";
-        
+
         // do not overwrite existing files unless specified
         if ($overwrite || !file_exists($outfile)) {
           // now write the template file to phpdoc/en/internals/zendapi/macros
@@ -137,6 +139,7 @@ vi: ts=1 sw=1
        
           file_put_contents($outfile, ob_get_clean());
         }
+      }
       }
     }
   }
