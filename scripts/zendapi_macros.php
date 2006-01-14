@@ -1,0 +1,143 @@
+<?php
+$overwrite = false;
+
+$zend_include_dir = "../../php-src/Zend";
+
+$zend_include_files = array("zend.h", 
+                            "zend_API.h", 
+                            "zend_objects_API.h", 
+                            "zend_hash.h", 
+                            "zend_list.h", 
+                            "zend_variables.h",
+                            "zend_unicode.h",
+							"zend_operators.h");
+
+$macro_prefixes = array("ZEND_", "Z_", "RETURN_");
+
+$output_dir = "../en/internals/zendapi/macros/";
+
+foreach ($zend_include_files as $infile) {
+  echo "processing $zend_include_dir/$infile\n";
+  
+  $in = fopen("$zend_include_dir/$infile", "r");
+  
+  if (!$in) {
+	die("can't open $zend_include_dir/$infile");
+  }
+  
+  // loop over all lines in the file
+  while (!feof($in)) {
+	$line = trim(fgets($in));
+
+	// now check for all known macro prefixes
+	foreach ($macro_prefixes as $prefix) {
+	  // does this line match a macro definition?
+	  if (preg_match("|#define\\s*($prefix\\w+)\\s*\\((.*)\\)|U", $line, $matches)) {
+		// get macro name and parameter list from the matches
+		$macro  = $matches[1];
+		$params = preg_split('|,\s+|', $matches[2]);
+
+		// path to output file
+		$outfile = $output_dir."/".$macro.".xml";
+		
+		// do not overwrite existing files unless specified
+		if ($overwrite || !file_exists($outfile)) {
+		  // now write the template file to phpdoc/en/internals/zendapi/macros
+		  ob_start();
+		  
+		  echo '<?xml version="1.0" encoding="iso-8859-1"?>'."\n";
+		  
+		  // take revision from existing file if any, else it is 1.1
+		  if (!$overwrite || !file_exists($outfile)) {
+			echo "<!-- $"."Revision: 1.1 $ -->\n";
+		  } else {
+			foreach (file($outfile) as $line) {
+			  if (strstr($line, 'Revision: ')) {
+				echo $line;
+				break;
+			  }
+			}
+		  }
+?>
+<refentry id="zend-macro.<?php echo str_replace("_", "-", $macro); ?>">
+ <refnamediv>
+  <refname><?php echo $macro; ?></refname>
+  <refpurpose>...</refpurpose>
+ </refnamediv>
+
+ <refsect1 role="description">
+  &reftitle.description;		  
+  <methodsynopsis>
+   <type>???</type><methodname><?php echo $macro; ?></methodname>
+<?php
+          foreach($params as $param) {
+            echo "    <methodparam><type>???</type><parameter>$param</parameter></methodparam>\n";
+          }
+?>
+  </methodsynopsis>
+  <para>
+   ...
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+<?php
+          foreach($params as $param) {
+?>
+    <varlistentry>
+     <term><parameter><?php echo $param; ?></parameter></term>
+     <listitem>
+      <para>
+       ...
+      </para>
+     </listitem>
+    </varlistentry>
+<?php
+                    }
+?>
+   </variablelist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   ...
+  </para>
+ </refsect1>
+
+</refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+<?php
+       
+          file_put_contents($outfile, ob_get_clean());
+		}
+	  }
+	}
+  }
+  
+}
+?>
