@@ -34,68 +34,68 @@ foreach ($zend_include_files as $infile) {
 
         // we look for prototypes marked with ZEND_API 
         // TODO prototypes may be indented by whitespace?
-            if (preg_match('/^(ZEND|TSRM|CWD)_API\s+(\S+)\s+(\S+)\((.*)\);$/U', $line, $matches)) {
-              // parse prototypes, step #1
+        if (preg_match('/^(ZEND|TSRM|CWD)_API\s+(\S+)\s+(\S+)\((.*)\);$/U', $line, $matches)) {
+            // parse prototypes, step #1
+          
+            // extract return type and function name 
+            $api_type    = $matches[1];
+            $return_type = $matches[2];
+            $function    = $matches[3];
+            
+            // the pointer '*' is usually next to the function name, not the type 
+            // TODO what if there is whitespace on both sides of the '*'?
+            while ($function[0] == '*') {
+                $return_type.= "*";
+                $function = substr($function, 1);
+            }
+            
+            // now generate the doc filename for this function
+            $filename = $functions_dir[$api_type]."/".$function.".xml";
+            
+            // only proceed it fhe file doesn't exist yet (no overwrites)
+            // and do not expose functions staring with '_'
+            if (($function[0] != '_') && ($overwrite || !file_exists($filename))) {
+                // now write the template file to phpdoc/en/internals/zendapi/functions
+                ob_start();
                 
-                // extract return type and function name 
-                $api_type    = $matches[1];
-                $return_type = $matches[2];
-                $function    = $matches[3];
-
-                // the pointer '*' is usually next to the function name, not the type 
-                // TODO what if there is whitespace on both sides of the '*'?
-                while ($function[0] == '*') {
-                    $return_type.= "*";
-                    $function = substr($function, 1);
+                echo '<?xml version="1.0" encoding="iso-8859-1"?>'."\n";
+                
+                // take revision from existing file 
+                if (!$overwrite || !file_exists($filename)) {
+                    echo "<!-- $"."Revision: 1.1 $ -->\n";
+                } else {
+                    foreach (file($filename) as $line) {
+                        if (strstr($line, 'Revision: ')) {
+                            echo $line;
+                            break;
+                        }
+                    }
                 }
 
-                // now generate the doc filename for this function
-                $filename = $functions_dir[$api_type]."/".$function.".xml";
-
-                // only proceed it fhe file doesn't exist yet (no overwrites)
-                // and do not expose functions staring with '_'
-                if (($function[0] != '_') && ($overwrite || !file_exists($filename))) {
-                    // now write the template file to phpdoc/en/internals/zendapi/functions
-                    ob_start();
-                
-                    echo '<?xml version="1.0" encoding="iso-8859-1"?>'."\n";
-                    
-                    // take revision from existing file 
-                    if (!$overwrite || !file_exists($filename)) {
-                        echo "<!-- $"."Revision: 1.1 $ -->\n";
-                    } else {
-                        foreach (file($filename) as $line) {
-                          if (strstr($line, 'Revision: ')) {
-                              echo $line;
-                              break;
-                          }
-                        }
-                    }
-
-                    // the parameters are spearated by commas
-                    // TODO find a better way to handle TSRMLS_D and TSRMLS_DC
-                    // TODO handle ...
-                    $params = array();
-                    foreach (explode(",", trim($matches[4])) as $param) {
-                        $new_param = array();
+                // the parameters are spearated by commas
+                // TODO find a better way to handle TSRMLS_D and TSRMLS_DC
+                // TODO handle ...
+                $params = array();
+                foreach (explode(",", trim($matches[4])) as $param) {
+                    $new_param = array();
                       
-                        $tokens = preg_split("/\s+/", trim($param));
-                        $name   = array_pop($tokens);
-                        $type   = implode(" ", $tokens);
-
-                        if (empty($name)) {
-                            $new_param['type'] = "";
-                            $new_param['name'] = $type;
-                        } else {
-                            while ($name[0] == '*') {
-                                $type.= "*";
-                                $name = substr($name, 1);
-                            }
-                            $new_param['type'] = $type;
-                            $new_param['name'] = $name;
+                    $tokens = preg_split("/\s+/", trim($param));
+                    $name   = array_pop($tokens);
+                    $type   = implode(" ", $tokens);
+                    
+                    if (empty($name)) {
+                        $new_param['type'] = "";
+                        $new_param['name'] = $type;
+                    } else {
+                        while ($name[0] == '*') {
+                            $type.= "*";
+                            $name = substr($name, 1);
                         }
-                        $params[] = $new_param;
+                        $new_param['type'] = $type;
+                        $new_param['name'] = $name;
                     }
+                    $params[] = $new_param;
+                }
 
 
 ?>
@@ -111,9 +111,9 @@ foreach ($zend_include_files as $infile) {
   <methodsynopsis>
    <type><?php echo $return_type; ?></type><methodname><?php echo $function; ?></methodname>
 <?php
-                    foreach($params as $param) {
-                        echo "    <methodparam><type>$param[type]</type><parameter>$param[name]</parameter></methodparam>\n";
-                    }
+                foreach($params as $param) {
+                    echo "    <methodparam><type>$param[type]</type><parameter>$param[name]</parameter></methodparam>\n";
+                }
 ?>
   </methodsynopsis>
   <para>
@@ -126,7 +126,7 @@ foreach ($zend_include_files as $infile) {
   <para>
    <variablelist>
 <?php
-                    foreach($params as $param) {
+                foreach($params as $param) {
 ?>
     <varlistentry>
      <term><parameter><?php echo $param["name"]; ?></parameter></term>
@@ -137,7 +137,7 @@ foreach ($zend_include_files as $infile) {
      </listitem>
     </varlistentry>
 <?php
-                    }
+                }
 ?>
    </variablelist>
   </para>
@@ -174,12 +174,9 @@ vi: ts=1 sw=1
 -->
 <?php
        
-                    file_put_contents($filename, ob_get_clean());
-                
+                file_put_contents($filename, ob_get_clean());                
             }   
-
-        }
-                                            
+        }                                           
     }
 }
 ?>
