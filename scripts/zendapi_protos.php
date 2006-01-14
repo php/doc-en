@@ -11,10 +11,12 @@ $zend_include_files = array("zend.h",
                             "zend_variables.h",
                             "zend_unicode.h",
                             "zend_modules.h",
-                            "../TSRM/TSRM.h");
+                            "../TSRM/TSRM.h",
+                            "../TSRM/tsrm_virtual_cwd.h");
 
 $functions_dir = array("ZEND"=>"../en/internals/zendapi/functions",
-                       "TSRM"=>"../en/internals/tsrm/functions");
+                       "TSRM"=>"../en/internals/tsrm/functions",
+                       "CWD" =>"../en/internals/tsrm/functions",);
 
 foreach ($zend_include_files as $infile) {
     echo "processing $zend_include_dir/$infile\n";
@@ -32,10 +34,8 @@ foreach ($zend_include_files as $infile) {
 
         // we look for prototypes marked with ZEND_API 
         // TODO prototypes may be indented by whitespace?
-        if (preg_match("/^(ZEND|TSRM)_API/", $line)) {
-
-            // parse prototypes, step #1
-            if (preg_match('/^(ZEND|TSRM)_API\s+(\S+)\s+(\S+)\((.*)\);$/U', $line, $matches)) {
+            if (preg_match('/^(ZEND|TSRM|CWD)_API\s+(\S+)\s+(\S+)\((.*)\);$/U', $line, $matches)) {
+              // parse prototypes, step #1
                 
                 // extract return type and function name 
                 $api_type    = $matches[1];
@@ -55,8 +55,6 @@ foreach ($zend_include_files as $infile) {
                 // only proceed it fhe file doesn't exist yet (no overwrites)
                 // and do not expose functions staring with '_'
                 if (($function[0] != '_') && ($overwrite || !file_exists($filename))) {
-                    echo "... writing $filename\n";
-
                     // now write the template file to phpdoc/en/internals/zendapi/functions
                     ob_start();
                 
@@ -82,8 +80,8 @@ foreach ($zend_include_files as $infile) {
                         $new_param = array();
                       
                         $tokens = preg_split("/\s+/", trim($param));
-                        $type   = array_shift($tokens);
-                        $name   = implode(" ", $tokens);
+                        $name   = array_pop($tokens);
+                        $type   = implode(" ", $tokens);
 
                         if (empty($name)) {
                             $new_param['type'] = "";
@@ -177,7 +175,7 @@ vi: ts=1 sw=1
 <?php
        
                     file_put_contents($filename, ob_get_clean());
-                }
+                
             }   
 
         }
