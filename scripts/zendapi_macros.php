@@ -10,8 +10,8 @@ $zend_include_files = array("zend.h",
                             "zend_list.h", 
                             "zend_variables.h",
                             "zend_unicode.h",
-							"zend_operators.h",
-							"zend_execute.h");
+                            "zend_operators.h",
+                            "zend_execute.h");
 
 $macro_prefixes = array("ZEND_", "Z_", "RETURN_");
 
@@ -23,42 +23,42 @@ foreach ($zend_include_files as $infile) {
   $in = fopen("$zend_include_dir/$infile", "r");
   
   if (!$in) {
-	die("can't open $zend_include_dir/$infile");
+    die("can't open $zend_include_dir/$infile");
   }
   
   // loop over all lines in the file
   while (!feof($in)) {
-	$line = trim(fgets($in));
+    $line = trim(fgets($in));
 
-	// now check for all known macro prefixes
-	foreach ($macro_prefixes as $prefix) {
-	  // does this line match a macro definition?
-	  if (preg_match("|#define\\s*($prefix\\w+)\\s*\\((.*)\\)|U", $line, $matches)) {
-		// get macro name and parameter list from the matches
-		$macro  = $matches[1];
-		$params = preg_split('|,\s+|', $matches[2]);
+    // now check for all known macro prefixes
+    foreach ($macro_prefixes as $prefix) {
+      // does this line match a macro definition?
+      if (preg_match("|#define\\s*($prefix\\w+)\\s*\\((.*)\\)|U", $line, $matches)) {
+        // get macro name and parameter list from the matches
+        $macro  = $matches[1];
+        $params = preg_split('|,\s+|', $matches[2]);
 
-		// path to output file
-		$outfile = $output_dir."/".$macro.".xml";
-		
-		// do not overwrite existing files unless specified
-		if ($overwrite || !file_exists($outfile)) {
-		  // now write the template file to phpdoc/en/internals/zendapi/macros
-		  ob_start();
-		  
-		  echo '<?xml version="1.0" encoding="iso-8859-1"?>'."\n";
-		  
-		  // take revision from existing file if any, else it is 1.1
-		  if (!$overwrite || !file_exists($outfile)) {
-			echo "<!-- $"."Revision: 1.1 $ -->\n";
-		  } else {
-			foreach (file($outfile) as $line) {
-			  if (strstr($line, 'Revision: ')) {
-				echo $line;
-				break;
-			  }
-			}
-		  }
+        // path to output file
+        $outfile = $output_dir."/".$macro.".xml";
+        
+        // do not overwrite existing files unless specified
+        if ($overwrite || !file_exists($outfile)) {
+          // now write the template file to phpdoc/en/internals/zendapi/macros
+          ob_start();
+          
+          echo '<?xml version="1.0" encoding="iso-8859-1"?>'."\n";
+          
+          // take revision from existing file if any, else it is 1.1
+          if (!$overwrite || !file_exists($outfile)) {
+            echo "<!-- $"."Revision: 1.1 $ -->\n";
+          } else {
+            foreach (file($outfile) as $line) {
+              if (strstr($line, 'Revision: ')) {
+                echo $line;
+                break;
+              }
+            }
+          }
 ?>
 <refentry id="zend-macro.<?php echo str_replace("_", "-", $macro); ?>">
  <refnamediv>
@@ -67,7 +67,7 @@ foreach ($zend_include_files as $infile) {
  </refnamediv>
 
  <refsect1 role="description">
-  &reftitle.description;		  
+  &reftitle.description;          
   <methodsynopsis>
    <type>???</type><methodname><?php echo $macro; ?></methodname>
 <?php
@@ -135,9 +135,9 @@ vi: ts=1 sw=1
 <?php
        
           file_put_contents($outfile, ob_get_clean());
-		}
-	  }
-	}
+        }
+      }
+    }
   }
   
 }
