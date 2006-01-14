@@ -1,4 +1,6 @@
 <?php
+$overwrite = false;
+
 $zend_include_dir = "../../php-src/Zend";
 
 $zend_include_files = array("zend.h", 
@@ -30,7 +32,7 @@ foreach ($zend_include_files as $infile) {
         if (!strncmp("ZEND_API", $line, 8)) {
 
             // parse prototypes, step #1
-            if (preg_match('|^ZEND_API\s+(\S+)\s+(\S+)\((.*)\);$|', $line, $matches)) {
+            if (preg_match('|^ZEND_API\s+(\S+)\s+(\S+)\((.*)\);$|U', $line, $matches)) {
                 
                 // extract return type and function name 
                 $return_type = $matches[1];
@@ -48,12 +50,23 @@ foreach ($zend_include_files as $infile) {
 
                 // only proceed it fhe file doesn't exist yet (no overwrites)
                 // and do not expose functions staring with '_'
-                if (($function[0] != '_') && !file_exists($filename)) {
+                if (($function[0] != '_') && ($overwrite || !file_exists($filename)) {
                     // now write the template file to phpdoc/en/internals/zendapi/functions
                     ob_start();
                 
                     echo '<?xml version="1.0" encoding="iso-8859-1"?>'."\n";
-                    echo "<!-- $"."Revision: 1.3 $ -->\n";
+                    
+                    // take revision from existing file 
+                    if (!$overwrite || !file_exists($filename)) {
+                        echo "<!-- $"."Revision: 1.1 $ -->\n";
+                    } else {
+                        foreach (file($filename) as $line) {
+                          if (strstr($line, 'Revision: ')) {
+                              echo $line;
+                              break;
+                          }
+                        }
+                    }
 
                     // the parameters are spearated by commas
                     // TODO find a better way to handle TSRMLS_D and TSRMLS_DC
