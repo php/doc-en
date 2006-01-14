@@ -6,7 +6,8 @@ $zend_include_files = array("zend.h",
                             "zend_objects_API.h", 
                             "zend_hash.h", 
                             "zend_list.h", 
-                            "zend_variables.h");
+                            "zend_variables.h",
+							"zend_unicode.h");
 
 $functions_dir = "../en/internals/zendapi/functions/";
 
@@ -86,9 +87,9 @@ foreach ($zend_include_files as $infile) {
   <methodsynopsis>
    <type><?php echo $return_type; ?></type><methodname><?php echo $function; ?></methodname>
 <?php
-   foreach($params as $param) {
-       echo "    <methodparam><type>$param[type]</type><parameter>$param[name]</parameter></methodparam>\n";
-   }
+                foreach($params as $param) {
+                    echo "    <methodparam><type>$param[type]</type><parameter>$param[name]</parameter></methodparam>\n";
+                }
 ?>
   </methodsynopsis>
   <para>
@@ -101,7 +102,7 @@ foreach ($zend_include_files as $infile) {
   <para>
    <variablelist>
 <?php
-   foreach($params as $param) {
+                foreach($params as $param) {
 ?>
     <varlistentry>
      <term><parameter><?php echo $param["name"]; ?></parameter></term>
@@ -112,7 +113,7 @@ foreach ($zend_include_files as $infile) {
      </listitem>
     </varlistentry>
 <?php
-    }
+                }
 ?>
    </variablelist>
   </para>
@@ -149,7 +150,7 @@ vi: ts=1 sw=1
 -->
 <?php
        
-       file_put_contents($functions_dir."/".$function.".xml", ob_get_clean());
+                file_put_contents($functions_dir."/".$function.".xml", ob_get_clean());
             }
 
         }
