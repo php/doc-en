@@ -7,7 +7,7 @@ $zend_include_files = array("zend.h",
                             "zend_hash.h", 
                             "zend_list.h", 
                             "zend_variables.h",
-							"zend_unicode.h");
+                            "zend_unicode.h");
 
 $functions_dir = "../en/internals/zendapi/functions/";
 
@@ -31,13 +31,8 @@ foreach ($zend_include_files as $infile) {
 
             // parse prototypes, step #1
             if (preg_match('|^ZEND_API\s+(\S+)\s+(\S+)\((.*)\);$|', $line, $matches)) {
-
-                // now write the template file to phpdoc/en/internals/zendapi/functions
-                ob_start();
                 
-                echo '<?xml version="1.0" encoding="iso-8859-1"?>'."\n";
-                echo "<!-- $"."Revision: 1.3 $ -->\n";
-
+                // extract return type and function name 
                 $return_type = $matches[1];
                 $function    = $matches[2];
 
@@ -48,30 +43,42 @@ foreach ($zend_include_files as $infile) {
                     $function = substr($function, 1);
                 }
 
-                // the parameters are spearated by commas
-                // TODO find a better way to handle TSRMLS_D and TSRMLS_DC
-                // TODO handle ...
-                $params = array();
-                foreach (explode(",", trim($matches[3])) as $param) {
-                    $new_param = array();
+                // now generate the doc filename for this function
+                $filename = $functions_dir."/".$function.".xml";
 
-                    $tokens = preg_split("/\s+/", trim($param));
-                    $type   = array_shift($tokens);
-                    $name   = implode(" ", $tokens);
+                // only proceed it fhe file doesn't exist yet (no overwrites)
+                // and do not expose functions staring with '_'
+                if (($function[0] == '_') && !file_exists($filename)) {
+                    // now write the template file to phpdoc/en/internals/zendapi/functions
+                    ob_start();
+                
+                    echo '<?xml version="1.0" encoding="iso-8859-1"?>'."\n";
+                    echo "<!-- $"."Revision: 1.3 $ -->\n";
 
-                    if (empty($name)) {
-                        $new_param['type'] = "";
-                        $new_param['name'] = $type;
-                    } else {
-                        while ($name[0] == '*') {
-                            $type.= "*";
-                            $name = substr($name, 1);
+                    // the parameters are spearated by commas
+                    // TODO find a better way to handle TSRMLS_D and TSRMLS_DC
+                    // TODO handle ...
+                    $params = array();
+                    foreach (explode(",", trim($matches[3])) as $param) {
+                        $new_param = array();
+                      
+                        $tokens = preg_split("/\s+/", trim($param));
+                        $type   = array_shift($tokens);
+                        $name   = implode(" ", $tokens);
+
+                        if (empty($name)) {
+                            $new_param['type'] = "";
+                            $new_param['name'] = $type;
+                        } else {
+                            while ($name[0] == '*') {
+                                $type.= "*";
+                                $name = substr($name, 1);
+                            }
+                            $new_param['type'] = $type;
+                            $new_param['name'] = $name;
                         }
-                        $new_param['type'] = $type;
-                        $new_param['name'] = $name;
+                        $params[] = $new_param;
                     }
-                    $params[] = $new_param;
-                }
 
 
 ?>
@@ -87,9 +94,9 @@ foreach ($zend_include_files as $infile) {
   <methodsynopsis>
    <type><?php echo $return_type; ?></type><methodname><?php echo $function; ?></methodname>
 <?php
-                foreach($params as $param) {
-                    echo "    <methodparam><type>$param[type]</type><parameter>$param[name]</parameter></methodparam>\n";
-                }
+                    foreach($params as $param) {
+                        echo "    <methodparam><type>$param[type]</type><parameter>$param[name]</parameter></methodparam>\n";
+                    }
 ?>
   </methodsynopsis>
   <para>
@@ -102,7 +109,7 @@ foreach ($zend_include_files as $infile) {
   <para>
    <variablelist>
 <?php
-                foreach($params as $param) {
+                    foreach($params as $param) {
 ?>
     <varlistentry>
      <term><parameter><?php echo $param["name"]; ?></parameter></term>
@@ -113,7 +120,7 @@ foreach ($zend_include_files as $infile) {
      </listitem>
     </varlistentry>
 <?php
-                }
+                    }
 ?>
    </variablelist>
   </para>
@@ -150,8 +157,9 @@ vi: ts=1 sw=1
 -->
 <?php
        
-                file_put_contents($functions_dir."/".$function.".xml", ob_get_clean());
-            }
+                    file_put_contents($filename, ob_get_clean());
+                }
+            }   
 
         }
                                             
