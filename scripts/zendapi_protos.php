@@ -48,7 +48,7 @@ foreach ($zend_include_files as $infile) {
 
                 // only proceed it fhe file doesn't exist yet (no overwrites)
                 // and do not expose functions staring with '_'
-                if (($function[0] == '_') && !file_exists($filename)) {
+                if (($function[0] != '_') && !file_exists($filename)) {
                     // now write the template file to phpdoc/en/internals/zendapi/functions
                     ob_start();
                 
