@@ -11,7 +11,8 @@ $zend_include_files = array("zend.h",
                             "zend_variables.h",
                             "zend_unicode.h",
                             "zend_operators.h",
-                            "zend_execute.h");
+                            "zend_execute.h",
+                            "zend_modules.h");
 
 $macro_prefixes = array("ZEND_", "Z_", "RETURN_");
 

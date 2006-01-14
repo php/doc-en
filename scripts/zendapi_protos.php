@@ -9,7 +9,8 @@ $zend_include_files = array("zend.h",
                             "zend_hash.h", 
                             "zend_list.h", 
                             "zend_variables.h",
-                            "zend_unicode.h");
+                            "zend_unicode.h",
+                            "zend_modules.h");
 
 $functions_dir = "../en/internals/zendapi/functions/";
 
