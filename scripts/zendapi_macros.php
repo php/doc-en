@@ -63,7 +63,7 @@ foreach ($zend_include_files as $infile) {
 			  }
 			}
 			?>
-			  <refentry id="zend-macro.<?php echo str_replace("_", "-", $macro); ?>">
+			  <refentry id="zend-macro.<?php echo strtolower(str_replace("_", "-", $macro)); ?>">
 				 <refnamediv>
 				 <refname><?php echo $macro; ?></refname>
 												   <refpurpose>...</refpurpose>
