@@ -157,15 +157,23 @@
 (element function
     (let* (
            (function-name (data (current-node)))
-           (id-base (string-replace
-                     (string-replace function-name "_" "-")
-                     "::" "."))
-           (linkend (string-append "function." (case-fold-down id-base )))
-           (target (element-with-id linkend))
-           (linkend2 (string-append "zend-api." (case-fold-down id-base )))
-           (target2 (element-with-id linkend2))
-           (linkend3 (string-append "zend-api-macro." id-base ))
-           (target3 (element-with-id linkend3))
+           (role-name (if (attribute-string (normalize "role"))
+						  (attribute-string (normalize "role"))
+						(normalize "php")) 
+					  )
+           (id-base (case-fold-down (string-replace (string-replace function-name "_" "-") "::" ".")))
+           (target (cond 
+					 ((equal-ci? role-name "php")        
+					  (href-to (element-with-id (string-append "function."   id-base ))))
+					 ((equal-ci? role-name "zend-api")   
+					  (href-to (element-with-id (string-append "zend-api."   id-base ))))
+					 ((equal-ci? role-name "zend-macro") 
+					  (href-to (element-with-id (string-append "zend-macro." id-base ))))
+					 ((equal-ci? role-name "libc")       
+					  (string-append %manpage-url-base% function-name %manpage-url-ext%))
+					 (else "")
+					 )
+				   )
            (parent-gi (gi (parent)))
            )
          
@@ -177,7 +185,7 @@
      ;; If a valid ID for the target function is not found, or if the
      ;; FUNCTION tag is within the definition of the same function,
      ;; make it bold, add (), but don't make a link
-     ((or (and (node-list-empty? target) (node-list-empty? target2) (node-list-empty? target3))
+     ((or (equal? target "") 
       (equal? (case-fold-updown
            (data (node-list-first
               (select-elements
@@ -198,12 +206,7 @@
      (else
       (make element gi: "A"
             attributes: (list
-                         (list "HREF" (href-to (cond ((not (node-list-empty? target3)) (case-fold-down target3))  
-                                                     ((not (node-list-empty? target2)) target2)
-                                                     ((not (node-list-empty? target)) target)
-                                             ))
-                               )
-                         )
+                         (list "HREF" target))
             ($bold-seq$
              (make sequence
                    (process-children)
