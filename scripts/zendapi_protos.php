@@ -121,11 +121,11 @@ foreach ($zend_include_files as $infile) {
   <methodsynopsis>
 <?php 
                 if ($return_type == "void") {
-                    echo "<void/>";
+                    echo "   <void/>";
                 } else {
-                    echo "<type>$return_type</type>";
+                    echo "   <type>$return_type</type>";
                 }
-                echo "<methodname>$function;</methodname>";
+                echo "<methodname>$function</methodname>";
                 if (count($params)) {
                     echo "\n";
                     foreach($params as $param) {
