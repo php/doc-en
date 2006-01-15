@@ -81,10 +81,16 @@ foreach ($zend_include_files as $infile) {
                       
                     $tokens = preg_split("/\s+/", trim($param));
                     $name   = array_pop($tokens);
+                    if (preg_match("|_DC$|", $name)) {
+                        $magic = $name;
+                        $name  = array_pop($tokens);
+                    } else {
+                        $magic = "";
+                    }
                     $type   = implode(" ", $tokens);
                     
                     if (empty($name)) {
-                        $new_param['type'] = "";
+                        $new_param['type'] = "magic";
                         $new_param['name'] = $type;
                     } else {
                         while ($name[0] == '*') {
@@ -95,6 +101,10 @@ foreach ($zend_include_files as $infile) {
                         $new_param['name'] = $name;
                     }
                     $params[] = $new_param;
+
+                    if ($magic) {
+                        $params[] = array("type"=>"magic", "name"=>$magic);
+                    }
                 }
 
 
@@ -109,10 +119,20 @@ foreach ($zend_include_files as $infile) {
   &reftitle.description;
   <literallayout>#include &lt;<?php echo basename($infile); ?>&gt;</literallayout>
   <methodsynopsis>
-   <type><?php echo $return_type; ?></type><methodname><?php echo $function; ?></methodname>
-<?php
-                foreach($params as $param) {
-                    echo "    <methodparam><type>$param[type]</type><parameter>$param[name]</parameter></methodparam>\n";
+<?php 
+                if ($return_type == "void") {
+                    echo "<void/>";
+                } else {
+                    echo "<type>$return_type</type>";
+                }
+                echo "<methodname>$function;</methodname>";
+                if (count($params)) {
+                    echo "\n";
+                    foreach($params as $param) {
+                        echo "    <methodparam><type>$param[type]</type><parameter>$param[name]</parameter></methodparam>\n";
+                    }  
+                } else {
+                    echo "<void/>\n";
                 }
 ?>
   </methodsynopsis>
