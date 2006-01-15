@@ -71,6 +71,7 @@ foreach ($zend_include_files as $infile) {
 
  <refsect1 role="description">
   &reftitle.description;          
+  <literallayout>#include &lt;<?php echo basename($infile); ?>&gt;</literallayout>
   <methodsynopsis>
    <type>???</type><methodname><?php echo $macro; ?></methodname>
 <?php
