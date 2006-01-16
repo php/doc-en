@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.25 2005-07-31 11:43:45 techtonik Exp $
+  $Id: htmlhelp.xsl,v 1.26 2006-01-16 14:53:42 hholzgra Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -684,7 +684,9 @@ Usage: string date (string format, int [timestamp])<br></h2>
     <xsl:call-template name="anchor"/>
     <h2 class="subheader">
       <span id="funcPurpose"><xsl:value-of select="./refpurpose"/></span>
-      (<span id="funcAvail"><xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/></span>)
+      <xsl:if test="ancestor::part/@id='funcref' or ancestor::part/@id='pecl-funcref'">
+        (<span id="funcAvail"><xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/></span>)
+      </xsl:if>
       <br/>
       <span id="funcUsage"><xsl:apply-templates select="../refsect1/methodsynopsis" mode="php"/></span>
     </h2>

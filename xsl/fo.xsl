@@ -678,9 +678,11 @@ set       toc,title
   <fo:block font-family="sans-serif" font-weight="bold" font-size="20pt">
     <xsl:apply-templates select="refname[1]"/>
   </fo:block>
-  <fo:block font-size="11pt">
-    (<xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>)
-  </fo:block>
+  <xsl:if test="ancestor::part/@id='funcref' or ancestor::part/@id='pecl-funcref'">
+    <fo:block font-size="11pt">
+      (<xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>)
+    </fo:block>
+  </xsl:if>
   <fo:block xsl:use-attribute-sets="normal.para.spacing" font-size="12pt">
     <xsl:apply-templates select="refname[1]"/><xsl:text> - </xsl:text>
     <xsl:apply-templates select="refpurpose"/>

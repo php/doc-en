@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.28 2005-07-15 09:20:44 techtonik Exp $
+  $Id: common.xsl,v 1.29 2006-01-16 14:53:42 hholzgra Exp $
 
   What is done in this stylesheet as common to all HTML output formats:
 
@@ -69,7 +69,9 @@
         </h1>
       </xsl:when>
     </xsl:choose>
-    <p>(<xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>)</p>
+    <xsl:if test="ancestor::part/@id='funcref' or ancestor::part/@id='pecl-funcref'">
+     <p>(<xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>)</p>
+    </xsl:if>
     <p>
       <xsl:apply-templates/>
     </p>

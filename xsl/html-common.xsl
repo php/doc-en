@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.28 2003-06-19 17:30:21 hholzgra Exp $
+  $Id: html-common.xsl,v 1.29 2006-01-16 14:53:42 hholzgra Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -251,11 +251,13 @@ set       toc
     <h1>
       <xsl:apply-templates select="refname[1]"/>
     </h1>
-    <p>
-      <xsl:text>(</xsl:text>
-      <xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>
-      <xsl:text>)</xsl:text>
-    </p>
+    <xsl:if test="ancestor::part/@id='funcref' or ancestor::part/@id='pecl-funcref'">
+      <p>
+        <xsl:text>(</xsl:text>
+        <xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>
+        <xsl:text>)</xsl:text>
+      </p>
+    </xsl:if>
     <p>
       <xsl:apply-templates/>
     </p>
