@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-chunk.xsl,v 1.3 2006-01-16 01:27:14 hholzgra Exp $
+  $Id: html-chunk.xsl,v 1.4 2006-01-16 10:37:59 hholzgra Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -70,31 +70,48 @@
     <xsl:value-of select="translate(translate(string(current()),'_','-'),
                       'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')"/>
   </xsl:variable>
+  <xsl:variable name="rolename">
+   <xsl:choose>
+    <xsl:when test="./@role">
+     <xsl:copy-of select="string(./@role)"/>
+    </xsl:when>
+    <xsl:when test="ancestor::chapter[@id='zend'] or ancestor::chapter[@id='tsrm']">
+     <xsl:choose>
+      <xsl:when test="string(current()) = translate(string(current()),
+                                                    'abcdefghijklmnopqrstuvwxyz',
+                                                    'ABCDEFGHIJKLMNOPQRSTUVWXYZ')">
+       <xsl:copy-of select="'zend-macro'"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:copy-of select="'zend-api'"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:copy-of select="'php'"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
   <xsl:variable name="targetid">
    <xsl:choose>
-    <xsl:when test="./@role='php'">
+    <xsl:when test="$rolename='php'">
      <xsl:if test="count(//refentry[@id=concat('function.',$idbase)])>0">
-	  <xsl:copy-of select="concat('function.',$idbase)"/>
+      <xsl:copy-of select="concat('function.',$idbase)"/>
      </xsl:if>
-	</xsl:when>
-    <xsl:when test="./@role='zend-api'">
+    </xsl:when>
+    <xsl:when test="$rolename='zend-api'">
      <xsl:if test="count(//refentry[@id=concat('zend-api.',$idbase)])>0">
-	  <xsl:copy-of select="concat('zend-api.',$idbase)"/>
+      <xsl:copy-of select="concat('zend-api.',$idbase)"/>
      </xsl:if>
-	</xsl:when>
-    <xsl:when test="./@role='zend-macro'">
+    </xsl:when>
+    <xsl:when test="$rolename='zend-macro'">
      <xsl:if test="count(//refentry[@id=concat('zend-macro.',$idbase)])>0">
-	  <xsl:copy-of select="concat('zend-macro.',$idbase)"/>
+      <xsl:copy-of select="concat('zend-macro.',$idbase)"/>
      </xsl:if>
-	</xsl:when>
-    <xsl:when test="./@role='libc'">
+    </xsl:when>
+    <xsl:when test="$rolename='libc'">
      <xsl:copy-of select="concat('http://www.opengroup.org/onlinepubs/007908799/xsh/',string(current()))"/>
-	</xsl:when>
-    <xsl:otherwise>
-     <xsl:if test="count(//refentry[@id=concat('function.',$idbase)])>0">
- 	  <xsl:copy-of select="concat('function.',$idbase)"/>
-     </xsl:if>
-	</xsl:otherwise>
+    </xsl:when>
    </xsl:choose>
   </xsl:variable>
   <xsl:choose>
