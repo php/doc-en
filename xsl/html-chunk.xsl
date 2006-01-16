@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-chunk.xsl,v 1.2 2003-04-25 18:41:22 goba Exp $
+  $Id: html-chunk.xsl,v 1.3 2006-01-16 01:27:14 hholzgra Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -66,14 +66,40 @@
   <xsl:variable name="content">
     <xsl:apply-templates/><xsl:text>()</xsl:text>
   </xsl:variable>
-  <xsl:variable name="targetid">
-    <xsl:value-of select="concat('function.', translate(string(current()),'_','-'))"/>
+  <xsl:variable name="idbase">
+    <xsl:value-of select="translate(translate(string(current()),'_','-'),
+                      'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')"/>
   </xsl:variable>
-
+  <xsl:variable name="targetid">
+   <xsl:choose>
+    <xsl:when test="./@role='php'">
+     <xsl:if test="count(//refentry[@id=concat('function.',$idbase)])>0">
+	  <xsl:copy-of select="concat('function.',$idbase)"/>
+     </xsl:if>
+	</xsl:when>
+    <xsl:when test="./@role='zend-api'">
+     <xsl:if test="count(//refentry[@id=concat('zend-api.',$idbase)])>0">
+	  <xsl:copy-of select="concat('zend-api.',$idbase)"/>
+     </xsl:if>
+	</xsl:when>
+    <xsl:when test="./@role='zend-macro'">
+     <xsl:if test="count(//refentry[@id=concat('zend-macro.',$idbase)])>0">
+	  <xsl:copy-of select="concat('zend-macro.',$idbase)"/>
+     </xsl:if>
+	</xsl:when>
+    <xsl:when test="./@role='libc'">
+     <xsl:copy-of select="concat('http://www.opengroup.org/onlinepubs/007908799/xsh/',string(current()))"/>
+	</xsl:when>
+    <xsl:otherwise>
+     <xsl:if test="count(//refentry[@id=concat('function.',$idbase)])>0">
+ 	  <xsl:copy-of select="concat('function.',$idbase)"/>
+     </xsl:if>
+	</xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
   <xsl:choose>
-    <xsl:when test="ancestor::refentry/refnamediv/refname=translate(current(),
-                      'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')
-                    or count(/*/part[@id='funcref']/*/refentry[@id=$targetid]) = 0">
+    <xsl:when test="ancestor::refentry/@id=$targetid
+                    or string-length($targetid) = 0">
       <b><xsl:copy-of select="$content"/></b>
     </xsl:when>
     <xsl:otherwise>
