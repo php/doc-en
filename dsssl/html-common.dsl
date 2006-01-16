@@ -332,11 +332,13 @@
 ;; on pcre reference pages (these are masked as function pages, but are
 ;; not function pages themselfs)
 (element (refnamediv refname)
-  (let ((refid (attribute-string (normalize "id") (parent (parent (current-node))))))
-    (if (or (not (string? refid))
-        (not (string=?
-          (substring refid 0 (min (string-length refid) 14))
-          "reference.pcre")))
+  (let ((refid (attribute-string (normalize "id") (parent (parent (current-node)))))
+        (partid (attribute-string (normalize "id") (parent (parent (parent (parent (current-node))))))))
+    (if (and (or (not (string? refid))
+                 (not (string=? (substring refid 0 (min (string-length refid) 14)) "reference.pcre"))
+                 )
+             (or (string=? partid "funcref") (string=? partid "pecl-funcref"))
+             )
       (make sequence
         (make element gi: "P"
           (literal "    (")
