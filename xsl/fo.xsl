@@ -719,6 +719,7 @@ set       toc,title
 
 <!-- Make FUNCTIONS bold, add parenthesis, and if target
      exists and it's no title, link them to their refentry  -->
+<!-- TODO add context-aware linking as in html-chunked.dsl -->
 <xsl:template match="function">
   <xsl:variable name="content">
     <xsl:apply-templates/>
