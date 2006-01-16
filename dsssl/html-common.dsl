@@ -152,31 +152,40 @@
 )
 
 
-
+(define (my-href-to target)
+  (cond ((node-list-empty? target) (normalize ""))
+        (else (href-to target)))
+  )
 
 (element function
-    (let* (
-           (function-name (data (current-node)))
-           (role-name (if (attribute-string (normalize "role"))
-                          (attribute-string (normalize "role"))
-                        (normalize "php")) 
-                      )
-           (id-base (case-fold-down (string-replace (string-replace function-name "_" "-") "::" ".")))
-           (target (cond 
-                     ((equal-ci? role-name "php")        
-                      (href-to (element-with-id (string-append "function."   id-base ))))
-                     ((equal-ci? role-name "zend-api")   
-                      (href-to (element-with-id (string-append "zend-api."   id-base ))))
-                     ((equal-ci? role-name "zend-macro") 
-                      (href-to (element-with-id (string-append "zend-macro." id-base ))))
-                     ((equal-ci? role-name "libc")       
-                      (string-append %manpage-url-base% function-name %manpage-url-ext%))
-                     (else "")
-                     )
-                   )
-           (parent-gi (gi (parent)))
-           )
-         
+  (let* (
+		 (function-name (data (current-node)))
+		 (chapter-id (attribute-string (normalize "id") (ancestor-member (parent) (list "chapter"))))
+		 (role-name (if (attribute-string (normalize "role"))
+						(attribute-string (normalize "role"))
+                        (cond ((or (equal? chapter-id "zend") 
+                                   (equal? chapter-id "tsrm")) 
+                               ( cond ((equal? (case-fold-up function-name) function-name) (normalize "zend-macro"))
+                                      (else (normalize "zend-api"))
+									  ))
+                              (else (normalize "php")))
+						))
+		 (id-base (case-fold-down (string-replace (string-replace function-name "_" "-") "::" ".")))
+		 (target (cond 
+				  ((equal-ci? role-name "php")        
+				   (my-href-to (element-with-id (string-append "function."   id-base ))))
+				  ((equal-ci? role-name "zend-api")   
+				   (my-href-to (element-with-id (string-append "zend-api."   id-base ))))
+				  ((equal-ci? role-name "zend-macro") 
+				   (my-href-to (element-with-id (string-append "zend-macro." id-base ))))
+				  ((equal-ci? role-name "libc")       
+				   (string-append %manpage-url-base% function-name %manpage-url-ext%))
+				  (else "")
+				  )
+				 )
+		 (parent-gi (gi (parent)))
+		 )
+	
     (cond
      ;; function names should be plain in FUNCDEF
      ((equal? parent-gi "funcdef")
@@ -198,7 +207,7 @@
                "refname"))))
           (case-fold-updown function-name)))
       ($bold-seq$
-       (make sequence
+       (make sequence 
      (process-children)
      (literal "()"))))
      
