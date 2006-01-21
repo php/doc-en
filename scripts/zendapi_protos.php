@@ -1,5 +1,5 @@
 <?php
-$overwrite = true;
+$overwrite = false;
 
 $zend_include_dir = "../../php-src/Zend";
 
