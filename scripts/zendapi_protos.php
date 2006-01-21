@@ -35,7 +35,10 @@ foreach ($zend_include_files as $infile) {
     while (!feof($in)) {
         // TODO a prototype may span more than one line?
         $line = trim(fgets($in));
-
+        if (substr($line, -1) == "\\") { // multiline macro, read one more line
+            $line = substr($line, 0, -1) . trim(fgets($in));
+        }       
+        
         // first we look for prototypes marked with ZEND_API 
         if (preg_match('/^\s*(ZEND|TSRM|CWD)_API\s+(\S+)\s+(\S+)\((.*)\);$/U', $line, $matches)) {
             // parse prototypes, step #1
@@ -92,8 +95,8 @@ foreach ($zend_include_files as $infile) {
                                           "return_type" => $return_type, 
                                           "params"      => $params,
                                           "api_type"    => $api_type,
-										  "infile"      => $infile
-										  );
+                                          "infile"      => $infile
+                                          );
         }        
 
         // next we look for macros that seem to be just wrappers around existing functions
@@ -106,8 +109,8 @@ foreach ($zend_include_files as $infile) {
           $wrappers[$wrapper] = array("function"   => $function, 
                                       "wrapper"    => $wrapper, 
                                       "param_list" => $param_list,
-									  "infile"     => $infile
-									  );
+                                      "infile"     => $infile
+                                      );
         }
     }
 }
@@ -128,11 +131,11 @@ foreach ($wrappers  as $name => $wrapper) {
     }
 
     $functions[$name] = array("name"        => $name,
-							  "return_type" => $function["return_type"], 
-							  "params"      => $params,
-							  "api_type"    => $function["api_type"],
-							  "infile"      => $wrapper["infile"]
-							  );
+                              "return_type" => $function["return_type"], 
+                              "params"      => $params,
+                              "api_type"    => $function["api_type"],
+                              "infile"      => $wrapper["infile"]
+                              );
   }
 }
 
