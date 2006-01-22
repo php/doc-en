@@ -6,8 +6,9 @@ $zend_include_dir = "../../php-src/Zend";
 $zend_include_files = array(
                             "zend.h", 
                             "zend_API.h", 
+                            "zend_compile.h",
                             "zend_hash.h", 
-							"zend_highlight.h",
+                            "zend_highlight.h",
                             "zend_interfaces.h",
                             "zend_list.h", 
                             "zend_modules.h",
