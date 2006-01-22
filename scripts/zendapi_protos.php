@@ -14,6 +14,7 @@ $zend_include_files = array(
                             "zend_hash.h", 
                             "zend_highlight.h",
                             "zend_interfaces.h",
+                            "zend_ini.h",
                             "zend_list.h", 
                             "zend_modules.h",
                             "zend_object_handlers.h",
