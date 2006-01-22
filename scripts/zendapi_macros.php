@@ -8,14 +8,19 @@ $zend_include_files = array(
                             "zend_API.h", 
                             "zend_builtin_functions.h",
                             "zend_compile.h",
+                            "zend_constants.h",
                             "zend_exceptions.h",
+                            "zend_execute.h",
                             "zend_hash.h", 
                             "zend_highlight.h",
                             "zend_interfaces.h",
+                            "zend_ini.h",
                             "zend_list.h", 
                             "zend_modules.h",
+                            "zend_objects.h",
                             "zend_object_handlers.h",
                             "zend_objects_API.h",
+                            "zend_qsort.h",
                             "zend_stream.h",
                             "zend_strtod.h",
                             "zend_unicode.h",
@@ -54,6 +59,7 @@ foreach ($zend_include_files as $infile) {
 
           // do not overwrite existing files unless specified
           if ($overwrite || !file_exists($outfile)) {
+            echo "writing $outfile\n";
             // now write the template file to phpdoc/en/internals/zendapi/macros
             ob_start();
           
