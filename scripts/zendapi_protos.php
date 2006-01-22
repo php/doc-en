@@ -3,18 +3,20 @@ $overwrite = false;
 
 $zend_include_dir = "../../php-src/Zend";
 
-$zend_include_files = array("zend.h", 
+$zend_include_files = array(
+                            "zend.h", 
                             "zend_API.h", 
-                            "zend_objects_API.h", 
-                            "zend_object_handlers.h",
-                            "zend_interfaces.h",
                             "zend_hash.h", 
+                            "zend_interfaces.h",
                             "zend_list.h", 
-                            "zend_variables.h",
-                            "zend_unicode.h",
                             "zend_modules.h",
+                            "zend_object_handlers.h",
+                            "zend_objects_API.h", 
+                            "zend_unicode.h",
+                            "zend_variables.h",
                             "../TSRM/TSRM.h",
-                            "../TSRM/tsrm_virtual_cwd.h");
+                            "../TSRM/tsrm_virtual_cwd.h",
+                            );
 
 $functions_dir = array("ZEND"=>"../en/internals/zendapi/functions",
                        "TSRM"=>"../en/internals/tsrm/functions",
@@ -42,7 +44,7 @@ foreach ($zend_include_files as $infile) {
         }       
         
         // first we look for prototypes marked with ZEND_API 
-        if (preg_match('/^\s*(ZEND|TSRM|CWD)_API\s+(\S+)\s+(\S+)\((.*)\);$/U', $line, $matches)) {
+        if (preg_match('/^\s*(ZEND|TSRM|CWD)_API\s+(\S+)\s+(\S+)\((.*)\)/U', $line, $matches)) {
             // parse prototypes, step #1
           
             // extract return type and function name 
@@ -158,6 +160,7 @@ function create_page($function, $return_type, $params, $api_type, $infile)
   // and do not expose functions staring with '_'
   if (($function[0] != '_') && ($overwrite || !file_exists($filename))) {
     // now write the template file to phpdoc/en/internals/zendapi/functions
+    echo "writing $filename\n";
     ob_start();
                 
     echo '<?xml version="1.0" encoding="iso-8859-1"?>'."\n";
