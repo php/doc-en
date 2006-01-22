@@ -132,31 +132,31 @@ foreach ($zend_include_files as $infile) {
 
 
 do {
-$additions = 0;
-foreach ($wrappers  as $name => $wrapper) {
-  if (isset($functions[$wrapper["function"]])) {
-    $function = $functions[$wrapper["function"]];
-    $params   = array();
-    foreach (explode(",", $wrapper["param_list"]) as $param) {
-      $param = preg_replace('|\s*_*(\w+)\s*|', '${1}', $param); // trim and strip leading _s
-      if (isset($function["params"][$param])) {
-        $param_type = $function["params"][$param]["type"];
-      } else {
-        $param_type = "...";
+  $additions = 0;
+  foreach ($wrappers  as $name => $wrapper) {
+    if (isset($functions[$wrapper["function"]])) {
+      $function = $functions[$wrapper["function"]];
+      $params   = array();
+      foreach (explode(",", $wrapper["param_list"]) as $param) {
+        $param = preg_replace('|\s*_*(\w+)\s*|', '${1}', $param); // trim and strip leading _s
+        if (isset($function["params"][$param])) {
+          $param_type = $function["params"][$param]["type"];
+        } else {
+          $param_type = "...";
+        }
+        $params[$param] = array("type"=>$param_type, "name"=>$param);
       }
-      $params[$param] = array("type"=>$param_type, "name"=>$param);
+      
+      $functions[$name] = array("name"        => $name,
+                                "return_type" => $function["return_type"], 
+                                "params"      => $params,
+                                "api_type"    => $function["api_type"],
+                                "infile"      => $wrapper["infile"]
+                                );
+      unset($wrappers[$name]);
+      $additions++;
     }
-
-    $functions[$name] = array("name"        => $name,
-                              "return_type" => $function["return_type"], 
-                              "params"      => $params,
-                              "api_type"    => $function["api_type"],
-                              "infile"      => $wrapper["infile"]
-                              );
-    unset($wrappers[$name]);
-    $additions++;
   }
-}
 } while ($additions > 0);
 
 foreach ($functions as $name => $function) {
