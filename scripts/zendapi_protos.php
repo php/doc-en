@@ -16,6 +16,7 @@ $zend_include_files = array(
                             "zend_object_handlers.h",
                             "zend_objects_API.h",
                             "zend_stream.h",
+                            "zend_strtod.h",
                             "zend_unicode.h",
                             "zend_variables.h",
                             "../TSRM/TSRM.h",
