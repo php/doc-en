@@ -8,6 +8,7 @@ $zend_include_files = array(
                             "zend_API.h", 
                             "zend_builtin_functions.h",
                             "zend_compile.h",
+                            "zend_exceptions.h",
                             "zend_hash.h", 
                             "zend_highlight.h",
                             "zend_interfaces.h",
