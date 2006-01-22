@@ -10,6 +10,7 @@ $zend_include_files = array(
                             "zend_compile.h",
                             "zend_constants.h",
                             "zend_exceptions.h",
+                            "zend_execute.h",
                             "zend_hash.h", 
                             "zend_highlight.h",
                             "zend_interfaces.h",
