@@ -3,19 +3,26 @@ $overwrite = false;
 
 $zend_include_dir = "../../php-src/Zend";
 
-$zend_include_files = array("zend.h", 
+$zend_include_files = array(
+                            "zend.h", 
                             "zend_API.h", 
-                            "zend_objects_API.h", 
-                            "zend_object_handlers.h",
+                            "zend_builtin_functions.h",
+                            "zend_compile.h",
+                            "zend_exceptions.h",
                             "zend_hash.h", 
+                            "zend_highlight.h",
+                            "zend_interfaces.h",
                             "zend_list.h", 
-                            "zend_variables.h",
-                            "zend_unicode.h",
-                            "zend_operators.h",
-                            "zend_execute.h",
                             "zend_modules.h",
+                            "zend_object_handlers.h",
+                            "zend_objects_API.h",
+                            "zend_stream.h",
+                            "zend_strtod.h",
+                            "zend_unicode.h",
+                            "zend_variables.h",
                             "../TSRM/TSRM.h",
-                            "../TSRM/tsrm_virtual_cwd.h");
+                            "../TSRM/tsrm_virtual_cwd.h",
+                            );
 
 $output_dirs = array("../en/internals/zendapi/macros" => array("ZEND_", "Z_", "RETURN_"), 
                      "../en/internals/tsrm/macros" => array("VCWD_"));
