@@ -131,6 +131,8 @@ foreach ($zend_include_files as $infile) {
 }
 
 
+do {
+$additions = 0;
 foreach ($wrappers  as $name => $wrapper) {
   if (isset($functions[$wrapper["function"]])) {
     $function = $functions[$wrapper["function"]];
@@ -151,9 +153,11 @@ foreach ($wrappers  as $name => $wrapper) {
                               "api_type"    => $function["api_type"],
                               "infile"      => $wrapper["infile"]
                               );
+    unset($wrappers[$name]);
+    $additions++;
   }
 }
-
+} while ($additions > 0);
 
 foreach ($functions as $name => $function) {
   create_page($name, $function["return_type"], $function["params"], $function["api_type"], $function["infile"]); 
