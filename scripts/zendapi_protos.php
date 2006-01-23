@@ -29,9 +29,9 @@ $zend_include_files = array(
                             "../TSRM/tsrm_virtual_cwd.h",
                             );
 
-$functions_dir = array("ZEND"=>"../en/internals/zendapi/functions",
-                       "TSRM"=>"../en/internals/tsrm/functions",
-                       "CWD" =>"../en/internals/tsrm/functions",);
+$api_dir = array("ZEND"=>"../en/internals/zendapi",
+                 "TSRM"=>"../en/internals/tsrm",
+                 "CWD" =>"../en/internals/tsrm",);
 
 
 $functions = array();
@@ -116,7 +116,7 @@ foreach ($zend_include_files as $infile) {
 
         // next we look for macros that seem to be just wrappers around existing functions
         // TODO catch multiline definitions
-        if (preg_match('|^#define\s+([a-z0-9_]+)\((.*)\)\s+(\w+)\(|U', $line, $matches)) {
+        if (preg_match('|^#define\s+(\w+)\((.*)\)\s+(\w+)\(|U', $line, $matches)) {
           $wrapper    = $matches[1];
           $param_list = $matches[2]; 
           $function   = $matches[3];
@@ -166,10 +166,11 @@ foreach ($functions as $name => $function) {
 
 function create_page($function, $return_type, $params, $api_type, $infile)
 {
-  global $overwrite, $functions_dir;
+  global $overwrite, $api_dir;
 
   // now generate the doc filename for this function
-  $filename = $functions_dir[$api_type]."/".$function.".xml";
+  $functype = (strtolower($function) == $function) ? "function" : "macro";
+  $filename = $api_dir[$api_type]."/".$functype."s/".$function.".xml";
             
   // only proceed it fhe file doesn't exist yet (no overwrites)
   // and do not expose functions staring with '_'
