@@ -54,9 +54,10 @@
    05/06/04 v2.1 - Corrected filenames for OO functions
    01/03/05 v2.2 - Implemented the new doc style
    08/08/05 v2.3 - Refpurpose is on one line
+   01/31/06 v2.4 - Fix reference.xml (comment configure/ini entities; fix &no.resource; (para))
 */
 
-$version="2.3";
+$version="2.4";
 
 $funclist=array();
 $num_funcs=0;
@@ -182,15 +183,15 @@ function write_reference_xml()
        "   </para>\n" .
        "  </section>\n\n" .
        "  <!-- Information found in configure.xml -->\n" .
-       "  &reference.".$extension_name.".configure;\n" .
+       "  <!-- reference.".$extension_name.".configure; -->\n" .
        "  <!-- Information found in ini.xml -->\n" .
-       "  &reference.".$extension_name.".ini;\n\n" .
+       "  <!-- reference.".$extension_name.".ini; -->\n\n" .
        "  <section id=\"" . $extension_name . ".resources\">\n" .
        "   &reftitle.resources;\n" .
        "   <para>\n" .
        "    Type of resource types (link id, etc.) this extension returns.\n" .
-       "    &no.resource;\n" .
        "   </para>\n" .
+       "   &no.resource;\n" .
        "  </section>\n");
        if ($num_const > 0) {
          fwrite($fp, "  <!-- Information found in constants.xml -->\n" .
