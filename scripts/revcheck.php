@@ -83,7 +83,7 @@ $CSS = array(
 
 // Option for the link to cvs.php.net:
 define('CVS_OPT', '&amp;view=patch');
-define('CVS_OPT_NOWS', '&amp;view=diff&amp;diff_format=h');
+define('CVS_OPT_NOWS', '');
 
 // Initializing variables from parameters
 $LANG = $argv[1];
@@ -852,8 +852,7 @@ END_OF_MULTILINE;
         if ($file["revision"][2] != "n/a" && $file["revision"][2] !== 0) {
             $url = 'http://cvs.php.net/viewcvs.cgi/' .
                    preg_replace( "'^".$DOCDIR."'", 'phpdoc/', $file['full_name']) .
-                   '?tr1=' . $file['revision'][1] . '&amp;tr2=' . $file['revision'][0] .
-                   '&amp;r1=text&amp;r2=text';
+                   '?r1=' . $file['revision'][1] . '&amp;r2=' . $file['revision'][0];
             $url_ws = $url . CVS_OPT_NOWS;
             $url   .= CVS_OPT;
 
