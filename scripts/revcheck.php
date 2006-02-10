@@ -836,7 +836,7 @@ print <<<END_OF_MULTILINE
 END_OF_MULTILINE;
 
     // This was the previous directory [first]
-    $prev_dir = $new_dir = $DOCDIR."en";
+    $prev_dir = false;
 
     // Go through all files collected
     foreach ($files_status as $num => $file) {
@@ -864,14 +864,16 @@ END_OF_MULTILINE;
         $new_dir = dirname($file["full_name"]);
 
         // If this is a new directory, put out old dir lines
-        if ($new_dir != $prev_dir && isset($lines)) {
-            echo $prev_diplay_dir;
-            echo " ($line_number)</th></tr>";
-    	echo $lines;
-    	
-    	$lines = '';
-    	$line_number = 0;
-            
+        if ($new_dir !== $prev_dir) {
+            if (isset($lines)) {
+                echo $prev_diplay_dir;
+                echo " ($line_number)</th></tr>";
+                echo $lines;
+            }
+
+            $lines = '';
+            $line_number = 0;
+
             // Store the new actual directory
             $prev_dir = $new_dir;
         }
