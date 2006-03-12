@@ -1,11 +1,35 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.5 $ -->
+<!-- $Revision: 1.6 $ -->
 <section id="apc.configuration">
  &reftitle.runtime;
  &extension.runtime;
  <para>
   Although the default APC settings are fine for many installations, serious
   users should consider tuning the following parameters.
+ </para>
+ <para>
+  There are two main decisions you have to make.  First, how much shared
+  memory do you want to set aside for APC, and second, whether you want APC
+  to check if a file has been modified on every request.  The two ini
+  directives involved here are <literal>apc.shm_size</literal> and 
+  <literal>apc.stat</literal>.  Read the sections on these two directives
+  carefully below.
+ </para>
+ <para>
+  Once you have a running server, you should copy the
+  <literal>apc.php</literal> script that comes with the extension to
+  somewhere in your docroot and load it up in your browser.  It provides
+  you with a detailed look at what is happening in your cache.  If you
+  have GD enabled in PHP, it will even have pretty graphs.  First thing
+  to check is of course that it is actually caching files.  Assuming it is
+  working you should then pay close attention to the <literal>Cache full
+  count</literal> number on the left.  That tells you the number of times
+  the cache has filled up and has had to forcefully clean up any entries
+  not accessed within the last <literal>apc.ttl</literal> seconds.  You
+  should configure your cache to minimize this number.  If you are constantly
+  filling your cache, the resulting cache churn is going to hurt performance.
+  You should either set more memory aside for APC, or use
+  <literal>apc.filters</literal> to cache fewer scripts.
  </para>
  <para>
   <table>
@@ -97,6 +121,18 @@
       <entry>"0"</entry>
       <entry>PHP_INI_SYSTEM</entry>
       <entry>&gt; APC 3.0.6</entry>
+     </row>
+     <row>
+      <entry>apc.max_file_size</entry>
+      <entry>"1M"</entry>
+      <entry>PHP_INI_SYSTEM</entry>
+      <entry>&gt; APC 3.0.6</entry>
+     </row>
+     <row>
+      <entry>apc.stat</entry>
+      <entry>"1"</entry>
+      <entry>PHP_INI_SYSTEM</entry>
+      <entry>&gt; APC 3.0.9</entry>
      </row>
     </tbody>
    </tgroup>
@@ -334,6 +370,43 @@
       create, populate and tear down the APC cache on every CLI
       request, but for various test scenarios it is handy to be
       able to enable APC for the CLI version of APC easily.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry id="ini.apc.max_file_size">
+    <term>
+     <parameter>apc.max_file_size</parameter>
+     <type>integer</type>
+    </term>
+    <listitem>
+     <para>
+      Prevent files larger than this value from getting cached.  Defaults to
+      1M. 
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry id="ini.apc.stat">
+    <term>
+     <parameter>apc.stat</parameter>
+     <type>integer</type>
+    </term>
+    <listitem>
+     <para>
+      Be careful if you change this setting.  The default is for this to be On
+      which means that APC will stat (check) the script on each request to see
+      if it has been modified.  If it has been modified it will recompile and
+      cache the new version.  If you turn this setting off, it will not check.
+      That means that in order to have changes become active you need to
+      restart your web server.  On a production server where you rarely
+      change the code, turning stats off can produce a significant performance
+      boost.
+     </para>
+     <para>
+      For included/required files this option applies as well, but note that
+      if you are using relative path includes (any path that doesn't start
+      with / on Unix) APC has to check in order to uniquely identify the file.
+      If you use absolute path includes APC can skip the stat and use that
+      absolute path as the unique identifier for the file.
      </para>
     </listitem>
    </varlistentry>
