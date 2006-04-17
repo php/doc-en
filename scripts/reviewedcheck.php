@@ -41,7 +41,7 @@ the actual langage xml files, and print statistics
 $LANG = $argv[1];
 $date = date('r');
 
-$path_doc = '../'.$LANG.'/';
+$path_doc = './'.$LANG.'/';
 
 if( !is_dir($path_doc) ) {
  echo 'Directory for the lang "'.$LANG.'" don\'t exist !'."\r\n";
@@ -66,7 +66,7 @@ global $path_doc;
 if (is_dir($dir)) {
    if ($dh = opendir($dir)) {
        while (($file = readdir($dh)) !== false) {
-         if( is_file($dir.$file) && !in_array($file, $ignore_file) && substr($file,0,1) != '.' ) {
+         if( is_file($dir.$file) && substr($file,0,1) != '.' ) {
 
 if (
  $file == "rsusi.txt"
@@ -85,7 +85,7 @@ continue;
            check_tag($dir, $file);
 
 
-         } elseif( is_dir($dir.$file) && $file != '.' && $file != '..' && $file != 'CVS'  && !in_array($file, $ignore_file)) {
+         } elseif( is_dir($dir.$file) && $file != '.' && $file != '..' && $file != 'CVS' ) {
            check_doc($dir.$file.'/');
          }
        }
