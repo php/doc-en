@@ -327,6 +327,7 @@ function get_dir_status($dir)
       // <lang>/reference/ tree, skip the file
       if (
 	   $file == "rsusi.txt"
+	  || $file == "missing-ids.xml"
           || $file == "extensions.xml"
 	  || $file == "README"
 	  || $file == "contributors.xml"
