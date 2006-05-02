@@ -45,7 +45,13 @@ passthru("$xmllint --noent --noout --valid $example_filename 2> $example_filenam
 $errors = file_get_contents("$example_filename.out");
 $errors = preg_replace("~.*validity error : IDREF attribute linkend references an unknown ID.*\n.*\n.*\n~", "", $errors);
 $errors = str_replace($example_filename, $_SERVER["argv"][1], $errors);
-echo $errors;
+
+if (empty($errors)) {
+	echo "Success: Your file passed this XML check, do consider running 'make test' as well.\n";
+} else {
+	echo "Errors: The following XML error exist:\n";
+	echo $errors;
+}
 
 //~ unlink("$example_filename");
 unlink("$example_filename.out");
