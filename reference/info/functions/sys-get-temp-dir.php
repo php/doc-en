@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.2 $ -->
-  <refentry id="function.php-get-tmpdir">
+<!-- $Revision$ -->
+  <refentry id="function.sys-get-temp-dir">
    <refnamediv>
-    <refname>php_get_tmpdir</refname>
+    <refname>sys_get_temp_dir</refname>
     <refpurpose>
       Returns directory path used for temporary files
     </refpurpose>
@@ -10,7 +10,7 @@
    <refsect1>
     <title>Description</title>
      <methodsynopsis>
-      <type>string</type><methodname>php_get_tmpdir</methodname>
+      <type>string</type><methodname>sys_get_temp_dir</methodname>
       <void/>
      </methodsynopsis>
     <para>
