@@ -36,6 +36,8 @@ function displayPage() {
 	assembleSkin();
 	document.all('pageContent').style.display = 'block';
 	//showPageCode();
+	// RAQ : Thursday, 17 February 2005 02:20 pm : Force focus to document to allow access keys to function.
+	document.focus();
 	// RAQ : Wednesday, 16 March 2005 01:58 pm : Force notes to be displayed if hash has been provided.
 	if (location.hash == '#userNotes')
 		showTabPane('pageNotes');
