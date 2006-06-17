@@ -9,7 +9,7 @@
                 version="1.0">
 
 <xsl:import href="docbook/fo/docbook.xsl"/>
-<xsl:include href="common.xsl"/>
+<xsl:import href="common.xsl"/>
 
 
 <!-- Enable FOP extensions -->
