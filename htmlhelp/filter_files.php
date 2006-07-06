@@ -13,6 +13,9 @@ if (!isset($HTML_SRC)) {
     die("This script is called from make_chm.php to filter output from XSL DocBook templates");
 }
 
+// make sure our regexes work under PHP >= 5.1
+ini_set('pcre.backtrack_limit', PHP_INT_MAX);
+
 $counter = filterFiles();
 
 // Filter XSL generated files through some refine filters
