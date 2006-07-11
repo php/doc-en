@@ -328,7 +328,7 @@ function get_dir_status($dir)
       if (
 	   $file == "rsusi.txt"
 	  || $file == "missing-ids.xml"
-          || $file == "extensions.xml"
+          || ($file == "extensions.xml" && strpos($dir, '/appendices/'))
 	  || $file == "README"
 	  || $file == "contributors.xml"
 	  || $file == "contributors.ent"
