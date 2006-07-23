@@ -517,6 +517,7 @@ function scan_for_constants_byref($buffer, $string, $type)
 
 function scan_for_constants($buffer)
 {
+var_dump($buffer);exit;
   scan_for_constants_byref($buffer, "REGISTER_LONG_CONSTANT", "integer");
   scan_for_constants_byref($buffer, "REGISTER_DOUBLE_CONSTANT", "float");
   scan_for_constants_byref($buffer, "REGISTER_STRING_CONSTANT", "string");
