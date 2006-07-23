@@ -407,42 +407,18 @@ function read_file($filename)
 
 function parse_desc($func_num, $data)
 {
-  $len=0;
-  $i=0;
-  $c=0;
-  $temp="";
-  $temp_len=0;
-  $spaces=0;
-
-  $len=strlen($data);
-  for ($i=0; $i<$len; $i++) {
-    $c=substr($data, $i, 1);
-    switch ($c) {
-      case '\r':
-      case '\n':
-      case ' ':
-        if (!$spaces) {
-          $spaces=1;
-          $temp .= ' ';
-          $temp_len++;
-        }
-        break;
-
-      default:
-        if ($c != '\r' && $c != '\n') {
-          $spaces=0;
-          $temp .= $c;
-          $temp_len++;
-        }
-        break;
-    }
+  // require at least 5 chars for the description (to skip empty or '*' lines)
+  if (!preg_match('/(.{5,})/', $data, $match)) {
+    echo "Not a proper description definition: $data\n";
+    return;
   }
-  function_add_purpose($func_num, $temp);
+  $data = trim($match[1], "* \t\r\n");
+  function_add_purpose($func_num, $data);
 }
 
 function parse_proto($proto)
 {
-  if (!preg_match('/proto\s+([a-zA-Z]+)\s+([a-zA-Z0-9:_-]+)\s*\((.+)\)\s+(.+)/', $proto, $match)) {
+  if (!preg_match('/proto\s+(?:(?:static|final|protected)\s+)?([a-zA-Z]+)\s+([a-zA-Z0-9:_-]+)\s*\((.*)\)\s+([\000-\377]+)/', $proto, $match)) {
     echo "Not a proper proto definition: $proto\n";
     return;
   }
@@ -453,10 +429,7 @@ function parse_proto($proto)
   parse_desc($func_number, $match[4]);
 
   // now parse the arguments
-  if (!preg_match_all('/(?:(\[),\s*)?([a-zA-Z]+)\s+(&?[a-zA-Z0-9:_-]+)/', $match[3], $match, PREG_SET_ORDER)) {
-    echo "Not a proper proto definition: $proto\n";
-    return;
-  }
+  preg_match_all('/(?:(\[),\s*)?([a-zA-Z]+)\s+(&?[a-zA-Z0-9:_-]+)/', $match[3], $match, PREG_SET_ORDER);
 
   foreach ($match as $arg) {
     function_add_arg($func_number, $arg[2], $arg[3], $arg[1]);
