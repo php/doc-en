@@ -453,74 +453,30 @@ function add_constant_to_list($name, $type)
   $constlist[$num_const]["name"]=$name;
   $constlist[$num_const]["type"]=$type;
 
-  $num_const++;
-  return(1);
-}
-
-function add_constant($varlist, $type)
-{
-    $on_name=0;
-    $len=strlen($varlist);
-    for ($i=0; $i<$len; $i++) {
-        $c=substr($varlist, $i, 1);
-        switch($c) {
-        case '"';
-            if (!$on_name) {
-              $on_name=1;
-              $name="";
-            } else {
-                $on_name=0;
-                add_constant_to_list($name, $type);
-                return(1);
-            }
-            break;
-
-        case ',':
-            return(0);
-            break;
-
-        default:
-            if ($on_name) {
-              $name .= $c;
-            }
-            break;
-
-        }
-     }
-     return(0);
-}
-
-function scan_for_constants_byref($buffer, $string, $type)
-{
-  $ptr=$buffer;
-
-  while (1) {
-    $temp=stristr($ptr, $string);
-    if (!$temp) { return(1); }
-    $temp2=substr($temp, strlen($string), strlen($temp)-strlen($string));
-    $temp3=stristr($temp2, "(");
-    if (!$temp3) { return(1); }
-    $temp4=substr($temp3, 1, strlen($temp3)-1);
-    $temp5=stristr($temp4, ")");
-    if (!$temp5) { return(1); }
-    $varlist=substr($temp4, 0, strlen($temp4)-strlen($temp5));
-    if (!add_constant($varlist, $type)) {
-      echo "Invalid constant definition: ";
-      $str=substr($temp, 0, strlen($temp)-strlen($temp5)+1);
-      echo $str;
-      echo "\n";
-    }
-    $ptr=$temp5;
-  }
-  return(0);
+  ++$num_const;
 }
 
 function scan_for_constants($buffer)
 {
-var_dump($buffer);exit;
-  scan_for_constants_byref($buffer, "REGISTER_LONG_CONSTANT", "integer");
-  scan_for_constants_byref($buffer, "REGISTER_DOUBLE_CONSTANT", "float");
-  scan_for_constants_byref($buffer, "REGISTER_STRING_CONSTANT", "string");
+  preg_match_all('/REGISTER_(?:MAIN_)?([A-Z]+)_CONSTANT\("(\S+)"/', $buffer, $matches, PREG_SET_ORDER);
+
+  foreach ($matches as $const) {
+    switch ($const[1]) {
+      case 'LONG':
+        $type = 'integer'; break;
+      case 'DOUBLE':
+        $type = 'float'; break;
+      case 'STRINGL':
+      case 'STRING':
+        $type = 'string'; break;
+
+      default:
+        echo "unknown type: $const[1]\n";
+        print_r($const);
+        continue;
+    }
+    add_constant_to_list($const[2], $type);
+  }
 }
 
 function write_constants_xml()
