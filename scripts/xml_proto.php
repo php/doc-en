@@ -438,156 +438,38 @@ function parse_desc($func_num, $data)
     }
   }
   function_add_purpose($func_num, $temp);
-  return(1);
 }
 
 function parse_proto($proto)
 {
-    $len=0;
-    $i=0;
-    $c=0;
-    $done=0;
-    $start=0;
-    $func_number=-1;
-    $got_proto_def=0;
-    $got_proto_type=0;
-    $got_proto_name=0;
-    $got_arg_type=0;
-    $start_args=0;
-    $temp="";
-    $temp2="";
-    $temp_len=0;
-    $isopt=0;
+  if (!preg_match('/proto\s+([a-zA-Z]+)\s+([a-zA-Z0-9:_-]+)\s*\((.+)\)\s+(.+)/', $proto, $match)) {
+    echo "Not a proper proto definition: $proto\n";
+    return;
+  }
 
-    $len=strlen($proto);
+  $func_number = new_function();
+  function_add_type($func_number, $match[1]);
+  function_add_name($func_number, $match[2]);
+  parse_desc($func_number, $match[4]);
 
-    for ($i=0; $i<$len; $i++) {
-        $c=substr($proto, $i, 1);
-        switch ($c) {
-        case '\r':
-        case '\n':
-        case ' ':
-            if ($temp_len) {
-              if (!$got_proto_def) {
-                if (strcasecmp($temp, "proto") != 0) {
-                  // Possibly just a comment, don't output error info
-                  // echo "Not a proper proto definition: $proto\n";
-                  return(0);
-                } else {
-                    $got_proto_def=1;
-                }
-              } else if (!$got_proto_type) {
-                  $func_number=new_function();
-                  function_add_type($func_number, $temp);
-                  $got_proto_type=1;
-              } else if (!$got_proto_name) {
-                  function_add_name($func_number, $temp);
-                  $got_proto_name=1;
-              } else if ($start_args && !$got_arg_type) {
-                  $got_arg_type=1;
-                  $temp2=$temp;
-              } else if ($start_args && $got_arg_type) {
-                  $got_arg_type=0;
-                  function_add_arg($func_number, $temp2, $temp, $isopt);
-                  $temp2="";
-              }
-              $temp_len=0;
-              $temp="";
-            }
-            break;
-      
-        case '[':
-            if ($got_proto_name) {
-              $isopt=1;
-            } else {
-                echo "Not a proper proto definition -5: $proto\n";
-            }
-            break;
-      
-        case ']':
-            if ($got_proto_name && $isopt) {
-            } else {
-                echo "Not a proper proto definition -6: $proto\n";
-            }
-            break;
+  // now parse the arguments
+  if (!preg_match_all('/(?:(\[),\s*)?([a-zA-Z]+)\s+(&?[a-zA-Z0-9:_-]+)/', $match[3], $match, PREG_SET_ORDER)) {
+    echo "Not a proper proto definition: $proto\n";
+    return;
+  }
 
-        case '(':
-            if ($got_proto_type && $got_proto_def &&!$got_proto_name) {
-              function_add_name($func_number, $temp);
-              $temp="";
-              $temp_len=0;
-              $start_args=1;
-              $got_proto_name=1;
-            } else {
-                echo "Not a proper proto definition -2: $proto\n";
-                return(0);
-            }
-
-            break;
-
-        case ')':
-            if ($start_args) {
-              if ($got_arg_type && $temp_len) {
-                function_add_arg($func_number, $temp2, $temp, $isopt);
-                $temp="";
-                $temp_len=0;
-              }
-              $done=1;
-            } else {
-                echo "Not a proper proto definition -4: $proto\n";
-                return(0);
-            }
-            break;
-
-        case ',':
-            if ($start_args && $got_arg_type) {
-              $got_arg_type=0;
-              function_add_arg($func_number, $temp2, $temp, $isopt);
-              $temp2="";
-              $temp="";
-              $temp_len=0;
-            } else if ($temp && !$temp2) {
-                echo "Not a proper proto definition -3: $temp2 : $temp : $proto\n";
-                return(0);
-            }
-            break;
-
-        default:
-            if ($c != '\r' && $c != '\n') {
-              $temp .= $c;
-              $temp_len++;
-            }
-            break;
-        }
-        if ($done) {
-          $start=$i+1;
-          break;
-        }
-    }
-    parse_desc($func_number, substr($proto, $start));
-    return(1);
+  foreach ($match as $arg) {
+    function_add_arg($func_number, $arg[2], $arg[3], $arg[1]);
+  }
 }
 
 function parse_file($buffer)
 {
-  global $funclist, $num_funcs;
+  preg_match_all('@/\*\s*{{{\s*(proto.+)\*/@sU', $buffer, $match);
 
-  $temp1="";
-  $temp2="";
-  $ptr="";
-  $args="";
-
-  $ptr=$buffer;
-  while (1) {
-    $temp1=strstr($ptr, "{{{");
-    if ($temp1 == false) break;
-    $temp2=strstr($temp1, "*/");
-    if ($temp2 == false) break;
-    $args=substr($temp1, 3, strlen($temp1)-strlen($temp2)-3);
-    parse_proto($args);
-    $ptr=$temp2;
+  foreach($match[1] as $proto) {
+    parse_proto(trim($proto));
   }
-  return(1);
 }
 
 function add_constant_to_list($name, $type)
