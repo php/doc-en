@@ -1,42 +1,49 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.8 $ -->
+<!-- $Revision: 1.9 $ -->
 <!-- Purpose: compression -->
 <!-- Membership: pecl -->
 
  <reference id="ref.zip">
-  <title>Zip File Functions (Read Only Access)</title>
+  <title>Zip File Functions</title>
   <titleabbrev>Zip</titleabbrev>
 
   <partintro>
    <section id="zip.intro">
     &reftitle.intro;
     <para>
-     This module enables you to transparently read ZIP compressed
+     This module enables you to transparently read or write ZIP compressed
      archives and the files inside them.
     </para>
    </section>
-   
+
    <section id="zip.requirements">
     &reftitle.required;
+    <section>
+    <title>PHP4 Bundled</title>
+       <para>
+        The initial version is bundled in PHP 4 and is available in PECL
+        as version 1.0, see <ulink url="&url.pecl.package;zip">
+        &url.pecl.package;zip</ulink>. It can only read Zip Archives.
+       </para>
+       <para>
+        This version uses the functions of the <ulink
+        url="&url.zziplib;">ZZIPlib</ulink> library by Guido Draheim.
+        You need ZZIPlib version &gt;= 0.10.6.
+       </para>
+    </section>
+
+    <section>
+    <title>PECL and PHP 5.2 or earlier</title>
     <para>
-     This module uses the functions of the <ulink
-     url="&url.zziplib;">ZZIPlib</ulink> library by Guido Draheim.
-     You need ZZIPlib version &gt;= 0.10.6.
+     The newest version is bundled in PHP 5.2.0 or earlier and
+     available in PECL, as version 1.1.0 or earlier. It does not
+     require any external library. It can read and write Zip archives
+     when used with PHP 5.1 or ealier and can only read them when used
+     with PHP4.
     </para>
-    <para>
-     The PECL package version 1.1.0 and up does not require any external
-     library. It also provides a write mode (creations and modifications).
-     The new features are not yet documented, please check the examples
-     included in the releases.
-    </para>
-    <para>
-     Note that ZZIPlib only provides a subset of functions
-     provided in a full implementation of the ZIP compression algorithm
-     and can only read ZIP file archives. A normal ZIP utility is
-     needed to create the ZIP file archives read by this library.
-    </para>
+    </section>
    </section>
-   
+
    &reference.zip.configure;
 
    <section id="zip.configuration">
@@ -46,21 +53,98 @@
 
    <section id="zip.resources">
     &reftitle.resources;
-    &no.resource;
+    <para>
+     There are two resource types used in the Zip module. The first one
+     is the Zip directory for the Zip archive, the second Zip Entry for
+     the archive entries.
+    </para>
    </section>
 
-   <section id="zip.constants">
-    &reftitle.constants;
-    &no.constants;
-   </section>
+   &reference.zip.constants;
 
    <section id="zip.examples">
     &reftitle.examples;
+    <example>
+     <title>Create a Zip archive</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+$zip = new ZipArchive();
+$filename = "./test112.zip";
+
+if ($zip->open($filename, ZIPARCHIVE::CREATE)!==TRUE) {
+    exit("cannot open <$filename>\n");
+}
+
+$zip->addFromString("testfilephp.txt" . time(), "#1 This is a test string added as testfilephp.txt.\n");
+$zip->addFromString("testfilephp2.txt" . time(), "#2 This is a test string added as testfilephp2.txt.\n");
+$zip->addFile($thisdir . "/too.php","/testfromfile.php");
+echo "numfiles: " . $zip->numFiles . "\n";
+echo "status:" . $zip->status . "\n";
+$zip->close();
+?>
+]]>
+     </programlisting>
+    </example>
+    <example>
+     <title>Dump the archive details and listing</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$za = new ZipArchive();
+
+$za->open('test_with_comment.zip');
+print_r($za);
+var_dump($za);
+echo "numFiles: " . $za->numFiles . "\n";
+echo "status: " . $za->status  . "\n";
+echo "statusSys: " . $za->statusSys . "\n";
+echo "filename: " . $za->filename . "\n";
+echo "comment: " . $za->comment . "\n";
+
+for ($i=0; $i<$za->numFiles;$i++) {
+    echo "index: $i\n";
+    print_r($za->statIndex($i));
+}
+echo "numFile:" . $za->numFiles . "\n";
+?>
+]]>
+     </programlisting>
+    </example>
+    <example>
+     <title>Zip stream wrapper, read an OpenOffice meta info</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$reader = new XMLReader();
+
+$reader->open('zip://' . dirname(__FILE__) . '/test.odt#meta.xml');
+$odt_meta = array();
+while ($reader->read()) {
+    if ($reader->nodeType == XMLREADER::ELEMENT) {
+        $elm = $reader->name;
+    } else {
+        if ($reader->nodeType == XMLREADER::END_ELEMENT && $reader->name == 'office:meta') {
+            break;
+        }
+        if (!trim($reader->value)) {
+            continue;
+        }
+        $odt_meta[$elm] = $reader->value;
+    }
+}
+print_r($odt_meta);
+?>
+]]>
+     </programlisting>
+    </example>
     <para>
-     This example opens a ZIP file archive, reads each file in the
-     archive and prints out its contents. The
-     <filename>test2.zip</filename> archive used in this example is
-     one of the test archives in the ZZIPlib source distribution.
+     This example uses the old API (PHP 4), it opens a ZIP file
+     archive, reads each file in the archive and prints out its
+     contents. The <filename>test2.zip</filename> archive used in this
+     example is one of the test archives in the ZZIPlib source
+     distribution.
     </para>
     <example>
      <title>Zip Usage Example</title>
@@ -71,7 +155,6 @@
 $zip = zip_open("/tmp/test2.zip");
 
 if ($zip) {
-
     while ($zip_entry = zip_read($zip)) {
         echo "Name:               " . zip_entry_name($zip_entry) . "\n";
         echo "Actual Filesize:    " . zip_entry_filesize($zip_entry) . "\n";
@@ -92,7 +175,6 @@ if ($zip) {
     zip_close($zip);
 
 }
-
 ?>
 ]]>
      </programlisting>
@@ -101,7 +183,6 @@ if ($zip) {
   </partintro>
 
 &reference.zip.functions;
-
  </reference>
 <!-- Keep this comment at the end of the file
 Local variables:
