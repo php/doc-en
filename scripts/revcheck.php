@@ -333,7 +333,8 @@ function get_dir_status($dir)
 	  || $file == "contributors.xml"
 	  || $file == "contributors.ent"
 	  || $file == "reserved.constants.xml"
-	  || $file == "DO_NOT_TRANSLATE" 
+	  || $file == 'DO_NOT_TRANSLATE'
+	  || strpos($dir, '/internals/')
 	  || ($file == "functions.xml" && strpos($dir, '/reference/')))
         continue;
 
