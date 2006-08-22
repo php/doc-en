@@ -73,6 +73,7 @@ while (false !== ($file = readdir($dh))) {
     }
     
     $lines = file($fullpath_file);
+    $hash  = sha1(implode('', $lines));
     
     $tmp   = '';
 
@@ -207,7 +208,7 @@ while (false !== ($file = readdir($dh))) {
     } elseif (strlen($tmp) < 40) {
             $log['error'][] = "ERROR: File ($file) is empty";
             continue;
-    } else {
+    } elseif (sha1($tmp) !== $hash) {
             $fp = fopen($fullpath_file, 'w');
             if ($fp) {
                     if (fwrite($fp, $tmp)) {
