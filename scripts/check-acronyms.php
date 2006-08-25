@@ -173,7 +173,7 @@ foreach($acronyms_infos as $acronym => $infos) {
     if ($mode == M_GLOBAL) {
         $occ = count($infos['locations']);
         printf(" %-20s %-60s [%2d occurences]\n", $acronym,  "($infos[description])", $occ);
-    } else if ($mode == M_SPECIFIC || $mode == M_VERBOSE) {
+    } else if ($mode === M_SPECIFIC || $mode === M_VERBOSE) {
         
         if ($mode === M_VERBOSE && count($infos['locations']) || in_array($acronym, $requested_acronyms)) {
 
@@ -192,7 +192,7 @@ foreach($acronyms_infos as $acronym => $infos) {
     }
 }
 
-if (!$found) {
+if (!$found && $mode === M_SPECIFIC) {
     echo "ERROR: No informations were found about requested acronyms. It may not exist.\n";
 }
 
