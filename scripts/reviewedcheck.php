@@ -78,7 +78,8 @@ if (
  || $file == "contributors.xml"
  || $file == "contributors.ent"
  || $file == "reserved.constants.xml"
- || $file == "DO_NOT_TRANSLATE" 
+ || $file == "DO_NOT_TRANSLATE"
+ || strpos($dir, '/internals/')
  || ($file == "functions.xml" && strpos($dir, '/reference/')))
 continue;
 
@@ -188,25 +189,25 @@ table.maxi { width: 820px; margin: 0 auto 0 auto; border-spacing: 1px; padding: 
 <tr class="act">
 <td>Reviewed to Yes</td>
 <td class="c">'.$nb_reviewed_yes.'</td>
-<td class="c">'.number_format(($nb_reviewed_yes*100)/$nb_file, 2, '.', '').'</td>
+<td class="c">'.number_format(($nb_reviewed_yes*100)/$nb_file, 2, '.', '').'%</td>
 </tr>
 
 <tr class="old">
 <td>Reviewed to No</td>
 <td class="c">'.$nb_reviewed_no.'</td>
-<td class="c">'.number_format(($nb_reviewed_no*100)/$nb_file, 2, '.', '').'</td>
+<td class="c">'.number_format(($nb_reviewed_no*100)/$nb_file, 2, '.', '').'%</td>
 </tr>
 
 <tr class="old">
 <td>Without Reviewed\'s tag</td>
 <td class="c">'.$nb_no_tag.'</td>
-<td class="c">'.number_format(($nb_no_tag*100)/$nb_file, 2, '.', '').'</td>
+<td class="c">'.number_format(($nb_no_tag*100)/$nb_file, 2, '.', '').'%</td>
 </tr>
 
 <tr class="blue">
 <th>Total</th>
 <th>'.$nb_file.'</th>
-<th>100</th>
+<th>100%</th>
 </tr>
 
 
