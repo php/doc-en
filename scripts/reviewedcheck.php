@@ -133,8 +133,8 @@ global $nb_reviewed_yes;
 
 
 // Sort the result
-ksort($result['reviewed_no']);
-ksort($result['no_tag']);
+if( is_array($result['reviewed_no']) ) { ksort($result['reviewed_no']); }
+if( is_array($result['no_tag']) ) { ksort($result['no_tag']); }
 
 // Rpint résult
 
@@ -221,6 +221,8 @@ table.maxi { width: 820px; margin: 0 auto 0 auto; border-spacing: 1px; padding: 
 <th>Sizes<br />in kB</th>
 </tr>';
 
+
+if( is_array($result['no_tag']) ) {
 // List files without reviewed's tag
 while( list($key, $val) = each($result['no_tag']) ) {
 
@@ -245,6 +247,13 @@ echo '
 
 
 } // end of while
+} else {
+echo '
+<tr class="old">
+ <td colspan="2" class="c">No file</td>
+</tr>
+';
+}
 
 echo '
 </table>
