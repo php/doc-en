@@ -288,11 +288,11 @@ function write_functions_xml()
         " </refsect1>\n"
     );
     fwrite($fp,
-        "\n <!-- Use when EXCEPTIONS exist\n" .
-        " <refsect1 role=\"exceptions\">\n" .
-        "  &reftitle.exceptions;\n" .
+        "\n <!-- Use when ERRORS exist\n" .
+        " <refsect1 role=\"errors\">\n" .
+        "  &reftitle.errors;\n" .
         "  <para>\n" .
-        "   When does this function throw exceptions?\n" .
+        "   When does this function throws E_* level errors, or exceptions?\n" .
         "  </para>\n" .
         " </refsect1>\n" .
         " -->\n\n"
