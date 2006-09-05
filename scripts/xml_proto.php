@@ -292,7 +292,7 @@ function write_functions_xml()
         " <refsect1 role=\"errors\">\n" .
         "  &reftitle.errors;\n" .
         "  <para>\n" .
-        "   When does this function throws E_* level errors, or exceptions?\n" .
+        "   When does this function throw E_* level errors, or exceptions?\n" .
         "  </para>\n" .
         " </refsect1>\n" .
         " -->\n\n"
