@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.13 $ -->
+<!-- $Revision: 1.14 $ -->
 <!-- splitted from ./en/functions/session.xml, last change in rev 1.23 -->
   <refentry id="function.session-set-save-handler">
    <refnamediv>
@@ -68,10 +68,9 @@
 <?php
 function open($save_path, $session_name) 
 {
-  global $sess_save_path, $sess_session_name;
-       
+  global $sess_save_path;
+  
   $sess_save_path = $save_path;
-  $sess_session_name = $session_name;
   return(true);
 }
 
@@ -82,25 +81,21 @@ function close()
 
 function read($id) 
 {
-  global $sess_save_path, $sess_session_name;
-
+  global $sess_save_path;
+  
   $sess_file = "$sess_save_path/sess_$id";
-  if ($fp = @fopen($sess_file, "r")) {
-    $sess_data = fread($fp, filesize($sess_file));
-    return($sess_data);
-  } else {
-    return(""); // Must return "" here.
-  }
-
+  return (string) @file_get_contents($sess_file);
 }
 
 function write($id, $sess_data) 
 {
-  global $sess_save_path, $sess_session_name;
-
+  global $sess_save_path;
+  
   $sess_file = "$sess_save_path/sess_$id";
   if ($fp = @fopen($sess_file, "w")) {
-    return(fwrite($fp, $sess_data));
+    $return = fwrite($fp, $sess_data);
+    fclose($fp);
+    return $return;
   } else {
     return(false);
   }
@@ -109,18 +104,21 @@ function write($id, $sess_data)
 
 function destroy($id) 
 {
-  global $sess_save_path, $sess_session_name;
-       
+  global $sess_save_path;
+  
   $sess_file = "$sess_save_path/sess_$id";
   return(@unlink($sess_file));
 }
 
-/*********************************************
- * WARNING - You will need to implement some *
- * sort of garbage collection routine here.  *
- *********************************************/
 function gc($maxlifetime) 
 {
+  global $sess_save_path;
+  
+  foreach (glob("$sess_save_path/sess_*") as $filename) {
+    if (filemtime($filename) + $maxlifetime < time()) {
+      @unlink($filename);
+    }
+  }
   return true;
 }
 
