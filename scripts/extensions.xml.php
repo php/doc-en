@@ -27,7 +27,7 @@
 <!-- Membership: core, pecl, bundled, external -->
 <!-- State: deprecated, experimental -->
 
-		--- NOTE: PHP >= 5 needed ---
+		--- NOTE: PHP >= 5.2 needed ---
 */
 
 $basedir = realpath(dirname(__FILE__) . '/..');
@@ -104,21 +104,21 @@ $xml = file_get_contents("$basedir/en/appendices/extensions.xml");
 // little hack to avoid loosing the entities
 $xml = preg_replace('/&([^;]+);/', PHP_EOL.'<!--'.PHP_EOL.'entity: "$1"'.PHP_EOL.'-->'.PHP_EOL, $xml);
 
-$simplexml = simplexml_load_string($xml, null, ~LIBXML_DTDVALID);
+$simplexml = simplexml_load_string($xml);
 
 
-foreach ($simplexml as &$node) {
+foreach ($simplexml->children() as $node) {
 
 	$tmp = explode('.', (string)$node->attributes());
 	$section = ucfirst($tmp[1]); // Purpose, State or Membership
 
-	foreach ($node->section as &$topnode) {
+	foreach ($node->children() as $topnode) {
 		$tmp     = explode('.', (string)$topnode->attributes());
 		$topname = $tmp[count($tmp)-1];
 
 		// this means that we have 2 levels (e.g. basic.*)
 		if ($topnode->section->itemizedlist) {
-			foreach ($topnode as &$lastnode) {
+			foreach ($topnode as $lastnode) {
 				$tmp  = explode('.', (string)$lastnode->attributes());
 				$name = $tmp[1].'.'.$tmp[2];
 
@@ -127,13 +127,13 @@ foreach ($simplexml as &$node) {
 				foreach ($Purpose[$name] as $ext => $dummy) {
 					unset($ext_list[$ext]); // to generate the debug messages later
 
-					$lastnode->itemizedlist .= <<< XML
+					$lastnode->itemizedlist = $lastnode->itemizedlist . <<< XML
      <listitem><para><xref linkend="$ext"/></para></listitem>
 
 XML;
 				}
 
-				$lastnode->itemizedlist .= '    '; // make the output prettier
+				$lastnode->itemizedlist = $lastnode->itemizedlist . '    ';
 
 			}
 
@@ -153,13 +153,13 @@ XML;
 					unset($ext_list[$ext]);
 				}
 
-				$topnode->itemizedlist .= <<< XML
+				$topnode->itemizedlist = $topnode->itemizedlist . <<< XML
     <listitem><para><xref linkend="$ext"/></para></listitem>
 
 XML;
 			}
 
-			$topnode->itemizedlist .= '   '; // make the output prettier
+			$topnode->itemizedlist = $topnode->itemizedlist . '   ';
 
 		} //end of 1 level handling
 	}
@@ -168,7 +168,7 @@ XML;
 
 $xml = strtr(html_entity_decode($simplexml->asXML()), array("\r\n" => "\n", "\r" => PHP_EOL, "\n" => PHP_EOL));
 // get the entities back again
-$xml = preg_replace('/( +)[\r\n]+<!--\s+entity: "([^"]+)"\s+-->[\r\n]+/', '$1&$2;'.PHP_EOL.PHP_EOL, $xml);
+$xml = preg_replace('/( *)[\r\n]*<!--\s+entity: "([^"]+)"\s+-->[\r\n]*/', '$1&$2;'.PHP_EOL.PHP_EOL, $xml);
 file_put_contents("$basedir/en/appendices/extensions.xml", $xml);
 
 
