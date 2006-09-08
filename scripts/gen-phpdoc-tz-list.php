@@ -33,7 +33,17 @@
 <appendix id="timezones">
  <title>List of Supported Timezones</title>
  <para>
+  Here you'll find the complete list of timezones supported by PHP, which are
+  meant to be used with e.g. <function>date_default_timezone_set</function>.
  </para>
+ <note>
+  <simpara>
+   The latest version of the timezone database can be installed via PECL's
+   <ulink url="&url.pecl.package.get;timezonedb">timezonedb</ulink>.
+   For Windows users, a pre-compiled DLL can be downloaded from the PECL4Win
+   site: <ulink url="&url.pecl.timezonedb.dll;">php_timezonedb.dll</ulink>.
+  </simpara>
+ </note>
 <?php foreach ($groupedList as $group => $zones) { ?>
 
  <sect1 id="timezones.<?php echo strtolower($group); ?>">
@@ -69,14 +79,6 @@
    </simpara>
   </note>
 <?php } ?>
-  <note>
-   <simpara>
-    The latest version of the timezone database can be installed via PECL's
-    <ulink url="&url.pecl.package.get;timezonedb">timezonedb</ulink>.
-    For Windows users, a pre-compiled DLL can be downloaded from the PECL4Win
-    site: <ulink url="&url.pecl.timezonedb.dll;">php_timezonedb.dll</ulink>.
-   </simpara>
-  </note>
  </sect1>
 <?php } ?>
 </appendix>
