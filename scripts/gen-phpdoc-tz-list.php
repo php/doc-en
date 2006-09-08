@@ -27,7 +27,7 @@
     unset($groupedList['Others']);
     $groupedList['Others'] = $others;
 ?>
-<?xml version="1.0" encoding="iso-8859-1"?>
+<?php echo '<?'; ?>xml version="1.0" encoding="iso-8859-1"?>
 <!-- $Revision$ -->
 <!-- AUTO GENERATED, DO NOT MODIFY BY HAND -->
 
@@ -62,17 +62,10 @@
     </tbody>
    </tgroup>
   </table>
-  <note>
-   <simpara>
-    The latest version of the timezone database can be installed via PECL's
-    <ulink url="&url.pecl.package.get;timezonedb">timezonedb</ulink>.
-    For Windows users, a pre-compiled DLL can be downloaded from the PECL4Win
-    site: <ulink url="&url.pecl.timezonedb.dll;">php_timezonedb.dll</ulink>.
-   </simpara>
-  </note>
  </sect1>
 <?php } ?>
-</appendix>  
+</appendix>
+
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml
@@ -93,4 +86,3 @@ vim600: syn=xml fen fdm=syntax fdl=2 si
 vim: et tw=78 syn=php
 vi: ts=4 sw=1
 -->
-
