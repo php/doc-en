@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.6 $ -->
-<refentry id="function.Memcache-addServer">
+<!-- $Revision: 1.1 $ -->
+<refentry id="function.Memcache-setServerParams">
  <refnamediv>
-  <refname>Memcache::addServer</refname>
-  <refpurpose>Add a memcached server to connection pool</refpurpose>
+  <refname>Memcache::setServerParams</refname>
+  <refpurpose>Changes server parameters and status at runtime</refpurpose>
  </refnamediv>
  
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <type>bool</type><methodname>Memcache::addServer</methodname>
+   <type>bool</type><methodname>Memcache::setServerParams</methodname>
    <methodparam><type>string</type><parameter>host</parameter></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>port</parameter></methodparam>
-   <methodparam choice="opt"><type>bool</type><parameter>persistent</parameter></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>weight</parameter></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>timeout</parameter></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>retry_interval</parameter></methodparam>
    <methodparam choice="opt"><type>bool</type><parameter>status</parameter></methodparam>
@@ -21,26 +19,13 @@
   </methodsynopsis>
   
   <para>
-   <function>Memcache::addServer</function> adds a server to the connection 
-   pool. The actual connection is established on first use.
-   The connection, which was opened using
-   <function>Memcache::addServer</function> will be automatically closed at the
-   end of script execution. Also you can close it with
-   <function>Memcache::close</function>.
-   You can also use the <function>memcache_add_server</function> function.
+   <function>Memcache::setServerParams</function> changes server parameters at runtime.
+   You can also use the <function>memcache_set_server_params</function> function.
   </para>
   
-  <para>
-   Failover may occur at any stage in any of the methods, as long as other 
-   servers are available the request the user won't notice. Any kind of 
-   socket or Memcached server level errors (except out-of-memory) may trigger 
-   the failover. Normal client errors such as adding an existing key will not 
-   trigger a failover.
-  </para>
-
   <note>
    <para>
-    This function has been added to Memcache version 2.0.0.
+    This function has been added to Memcache version 2.1.0.
    </para>
   </note>
 
@@ -68,24 +53,6 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>persistent</parameter></term>
-     <listitem>
-      <para>
-       Controls the use of a persistent connection. Default to &true;.
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry>
-     <term><parameter>weight</parameter></term>
-     <listitem>
-      <para>
-       Number of buckets to create for this server which in turn control its
-       probability of it being selected. The probability is relative to the
-       total weight of all servers.
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry>
      <term><parameter>timeout</parameter></term>
      <listitem>
       <para>
@@ -103,14 +70,6 @@
        is 15 seconds. Setting this parameter to -1 disables automatic retry. 
        Neither this nor the <parameter>persistent</parameter> parameter has any 
        effect when the extension is loaded dynamically via <function>dl</function>.
-      </para>
-      <para>
-       Each failed connection struct has its own timeout and before it has expired 
-       the struct will be skipped when selecting backends to serve a request. Once 
-       expired the connection will be successfully reconnected or marked as failed 
-       for another <parameter>retry_interval</parameter> seconds. The typical 
-       effect is that each webserver child will retry the connection about every
-       <parameter>retry_interval</parameter> seconds when serving a page.
       </para>
      </listitem>
     </varlistentry>
@@ -152,21 +111,29 @@
   &reftitle.examples;
   <para>
    <example>
-    <title><function>Memcache::addServer</function> example</title>
+    <title><function>Memcache::setServerParams</function> example</title>
     <programlisting role="php">
 <![CDATA[
 <?php
 
+function _callback_memcache_failure($host, $port) {
+	print "memcache '$host:$port' failed";
+}
+
 /* OO API */
 
 $memcache = new Memcache;
-$memcache->addServer('memcache_host', 11211);
-$memcache->addServer('memcache_host2', 11211);
+
+// Add the server in offline mode
+$memcache->addServer('memcache_host', 11211, false, 1, 1, -1, false);
+
+// Bring the server back online
+$memcache->setServerParams('memcache_host', 11211, 1, 15, true, '_callback_memcache_failure');
 
 /* procedural API */
 
 $memcache_obj = memcache_connect('memcache_host', 11211);
-memcache_add_server($memcache_obj, 'memcache_host2', 11211);
+memcache_set_server_params($memcache_obj, 'memcache_host', 11211, 1, 15, true, '_callback_memcache_failure');
 
 ?>
 ]]>
@@ -179,10 +146,7 @@ memcache_add_server($memcache_obj, 'memcache_host2', 11211);
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>Memcache::connect</function></member>
-    <member><function>Memcache::pconnect</function></member>
-    <member><function>Memcache::close</function></member>
-    <member><function>Memcache::setServerParams</function></member>
+    <member><function>Memcache::addServer</function></member>
     <member><function>Memcache::getServerStatus</function></member>
    </simplelist>
   </para>
