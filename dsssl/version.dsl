@@ -4963,6 +4963,7 @@
    ((equal-ci? (data nl) "spl_autoload_functions") (literal "PHP 5 >= 5.1.0RC1"))
    ((equal-ci? (data nl) "spl_autoload_register") (literal "PHP 5 >= 5.1.0RC1"))
    ((equal-ci? (data nl) "spl_autoload_unregister") (literal "PHP 5 >= 5.1.0RC1"))
+   ((equal-ci? (data nl) "spl_object_hash") (literal "PHP 5 >= 5.2.0"))
    ((equal-ci? (data nl) "spl_classes") (literal "PHP 5"))
    ((equal-ci? (data nl) "split") (literal "PHP 3, PHP 4, PHP 5"))
    ((equal-ci? (data nl) "spliti") (literal "PHP 4 >= 4.0.1, PHP 5"))
