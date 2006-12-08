@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='iso-8859-1'?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
  <reference id="ref.sam">
   <title>SAM - Simple Asynchronous Messaging</title>
   <titleabbrev>SAM</titleabbrev>
@@ -361,7 +361,110 @@ by using the freely distributable <ulink url="&url.ms.crt;">runtime package</uli
       </example>
      </para>
     </section>  <!-- id=sam.operations -->
+    <section id='sam.pubsub'>
+     <title>Publish/Subscribe and suscriptions to topics</title>
+     <para>
+     SAM allows messages to be sent either to queues or, for WebSphere MQ and WPM, to publish/subscribe topics.
+     A topic desintation is specified to SAM in the usual way, i.e. in the form 'topic://fred', rather than the form 
+     'queue://AQUEUE' used for point to point operation. To use publish/subscribe it is simply necessary to specify the 
+     correct broker name on the SAMConnect "connect" call and the desired topic in the destination argument to the SAMConnect "send" 
+     and "receive" calls. The PHP interface is otherwise identical to the point to point model.
+     </para>
+     <para>
+     By default, SAM creates non-durable subscriptions when using publish/subscribe. This means that if a client application is 
+     inactive when messages are published to a topic, then it will not receive them when it subsequently restarted. SAM does also 
+     allow durable subscriptions to be made to topics when using WPM or WebSphere MQ publish/subscribe. The purpose of these
+     subscriptions is to allow data to be received by a client application even if that client was not active at the time
+     the data was published.
+     </para>
+     <para>
+     Durable subscriptions are specified by using the SAMConnect "subscribe" call. This method takes the destination topic as an
+     input parameter and returns a subscription identifier that may be used on subsequent "receive" calls. When the subscription
+     is no longer required the SAMConnection "unsubscribe" method should be used to delete the subscription.
+     </para>
+     <para>
+      <example>
+       <title>Creating a durable subscription to a topic</title>
+       <programlisting role="php">
+        <![CDATA[
+<?php
 
+      $subName = $conn->subscribe('topic://A');
+
+      if (!$subName) {
+         echo "Subscribe failed";
+      } else {
+         # Subscribe was OK
+         ...
+      }
+?>
+        ]]>
+       </programlisting>
+      </example>
+     </para>
+     <para>
+      <example>
+       <title>Subscribing to a topic using a WebSphere Platform Messaging (WPM) server</title>
+       <programlisting role="php">
+        <![CDATA[
+<?php
+   $conn = new SAMConnection();
+   // Note: For pub/sub on WPM, when connecting the name of a messaging engine
+   //   to hold the durable subscription (SAM_WPM_DUR_SUB_HOME) must be specified.
+   $conn->connect(SAM_WMQ, array(SAM_ENDPOINTS => 'localhost:7278:BootstrapBasicMessaging',
+                                 SAM_BUS => 'Bus1',
+                                 SAM_TARGETCHAIN => 'InboundBasicMessaging'
+                                 SAM_WPM_DUR_SUB_HOME => 'MyMachineNode01.server1-Bus1'));
+
+   $subName = $conn->subscribe('topic://A');
+
+   if (!$subName) {
+      echo "Subscribe failed";
+   } else {
+      # Subscribe was OK
+      ...
+   }
+?>
+        ]]>
+       </programlisting>
+      </example>
+     </para>
+     <para>
+      <example>
+       <title>Receiving published data using a durable subscription</title>
+       <programlisting role="php">
+        <![CDATA[
+<?php
+
+      $msg = $conn->receive($subName);
+      if ($msg) {
+         echo "Received a message OK";
+      } else {
+         echo "The receive failed";
+      }
+
+?>
+        ]]>
+       </programlisting>
+      </example>
+     </para>
+     <para>
+      <example>
+       <title>Deleting a durable subscription to a topic</title>
+       <programlisting role="php">
+        <![CDATA[
+<?php
+
+      if (!$conn->unsubscribe($subName)) {
+         echo "Unsubscribe failed";
+      }
+
+?>
+        ]]>
+       </programlisting>
+      </example>
+     </para>
+    </section>  <!-- id=sam.pubsub -->
     <section id='sam.errors'>
      <title>Error handling</title>
      <para>
