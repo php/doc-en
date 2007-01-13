@@ -31,7 +31,7 @@ if ($_SERVER['argc'] == 2 &&
       $_SERVER['argc'] < 2) {
 
     echo "Prepare documentation for the new style (Whitespace Fix)\n\n";
-    echo "Usage:      {$_SERVER['argv'][0]} <extension>\n";
+    echo "Usage:      {$_SERVER['argv'][0]} <path_to_extension>\n";
     echo "            --help, -help, -h, -?      - to get this help\n";
     die;
 
