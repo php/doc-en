@@ -1,12 +1,12 @@
 <!DOCTYPE style-sheet PUBLIC "-//James Clark//DTD DSSSL Style Sheet//EN" [
-<!ENTITY docbook.dsl SYSTEM "/usr/share/sgml/docbkdsl/html/docbook.dsl" CDATA DSSSL>
+<!ENTITY docbook.dsl SYSTEM "/usr/src/php/doc/dsssl/docbook/html/docbook.dsl" CDATA DSSSL>
 ]>
 
 <!--
 
   $Id$
 
-  Stylesheet for generating a .toc file for kdevelope.
+  Stylesheet for generating a .toc file for kdevelop.
 
 -->
 
@@ -18,7 +18,7 @@
   "UNREGISTERED::James Clark//Flow Object Class::element")
 
 (element book 
-		(make element gi: "gideontoc"
+		(make element gi: "kdeveloptoc"
 					(make sequence
 						(make element gi: "title" (literal "PHP"))
 						(make element gi: "base" attributes: (list (list "href" "NO")) (empty-sosofo))
