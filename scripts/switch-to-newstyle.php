@@ -81,11 +81,12 @@ foreach (glob($fullpath_dir . "*.xml") as $file) {
  </refsect1>',
  $new);
  
- 
+ $result = array(); 
  // Write parameters and return values
  preg_match('@<methodsynopsis>((.|\n)*)</methodsynopsis>@m', $old, $result);
 
  if (count($result)) {
+     $params = array();
      preg_match_all('@<parameter>([^<]*)</parameter>@', $result[1], $params);
      if (count($params) && count($params[1])) {
          $buffer = '</refsect1>
