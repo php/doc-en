@@ -14,7 +14,6 @@
 | license@php.net so we can mail you a copy immediately.               |
 +----------------------------------------------------------------------+
 | Authors:    Mehdi Achour <didou@php.net>                             |
-|             Etienne Kneuss <colder@php.net>                          |
 +----------------------------------------------------------------------+
 
 $Id$
@@ -52,6 +51,9 @@ foreach (glob($fullpath_dir . "*.xml") as $file) {
     array('<refsect1>', '<title>Description</title>', "  </para>\n  <para>\n   <example>"),
     array('<refsect1 role="description">', '&reftitle.description;', "  </para>\n </refsect1>\n <refsect1 role=\"examples\">\n  &reftitle.examples;\n  <para>\n   <example>"),
     $old);
+
+    // Remove splitted from .. which doesn't make sense anymore
+    $new = preg_replace('@<!-- splitted [^>]*>\s*\n@', '', $new);
 
     // Switch see also
     $new = preg_replace(
