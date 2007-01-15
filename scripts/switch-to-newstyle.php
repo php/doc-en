@@ -43,13 +43,21 @@ if (!is_dir($fullpath_dir)) {
     exit(1);
 }
 
-
+$counts = array('old' => 0, 'new' => 0);
 foreach (glob($fullpath_dir . "*.xml") as $file) {
+    
     $old = file_get_contents($file);
+    
+    // Check if file is already using the new style and if so, skip it
+    if (false !== strpos($old, '<refsect1 role=')) {
+        $counts['new']++;
+        continue;
+    }
+    
     // Switch description and examples
     $new = str_replace(
     array('<refsect1>', '<title>Description</title>', "  </para>\n  <para>\n   <example>"),
-    array('<refsect1 role="description">', '&reftitle.description;', "  </para>\n </refsect1>\n <refsect1 role=\"examples\">\n  &reftitle.examples;\n  <para>\n   <example>"),
+    array("\n".' <refsect1 role="description">', '&reftitle.description;', "  </para>\n </refsect1>\n\n <refsect1 role=\"examples\">\n  &reftitle.examples;\n  <para>\n   <example>"),
     $old);
 
     // Remove splitted from .. which doesn't make sense anymore
@@ -62,6 +70,7 @@ foreach (glob($fullpath_dir . "*.xml") as $file) {
   </para>
  </refsect1>!',
  ' </refsect1>
+
  <refsect1 role="seealso">
   &reftitle.seealso;
   <para>
@@ -80,6 +89,7 @@ foreach (glob($fullpath_dir . "*.xml") as $file) {
      preg_match_all('@<parameter>([^<]*)</parameter>@', $result[1], $params);
      if (count($params) && count($params[1])) {
          $buffer = '</refsect1>
+
  <refsect1 role="parameters">
   &reftitle.parameters;
   <para>
@@ -99,6 +109,7 @@ foreach (glob($fullpath_dir . "*.xml") as $file) {
          $buffer .= '   </variablelist>
   </para>
  </refsect1>
+
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
@@ -107,9 +118,18 @@ foreach (glob($fullpath_dir . "*.xml") as $file) {
      }
      $new = preg_replace('!</refsect1>!', $buffer, $new, 1);
  }
+ 
+ if ($new === $old) {
+     continue;
+ }
+ $counts['old']++;
 
  $fp = fopen($file, 'w');
  fputs($fp, $new);
  fclose($fp);
 
 }
+
+echo "Modified file information:\n";
+echo "Old --> New: {$counts['old']}\n";
+echo "Already New: {$counts['new']}\n";
