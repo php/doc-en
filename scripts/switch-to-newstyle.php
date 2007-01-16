@@ -87,7 +87,7 @@ foreach (glob($fullpath_dir . "*.xml") as $file) {
 
  if (count($result)) {
      $params = array();
-     preg_match_all('@<parameter>([^<]*)</parameter>@', $result[1], $params);
+     preg_match_all('@<parameter[^>]*>([^<]*)</parameter>@', $result[1], $params);
      if (count($params) && count($params[1])) {
          $buffer = '</refsect1>
 
