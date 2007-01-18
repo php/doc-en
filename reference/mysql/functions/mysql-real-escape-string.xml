@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.26 $ -->
+<!-- $Revision: 1.27 $ -->
 <refentry id="function.mysql-real-escape-string">
  <refnamediv>
   <refname>mysql_real_escape_string</refname>
@@ -121,30 +121,44 @@ SELECT * FROM users WHERE user='aidan' AND password='' OR ''=''
     <programlisting role="php">
 <![CDATA[
 <?php
-// Quote variable to make safe
-function quote_smart($value)
-{
-    // Stripslashes
-    if (get_magic_quotes_gpc()) {
-        $value = stripslashes($value);
+
+if (isset($_POST['product_name']) && isset($_POST['product_description']) && isset($_POST['user_id'])) {
+    // Connect
+
+    $link = mysql_connect('mysql_host', 'mysql_user', 'mysql_password');
+
+    if(!is_resource($link)) {
+
+        echo "Failed to connect to the server\n";
+        // ... log the error properly
+
+    } else {
+        
+        // Reverse magic_quotes_gpc effects on those vars if ON.
+
+        if(get_magic_quotes_gpc()) {
+            $product_name        = stripslashes($_POST['product_name']);
+            $product_description = stripslashes($_POST['product_description']);
+        } else {
+            $product_name        = $_POST['product_name'];
+            $product_description = $_POST['product_description'];
+        }
+
+        // Make a safe query
+        $query = sprintf("INSERT INTO products (`name`, `description`, `user_id`) VALUES ('%s', '%s', '%d')",
+                    mysql_real_escape_string($product_name, $link),
+                    mysql_real_escape_string($product_description, $link),
+                    $_POST['user_id']);
+
+        mysql_query($query, $link);
+
+        if (mysql_affected_rows($link) > 0) {
+            echo "Product inserted\n";
+        }
     }
-    // Quote if not a number or a numeric string
-    if (!is_numeric($value)) {
-        $value = "'" . mysql_real_escape_string($value) . "'";
-    }
-    return $value;
+} else {
+    echo "Fill the form properly\n";
 }
-
-// Connect
-$link = mysql_connect('mysql_host', 'mysql_user', 'mysql_password')
-    OR die(mysql_error());
-
-// Make a safe query
-$query = sprintf("SELECT * FROM users WHERE user=%s AND password=%s",
-            quote_smart($_POST['username']),
-            quote_smart($_POST['password']));
-
-mysql_query($query);
 ?>
 ]]>
     </programlisting>
