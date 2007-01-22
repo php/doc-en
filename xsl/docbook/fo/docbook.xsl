@@ -2,7 +2,9 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:exsl="http://exslt.org/common"
                 xmlns:fo="http://www.w3.org/1999/XSL/Format"
-                exclude-result-prefixes="exsl"
+                xmlns:ng="http://docbook.org/docbook-ng"
+                xmlns:db="http://docbook.org/ns/docbook"
+                exclude-result-prefixes="db ng exsl"
                 version='1.0'>
 
 <!-- It is important to use indent="no" here, otherwise verbatim -->
@@ -11,7 +13,7 @@
 <xsl:output method="xml" indent="no"/>
 
 <!-- ********************************************************************
-     $Id: docbook.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
+     $Id: docbook.xsl,v 1.6 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -68,14 +70,18 @@
 <xsl:include href="titlepage.templates.xsl"/>
 <xsl:include href="pagesetup.xsl"/>
 <xsl:include href="pi.xsl"/>
+<xsl:include href="spaces.xsl"/>
 <xsl:include href="ebnf.xsl"/>
 <xsl:include href="docbookng.xsl"/>
 <xsl:include href="../html/chunker.xsl"/>
+<xsl:include href="../common/stripns.xsl"/>
 
 <xsl:include href="fop.xsl"/>
+<xsl:include href="fop1.xsl"/>
 <xsl:include href="passivetex.xsl"/>
 <xsl:include href="xep.xsl"/>
 <xsl:include href="axf.xsl"/>
+<xsl:include href="ptc.xsl"/>
 
 <xsl:param name="stylesheet.result.type" select="'fo'"/>
 
@@ -107,20 +113,32 @@
 </xsl:template>
 
 <!-- Update this list if new root elements supported -->
-<xsl:variable name="root.elements" select="' appendix article bibliography book chapter colophon dedication glossary index part preface refentry reference sect1 section set setindex '"/>
+<xsl:variable name="root.elements" select="' appendix article bibliography book chapter colophon dedication glossary index part preface qandaset refentry reference sect1 section set setindex '"/>
 
 <xsl:template match="/">
   <xsl:choose>
-    <xsl:when test="function-available('exsl:node-set')
-                    and namespace-uri(*[1]) = 'http://docbook.org/docbook-ng'">
-      <!-- Hack! If someone hands us a DocBook NG document, toss the namespace -->
-      <!-- and continue. Someday we may reverse this logic and add the namespace -->
-      <!-- to documents that don't have one. But not before the whole stylesheet -->
-      <!-- has been converted to use namespaces. i.e., don't hold your breath -->
+    <!-- include extra test for Xalan quirk -->
+    <xsl:when test="(function-available('exsl:node-set') or
+                     contains(system-property('xsl:vendor'),
+                       'Apache Software Foundation'))
+                    and (*/self::ng:* or */self::db:*)">
+      <!-- Hack! If someone hands us a DocBook V5.x or DocBook NG document,
+           toss the namespace and continue. Someday we'll reverse this logic
+           and add the namespace to documents that don't have one.
+           But not before the whole stylesheet has been converted to use
+           namespaces. i.e., don't hold your breath -->
+      <xsl:message>Stripping namespace from DocBook 5 document.</xsl:message>
       <xsl:variable name="nons">
         <xsl:apply-templates mode="stripNS"/>
       </xsl:variable>
       <xsl:apply-templates select="exsl:node-set($nons)"/>
+    </xsl:when>
+    <!-- Can't process unless namespace removed -->
+    <xsl:when test="*/self::ng:* or */self::db:*">
+      <xsl:message terminate="yes">
+        <xsl:text>Unable to strip the namespace from DB5 document,</xsl:text>
+        <xsl:text> cannot proceed.</xsl:text>
+      </xsl:message>
     </xsl:when>
     <xsl:otherwise>
       <xsl:choose>
@@ -216,6 +234,7 @@
     </xsl:attribute>
 
     <xsl:if test="$xep.extensions != 0">
+      <xsl:call-template name="xep-pis"/>
       <xsl:call-template name="xep-document-information"/>
     </xsl:if>
     <xsl:if test="$axf.extensions != 0">
@@ -227,6 +246,19 @@
     <xsl:if test="$fop.extensions != 0">
       <xsl:apply-templates select="$document.element" mode="fop.outline"/>
     </xsl:if>
+
+    <xsl:if test="$fop1.extensions != 0">
+      <xsl:variable name="bookmarks">
+        <xsl:apply-templates select="$document.element" 
+                             mode="fop1.outline"/>
+      </xsl:variable>
+      <xsl:if test="string($bookmarks) != ''">
+        <fo:bookmark-tree>
+          <xsl:copy-of select="$bookmarks"/>
+        </fo:bookmark-tree>
+      </xsl:if>
+    </xsl:if>
+
     <xsl:if test="$xep.extensions != 0">
       <xsl:variable name="bookmarks">
         <xsl:apply-templates select="$document.element" mode="xep.outline"/>
@@ -237,6 +269,19 @@
         </rx:outline>
       </xsl:if>
     </xsl:if>
+
+    <xsl:if test="$arbortext.extensions != 0 and $ati.xsl11.bookmarks != 0">
+      <xsl:variable name="bookmarks">
+        <xsl:apply-templates select="$document.element"
+                             mode="ati.xsl11.bookmarks"/>
+      </xsl:variable>
+      <xsl:if test="string($bookmarks) != ''">
+        <fo:bookmark-tree>
+          <xsl:copy-of select="$bookmarks"/>
+        </fo:bookmark-tree>
+      </xsl:if>
+    </xsl:if>
+
     <xsl:apply-templates select="$document.element"/>
   </fo:root>
 </xsl:template>
@@ -255,29 +300,6 @@
     <xsl:value-of select="$page.height"/>
     <xsl:text>)</xsl:text>
   </xsl:message>
-</xsl:template>
-
-<!-- ==================================================================== -->
-
-<xsl:template match="*" mode="stripNS">
-  <xsl:choose>
-    <xsl:when test="namespace-uri(.) = 'http://docbook.org/docbook-ng'">
-      <xsl:element name="{local-name(.)}">
-        <xsl:copy-of select="@*"/>
-        <xsl:apply-templates mode="stripNS"/>
-      </xsl:element>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:copy>
-        <xsl:copy-of select="@*"/>
-        <xsl:apply-templates mode="stripNS"/>
-      </xsl:copy>
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
-<xsl:template match="comment()|processing-instruction()|text()" mode="stripNS">
-  <xsl:copy/>
 </xsl:template>
 
 <!-- ==================================================================== -->

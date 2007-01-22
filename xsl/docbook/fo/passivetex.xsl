@@ -4,25 +4,12 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: passivetex.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
+     $Id: passivetex.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
       This extension stops PassiveTeX from merging subsequent '-' to 
       dashes. You must set passivetex.extensions to '1' if you want get
       this functionality.
      ******************************************************************** -->
-
-<xsl:template match="text()">
-  <xsl:choose>
-    <xsl:when test="$passivetex.extensions != 0">
-      <xsl:call-template name="passivetex.dash.subst">
-        <xsl:with-param name="string" select="."/>
-      </xsl:call-template>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:value-of select="."/>
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
 
 <xsl:template name="passivetex.dash.subst">
   <xsl:param name="string"/>

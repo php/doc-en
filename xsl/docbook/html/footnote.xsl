@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: footnote.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: footnote.xsl,v 1.4 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -118,6 +118,11 @@
     </xsl:call-template>
   </xsl:variable>
   <p>
+    <xsl:if test="@role and $para.propagates.style != 0">
+      <xsl:attribute name="class">
+        <xsl:value-of select="@role"/>
+      </xsl:attribute>
+    </xsl:if>
     <sup>
       <xsl:text>[</xsl:text>
       <a name="{$name}" href="{$href}">
@@ -218,6 +223,19 @@
       <br/>
       <hr width="100" align="left"/>
       <xsl:apply-templates select="$footnotes" mode="process.footnote.mode"/>
+    </div>
+  </xsl:if>
+
+  <xsl:if test="$annotation.support != 0 and //annotation">
+    <div class="annotation-list">
+      <div class="annotation-nocss">
+	<p>The following annotations are from this essay. You are seeing
+	them here because your browser doesn’t support the user-interface
+	techniques used to make them appear as ‘popups’ on modern browsers.</p>
+      </div>
+
+      <xsl:apply-templates select="//annotation"
+			   mode="annotation-popup"/>
     </div>
   </xsl:if>
 </xsl:template>

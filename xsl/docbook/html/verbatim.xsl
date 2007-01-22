@@ -1,14 +1,14 @@
 <?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:sverb="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.Verbatim"
-                xmlns:xverb="com.nwalsh.xalan.Verbatim"
+                xmlns:xverb="xalan://com.nwalsh.xalan.Verbatim"
                 xmlns:lxslt="http://xml.apache.org/xslt"
                 xmlns:exsl="http://exslt.org/common"
                 exclude-result-prefixes="sverb xverb lxslt exsl"
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: verbatim.xsl,v 1.4 2005-07-15 08:27:51 techtonik Exp $
+     $Id: verbatim.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -16,6 +16,9 @@
      and other information.
 
      ******************************************************************** -->
+
+<xsl:include href="../highlighting/common.xsl"/>
+<xsl:include href="highlight.xsl"/>
 
 <lxslt:component prefix="xverb"
                  functions="numberLines"/>
@@ -40,26 +43,26 @@
     </xsl:message>
   </xsl:if>
 
-    <xsl:choose>
-      <xsl:when test="$suppress-numbers = '0'
-                      and @linenumbering = 'numbered'
-                      and $use.extensions != '0'
-                      and $linenumbering.extension != '0'">
-        <xsl:variable name="rtf">
-          <xsl:apply-templates/>
-        </xsl:variable>
-        <pre class="{name(.)}">
-          <xsl:call-template name="number.rtf.lines">
-            <xsl:with-param name="rtf" select="$rtf"/>
-          </xsl:call-template>
-        </pre>
-      </xsl:when>
-      <xsl:otherwise>
-        <pre class="{name(.)}">
-          <xsl:apply-templates/>
-        </pre>
-      </xsl:otherwise>
-    </xsl:choose>
+  <xsl:choose>
+    <xsl:when test="$suppress-numbers = '0'
+		    and @linenumbering = 'numbered'
+		    and $use.extensions != '0'
+		    and $linenumbering.extension != '0'">
+      <xsl:variable name="rtf">
+	<xsl:call-template name="apply-highlighting"/>
+      </xsl:variable>
+      <pre class="{name(.)}">
+	<xsl:call-template name="number.rtf.lines">
+	  <xsl:with-param name="rtf" select="$rtf"/>
+	</xsl:call-template>
+      </pre>
+    </xsl:when>
+    <xsl:otherwise>
+      <pre class="{name(.)}">
+	<xsl:call-template name="apply-highlighting"/>
+      </pre>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 <xsl:template match="literallayout">
@@ -81,47 +84,47 @@
     </xsl:message>
   </xsl:if>
 
-    <xsl:choose>
-      <xsl:when test="$suppress-numbers = '0'
-                      and @linenumbering = 'numbered'
-                      and $use.extensions != '0'
-                      and $linenumbering.extension != '0'">
-        <xsl:choose>
-          <xsl:when test="@class='monospaced'">
-            <pre class="{name(.)}">
-              <xsl:call-template name="number.rtf.lines">
-                <xsl:with-param name="rtf" select="$rtf"/>
-              </xsl:call-template>
-            </pre>
-          </xsl:when>
-          <xsl:otherwise>
-            <div class="{name(.)}">
-              <p>
-                <xsl:call-template name="number.rtf.lines">
-                  <xsl:with-param name="rtf" select="$rtf"/>
-                </xsl:call-template>
-              </p>
-            </div>
-          </xsl:otherwise>
-        </xsl:choose>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:choose>
-          <xsl:when test="@class='monospaced'">
-            <pre class="{name(.)}">
-              <xsl:copy-of select="$rtf"/>
-            </pre>
-          </xsl:when>
-          <xsl:otherwise>
-            <div class="{name(.)}">
-              <p>
-                <xsl:call-template name="make-verbatim">
-                  <xsl:with-param name="rtf" select="$rtf"/>
-                </xsl:call-template>
-              </p>
-            </div>
-          </xsl:otherwise>
-        </xsl:choose>
+  <xsl:choose>
+    <xsl:when test="$suppress-numbers = '0'
+		    and @linenumbering = 'numbered'
+		    and $use.extensions != '0'
+		    and $linenumbering.extension != '0'">
+      <xsl:choose>
+	<xsl:when test="@class='monospaced'">
+	  <pre class="{name(.)}">
+	    <xsl:call-template name="number.rtf.lines">
+	      <xsl:with-param name="rtf" select="$rtf"/>
+	    </xsl:call-template>
+	  </pre>
+	</xsl:when>
+	<xsl:otherwise>
+	  <div class="{name(.)}">
+	    <p>
+	      <xsl:call-template name="number.rtf.lines">
+		<xsl:with-param name="rtf" select="$rtf"/>
+	      </xsl:call-template>
+	    </p>
+	  </div>
+	</xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:choose>
+	<xsl:when test="@class='monospaced'">
+	  <pre class="{name(.)}">
+	    <xsl:copy-of select="$rtf"/>
+	  </pre>
+	</xsl:when>
+	<xsl:otherwise>
+	  <div class="{name(.)}">
+	    <p>
+	      <xsl:call-template name="make-verbatim">
+		<xsl:with-param name="rtf" select="$rtf"/>
+	      </xsl:call-template>
+	    </p>
+	  </div>
+	</xsl:otherwise>
+      </xsl:choose>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -234,37 +237,37 @@
 
   <xsl:variable name="linenumbering.startinglinenumber">
     <xsl:choose>
-      <xsl:when test="@startinglinenumber">
-        <xsl:value-of select="@startinglinenumber"/>
+      <xsl:when test="$pi.context/@startinglinenumber">
+        <xsl:value-of select="$pi.context/@startinglinenumber"/>
       </xsl:when>
-      <xsl:when test="@continuation='continues'">
+      <xsl:when test="$pi.context/@continuation='continues'">
         <xsl:variable name="lastLine">
           <xsl:choose>
-            <xsl:when test="self::programlisting">
+            <xsl:when test="$pi.context/self::programlisting">
               <xsl:call-template name="lastLineNumber">
                 <xsl:with-param name="listings"
                      select="preceding::programlisting[@linenumbering='numbered']"/>
               </xsl:call-template>
             </xsl:when>
-            <xsl:when test="self::screen">
+            <xsl:when test="$pi.context/self::screen">
               <xsl:call-template name="lastLineNumber">
                 <xsl:with-param name="listings"
                      select="preceding::screen[@linenumbering='numbered']"/>
               </xsl:call-template>
             </xsl:when>
-            <xsl:when test="self::literallayout">
+            <xsl:when test="$pi.context/self::literallayout">
               <xsl:call-template name="lastLineNumber">
                 <xsl:with-param name="listings"
                      select="preceding::literallayout[@linenumbering='numbered']"/>
               </xsl:call-template>
             </xsl:when>
-            <xsl:when test="self::address">
+            <xsl:when test="$pi.context/self::address">
               <xsl:call-template name="lastLineNumber">
                 <xsl:with-param name="listings"
                      select="preceding::address[@linenumbering='numbered']"/>
               </xsl:call-template>
             </xsl:when>
-            <xsl:when test="self::synopsis">
+            <xsl:when test="$pi.context/self::synopsis">
               <xsl:call-template name="lastLineNumber">
                 <xsl:with-param name="listings"
                      select="preceding::synopsis[@linenumbering='numbered']"/>
@@ -273,7 +276,7 @@
             <xsl:otherwise>
               <xsl:message>
                 <xsl:text>Unexpected verbatim environment: </xsl:text>
-                <xsl:value-of select="local-name(.)"/>
+                <xsl:value-of select="local-name($pi.context)"/>
               </xsl:message>
               <xsl:value-of select="0"/>
             </xsl:otherwise>

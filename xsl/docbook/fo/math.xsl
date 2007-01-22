@@ -2,10 +2,11 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:fo="http://www.w3.org/1999/XSL/Format"
                 xmlns:mml="http://www.w3.org/1998/Math/MathML"
+                exclude-result-prefixes="mml"
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: math.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: math.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -30,6 +31,12 @@
 </xsl:template>
 
 <xsl:template match="alt">
+</xsl:template>
+
+<xsl:template match="mathphrase">
+  <fo:inline>
+    <xsl:apply-templates/>
+  </fo:inline>
 </xsl:template>
 
 <!-- "Support" for MathML -->

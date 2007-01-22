@@ -14,9 +14,25 @@
   <xsl:param name="targetptr.att" select="''"/>
   <xsl:param name="olink.lang" select="''"/>
 
+  <!-- use root's xml:base if exists -->
+  <xsl:variable name="xml.base" select="/*/@xml:base"/>
+
   <!-- This selection can be customized if needed -->
-  <xsl:variable name="target.database.filename" 
-      select="$target.database.document"/>
+  <xsl:variable name="target.database.filename">
+    <xsl:choose>
+      <xsl:when test="$xml.base != '' and
+                   not(starts-with($target.database.document, 'file:/')) and
+                   not(starts-with($target.database.document, '/'))">
+        <xsl:call-template name="systemIdToBaseURI">
+          <xsl:with-param name="systemId" select="$xml.base"/>
+        </xsl:call-template>
+        <xsl:value-of select="$target.database.document"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$target.database.document"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
 
   <xsl:variable name="target.database" 
       select="document($target.database.filename,/)"/>
@@ -532,6 +548,58 @@
   </xsl:if>
 </xsl:template>
 
+<!-- Computes the href of the object containing the olink element -->
+<xsl:template name="olink.from.uri">
+  <xsl:param name="target.database"/>
+  <xsl:param name="object" select="NotAnElement"/>
+  <xsl:param name="object.targetdoc" select="$current.docid"/>
+  <xsl:param name="object.lang" 
+           select="concat($object/ancestor::*[last()]/@lang,
+                          $object/ancestor::*[last()]/@xml:lang)"/>
+
+  <xsl:variable name="parent.id">
+    <xsl:call-template name="object.id">
+      <xsl:with-param name="object" select="$object"/>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <!-- Get the olink key for the parent of olink element -->
+  <xsl:variable name="from.key">
+    <xsl:call-template name="select.olink.key">
+      <xsl:with-param name="targetdoc.att" select="$object.targetdoc"/>
+      <xsl:with-param name="targetptr.att" select="$parent.id"/>
+      <xsl:with-param name="olink.lang" select="$object.lang"/>
+      <xsl:with-param name="target.database" select="$target.database"/>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:variable name="from.olink.href">
+    <xsl:for-each select="$target.database" >
+      <xsl:value-of select="key('targetptr-key', $from.key)/@href" />
+    </xsl:for-each>
+  </xsl:variable>
+
+  <xsl:choose>
+    <!-- we found the olink object -->
+    <xsl:when test="$from.olink.href != ''">
+      <xsl:value-of select="$from.olink.href"/>
+    </xsl:when>
+    <xsl:when test="not($object/parent::*)">
+      <xsl:value-of select="$from.olink.href"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <!-- recurse upward in current document -->
+      <xsl:call-template name="olink.from.uri">
+        <xsl:with-param name="target.database" select="$target.database"/>
+        <xsl:with-param name="object" select="$object/parent::*"/>
+        <xsl:with-param name="object.targetdoc" select="$object.targetdoc"/>
+        <xsl:with-param name="object.lang" select="$object.lang"/>
+      </xsl:call-template>
+    </xsl:otherwise>
+  </xsl:choose>
+
+</xsl:template>
+
 <xsl:template name="olink.hottext">
   <xsl:param name="target.database"/>
   <xsl:param name="olink.lang" select="''"/>
@@ -812,7 +880,7 @@
 
           <xsl:variable name="template">
             <xsl:call-template name="gentext.template">
-              <xsl:with-param name="context" select="'title'"/>
+              <xsl:with-param name="context" select="'xref'"/>
               <xsl:with-param name="name" select="$target.elem"/>
               <xsl:with-param name="lang" select="$lang"/>
             </xsl:call-template>
@@ -848,12 +916,14 @@
       </xsl:choose>
     </xsl:when>
     <xsl:when test="@targetdoc != '' or @targetptr != ''">
-      <xsl:message>
-        <xsl:text>Olink error: no generated text for </xsl:text>
-        <xsl:text>targetdoc/targetptr/lang = '</xsl:text>
-        <xsl:value-of select="$olink.key"/>
-        <xsl:text>'.</xsl:text>
-      </xsl:message>
+      <xsl:if test="$olink.key != ''">
+        <xsl:message>
+          <xsl:text>Olink error: no generated text for </xsl:text>
+          <xsl:text>targetdoc/targetptr/lang = '</xsl:text>
+          <xsl:value-of select="$olink.key"/>
+          <xsl:text>'.</xsl:text>
+        </xsl:message>
+      </xsl:if>
       <xsl:text>????</xsl:text>
     </xsl:when>
     <xsl:otherwise>
@@ -940,7 +1010,7 @@
   <xsl:choose>
     <xsl:when test="$linkend != ''">
       <xsl:call-template name="xref.page.citation">
-        <xsl:with-param name="linkend" select="@linkend"/>
+        <xsl:with-param name="linkend" select="$linkend"/>
         <xsl:with-param name="target" select="key('id', $linkend)"/>
         <xsl:with-param name="xrefstyle" select="$xrefstyle"/>
       </xsl:call-template>
@@ -1004,6 +1074,19 @@
     <xsl:value-of select="substring-before($olink.key, '/')"/>
   </xsl:variable>
 
+  <xsl:variable name="targetptr">
+    <xsl:value-of 
+          select="substring-before(substring-after($olink.key, '/'), '/')"/>
+  </xsl:variable>
+
+  <!-- Don't add docname if pointing to root element -->
+  <xsl:variable name="rootptr">
+    <xsl:for-each select="$target.database" >
+      <xsl:value-of 
+             select="key('targetdoc-key', $targetdoc)/div[1]/@targetptr" />
+    </xsl:for-each>
+  </xsl:variable>
+
   <xsl:variable name="docname">
     <xsl:for-each select="$target.database" >
       <xsl:value-of 
@@ -1015,6 +1098,7 @@
               and (contains($xrefstyle, 'docname')))
               and ($olink.doctitle = 'yes' or $olink.doctitle = '1')
               and $current.docid != '' 
+              and $rootptr != $targetptr
               and $current.docid != $targetdoc
               and $docname != ''">
     <xsl:call-template name="substitute-markup">
@@ -1048,10 +1132,9 @@
     </xsl:choose>
   </xsl:param>
 
-  <xsl:if test="not(starts-with(normalize-space($xrefstyle),
-                    'select:') != '' 
-                and (contains($xrefstyle, 'page')
-                     or contains($xrefstyle, 'Page')))
+  <xsl:if test="not(starts-with(normalize-space($xrefstyle),'select:')
+                    and (contains($xrefstyle, 'page')
+                         or contains($xrefstyle, 'Page')))
                 and ( $insert.xref.page.number = 'yes' 
                    or $insert.xref.page.number = '1')
                 or local-name($target) = 'para'">

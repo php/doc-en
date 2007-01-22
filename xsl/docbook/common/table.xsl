@@ -5,7 +5,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: table.xsl,v 1.4 2005-07-15 08:27:52 techtonik Exp $
+     $Id: table.xsl,v 1.5 2007-01-22 11:35:11 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -253,10 +253,11 @@ or 0 (the empty string)</para>
   <xsl:param name="colnum" select="0"/>
   <xsl:param name="attribute" select="'colsep'"/>
 
-  <xsl:variable name="tgroup" select="$row/ancestor::tgroup[1]"/>
+  <xsl:variable name="tgroup" select="$row/parent::*/parent::tgroup[1]"/>
 
   <xsl:variable name="table" select="($tgroup/ancestor::table
-                                     |$tgroup/ancestor::informaltable)[1]"/>
+                                     |$tgroup/ancestor::informaltable
+				     |$entry/ancestor::entrytbl)[last()]"/>
 
   <xsl:variable name="entry.value">
     <xsl:call-template name="get-attribute">
@@ -357,6 +358,15 @@ or 0 (the empty string)</para>
     </xsl:choose>
   </xsl:variable>
 
+  <xsl:variable name="calc.colvalue">
+    <xsl:if test="$colnum &gt; 0">
+      <xsl:call-template name="colnum.colspec">
+        <xsl:with-param name="colnum" select="$colnum"/>
+        <xsl:with-param name="attribute" select="$attribute"/>
+      </xsl:call-template>
+    </xsl:if>
+  </xsl:variable>
+
   <xsl:choose>
     <xsl:when test="$entry.value != ''">
       <xsl:value-of select="$entry.value"/>
@@ -364,33 +374,20 @@ or 0 (the empty string)</para>
     <xsl:when test="$row.value != ''">
       <xsl:value-of select="$row.value"/>
     </xsl:when>
-    <xsl:when test="$tgroup.value != ''">
-      <xsl:value-of select="$tgroup.value"/>
-    </xsl:when>
-    <xsl:when test="$table.value != ''">
-      <xsl:value-of select="$table.value"/>
-    </xsl:when>
     <xsl:when test="$span.value != ''">
       <xsl:value-of select="$span.value"/>
     </xsl:when>
     <xsl:when test="$namest.value != ''">
       <xsl:value-of select="$namest.value"/>
     </xsl:when>
-    <xsl:when test="$colnum &gt; 0">
-      <xsl:variable name="calc.colvalue">
-        <xsl:call-template name="colnum.colspec">
-          <xsl:with-param name="colnum" select="$colnum"/>
-          <xsl:with-param name="attribute" select="$attribute"/>
-        </xsl:call-template>
-      </xsl:variable>
-      <xsl:choose>
-        <xsl:when test="$calc.colvalue != ''">
-          <xsl:value-of select="$calc.colvalue"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="$default.value"/>
-        </xsl:otherwise>
-      </xsl:choose>
+    <xsl:when test="$calc.colvalue != ''">
+      <xsl:value-of select="$calc.colvalue"/>
+    </xsl:when>
+    <xsl:when test="$tgroup.value != ''">
+      <xsl:value-of select="$tgroup.value"/>
+    </xsl:when>
+    <xsl:when test="$table.value != ''">
+      <xsl:value-of select="$table.value"/>
     </xsl:when>
     <xsl:otherwise>
       <xsl:value-of select="$default.value"/>
@@ -401,7 +398,10 @@ or 0 (the empty string)</para>
 <xsl:template name="colnum.colspec">
   <xsl:param name="colnum" select="0"/>
   <xsl:param name="attribute" select="'colname'"/>
-  <xsl:param name="colspecs" select="ancestor::tgroup/colspec"/>
+  <xsl:param name="colspec.ancestor" 
+             select="(ancestor::tgroup|ancestor::entrytbl)
+	             [position() = last()]"/>
+  <xsl:param name="colspecs" select="$colspec.ancestor/colspec"/>
   <xsl:param name="count" select="1"/>
 
   <xsl:choose>
@@ -459,6 +459,18 @@ or 0 (the empty string)</para>
       <xsl:value-of select="."/>
     </xsl:if>
   </xsl:for-each>
+</xsl:template>
+
+<xsl:template name="consume-row">
+  <xsl:param name="spans"/>
+
+  <xsl:if test="contains($spans,':')">
+    <xsl:value-of select="substring-before($spans,':') - 1"/>
+    <xsl:text>:</xsl:text>
+    <xsl:call-template name="consume-row">
+      <xsl:with-param name="spans" select="substring-after($spans,':')"/>
+    </xsl:call-template>
+  </xsl:if>
 </xsl:template>
 
 </xsl:stylesheet>

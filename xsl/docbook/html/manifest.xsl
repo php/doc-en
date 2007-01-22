@@ -1,10 +1,10 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
-		version="1.0"
+                version="1.0"
                 exclude-result-prefixes="doc">
 
 <!-- ********************************************************************
-     $Id: manifest.xsl,v 1.5 2005-07-15 09:18:33 techtonik Exp $
+     $Id: manifest.xsl,v 1.6 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -91,7 +91,9 @@
           <xsl:value-of select="$base.dir"/>
         </xsl:if>
       </xsl:with-param>
-      <xsl:with-param name="base.name" select="concat('ln-',$id,$html.ext)"/>
+      <xsl:with-param name="base.name">
+        <xsl:apply-templates mode="chunk-filename" select="."/>
+      </xsl:with-param>
     </xsl:call-template>
     <xsl:text>&#10;</xsl:text>
   </xsl:if>

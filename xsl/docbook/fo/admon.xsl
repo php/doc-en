@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: admon.xsl,v 1.5 2005-07-16 23:38:31 techtonik Exp $
+     $Id: admon.xsl,v 1.6 2007-01-22 11:35:11 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -67,15 +67,15 @@
      <xsl:apply-templates select="." mode="admon.graphic.width"/>
   </xsl:variable>
 
-  <fo:block id="{$id}">
+  <fo:block id="{$id}"
+            xsl:use-attribute-sets="graphical.admonition.properties">
     <fo:list-block provisional-distance-between-starts="{$graphic.width} + 18pt"
-    		provisional-label-separation="18pt"
-		xsl:use-attribute-sets="list.block.spacing">
+                    provisional-label-separation="18pt">
       <fo:list-item>
           <fo:list-item-label end-indent="label-end()">
             <fo:block>
               <fo:external-graphic width="auto" height="auto"
-	      		           content-width="{$graphic.width}" >
+                                         content-width="{$graphic.width}" >
                 <xsl:attribute name="src">
                   <xsl:call-template name="admon.graphic"/>
                 </xsl:attribute>
@@ -102,9 +102,10 @@
     <xsl:call-template name="object.id"/>
   </xsl:variable>
 
-  <fo:block id="{$id}">
+  <fo:block id="{$id}"
+            xsl:use-attribute-sets="nongraphical.admonition.properties">
     <xsl:if test="$admon.textlabel != 0 or title">
-      <fo:block keep-with-next='always'
+      <fo:block keep-with-next.within-column='always'
                 xsl:use-attribute-sets="admonition.title.properties">
          <xsl:apply-templates select="." mode="object.title.markup"/>
       </fo:block>

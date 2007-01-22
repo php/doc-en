@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: biblio.xsl,v 1.4 2005-07-15 08:27:50 techtonik Exp $
+     $Id: biblio.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -15,6 +15,8 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="bibliography">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
@@ -40,6 +42,8 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="bibliodiv">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
     <xsl:apply-templates/>
   </div>
@@ -67,9 +71,7 @@
 				   and not(self::titleabbrev)
 			           and not(self::biblioentry)
 				   and not(self::bibliomixed)]"/>
-    <dl>
-      <xsl:apply-templates select="biblioentry|bibliomixed"/>
-    </dl>
+    <xsl:apply-templates select="biblioentry|bibliomixed"/>
   </div>
 </xsl:template>
 
@@ -97,7 +99,7 @@
 	      </xsl:apply-templates>
 	    </xsl:when>
 	    <xsl:otherwise>
-          <xsl:apply-templates select="$entry"/>
+	      <xsl:apply-templates select="$entry"/>
 	    </xsl:otherwise>
 	  </xsl:choose>
         </xsl:when>
@@ -123,7 +125,9 @@
     </xsl:when>
     <xsl:otherwise>
       <div class="{name(.)}">
-        <xsl:call-template name="anchor"/>
+        <xsl:call-template name="anchor">
+	  <xsl:with-param name="conditional" select="0"/>
+	</xsl:call-template>
         <p>
 	  <xsl:copy-of select="$label"/>
           <xsl:apply-templates mode="bibliography.mode"/>
@@ -155,7 +159,7 @@
 	      </xsl:apply-templates>
 	    </xsl:when>
 	    <xsl:otherwise>
-          <xsl:apply-templates select="$entry"/>
+	      <xsl:apply-templates select="$entry"/>
 	    </xsl:otherwise>
 	  </xsl:choose>
         </xsl:when>
@@ -181,7 +185,9 @@
     </xsl:when>
     <xsl:otherwise>
       <div class="{name(.)}">
-        <xsl:call-template name="anchor"/>
+        <xsl:call-template name="anchor">
+	  <xsl:with-param name="conditional" select="0"/>
+	</xsl:call-template>
         <p class="{name(.)}">
 	  <xsl:copy-of select="$label"/>
           <xsl:apply-templates mode="bibliomixed.mode"/>
@@ -239,49 +245,49 @@
 <xsl:template match="address" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="affiliation" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="shortaffil" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="jobtitle" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="artheader|articleinfo|info" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="artpagenums" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="author" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:call-template name="person.name"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
@@ -292,28 +298,28 @@
 <xsl:template match="authorgroup" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:call-template name="person.name.list"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="authorinitials" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="bibliomisc" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="bibliomset" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
@@ -338,7 +344,7 @@
       <i><xsl:apply-templates/></i>
     </xsl:otherwise>
   </xsl:choose>
-  <xsl:value-of select="$biblioentry.item.separator"/>
+  <xsl:copy-of select="$biblioentry.item.separator"/>
 </xsl:template>
 
 <!-- ================================================== -->
@@ -346,7 +352,7 @@
 <xsl:template match="bookbiblio" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
@@ -362,77 +368,77 @@
         <xsl:call-template name="inline.italicseq"/>
       </xsl:otherwise>
     </xsl:choose>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="collab" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="collabname" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="confgroup" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="confdates" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="conftitle" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="confnum" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="confsponsor" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="contractnum" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="contractsponsor" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="contrib" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
@@ -453,7 +459,7 @@
       <xsl:call-template name="gentext.space"/>
       <xsl:apply-templates select="holder" mode="bibliography.mode"/>
     </xsl:if>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
@@ -474,133 +480,133 @@
 <xsl:template match="corpauthor" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="corpcredit" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="corpname" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="date" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="edition" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="editor" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:call-template name="person.name"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="firstname" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="honorific" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="indexterm" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="invpartnumber" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="isbn" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="issn" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="issuenum" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="lineage" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="orgname" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="orgdiv" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="othercredit" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="othername" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="pagenums" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
@@ -611,21 +617,21 @@
 <xsl:template match="productname" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="productnumber" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="pubdate" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
@@ -638,21 +644,21 @@
 <xsl:template match="publishername" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="pubsnumber" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="releaseinfo" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
@@ -669,42 +675,42 @@
 <xsl:template match="seriesvolnums" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="subtitle" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="surname" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="title" mode="bibliography.mode">
   <span class="{name(.)}">
     <i><xsl:apply-templates mode="bibliography.mode"/></i>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="titleabbrev" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
 <xsl:template match="volumenum" mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 
@@ -712,7 +718,7 @@
               mode="bibliography.mode">
   <span class="{name(.)}">
     <xsl:apply-templates mode="bibliography.mode"/>
-    <xsl:value-of select="$biblioentry.item.separator"/>
+    <xsl:copy-of select="$biblioentry.item.separator"/>
   </span>
 </xsl:template>
 

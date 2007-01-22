@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: html.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: html.xsl,v 1.4 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -11,6 +11,42 @@
      and other information.
 
      ******************************************************************** -->
+
+<!-- The generate.html.title template is currently used for generating HTML -->
+<!-- "title" attributes for some inline elements only, but not for any -->
+<!-- block elements. It is called in eleven places in the inline.xsl -->
+<!-- file. But it's called by all the inline.* templates (e.g., -->
+<!-- inline.boldseq), which in turn are called by other (element) -->
+<!-- templates, so it results, currently, in supporting generation of the -->
+<!-- HTML "title" attribute for a total of about 92 elements. -->
+<xsl:template name="generate.html.title">
+  <xsl:if test="alt">
+    <xsl:attribute name="title">
+      <xsl:value-of select="normalize-space(alt)"/>
+    </xsl:attribute>
+  </xsl:if>
+</xsl:template>
+
+<xsl:template name="dir">
+  <xsl:param name="inherit" select="0"/>
+
+  <xsl:variable name="dir">
+    <xsl:choose>
+      <xsl:when test="@dir">
+	<xsl:value-of select="@dir"/>
+      </xsl:when>
+      <xsl:when test="$inherit != 0">
+	<xsl:value-of select="ancestor::*/@dir[1]"/>
+      </xsl:when>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:if test="$dir != ''">
+    <xsl:attribute name="dir">
+      <xsl:value-of select="$dir"/>
+    </xsl:attribute>
+  </xsl:if>
+</xsl:template>
 
 <xsl:template name="anchor">
   <xsl:param name="node" select="."/>
@@ -20,7 +56,7 @@
       <xsl:with-param name="object" select="$node"/>
     </xsl:call-template>
   </xsl:variable>
-  <xsl:if test="$conditional = 0 or $node/@id">
+  <xsl:if test="$conditional = 0 or $node/@id or $node/@xml:id">
     <a name="{$id}"/>
   </xsl:if>
 </xsl:template>
@@ -44,11 +80,13 @@
 </xsl:template>
 
 <xsl:template name="href.target.with.base.dir">
+  <xsl:param name="context" select="."/>
   <xsl:param name="object" select="."/>
   <xsl:if test="$manifest.in.base.dir = 0">
     <xsl:value-of select="$base.dir"/>
   </xsl:if>
   <xsl:call-template name="href.target">
+    <xsl:with-param name="context" select="$context"/>
     <xsl:with-param name="object" select="$object"/>
   </xsl:call-template>
 </xsl:template>
@@ -84,6 +122,46 @@
       <xsl:text>&#x2022;</xsl:text>
     </xsl:otherwise>
   </xsl:choose>
+</xsl:template>
+
+<xsl:template name="id.warning">
+  <xsl:if test="$id.warnings != 0 and not(@id) and not(@xml:id) and parent::*">
+    <xsl:variable name="title">
+      <xsl:choose>
+	<xsl:when test="title">
+	  <xsl:value-of select="title[1]"/>
+	</xsl:when>
+	<xsl:when test="substring(local-name(*[1]),
+			          string-length(local-name(*[1])-3) = 'info')
+			and *[1]/title">
+	  <xsl:value-of select="*[1]/title[1]"/>
+	</xsl:when>
+	<xsl:when test="refmeta/refentrytitle">
+	  <xsl:value-of select="refmeta/refentrytitle"/>
+	</xsl:when>
+	<xsl:when test="refnamediv/refname">
+	  <xsl:value-of select="refnamediv/refname[1]"/>
+	</xsl:when>
+      </xsl:choose>
+    </xsl:variable>
+
+    <xsl:message>
+      <xsl:text>ID recommended on </xsl:text>
+      <xsl:value-of select="local-name(.)"/>
+      <xsl:if test="$title != ''">
+	<xsl:text>: </xsl:text>
+	<xsl:choose>
+	  <xsl:when test="string-length($title) &gt; 40">
+	    <xsl:value-of select="substring($title,1,40)"/>
+	    <xsl:text>...</xsl:text>
+	  </xsl:when>
+	  <xsl:otherwise>
+	    <xsl:value-of select="$title"/>
+	  </xsl:otherwise>
+	</xsl:choose>
+      </xsl:if>
+    </xsl:message>
+  </xsl:if>
 </xsl:template>
 
 </xsl:stylesheet>

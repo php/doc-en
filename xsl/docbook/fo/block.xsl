@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: block.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
+     $Id: block.xsl,v 1.6 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -24,6 +24,9 @@
 
 <xsl:template name="block.object">
   <fo:block>
+    <xsl:if test="@id">
+      <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+    </xsl:if>
     <xsl:apply-templates/>
   </fo:block>
 </xsl:template>
@@ -39,12 +42,18 @@
 
 <xsl:template match="simpara">
   <fo:block xsl:use-attribute-sets="normal.para.spacing">
+    <xsl:if test="@id">
+      <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+    </xsl:if>
     <xsl:apply-templates/>
   </fo:block>
 </xsl:template>
 
 <xsl:template match="formalpara">
   <fo:block xsl:use-attribute-sets="normal.para.spacing">
+    <xsl:if test="@id">
+      <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+    </xsl:if>
     <xsl:apply-templates/>
   </fo:block>
 </xsl:template>
@@ -127,7 +136,7 @@
   <xsl:param name="end.indent">0pt</xsl:param>
 
   <xsl:choose>
-    <xsl:when test="$fop.extensions">
+    <xsl:when test="not($fop.extensions = 0)">
       <!-- fop 0.20.5 does not support floats -->
       <xsl:copy-of select="$content"/>
     </xsl:when>
@@ -182,12 +191,12 @@
                 <xsl:choose>
                   <xsl:when test="ancestor::para">
                     <!-- Special case for handling inline floats
-		         in Antenna House-->
+                         in Antenna House-->
                     <xsl:value-of select="concat('-', $body.start.indent)"/>
                   </xsl:when>
                   <xsl:otherwise>0pt</xsl:otherwise>
                 </xsl:choose>
-	      </xsl:attribute>
+              </xsl:attribute>
               <fo:block start-indent="{$start.indent}"
                         end-indent="-{$start.indent} - {$width}">
                 <xsl:copy-of select="$content"/>
@@ -243,20 +252,22 @@
     </xsl:call-template>
   </xsl:variable>
 
+  <xsl:variable name="id">
+    <xsl:call-template name="object.id"/>
+  </xsl:variable>
+
   <xsl:choose>
     <xsl:when test="$pi-type = 'margin.note'">
       <xsl:call-template name="margin.note"/>
     </xsl:when>
     <xsl:otherwise>
       <xsl:variable name="content">
-  <fo:block xsl:use-attribute-sets="sidebar.properties">
-    <xsl:if test="./title">
-            <fo:block xsl:use-attribute-sets="sidebar.title.properties">
-        <xsl:apply-templates select="./title" mode="sidebar.title.mode"/>
-      </fo:block>
-    </xsl:if>
-    <xsl:apply-templates/>
-  </fo:block>
+        <fo:block xsl:use-attribute-sets="sidebar.properties"
+		  id="{$id}">
+	  <xsl:call-template name="sidebar.titlepage"/>
+          <xsl:apply-templates select="node()[not(self::title) and
+	                                 not(self::sidebarinfo)]"/>
+        </fo:block>
       </xsl:variable>
     
       <xsl:variable name="pi-width">
@@ -297,6 +308,7 @@
                             $position = 'left'">0pt</xsl:when>
             <xsl:when test="$position = 'end' or 
                             $position = 'right'">0.5em</xsl:when>
+            <xsl:otherwise>0pt</xsl:otherwise>
           </xsl:choose>
         </xsl:with-param>
         <xsl:with-param name="end.indent">
@@ -305,6 +317,7 @@
                             $position = 'left'">0.5em</xsl:when>
             <xsl:when test="$position = 'end' or 
                             $position = 'right'">0pt</xsl:when>
+            <xsl:otherwise>0pt</xsl:otherwise>
           </xsl:choose>
         </xsl:with-param>
       </xsl:call-template>
@@ -313,11 +326,13 @@
 
 </xsl:template>
 
-<xsl:template match="sidebar/title">
-</xsl:template>
+<xsl:template match="sidebar/title|sidebarinfo"/>
 
-<xsl:template match="sidebar/title" mode="sidebar.title.mode">
-  <xsl:apply-templates/>
+<xsl:template match="sidebar/title|sidebarinfo/title"
+              mode="titlepage.mode" priority="1">
+  <fo:block xsl:use-attribute-sets="sidebar.title.properties">
+    <xsl:apply-templates/>
+  </fo:block>
 </xsl:template>
 
 <xsl:template name="margin.note">
@@ -361,6 +376,7 @@
                         $position = 'left'">0pt</xsl:when>
         <xsl:when test="$position = 'end' or 
                         $position = 'right'">0.5em</xsl:when>
+        <xsl:otherwise>0pt</xsl:otherwise>
       </xsl:choose>
     </xsl:with-param>
     <xsl:with-param name="end.indent">
@@ -369,6 +385,7 @@
                         $position = 'left'">0.5em</xsl:when>
         <xsl:when test="$position = 'end' or 
                         $position = 'right'">0pt</xsl:when>
+        <xsl:otherwise>0pt</xsl:otherwise>
       </xsl:choose>
     </xsl:with-param>
   </xsl:call-template>
@@ -381,18 +398,18 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="abstract">
-  <fo:block>
+  <fo:block xsl:use-attribute-sets="abstract.properties">
     <xsl:if test="@id">
       <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
-    </xsl:if>
-    <xsl:if test="title">
-      <xsl:call-template name="formal.object.heading"/>
     </xsl:if>
     <xsl:apply-templates/>
   </fo:block>
 </xsl:template>
 
 <xsl:template match="abstract/title">
+  <fo:block xsl:use-attribute-sets="abstract.title.properties">
+    <xsl:apply-templates/>
+  </fo:block>
 </xsl:template>
 
 <!-- ==================================================================== -->
@@ -488,14 +505,17 @@
 <!-- For better or worse, revhistory is allowed in content... -->
 
 <xsl:template match="revhistory">
-  <fo:table table-layout="fixed">
+  <fo:table table-layout="fixed" xsl:use-attribute-sets="revhistory.table.properties">
+    <xsl:if test="@id">
+      <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+    </xsl:if>
     <fo:table-column column-number="1" column-width="proportional-column-width(1)"/>
     <fo:table-column column-number="2" column-width="proportional-column-width(1)"/>
     <fo:table-column column-number="3" column-width="proportional-column-width(1)"/>
-    <fo:table-body>
+    <fo:table-body start-indent="0pt" end-indent="0pt">
       <fo:table-row>
-        <fo:table-cell number-columns-spanned="3">
-          <fo:block>
+        <fo:table-cell number-columns-spanned="3" xsl:use-attribute-sets="revhistory.table.cell.properties">
+          <fo:block xsl:use-attribute-sets="revhistory.title.properties">
             <xsl:call-template name="gentext">
               <xsl:with-param name="key" select="'RevHistory'"/>
             </xsl:call-template>
@@ -508,13 +528,16 @@
 </xsl:template>
 
 <xsl:template match="revhistory/revision">
-  <xsl:variable name="revnumber" select=".//revnumber"/>
-  <xsl:variable name="revdate"   select=".//date"/>
-  <xsl:variable name="revauthor" select=".//authorinitials"/>
-  <xsl:variable name="revremark" select=".//revremark|.//revdescription"/>
+  <xsl:variable name="revnumber" select="revnumber"/>
+  <xsl:variable name="revdate"   select="date"/>
+  <xsl:variable name="revauthor" select="authorinitials|author"/>
+  <xsl:variable name="revremark" select="revremark|revdescription"/>
   <fo:table-row>
-    <fo:table-cell>
+    <fo:table-cell xsl:use-attribute-sets="revhistory.table.cell.properties">
       <fo:block>
+        <xsl:if test="@id">
+          <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+        </xsl:if>
         <xsl:if test="$revnumber">
           <xsl:call-template name="gentext">
             <xsl:with-param name="key" select="'Revision'"/>
@@ -524,20 +547,25 @@
         </xsl:if>
       </fo:block>
     </fo:table-cell>
-    <fo:table-cell>
+    <fo:table-cell xsl:use-attribute-sets="revhistory.table.cell.properties">
       <fo:block>
         <xsl:apply-templates select="$revdate[1]"/>
       </fo:block>
     </fo:table-cell>
-    <fo:table-cell>
+    <fo:table-cell xsl:use-attribute-sets="revhistory.table.cell.properties">
       <fo:block>
-        <xsl:apply-templates select="$revauthor[1]"/>
+        <xsl:for-each select="$revauthor">
+          <xsl:apply-templates select="."/>
+          <xsl:if test="position() != last()">
+            <xsl:text>, </xsl:text>
+          </xsl:if>
+        </xsl:for-each>
       </fo:block>
     </fo:table-cell>
   </fo:table-row>
   <xsl:if test="$revremark">
     <fo:table-row>
-      <fo:table-cell number-columns-spanned="3">
+      <fo:table-cell number-columns-spanned="3" xsl:use-attribute-sets="revhistory.table.cell.properties">
         <fo:block>
           <xsl:apply-templates select="$revremark[1]"/>
         </fo:block>
@@ -558,6 +586,10 @@
   <xsl:apply-templates/>
 </xsl:template>
 
+<xsl:template match="revision/author">
+  <xsl:apply-templates/>
+</xsl:template>
+
 <xsl:template match="revision/revremark">
   <xsl:apply-templates/>
 </xsl:template>
@@ -570,6 +602,9 @@
 
 <xsl:template match="ackno">
   <fo:block xsl:use-attribute-sets="normal.para.spacing">
+    <xsl:if test="@id">
+      <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+    </xsl:if>
     <xsl:apply-templates/>
   </fo:block>
 </xsl:template>

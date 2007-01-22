@@ -3,7 +3,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: task.xsl,v 1.1 2004-10-01 16:32:08 techtonik Exp $
+     $Id: task.xsl,v 1.2 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -58,12 +58,18 @@
   <xsl:call-template name="semiformal.object"/>
 </xsl:template>
 
+<xsl:template match="tasksummary/title"/>
+
 <xsl:template match="taskprerequisites">
   <xsl:call-template name="semiformal.object"/>
 </xsl:template>
 
+<xsl:template match="taskprerequisites/title"/>
+
 <xsl:template match="taskrelated">
   <xsl:call-template name="semiformal.object"/>
 </xsl:template>
+
+<xsl:template match="taskrelated/title"/>
 
 </xsl:stylesheet>

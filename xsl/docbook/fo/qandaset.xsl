@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: qandaset.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
+     $Id: qandaset.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -16,7 +16,9 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="qandaset">
-  <xsl:variable name="id"><xsl:call-template name="object.id"/></xsl:variable>
+  <xsl:variable name="id">
+    <xsl:call-template name="object.id"/>
+  </xsl:variable>
 
   <xsl:variable name="label-width">
     <xsl:call-template name="dbfo-attribute">
@@ -41,33 +43,82 @@
       <xsl:otherwise>2.5em</xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
+  
+  <xsl:variable name="toc">
+    <xsl:call-template name="dbfo-attribute">
+      <xsl:with-param name="pis"
+                      select="processing-instruction('dbfo')"/>
+      <xsl:with-param name="attribute" select="'toc'"/>
+    </xsl:call-template>
+  </xsl:variable>
 
-  <fo:block id="{$id}">
-    <xsl:if test="blockinfo/title|info/title|title">
-      <xsl:apply-templates select="(blockinfo/title|info/title|title)[1]"/>
-    </xsl:if>
+  <xsl:variable name="toc.params">
+    <xsl:call-template name="find.path.params">
+      <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
+    </xsl:call-template>
+  </xsl:variable>
 
-    <xsl:apply-templates select="*[name(.) != 'title'
-                                 and name(.) != 'titleabbrev'
-                                 and name(.) != 'qandadiv'
-                                 and name(.) != 'qandaentry']"/>
-    <xsl:apply-templates select="qandadiv"/>
+  <xsl:variable name="content">
+    <fo:block id="{$id}">
+      <xsl:choose>
+        <xsl:when test="parent::*">
+          <xsl:if test="blockinfo/title|info/title|title">
+            <xsl:apply-templates select="(blockinfo/title|
+                                          info/title|title)[1]"/>
+          </xsl:if>
+        </xsl:when>
+        <!-- If it is the root element -->
+        <xsl:otherwise>
+          <xsl:call-template name="qandaset.titlepage"/>
+        </xsl:otherwise>
+      </xsl:choose>
+  
+      <xsl:if test="(contains($toc.params, 'toc') and $toc != '0') 
+                    or $toc = '1'">
+        <xsl:call-template name="qandaset.toc">
+          <xsl:with-param name="toc.title.p"
+                          select="contains($toc.params, 'title')"/>
+        </xsl:call-template>
+      </xsl:if>
 
-    <xsl:if test="qandaentry">
-      <fo:list-block xsl:use-attribute-sets="list.block.spacing"
-                     provisional-label-separation="0.2em">
-	<xsl:attribute name="provisional-distance-between-starts">
-	  <xsl:choose>
-	    <xsl:when test="$label-length != ''">
-	      <xsl:value-of select="$label-length"/>
-	    </xsl:when>
-	    <xsl:otherwise>2.5em</xsl:otherwise>
-	  </xsl:choose>
-	</xsl:attribute>
-        <xsl:apply-templates select="qandaentry"/>
-      </fo:list-block>
-    </xsl:if>
-  </fo:block>
+      <xsl:call-template name="qandaset.toc.separator"/>
+
+      <xsl:apply-templates select="*[name(.) != 'title'
+                                   and name(.) != 'titleabbrev'
+                                   and name(.) != 'qandadiv'
+                                   and name(.) != 'qandaentry']"/>
+      <xsl:apply-templates select="qandadiv"/>
+  
+      <xsl:if test="qandaentry">
+        <fo:list-block xsl:use-attribute-sets="list.block.spacing"
+                       provisional-label-separation="0.2em">
+          <xsl:attribute name="provisional-distance-between-starts">
+            <xsl:choose>
+              <xsl:when test="$label-length != ''">
+                <xsl:value-of select="$label-length"/>
+              </xsl:when>
+              <xsl:otherwise>2.5em</xsl:otherwise>
+            </xsl:choose>
+          </xsl:attribute>
+          <xsl:apply-templates select="qandaentry"/>
+        </fo:list-block>
+      </xsl:if>
+    </fo:block>
+  </xsl:variable>
+
+  <xsl:choose>
+    <xsl:when test="parent::*">
+      <xsl:copy-of select="$content"/>
+    </xsl:when>
+    <!-- Otherwise create a page sequence -->
+    <xsl:otherwise>
+      <xsl:apply-templates select="." mode="page.sequence">
+        <xsl:with-param name="content" select="$content"/>
+        <xsl:with-param name="master-reference" select="'body'"/>
+      </xsl:apply-templates>
+    </xsl:otherwise>
+  </xsl:choose>
+  
 </xsl:template>
 
 <xsl:template match="qandaset/blockinfo/title|qandset/info/title|qandaset/title">
@@ -134,20 +185,20 @@
                                  and name(.) != 'titleabbrev'
                                  and name(.) != 'qandadiv'
                                  and name(.) != 'qandaentry']"/>
-    <fo:block start-indent="{count(ancestor::qandadiv)*2}pc">
+    <fo:block>
       <xsl:apply-templates select="qandadiv"/>
 
       <xsl:if test="qandaentry">
         <fo:list-block xsl:use-attribute-sets="list.block.spacing"
                        provisional-label-separation="0.2em">
-	  <xsl:attribute name="provisional-distance-between-starts">
-	    <xsl:choose>
-	      <xsl:when test="$label-length != ''">
-	        <xsl:value-of select="$label-length"/>
-	      </xsl:when>
-	      <xsl:otherwise>2.5em</xsl:otherwise>
-	    </xsl:choose>
-	  </xsl:attribute>
+          <xsl:attribute name="provisional-distance-between-starts">
+            <xsl:choose>
+              <xsl:when test="$label-length != ''">
+                <xsl:value-of select="$label-length"/>
+              </xsl:when>
+              <xsl:otherwise>2.5em</xsl:otherwise>
+            </xsl:choose>
+          </xsl:attribute>
           <xsl:apply-templates select="qandaentry"/>
         </fo:list-block>
       </xsl:if>
@@ -179,7 +230,7 @@
       <xsl:apply-templates select="parent::qandadiv" mode="label.markup"/>
       <xsl:if test="$qandadiv.autolabel != 0">
         <xsl:apply-templates select="." mode="intralabel.punctuation"/>
-	<xsl:text> </xsl:text>
+        <xsl:text> </xsl:text>
       </xsl:if>
       <xsl:apply-templates/>
     </xsl:with-param>
@@ -221,9 +272,9 @@
         <xsl:otherwise>
           <fo:block>
             <xsl:apply-templates select="." mode="label.markup"/>
-	    <xsl:if test="$deflabel = 'number' and not(label)">
+            <xsl:if test="$deflabel = 'number' and not(label)">
               <xsl:apply-templates select="." mode="intralabel.punctuation"/>
-	    </xsl:if>
+            </xsl:if>
           </fo:block>
         </xsl:otherwise>
       </xsl:choose>

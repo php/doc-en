@@ -9,7 +9,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: verbatim.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
+     $Id: verbatim.xsl,v 1.6 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -17,6 +17,9 @@
      and other information.
 
      ******************************************************************** -->
+
+<xsl:include href="../highlighting/common.xsl"/>
+<xsl:include href="highlight.xsl"/>
 
 <lxslt:component prefix="xverb"
                  functions="numberLines"/>
@@ -33,12 +36,12 @@
                       and $linenumbering.extension != '0'">
         <xsl:call-template name="number.rtf.lines">
           <xsl:with-param name="rtf">
-            <xsl:apply-templates/>
+	    <xsl:call-template name="apply-highlighting"/>
           </xsl:with-param>
         </xsl:call-template>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:apply-templates/>
+	<xsl:call-template name="apply-highlighting"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
@@ -260,37 +263,37 @@
 
   <xsl:variable name="linenumbering.startinglinenumber">
     <xsl:choose>
-      <xsl:when test="@startinglinenumber">
-        <xsl:value-of select="@startinglinenumber"/>
+      <xsl:when test="$pi.context/@startinglinenumber">
+        <xsl:value-of select="$pi.context/@startinglinenumber"/>
       </xsl:when>
-      <xsl:when test="@continuation='continues'">
+      <xsl:when test="$pi.context/@continuation='continues'">
         <xsl:variable name="lastLine">
           <xsl:choose>
-            <xsl:when test="self::programlisting">
+            <xsl:when test="$pi.context/self::programlisting">
               <xsl:call-template name="lastLineNumber">
                 <xsl:with-param name="listings"
                      select="preceding::programlisting[@linenumbering='numbered']"/>
               </xsl:call-template>
             </xsl:when>
-            <xsl:when test="self::screen">
+            <xsl:when test="$pi.context/self::screen">
               <xsl:call-template name="lastLineNumber">
                 <xsl:with-param name="listings"
                      select="preceding::screen[@linenumbering='numbered']"/>
               </xsl:call-template>
             </xsl:when>
-            <xsl:when test="self::literallayout">
+            <xsl:when test="$pi.context/self::literallayout">
               <xsl:call-template name="lastLineNumber">
                 <xsl:with-param name="listings"
                      select="preceding::literallayout[@linenumbering='numbered']"/>
               </xsl:call-template>
             </xsl:when>
-            <xsl:when test="self::address">
+            <xsl:when test="$pi.context/self::address">
               <xsl:call-template name="lastLineNumber">
                 <xsl:with-param name="listings"
                      select="preceding::address[@linenumbering='numbered']"/>
               </xsl:call-template>
             </xsl:when>
-            <xsl:when test="self::synopsis">
+            <xsl:when test="$pi.context/self::synopsis">
               <xsl:call-template name="lastLineNumber">
                 <xsl:with-param name="listings"
                      select="preceding::synopsis[@linenumbering='numbered']"/>
@@ -384,9 +387,35 @@
 </xsl:template>
 
 <xsl:template match="text()" mode="hyphenate.verbatim" priority="2">
-  <xsl:call-template name="hyphenate.verbatim">
+  <xsl:call-template name="hyphenate.verbatim.block">
     <xsl:with-param name="content" select="."/>
   </xsl:call-template>
+</xsl:template>
+
+<xsl:template name="hyphenate.verbatim.block">
+  <xsl:param name="content" select="''"/>
+  <xsl:param name="count" select="1"/>
+
+  <!-- recurse on lines first to keep recursion depth reasonable -->
+  <xsl:choose>
+    <xsl:when test="contains($content, '&#xA;')">
+      <xsl:variable name="line" select="substring-before($content, '&#xA;')"/>
+      <xsl:variable name="rest" select="substring-after($content, '&#xA;')"/>
+      <xsl:call-template name="hyphenate.verbatim">
+        <xsl:with-param name="content" select="concat($line, '&#xA;')"/>
+      </xsl:call-template>
+      <xsl:call-template name="hyphenate.verbatim.block">
+        <xsl:with-param name="content" select="$rest"/>
+        <xsl:with-param name="count" select="$count + 1"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:call-template name="hyphenate.verbatim">
+        <xsl:with-param name="content" select="$content"/>
+      </xsl:call-template>
+    </xsl:otherwise>
+  </xsl:choose>
+  
 </xsl:template>
 
 <xsl:template name="hyphenate.verbatim">
@@ -400,7 +429,7 @@
       <xsl:text>&#x00AD;</xsl:text>
     </xsl:when>
     <xsl:when test="$hyphenate.verbatim.characters != '' and
-                    translate($hyphenate.verbatim.characters, $head, '') = ''">
+                    translate($head, $hyphenate.verbatim.characters, '') = '' and not($tail = '')">
       <xsl:value-of select="$head"/>
       <xsl:text>&#x00AD;</xsl:text>
     </xsl:when>

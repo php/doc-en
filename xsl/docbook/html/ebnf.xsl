@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: ebnf.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: ebnf.xsl,v 1.4 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -17,7 +17,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: ebnf.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+$Id: ebnf.xsl,v 1.4 2007-01-22 11:35:12 bjori Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>

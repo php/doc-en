@@ -8,7 +8,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: synop.xsl,v 1.4 2005-07-15 08:27:49 techtonik Exp $
+     $Id: synop.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -24,7 +24,7 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="cmdsynopsis">
-  <fo:block>
+  <fo:block xsl:use-attribute-sets="normal.para.spacing">
     <xsl:apply-templates/>
   </fo:block>
 </xsl:template>
@@ -52,7 +52,9 @@
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
-  <xsl:if test="position()>1"><xsl:value-of select="$sepchar"/></xsl:if>
+  <xsl:if test="preceding-sibling::*">
+    <xsl:value-of select="$sepchar"/>
+  </xsl:if>
   <xsl:choose>
     <xsl:when test="$choice='plain'">
       <xsl:value-of select="$arg.choice.plain.open.str"/>
@@ -98,7 +100,9 @@
 <xsl:template match="group/arg">
   <xsl:variable name="choice" select="@choice"/>
   <xsl:variable name="rep" select="@rep"/>
-  <xsl:if test="position()>1"><xsl:value-of select="$arg.or.sep"/></xsl:if>
+  <xsl:if test="preceding-sibling::*">
+    <xsl:value-of select="$arg.or.sep"/>
+  </xsl:if>
   <xsl:call-template name="group-or-arg"/>
 </xsl:template>
 
@@ -133,7 +137,10 @@
   <xsl:variable name="snum">
     <xsl:apply-templates select="." mode="synopfragment.number"/>
   </xsl:variable>
-  <fo:block>
+  <xsl:variable name="id">
+    <xsl:call-template name="object.id"/>
+  </xsl:variable>
+  <fo:block id="{$id}">
     <xsl:text>(</xsl:text>
     <xsl:value-of select="$snum"/>
     <xsl:text>)</xsl:text>
@@ -155,10 +162,18 @@
 </xsl:template>
 
 <xsl:template match="funcprototype">
-  <fo:block font-family="{$monospace.font.family}">
+  <fo:block font-family="{$monospace.font.family}"
+          space-before.minimum="0.8em"
+          space-before.optimum="1em"
+          space-before.maximum="1.2em">
     <xsl:apply-templates/>
     <xsl:if test="$funcsynopsis.style='kr'">
+      <fo:block
+          space-before.minimum="0.8em"
+          space-before.optimum="1em"
+          space-before.maximum="1.2em">
       <xsl:apply-templates select="./paramdef" mode="kr-funcsynopsis-mode"/>
+      </fo:block>
     </xsl:if>
   </fo:block>
 </xsl:template>
@@ -223,7 +238,7 @@
 <xsl:template match="paramdef/parameter">
   <xsl:choose>
     <xsl:when test="$funcsynopsis.decoration != 0">
-      <xsl:apply-templates/>
+      <xsl:call-template name="inline.italicseq"/>
     </xsl:when>
     <xsl:otherwise>
       <xsl:apply-templates/>
@@ -267,19 +282,21 @@
     </xsl:choose>
   </xsl:param>
 
+  <!--
   <xsl:message>process <xsl:value-of select="name(.)"/> in <xsl:value-of select="$language"/></xsl:message>
+  -->
 
   <xsl:choose>
-    <xsl:when test="$language='java'">
+    <xsl:when test="$language='java' or $language='Java'">
       <xsl:apply-templates select="." mode="java"/>
     </xsl:when>
-    <xsl:when test="$language='perl'">
+    <xsl:when test="$language='perl' or $language='Perl'">
       <xsl:apply-templates select="." mode="perl"/>
     </xsl:when>
-    <xsl:when test="$language='idl'">
+    <xsl:when test="$language='idl' or $language='IDL'">
       <xsl:apply-templates select="." mode="idl"/>
     </xsl:when>
-    <xsl:when test="$language='cpp'">
+    <xsl:when test="$language='cpp' or $language='c++' or $language='C++'">
       <xsl:apply-templates select="." mode="cpp"/>
     </xsl:when>
     <xsl:otherwise>
@@ -315,9 +332,9 @@
             linefeed-treatment="preserve"
             xsl:use-attribute-sets="monospace.verbatim.properties">
     <xsl:apply-templates select="ooclass[1]" mode="java"/>
-    <xsl:if test="ooclass[position() &gt; 1]">
+    <xsl:if test="ooclass[preceding-sibling::*]">
       <xsl:text> extends</xsl:text>
-      <xsl:apply-templates select="ooclass[position() &gt; 1]" mode="java"/>
+      <xsl:apply-templates select="ooclass[preceding-sibling::*]" mode="java"/>
       <xsl:if test="oointerface|ooexception">
         <xsl:text>&RE;&nbsp;&nbsp;&nbsp;&nbsp;</xsl:text>
       </xsl:if>
@@ -349,7 +366,7 @@
 
 <xsl:template match="ooclass|oointerface|ooexception" mode="java">
   <xsl:choose>
-    <xsl:when test="position() &gt; 1">
+    <xsl:when test="preceding-sibling::*">
       <xsl:text>, </xsl:text>
     </xsl:when>
     <xsl:otherwise>
@@ -361,7 +378,9 @@
 
 <xsl:template match="modifier" mode="java">
   <xsl:apply-templates mode="java"/>
-  <xsl:text>&nbsp;</xsl:text>
+    <xsl:if test="following-sibling::*">
+      <xsl:text>&nbsp;</xsl:text>
+    </xsl:if>
 </xsl:template>
 
 <xsl:template match="classname" mode="java">
@@ -422,7 +441,7 @@
 
 <xsl:template match="methodparam" mode="java">
   <xsl:param name="indent">0</xsl:param>
-  <xsl:if test="position() &gt; 1">
+  <xsl:if test="preceding-sibling::methodparam">
     <xsl:text>,&RE;</xsl:text>
     <xsl:if test="$indent &gt; 0">
       <xsl:call-template name="copy-string">
@@ -440,11 +459,12 @@
 
 <xsl:template mode="java"
   match="constructorsynopsis|destructorsynopsis|methodsynopsis">
-  <xsl:variable name="modifiers" select="modifier"/>
+  <xsl:variable name="start-modifiers" select="modifier[following-sibling::*[name(.) != 'modifier']]"/>
   <xsl:variable name="notmod" select="*[name(.) != 'modifier']"/>
+  <xsl:variable name="end-modifiers" select="modifier[preceding-sibling::*[name(.) != 'modifier']]"/>
   <xsl:variable name="decl">
     <xsl:text>  </xsl:text>
-    <xsl:apply-templates select="$modifiers" mode="java"/>
+    <xsl:apply-templates select="$start-modifiers" mode="java"/>
 
     <!-- type -->
     <xsl:if test="name($notmod[1]) != 'methodname'">
@@ -468,6 +488,10 @@
       <xsl:text>&RE;&nbsp;&nbsp;&nbsp;&nbsp;throws&nbsp;</xsl:text>
       <xsl:apply-templates select="exceptionname" mode="java"/>
     </xsl:if>
+    <xsl:if test="modifier[preceding-sibling::*[name(.) != 'modifier']]">
+      <xsl:text> </xsl:text>
+      <xsl:apply-templates select="$end-modifiers" mode="java"/>
+    </xsl:if>
     <xsl:text>;</xsl:text>
   </fo:block>
   <xsl:call-template name="synop-break"/>
@@ -481,9 +505,9 @@
             linefeed-treatment="preserve"
             xsl:use-attribute-sets="monospace.verbatim.properties">
     <xsl:apply-templates select="ooclass[1]" mode="cpp"/>
-    <xsl:if test="ooclass[position() &gt; 1]">
+    <xsl:if test="ooclass[preceding-sibling::*]">
       <xsl:text>: </xsl:text>
-      <xsl:apply-templates select="ooclass[position() &gt; 1]" mode="cpp"/>
+      <xsl:apply-templates select="ooclass[preceding-sibling::*]" mode="cpp"/>
       <xsl:if test="oointerface|ooexception">
 	<xsl:text>&RE;&nbsp;&nbsp;&nbsp;&nbsp;</xsl:text>
       </xsl:if>
@@ -514,7 +538,7 @@
 </xsl:template>
 
 <xsl:template match="ooclass|oointerface|ooexception" mode="cpp">
-  <xsl:if test="position() &gt; 1">
+  <xsl:if test="preceding-sibling::*">
     <xsl:text>, </xsl:text>
   </xsl:if>
   <xsl:apply-templates mode="cpp"/>
@@ -522,7 +546,9 @@
 
 <xsl:template match="modifier" mode="cpp">
   <xsl:apply-templates mode="cpp"/>
-  <xsl:text>&nbsp;</xsl:text>
+    <xsl:if test="following-sibling::*">
+      <xsl:text>&nbsp;</xsl:text>
+    </xsl:if>
 </xsl:template>
 
 <xsl:template match="classname" mode="cpp">
@@ -582,7 +608,7 @@
 </xsl:template>
 
 <xsl:template match="methodparam" mode="cpp">
-  <xsl:if test="position() &gt; 1">
+  <xsl:if test="preceding-sibling::methodparam">
     <xsl:text>, </xsl:text>
   </xsl:if>
   <xsl:apply-templates mode="cpp"/>
@@ -594,15 +620,16 @@
 
 <xsl:template mode="cpp"
   match="constructorsynopsis|destructorsynopsis|methodsynopsis">
-  <xsl:variable name="modifiers" select="modifier"/>
+  <xsl:variable name="start-modifiers" select="modifier[following-sibling::*[name(.) != 'modifier']]"/>
   <xsl:variable name="notmod" select="*[name(.) != 'modifier']"/>
+  <xsl:variable name="end-modifiers" select="modifier[preceding-sibling::*[name(.) != 'modifier']]"/>
 
   <fo:block wrap-option='no-wrap'
             white-space-collapse='false'
             linefeed-treatment="preserve"
             xsl:use-attribute-sets="monospace.verbatim.properties">
     <xsl:text>  </xsl:text>
-    <xsl:apply-templates select="$modifiers" mode="cpp"/>
+    <xsl:apply-templates select="$start-modifiers" mode="cpp"/>
 
     <!-- type -->
     <xsl:if test="name($notmod[1]) != 'methodname'">
@@ -616,6 +643,10 @@
     <xsl:if test="exceptionname">
       <xsl:text>&RE;&nbsp;&nbsp;&nbsp;&nbsp;throws&nbsp;</xsl:text>
       <xsl:apply-templates select="exceptionname" mode="cpp"/>
+    </xsl:if>
+    <xsl:if test="modifier[preceding-sibling::*[name(.) != 'modifier']]">
+      <xsl:text> </xsl:text>
+      <xsl:apply-templates select="$end-modifiers" mode="cpp"/>
     </xsl:if>
     <xsl:text>;</xsl:text>
   </fo:block>
@@ -631,9 +662,9 @@
             xsl:use-attribute-sets="monospace.verbatim.properties">
     <xsl:text>interface </xsl:text>
     <xsl:apply-templates select="ooclass[1]" mode="idl"/>
-    <xsl:if test="ooclass[position() &gt; 1]">
+    <xsl:if test="ooclass[preceding-sibling::*]">
       <xsl:text>: </xsl:text>
-      <xsl:apply-templates select="ooclass[position() &gt; 1]" mode="idl"/>
+      <xsl:apply-templates select="ooclass[preceding-sibling::*]" mode="idl"/>
       <xsl:if test="oointerface|ooexception">
 	<xsl:text>&RE;&nbsp;&nbsp;&nbsp;&nbsp;</xsl:text>
       </xsl:if>
@@ -664,7 +695,7 @@
 </xsl:template>
 
 <xsl:template match="ooclass|oointerface|ooexception" mode="idl">
-  <xsl:if test="position() &gt; 1">
+  <xsl:if test="preceding-sibling::*">
     <xsl:text>, </xsl:text>
   </xsl:if>
   <xsl:apply-templates mode="idl"/>
@@ -672,7 +703,9 @@
 
 <xsl:template match="modifier" mode="idl">
   <xsl:apply-templates mode="idl"/>
-  <xsl:text>&nbsp;</xsl:text>
+    <xsl:if test="following-sibling::*">
+      <xsl:text>&nbsp;</xsl:text>
+    </xsl:if>
 </xsl:template>
 
 <xsl:template match="classname" mode="idl">
@@ -732,7 +765,7 @@
 </xsl:template>
 
 <xsl:template match="methodparam" mode="idl">
-  <xsl:if test="position() &gt; 1">
+  <xsl:if test="preceding-sibling::methodparam">
     <xsl:text>, </xsl:text>
   </xsl:if>
   <xsl:apply-templates mode="idl"/>
@@ -744,15 +777,16 @@
 
 <xsl:template mode="idl"
   match="constructorsynopsis|destructorsynopsis|methodsynopsis">
-  <xsl:variable name="modifiers" select="modifier"/>
+  <xsl:variable name="start-modifiers" select="modifier[following-sibling::*[name(.) != 'modifier']]"/>
   <xsl:variable name="notmod" select="*[name(.) != 'modifier']"/>
+  <xsl:variable name="end-modifiers" select="modifier[preceding-sibling::*[name(.) != 'modifier']]"/>
 
   <fo:block wrap-option='no-wrap'
             white-space-collapse='false'
             linefeed-treatment="preserve"
             xsl:use-attribute-sets="monospace.verbatim.properties">
     <xsl:text>  </xsl:text>
-    <xsl:apply-templates select="$modifiers" mode="idl"/>
+    <xsl:apply-templates select="$start-modifiers" mode="idl"/>
 
     <!-- type -->
     <xsl:if test="name($notmod[1]) != 'methodname'">
@@ -767,6 +801,10 @@
       <xsl:text>&RE;&nbsp;&nbsp;&nbsp;&nbsp;raises(</xsl:text>
       <xsl:apply-templates select="exceptionname" mode="idl"/>
       <xsl:text>)</xsl:text>
+    </xsl:if>
+    <xsl:if test="modifier[preceding-sibling::*[name(.) != 'modifier']]">
+      <xsl:text> </xsl:text>
+      <xsl:apply-templates select="$end-modifiers" mode="idl"/>
     </xsl:if>
     <xsl:text>;</xsl:text>
   </fo:block>
@@ -784,9 +822,9 @@
     <xsl:apply-templates select="ooclass[1]" mode="perl"/>
     <xsl:text>;&RE;</xsl:text>
 
-    <xsl:if test="ooclass[position() &gt; 1]">
+    <xsl:if test="ooclass[preceding-sibling::*]">
       <xsl:text>@ISA = (</xsl:text>
-      <xsl:apply-templates select="ooclass[position() &gt; 1]" mode="perl"/>
+      <xsl:apply-templates select="ooclass[preceding-sibling::*]" mode="perl"/>
       <xsl:text>);&RE;</xsl:text>
     </xsl:if>
 
@@ -803,7 +841,7 @@
 </xsl:template>
 
 <xsl:template match="ooclass|oointerface|ooexception" mode="perl">
-  <xsl:if test="position() &gt; 1">
+  <xsl:if test="preceding-sibling::*">
     <xsl:text>, </xsl:text>
   </xsl:if>
   <xsl:apply-templates mode="perl"/>
@@ -811,7 +849,9 @@
 
 <xsl:template match="modifier" mode="perl">
   <xsl:apply-templates mode="perl"/>
-  <xsl:text>&nbsp;</xsl:text>
+    <xsl:if test="following-sibling::*">
+      <xsl:text>&nbsp;</xsl:text>
+    </xsl:if>
 </xsl:template>
 
 <xsl:template match="classname" mode="perl">
@@ -871,7 +911,7 @@
 </xsl:template>
 
 <xsl:template match="methodparam" mode="perl">
-  <xsl:if test="position() &gt; 1">
+  <xsl:if test="preceding-sibling::methodparam">
     <xsl:text>, </xsl:text>
   </xsl:if>
   <xsl:apply-templates mode="perl"/>
@@ -883,8 +923,9 @@
 
 <xsl:template mode="perl"
   match="constructorsynopsis|destructorsynopsis|methodsynopsis">
-  <xsl:variable name="modifiers" select="modifier"/>
+  <xsl:variable name="start-modifiers" select="modifier[following-sibling::*[name(.) != 'modifier']]"/>
   <xsl:variable name="notmod" select="*[name(.) != 'modifier']"/>
+  <xsl:variable name="end-modifiers" select="modifier[preceding-sibling::*[name(.) != 'modifier']]"/>
 
   <fo:block wrap-option='no-wrap'
             white-space-collapse='false'
@@ -899,5 +940,28 @@
 </xsl:template>
 
 <!-- ==================================================================== -->
+
+<!-- * DocBook 5 allows linking elements (link, olink, and xref) -->
+<!-- * within the OO *synopsis elements (classsynopsis, fieldsynopsis, -->
+<!-- * methodsynopsis, constructorsynopsis, destructorsynopsis) and -->
+<!-- * their children. So we need to have mode="java|cpp|idl|perl" -->
+<!-- * per-mode matches for those linking elements in order for them -->
+<!-- * to be processed as expected. -->
+
+<xsl:template match="link|olink|xref" mode="java">
+  <xsl:apply-templates select="."/>
+</xsl:template>
+
+<xsl:template match="link|olink|xref" mode="cpp">
+  <xsl:apply-templates select="."/>
+</xsl:template>
+
+<xsl:template match="link|olink|xref" mode="idl">
+  <xsl:apply-templates select="."/>
+</xsl:template>
+
+<xsl:template match="link|olink|xref" mode="perl">
+  <xsl:apply-templates select="."/>
+</xsl:template>
 
 </xsl:stylesheet>

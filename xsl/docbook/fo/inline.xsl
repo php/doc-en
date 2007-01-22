@@ -19,7 +19,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: inline.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: inline.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -76,7 +76,7 @@
             <!-- otherwise it's a URI -->
             <xsl:otherwise>
               <xsl:attribute name="internal-destination">
-                <xsl:value-of select="@xlink.href"/>
+                <xsl:value-of select="@xlink:href"/>
               </xsl:attribute>
             </xsl:otherwise>
           </xsl:choose>
@@ -337,6 +337,11 @@
 </xsl:template>
 
 <xsl:template match="database">
+  <xsl:call-template name="inline.charseq"/>
+</xsl:template>
+
+<xsl:template match="date">
+  <!-- should this support locale-specific formatting? how? -->
   <xsl:call-template name="inline.charseq"/>
 </xsl:template>
 
@@ -645,11 +650,24 @@
 
 <xsl:template match="trademark">
   <xsl:call-template name="inline.charseq"/>
-  <xsl:if test="@class">
-    <xsl:call-template name="dingbat">
-      <xsl:with-param name="dingbat" select="@class"/>
-    </xsl:call-template>
-  </xsl:if>
+  <xsl:choose>
+    <xsl:when test="@class = 'copyright'
+                    or @class = 'registered'">
+      <xsl:call-template name="dingbat">
+        <xsl:with-param name="dingbat" select="@class"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:when test="@class = 'service'">
+      <xsl:call-template name="inline.superscriptseq">
+        <xsl:with-param name="content" select="'SM'"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:call-template name="dingbat">
+        <xsl:with-param name="dingbat" select="'trademark'"/>
+      </xsl:call-template>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 <xsl:template match="firstterm">
@@ -663,10 +681,20 @@
 
   <xsl:choose>
     <xsl:when test="($firstterm.only.link = 0 or $firstterm = 1) and @linkend">
-      <fo:basic-link internal-destination="{@linkend}"
-                     xsl:use-attribute-sets="xref.properties">
-        <xsl:call-template name="inline.italicseq"/>
-      </fo:basic-link>
+      <xsl:variable name="targets" select="key('id',@linkend)"/>
+      <xsl:variable name="target" select="$targets[1]"/>
+
+      <xsl:choose>
+        <xsl:when test="$target">
+          <fo:basic-link internal-destination="{@linkend}" 
+                         xsl:use-attribute-sets="xref.properties">
+            <xsl:call-template name="inline.italicseq"/>
+          </fo:basic-link>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:call-template name="inline.italicseq"/>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:when>
 
     <xsl:when test="not(@linkend)
@@ -757,6 +785,20 @@
       <xsl:call-template name="inline.italicseq"/>
     </xsl:otherwise>
   </xsl:choose>
+</xsl:template>
+
+<xsl:template match="termdef">
+  <fo:inline>
+    <xsl:call-template name="gentext.template">
+      <xsl:with-param name="context" select="'termdef'"/>
+      <xsl:with-param name="name" select="'prefix'"/>
+    </xsl:call-template>
+    <xsl:apply-templates/>
+    <xsl:call-template name="gentext.template">
+      <xsl:with-param name="context" select="'termdef'"/>
+      <xsl:with-param name="name" select="'suffix'"/>
+    </xsl:call-template>
+  </fo:inline>
 </xsl:template>
 
 <xsl:template match="sgmltag|tag">
@@ -851,7 +893,7 @@
         </xsl:with-param>
       </xsl:call-template>
     </xsl:when>
-    <xsl:when test="$class='sgmlcomment'">
+    <xsl:when test="$class='sgmlcomment' or $class='comment'">
       <xsl:call-template name="inline.monoseq">
         <xsl:with-param name="content">
           <xsl:text>&lt;!--</xsl:text>
@@ -870,9 +912,13 @@
   <xsl:call-template name="inline.monoseq">
     <xsl:with-param name="content">
       <fo:inline keep-together.within-line="always" hyphenate="false">
-        <xsl:text>&lt;</xsl:text>
+        <xsl:if test="not($email.delimiters.enabled = 0)">
+          <xsl:text>&lt;</xsl:text>
+        </xsl:if>
         <xsl:apply-templates/>
-        <xsl:text>&gt;</xsl:text>
+        <xsl:if test="not($email.delimiters.enabled = 0)">
+          <xsl:text>&gt;</xsl:text>
+        </xsl:if>
       </fo:inline>
     </xsl:with-param>
   </xsl:call-template>
@@ -921,6 +967,20 @@
   <xsl:param name="nodelist" select="guibutton|guiicon|guilabel|guimenu|guimenuitem|guisubmenu|interface"/><!-- not(shortcut) -->
   <xsl:param name="count" select="1"/>
 
+  <xsl:variable name="mm.separator">
+    <xsl:choose>
+      <xsl:when test="$fop.extensions != 0 and
+                contains($menuchoice.menu.separator, '&#x2192;')">
+        <fo:inline font-family="Symbol">
+          <xsl:copy-of select="$menuchoice.menu.separator"/>
+        </fo:inline>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:copy-of select="$menuchoice.menu.separator"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
   <xsl:choose>
     <xsl:when test="$count>count($nodelist)"></xsl:when>
     <xsl:when test="$count=1">
@@ -935,10 +995,10 @@
       <xsl:choose>
         <xsl:when test="name($node)='guimenuitem'
                         or name($node)='guisubmenu'">
-          <xsl:value-of select="$menuchoice.menu.separator"/>
+          <xsl:copy-of select="$mm.separator"/>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:value-of select="$menuchoice.separator"/>
+          <xsl:copy-of select="$menuchoice.separator"/>
         </xsl:otherwise>
       </xsl:choose>
       <xsl:apply-templates select="$node"/>
@@ -959,10 +1019,21 @@
 </xsl:template>
 
 <xsl:template match="citation">
-  <!-- todo: biblio-citation-check -->
-  <xsl:text>[</xsl:text>
-  <xsl:call-template name="inline.charseq"/>
-  <xsl:text>]</xsl:text>
+  <!-- todo: integrate with bibliography collection -->
+  <xsl:variable name="targets" select="(//biblioentry | //bibliomixed)[abbrev = string(current())]"/>
+
+  <xsl:choose>
+    <xsl:when test="$targets">
+      <xsl:call-template name="xref">
+	<xsl:with-param name="targets" select="$targets"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:text>[</xsl:text>
+      <xsl:call-template name="inline.charseq"/>
+      <xsl:text>]</xsl:text>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 <!-- ==================================================================== -->
@@ -1016,8 +1087,29 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="personname">
-  <xsl:call-template name="anchor"/>
   <xsl:call-template name="person.name"/>
+</xsl:template>
+
+<xsl:template match="jobtitle">
+  <xsl:apply-templates/>
+</xsl:template>
+
+<!-- ==================================================================== -->
+
+<xsl:template match="org">
+  <xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="orgname">
+  <xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="orgdiv">
+  <xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="affiliation">
+  <xsl:apply-templates/>
 </xsl:template>
 
 <!-- ==================================================================== -->

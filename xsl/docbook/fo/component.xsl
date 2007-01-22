@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: component.xsl,v 1.6 2005-07-16 23:38:32 techtonik Exp $
+     $Id: component.xsl,v 1.7 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -39,7 +39,7 @@
   <xsl:variable name="level">
     <xsl:choose>
       <xsl:when test="ancestor::section">
-	<xsl:value-of select="count(ancestor::section)+1"/>
+        <xsl:value-of select="count(ancestor::section)+1"/>
       </xsl:when>
       <xsl:when test="ancestor::sect5">6</xsl:when>
       <xsl:when test="ancestor::sect4">5</xsl:when>
@@ -84,7 +84,7 @@
       </xsl:attribute>
       <xsl:attribute name="axf:outline-expand">false</xsl:attribute>
       <xsl:attribute name="axf:outline-title">
-        <xsl:value-of select="$title"/>
+        <xsl:value-of select="normalize-space($title)"/>
       </xsl:attribute>
     </xsl:if>
 
@@ -95,9 +95,9 @@
          font-size there... -->
     <xsl:choose>
       <xsl:when test="$level=2">
-	<fo:block xsl:use-attribute-sets="section.title.level2.properties">
-	  <xsl:copy-of select="$title"/>
-	</fo:block>
+        <fo:block xsl:use-attribute-sets="section.title.level2.properties">
+          <xsl:copy-of select="$title"/>
+        </fo:block>
       </xsl:when>
       <xsl:when test="$level=3">
         <fo:block xsl:use-attribute-sets="section.title.level3.properties">
@@ -115,13 +115,13 @@
         </fo:block>
       </xsl:when>
       <xsl:when test="$level=6">
-	<fo:block xsl:use-attribute-sets="section.title.level6.properties">
-	  <xsl:copy-of select="$title"/>
-	</fo:block>
+        <fo:block xsl:use-attribute-sets="section.title.level6.properties">
+          <xsl:copy-of select="$title"/>
+        </fo:block>
       </xsl:when>
       <xsl:otherwise>
-	<!-- not in a section: do nothing special -->
-	<xsl:copy-of select="$title"/>
+        <!-- not in a section: do nothing special -->
+        <xsl:copy-of select="$title"/>
       </xsl:otherwise>
     </xsl:choose>
   </fo:block>
@@ -348,11 +348,15 @@
 
       <xsl:variable name="toc.params">
         <xsl:call-template name="find.path.params">
-          <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
+          <xsl:with-param name="table" 
+                          select="normalize-space($generate.toc)"/>
         </xsl:call-template>
       </xsl:variable>
       <xsl:if test="contains($toc.params, 'toc')">
-        <xsl:call-template name="component.toc"/>
+        <xsl:call-template name="component.toc">
+          <xsl:with-param name="toc.title.p" 
+                          select="contains($toc.params, 'title')"/>
+        </xsl:call-template>
         <xsl:call-template name="component.toc.separator"/>
       </xsl:if>
 
@@ -439,7 +443,10 @@
         </xsl:call-template>
       </xsl:variable>
       <xsl:if test="contains($toc.params, 'toc')">
-        <xsl:call-template name="component.toc"/>
+        <xsl:call-template name="component.toc">
+          <xsl:with-param name="toc.title.p" 
+                          select="contains($toc.params, 'title')"/>
+        </xsl:call-template>
         <xsl:call-template name="component.toc.separator"/>
       </xsl:if>
       <xsl:apply-templates/>
@@ -526,7 +533,10 @@
       </xsl:variable>
 
       <xsl:if test="contains($toc.params, 'toc')">
-        <xsl:call-template name="component.toc"/>
+        <xsl:call-template name="component.toc">
+          <xsl:with-param name="toc.title.p" 
+                          select="contains($toc.params, 'title')"/>
+        </xsl:call-template>
         <xsl:call-template name="component.toc.separator"/>
       </xsl:if>
       <xsl:apply-templates/>
@@ -613,7 +623,10 @@
       </xsl:variable>
 
       <xsl:if test="contains($toc.params, 'toc')">
-        <xsl:call-template name="component.toc"/>
+        <xsl:call-template name="component.toc">
+          <xsl:with-param name="toc.title.p" 
+                          select="contains($toc.params, 'title')"/>
+        </xsl:call-template>
         <xsl:call-template name="component.toc.separator"/>
       </xsl:if>
       <xsl:apply-templates/>
@@ -625,6 +638,7 @@
 <xsl:template match="article/articleinfo"></xsl:template>
 <xsl:template match="article/title"></xsl:template>
 <xsl:template match="article/subtitle"></xsl:template>
+<xsl:template match="article/titleabbrev"></xsl:template>
 
 <xsl:template match="article/appendix">
   <xsl:variable name="id">
@@ -640,22 +654,22 @@
   </xsl:variable>
 
   <fo:block id='{$id}'>
-    <xsl:if test="$passivetex.extensions != 0">
-      <fotex:bookmark xmlns:fotex="http://www.tug.org/fotex" 
-                      fotex-bookmark-level="{count(ancestor::*)+2}" 
-                      fotex-bookmark-label="{$id}">
-        <xsl:value-of select="$titleabbrev"/>
-      </fotex:bookmark>
-    </xsl:if>
-
     <xsl:if test="$axf.extensions != 0">
       <xsl:attribute name="axf:outline-level">
         <xsl:value-of select="count(ancestor::*)+2"/>
       </xsl:attribute>
       <xsl:attribute name="axf:outline-expand">false</xsl:attribute>
       <xsl:attribute name="axf:outline-title">
-        <xsl:value-of select="$titleabbrev"/>
+        <xsl:value-of select="normalize-space($titleabbrev)"/>
       </xsl:attribute>
+    </xsl:if>
+
+    <xsl:if test="$passivetex.extensions != 0">
+      <fotex:bookmark xmlns:fotex="http://www.tug.org/fotex" 
+                      fotex-bookmark-level="{count(ancestor::*)+2}" 
+                      fotex-bookmark-label="{$id}">
+        <xsl:value-of select="$titleabbrev"/>
+      </fotex:bookmark>
     </xsl:if>
 
     <fo:block xsl:use-attribute-sets="article.appendix.title.properties">
@@ -677,6 +691,72 @@
 </xsl:template>
 
 <!-- ==================================================================== -->
+
+<!-- Create a page sequence for an element -->
+<xsl:template match="*" mode="page.sequence">
+  <xsl:param name="content" select="NOTANODE"/>
+  <xsl:param name="master-reference">
+    <xsl:call-template name="select.pagemaster"/>
+  </xsl:param>
+
+  <fo:page-sequence hyphenate="{$hyphenate}"
+                    master-reference="{$master-reference}">
+    <xsl:attribute name="language">
+      <xsl:call-template name="l10n.language"/>
+    </xsl:attribute>
+    <xsl:attribute name="format">
+      <xsl:call-template name="page.number.format">
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+    </xsl:attribute>
+
+    <xsl:attribute name="initial-page-number">
+      <xsl:call-template name="initial.page.number">
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+    </xsl:attribute>
+
+    <xsl:attribute name="force-page-count">
+      <xsl:call-template name="force.page.count">
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+    </xsl:attribute>
+
+    <xsl:attribute name="hyphenation-character">
+      <xsl:call-template name="gentext">
+        <xsl:with-param name="key" select="'hyphenation-character'"/>
+      </xsl:call-template>
+    </xsl:attribute>
+    <xsl:attribute name="hyphenation-push-character-count">
+      <xsl:call-template name="gentext">
+        <xsl:with-param name="key" select="'hyphenation-push-character-count'"/>
+      </xsl:call-template>
+    </xsl:attribute>
+    <xsl:attribute name="hyphenation-remain-character-count">
+      <xsl:call-template name="gentext">
+        <xsl:with-param name="key" select="'hyphenation-remain-character-count'"/>
+      </xsl:call-template>
+    </xsl:attribute>
+
+    <xsl:apply-templates select="." mode="running.head.mode">
+      <xsl:with-param name="master-reference" select="$master-reference"/>
+    </xsl:apply-templates>
+
+    <xsl:apply-templates select="." mode="running.foot.mode">
+      <xsl:with-param name="master-reference" select="$master-reference"/>
+    </xsl:apply-templates>
+
+    <fo:flow flow-name="xsl-region-body">
+      <xsl:call-template name="set.flow.properties">
+        <xsl:with-param name="element" select="local-name(.)"/>
+        <xsl:with-param name="master-reference" select="$master-reference"/>
+      </xsl:call-template>
+
+      <xsl:copy-of select="$content"/>
+
+    </fo:flow>
+  </fo:page-sequence>
+</xsl:template>
 
 </xsl:stylesheet>
 

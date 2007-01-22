@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: pi.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: pi.xsl,v 1.4 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -203,5 +203,49 @@
 </xsl:template>
 
 <!-- ==================================================================== -->
+
+<!-- Copy well-formed external HTML content to the output. -->
+<!-- An optional <html> wrapper will be removed before content is copied 
+     to support multiple elements in output without a wrapper.
+     No other processing is done to the content. -->
+<xsl:template match="processing-instruction('dbhtml-include')">
+  <xsl:param name="href">
+    <xsl:call-template name="dbhtml-attribute">
+      <xsl:with-param name="pis" select="."/>
+      <xsl:with-param name="attribute">href</xsl:with-param>
+    </xsl:call-template>
+  </xsl:param>
+
+  <xsl:choose>
+    <xsl:when test="$href != ''">
+      <xsl:variable name="content" select="document($href,/)"/>
+      <xsl:choose>
+        <xsl:when test="$content/*">
+          <xsl:choose>
+            <xsl:when test="$content/*[1][self::html]">
+              <!-- include just the children of html wrapper -->
+              <xsl:copy-of select="$content/*[1]/node()"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:copy-of select="$content"/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:message>
+            <xsl:text>ERROR: dbhtml-include processing instruction </xsl:text>
+            <xsl:text>href has no content.</xsl:text>
+          </xsl:message>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:message>
+        <xsl:text>ERROR: dbhtml-include processing instruction has </xsl:text>
+        <xsl:text>missing or empty href value.</xsl:text>
+      </xsl:message>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
 
 </xsl:stylesheet>

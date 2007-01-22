@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: glossary.xsl,v 1.4 2005-07-15 08:27:50 techtonik Exp $
+     $Id: glossary.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -15,6 +15,8 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="glossary">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
@@ -72,6 +74,8 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="glossdiv">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
     <xsl:apply-templates select="(glossentry[1]/preceding-sibling::*)"/>
 
@@ -182,37 +186,47 @@ GlossEntry ::=
 
 <xsl:template match="glossentry/glosssee">
   <xsl:variable name="otherterm" select="@otherterm"/>
-  <xsl:variable name="targets" select="//node()[@id=$otherterm]"/>
+  <xsl:variable name="targets" select="key('id', $otherterm)"/>
   <xsl:variable name="target" select="$targets[1]"/>
 
   <dd>
     <p>
-      <xsl:call-template name="gentext.template">
-        <xsl:with-param name="context" select="'glossary'"/>
-        <xsl:with-param name="name" select="'see'"/>
+      <xsl:variable name="template">
+        <xsl:call-template name="gentext.template">
+          <xsl:with-param name="context" select="'glossary'"/>
+          <xsl:with-param name="name" select="'see'"/>
+        </xsl:call-template>
+      </xsl:variable>
+
+      <xsl:variable name="title">
+        <xsl:choose>
+          <xsl:when test="$target">
+            <a>
+              <xsl:attribute name="href">
+                <xsl:call-template name="href.target">
+                  <xsl:with-param name="object" select="$target"/>
+                </xsl:call-template>
+              </xsl:attribute>
+              <xsl:apply-templates select="$target" mode="xref-to"/>
+            </a>
+          </xsl:when>
+          <xsl:when test="$otherterm != '' and not($target)">
+            <xsl:message>
+              <xsl:text>Warning: glosssee @otherterm reference not found: </xsl:text>
+              <xsl:value-of select="$otherterm"/>
+            </xsl:message>
+            <xsl:apply-templates/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:apply-templates/>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+
+      <xsl:call-template name="substitute-markup">
+        <xsl:with-param name="template" select="$template"/>
+        <xsl:with-param name="title" select="$title"/>
       </xsl:call-template>
-      <xsl:choose>
-        <xsl:when test="$target">
-          <a>
-            <xsl:attribute name="href">
-              <xsl:call-template name="href.target">
-                <xsl:with-param name="object" select="$target"/>
-              </xsl:call-template>
-            </xsl:attribute>
-            <xsl:apply-templates select="$target" mode="xref-to"/>
-          </a>
-        </xsl:when>
-        <xsl:when test="$otherterm != '' and not($target)">
-          <xsl:message>
-            <xsl:text>Warning: glosssee @otherterm reference not found: </xsl:text>
-            <xsl:value-of select="$otherterm"/>
-          </xsl:message>
-          <xsl:apply-templates/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:apply-templates/>
-        </xsl:otherwise>
-      </xsl:choose>
       <xsl:text>.</xsl:text>
     </p>
   </dd>
@@ -223,11 +237,19 @@ GlossEntry ::=
     <xsl:apply-templates select="*[local-name(.) != 'glossseealso']"/>
     <xsl:if test="glossseealso">
       <p>
-        <xsl:call-template name="gentext.template">
-          <xsl:with-param name="context" select="'glossary'"/>
-          <xsl:with-param name="name" select="'seealso'"/>
+        <xsl:variable name="template">
+          <xsl:call-template name="gentext.template">
+            <xsl:with-param name="context" select="'glossary'"/>
+            <xsl:with-param name="name" select="'seealso'"/>
+          </xsl:call-template>
+        </xsl:variable>
+        <xsl:variable name="title">
+          <xsl:apply-templates select="glossseealso"/>
+        </xsl:variable>
+        <xsl:call-template name="substitute-markup">
+          <xsl:with-param name="template" select="$template"/>
+          <xsl:with-param name="title" select="$title"/>
         </xsl:call-template>
-        <xsl:apply-templates select="glossseealso"/>
       </p>
     </xsl:if>
   </dd>
@@ -235,7 +257,7 @@ GlossEntry ::=
 
 <xsl:template match="glossseealso">
   <xsl:variable name="otherterm" select="@otherterm"/>
-  <xsl:variable name="targets" select="//node()[@id=$otherterm]"/>
+  <xsl:variable name="targets" select="key('id', $otherterm)"/>
   <xsl:variable name="target" select="$targets[1]"/>
 
   <xsl:choose>
@@ -278,6 +300,8 @@ GlossEntry ::=
 <xsl:template match="glossary[@role='auto']" priority="2">
   <xsl:variable name="terms" select="//glossterm[not(parent::glossdef)]|//firstterm"/>
   <xsl:variable name="collection" select="document($glossary.collection, .)"/>
+
+  <xsl:call-template name="id.warning"/>
 
   <xsl:if test="$glossary.collection = ''">
     <xsl:message>

@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: block.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: block.xsl,v 1.4 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -56,6 +56,7 @@
 
   <xsl:variable name="p">
     <p>
+      <xsl:call-template name="dir"/>
       <xsl:if test="$class != ''">
         <xsl:attribute name="class">
           <xsl:value-of select="$class"/>
@@ -195,22 +196,7 @@
 
 <!-- ==================================================================== -->
 
-<xsl:template match="sidebar">
-  <div class="{name(.)}">
-    <xsl:call-template name="anchor"/>
-    <xsl:apply-templates/>
-  </div>
-</xsl:template>
-
-<xsl:template match="sidebar/title">
-  <p class="title">
-    <b><xsl:apply-templates/></b>
-  </p>
-</xsl:template>
-
-<!-- ==================================================================== -->
-
-<xsl:template match="abstract">
+<xsl:template match="abstract|sidebar">
   <div class="{name(.)}">
     <xsl:call-template name="anchor"/>
     <xsl:call-template name="formal.object.heading">
@@ -224,8 +210,10 @@
   </div>
 </xsl:template>
 
-<xsl:template match="abstract/title">
+<xsl:template match="abstract/title|sidebar/title">
 </xsl:template>
+
+<xsl:template match="sidebar/sidebarinfo"/>
 
 <!-- ==================================================================== -->
 
@@ -341,10 +329,10 @@
 </xsl:template>
 
 <xsl:template match="revhistory/revision">
-  <xsl:variable name="revnumber" select=".//revnumber"/>
-  <xsl:variable name="revdate"   select=".//date"/>
-  <xsl:variable name="revauthor" select=".//authorinitials"/>
-  <xsl:variable name="revremark" select=".//revremark|.//revdescription"/>
+  <xsl:variable name="revnumber" select="revnumber"/>
+  <xsl:variable name="revdate"   select="date"/>
+  <xsl:variable name="revauthor" select="authorinitials|author"/>
+  <xsl:variable name="revremark" select="revremark|revdescription"/>
   <tr>
     <td align="left">
       <xsl:if test="$revnumber">
@@ -368,7 +356,12 @@
       </xsl:when>
       <xsl:otherwise>
         <td align="left">
-          <xsl:apply-templates select="$revauthor"/>
+          <xsl:for-each select="$revauthor">
+            <xsl:apply-templates select="."/>
+            <xsl:if test="position() != last()">
+	      <xsl:text>, </xsl:text>
+	    </xsl:if>
+	  </xsl:for-each>
         </td>
       </xsl:otherwise>
     </xsl:choose>

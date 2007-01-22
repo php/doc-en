@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: titles.xsl,v 1.5 2005-07-16 23:38:36 techtonik Exp $
+     $Id: titles.xsl,v 1.6 2007-01-22 11:35:11 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -375,6 +375,21 @@ title of the element. This does not include the label.
   </xsl:apply-templates>
 </xsl:template>
 
+<xsl:template match="task" mode="title.markup">
+  <xsl:param name="allow-anchors" select="0"/>
+  <xsl:apply-templates select="title" mode="title.markup">
+    <xsl:with-param name="allow-anchors" select="$allow-anchors"/>
+  </xsl:apply-templates>
+</xsl:template>
+
+<xsl:template match="sidebar" mode="title.markup">
+  <xsl:param name="allow-anchors" select="0"/>
+  <xsl:apply-templates select="(info/title|sidebarinfo/title|title)[1]"
+                       mode="title.markup">
+    <xsl:with-param name="allow-anchors" select="$allow-anchors"/>
+  </xsl:apply-templates>
+</xsl:template>
+
 <xsl:template match="abstract" mode="title.markup">
   <xsl:param name="allow-anchors" select="0"/>
   <xsl:choose>
@@ -429,6 +444,25 @@ title of the element. This does not include the label.
 <xsl:template match="qandaentry" mode="title.markup">
   <!-- qandaentrys are represented by the first question in them -->
   <xsl:text>Question</xsl:text>
+</xsl:template>
+
+<xsl:template match="qandaset" mode="title.markup">
+  <xsl:param name="allow-anchors" select="0"/>
+  <xsl:variable name="title" select="(info/title|
+                                      blockinfo/title|
+				      title)[1]"/>
+  <xsl:choose>
+    <xsl:when test="$title">
+      <xsl:apply-templates select="$title" mode="title.markup">
+        <xsl:with-param name="allow-anchors" select="$allow-anchors"/>
+      </xsl:apply-templates>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:call-template name="gentext">
+        <xsl:with-param name="key" select="'QandASet'"/>
+      </xsl:call-template>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 <xsl:template match="legalnotice" mode="title.markup">

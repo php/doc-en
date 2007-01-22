@@ -2,6 +2,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
                 xmlns:fo="http://www.w3.org/1999/XSL/Format"
+                xmlns:rx="http://www.renderx.com/XSL/Extensions"
                 xmlns:stbl="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.Table"
                 xmlns:xtbl="com.nwalsh.xalan.Table"
                 xmlns:lxslt="http://xml.apache.org/xslt"
@@ -12,7 +13,7 @@
 <xsl:include href="../common/table.xsl"/>
 
 <!-- ********************************************************************
-     $Id: table.xsl,v 1.6 2005-07-16 23:38:32 techtonik Exp $
+     $Id: table.xsl,v 1.7 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -24,7 +25,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: table.xsl,v 1.6 2005-07-16 23:38:32 techtonik Exp $
+$Id: table.xsl,v 1.7 2007-01-22 11:35:12 bjori Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>
@@ -34,8 +35,8 @@ $Id: table.xsl,v 1.6 2005-07-16 23:38:32 techtonik Exp $
 </referenceinfo>
 <title>Formatting Object Table Reference</title>
 
-<partintro>
-<section><title>Introduction</title>
+<partintro id="partintro">
+<title>Introduction</title>
 
 <para>This is technical reference documentation for the DocBook XSL
 Stylesheets; it documents (some of) the parameters, templates, and
@@ -48,7 +49,6 @@ works</quote>.</para>
 
 <para>Although I am trying to be thorough, this documentation is known
 to be incomplete. Don't forget to read the source, too :-)</para>
-</section>
 </partintro>
 </doc:reference>
 
@@ -56,6 +56,169 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 
 <lxslt:component prefix="xtbl"
                  functions="adjustColumnWidths"/>
+
+<!-- ==================================================================== -->
+
+<xsl:template name="make.table.content">
+  <xsl:choose>
+    <xsl:when test="tgroup|mediaobject|graphic">
+      <xsl:call-template name="calsTable"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="." mode="htmlTable"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- ==================================================================== -->
+
+<xsl:template name="calsTable">
+
+  <xsl:variable name="keep.together">
+    <xsl:call-template name="dbfo-attribute">
+      <xsl:with-param name="pis"
+                      select="processing-instruction('dbfo')"/>
+      <xsl:with-param name="attribute" select="'keep-together'"/>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:for-each select="tgroup">
+
+    <fo:table xsl:use-attribute-sets="table.table.properties">
+      <xsl:if test="$keep.together != ''">
+        <xsl:attribute name="keep-together.within-column">
+          <xsl:value-of select="$keep.together"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:call-template name="table.frame"/>
+      <xsl:if test="following-sibling::tgroup">
+        <xsl:attribute name="border-bottom-width">0pt</xsl:attribute>
+        <xsl:attribute name="border-bottom-style">none</xsl:attribute>
+        <xsl:attribute name="padding-bottom">0pt</xsl:attribute>
+        <xsl:attribute name="margin-bottom">0pt</xsl:attribute>
+        <xsl:attribute name="space-after">0pt</xsl:attribute>
+        <xsl:attribute name="space-after.minimum">0pt</xsl:attribute>
+        <xsl:attribute name="space-after.optimum">0pt</xsl:attribute>
+        <xsl:attribute name="space-after.maximum">0pt</xsl:attribute>
+      </xsl:if>
+      <xsl:if test="preceding-sibling::tgroup">
+        <xsl:attribute name="border-top-width">0pt</xsl:attribute>
+        <xsl:attribute name="border-top-style">none</xsl:attribute>
+        <xsl:attribute name="padding-top">0pt</xsl:attribute>
+        <xsl:attribute name="margin-top">0pt</xsl:attribute>
+        <xsl:attribute name="space-before">0pt</xsl:attribute>
+        <xsl:attribute name="space-before.minimum">0pt</xsl:attribute>
+        <xsl:attribute name="space-before.optimum">0pt</xsl:attribute>
+        <xsl:attribute name="space-before.maximum">0pt</xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates select="."/>
+    </fo:table>
+  </xsl:for-each>
+</xsl:template>
+
+<!-- ==================================================================== -->
+
+<!-- Placeholder template enables wrapping a fo:table in
+     another table for purposes of layout or applying
+     extensions such as XEP table-omit-initial-header to
+     create "continued" titles on page breaks. -->
+<xsl:template name="table.layout">
+  <xsl:param name="table.content" select="NOTANODE"/>
+
+  <xsl:copy-of select="$table.content"/>
+</xsl:template>
+
+<xsl:template name="table.block">
+  <xsl:param name="table.layout" select="NOTANODE"/>
+
+  <xsl:variable name="id">
+    <xsl:call-template name="object.id"/>
+  </xsl:variable>
+
+  <xsl:variable name="param.placement"
+                select="substring-after(normalize-space(
+                   $formal.title.placement), concat(local-name(.), ' '))"/>
+
+  <xsl:variable name="placement">
+    <xsl:choose>
+      <xsl:when test="contains($param.placement, ' ')">
+        <xsl:value-of select="substring-before($param.placement, ' ')"/>
+      </xsl:when>
+      <xsl:when test="$param.placement = ''">before</xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$param.placement"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:choose>
+    <xsl:when test="self::table">
+      <fo:block id="{$id}"
+                xsl:use-attribute-sets="table.properties">
+        <xsl:if test="$placement = 'before'">
+          <xsl:call-template name="formal.object.heading">
+            <xsl:with-param name="placement" select="$placement"/>
+          </xsl:call-template>
+        </xsl:if>
+        <xsl:copy-of select="$table.layout"/>
+        <xsl:call-template name="table.footnote.block"/>
+        <xsl:if test="$placement != 'before'">
+          <xsl:call-template name="formal.object.heading">
+            <xsl:with-param name="placement" select="$placement"/>
+          </xsl:call-template>
+        </xsl:if>
+      </fo:block>
+    </xsl:when>
+    <xsl:otherwise>
+      <fo:block id="{$id}"
+                xsl:use-attribute-sets="informaltable.properties">
+        <xsl:copy-of select="$table.layout"/>
+        <xsl:call-template name="table.footnote.block"/>
+      </fo:block>
+    </xsl:otherwise>
+  </xsl:choose>
+
+
+</xsl:template>
+
+<!-- Output a table's footnotes in a block -->
+<xsl:template name="table.footnote.block">
+  <xsl:if test=".//footnote">
+    <fo:block keep-with-previous.within-column="always">
+      <xsl:apply-templates select=".//footnote" mode="table.footnote.mode"/>
+    </fo:block>
+  </xsl:if>
+</xsl:template>
+
+<!-- ==================================================================== -->
+
+<xsl:template name="table.container">
+  <xsl:param name="table.block"/>
+  <xsl:choose>
+    <xsl:when test="@orient='land' and 
+                    $fop.extensions = 0 and 
+                    $passivetex.extensions = 0" >
+      <fo:block-container reference-orientation="90"
+            padding="6pt"
+            xsl:use-attribute-sets="list.block.spacing">
+        <xsl:attribute name="width">
+          <xsl:call-template name="table.width"/>
+        </xsl:attribute>
+        <fo:block start-indent="0pt" end-indent="0pt">
+          <xsl:copy-of select="$table.block"/>
+        </fo:block>
+      </fo:block-container>
+    </xsl:when>
+    <xsl:when test="@pgwide = 1">
+      <fo:block span="all" start-indent="0pt" end-indent="0pt">
+        <xsl:copy-of select="$table.block"/>
+      </fo:block>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:copy-of select="$table.block"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
 
 <!-- ==================================================================== -->
 
@@ -121,6 +284,147 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 </xsl:template>
 
 <!-- ==================================================================== -->
+<xsl:template name="table.frame">
+  <xsl:variable name="frame">
+    <xsl:choose>
+      <xsl:when test="../@frame">
+        <xsl:value-of select="../@frame"/>
+      </xsl:when>
+      <xsl:otherwise>all</xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:choose>
+    <xsl:when test="$frame='all'">
+      <xsl:attribute name="border-left-style">
+        <xsl:value-of select="$table.frame.border.style"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-right-style">
+        <xsl:value-of select="$table.frame.border.style"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-top-style">
+        <xsl:value-of select="$table.frame.border.style"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-bottom-style">
+        <xsl:value-of select="$table.frame.border.style"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-left-width">
+        <xsl:value-of select="$table.frame.border.thickness"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-right-width">
+        <xsl:value-of select="$table.frame.border.thickness"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-top-width">
+        <xsl:value-of select="$table.frame.border.thickness"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-bottom-width">
+        <xsl:value-of select="$table.frame.border.thickness"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-left-color">
+        <xsl:value-of select="$table.frame.border.color"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-right-color">
+        <xsl:value-of select="$table.frame.border.color"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-top-color">
+        <xsl:value-of select="$table.frame.border.color"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-bottom-color">
+        <xsl:value-of select="$table.frame.border.color"/>
+      </xsl:attribute>
+    </xsl:when>
+    <xsl:when test="$frame='bottom'">
+      <xsl:attribute name="border-left-style">none</xsl:attribute>
+      <xsl:attribute name="border-right-style">none</xsl:attribute>
+      <xsl:attribute name="border-top-style">none</xsl:attribute>
+      <xsl:attribute name="border-bottom-style">
+        <xsl:value-of select="$table.frame.border.style"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-bottom-width">
+        <xsl:value-of select="$table.frame.border.thickness"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-bottom-color">
+        <xsl:value-of select="$table.frame.border.color"/>
+      </xsl:attribute>
+    </xsl:when>
+    <xsl:when test="$frame='sides'">
+      <xsl:attribute name="border-left-style">
+        <xsl:value-of select="$table.frame.border.style"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-right-style">
+        <xsl:value-of select="$table.frame.border.style"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-top-style">none</xsl:attribute>
+      <xsl:attribute name="border-bottom-style">none</xsl:attribute>
+      <xsl:attribute name="border-left-width">
+        <xsl:value-of select="$table.frame.border.thickness"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-right-width">
+        <xsl:value-of select="$table.frame.border.thickness"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-left-color">
+        <xsl:value-of select="$table.frame.border.color"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-right-color">
+        <xsl:value-of select="$table.frame.border.color"/>
+      </xsl:attribute>
+    </xsl:when>
+    <xsl:when test="$frame='top'">
+      <xsl:attribute name="border-left-style">none</xsl:attribute>
+      <xsl:attribute name="border-right-style">none</xsl:attribute>
+      <xsl:attribute name="border-top-style">
+        <xsl:value-of select="$table.frame.border.style"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-bottom-style">none</xsl:attribute>
+      <xsl:attribute name="border-top-width">
+        <xsl:value-of select="$table.frame.border.thickness"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-top-color">
+        <xsl:value-of select="$table.frame.border.color"/>
+      </xsl:attribute>
+    </xsl:when>
+    <xsl:when test="$frame='topbot'">
+      <xsl:attribute name="border-left-style">none</xsl:attribute>
+      <xsl:attribute name="border-right-style">none</xsl:attribute>
+      <xsl:attribute name="border-top-style">
+        <xsl:value-of select="$table.frame.border.style"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-bottom-style">
+        <xsl:value-of select="$table.frame.border.style"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-top-width">
+        <xsl:value-of select="$table.frame.border.thickness"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-bottom-width">
+        <xsl:value-of select="$table.frame.border.thickness"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-top-color">
+        <xsl:value-of select="$table.frame.border.color"/>
+      </xsl:attribute>
+      <xsl:attribute name="border-bottom-color">
+        <xsl:value-of select="$table.frame.border.color"/>
+      </xsl:attribute>
+    </xsl:when>
+    <xsl:when test="$frame='none'">
+      <xsl:attribute name="border-left-style">none</xsl:attribute>
+      <xsl:attribute name="border-right-style">none</xsl:attribute>
+      <xsl:attribute name="border-top-style">none</xsl:attribute>
+      <xsl:attribute name="border-bottom-style">none</xsl:attribute>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:message>
+        <xsl:text>Impossible frame on table: </xsl:text>
+        <xsl:value-of select="$frame"/>
+      </xsl:message>
+      <xsl:attribute name="border-left-style">none</xsl:attribute>
+      <xsl:attribute name="border-right-style">none</xsl:attribute>
+      <xsl:attribute name="border-top-style">none</xsl:attribute>
+      <xsl:attribute name="border-bottom-style">none</xsl:attribute>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- ==================================================================== -->
 
 <xsl:template name="border">
   <xsl:param name="side" select="'left'"/>
@@ -139,7 +443,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 <!-- ==================================================================== -->
 
 <xsl:template match="tgroup" name="tgroup">
-  <xsl:if test="not(@cols)">
+  <xsl:if test="not(@cols) or @cols = '' or string(number(@cols)) = 'NaN'">
     <xsl:message terminate="yes">
       <xsl:text>Error: CALS tables must specify the number of columns.</xsl:text>
     </xsl:message>
@@ -165,7 +469,16 @@ to be incomplete. Don't forget to read the source, too :-)</para>
     </xsl:choose>
   </xsl:variable>
 
-  <xsl:if test="position() = 1">
+  <xsl:variable name="prop-columns"
+                select=".//colspec[contains(@colwidth, '*')]"/>
+  <xsl:if test="count($prop-columns) != 0 or
+                $fop.extensions != 0 or
+                $fop1.extensions != 0 or
+                $passivetex.extensions != 0">
+    <xsl:attribute name="table-layout">fixed</xsl:attribute>
+  </xsl:if>
+
+  <xsl:if test="count(preceding-sibling::tgroup) = 0">
     <!-- If this is the first tgroup, output the width attribute for the -->
     <!-- surrounding fo:table. (If this isn't the first tgroup, trying   -->
     <!-- to output the attribute will cause an error.)                   -->
@@ -207,6 +520,13 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 <xsl:template match="colspec"></xsl:template>
 
 <xsl:template name="table.width">
+
+  <xsl:variable name="numcols">
+    <xsl:call-template name="widest-html-row">
+      <xsl:with-param name="rows" select=".//tr"/>
+    </xsl:call-template>
+  </xsl:variable>
+
   <xsl:variable name="explicit.table.width">
     <xsl:choose>
       <xsl:when test="self::entrytbl">
@@ -233,16 +553,72 @@ to be incomplete. Don't forget to read the source, too :-)</para>
     </xsl:choose>
   </xsl:variable>
 
+  <xsl:variable name="column.sum">
+    <xsl:choose>
+      <!-- CALS table -->
+      <xsl:when test="tgroup[1][@cols]">
+        <xsl:if test="count(tgroup[1]/colspec) = tgroup/@cols">
+          <xsl:for-each select="tgroup[1]/colspec">
+            <xsl:if test="position() != 1">
+              <xsl:text> + </xsl:text>
+            </xsl:if>
+            <xsl:choose>
+              <xsl:when test="not(@colwidth)">NOWIDTH</xsl:when>
+              <xsl:when test="contains(@colwidth, '*')">NOWIDTH</xsl:when>
+              <xsl:otherwise>
+                <xsl:value-of select="@colwidth"/>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:for-each>
+        </xsl:if>
+      </xsl:when>
+      <xsl:otherwise>
+        <!-- HTML table -->
+        <xsl:if test="count(col|colgroup/col) = $numcols">
+          <xsl:for-each select="col|colgroup/col">
+            <xsl:if test="position() != 1">
+              <xsl:text> + </xsl:text>
+            </xsl:if>
+            <xsl:choose>
+              <xsl:when test="not(@width)">NOWIDTH</xsl:when>
+              <xsl:when test="contains(@width, '%')">NOWIDTH</xsl:when>
+              <xsl:otherwise>
+                <xsl:value-of select="@width"/>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:for-each>
+        </xsl:if>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable name="column.sum.width">
+    <xsl:if test="not(contains($column.sum, 'NOWIDTH'))">
+      <xsl:value-of select="$column.sum"/>
+    </xsl:if>
+  </xsl:variable>
+
+  <xsl:variable name="prop-columns"
+                select=".//colspec[contains(@colwidth, '*')]"/>
+
   <xsl:variable name="table.width">
     <xsl:choose>
       <xsl:when test="$explicit.table.width != ''">
         <xsl:value-of select="$explicit.table.width"/>
       </xsl:when>
+      <xsl:when test="$column.sum.width != ''">
+        <xsl:value-of select="$column.sum.width"/>
+      </xsl:when>
       <xsl:when test="$default.table.width = ''">
         <xsl:choose>
           <!-- These processors don't support table-layout="auto" -->
           <xsl:when test="$fop.extensions != 0 or
+                          $fop1.extensions != 0 or
                           $passivetex.extensions != 0">
+            <xsl:text>100%</xsl:text>
+          </xsl:when>
+          <!-- Proportional columns imply 100% width -->
+          <xsl:when test="count($prop-columns) != 0">
             <xsl:text>100%</xsl:text>
           </xsl:when>
           <xsl:otherwise>
@@ -264,7 +640,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 <xsl:template match="thead">
   <xsl:variable name="tgroup" select="parent::*"/>
 
-  <fo:table-header start-indent="0pt">
+  <fo:table-header start-indent="0pt" end-indent="0pt">
     <xsl:apply-templates select="row[1]">
       <xsl:with-param name="spans">
         <xsl:call-template name="blank.spans">
@@ -278,7 +654,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 <xsl:template match="tfoot">
   <xsl:variable name="tgroup" select="parent::*"/>
 
-  <fo:table-footer start-indent="0pt">
+  <fo:table-footer start-indent="0pt" end-indent="0pt">
     <xsl:apply-templates select="row[1]">
       <xsl:with-param name="spans">
         <xsl:call-template name="blank.spans">
@@ -293,7 +669,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 <xsl:template match="tbody">
   <xsl:variable name="tgroup" select="parent::*"/>
 
-  <fo:table-body start-indent="0pt">
+  <fo:table-body start-indent="0pt" end-indent="0pt">
     <xsl:apply-templates select="row[1]">
       <xsl:with-param name="spans">
         <xsl:call-template name="blank.spans">
@@ -305,6 +681,47 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 </xsl:template>
 
 <xsl:template match="row">
+  <xsl:param name="spans"/>
+
+  <xsl:choose>
+    <xsl:when test="contains($spans, '0')">
+      <xsl:call-template name="normal-row">
+	<xsl:with-param name="spans" select="$spans"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <!--
+      <xsl:message>
+	<xsl:text>Ignoring row: </xsl:text>
+	<xsl:value-of select="$spans"/>
+	<xsl:text> = </xsl:text>
+	<xsl:call-template name="consume-row">
+	  <xsl:with-param name="spans" select="$spans"/>
+	</xsl:call-template>
+      </xsl:message>
+      -->
+
+      <xsl:if test="normalize-space(.//text()) != ''">
+	<xsl:message>Warning: overlapped row contains content!</xsl:message>
+      </xsl:if>
+
+      <fo:table-row>
+	<xsl:comment> This row intentionally left blank </xsl:comment>
+	<fo:table-cell><fo:block/></fo:table-cell>
+      </fo:table-row>
+
+      <xsl:apply-templates select="following-sibling::row[1]">
+	<xsl:with-param name="spans">
+	  <xsl:call-template name="consume-row">
+	    <xsl:with-param name="spans" select="$spans"/>
+	  </xsl:call-template>
+	</xsl:with-param>
+      </xsl:apply-templates>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template name="normal-row">
   <xsl:param name="spans"/>
 
   <xsl:variable name="bgcolor">
@@ -610,7 +1027,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 
         <xsl:choose>
           <xsl:when test="$fop.extensions = 0 and $passivetex.extensions = 0
-	                  and $orientation != ''">
+                          and $orientation != ''">
             <fo:block-container reference-orientation="{$orientation}">
               <xsl:if test="$rotated-width != ''">
                 <xsl:attribute name="width">
@@ -655,61 +1072,82 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   <xsl:param name="align.inherit" select="''"/>
   <xsl:param name="char.inherit" select="''"/>
 
-        <xsl:if test="$bgcolor.pi != ''">
-          <xsl:attribute name="background-color">
-            <xsl:value-of select="$bgcolor.pi"/>
-          </xsl:attribute>
-        </xsl:if>
+  <xsl:choose>
+    <xsl:when test="ancestor::tgroup">
+      <xsl:if test="$bgcolor.pi != ''">
+        <xsl:attribute name="background-color">
+          <xsl:value-of select="$bgcolor.pi"/>
+        </xsl:attribute>
+      </xsl:if>
 
-        <xsl:if test="$rowsep.inherit &gt; 0">
-          <xsl:call-template name="border">
-            <xsl:with-param name="side" select="'bottom'"/>
-          </xsl:call-template>
-        </xsl:if>
+      <xsl:if test="$rowsep.inherit &gt; 0">
+        <xsl:call-template name="border">
+          <xsl:with-param name="side" select="'bottom'"/>
+        </xsl:call-template>
+      </xsl:if>
 
-        <xsl:if test="$colsep.inherit &gt; 0 and 
-	              $col &lt; ancestor::tgroup/@cols">
-          <xsl:call-template name="border">
-            <xsl:with-param name="side" select="'right'"/>
-          </xsl:call-template>
-        </xsl:if>
+      <xsl:if test="$colsep.inherit &gt; 0 and 
+                      $col &lt; ancestor::tgroup/@cols">
+        <xsl:call-template name="border">
+          <xsl:with-param name="side" select="'right'"/>
+        </xsl:call-template>
+      </xsl:if>
 
-        <xsl:if test="$valign.inherit != ''">
-          <xsl:attribute name="display-align">
-            <xsl:choose>
-              <xsl:when test="$valign.inherit='top'">before</xsl:when>
-              <xsl:when test="$valign.inherit='middle'">center</xsl:when>
-              <xsl:when test="$valign.inherit='bottom'">after</xsl:when>
-              <xsl:otherwise>
-                <xsl:message>
-                  <xsl:text>Unexpected valign value: </xsl:text>
-                  <xsl:value-of select="$valign.inherit"/>
-                  <xsl:text>, center used.</xsl:text>
-                </xsl:message>
-                <xsl:text>center</xsl:text>
-              </xsl:otherwise>
-            </xsl:choose>
-          </xsl:attribute>
-        </xsl:if>
+      <xsl:if test="$valign.inherit != ''">
+        <xsl:attribute name="display-align">
+          <xsl:choose>
+            <xsl:when test="$valign.inherit='top'">before</xsl:when>
+            <xsl:when test="$valign.inherit='middle'">center</xsl:when>
+            <xsl:when test="$valign.inherit='bottom'">after</xsl:when>
+            <xsl:otherwise>
+              <xsl:message>
+                <xsl:text>Unexpected valign value: </xsl:text>
+                <xsl:value-of select="$valign.inherit"/>
+                <xsl:text>, center used.</xsl:text>
+              </xsl:message>
+              <xsl:text>center</xsl:text>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:attribute>
+      </xsl:if>
 
-        <xsl:if test="$align.inherit != ''">
-          <xsl:attribute name="text-align">
-            <xsl:value-of select="$align.inherit"/>
-          </xsl:attribute>
-        </xsl:if>
-
-        <xsl:if test="$char.inherit != ''">
+      <xsl:choose>
+        <xsl:when test="$align.inherit = 'char' and $char.inherit != ''">
           <xsl:attribute name="text-align">
             <xsl:value-of select="$char.inherit"/>
           </xsl:attribute>
-        </xsl:if>
+        </xsl:when>
+        <xsl:when test="$align.inherit != ''">
+          <xsl:attribute name="text-align">
+            <xsl:value-of select="$align.inherit"/>
+          </xsl:attribute>
+        </xsl:when>
+      </xsl:choose>
+
+    </xsl:when>
+    <xsl:otherwise>
+      <!-- HTML table -->
+      <xsl:variable name="border" 
+                    select="(ancestor::table |
+                             ancestor::informaltable)[last()]/@border"/>
+      <xsl:if test="$border != '' and $border != 0">
+        <xsl:attribute name="border">
+          <xsl:value-of select="$table.cell.border.thickness"/>
+          <xsl:text> </xsl:text>
+          <xsl:value-of select="$table.cell.border.style"/>
+          <xsl:text> </xsl:text>
+          <xsl:value-of select="$table.cell.border.color"/>
+        </xsl:attribute>
+      </xsl:if>
+    </xsl:otherwise>
+  </xsl:choose>
 
 </xsl:template>
 
 <!-- Expand this template to add properties to any cell's block -->
 <xsl:template name="table.cell.block.properties">
   <!-- highlight this entry? -->
-  <xsl:if test="ancestor::thead">
+  <xsl:if test="ancestor::thead or ancestor::tfoot">
     <xsl:attribute name="font-weight">bold</xsl:attribute>
   </xsl:if>
 </xsl:template>
@@ -899,14 +1337,14 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   <xsl:choose>
     <xsl:when test="$count>count($colspecs)">
       <fo:table-column column-number="{$countcol}">
-	<xsl:variable name="colwidth">
-	  <xsl:call-template name="calc.column.width"/>
-	</xsl:variable>
-	<xsl:if test="$colwidth != 'proportional-column-width(1)'">
-	  <xsl:attribute name="column-width">
-	    <xsl:value-of select="$colwidth"/>
-	  </xsl:attribute>
-	</xsl:if>
+        <xsl:variable name="colwidth">
+          <xsl:call-template name="calc.column.width"/>
+        </xsl:variable>
+        <xsl:if test="$colwidth != 'proportional-column-width(1)'">
+          <xsl:attribute name="column-width">
+            <xsl:value-of select="$colwidth"/>
+          </xsl:attribute>
+        </xsl:if>
       </fo:table-column>
     </xsl:when>
     <xsl:otherwise>
@@ -935,19 +1373,19 @@ to be incomplete. Don't forget to read the source, too :-)</para>
       <xsl:choose>
         <xsl:when test="$colspec.colnum=$countcol">
           <fo:table-column column-number="{$countcol}">
-	    <xsl:variable name="colwidth">
+            <xsl:variable name="colwidth">
               <xsl:call-template name="calc.column.width">
                 <xsl:with-param name="colwidth">
                   <xsl:value-of select="$colspec.colwidth"/>
                 </xsl:with-param>
-	      </xsl:call-template>
-	    </xsl:variable>
-	    <xsl:if test="$colwidth != 'proportional-column-width(1)'">
-	      <xsl:attribute name="column-width">
-		<xsl:value-of select="$colwidth"/>
-	      </xsl:attribute>
-	    </xsl:if>
-	  </fo:table-column>
+              </xsl:call-template>
+            </xsl:variable>
+            <xsl:if test="$colwidth != 'proportional-column-width(1)'">
+              <xsl:attribute name="column-width">
+                <xsl:value-of select="$colwidth"/>
+              </xsl:attribute>
+            </xsl:if>
+          </fo:table-column>
         </xsl:when>
         <xsl:otherwise>
           <xsl:call-template name="generate.col">

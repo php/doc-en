@@ -1,11 +1,13 @@
 <?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
-                exclude-result-prefixes="doc"
+                xmlns:dyn="http://exslt.org/dynamic"
+                xmlns:saxon="http://icl.com/saxon"
+                exclude-result-prefixes="doc dyn saxon"
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: common.xsl,v 1.5 2005-07-16 23:38:35 techtonik Exp $
+     $Id: common.xsl,v 1.6 2007-01-22 11:35:11 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -19,7 +21,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: common.xsl,v 1.5 2005-07-16 23:38:35 techtonik Exp $
+$Id: common.xsl,v 1.6 2007-01-22 11:35:11 bjori Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>
@@ -29,8 +31,8 @@ $Id: common.xsl,v 1.5 2005-07-16 23:38:35 techtonik Exp $
 </referenceinfo>
 <title>Common Template Reference</title>
 
-<partintro>
-<section><title>Introduction</title>
+<partintro id="partintro">
+<title>Introduction</title>
 
 <para>This is technical reference documentation for the DocBook XSL
 Stylesheets; it documents (some of) the parameters, templates, and
@@ -43,7 +45,6 @@ works</quote>.</para>
 
 <para>Although I am trying to be thorough, this documentation is known
 to be incomplete. Don't forget to read the source, too :-)</para>
-</section>
 </partintro>
 
 </doc:reference>
@@ -70,7 +71,7 @@ mediaobject mediaobjectco menuchoice msg msgentry msgexplan msginfo
 msgmain msgrel msgset msgsub msgtext note objectinfo
 orderedlist othercredit part partintro preface printhistory procedure
 programlistingco publisher qandadiv qandaentry qandaset question
-refentry reference refmeta refnamediv refsect1 refsect1info refsect2
+refentry reference refmeta refnamediv refsection refsect1 refsect1info refsect2
 refsect2info refsect3 refsect3info refsynopsisdiv refsynopsisdivinfo
 revhistory revision row sbr screenco screenshot sect1 sect1info sect2
 sect2info sect3 sect3info sect4 sect4info sect5 sect5info section
@@ -91,8 +92,8 @@ ooclass
 ooexception
 oointerface
 simplemsgentry
+manvolnum
 "/>
-
 <!-- ====================================================================== -->
 
 <doc:template name="is.component" xmlns="">
@@ -179,7 +180,7 @@ simplemsgentry
 <!-- ====================================================================== -->
 
 <doc:template name="section.level" xmlns="">
-<refpurpose>Returns the hierarchical level of a section.</refpurpose>
+<refpurpose>Returns the hierarchical level of a section</refpurpose>
 
 <refdescription>
 <para>This template calculates the hierarchical level of a section.
@@ -256,7 +257,7 @@ Defaults to the context node.</para>
 </xsl:template><!-- section.level -->
 
 <doc:template name="qanda.section.level" xmlns="">
-<refpurpose>Returns the hierarchical level of a QandASet.</refpurpose>
+<refpurpose>Returns the hierarchical level of a QandASet</refpurpose>
 
 <refdescription>
 <para>This template calculates the hierarchical level of a QandASet.
@@ -469,6 +470,9 @@ Defaults to the context node.</para>
     <xsl:when test="$object/@id">
       <xsl:value-of select="$object/@id"/>
     </xsl:when>
+    <xsl:when test="$object/@xml:id">
+      <xsl:value-of select="$object/@xml:id"/>
+    </xsl:when>
     <xsl:otherwise>
       <xsl:value-of select="generate-id($object)"/>
     </xsl:otherwise>
@@ -508,6 +512,10 @@ Defaults to the context node.</para>
 
     <xsl:otherwise>
       <xsl:choose>
+	<!-- Handle case when personname contains only general markup (DocBook 5.0) -->
+	<xsl:when test="$node/self::personname and not($node/firstname or $node/honorific or $node/lineage or $node/othername or $node/surname)">
+	  <xsl:apply-templates select="$node/node()"/>
+	</xsl:when>
         <xsl:when test="$style = 'family-given'">
           <xsl:call-template name="person.name.family-given">
             <xsl:with-param name="node" select="$node"/>
@@ -953,6 +961,12 @@ recursive process.</para>
         </xsl:if>
       </xsl:for-each>
     </xsl:when>
+
+    <!-- If no selection by role, and there is only one object, use it -->
+    <xsl:when test="count($olist) = 1 and $count = 1">
+      <xsl:value-of select="$count"/> 
+    </xsl:when>
+
     <xsl:otherwise>
       <!-- Otherwise select first acceptable object -->
       <xsl:if test="$count &lt;= count($olist)">
@@ -1029,7 +1043,7 @@ recursive process.</para>
 </xsl:template>
 
 <doc:template name="is.acceptable.mediaobject" xmlns="">
-<refpurpose>Returns '1' if the specified media object is recognized.</refpurpose>
+<refpurpose>Returns '1' if the specified media object is recognized</refpurpose>
 
 <refdescription>
 <para>This template examines a media object and returns '1' if the
@@ -1311,8 +1325,39 @@ pointed to by the link is one of the elements listed in
 
 <xsl:template name="orderedlist-starting-number">
   <xsl:param name="list" select="."/>
+
+  <!-- Need a neutral dbxxx -->
+  <xsl:variable name="pi-html-start">
+    <xsl:call-template name="pi-attribute">
+      <xsl:with-param name="pis"
+                      select="$list/processing-instruction('dbhtml')"/>
+      <xsl:with-param name="attribute" select="'start'"/>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:variable name="pi-fo-start">
+    <xsl:call-template name="pi-attribute">
+      <xsl:with-param name="pis"
+                      select="$list/processing-instruction('dbfo')"/>
+      <xsl:with-param name="attribute" select="'start'"/>
+    </xsl:call-template>
+  </xsl:variable>
+
   <xsl:choose>
-    <xsl:when test="not($list/@continuation = 'continues')">1</xsl:when>
+    <xsl:when test="not($list/@continuation = 'continues')">
+      <xsl:choose>
+	<xsl:when test="@startingnumber">
+	  <xsl:value-of select="@startingnumber"/>
+	</xsl:when>
+	<xsl:when test="$pi-html-start != ''">
+	  <xsl:value-of select="$pi-html-start"/>
+	</xsl:when>
+	<xsl:when test="$pi-fo-start != ''">
+	  <xsl:value-of select="$pi-fo-start"/>
+	</xsl:when>
+	<xsl:otherwise>1</xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
     <xsl:otherwise>
       <xsl:variable name="prevlist"
                     select="$list/preceding::orderedlist[1]"/>
@@ -1709,8 +1754,10 @@ node location.</para>
 <xsl:template name="xml.base.dirs">
   <xsl:param name="base.elem" select="NONODE"/>
 
-  <!-- Recursively resolve xml:base attributes -->
-  <xsl:if test="$base.elem/ancestor::*[@xml:base != '']">
+  <!-- Recursively resolve xml:base attributes, up to a 
+       full path with : in uri -->
+  <xsl:if test="$base.elem/ancestor::*[@xml:base != ''] and
+                not(contains($base.elem/@xml:base, ':'))">
     <xsl:call-template name="xml.base.dirs">
       <xsl:with-param name="base.elem" 
                       select="$base.elem/ancestor::*[@xml:base != ''][1]"/>
@@ -1763,5 +1810,285 @@ node location.</para>
   </xsl:if>
 </xsl:template>
 
-</xsl:stylesheet>
+<!-- ===================================== -->
 
+<doc:template name="string.upper" xmlns="">
+<refpurpose>Converts a string to all uppercase letters</refpurpose>
+
+<refdescription>
+<para>Given a string, this template does a language-aware conversion
+of that string to all uppercase letters, based on the values of the
+<literal>lowercase.alpha</literal> and
+<literal>uppercase.alpha</literal> gentext keys for the current
+locale. It affects only those characters found in the values of
+<literal>lowercase.alpha</literal> and
+<literal>uppercase.alpha</literal>. All other characters are left
+unchanged.</para>
+</refdescription>
+
+<refparameter>
+<variablelist>
+<varlistentry><term>string</term>
+<listitem>
+<para>The string to convert to uppercase.</para>
+</listitem>
+</varlistentry>
+</variablelist>
+</refparameter>
+</doc:template>
+
+<xsl:template name="string.upper">
+  <xsl:param name="string" select="''"/>
+  <xsl:variable name="lowercase.alpha">
+    <xsl:call-template name="gentext">
+      <xsl:with-param name="key" select="'lowercase.alpha'"/>
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="uppercase.alpha">
+    <xsl:call-template name="gentext">
+      <xsl:with-param name="key" select="'uppercase.alpha'"/>
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:value-of select="translate($string,$lowercase.alpha,$uppercase.alpha)"/>
+</xsl:template>
+
+<!-- ===================================== -->
+
+<doc:template name="string.lower" xmlns="">
+<refpurpose>Converts a string to all lowercase letters</refpurpose>
+
+<refdescription>
+<para>Given a string, this template does a language-aware conversion
+of that string to all lowercase letters, based on the values of the
+<literal>uppercase.alpha</literal> and
+<literal>lowercase.alpha</literal> gentext keys for the current
+locale. It affects only those characters found in the values of
+<literal>uppercase.alpha</literal> and
+<literal>lowercase.alpha</literal>. All other characters are left
+unchanged.</para>
+</refdescription>
+
+<refparameter>
+<variablelist>
+<varlistentry><term>string</term>
+<listitem>
+<para>The string to convert to lowercase.</para>
+</listitem>
+</varlistentry>
+</variablelist>
+</refparameter>
+</doc:template>
+
+<xsl:template name="string.lower">
+  <xsl:param name="string" select="''"/>
+  <xsl:variable name="uppercase.alpha">
+    <xsl:call-template name="gentext">
+      <xsl:with-param name="key" select="'uppercase.alpha'"/>
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="lowercase.alpha">
+    <xsl:call-template name="gentext">
+      <xsl:with-param name="key" select="'lowercase.alpha'"/>
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:value-of select="translate($string,$uppercase.alpha,$lowercase.alpha)"/>
+</xsl:template>
+
+<!-- ===================================== -->
+
+<doc:template name="select.choice.separator" xmlns="">
+  <refpurpose>Returns localized choice separator</refpurpose>
+  <refdescription>
+    <para>This template enables auto-generation of an appropriate
+    localized "choice" separator (for example, "and" or "or") before
+    the final item in an inline list (though it could also be useful
+    for generating choice separators for non-inline lists).</para>
+
+    <para>It currently works by evaluating a processing instruction
+    (PI) of the form &lt;?dbchoice&#xa0;choice="foo"?> :
+
+    <itemizedlist>
+      <listitem>
+	<simpara>if the value of the <sgmltag>choice</sgmltag>
+	pseudo-attribute is "and" or "or", returns a localized "and"
+	or "or"</simpara>
+      </listitem>
+      <listitem>
+	<simpara>otherwise returns the literal value of the
+	<sgmltag>choice</sgmltag> pseudo-attribute</simpara>
+      </listitem>
+    </itemizedlist>
+
+    The latter is provided only as a temporary workaround because the
+    locale files do not currently have translations for the word
+    <wordasword>or</wordasword>. So if you want to generate a a
+    logical "or" separator in French (for example), you currently need
+    to do this:
+
+    <literallayout>&lt;?dbchoice choice="ou"?></literallayout>
+    </para>
+
+    <warning>
+      <para>The <sgmltag>dbchoice</sgmltag> processing instruction is
+      an unfortunate hack; support for it may disappear in the future
+      (particularly if and when a more appropriate means for marking
+      up "choice" lists becomes available in DocBook).</para>
+    </warning>
+  </refdescription>
+</doc:template>
+
+<xsl:template name="select.choice.separator">
+  
+  <xsl:variable name="choice">
+    <xsl:call-template name="pi-attribute">
+      <xsl:with-param name="pis" select="processing-instruction('dbchoice')"/>
+      <xsl:with-param name="attribute">choice</xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
+  
+  <xsl:choose>
+    <!-- if value of $choice is "and" or "or", translate to equivalent in -->
+    <!-- current locale -->
+    <xsl:when test="$choice = 'and' or $choice = 'or'">
+      <xsl:call-template name="gentext">
+	<xsl:with-param name="key" select="$choice"/>
+      </xsl:call-template>
+    </xsl:when>
+    <!--  otherwise, just output value of $choice, whatever it is -->
+    <xsl:otherwise>
+      <xsl:value-of select="$choice"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- ===================================== -->
+
+<doc:template name="evaluate.info.profile" xmlns="">
+  <refpurpose>Evaluates an info profile</refpurpose>
+  <refdescription>
+    <para>This function evaluates an "info profile" matching the XPath
+    expression given by the <parameter>profile</parameter>
+    parameter. It relies on the XSLT <function>evaluate()</function>
+    extension function.</para>
+
+    <para>The value of the <parameter>profile</parameter> parameter
+    can include the literal string <literal>$info</literal>. If found
+    in the value of the <parameter>profile</parameter> parameter, the
+    literal string <literal>$info</literal> string is replaced with
+    the value of the <parameter>info</parameter> parameter, which
+    should be a set of <replaceable>*info</replaceable> nodes; the
+    expression is then evaluated using the XSLT
+    <function>evaluate()</function> extension function.</para>
+  </refdescription>
+  <refparameter>
+    <variablelist>
+       <varlistentry>
+        <term>profile</term>
+        <listitem>
+          <para>A string representing an XPath expression </para>
+        </listitem>
+      </varlistentry>
+       <varlistentry>
+        <term>info</term>
+        <listitem>
+          <para>A set of *info nodes</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refparameter>
+
+  <refreturn>
+    <para>Returns a node (the result of evaluating the
+    <parameter>profile</parameter> parameter)</para>
+  </refreturn>
+</doc:template>
+
+  <xsl:template name="evaluate.info.profile">
+    <xsl:param name="profile"/>
+    <xsl:param name="info"/>
+    <xsl:choose>
+      <!-- * xsltproc and Xalan both support dyn:evaluate() -->
+      <xsl:when test="function-available('dyn:evaluate')">
+        <xsl:apply-templates
+            select="dyn:evaluate($profile)" mode="get.refentry.metadata"/>
+      </xsl:when>
+      <!-- * Saxon has its own evaluate() & doesn't support dyn:evaluate() -->
+      <xsl:when test="function-available('saxon:evaluate')">
+        <xsl:apply-templates
+            select="saxon:evaluate($profile)" mode="get.refentry.metadata"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:message terminate="yes">
+Error: The "info profiling" mechanism currently requires an XSLT
+engine that supports the evaluate() XSLT extension function. Your XSLT
+engine does not support it.
+</xsl:message>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+<!-- ===================================== -->
+
+<doc:template name="log.message" xmlns="">
+  <refpurpose>Logs/emits formatted notes and warnings</refpurpose>
+
+  <refdescription>
+    <para>The <function>log.message</function> function is a utility
+    function for logging/emitting formatted messages&#xa0;– that is,
+    notes and warnings, along with a given log "level" and an
+    identifier for the "source" that the message relates to.</para>
+  </refdescription>
+
+  <refparameter>
+    <variablelist>
+      <varlistentry>
+        <term>level</term>
+        <listitem>
+          <para>Text to indicate the message level
+          (<literal>Note</literal> or
+          <literal>Warning</literal>)</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>source</term>
+        <listitem>
+          <para>Text to identify source element the
+          notification/warning relates to</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>message</term>
+        <listitem>
+          <para>Message to lot/emit</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>message-width</term>
+        <listitem>
+          <para>Expected maximum message width</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refparameter>
+  <refreturn>
+  <para>Outputs a message (generally, to standard error).</para></refreturn>
+</doc:template>
+
+<xsl:template name="log.message">
+  <xsl:param name="level"/>
+  <xsl:param name="source"/>
+  <xsl:param name="message"/>
+  <xsl:param name="message-width">50</xsl:param>
+  <xsl:message><xsl:value-of
+  select="$level"/><xsl:text>: </xsl:text><xsl:value-of
+  select="$message"/><xsl:call-template
+  name="copy-string">
+  <xsl:with-param name="string" select="'&#x20;'"/>
+  <xsl:with-param
+      name="count"
+      select="$message-width - string-length($message)"/>
+  </xsl:call-template><xsl:value-of
+  select="$source"/></xsl:message>
+</xsl:template>
+
+</xsl:stylesheet>

@@ -10,7 +10,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: index.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
+     $Id: index.xsl,v 1.6 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -293,7 +293,9 @@
   <!-- Temporal workaround for bug in AXF -->
   <xsl:variable name="wrapper.name">
     <xsl:choose>
-      <xsl:when test="$axf.extensions != 0">fo:block</xsl:when>
+      <xsl:when test="$axf.extensions != 0">
+        <xsl:call-template name="inline.or.block"/>
+      </xsl:when>
       <xsl:otherwise>fo:wrapper</xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
@@ -457,6 +459,21 @@
     <xsl:apply-templates/>
     <xsl:text>)</xsl:text>
   </fo:block>
+</xsl:template>
+
+<!-- Determines if an object should be inserted as an fo:inline
+     or an fo:block.  Used for indexterms -->
+<xsl:template name="inline.or.block">
+  <xsl:param name="parentnode" select=".."/>
+
+  <xsl:variable name="parent" select="local-name($parentnode)"/>
+
+  <xsl:variable name="block.parents" select="'|answer|appendix|appendixinfo|article|articleinfo|bibliodiv|bibliography|bibliographyinfo|blockinfo|blockquote|bookinfo|callout|caution|chapter|chapterinfo|dedication|example|figure|formalpara|funcsynopsisinfo|glossary|glossaryinfo|glossdef|glossdiv|glossentry|highlights|important|index|indexinfo|informalexample|informalfigure|informaltable|itemizedlist|legalnotice|listitem|msgexplan|msgtext|note|objectinfo|orderedlist|partinfo|partintro|preface|prefaceinfo|procedure|qandadiv|qandaset|question|refentry|refentryinfo|referenceinfo|refmeta|refmiscinfo|refsect1|refsect1info|refsect2|refsect2info|refsect3|refsect3info|refsection|refsectioninfo|refsynopsisdiv|refsynopsisdivinfo|revdescription|screeninfo|sect1|sect1info|sect2|sect2info|sect3|sect3info|sect4|sect4info|sect5|sect5info|section|sectioninfo|setindex|setindexinfo|setinfo|sidebar|sidebarinfo|simplesect|step|table|task|taskprerequisites|taskrelated|tasksummary|tip|variablelist|warning|'"/>
+
+  <xsl:choose>
+    <xsl:when test="contains($parent, $block.parents)">fo:block</xsl:when>
+    <xsl:otherwise>fo:inline</xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 </xsl:stylesheet>

@@ -1,4 +1,8 @@
 <?xml version='1.0'?>
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY lowercase "'abcdefghijklmnopqrstuvwxyz'">
+<!ENTITY uppercase "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'">
+ ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:fo="http://www.w3.org/1999/XSL/Format"
                 xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -10,7 +14,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: graphics.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: graphics.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -31,6 +35,9 @@
   <xsl:choose>
     <xsl:when test="$passivetex.extensions != 0">
       <xsl:text> PNG PDF JPG JPEG linespecific </xsl:text>
+    </xsl:when>
+    <xsl:when test="$fop1.extensions != 0">
+      <xsl:text> BMP GIF TIFF SVG PNG EPS JPG JPEG linespecific </xsl:text>
     </xsl:when>
     <xsl:when test="$fop.extensions != 0">
       <xsl:text> BMP GIF TIFF SVG PNG EPS JPG JPEG linespecific </xsl:text>
@@ -58,6 +65,9 @@
     <xsl:when test="$passivetex.extensions != 0">
       <xsl:text> png pdf jpg jpeg </xsl:text>
     </xsl:when>
+    <xsl:when test="$fop1.extensions != 0">
+      <xsl:text> bmp gif tif tiff svg png pdf jpg jpeg eps </xsl:text>
+    </xsl:when>
     <xsl:when test="$fop.extensions != 0">
       <xsl:text> bmp gif tif tiff svg png pdf jpg jpeg eps </xsl:text>
     </xsl:when>
@@ -83,6 +93,33 @@
                          concat(' ', $lcext, ' '))">1</xsl:if>
 </xsl:template>
 
+<xsl:template name="graphic.format.content-type">
+  <xsl:param name="format"/>
+  <xsl:variable name="is.graphic.format">
+    <xsl:call-template name="is.graphic.format">
+      <xsl:with-param name="format" select="$format"/>
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:if test="$is.graphic.format">
+    <xsl:choose>
+      <xsl:when test="$format = ''"></xsl:when>
+      <xsl:when test="$format = 'linespecific'"></xsl:when>
+      <xsl:when test="$format = 'PS'">application/postscript</xsl:when>
+      <xsl:when test="$format = 'PDF'">application/pdf</xsl:when>
+      <xsl:when test="$format = 'PNG'">image/png</xsl:when>
+      <xsl:when test="$format = 'SVG'">image/svg+xml</xsl:when>
+      <xsl:when test="$format = 'JPG'">image/jpeg</xsl:when>
+      <xsl:when test="$format = 'GIF87a'">image/gif</xsl:when>
+      <xsl:when test="$format = 'GIF89a'">image/gif</xsl:when>
+      <xsl:otherwise>
+          <xsl:value-of select="concat('image/', 
+            translate($format, &uppercase;, &lowercase;))"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:if>
+</xsl:template>
+
+
 <!-- ==================================================================== -->
 
 <xsl:template match="screenshot">
@@ -107,7 +144,9 @@
   <xsl:variable name="scalefit">
     <xsl:choose>
       <xsl:when test="$ignore.image.scaling != 0">0</xsl:when>
-      <xsl:when test="@contentwidth or @contentdepth">0</xsl:when>
+      <xsl:when test="@contentwidth">0</xsl:when>
+      <xsl:when test="@contentdepth and 
+                      @contentdepth != '100%'">0</xsl:when>
       <xsl:when test="@scale">0</xsl:when>
       <xsl:when test="@scalefit"><xsl:value-of select="@scalefit"/></xsl:when>
       <xsl:when test="@width or @depth">1</xsl:when>
@@ -144,6 +183,14 @@
     </xsl:choose>
   </xsl:variable>
 
+  <xsl:variable name="content-type">
+    <xsl:if test="@format">
+      <xsl:call-template name="graphic.format.content-type">
+        <xsl:with-param name="format" select="@format"/>
+      </xsl:call-template>
+    </xsl:if>
+  </xsl:variable>
+
   <xsl:variable name="bgcolor">
     <xsl:call-template name="dbfo-attribute">
       <xsl:with-param name="pis"
@@ -155,7 +202,14 @@
   <fo:external-graphic>
     <xsl:attribute name="src">
       <xsl:call-template name="fo-external-image">
-        <xsl:with-param name="filename" select="$filename"/>
+        <xsl:with-param name="filename">
+          <xsl:if test="$img.src.path != '' and
+                        not(starts-with($filename, '/')) and
+                        not(contains($filename, '://'))">
+            <xsl:value-of select="$img.src.path"/>
+          </xsl:if>
+          <xsl:value-of select="$filename"/>
+        </xsl:with-param>
       </xsl:call-template>
     </xsl:attribute>
 
@@ -165,7 +219,7 @@
         <xsl:when test="contains(@width,'%')">
           <xsl:value-of select="@width"/>
         </xsl:when>
-        <xsl:when test="@width">
+        <xsl:when test="@width and not(@width = '')">
           <xsl:call-template name="length-spec">
             <xsl:with-param name="length" select="@width"/>
             <xsl:with-param name="default.units" select="'px'"/>
@@ -234,9 +288,16 @@
           <xsl:value-of select="$scale * 100"/>
           <xsl:text>%</xsl:text>
         </xsl:when>
+        <xsl:when test="$scalefit = 1">scale-to-fit</xsl:when>
         <xsl:otherwise>auto</xsl:otherwise>
       </xsl:choose>
     </xsl:attribute>
+
+    <xsl:if test="$content-type != ''">
+      <xsl:attribute name="content-type">
+        <xsl:value-of select="concat('content-type:',$content-type)"/>
+      </xsl:attribute>
+    </xsl:if>
 
     <xsl:if test="$bgcolor != ''">
       <xsl:attribute name="background-color">
@@ -346,7 +407,7 @@
   <xsl:variable name="object" select="$olist[position() = $object.index]"/>
 
   <xsl:variable name="align">
-    <xsl:value-of select="$object/imagedata[@align][1]/@align"/>
+    <xsl:value-of select="$object/descendant::imagedata[@align][1]/@align"/>
   </xsl:variable>
 
   <xsl:variable name="id">
@@ -523,6 +584,10 @@
 
 <xsl:template match="caption">
   <fo:block>
+    <xsl:if test="@align = 'right' or @align = 'left' or @align='center'">
+      <xsl:attribute name="text-align"><xsl:value-of
+                         select="@align"/></xsl:attribute>
+    </xsl:if>
     <xsl:apply-templates/>
   </fo:block>
 </xsl:template>
@@ -534,8 +599,7 @@
 
   <xsl:choose>
     <xsl:when test="$passivetex.extensions != 0
-                    or $fop.extensions != 0
-                    or $arbortext.extensions != 0">
+                    or $fop.extensions != 0">
       <xsl:value-of select="$filename"/>
     </xsl:when>
     <xsl:otherwise>
@@ -550,6 +614,10 @@
   <xsl:choose>
     <xsl:when test="contains(., ':')">
       <!-- it has a uri scheme so it is an absolute uri -->
+      <xsl:value-of select="."/>
+    </xsl:when>
+    <xsl:when test="$keep.relative.image.uris != 0">
+      <!-- leave it alone -->
       <xsl:value-of select="."/>
     </xsl:when>
     <xsl:otherwise>

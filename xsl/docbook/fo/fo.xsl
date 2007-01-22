@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: fo.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: fo.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -21,7 +21,7 @@
       <xsl:with-param name="object" select="$node"/>
     </xsl:call-template>
   </xsl:variable>
-  <xsl:if test="$conditional = 0 or $node/@id">
+  <xsl:if test="$conditional = 0 or $node/@id or $node/@xml:id">
     <xsl:attribute name="id"><xsl:value-of select="$id"/></xsl:attribute>
   </xsl:if>
 </xsl:template>
@@ -40,7 +40,7 @@
       <xsl:when test="$dingbat='rdquo'">"</xsl:when>
       <xsl:when test="$dingbat='lsquo'">'</xsl:when>
       <xsl:when test="$dingbat='rsquo'">'</xsl:when>
-      <xsl:when test="$dingbat='em-dash'">--</xsl:when>
+      <xsl:when test="$dingbat='em-dash'">&#x2014;</xsl:when>
       <xsl:when test="$dingbat='en-dash'">-</xsl:when>
       <xsl:otherwise>o</xsl:otherwise>
     </xsl:choose>

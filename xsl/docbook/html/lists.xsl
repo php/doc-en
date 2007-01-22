@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: lists.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: lists.xsl,v 1.4 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -109,24 +109,8 @@
 </xsl:template>
 
 <xsl:template match="orderedlist">
-  <xsl:variable name="pi-start">
-    <xsl:call-template name="dbhtml-attribute">
-      <xsl:with-param name="pis"
-                      select="processing-instruction('dbhtml')"/>
-      <xsl:with-param name="attribute" select="'start'"/>
-    </xsl:call-template>
-  </xsl:variable>
-
   <xsl:variable name="start">
-    <xsl:choose>
-      <xsl:when test="@continuation='continues'">
-        <xsl:call-template name="orderedlist-starting-number"/>
-      </xsl:when>
-      <xsl:when test="$pi-start != ''">
-        <xsl:value-of select="$pi-start"/>
-      </xsl:when>
-      <xsl:otherwise>1</xsl:otherwise>
-    </xsl:choose>
+    <xsl:call-template name="orderedlist-starting-number"/>
   </xsl:variable>
 
   <xsl:variable name="numeration">
@@ -443,14 +427,18 @@
   <span class="term">
     <xsl:call-template name="anchor"/>
     <xsl:apply-templates/>
-    <xsl:text>, </xsl:text>
-  </span>
-</xsl:template>
-
-<xsl:template match="varlistentry/term[position()=last()]" priority="2">
-  <span class="term">
-    <xsl:call-template name="anchor"/>
-    <xsl:apply-templates/>
+    <xsl:choose>
+      <xsl:when test="position() = last()"/> <!-- do nothing -->
+      <xsl:otherwise>
+        <!-- * if we have multiple terms in the same varlistentry, generate -->
+        <!-- * a separator (", " by default) and/or an additional line -->
+        <!-- * break after each one except the last -->
+        <xsl:value-of select="$variablelist.term.separator"/>
+        <xsl:if test="not($variablelist.term.break.after = '0')">
+          <br/>
+        </xsl:if>
+      </xsl:otherwise>
+    </xsl:choose>
   </span>
 </xsl:template>
 
@@ -488,8 +476,35 @@
 
 <xsl:template match="simplelist[@type='inline']">
   <span class="{name(.)}">
-    <xsl:call-template name="anchor"/>
+  <!-- if dbchoice PI exists, use that to determine the choice separator -->
+  <!-- (that is, equivalent of "and" or "or" in current locale), or literal -->
+  <!-- value of "choice" otherwise -->
+  <xsl:variable name="localized-choice-separator">
+    <xsl:choose>
+      <xsl:when test="processing-instruction('dbchoice')">
+	<xsl:call-template name="select.choice.separator"/>
+      </xsl:when>
+      <xsl:otherwise>
+	<!-- empty -->
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:for-each select="member">
     <xsl:apply-templates/>
+    <xsl:choose>
+      <xsl:when test="position() = last()"/> <!-- do nothing -->
+      <xsl:otherwise>
+	<xsl:text>, </xsl:text>
+	<xsl:if test="position() = last() - 1">
+	  <xsl:if test="$localized-choice-separator != ''">
+	    <xsl:value-of select="$localized-choice-separator"/>
+	    <xsl:text> </xsl:text>
+	  </xsl:if>
+	</xsl:if>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:for-each>
   </span>
 </xsl:template>
 
@@ -637,16 +652,6 @@
 
 <xsl:template match="member">
   <xsl:call-template name="anchor"/>
-  <xsl:apply-templates/>
-</xsl:template>
-
-<xsl:template match="simplelist[@type='inline']/member">
-  <xsl:apply-templates/>
-  <xsl:text>, </xsl:text>
-</xsl:template>
-
-<xsl:template match="simplelist[@type='inline']/member[position()=last()]"
-              priority="2">
   <xsl:apply-templates/>
 </xsl:template>
 

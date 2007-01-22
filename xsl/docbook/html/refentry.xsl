@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: refentry.xsl,v 1.6 2005-07-16 23:38:35 techtonik Exp $
+     $Id: refentry.xsl,v 1.7 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -15,7 +15,12 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="reference">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
@@ -78,7 +83,12 @@
 </xsl:template>
 
 <xsl:template match="refentry">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="language.attribute"/>
     <xsl:if test="$refentry.separator != 0 and preceding-sibling::refentry">
       <div class="refentry.separator">
@@ -120,6 +130,9 @@
 
 <xsl:template match="refnamediv">
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="anchor"/>
 
     <xsl:choose>
@@ -155,20 +168,22 @@
 
 <xsl:template match="refname">
   <xsl:if test="not(preceding-sibling::refdescriptor)">
-  <xsl:apply-templates/>
-  <xsl:if test="following-sibling::refname">
-    <xsl:text>, </xsl:text>
-  </xsl:if>
+    <xsl:apply-templates/>
+    <xsl:if test="following-sibling::refname">
+      <xsl:text>, </xsl:text>
+    </xsl:if>
   </xsl:if>
 </xsl:template>
 
 <xsl:template match="refpurpose">
-  <xsl:text> </xsl:text>
-  <xsl:call-template name="dingbat">
-    <xsl:with-param name="dingbat">em-dash</xsl:with-param>
-  </xsl:call-template>
-  <xsl:text> </xsl:text>
-  <xsl:apply-templates/>
+  <xsl:if test="node()">
+    <xsl:text> </xsl:text>
+    <xsl:call-template name="dingbat">
+      <xsl:with-param name="dingbat">em-dash</xsl:with-param>
+    </xsl:call-template>
+    <xsl:text> </xsl:text>
+    <xsl:apply-templates/>
+  </xsl:if>
 </xsl:template>
 
 <xsl:template match="refdescriptor">
@@ -176,6 +191,7 @@
 </xsl:template>
 
 <xsl:template match="refclass">
+  <xsl:if test="$refclass.suppress = 0">
   <p>
     <b>
       <xsl:if test="@role">
@@ -185,10 +201,14 @@
       <xsl:apply-templates/>
     </b>
   </p>
+  </xsl:if>
 </xsl:template>
 
 <xsl:template match="refsynopsisdiv">
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="anchor"/>
     <h2>
       <xsl:choose>
@@ -218,6 +238,9 @@
 
 <xsl:template match="refsection|refsect1|refsect2|refsect3">
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="language.attribute"/>
     <xsl:call-template name="anchor">
       <xsl:with-param name="conditional" select="0"/>

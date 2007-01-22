@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ********************************************************************
-     $Id: lib.xsl,v 1.4 2005-07-15 08:27:53 techtonik Exp $
+     $Id: lib.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -11,7 +11,7 @@
 
      ******************************************************************** -->
 
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:src="http://nwalsh.com/xmlns/litprog/fragment" exclude-result-prefixes="src" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:src="http://nwalsh.com/xmlns/litprog/fragment" xmlns:dyn="http://exslt.org/dynamic" xmlns:saxon="http://icl.com/saxon" exclude-result-prefixes="src" version="1.0">
 
 <xsl:template name="dot.count">
   <!-- Returns the number of "." characters in a string -->
@@ -310,6 +310,164 @@
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
+  <xsl:template name="prepend-pad">    
+  <!-- recursive template to right justify and prepend-->
+  <!-- the value with whatever padChar is passed in   -->
+    <xsl:param name="padChar" select="' '"/>
+    <xsl:param name="padVar"/>
+    <xsl:param name="length"/>
+    <xsl:choose>
+      <xsl:when test="string-length($padVar) &lt; $length">
+        <xsl:call-template name="prepend-pad">
+          <xsl:with-param name="padChar" select="$padChar"/>
+          <xsl:with-param name="padVar" select="concat($padChar,$padVar)"/>
+          <xsl:with-param name="length" select="$length"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="substring($padVar,string-length($padVar) - $length + 1)"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <xsl:template name="str.tokenize.keep.delimiters">
+    <xsl:param name="string" select="''"/>
+    <xsl:param name="delimiters" select="' '"/>
+    <xsl:choose>
+      <xsl:when test="not($string)"/>
+      <xsl:when test="not($delimiters)">
+	<xsl:call-template name="str.tokenize.keep.delimiters-characters">
+	  <xsl:with-param name="string" select="$string"/>
+	</xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+	<xsl:call-template name="str.tokenize.keep.delimiters-delimiters">
+	  <xsl:with-param name="string" select="$string"/>
+	  <xsl:with-param name="delimiters" select="$delimiters"/>
+	</xsl:call-template>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+  
+  <xsl:template name="str.tokenize.keep.delimiters-characters">
+    <xsl:param name="string"/>
+    <xsl:if test="$string">
+      <token><xsl:value-of select="substring($string, 1, 1)"/></token>
+      <xsl:call-template name="str.tokenize.keep.delimiters-characters">
+	<xsl:with-param name="string" select="substring($string, 2)"/>
+      </xsl:call-template>
+    </xsl:if>
+  </xsl:template>
+  
+  <xsl:template name="str.tokenize.keep.delimiters-delimiters">
+    <xsl:param name="string"/>
+    <xsl:param name="delimiters"/>
+    <xsl:variable name="delimiter" select="substring($delimiters, 1, 1)"/>
+    <xsl:choose>
+      <xsl:when test="not($delimiter)">
+	<token><xsl:value-of select="$string"/></token>
+      </xsl:when>
+      <xsl:when test="contains($string, $delimiter)">
+	<xsl:if test="not(starts-with($string, $delimiter))">
+	  <xsl:call-template name="str.tokenize.keep.delimiters-delimiters">
+	    <xsl:with-param name="string" select="substring-before($string, $delimiter)"/>
+	    <xsl:with-param name="delimiters" select="substring($delimiters, 2)"/>
+	  </xsl:call-template>
+	</xsl:if>
+	<!-- output each delimiter -->
+	<xsl:value-of select="$delimiter"/>
+	<xsl:call-template name="str.tokenize.keep.delimiters-delimiters">
+	  <xsl:with-param name="string" select="substring-after($string, $delimiter)"/>
+	  <xsl:with-param name="delimiters" select="$delimiters"/>
+	</xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+	<xsl:call-template name="str.tokenize.keep.delimiters-delimiters">
+	  <xsl:with-param name="string" select="$string"/>
+	  <xsl:with-param name="delimiters" select="substring($delimiters, 2)"/>
+	</xsl:call-template>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+    <xsl:template name="apply-string-subst-map">
+      <xsl:param name="content"/>
+      <xsl:param name="map.contents"/>
+      <xsl:variable name="replaced_text">
+        <xsl:call-template name="string.subst">
+          <xsl:with-param name="string" select="$content"/>
+          <xsl:with-param name="target" select="$map.contents[1]/@oldstring"/>
+          <xsl:with-param name="replacement" select="$map.contents[1]/@newstring"/>
+        </xsl:call-template>
+      </xsl:variable>
+      <xsl:choose>
+        <xsl:when test="$map.contents[2]">
+          <xsl:call-template name="apply-string-subst-map">
+            <xsl:with-param name="content" select="$replaced_text"/>
+            <xsl:with-param name="map.contents" select="$map.contents[position() &gt; 1]"/>
+          </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="$replaced_text"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:template>
+
+  
+    <xsl:template name="apply-character-map">
+      <xsl:param name="content"/>
+      <xsl:param name="map.contents"/>
+      <xsl:variable name="replaced_text">
+        <xsl:call-template name="string.subst">
+          <xsl:with-param name="string" select="$content"/>
+          <xsl:with-param name="target" select="$map.contents[1]/@character"/>
+          <xsl:with-param name="replacement" select="$map.contents[1]/@string"/>
+        </xsl:call-template>
+      </xsl:variable>
+      <xsl:choose>
+        <xsl:when test="$map.contents[2]">
+          <xsl:call-template name="apply-character-map">
+            <xsl:with-param name="content" select="$replaced_text"/>
+            <xsl:with-param name="map.contents" select="$map.contents[position() &gt; 1]"/>
+          </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="$replaced_text"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:template>
+
+  
+  <xsl:template name="read-character-map">
+    <xsl:param name="use.subset"/>
+    <xsl:param name="subset.profile"/>
+    <xsl:param name="uri"/>
+    <xsl:choose>
+      <xsl:when test="$use.subset != 0">
+        <!-- use a subset of the character map instead of the full map -->
+        <xsl:choose>
+          <!-- xsltproc and Xalan both support dyn:evaluate() -->
+          <xsl:when test="function-available('dyn:evaluate')">
+            <xsl:copy-of select="document($uri)//*[local-name()='output-character']                                  [dyn:evaluate($subset.profile)]"/>
+          </xsl:when>
+          <!-- Saxon has its own evaluate() & doesn't support dyn:evaluate() -->
+          <xsl:when test="function-available('saxon:evaluate')">
+            <xsl:copy-of select="document($uri)//*[local-name()='output-character']                                  [saxon:evaluate($subset.profile)]"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:message terminate="yes">
+Error: To process character-map subsets, you must use an XSLT engine
+that supports the evaluate() XSLT extension function. Your XSLT engine
+does not support it.
+</xsl:message>
+          </xsl:otherwise>
+        </xsl:choose>
+        </xsl:when>
+        <xsl:otherwise>
+          <!-- value of $use.subset is non-zero, so use the full map -->
+        <xsl:copy-of select="document($uri)//*[local-name()='output-character']"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
 <xsl:template name="count.uri.path.depth">
   <xsl:param name="filename" select="''"/>
   <xsl:param name="count" select="0"/>
@@ -351,5 +509,51 @@
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
+
+  <xsl:template name="trim.text">
+    <xsl:param name="contents" select="."/>
+    <xsl:variable name="contents-left-trimmed">
+      <xsl:call-template name="trim-left">
+        <xsl:with-param name="contents" select="$contents"/>
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:variable name="contents-trimmed">
+      <xsl:call-template name="trim-right">
+        <xsl:with-param name="contents" select="$contents-left-trimmed"/>
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:value-of select="$contents-trimmed"/>
+  </xsl:template>
+
+  <xsl:template name="trim-left">
+    <xsl:param name="contents"/>
+    <xsl:choose>
+      <xsl:when test="starts-with($contents,'&#xA;') or                       starts-with($contents,'&#xA;') or                       starts-with($contents,' ') or                       starts-with($contents,'&#x9;')">
+        <xsl:call-template name="trim-left">
+          <xsl:with-param name="contents" select="substring($contents, 2)"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$contents"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <xsl:template name="trim-right">
+    <xsl:param name="contents"/>
+    <xsl:variable name="last-char">
+      <xsl:value-of select="substring($contents, string-length($contents), 1)"/>
+    </xsl:variable>
+    <xsl:choose>
+      <xsl:when test="($last-char = '&#xA;') or                       ($last-char = '&#xD;') or                       ($last-char = ' ') or                       ($last-char = '&#x9;')">
+        <xsl:call-template name="trim-right">
+          <xsl:with-param name="contents" select="substring($contents, 1, string-length($contents) - 1)"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$contents"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
 
 </xsl:stylesheet>

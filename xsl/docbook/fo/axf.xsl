@@ -5,18 +5,38 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: axf.xsl,v 1.2 2005-07-15 08:27:48 techtonik Exp $
+     $Id: axf.xsl,v 1.3 2007-01-22 11:35:12 bjori Exp $
      ******************************************************************** -->
 
 <xsl:template name="axf-document-information">
 
-    <xsl:if test="//author[1]">
+    <xsl:variable name="authors" select="(//author|//editor|
+                                          //corpauthor|//authorgroup)[1]"/>
+    <xsl:if test="$authors">
+      <xsl:variable name="author">
+        <xsl:choose>
+          <xsl:when test="$authors[self::authorgroup]">
+            <xsl:call-template name="person.name.list">
+              <xsl:with-param name="person.list" 
+                 select="$authors/*[self::author|self::corpauthor|
+                               self::othercredit|self::editor]"/>
+            </xsl:call-template>
+          </xsl:when>
+          <xsl:when test="$authors[self::corpauthor]">
+            <xsl:value-of select="$authors"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:call-template name="person.name">
+              <xsl:with-param name="node" select="$authors"/>
+            </xsl:call-template>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+
       <xsl:element name="axf:document-info">
         <xsl:attribute name="name">author</xsl:attribute>
         <xsl:attribute name="value">
-          <xsl:call-template name="person.name">
-            <xsl:with-param name="node" select="//author[1]"/>
-          </xsl:call-template>
+          <xsl:value-of select="normalize-space($author)"/>
         </xsl:attribute>
       </xsl:element>
     </xsl:if>
@@ -26,14 +46,19 @@
       <xsl:apply-templates select="/*[1]" mode="title.markup"/>
     </xsl:variable>
 
-    <axf:document-info name="title" value="{$title}"/>
+    <!-- * see bug report #1465301 - mzjn -->
+    <axf:document-info name="title">
+      <xsl:attribute name="value">
+        <xsl:value-of select="normalize-space($title)"/>
+      </xsl:attribute>
+    </axf:document-info>
 
     <xsl:if test="//keyword">
       <xsl:element name="axf:document-info">
         <xsl:attribute name="name">keywords</xsl:attribute>
         <xsl:attribute name="value">
           <xsl:for-each select="//keyword">
-            <xsl:value-of select="."/>
+            <xsl:value-of select="normalize-space(.)"/>
             <xsl:if test="position() != last()">
               <xsl:text>, </xsl:text>
             </xsl:if>
@@ -47,7 +72,7 @@
         <xsl:attribute name="name">subject</xsl:attribute>
         <xsl:attribute name="value">
           <xsl:for-each select="//subjectterm">
-            <xsl:value-of select="."/>
+            <xsl:value-of select="normalize-space(.)"/>
             <xsl:if test="position() != last()">
               <xsl:text>, </xsl:text>
             </xsl:if>

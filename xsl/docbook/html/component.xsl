@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: component.xsl,v 1.4 2005-07-15 08:27:50 techtonik Exp $
+     $Id: component.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -73,7 +73,12 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="dedication" mode="dedication">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="language.attribute"/>
     <xsl:call-template name="dedication.titlepage"/>
     <xsl:apply-templates/>
@@ -101,7 +106,12 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="colophon">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
@@ -119,11 +129,18 @@
 </xsl:template>
 
 <xsl:template match="colophon/title"></xsl:template>
+<xsl:template match="colophon/subtitle"></xsl:template>
+<xsl:template match="colophon/titleabbrev"></xsl:template>
 
 <!-- ==================================================================== -->
 
 <xsl:template match="preface">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
@@ -175,7 +192,12 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="chapter">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
@@ -230,7 +252,12 @@
     <xsl:call-template name="chunk"/>
   </xsl:variable>
 
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
@@ -297,76 +324,13 @@
 
 <!-- ==================================================================== -->
 
-<xsl:template match="dedication" mode="component.number">
-  <xsl:param name="add.space" select="false()"/>
-</xsl:template>
-
-<xsl:template match="preface" mode="component.number">
-  <xsl:param name="add.space" select="false()"/>
-</xsl:template>
-
-<xsl:template match="chapter" mode="component.number">
-  <xsl:param name="add.space" select="false()"/>
-
-  <xsl:choose>
-    <xsl:when test="@label">
-      <xsl:value-of select="@label"/>
-      <xsl:text>.</xsl:text>
-      <xsl:if test="$add.space">
-        <xsl:call-template name="gentext.space"/>
-      </xsl:if>
-    </xsl:when>
-    <xsl:when test="$chapter.autolabel">
-      <xsl:number from="book" count="chapter" format="1."/>
-      <xsl:if test="$add.space">
-        <xsl:call-template name="gentext.space"/>
-      </xsl:if>
-    </xsl:when>
-    <xsl:otherwise></xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
-<xsl:template match="appendix" mode="component.number">
-  <xsl:param name="add.space" select="false()"/>
-
-  <xsl:choose>
-    <xsl:when test="@label">
-      <xsl:value-of select="@label"/>
-      <xsl:text>.</xsl:text>
-      <xsl:if test="$add.space">
-        <xsl:call-template name="gentext.space"/>
-      </xsl:if>
-    </xsl:when>
-    <xsl:when test="$chapter.autolabel">
-      <xsl:number from="book" count="appendix" format="A."/>
-      <xsl:if test="$add.space">
-        <xsl:call-template name="gentext.space"/>
-      </xsl:if>
-    </xsl:when>
-    <xsl:otherwise></xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
-<xsl:template match="article" mode="component.number">
-  <xsl:param name="add.space" select="false()"/>
-</xsl:template>
-
-<xsl:template match="bibliography" mode="component.number">
-  <xsl:param name="add.space" select="false()"/>
-</xsl:template>
-
-<xsl:template match="glossary" mode="component.number">
-  <xsl:param name="add.space" select="false()"/>
-</xsl:template>
-
-<xsl:template match="index" mode="component.number">
-  <xsl:param name="add.space" select="false()"/>
-</xsl:template>
-
-<!-- ==================================================================== -->
-
 <xsl:template match="article">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">

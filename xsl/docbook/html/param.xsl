@@ -4,7 +4,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:src="http://nwalsh.com/xmlns/litprog/fragment" exclude-result-prefixes="src" version="1.0">
 
 <!-- ********************************************************************
-     $Id: param.xsl,v 1.5 2005-07-15 09:18:34 techtonik Exp $
+     $Id: param.xsl,v 1.6 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -21,13 +21,62 @@
 </xsl:param>
 <xsl:param name="admon.textlabel" select="1"/>
 <xsl:param name="annotate.toc" select="1"/>
-<xsl:param name="appendix.autolabel" select="1"/>
+<xsl:param name="annotation.css">
+/* ======================================================================
+   Annotations
+*/
+
+div.annotation-list  { visibility: hidden;
+                     }
+
+div.annotation-nocss { position: absolute;
+                       visibility: hidden;
+                     }
+
+div.annotation-popup { position: absolute;
+                       z-index: 4;
+                       visibility: hidden;
+                       padding: 0px;
+                       margin: 2px;
+                       border-style: solid;
+                       border-width: 1px;
+                       width: 200px;
+		       background-color: white;
+                     }
+
+div.annotation-title { padding: 1px;
+                       font-weight: bold;
+                       border-bottom-style: solid;
+                       border-bottom-width: 1px;
+		       color: white;
+		       background-color: black;
+                     }
+
+div.annotation-body  { padding: 2px;
+                     }
+
+div.annotation-body p { margin-top: 0px;
+                        padding-top: 0px;
+                      }
+
+div.annotation-close { position: absolute;
+                       top: 2px;
+                       right: 2px;
+                     }
+</xsl:param>
+<xsl:param name="annotation.js" select="'http://docbook.sourceforge.net/release/script/AnchorPosition.js             http://docbook.sourceforge.net/release/script/PopupWindow.js'"/>
+<xsl:param name="annotation.graphic.open" select="'http://docbook.sourceforge.net/release/images/annot-open.png'"/>
+<xsl:param name="annotation.graphic.close" select="'http://docbook.sourceforge.net/release/images/annot-close.png'"/>
+<xsl:param name="annotation.support" select="0"/>
+<xsl:param name="appendix.autolabel" select="'A'"/>
 <xsl:param name="author.othername.in.middle" select="1"/>
 <xsl:param name="autotoc.label.separator" select="'. '"/>
+<xsl:param name="autotoc.label.in.hyperlink" select="1"/>
 <xsl:param name="base.dir" select="''"/>
 <xsl:param name="biblioentry.item.separator">. </xsl:param>
 <xsl:param name="bibliography.collection" select="'http://docbook.sourceforge.net/release/bibliography/bibliography.xml'"/>
 <xsl:param name="bibliography.numbered" select="0"/>
+<xsl:param name="blurb.on.titlepage.enabled">0</xsl:param>
 <xsl:param name="bridgehead.in.toc" select="0"/>
 <xsl:param name="callout.defaultcolumn" select="'60'"/>
 <xsl:param name="callout.graphics.extension" select="'.png'"/>
@@ -40,20 +89,29 @@
 <xsl:param name="callout.unicode.start.character" select="10102"/>
 <xsl:param name="callouts.extension" select="'1'"/>
 <xsl:param name="chapter.autolabel" select="1"/>
+<xsl:param name="chunk.append"/>
 <xsl:param name="chunk.first.sections" select="0"/>
 <xsl:param name="chunk.quietly" select="0"/>
 <xsl:param name="chunk.section.depth" select="1"/>
 <xsl:param name="chunk.toc" select="''"/>
 <xsl:param name="chunk.tocs.and.lots" select="0"/>
+<xsl:param name="chunk.tocs.and.lots.has.title" select="1"/>
 <xsl:param name="chunk.separate.lots" select="0"/>
 <xsl:param name="citerefentry.link" select="'0'"/>
 <xsl:param name="collect.xref.targets" select="'no'"/>
 <xsl:param name="component.label.includes.part.label" select="0"/>
+<xsl:param name="contrib.inline.enabled">1</xsl:param>
 <xsl:param name="css.decoration" select="1"/>
 <xsl:param name="current.docid" select="''"/> 
-<xsl:param name="default.float.class" select="'before'"/>
+<xsl:param name="default.float.class">
+  <xsl:choose>
+    <xsl:when test="contains($stylesheet.result.type,'html')">left</xsl:when>
+    <xsl:otherwise>before</xsl:otherwise>
+  </xsl:choose>
+</xsl:param>
 <xsl:param name="default.image.width" select="''"/>
 <xsl:param name="default.table.width" select="''"/>
+<xsl:param name="default.table.frame" select="'all'"/>
 <xsl:param name="draft.mode" select="'maybe'"/>
 <xsl:param name="draft.watermark.image" select="'http://docbook.sourceforge.net/release/images/draft.png'"/>
 <xsl:param name="ebnf.table.bgcolor" select="'#F5DCB3'"/>
@@ -68,6 +126,8 @@
 <xsl:param name="eclipse.plugin.name">DocBook Online Help Sample</xsl:param>
 <xsl:param name="eclipse.plugin.id">com.example.help</xsl:param>
 <xsl:param name="eclipse.plugin.provider">Example provider</xsl:param>
+<xsl:param name="editedby.enabled">1</xsl:param>
+<xsl:param name="email.delimiters.enabled">1</xsl:param>
 <xsl:param name="emphasis.propagates.style" select="1"/>
 <xsl:param name="entry.propagates.style" select="1"/>
 <xsl:param name="firstterm.only.link" select="0"/>
@@ -90,6 +150,7 @@ task before
 <xsl:param name="generate.id.attributes" select="0"/>
 <xsl:param name="generate.index" select="1"/>
 <xsl:param name="generate.legalnotice.link" select="0"/>
+<xsl:param name="generate.revhistory.link" select="0"/>
 <xsl:param name="generate.manifest" select="0"/>
 <xsl:param name="generate.meta.abstract" select="1"/>
 <xsl:param name="generate.section.toc.level" select="0"/>
@@ -118,13 +179,19 @@ set       toc,title
 <xsl:param name="glossterm.auto.link" select="0"/>
 <xsl:param name="graphic.default.extension"/>
 <xsl:param name="graphicsize.extension" select="1"/>
+<xsl:param name="graphicsize.use.img.src.path" select="0"/>
 <xsl:param name="header.rule" select="1"/>
+<xsl:param name="highlight.default.language" select="''"/>
+<xsl:param name="highlight.source" select="0"/>
+<xsl:param name="html.append"/>
 <xsl:param name="html.base"/>
 <xsl:param name="html.cellpadding" select="''"/>
 <xsl:param name="html.cellspacing" select="''"/>
 <xsl:param name="html.cleanup" select="1"/>
 <xsl:param name="html.ext" select="'.html'"/>
 <xsl:param name="html.extra.head.links" select="0"/>
+<xsl:param name="html.head.legalnotice.link.types">copyright</xsl:param>
+<xsl:param name="html.head.legalnotice.link.multiple" select="1"/>
 <xsl:param name="html.longdesc" select="1"/>
 <xsl:param name="html.longdesc.link" select="$html.longdesc"/>
 <xsl:param name="html.stylesheet" select="''"/>
@@ -179,14 +246,23 @@ set       toc,title
 <xsl:param name="htmlhelp.use.hhk" select="0"/>
 <xsl:param name="htmlhelp.window.geometry"/>
 <xsl:param name="img.src.path"/>
+<xsl:param name="id.warnings" select="1"/>
+<xsl:param name="index.method" select="'basic'"/>
 <xsl:param name="index.on.role" select="0"/>
 <xsl:param name="index.on.type" select="0"/>
+<xsl:param name="index.number.separator" select="''"/>
+<xsl:param name="index.term.separator" select="''"/>
+<xsl:param name="index.range.separator" select="''"/>
 <xsl:param name="index.prefer.titleabbrev" select="0"/>
 <xsl:param name="ignore.image.scaling" select="0"/>
 <xsl:param name="inherit.keywords" select="'1'"/>
+<xsl:param name="insert.xref.page.number">no</xsl:param>
+<xsl:param name="keep.relative.image.uris" select="1"/>
+
 <xsl:param name="l10n.gentext.default.language" select="'en'"/>
 <xsl:param name="l10n.gentext.language" select="''"/>
 <xsl:param name="l10n.gentext.use.xref.language" select="0"/>
+<xsl:param name="l10n.lang.value.rfc.compliant" select="1"/>
 <xsl:param name="label.from.part" select="'0'"/>
 <xsl:param name="linenumbering.everyNth" select="'5'"/>
 <xsl:param name="linenumbering.extension" select="'1'"/>
@@ -200,7 +276,7 @@ set       toc,title
 <xsl:param name="manifest" select="'HTML.manifest'"/>
 <xsl:param name="manifest.in.base.dir" select="0"/>
 <xsl:param name="manual.toc" select="''"/>
-<xsl:param name="menuchoice.menu.separator" select="'-&gt;'"/>
+<xsl:param name="menuchoice.menu.separator"> → </xsl:param>
 <xsl:param name="menuchoice.separator" select="'+'"/>
 <xsl:param name="navig.graphics.extension" select="'.gif'"/>
 <xsl:param name="navig.graphics" select="0"/>
@@ -217,14 +293,15 @@ set       toc,title
 <xsl:param name="insert.olink.pdf.frag" select="0"/>
 <xsl:param name="prefer.internal.olink" select="0"/>
 <xsl:param name="olink.lang.fallback.sequence" select="''"/> 
-<xsl:param name="olink.doctitle" select="no"/> 
+<xsl:param name="olink.doctitle" select="'no'"/> 
 <xsl:param name="olink.fragid" select="'fragid='"/>
 <xsl:param name="olink.outline.ext" select="'.olink'"/>
 <xsl:param name="olink.pubid" select="'pubid='"/>
 <xsl:param name="olink.resolver" select="'/cgi-bin/olink'"/>
 <xsl:param name="olink.sysid" select="'sysid='"/>
+<xsl:param name="othercredit.like.author.enabled">0</xsl:param>
 <xsl:param name="para.propagates.style" select="1"/>
-<xsl:param name="part.autolabel" select="1"/>
+<xsl:param name="part.autolabel" select="'I'"/>
 <xsl:param name="phrase.propagates.style" select="1"/>
 <xsl:param name="pixels.per.inch" select="90"/>
 <xsl:param name="points.per.em" select="10"/>
@@ -243,17 +320,21 @@ set       toc,title
 <xsl:param name="profile.role" select="''"/>
 <xsl:param name="profile.security" select="''"/>
 <xsl:param name="profile.separator" select="';'"/>
+<xsl:param name="profile.status" select="''"/>
 <xsl:param name="profile.userlevel" select="''"/>
 <xsl:param name="profile.value" select="''"/>
 <xsl:param name="profile.vendor" select="''"/>
 <xsl:param name="punct.honorific" select="'.'"/>
 <xsl:param name="qanda.defaultlabel">number</xsl:param>
 <xsl:param name="qanda.inherit.numeration" select="1"/>
+<xsl:param name="qanda.nested.in.toc" select="0"/>
 <xsl:param name="qandadiv.autolabel" select="1"/>
 <xsl:param name="refentry.generate.name" select="1"/>
 <xsl:param name="refentry.generate.title" select="0"/>
 <xsl:param name="refentry.separator" select="'1'"/>
 <xsl:param name="refentry.xref.manvolnum" select="1"/>
+<xsl:param name="reference.autolabel" select="'I'"/>
+<xsl:param name="refclass.suppress" select="0"/>
 <xsl:param name="root.filename" select="'index'"/>
 <xsl:param name="rootid" select="''"/>
 <xsl:param name="runinhead.default.title.end.punct" select="'.'"/>
@@ -306,10 +387,11 @@ set       toc,title
 <xsl:param name="use.role.for.mediaobject" select="1"/>
 <xsl:param name="use.svg" select="1"/>
 <xsl:param name="variablelist.as.table" select="0"/>
+<xsl:param name="variablelist.term.separator">, </xsl:param>
+<xsl:param name="variablelist.term.break.after">0</xsl:param>
 <xsl:param name="xref.with.number.and.title" select="1"/>
 <xsl:param name="xref.label-title.separator">: </xsl:param>
 <xsl:param name="xref.label-page.separator"><xsl:text> </xsl:text></xsl:param>
 <xsl:param name="xref.title-page.separator"><xsl:text> </xsl:text></xsl:param>
-<xsl:param name="insert.xref.page.number">no</xsl:param>
 
 </xsl:stylesheet>

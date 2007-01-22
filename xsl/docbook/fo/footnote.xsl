@@ -6,7 +6,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: footnote.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
+     $Id: footnote.xsl,v 1.6 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -32,7 +32,7 @@
 
 <xsl:template match="footnote">
   <xsl:choose>
-    <xsl:when test="ancestor::tgroup">
+    <xsl:when test="ancestor::table or ancestor::informaltable">
       <xsl:call-template name="format.footnote.mark">
         <xsl:with-param name="mark">
           <xsl:apply-templates select="." mode="footnote.number"/>
@@ -70,7 +70,7 @@
     <xsl:when test="string-length(@label) != 0">
       <xsl:value-of select="@label"/>
     </xsl:when>
-    <xsl:when test="ancestor::tgroup">
+    <xsl:when test="ancestor::table or ancestor::informaltable">
       <xsl:variable name="tfnum">
         <xsl:number level="any" from="table|informaltable" format="1"/>
       </xsl:variable>
@@ -80,7 +80,7 @@
           <xsl:value-of select="substring($table.footnote.number.symbols, $tfnum, 1)"/>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:number level="any" from="tgroup"
+          <xsl:number level="any" from="table|informaltable"
                       format="{$table.footnote.number.format}"/>
         </xsl:otherwise>
       </xsl:choose>
@@ -90,7 +90,7 @@
         <!-- FIXME: list in @from is probably not complete -->
         <xsl:number level="any" 
                     from="chapter|appendix|preface|article|refentry|bibliography" 
-                    count="footnote[not(@label)][not(ancestor::tgroup)]|ulink[$ulink.footnotes != 0][node()][@url != .][not(ancestor::footnote)]" 
+                    count="footnote[not(@label)][not(ancestor::table) and not(ancestor::informaltable)]|ulink[$ulink.footnotes != 0][node()][@url != .][not(ancestor::footnote)]" 
                     format="1"/>
       </xsl:variable>
       <xsl:choose>
@@ -154,16 +154,16 @@
   </fo:block>
 </xsl:template>
 
-<xsl:template match="footnote" name="process.footnote" mode="table.footnote.mode">
+<xsl:template match="footnote" mode="table.footnote.mode">
   <xsl:choose>
     <xsl:when test="local-name(*[1]) = 'para' or local-name(*[1]) = 'simpara'">
-      <fo:block>
+      <fo:block xsl:use-attribute-sets="table.footnote.properties">
         <xsl:apply-templates/>
       </fo:block>
     </xsl:when>
 
     <xsl:when test="function-available('exsl:node-set')">
-      <fo:block>
+      <fo:block xsl:use-attribute-sets="table.footnote.properties">
         <xsl:apply-templates select="*[1]" mode="footnote.body.number"/>
         <xsl:apply-templates select="*[position() &gt; 1]"/>
       </fo:block>
@@ -176,7 +176,7 @@
         <xsl:value-of select="local-name(*[1])"/>
         <xsl:text> unexpected as first child of footnote.</xsl:text>
       </xsl:message>
-      <fo:block>
+      <fo:block xsl:use-attribute-sets="table.footnote.properties">
         <xsl:apply-templates/>
       </fo:block>
     </xsl:otherwise>

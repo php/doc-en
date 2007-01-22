@@ -1,10 +1,13 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:exsl="http://exslt.org/common"
+                xmlns:cf="http://docbook.sourceforge.net/xmlns/chunkfast/1.0"
+                xmlns:ng="http://docbook.org/docbook-ng"
+                xmlns:db="http://docbook.org/ns/docbook"
                 version="1.0"
-                exclude-result-prefixes="exsl">
+                exclude-result-prefixes="exsl cf ng db">
 
 <!-- ********************************************************************
-     $Id: chunk-code.xsl,v 1.2 2005-07-15 08:27:50 techtonik Exp $
+     $Id: chunk-code.xsl,v 1.3 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -47,9 +50,9 @@
 
   <xsl:choose>
     <xsl:when test="$chunk != 0">
-      <div class="{local-name(.)}" id="{generate-id()}">
+      <cf:div class="{local-name(.)}" id="{generate-id()}">
         <xsl:apply-templates select="*" mode="find.chunks"/>
-      </div>
+      </cf:div>
     </xsl:when>
     <xsl:otherwise>
       <xsl:apply-templates select="*" mode="find.chunks"/>
@@ -66,17 +69,17 @@
 
   <xsl:choose>
     <xsl:when test="$chunk.fast != 0 and function-available('exsl:node-set')">
-      <xsl:variable name="chunks" select="exsl:node-set($chunk.hierarchy)//div"/>
+      <xsl:variable name="chunks" select="exsl:node-set($chunk.hierarchy)//cf:div"/>
       <xsl:variable name="genid" select="generate-id()"/>
 
       <xsl:variable name="div" select="$chunks[@id=$genid]"/>
 
       <xsl:variable name="prevdiv"
-                    select="($div/preceding-sibling::div|$div/preceding::div|$div/parent::div)[last()]"/>
+                    select="($div/preceding-sibling::cf:div|$div/preceding::cf:div|$div/parent::cf:div)[last()]"/>
       <xsl:variable name="prev" select="key('genid', $prevdiv/@id)"/>
 
       <xsl:variable name="nextdiv"
-                    select="($div/following-sibling::div|$div/following::div|$div/div)[1]"/>
+                    select="($div/following-sibling::cf:div|$div/following::cf:div|$div/cf:div)[1]"/>
       <xsl:variable name="next" select="key('genid', $nextdiv/@id)"/>
 
       <xsl:choose>
@@ -188,7 +191,7 @@
 
              |ancestor::sect4[$chunk.section.depth &gt; 3
                                and preceding-sibling::sect4
-                               and parent::sect3[preceding-sibling::sect2]
+                               and parent::sect3[preceding-sibling::sect3]
                                and ancestor::sect2[preceding-sibling::sect2]
                                and ancestor::sect1[preceding-sibling::sect1]][1]
 
@@ -217,7 +220,7 @@
 
              |preceding::sect4[$chunk.section.depth &gt; 3
                                and preceding-sibling::sect4
-                               and parent::sect3[preceding-sibling::sect2]
+                               and parent::sect3[preceding-sibling::sect3]
                                and ancestor::sect2[preceding-sibling::sect2]
                                and ancestor::sect1[preceding-sibling::sect1]][1]
 
@@ -245,7 +248,7 @@
              |preceding::bibliography[parent::article or parent::book or parent::part][1]
              |preceding::glossary[parent::article or parent::book or parent::part][1]
              |preceding::index[$generate.index != 0]
-	                       [parent::article or parent::book or parent::part][1]
+                               [parent::article or parent::book or parent::part][1]
              |preceding::setindex[$generate.index != 0][1]
              |ancestor::set
              |ancestor::book[1]
@@ -273,7 +276,7 @@
 
              |following::sect4[$chunk.section.depth &gt; 3
                                and preceding-sibling::sect4
-                               and parent::sect3[preceding-sibling::sect2]
+                               and parent::sect3[preceding-sibling::sect3]
                                and ancestor::sect2[preceding-sibling::sect2]
                                and ancestor::sect1[preceding-sibling::sect1]][1]
 
@@ -303,7 +306,7 @@
 
              |descendant::sect4[$chunk.section.depth &gt; 3
                                and preceding-sibling::sect4
-                               and parent::sect3[preceding-sibling::sect2]
+                               and parent::sect3[preceding-sibling::sect3]
                                and ancestor::sect2[preceding-sibling::sect2]
                                and ancestor::sect1[preceding-sibling::sect1]][1]
 
@@ -330,7 +333,7 @@
              |following::bibliography[parent::article or parent::book or parent::part][1]
              |following::glossary[parent::article or parent::book or parent::part][1]
              |following::index[$generate.index != 0]
-	                       [parent::article or parent::book or parent::part][1]
+                               [parent::article or parent::book or parent::part][1]
              |following::article[1]
              |following::setindex[$generate.index != 0][1]
              |descendant::book[1]
@@ -341,7 +344,7 @@
              |descendant::bibliography[parent::article or parent::book or parent::part][1]
              |descendant::glossary[parent::article or parent::book or parent::part][1]
              |descendant::index[$generate.index != 0]
-	                       [parent::article or parent::book or parent::part][1]
+                               [parent::article or parent::book or parent::part][1]
              |descendant::colophon[1]
              |descendant::setindex[$generate.index != 0][1]
              |descendant::part[1]
@@ -391,7 +394,7 @@
              |preceding::bibliography[parent::article or parent::book or parent::part][1]
              |preceding::glossary[parent::article or parent::book or parent::part][1]
              |preceding::index[$generate.index != 0]
-	                       [parent::article or parent::book or parent::part][1]
+                               [parent::article or parent::book or parent::part][1]
              |preceding::setindex[$generate.index != 0][1]
              |ancestor::set
              |ancestor::book[1]
@@ -433,7 +436,7 @@
              |following::bibliography[parent::article or parent::book or parent::part][1]
              |following::glossary[parent::article or parent::book or parent::part][1]
              |following::index[$generate.index != 0]
-	                       [parent::article or parent::book][1]
+                               [parent::article or parent::book][1]
              |following::article[1]
              |following::setindex[$generate.index != 0][1]
              |descendant::book[1]
@@ -444,7 +447,7 @@
              |descendant::bibliography[parent::article or parent::book][1]
              |descendant::glossary[parent::article or parent::book or parent::part][1]
              |descendant::index[$generate.index != 0]
-	                       [parent::article or parent::book][1]
+                               [parent::article or parent::book][1]
              |descendant::colophon[1]
              |descendant::setindex[$generate.index != 0][1]
              |descendant::part[1]
@@ -464,51 +467,81 @@
 
 <xsl:template match="/">
   <xsl:choose>
-    <xsl:when test="$rootid != ''">
+    <!-- include extra test for Xalan quirk -->
+    <xsl:when test="(function-available('exsl:node-set') or
+                     contains(system-property('xsl:vendor'),
+                       'Apache Software Foundation'))
+                    and (*/self::ng:* or */self::db:*)">
+      <!-- Hack! If someone hands us a DocBook V5.x or DocBook NG document,
+           toss the namespace and continue. Someday we'll reverse this logic
+           and add the namespace to documents that don't have one.
+           But not before the whole stylesheet has been converted to use
+           namespaces. i.e., don't hold your breath -->
+      <xsl:message>Stripping namespace from DocBook 5 document.</xsl:message>
+      <xsl:variable name="nons">
+        <xsl:apply-templates mode="stripNS"/>
+      </xsl:variable>
+      <xsl:message>Processing stripped document.</xsl:message>
+      <xsl:apply-templates select="exsl:node-set($nons)"/>
+    </xsl:when>
+    <!-- Can't process unless namespace removed -->
+    <xsl:when test="*/self::ng:* or */self::db:*">
+      <xsl:message terminate="yes">
+        <xsl:text>Unable to strip the namespace from DB5 document,</xsl:text>
+        <xsl:text> cannot proceed.</xsl:text>
+      </xsl:message>
+    </xsl:when>
+    <xsl:otherwise>
       <xsl:choose>
-        <xsl:when test="count(key('id',$rootid)) = 0">
-          <xsl:message terminate="yes">
-            <xsl:text>ID '</xsl:text>
-            <xsl:value-of select="$rootid"/>
-            <xsl:text>' not found in document.</xsl:text>
-          </xsl:message>
+        <xsl:when test="$rootid != ''">
+          <xsl:choose>
+            <xsl:when test="count(key('id',$rootid)) = 0">
+              <xsl:message terminate="yes">
+                <xsl:text>ID '</xsl:text>
+                <xsl:value-of select="$rootid"/>
+                <xsl:text>' not found in document.</xsl:text>
+              </xsl:message>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:if test="$collect.xref.targets = 'yes' or
+                            $collect.xref.targets = 'only'">
+                <xsl:apply-templates select="key('id', $rootid)"
+                                     mode="collect.targets"/>
+              </xsl:if>
+              <xsl:if test="$collect.xref.targets != 'only'">
+                <xsl:apply-templates select="key('id',$rootid)"
+                                     mode="process.root"/>
+                <xsl:if test="$tex.math.in.alt != ''">
+                  <xsl:apply-templates select="key('id',$rootid)"
+                                       mode="collect.tex.math"/>
+                </xsl:if>
+                <xsl:if test="$generate.manifest != 0">
+                  <xsl:call-template name="generate.manifest">
+                    <xsl:with-param name="node" select="key('id',$rootid)"/>
+                  </xsl:call-template>
+                </xsl:if>
+              </xsl:if>
+            </xsl:otherwise>
+          </xsl:choose>
         </xsl:when>
         <xsl:otherwise>
           <xsl:if test="$collect.xref.targets = 'yes' or
                         $collect.xref.targets = 'only'">
-            <xsl:apply-templates select="key('id', $rootid)"
-                        mode="collect.targets"/>
+            <xsl:apply-templates select="/" mode="collect.targets"/>
           </xsl:if>
           <xsl:if test="$collect.xref.targets != 'only'">
-            <xsl:apply-templates select="key('id',$rootid)"
-                        mode="process.root"/>
+            <xsl:apply-templates select="/" mode="process.root"/>
             <xsl:if test="$tex.math.in.alt != ''">
-              <xsl:apply-templates select="key('id',$rootid)"
-                          mode="collect.tex.math"/>
+              <xsl:apply-templates select="/" mode="collect.tex.math"/>
             </xsl:if>
             <xsl:if test="$generate.manifest != 0">
               <xsl:call-template name="generate.manifest">
-                <xsl:with-param name="node" select="key('id',$rootid)"/>
+                <xsl:with-param name="node" select="/"/>
               </xsl:call-template>
             </xsl:if>
           </xsl:if>
         </xsl:otherwise>
       </xsl:choose>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:if test="$collect.xref.targets = 'yes' or
-                    $collect.xref.targets = 'only'">
-        <xsl:apply-templates select="/" mode="collect.targets"/>
-      </xsl:if>
-      <xsl:if test="$collect.xref.targets != 'only'">
-        <xsl:apply-templates select="/" mode="process.root"/>
-        <xsl:if test="$tex.math.in.alt != ''">
-          <xsl:apply-templates select="/" mode="collect.tex.math"/>
-        </xsl:if>
-        <xsl:if test="$generate.manifest != 0">
-          <xsl:call-template name="generate.manifest"/>
-        </xsl:if>
-      </xsl:if>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -710,9 +743,11 @@
               <xsl:with-param name="next" select="/foo"/>
               <xsl:with-param name="nav.context" select="'toc'"/>
               <xsl:with-param name="content">
-                <h1>
-                  <xsl:apply-templates select="." mode="object.title.markup"/>
-                </h1>
+                <xsl:if test="$chunk.tocs.and.lots.has.title != 0">
+                  <h1>
+                    <xsl:apply-templates select="." mode="object.title.markup"/>
+                  </h1>
+                </xsl:if>
                 <xsl:copy-of select="$lots"/>
               </xsl:with-param>
             </xsl:call-template>
@@ -963,6 +998,23 @@
       </xsl:call-template>
     </div>
   </xsl:if>
+
+  <!-- FIXME: When chunking, only the annotations actually used
+              in this chunk should be referenced. I don't think it
+              does any harm to reference them all, but it adds
+              unnecessary bloat to each chunk. -->
+  <xsl:if test="$annotation.support != 0 and //annotation">
+    <div class="annotation-list">
+      <div class="annotation-nocss">
+        <p>The following annotations are from this essay. You are seeing
+        them here because your browser doesn’t support the user-interface
+        techniques used to make them appear as ‘popups’ on modern browsers.</p>
+      </div>
+
+      <xsl:apply-templates select="//annotation"
+                           mode="annotation-popup"/>
+    </div>
+  </xsl:if>
 </xsl:template>
 
 <xsl:template name="process.chunk.footnotes">
@@ -982,6 +1034,10 @@
   <xsl:choose>
     <xsl:when test="contains(., ':')">
       <!-- it has a uri scheme so it is an absolute uri -->
+      <xsl:value-of select="."/>
+    </xsl:when>
+    <xsl:when test="$keep.relative.image.uris != 0">
+      <!-- leave it alone -->
       <xsl:value-of select="."/>
     </xsl:when>
     <xsl:otherwise>

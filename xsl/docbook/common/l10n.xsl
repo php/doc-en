@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: l10n.xsl,v 1.4 2005-07-15 09:18:39 techtonik Exp $
+     $Id: l10n.xsl,v 1.5 2007-01-22 11:35:11 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -137,9 +137,19 @@
 
   <xsl:if test="$language != ''">
     <xsl:attribute name="lang">
-      <xsl:value-of select="$language"/>
+      <xsl:choose>
+        <xsl:when test="$l10n.lang.value.rfc.compliant != 0">
+          <xsl:value-of select="translate($language, '_', '-')"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="$language"/>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:attribute>
   </xsl:if>
+
+  <!-- FIXME: This is sort of hack, but it was the easiest way to add at least partial support for dir attribute -->
+  <xsl:copy-of select="ancestor-or-self::*[@dir][1]/@dir"/>
 </xsl:template>
 
 <xsl:template name="gentext">

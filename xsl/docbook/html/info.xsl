@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: info.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: info.xsl,v 1.4 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -31,18 +31,6 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="jobtitle">
-  <span class="{name(.)}">
-    <xsl:apply-templates/>
-  </span>
-</xsl:template>
-
-<xsl:template match="orgname">
-  <span class="{name(.)}">
-    <xsl:apply-templates/>
-  </span>
-</xsl:template>
-
-<xsl:template match="orgdiv">
   <span class="{name(.)}">
     <xsl:apply-templates/>
   </span>

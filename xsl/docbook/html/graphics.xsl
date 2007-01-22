@@ -3,15 +3,15 @@
                 xmlns:xlink="http://www.w3.org/1999/xlink"
                 xmlns:stext="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.TextFactory"
                 xmlns:simg="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.ImageIntrinsics"
-                xmlns:ximg="xaln://com.nwalsh.xalan.ImageIntrinsics"
-                xmlns:xtext="com.nwalsh.xalan.Text"
+                xmlns:ximg="xalan://com.nwalsh.xalan.ImageIntrinsics"
+                xmlns:xtext="xalan://com.nwalsh.xalan.Text"
                 xmlns:lxslt="http://xml.apache.org/xslt"
                 exclude-result-prefixes="xlink stext xtext lxslt simg ximg"
                 extension-element-prefixes="stext xtext"
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: graphics.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: graphics.xsl,v 1.4 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -231,26 +231,78 @@
     </xsl:choose>
   </xsl:variable>
 
-  <xsl:variable name="intrinsicwidth">
+  <xsl:variable name="output_filename">
+    <xsl:choose>
+      <xsl:when test="@entityref">
+	<xsl:value-of select="$filename"/>
+      </xsl:when>
+      <!--
+        Moved test for $keep.relative.image.uris to template below:
+            <xsl:template match="@fileref">
+      -->
+      <xsl:otherwise>
+	<xsl:value-of select="$filename"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable name="img.src.path.pi">
+    <xsl:call-template name="dbhtml-attribute">
+      <xsl:with-param name="pis"
+                      select="../processing-instruction('dbhtml')"/>
+      <xsl:with-param name="attribute" select="'img.src.path'"/>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:variable name="filename.for.graphicsize">
+    <xsl:choose>
+      <xsl:when test="$img.src.path.pi != ''">
+        <xsl:value-of select="concat($img.src.path.pi, $filename)"/>
+      </xsl:when>
+      <xsl:when test="$img.src.path != '' and
+                      $graphicsize.use.img.src.path != 0 and
+                      $tag = 'img' and
+                      not(starts-with($filename, '/')) and
+                      not(contains($filename, '://'))">
+        <xsl:value-of select="concat($img.src.path, $filename)"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$filename"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable name="realintrinsicwidth">
     <!-- This funny compound test works around a bug in XSLTC -->
     <xsl:choose>
       <xsl:when test="$use.extensions != 0 and $graphicsize.extension != 0">
         <xsl:choose>
           <xsl:when test="function-available('simg:getWidth')">
-            <xsl:value-of select="simg:getWidth(simg:new($filename),
+            <xsl:value-of select="simg:getWidth(simg:new($filename.for.graphicsize),
                                                 $nominal.image.width)"/>
           </xsl:when>
           <xsl:when test="function-available('ximg:getWidth')">
-            <xsl:value-of select="ximg:getWidth(ximg:new($filename),
+            <xsl:value-of select="ximg:getWidth(ximg:new($filename.for.graphicsize),
                                                 $nominal.image.width)"/>
           </xsl:when>
           <xsl:otherwise>
-            <xsl:value-of select="$nominal.image.width"/>
+           <xsl:value-of select="0"/>
           </xsl:otherwise>
         </xsl:choose>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="$nominal.image.width"/>
+        <xsl:value-of select="0"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable name="intrinsicwidth">
+    <xsl:choose>
+      <xsl:when test="$realintrinsicwidth = 0">
+       <xsl:value-of select="$nominal.image.width"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of select="$realintrinsicwidth"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
@@ -261,11 +313,11 @@
       <xsl:when test="$use.extensions != 0 and $graphicsize.extension != 0">
         <xsl:choose>
           <xsl:when test="function-available('simg:getDepth')">
-            <xsl:value-of select="simg:getDepth(simg:new($filename),
+            <xsl:value-of select="simg:getDepth(simg:new($filename.for.graphicsize),
                                                 $nominal.image.depth)"/>
           </xsl:when>
           <xsl:when test="function-available('ximg:getDepth')">
-            <xsl:value-of select="ximg:getDepth(ximg:new($filename),
+            <xsl:value-of select="ximg:getDepth(ximg:new($filename.for.graphicsize),
                                                 $nominal.image.depth)"/>
           </xsl:when>
           <xsl:otherwise>
@@ -467,10 +519,14 @@ align: <xsl:value-of select="@align"/>
 valign: <xsl:value-of select="@valign"/></xsl:message>
 -->
 
+  <xsl:variable name="scaled"
+              select="@width|@depth|@contentwidth|@contentdepth
+                        |@scale|@scalefit"/>
+
   <xsl:variable name="img">
     <xsl:choose>
       <xsl:when test="@format = 'SVG'">
-        <object data="{$filename}" type="image/svg+xml">
+        <object data="{$output_filename}" type="image/svg+xml">
           <xsl:call-template name="process.image.attributes">
             <!--xsl:with-param name="alt" select="$alt"/ there's no alt here-->
             <xsl:with-param name="html.depth" select="$html.depth"/>
@@ -493,7 +549,7 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
             </xsl:attribute>
           </xsl:if>
           <xsl:if test="$use.embed.for.svg != 0">
-            <embed src="{$filename}" type="image/svg+xml">
+            <embed src="{$output_filename}" type="image/svg+xml">
               <xsl:call-template name="process.image.attributes">
                 <!--xsl:with-param name="alt" select="$alt"/ there's no alt here -->
                 <xsl:with-param name="html.depth" select="$html.depth"/>
@@ -511,16 +567,35 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
       </xsl:when>
       <xsl:otherwise>
         <xsl:element name="{$tag}">
+         <xsl:if test="$tag = 'img' and ../../self::imageobjectco">
+           <xsl:choose>
+             <xsl:when test="$scaled">
+              <!-- It might be possible to handle some scaling; needs -->
+              <!-- more investigation -->
+              <xsl:message>
+                <xsl:text>Warning: imagemaps not supported </xsl:text>
+                <xsl:text>on scaled images</xsl:text>
+              </xsl:message>
+             </xsl:when>
+             <xsl:otherwise>
+              <xsl:attribute name="border">0</xsl:attribute>
+              <xsl:attribute name="usemap">
+                <xsl:value-of select="generate-id(../..)"/>
+              </xsl:attribute>
+             </xsl:otherwise>
+           </xsl:choose>
+         </xsl:if>
+
           <xsl:attribute name="src">
-	    <xsl:choose>
-	      <xsl:when test="$img.src.path != '' and
-			      $tag = 'img' and
-	                      not(starts-with($filename, '/')) and
-			      not(contains($filename, '://'))">
-	        <xsl:value-of select="$img.src.path"/>
-	      </xsl:when>
-	    </xsl:choose>
-            <xsl:value-of select="$filename"/>
+           <xsl:choose>
+             <xsl:when test="$img.src.path != '' and
+                           $tag = 'img' and
+                             not(starts-with($output_filename, '/')) and
+                           not(contains($output_filename, '://'))">
+               <xsl:value-of select="$img.src.path"/>
+             </xsl:when>
+           </xsl:choose>
+            <xsl:value-of select="$output_filename"/>
           </xsl:attribute>
 
           <xsl:if test="@align">
@@ -558,7 +633,6 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
-
 
   <xsl:variable name="bgcolor">
     <xsl:call-template name="dbhtml-attribute">
@@ -637,6 +711,156 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
       <xsl:copy-of select="$img"/>
     </xsl:otherwise>
   </xsl:choose>
+
+  <xsl:if test="$tag = 'img' and ../../self::imageobjectco and not($scaled)">
+    <map name="{generate-id(../..)}">
+      <xsl:for-each select="../../areaspec//area">
+       <xsl:variable name="units">
+         <xsl:choose>
+           <xsl:when test="@units">
+             <xsl:value-of select="@units"/>
+           </xsl:when>
+           <xsl:when test="../@units">
+             <xsl:value-of select="../@units"/>
+           </xsl:when>
+           <xsl:otherwise>calspair</xsl:otherwise>
+         </xsl:choose>
+       </xsl:variable>
+
+       <xsl:choose>
+         <xsl:when test="$units = 'calspair'">
+           <xsl:variable name="coords" select="normalize-space(@coords)"/>
+           <xsl:variable name="p1"
+                       select="substring-before($coords, ' ')"/>
+           <xsl:variable name="p2"
+                       select="substring-after($coords, ' ')"/>
+
+           <xsl:variable name="x1" select="substring-before($p1,',')"/>
+           <xsl:variable name="y1" select="substring-after($p1,',')"/>
+           <xsl:variable name="x2" select="substring-before($p2,',')"/>
+           <xsl:variable name="y2" select="substring-after($p2,',')"/>
+
+           <xsl:variable name="x1p" select="$x1 div 100.0"/>
+           <xsl:variable name="y1p" select="$y1 div 100.0"/>
+           <xsl:variable name="x2p" select="$x2 div 100.0"/>
+	   <xsl:variable name="y2p" select="$y2 div 100.0"/>
+
+<!--
+           <xsl:message>
+             <xsl:text>units: </xsl:text>
+             <xsl:value-of select="$units"/>
+             <xsl:text> </xsl:text>
+             <xsl:value-of select="$x1p"/><xsl:text>, </xsl:text>
+             <xsl:value-of select="$y1p"/><xsl:text>, </xsl:text>
+             <xsl:value-of select="$x2p"/><xsl:text>, </xsl:text>
+             <xsl:value-of select="$y2p"/><xsl:text>, </xsl:text>
+           </xsl:message>
+
+           <xsl:message>
+             <xsl:text>      </xsl:text>
+             <xsl:value-of select="$intrinsicwidth"/>
+             <xsl:text>, </xsl:text>
+             <xsl:value-of select="$intrinsicdepth"/>
+           </xsl:message>
+
+           <xsl:message>
+             <xsl:text>      </xsl:text>
+             <xsl:value-of select="$units"/>
+             <xsl:text> </xsl:text>
+             <xsl:value-of select="round($x1p * $intrinsicwidth div 100.0)"/>
+             <xsl:text>,</xsl:text>
+             <xsl:value-of select="round($intrinsicdepth
+                                - ($y1p * $intrinsicdepth div 100.0))"/>
+             <xsl:text>,</xsl:text>
+             <xsl:value-of select="round($x2p * $intrinsicwidth div 100.0)"/>
+             <xsl:text>,</xsl:text>
+             <xsl:value-of select="round($intrinsicdepth
+                                - ($y2p * $intrinsicdepth div 100.0))"/>
+           </xsl:message>
+-->
+
+	   <area shape="rect">
+	     <xsl:variable name="linkends">
+	       <xsl:choose>
+		 <xsl:when test="@linkends">
+		   <xsl:value-of select="normalize-space(@linkends)"/>
+		 </xsl:when>
+		 <xsl:otherwise>
+		   <xsl:value-of select="normalize-space(../@linkends)"/>
+		 </xsl:otherwise>
+	       </xsl:choose>
+	     </xsl:variable>
+
+	     <xsl:variable name="href">
+	       <xsl:choose>
+		 <xsl:when test="@xlink:href">
+		   <xsl:value-of select="@xlink:href"/>
+		 </xsl:when>
+		 <xsl:otherwise>
+		   <xsl:value-of select="../@xlink:href"/>
+		 </xsl:otherwise>
+	       </xsl:choose>
+	     </xsl:variable>
+
+	     <xsl:choose>
+	       <xsl:when test="$linkends != ''">
+		 <xsl:variable name="linkend">
+		   <xsl:choose>
+		     <xsl:when test="contains($linkends, ' ')">
+		       <xsl:value-of select="substring-before($linkends, ' ')"/>
+		     </xsl:when>
+		     <xsl:otherwise>
+		       <xsl:value-of select="$linkends"/>
+		     </xsl:otherwise>
+		   </xsl:choose>
+		 </xsl:variable>
+		 
+		 <xsl:variable name="target" select="key('id', $linkend)[1]"/>
+		
+		 <xsl:if test="$target">
+		   <xsl:attribute name="href">
+		     <xsl:call-template name="href.target">
+		       <xsl:with-param name="object" select="$target"/>
+		     </xsl:call-template>
+		   </xsl:attribute>
+		 </xsl:if>
+	       </xsl:when>
+	       <xsl:when test="$href != ''">
+		 <xsl:attribute name="href">
+		   <xsl:value-of select="$href"/>
+		 </xsl:attribute>
+	       </xsl:when>
+	     </xsl:choose>
+
+	     <xsl:if test="alt">
+	       <xsl:attribute name="alt">
+		 <xsl:value-of select="alt[1]"/>
+	       </xsl:attribute>
+	     </xsl:if>
+
+	     <xsl:attribute name="coords">
+	       <xsl:value-of select="round($x1p * $intrinsicwidth div 100.0)"/>
+	       <xsl:text>,</xsl:text>
+	       <xsl:value-of select="round($intrinsicdepth
+				       - ($y1p * $intrinsicdepth div 100.0))"/>
+	       <xsl:text>,</xsl:text>
+	       <xsl:value-of select="round($x2p * $intrinsicwidth div 100.0)"/>
+	       <xsl:text>,</xsl:text>
+	       <xsl:value-of select="round($intrinsicdepth
+				     - ($y2p * $intrinsicdepth div 100.0))"/>
+	     </xsl:attribute>
+	   </area>
+         </xsl:when>
+         <xsl:otherwise>
+           <xsl:message>
+             <xsl:text>Warning: only calspair supported </xsl:text>
+             <xsl:text>in imageobjectco</xsl:text>
+           </xsl:message>
+         </xsl:otherwise>
+       </xsl:choose>
+      </xsl:for-each>
+    </map>
+  </xsl:if>
 </xsl:template>
 
 <xsl:template name="process.image.attributes">
@@ -731,7 +955,7 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
 
   <xsl:if test="$alt != ''">
     <xsl:attribute name="alt">
-      <xsl:value-of select="$alt"/>
+      <xsl:value-of select="normalize-space($alt)"/>
     </xsl:attribute>
   </xsl:if>
 
@@ -840,7 +1064,7 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
   <xsl:variable name="object" select="$olist[position() = $object.index]"/>
 
   <xsl:variable name="align">
-    <xsl:value-of select="$object/imagedata[@align][1]/@align"/>
+    <xsl:value-of select="$object/descendant::imagedata[@align][1]/@align"/>
   </xsl:variable>
 
   <div class="{name(.)}">
@@ -1030,6 +1254,7 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
             </xsl:for-each>
           </body>
         </html>
+        <xsl:value-of select="$chunk.append"/>
       </xsl:with-param>
     </xsl:call-template>
   </xsl:if>
@@ -1152,6 +1377,10 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
 
 <xsl:template match="caption">
   <div class="{name(.)}">
+    <xsl:if test="@align = 'right' or @align = 'left' or @align='center'">
+      <xsl:attribute name="align"><xsl:value-of
+                         select="@align"/></xsl:attribute>
+    </xsl:if>
     <xsl:apply-templates/>
   </div>
 </xsl:template>
@@ -1166,6 +1395,28 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
   </xsl:copy>
 </xsl:template>
 
+
+<!-- The following works sometimes, but needs to take into account
+             1. When there is no /*/@xml:base
+             2. When the chunks are going somewhere else
+<xsl:variable name="relpath">
+  <xsl:call-template name="relative-uri">
+    <xsl:with-param name="filename" select="@fileref"/>
+  </xsl:call-template>
+</xsl:variable>
+
+<xsl:choose>
+  <xsl:when test="/*/@xml:base
+                  and starts-with($relpath,/*/@xml:base)">
+    <xsl:value-of select="substring-after($relpath,/*/@xml:base)"/>
+  </xsl:when>
+  <xsl:otherwise>
+    <xsl:value-of select="@fileref"/>
+  </xsl:otherwise>
+</xsl:choose>
+<xsl:value-of select="@fileref"/>
+      </xsl:when>
+-->
 <!-- Resolve xml:base attributes -->
 <xsl:template match="@fileref">
   <!-- need a check for absolute urls -->
@@ -1174,8 +1425,12 @@ valign: <xsl:value-of select="@valign"/></xsl:message>
       <!-- it has a uri scheme so it is an absolute uri -->
       <xsl:value-of select="."/>
     </xsl:when>
+    <xsl:when test="$keep.relative.image.uris != 0">
+      <!-- leave it alone -->
+      <xsl:value-of select="."/>
+    </xsl:when>
     <xsl:otherwise>
-      <!-- its a relative uri -->
+      <!-- its a relative uri that needs xml:base processing -->
       <xsl:call-template name="relative-uri">
       </xsl:call-template>
     </xsl:otherwise>

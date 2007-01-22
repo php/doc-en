@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: targets.xsl,v 1.2 2004-10-01 16:32:09 techtonik Exp $
+     $Id: targets.xsl,v 1.3 2007-01-22 11:35:11 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -86,6 +86,7 @@ document output.
   <xsl:value-of select="$olink.base.uri"/>
   <xsl:call-template name="href.target">
     <xsl:with-param name="object" select="$nd"/>
+    <xsl:with-param name="context" select="NOTANODE"/>
   </xsl:call-template>
 </xsl:template>
 
@@ -118,11 +119,18 @@ document output.
     </xsl:attribute>
   </xsl:if>
 
-  <xsl:if test="$nd/@id">
-    <xsl:attribute name="targetptr">
-      <xsl:value-of select="$nd/@id"/>
-    </xsl:attribute>
-  </xsl:if>
+  <xsl:choose>
+    <xsl:when test="$nd/@id">
+      <xsl:attribute name="targetptr">
+        <xsl:value-of select="$nd/@id"/>
+      </xsl:attribute>
+    </xsl:when>
+    <xsl:when test="$nd/@xml:id">
+      <xsl:attribute name="targetptr">
+        <xsl:value-of select="$nd/@xml:id"/>
+      </xsl:attribute>
+    </xsl:when>
+  </xsl:choose>
 
   <xsl:if test="$nd/@lang">
     <xsl:attribute name="lang">
@@ -243,6 +251,7 @@ document output.
 
 <xsl:template match="figure|example|table" mode="olink.mode">
   <xsl:call-template name="obj"/>
+  <xsl:apply-templates mode="olink.mode"/>
 </xsl:template>
 
 <xsl:template match="equation[title]" mode="olink.mode">
@@ -254,7 +263,7 @@ document output.
 </xsl:template>
 
 <xsl:template match="*" mode="olink.mode">
-  <xsl:if test="@id">
+  <xsl:if test="@id or @xml:id">
     <xsl:call-template name="obj"/>
   </xsl:if> 
   <xsl:apply-templates mode="olink.mode"/>

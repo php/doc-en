@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: autotoc.xsl,v 1.6 2005-07-16 23:38:34 techtonik Exp $
+     $Id: autotoc.xsl,v 1.7 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -125,18 +125,22 @@
 
 <xsl:template name="set.toc">
   <xsl:param name="toc-context" select="."/>
+  <xsl:param name="toc.title.p" select="true()"/>
 
   <xsl:call-template name="make.toc">
     <xsl:with-param name="toc-context" select="$toc-context"/>
+    <xsl:with-param name="toc.title.p" select="$toc.title.p"/>
     <xsl:with-param name="nodes" select="book|setindex"/>
   </xsl:call-template>
 </xsl:template>
 
 <xsl:template name="division.toc">
   <xsl:param name="toc-context" select="."/>
+  <xsl:param name="toc.title.p" select="true()"/>
 
   <xsl:call-template name="make.toc">
     <xsl:with-param name="toc-context" select="$toc-context"/>
+    <xsl:with-param name="toc.title.p" select="$toc.title.p"/>
     <xsl:with-param name="nodes" select="part|reference
                                          |preface|chapter|appendix
                                          |article
@@ -276,13 +280,10 @@
 
  <span>
   <xsl:attribute name="class"><xsl:value-of select="local-name(.)"/></xsl:attribute>
-  <a>
-    <xsl:attribute name="href">
-      <xsl:call-template name="href.target">
-        <xsl:with-param name="context" select="$toc-context"/>
-      </xsl:call-template>
-    </xsl:attribute>
-    
+
+  <!-- * if $autotoc.label.in.hyperlink is zero, then output the label -->
+  <!-- * before the hyperlinked title (as the DSSSL stylesheet does) -->
+  <xsl:if test="$autotoc.label.in.hyperlink = 0">
     <xsl:variable name="label">
       <xsl:apply-templates select="." mode="label.markup"/>
     </xsl:variable>
@@ -290,6 +291,26 @@
     <xsl:if test="$label != ''">
       <xsl:value-of select="$autotoc.label.separator"/>
     </xsl:if>
+  </xsl:if>
+
+  <a>
+    <xsl:attribute name="href">
+      <xsl:call-template name="href.target">
+        <xsl:with-param name="context" select="$toc-context"/>
+      </xsl:call-template>
+    </xsl:attribute>
+    
+  <!-- * if $autotoc.label.in.hyperlink is non-zero, then output the label -->
+  <!-- * as part of the hyperlinked title -->
+  <xsl:if test="not($autotoc.label.in.hyperlink = 0)">
+    <xsl:variable name="label">
+      <xsl:apply-templates select="." mode="label.markup"/>
+    </xsl:variable>
+    <xsl:copy-of select="$label"/>
+    <xsl:if test="$label != ''">
+      <xsl:value-of select="$autotoc.label.separator"/>
+    </xsl:if>
+  </xsl:if>
 
     <xsl:apply-templates select="." mode="titleabbrev.markup"/>
   </a>
@@ -467,18 +488,20 @@
 
   <xsl:element name="{$toc.listitem.type}">
     <span class='refentrytitle'>
-    <a>
-      <xsl:attribute name="href">
-        <xsl:call-template name="href.target"/>
-      </xsl:attribute>
-      <xsl:copy-of select="$title"/>
-    </a>
+      <a>
+        <xsl:attribute name="href">
+          <xsl:call-template name="href.target"/>
+        </xsl:attribute>
+        <xsl:copy-of select="$title"/>
+      </a>
     </span>
     <span class='refpurpose'>
-    <xsl:if test="$annotate.toc != 0">
-      <xsl:text> - </xsl:text>
-      <xsl:value-of select="refnamediv/refpurpose"/>
-    </xsl:if>
+      <xsl:if test="$annotate.toc != 0">
+        <!-- * DocBook 5 says inlinemediaobject (among other things) -->
+        <!-- * is allowed in refpurpose; so we need to run -->
+        <!-- * apply-templates on refpurpose here, instead of value-of  -->
+        <xsl:apply-templates select="refnamediv/refpurpose"/>
+      </xsl:if>
     </span>
   </xsl:element>
 </xsl:template>

@@ -6,7 +6,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: ebnf.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: ebnf.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -18,7 +18,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: ebnf.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+$Id: ebnf.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>
@@ -67,7 +67,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
           <fo:table-column column-number="3" column-width="5%"/>
           <fo:table-column column-number="4" column-width="52%"/>
           <fo:table-column column-number="5" column-width="25%"/>
-          <fo:table-body>
+          <fo:table-body start-indent="0pt" end-indent="0pt">
             <xsl:apply-templates select="production|productionrecap"/>
           </fo:table-body>
         </fo:table>
@@ -80,7 +80,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
         <fo:table-column column-number="3" column-width="5%"/>
         <fo:table-column column-number="4" column-width="52%"/>
         <fo:table-column column-number="5" column-width="25%"/>
-        <fo:table-body>
+        <fo:table-body start-indent="0pt" end-indent="0pt">
           <xsl:apply-templates select="production|productionrecap"/>
         </fo:table-body>
       </fo:table>

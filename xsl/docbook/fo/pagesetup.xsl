@@ -4,7 +4,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: pagesetup.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
+     $Id: pagesetup.xsl,v 1.6 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the DocBook XSL Stylesheet distribution.
@@ -72,7 +72,7 @@
       <fo:region-body display-align="center"
                       margin-bottom="{$body.margin.bottom}"
                       margin-top="{$body.margin.top}">
-        <xsl:if test="$fop.extensions = 0">
+        <xsl:if test="$fop.extensions = 0 and $fop1.extensions = 0">
           <xsl:attribute name="region-name">blank-body</xsl:attribute>
         </xsl:if>
       </fo:region-body>
@@ -1450,7 +1450,7 @@
 
   <xsl:call-template name="footnote-separator"/>
 
-  <xsl:if test="$fop.extensions = 0">
+  <xsl:if test="$fop.extensions = 0 and $fop1.extensions = 0">
     <xsl:call-template name="blank.page.content"/>
   </xsl:if>
 </xsl:template>
@@ -1539,7 +1539,10 @@
       </fo:table-column>
 
       <fo:table-body>
-        <fo:table-row height="14pt">
+        <fo:table-row>
+          <xsl:attribute name="block-progression-dimension.minimum">
+            <xsl:value-of select="$header.table.height"/>
+          </xsl:attribute>
           <fo:table-cell text-align="left"
                          display-align="before">
             <xsl:if test="$fop.extensions = 0">
@@ -1860,7 +1863,10 @@
       </fo:table-column>
 
       <fo:table-body>
-        <fo:table-row height="14pt">
+        <fo:table-row>
+          <xsl:attribute name="block-progression-dimension.minimum">
+            <xsl:value-of select="$footer.table.height"/>
+          </xsl:attribute>
           <fo:table-cell text-align="left"
                          display-align="after">
             <xsl:if test="$fop.extensions = 0">
@@ -2004,30 +2010,38 @@
   <xsl:param name="element" select="local-name(.)"/>
   <xsl:param name="master-reference" select="''"/>
 
+  <!-- Select the first content that the stylesheet places
+       after the TOC -->
+  <xsl:variable name="first.book.content" 
+                select="ancestor::book/*[
+                          not(self::title or
+                              self::subtitle or
+                              self::titleabbrev or
+                              self::bookinfo or
+                              self::info or
+                              self::dedication or
+                              self::preface or
+                              self::toc or
+                              self::lot)][1]"/>
   <xsl:choose>
     <!-- double-sided output -->
     <xsl:when test="$double.sided != 0">
       <xsl:choose>
         <xsl:when test="$element = 'toc'">auto-odd</xsl:when>
         <xsl:when test="$element = 'book'">1</xsl:when>
+        <!-- preface typically continues TOC roman numerals -->
+        <!-- Change page.number.format if not -->
         <xsl:when test="$element = 'preface'">auto-odd</xsl:when>
-        <xsl:when test="$element = 'part' and not(preceding::chapter)
-                        and not(preceding::part)">1</xsl:when>
-        <xsl:when test="($element = 'dedication' or $element = 'article') and
-                        not(preceding::chapter
+        <xsl:when test="($element = 'dedication' or $element = 'article') 
+                    and not(preceding::chapter
                             or preceding::preface
                             or preceding::appendix
                             or preceding::article
                             or preceding::dedication
                             or parent::part
                             or parent::reference)">1</xsl:when>
-        <xsl:when test="($element = 'chapter' or $element = 'appendix') and
-                        not(preceding::chapter
-                            or preceding::appendix
-                            or preceding::article
-                            or preceding::dedication
-                            or parent::part
-                            or parent::reference)">1</xsl:when>
+        <xsl:when test="generate-id($first.book.content) =
+                        generate-id(.)">1</xsl:when>
         <xsl:otherwise>auto-odd</xsl:otherwise>
       </xsl:choose>
     </xsl:when>
@@ -2036,8 +2050,9 @@
     <xsl:otherwise>
       <xsl:choose>
         <xsl:when test="$element = 'toc'">auto</xsl:when>
+        <xsl:when test="$element = 'book'">1</xsl:when>
         <xsl:when test="$element = 'preface'">auto</xsl:when>
-        <xsl:when test="($element = 'dedication' or $element = 'article') and
+       <xsl:when test="($element = 'dedication' or $element = 'article') and
                         not(preceding::chapter
                             or preceding::preface
                             or preceding::appendix
@@ -2045,13 +2060,8 @@
                             or preceding::dedication
                             or parent::part
                             or parent::reference)">1</xsl:when>
-        <xsl:when test="($element = 'chapter' or $element = 'appendix') and
-                        not(preceding::chapter
-                            or preceding::appendix
-                            or preceding::article
-                            or preceding::dedication
-                            or parent::part
-                            or parent::reference)">1</xsl:when>
+        <xsl:when test="generate-id($first.book.content) =
+                        generate-id(.)">1</xsl:when>
         <xsl:otherwise>auto</xsl:otherwise>
       </xsl:choose>
     </xsl:otherwise>
@@ -2078,9 +2088,14 @@
   <!-- Customize this template to set attributes on fo:flow -->
 
   <xsl:choose>
-    <xsl:when test="$master-reference = 'body' or
+    <xsl:when test="$fop.extensions != 0 or $passivetex.extensions != 0">
+      <!-- body.start.indent does not work well with these processors -->
+    </xsl:when>
+    <xsl:when test="starts-with($master-reference, 'body') or
+                    starts-with($master-reference, 'lot') or
+                    starts-with($master-reference, 'front') or
                     $element = 'preface' or
-                    ($master-reference = 'back' and
+                    (starts-with($master-reference, 'back') and
                     $element = 'appendix')">
       <xsl:attribute name="start-indent">
         <xsl:value-of select="$body.start.indent"/>

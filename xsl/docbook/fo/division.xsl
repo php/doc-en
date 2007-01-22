@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: division.xsl,v 1.5 2005-07-16 23:38:32 techtonik Exp $
+     $Id: division.xsl,v 1.6 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -48,7 +48,7 @@
       </xsl:attribute>
       <xsl:attribute name="axf:outline-expand">false</xsl:attribute>
       <xsl:attribute name="axf:outline-title">
-        <xsl:value-of select="$title"/>
+        <xsl:value-of select="normalize-space($title)"/>
       </xsl:attribute>
     </xsl:if>
     <xsl:copy-of select="$title"/>
@@ -218,6 +218,7 @@
 <xsl:template match="set/setinfo"></xsl:template>
 <xsl:template match="set/title"></xsl:template>
 <xsl:template match="set/subtitle"></xsl:template>
+<xsl:template match="set/titleabbrev"></xsl:template>
 
 <!-- ==================================================================== -->
 
@@ -227,11 +228,12 @@
   </xsl:variable>
 
   <xsl:variable name="preamble"
-                select="title|subtitle|titleabbrev|bookinfo"/>
+                select="title|subtitle|titleabbrev|bookinfo|info"/>
 
   <xsl:variable name="content"
-                select="*[not(self::title or self::subtitle
+                select="node()[not(self::title or self::subtitle
                             or self::titleabbrev
+                            or self::info
                             or self::bookinfo)]"/>
 
   <xsl:variable name="titlepage-master-reference">
@@ -377,7 +379,10 @@
                           select="$lot-master-reference"/>
         </xsl:call-template>
 
-        <xsl:call-template name="division.toc"/>
+        <xsl:call-template name="division.toc">
+          <xsl:with-param name="toc.title.p" 
+                          select="contains($toc.params, 'title')"/>
+        </xsl:call-template>
       </fo:flow>
     </fo:page-sequence>
   </xsl:if>
@@ -649,7 +654,7 @@
 
         <xsl:call-template name="list.of.titles">
           <xsl:with-param name="titles" select="'equation'"/>
-          <xsl:with-param name="nodes" select=".//equation[title]"/>
+          <xsl:with-param name="nodes" select=".//equation[title or info/title]"/>
         </xsl:call-template>
       </fo:flow>
     </fo:page-sequence>
@@ -727,8 +732,10 @@
 </xsl:template>
 
 <xsl:template match="book/bookinfo"></xsl:template>
+<xsl:template match="book/info"></xsl:template>
 <xsl:template match="book/title"></xsl:template>
 <xsl:template match="book/subtitle"></xsl:template>
+<xsl:template match="book/titleabbrev"></xsl:template>
 
 <!-- ==================================================================== -->
 
@@ -820,8 +827,10 @@
 </xsl:template>
 
 <xsl:template match="part/docinfo|partinfo"></xsl:template>
+<xsl:template match="part/info"></xsl:template>
 <xsl:template match="part/title"></xsl:template>
 <xsl:template match="part/subtitle"></xsl:template>
+<xsl:template match="part/titleabbrev"></xsl:template>
 
 <!-- ==================================================================== -->
 
@@ -841,7 +850,16 @@
     </xsl:call-template>
   </xsl:variable>
 
-  <xsl:if test="contains($toc.params, 'toc')">
+  <xsl:variable name="nodes" select="reference|
+                                     preface|
+                                     chapter|
+                                     appendix|
+                                     article|
+                                     bibliography|
+                                     glossary|
+                                     index"/>
+
+  <xsl:if test="count($nodes) &gt; 0 and contains($toc.params, 'toc')">
     <fo:page-sequence hyphenate="{$hyphenate}"
                       master-reference="{$lot-master-reference}">
       <xsl:attribute name="language">
@@ -901,7 +919,10 @@
 
         <xsl:call-template name="division.toc">
           <xsl:with-param name="toc-context" select="$part"/>
+          <xsl:with-param name="toc.title.p" 
+                          select="contains($toc.params, 'title')"/>
         </xsl:call-template>
+
       </fo:flow>
     </fo:page-sequence>
   </xsl:if>

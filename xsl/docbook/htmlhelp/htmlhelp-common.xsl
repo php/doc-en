@@ -1,24 +1,33 @@
 <?xml version="1.0"?>
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY lf '<xsl:text xmlns:xsl="http://www.w3.org/1999/XSL/Transform">&#xA;</xsl:text>'>
+]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
                 xmlns:exsl="http://exslt.org/common"
                 xmlns:set="http://exslt.org/sets"
                 xmlns:h="urn:x-hex"
+		xmlns:ng="http://docbook.org/docbook-ng"
+		xmlns:db="http://docbook.org/ns/docbook"
 		version="1.0"
-                exclude-result-prefixes="doc exsl set h">
+                exclude-result-prefixes="doc exsl set h db ng">
 
 <!-- ********************************************************************
-     $Id: htmlhelp-common.xsl,v 1.3 2005-07-15 09:18:39 techtonik Exp $
+     $Id: htmlhelp-common.xsl,v 1.4 2007-01-22 11:35:12 bjori Exp $
      ******************************************************************** -->
 
 <!-- ==================================================================== -->
 <!-- Customizations of standard HTML stylesheet parameters -->
 
+<!-- no navigation on pages by default, HTML Help provides its own navigation controls -->
 <xsl:param name="suppress.navigation" select="1"/>
+
+<!-- no separate HTML page with index, index is built inside CHM index pane -->
+<xsl:param name="generate.index" select="0"/>
 
 <!-- ==================================================================== -->
 
-<xsl:variable name="htmlhelp.generate.index" select="//indexterm[1]"/>
+<xsl:param name="htmlhelp.generate.index" select="//indexterm[1]"/>
 
 <!-- Set up HTML Help flag -->
 <xsl:variable name="htmlhelp.output" select="1"/>
@@ -465,19 +474,18 @@ Enhanced decompilation=</xsl:text>
 
 <!-- ==================================================================== -->
 
-<!-- Following templates are not nice. It is because MS help compiler is unable
-     to process correct HTML files. We must generate following weird
-     stuff instead. -->
+<!-- HHC and HHK files are processed by compiler line by line
+     and therefore are very sensitive to whitespaces (linefeeds for sure).  -->
 
 <xsl:template name="hhc">
-  <xsl:call-template name="write.text.chunk">
+  <xsl:call-template name="write.chunk">
     <xsl:with-param name="filename">
       <xsl:if test="$manifest.in.base.dir != 0">
         <xsl:value-of select="$base.dir"/>
       </xsl:if>
       <xsl:value-of select="$htmlhelp.hhc"/>
     </xsl:with-param>
-    <xsl:with-param name="method" select="'text'"/>
+    <xsl:with-param name="indent" select="'no'"/>
     <xsl:with-param name="content">
       <xsl:call-template name="hhc-main"/>
     </xsl:with-param>
@@ -486,41 +494,42 @@ Enhanced decompilation=</xsl:text>
 </xsl:template>
 
 <xsl:template name="hhc-main">
-  <xsl:text disable-output-escaping="yes">&lt;HTML&gt;
-&lt;HEAD&gt;
-&lt;/HEAD&gt;
-  &lt;BODY&gt;
-</xsl:text>
+<HTML>&lf;
+ <HEAD></HEAD>&lf;
+ <BODY>&lf;
   <xsl:if test="$htmlhelp.hhc.folders.instead.books != 0">
-    <xsl:text disable-output-escaping="yes">&lt;OBJECT type="text/site properties"&gt;
-	&lt;param name="ImageType" value="Folder"&gt;
-&lt;/OBJECT&gt;
-</xsl:text>
+   <OBJECT type="text/site properties">&lf;
+     <param name="ImageType" value="Folder"/>&lf;
+   </OBJECT>&lf;
   </xsl:if>
-  <xsl:if test="$htmlhelp.hhc.show.root != 0">
-<xsl:text disable-output-escaping="yes">&lt;UL&gt;
-</xsl:text>
-  </xsl:if>
+  <xsl:variable name="content">
+    <xsl:choose>
+      <xsl:when test="$rootid != ''">
+	<xsl:apply-templates select="key('id',$rootid)" mode="hhc"/>
+      </xsl:when>
+      <xsl:otherwise>
+	<xsl:apply-templates select="/" mode="hhc"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
 
   <xsl:choose>
-    <xsl:when test="$rootid != ''">
-      <xsl:apply-templates select="key('id',$rootid)" mode="hhc"/>
+    <xsl:when test="$htmlhelp.hhc.show.root != 0">
+      <UL>&lf;
+        <xsl:copy-of select="$content"/>
+      </UL>&lf;
     </xsl:when>
     <xsl:otherwise>
-      <xsl:apply-templates select="/" mode="hhc"/>
+    <xsl:copy-of select="$content"/>
     </xsl:otherwise>
   </xsl:choose>
 
-  <xsl:if test="$htmlhelp.hhc.show.root != 0">
-  <xsl:text disable-output-escaping="yes">&lt;/UL&gt;
-</xsl:text>
-  </xsl:if>
-  <xsl:text disable-output-escaping="yes">&lt;/BODY&gt;
-&lt;/HTML&gt;</xsl:text>
+ </BODY>
+</HTML>
 </xsl:template>
 
-<xsl:template match="set" mode="hhc">
-  <xsl:variable name="title">
+<xsl:template name="hhc.entry">
+  <xsl:param name="title">
     <xsl:if test="$htmlhelp.autolabel=1">
       <xsl:variable name="label.markup">
         <xsl:apply-templates select="." mode="label.markup"/>
@@ -529,22 +538,26 @@ Enhanced decompilation=</xsl:text>
         <xsl:value-of select="concat($label.markup,$autotoc.label.separator)"/>
       </xsl:if>
     </xsl:if>
-    <xsl:call-template name="escape-attr">
-      <xsl:with-param name="value">
-        <xsl:apply-templates select="." mode="title.markup"/>
-      </xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
+    <xsl:apply-templates select="." mode="title.markup"/>
+  </xsl:param>
 
-  <xsl:if test="$htmlhelp.hhc.show.root != 0">
-    <xsl:text disable-output-escaping="yes">&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
-      &lt;param name="Name" value="</xsl:text>
+  <LI><OBJECT type="text/sitemap">&lf;
+    <param name="Name">
+      <xsl:attribute name="value">
           <xsl:value-of select="normalize-space($title)"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-      &lt;param name="Local" value="</xsl:text>
+      </xsl:attribute>
+    </param>&lf;
+    <param name="Local">
+      <xsl:attribute name="value">
           <xsl:call-template name="href.target.with.base.dir"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-    &lt;/OBJECT&gt;</xsl:text>
+      </xsl:attribute>
+    </param>
+  </OBJECT></LI>&lf;
+</xsl:template>
+
+<xsl:template match="set" mode="hhc">
+  <xsl:if test="$htmlhelp.hhc.show.root != 0">
+    <xsl:call-template name="hhc.entry"/>
   </xsl:if>
   <xsl:if test="book">
     <xsl:variable name="toc.params">
@@ -552,50 +565,42 @@ Enhanced decompilation=</xsl:text>
         <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
       </xsl:call-template>
     </xsl:variable>
-    <xsl:text disable-output-escaping="yes">&lt;UL&gt;</xsl:text>
+    <UL>
       <xsl:if test="contains($toc.params, 'toc') and $htmlhelp.hhc.show.root = 0">
-        <xsl:text disable-output-escaping="yes">&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
-          &lt;param name="Name" value="</xsl:text>
+      <LI><OBJECT type="text/sitemap">&lf;
+          <param name="Name">
+            <xsl:attribute name="value">
             <xsl:call-template name="gentext">
               <xsl:with-param name="key" select="'TableofContents'"/>
             </xsl:call-template>
-          <xsl:text disable-output-escaping="yes">"&gt;
-          &lt;param name="Local" value="</xsl:text>
-              <xsl:call-template name="href.target.with.base.dir"/>
-          <xsl:text disable-output-escaping="yes">"&gt;
-        &lt;/OBJECT&gt;</xsl:text>
+            </xsl:attribute>
+          </param>&lf;
+          <param name="Local">
+            <xsl:attribute name="value">
+	      <xsl:choose>
+		<xsl:when test="$chunk.tocs.and.lots != 0">
+		  <xsl:apply-templates select="." mode="recursive-chunk-filename">
+		    <xsl:with-param name="recursive" select="true()"/>
+		  </xsl:apply-templates>
+		  <xsl:text>-toc</xsl:text>
+		  <xsl:value-of select="$html.ext"/>
+		</xsl:when>
+		<xsl:otherwise>
+		  <xsl:call-template name="href.target.with.base.dir"/>
+		</xsl:otherwise>
+	      </xsl:choose>
+	    </xsl:attribute>
+          </param>
+      </OBJECT></LI>&lf;
       </xsl:if>
       <xsl:apply-templates select="book" mode="hhc"/>
-    <xsl:text disable-output-escaping="yes">&lt;/UL&gt;</xsl:text>
+    </UL>&lf;
   </xsl:if>
 </xsl:template>
 
 <xsl:template match="book" mode="hhc">
-  <xsl:variable name="title">
-    <xsl:if test="$htmlhelp.autolabel=1">
-      <xsl:variable name="label.markup">
-        <xsl:apply-templates select="." mode="label.markup"/>
-      </xsl:variable>
-      <xsl:if test="normalize-space($label.markup)">
-        <xsl:value-of select="concat($label.markup,$autotoc.label.separator)"/>
-      </xsl:if>
-    </xsl:if>
-    <xsl:call-template name="escape-attr">
-      <xsl:with-param name="value">
-        <xsl:apply-templates select="." mode="title.markup"/>
-      </xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-
   <xsl:if test="$htmlhelp.hhc.show.root != 0 or parent::*">
-    <xsl:text disable-output-escaping="yes">&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
-      &lt;param name="Name" value="</xsl:text>
-          <xsl:value-of select="normalize-space($title)"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-      &lt;param name="Local" value="</xsl:text>
-          <xsl:call-template name="href.target.with.base.dir"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-    &lt;/OBJECT&gt;</xsl:text>
+    <xsl:call-template name="hhc.entry"/>
   </xsl:if>
   <xsl:if test="part|reference|preface|chapter|appendix|bibliography|article|colophon|glossary">
     <xsl:variable name="toc.params">
@@ -603,278 +608,126 @@ Enhanced decompilation=</xsl:text>
         <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
       </xsl:call-template>
     </xsl:variable>
-    <xsl:text disable-output-escaping="yes">&lt;UL&gt;</xsl:text>
+    <UL>
       <xsl:if test="contains($toc.params, 'toc') and $htmlhelp.hhc.show.root = 0 and not(parent::*)">
-        <xsl:text disable-output-escaping="yes">&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
-          &lt;param name="Name" value="</xsl:text>
-            <xsl:call-template name="gentext">
-              <xsl:with-param name="key" select="'TableofContents'"/>
-            </xsl:call-template>
-          <xsl:text disable-output-escaping="yes">"&gt;
-          &lt;param name="Local" value="</xsl:text>
-              <xsl:call-template name="href.target.with.base.dir"/>
-          <xsl:text disable-output-escaping="yes">"&gt;
-        &lt;/OBJECT&gt;</xsl:text>
+        <LI><OBJECT type="text/sitemap">&lf;
+            <param name="Name">
+              <xsl:attribute name="value">
+		<xsl:call-template name="gentext">
+		  <xsl:with-param name="key" select="'TableofContents'"/>
+		</xsl:call-template>
+              </xsl:attribute>
+            </param>&lf;
+            <param name="Local">
+	      <xsl:attribute name="value">
+		<xsl:choose>
+		  <xsl:when test="$chunk.tocs.and.lots != 0">
+		    <xsl:apply-templates select="." mode="recursive-chunk-filename">
+		      <xsl:with-param name="recursive" select="true()"/>
+		    </xsl:apply-templates>
+		    <xsl:text>-toc</xsl:text>
+		    <xsl:value-of select="$html.ext"/>
+		  </xsl:when>
+		  <xsl:otherwise>
+		    <xsl:call-template name="href.target.with.base.dir"/>
+		  </xsl:otherwise>
+		</xsl:choose>
+	      </xsl:attribute>
+            </param>
+        </OBJECT></LI>&lf;
       </xsl:if>
       <xsl:apply-templates select="part|reference|preface|chapter|bibliography|appendix|article|colophon|glossary"
 			   mode="hhc"/>
-    <xsl:text disable-output-escaping="yes">&lt;/UL&gt;</xsl:text>
+    </UL>&lf;
   </xsl:if>
 </xsl:template>
 
 <xsl:template match="part|reference|preface|chapter|bibliography|appendix|article|glossary"
               mode="hhc">
-  <xsl:variable name="title">
-    <xsl:if test="$htmlhelp.autolabel=1">
-      <xsl:variable name="label.markup">
-        <xsl:apply-templates select="." mode="label.markup"/>
-      </xsl:variable>
-      <xsl:if test="normalize-space($label.markup)">
-        <xsl:value-of select="concat($label.markup,$autotoc.label.separator)"/>
-      </xsl:if>
-    </xsl:if>
-    <xsl:call-template name="escape-attr">
-      <xsl:with-param name="value">
-        <xsl:apply-templates select="." mode="title.markup"/>
-      </xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-
   <xsl:if test="$htmlhelp.hhc.show.root != 0 or parent::*">
-    <xsl:text disable-output-escaping="yes">&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
-      &lt;param name="Name" value="</xsl:text>
-          <xsl:value-of select="normalize-space($title)"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-      &lt;param name="Local" value="</xsl:text>
-          <xsl:call-template name="href.target.with.base.dir"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-    &lt;/OBJECT&gt;</xsl:text>
+    <xsl:call-template name="hhc.entry"/>
   </xsl:if>
-  <xsl:if test="reference|preface|chapter|appendix|refentry|section|sect1|bibliodiv">
-    <xsl:text disable-output-escaping="yes">&lt;UL&gt;</xsl:text>
+  <xsl:if test="article|reference|preface|chapter|appendix|refentry|section|sect1|bibliodiv">
+    <UL>&lf;
       <xsl:apply-templates
-	select="reference|preface|chapter|appendix|refentry|section|sect1|bibliodiv"
+	select="article|reference|preface|chapter|appendix|refentry|section|sect1|bibliodiv"
 	mode="hhc"/>
-    <xsl:text disable-output-escaping="yes">&lt;/UL&gt;</xsl:text>
+    </UL>
   </xsl:if>
 </xsl:template>
 
 <xsl:template match="section" mode="hhc">
-  <xsl:variable name="title">
-    <xsl:if test="$htmlhelp.autolabel=1">
-      <xsl:variable name="label.markup">
-        <xsl:apply-templates select="." mode="label.markup"/>
-      </xsl:variable>
-      <xsl:if test="normalize-space($label.markup)">
-        <xsl:value-of select="concat($label.markup,$autotoc.label.separator)"/>
-      </xsl:if>
-    </xsl:if>
-    <xsl:call-template name="escape-attr">
-      <xsl:with-param name="value">
-        <xsl:apply-templates select="." mode="title.markup"/>
-      </xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-
   <xsl:if test="$htmlhelp.hhc.show.root != 0 or parent::*">
-    <xsl:text disable-output-escaping="yes">&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
-      &lt;param name="Name" value="</xsl:text>
-          <xsl:value-of select="normalize-space($title)"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-      &lt;param name="Local" value="</xsl:text>
-          <xsl:call-template name="href.target.with.base.dir"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-    &lt;/OBJECT&gt;</xsl:text>
+    <xsl:call-template name="hhc.entry"/>
   </xsl:if>
   <xsl:if test="section[count(ancestor::section) &lt; $htmlhelp.hhc.section.depth]|refentry">
-    <xsl:text disable-output-escaping="yes">&lt;UL&gt;</xsl:text>
+    <UL>&lf;
       <xsl:apply-templates select="section|refentry" mode="hhc"/>
-    <xsl:text disable-output-escaping="yes">&lt;/UL&gt;</xsl:text>
+    </UL>
   </xsl:if>
 </xsl:template>
 
 <xsl:template match="sect1" mode="hhc">
-  <xsl:variable name="title">
-    <xsl:if test="$htmlhelp.autolabel=1">
-      <xsl:variable name="label.markup">
-        <xsl:apply-templates select="." mode="label.markup"/>
-      </xsl:variable>
-      <xsl:if test="normalize-space($label.markup)">
-        <xsl:value-of select="concat($label.markup,$autotoc.label.separator)"/>
-      </xsl:if>
-    </xsl:if>
-    <xsl:call-template name="escape-attr">
-      <xsl:with-param name="value">
-        <xsl:apply-templates select="." mode="title.markup"/>
-      </xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-
   <xsl:if test="$htmlhelp.hhc.show.root != 0 or parent::*">
-    <xsl:text disable-output-escaping="yes">&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
-      &lt;param name="Name" value="</xsl:text>
-          <xsl:value-of select="normalize-space($title)"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-      &lt;param name="Local" value="</xsl:text>
-          <xsl:call-template name="href.target.with.base.dir"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-    &lt;/OBJECT&gt;</xsl:text>
+    <xsl:call-template name="hhc.entry"/>
   </xsl:if>
   <xsl:if test="sect2[$htmlhelp.hhc.section.depth > 1]|refentry">
-    <xsl:text disable-output-escaping="yes">&lt;UL&gt;</xsl:text>
+    <UL>&lf;
       <xsl:apply-templates select="sect2|refentry"
 			   mode="hhc"/>
-    <xsl:text disable-output-escaping="yes">&lt;/UL&gt;</xsl:text>
+    </UL>
   </xsl:if>
 </xsl:template>
 
 <xsl:template match="sect2" mode="hhc">
-  <xsl:variable name="title">
-    <xsl:if test="$htmlhelp.autolabel=1">
-      <xsl:variable name="label.markup">
-        <xsl:apply-templates select="." mode="label.markup"/>
-      </xsl:variable>
-      <xsl:if test="normalize-space($label.markup)">
-        <xsl:value-of select="concat($label.markup,$autotoc.label.separator)"/>
-      </xsl:if>
-    </xsl:if>
-    <xsl:call-template name="escape-attr">
-      <xsl:with-param name="value">
-        <xsl:apply-templates select="." mode="title.markup"/>
-      </xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-
   <xsl:if test="$htmlhelp.hhc.show.root != 0 or parent::*">
-    <xsl:text disable-output-escaping="yes">&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
-      &lt;param name="Name" value="</xsl:text>
-          <xsl:value-of select="normalize-space($title)"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-      &lt;param name="Local" value="</xsl:text>
-          <xsl:call-template name="href.target.with.base.dir"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-    &lt;/OBJECT&gt;</xsl:text>
+    <xsl:call-template name="hhc.entry"/>
   </xsl:if>
   <xsl:if test="sect3[$htmlhelp.hhc.section.depth > 2]|refentry">
-    <xsl:text disable-output-escaping="yes">&lt;UL&gt;</xsl:text>
+    <UL>&lf;
       <xsl:apply-templates select="sect3|refentry"
 			   mode="hhc"/>
-    <xsl:text disable-output-escaping="yes">&lt;/UL&gt;</xsl:text>
+    </UL>
   </xsl:if>
 </xsl:template>
 
 <xsl:template match="sect3" mode="hhc">
-  <xsl:variable name="title">
-    <xsl:if test="$htmlhelp.autolabel=1">
-      <xsl:variable name="label.markup">
-        <xsl:apply-templates select="." mode="label.markup"/>
-      </xsl:variable>
-      <xsl:if test="normalize-space($label.markup)">
-        <xsl:value-of select="concat($label.markup,$autotoc.label.separator)"/>
-      </xsl:if>
-    </xsl:if>
-    <xsl:call-template name="escape-attr">
-      <xsl:with-param name="value">
-        <xsl:apply-templates select="." mode="title.markup"/>
-      </xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-
   <xsl:if test="$htmlhelp.hhc.show.root != 0 or parent::*">
-    <xsl:text disable-output-escaping="yes">&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
-      &lt;param name="Name" value="</xsl:text>
-          <xsl:value-of select="normalize-space($title)"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-      &lt;param name="Local" value="</xsl:text>
-          <xsl:call-template name="href.target.with.base.dir"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-    &lt;/OBJECT&gt;</xsl:text>
+    <xsl:call-template name="hhc.entry"/>
   </xsl:if>
   <xsl:if test="sect4[$htmlhelp.hhc.section.depth > 3]|refentry">
-    <xsl:text disable-output-escaping="yes">&lt;UL&gt;</xsl:text>
+    <UL>&lf;
       <xsl:apply-templates select="sect4|refentry"
 			   mode="hhc"/>
-    <xsl:text disable-output-escaping="yes">&lt;/UL&gt;</xsl:text>
+    </UL>
   </xsl:if>
 </xsl:template>
 
 <xsl:template match="sect4" mode="hhc">
-  <xsl:variable name="title">
-    <xsl:if test="$htmlhelp.autolabel=1">
-      <xsl:variable name="label.markup">
-        <xsl:apply-templates select="." mode="label.markup"/>
-      </xsl:variable>
-      <xsl:if test="normalize-space($label.markup)">
-        <xsl:value-of select="concat($label.markup,$autotoc.label.separator)"/>
-      </xsl:if>
-    </xsl:if>
-    <xsl:call-template name="escape-attr">
-      <xsl:with-param name="value">
-        <xsl:apply-templates select="." mode="title.markup"/>
-      </xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-
   <xsl:if test="$htmlhelp.hhc.show.root != 0 or parent::*">
-    <xsl:text disable-output-escaping="yes">&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
-      &lt;param name="Name" value="</xsl:text>
-          <xsl:value-of select="normalize-space($title)"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-      &lt;param name="Local" value="</xsl:text>
-          <xsl:call-template name="href.target.with.base.dir"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-    &lt;/OBJECT&gt;</xsl:text>
+    <xsl:call-template name="hhc.entry"/>
   </xsl:if>
   <xsl:if test="sect5[$htmlhelp.hhc.section.depth > 4]|refentry">
-    <xsl:text disable-output-escaping="yes">&lt;UL&gt;</xsl:text>
+    <UL>&lf;
       <xsl:apply-templates select="sect5|refentry"
 			   mode="hhc"/>
-    <xsl:text disable-output-escaping="yes">&lt;/UL&gt;</xsl:text>
+    </UL>
   </xsl:if>
 </xsl:template>
 
 <xsl:template match="sect5|refentry|colophon|bibliodiv" mode="hhc">
-  <xsl:variable name="title">
-    <xsl:if test="$htmlhelp.autolabel=1">
-      <xsl:variable name="label.markup">
-        <xsl:apply-templates select="." mode="label.markup"/>
-      </xsl:variable>
-      <xsl:if test="normalize-space($label.markup)">
-        <xsl:value-of select="concat($label.markup,$autotoc.label.separator)"/>
-      </xsl:if>
-    </xsl:if>
-    <xsl:call-template name="escape-attr">
-      <xsl:with-param name="value">
-        <xsl:apply-templates select="." mode="title.markup"/>
-      </xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-
   <xsl:if test="$htmlhelp.hhc.show.root != 0 or parent::*">
-    <xsl:text disable-output-escaping="yes">&lt;LI&gt; &lt;OBJECT type="text/sitemap"&gt;
-      &lt;param name="Name" value="</xsl:text>
-          <xsl:value-of select="normalize-space($title)"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-      &lt;param name="Local" value="</xsl:text>
-          <xsl:call-template name="href.target.with.base.dir"/>
-      <xsl:text disable-output-escaping="yes">"&gt;
-    &lt;/OBJECT&gt;</xsl:text>
+    <xsl:call-template name="hhc.entry"/>
   </xsl:if>
   <xsl:if test="refentry">
-    <xsl:text disable-output-escaping="yes">&lt;UL&gt;</xsl:text>
+    <UL>&lf;
       <xsl:apply-templates select="refentry"
 			   mode="hhc"/>
-    <xsl:text disable-output-escaping="yes">&lt;/UL&gt;</xsl:text>
+    </UL>
   </xsl:if>
 </xsl:template>
 
 <!-- ==================================================================== -->
-
-<!-- no separate HTML page with index -->
-<xsl:template match="index"/>   
-<xsl:template match="setindex"/>   
-<xsl:template match="index" mode="toc"/>
-<xsl:template match="setindex" mode="toc"/>
 
 <xsl:template match="indexterm">
   <xsl:choose>
@@ -900,6 +753,15 @@ Enhanced decompilation=</xsl:text>
         <xsl:if test="not(//indexterm[normalize-space(primary)=$primary and not(secondary)])">
           <xsl:call-template name="write.indexterm">
             <xsl:with-param name="text" select="$primary"/>
+          </xsl:call-template>
+        </xsl:if>
+      </xsl:if>
+
+      <xsl:if test="tertiary">
+        <xsl:if test="not(//indexterm[normalize-space(primary)=$primary and 
+		                      normalize-space(secondary)=$secondary and not(tertiary)])">
+          <xsl:call-template name="write.indexterm">
+            <xsl:with-param name="text" select="concat($primary, ', ', $secondary)"/>
           </xsl:call-template>
         </xsl:if>
       </xsl:if>
@@ -931,15 +793,15 @@ Enhanced decompilation=</xsl:text>
 <!-- ==================================================================== -->
 
 <xsl:template name="hhk">
-  <xsl:call-template name="write.text.chunk">
+  <xsl:call-template name="write.chunk">
     <xsl:with-param name="filename">
       <xsl:if test="$manifest.in.base.dir != 0">
         <xsl:value-of select="$base.dir"/>
       </xsl:if>
       <xsl:value-of select="$htmlhelp.hhk"/>
     </xsl:with-param>
-    <xsl:with-param name="method" select="'text'"/>
-    <xsl:with-param name="content"><xsl:text disable-output-escaping="yes"><![CDATA[<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+    <xsl:with-param name="indent" select="'no'"/>
+    <xsl:with-param name="content"><xsl:text disable-output-escaping="yes"><![CDATA[<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <HTML>
 <HEAD>
 <meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
@@ -986,20 +848,20 @@ Enhanced decompilation=</xsl:text>
         <xsl:with-param name="seealso" select="$primary"/>
       </xsl:call-template>
     </xsl:if>
-    <xsl:text disable-output-escaping="yes"><![CDATA[<UL>]]>&#10;</xsl:text>
+    <UL>
     <xsl:call-template name="write.indexterm.hhk">
       <xsl:with-param name="text" select="$secondary"/>
       <xsl:with-param name="seealso" select="secondary/seealso"/>
     </xsl:call-template>
     <xsl:if test="tertiary">
-      <xsl:text disable-output-escaping="yes"><![CDATA[<UL>]]>&#10;</xsl:text>
+      <UL>&lf;
       <xsl:call-template name="write.indexterm.hhk">
         <xsl:with-param name="text" select="$tertiary"/>
         <xsl:with-param name="seealso" select="tertiary/seealso"/>
       </xsl:call-template>
-      <xsl:text disable-output-escaping="yes"><![CDATA[</UL>]]>&#10;</xsl:text>
+      </UL>
     </xsl:if>
-    <xsl:text disable-output-escaping="yes"><![CDATA[</UL>]]>&#10;</xsl:text>
+    </UL>
   </xsl:if>
 
 </xsl:template>
@@ -1007,40 +869,44 @@ Enhanced decompilation=</xsl:text>
 <xsl:template name="write.indexterm.hhk">
   <xsl:param name="text"/>
   <xsl:param name="seealso"/>
-  <xsl:variable name="text.escaped">
-    <xsl:call-template name="escape-attr">
-      <xsl:with-param name="value" select="$text"/>
-    </xsl:call-template>
-  </xsl:variable>
 
-  <xsl:text disable-output-escaping="yes"><![CDATA[<LI> <OBJECT type="text/sitemap">
-    <param name="Name" value="]]></xsl:text><xsl:value-of select="$text.escaped"/><xsl:text disable-output-escaping="yes"><![CDATA[">]]></xsl:text>
+  <LI> <OBJECT type="text/sitemap">&lf;
+    <param name="Name">
+      <xsl:attribute name="value">
+        <xsl:value-of select="$text"/>
+      </xsl:attribute>
+    </param>&lf;
+
       <xsl:if test="not(seealso)">
         <xsl:variable name="href">
           <xsl:call-template name="href.target.with.base.dir"/>
         </xsl:variable>
         <xsl:variable name="title">
-          <xsl:call-template name="escape-attr">
-            <xsl:with-param name="value">
-              <xsl:call-template name="nearest.title">
-                <xsl:with-param name="object" select=".."/>
-              </xsl:call-template>
-            </xsl:with-param>
-          </xsl:call-template>
+	  <xsl:call-template name="nearest.title">
+	    <xsl:with-param name="object" select=".."/>
+	  </xsl:call-template>
         </xsl:variable>
-        <xsl:text disable-output-escaping="yes"><![CDATA[<param name="Name" value="]]></xsl:text>
+
+        <param name="Name">
+          <xsl:attribute name="value">
           <xsl:value-of select="$title"/>
-        <xsl:text disable-output-escaping="yes"><![CDATA[">]]></xsl:text>
-        <xsl:text disable-output-escaping="yes"><![CDATA[<param name="Local" value="]]></xsl:text>
+          </xsl:attribute>
+        </param>&lf;
+        <param name="Local">
+          <xsl:attribute name="value">
           <xsl:value-of select="$href"/>
-        <xsl:text disable-output-escaping="yes"><![CDATA[">]]></xsl:text>
+          </xsl:attribute>
+        </param>&lf;
       </xsl:if>
+
       <xsl:if test="seealso">
-        <xsl:text disable-output-escaping="yes"><![CDATA[<param name="See Also" value="]]></xsl:text>
+        <param name="See Also">
+          <xsl:attribute name="value">
           <xsl:value-of select="$seealso"/>
-        <xsl:text disable-output-escaping="yes"><![CDATA[">]]></xsl:text>
+          </xsl:attribute>
+        </param>&lf;
       </xsl:if>
-      <xsl:text disable-output-escaping="yes"><![CDATA[ </OBJECT>]]></xsl:text>
+      </OBJECT></LI>
 </xsl:template>
 
 <xsl:template match="text()" mode="hhk"/>
@@ -1180,41 +1046,6 @@ Enhanced decompilation=</xsl:text>
     </xsl:if>
     <xsl:value-of select="document('')//h:hex/d[$digit+1]"/>
   </xsl:template>
-
-<!-- ==================================================================== -->
-<!-- Template for escaping <, & and " in attribute values. 
-     We aren't using HTML output method, so we must do this job ourselves -->
-
-<xsl:template name="escape-attr">
-  <xsl:param name="value"/>
-
-  <xsl:variable name="amp.escaped">
-    <xsl:call-template name="string.subst">
-      <xsl:with-param name="string" select="$value"/>
-      <xsl:with-param name="target" select="'&amp;'"/>
-      <xsl:with-param name="replacement" select="'&amp;amp;'"/>
-    </xsl:call-template>
-  </xsl:variable>
-
-  <xsl:variable name="quot.escaped">
-    <xsl:call-template name="string.subst">
-      <xsl:with-param name="string" select="$amp.escaped"/>
-      <xsl:with-param name="target" select="'&quot;'"/>
-      <xsl:with-param name="replacement" select="'&amp;quot;'"/>
-    </xsl:call-template>
-  </xsl:variable>
-
-  <xsl:variable name="angle.escaped">
-    <xsl:call-template name="string.subst">
-      <xsl:with-param name="string" select="$quot.escaped"/>
-      <xsl:with-param name="target" select="'&lt;'"/>
-      <xsl:with-param name="replacement" select="'&amp;lt;'"/>
-    </xsl:call-template>
-  </xsl:variable>
-
-  <xsl:value-of select="$angle.escaped"/>
-
-</xsl:template>
 
 <!-- ==================================================================== -->
 <!-- Modification to standard HTML stylesheets -->

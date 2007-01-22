@@ -2,7 +2,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
                 xmlns:stbl="http://nwalsh.com/xslt/ext/com.nwalsh.saxon.Table"
-                xmlns:xtbl="com.nwalsh.xalan.Table"
+                xmlns:xtbl="xalan://com.nwalsh.xalan.Table"
                 xmlns:lxslt="http://xml.apache.org/xslt"
                 xmlns:ptbl="http://nwalsh.com/xslt/ext/xsltproc/python/Table"
                 exclude-result-prefixes="doc stbl xtbl lxslt ptbl"
@@ -11,7 +11,7 @@
 <xsl:include href="../common/table.xsl"/>
 
 <!-- ********************************************************************
-     $Id: table.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: table.xsl,v 1.4 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -141,7 +141,7 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="tgroup" name="tgroup">
-  <xsl:if test="not(@cols)">
+  <xsl:if test="not(@cols) or @cols = '' or string(number(@cols)) = 'NaN'">
     <xsl:message terminate="yes">
       <xsl:text>Error: CALS tables must specify the number of columns.</xsl:text>
     </xsl:message>
@@ -233,7 +233,7 @@
       <xsl:when test="$table.borders.with.css != 0">
         <xsl:attribute name="border">0</xsl:attribute>
         <xsl:choose>
-          <xsl:when test="../@frame='all'">
+          <xsl:when test="../@frame='all' or (not(../@frame) and $default.table.frame='all')">
             <xsl:attribute name="style">
               <xsl:text>border-collapse: collapse;</xsl:text>
               <xsl:call-template name="border">
@@ -262,7 +262,7 @@
               </xsl:call-template>
             </xsl:attribute>
           </xsl:when>
-          <xsl:when test="../@frame='topbot'">
+          <xsl:when test="../@frame='topbot' or (not(../@frame) and $default.table.frame='topbot')">
             <xsl:attribute name="style">
               <xsl:text>border-collapse: collapse;</xsl:text>
               <xsl:call-template name="border">
@@ -279,7 +279,7 @@
               </xsl:call-template>
             </xsl:attribute>
           </xsl:when>
-          <xsl:when test="../@frame='top'">
+          <xsl:when test="../@frame='top' or (not(../@frame) and $default.table.frame='top')">
             <xsl:attribute name="style">
               <xsl:text>border-collapse: collapse;</xsl:text>
               <xsl:call-template name="border">
@@ -290,7 +290,7 @@
               </xsl:call-template>
             </xsl:attribute>
           </xsl:when>
-          <xsl:when test="../@frame='bottom'">
+          <xsl:when test="../@frame='bottom' or (not(../@frame) and $default.table.frame='bottom')">
             <xsl:attribute name="style">
               <xsl:text>border-collapse: collapse;</xsl:text>
               <xsl:call-template name="border">
@@ -301,7 +301,7 @@
               </xsl:call-template>
             </xsl:attribute>
           </xsl:when>
-          <xsl:when test="../@frame='sides'">
+          <xsl:when test="../@frame='sides' or (not(../@frame) and $default.table.frame='sides')">
             <xsl:attribute name="style">
               <xsl:text>border-collapse: collapse;</xsl:text>
               <xsl:call-template name="border">
@@ -325,7 +325,7 @@
           </xsl:otherwise>
         </xsl:choose>
       </xsl:when>
-      <xsl:when test="../@frame='none' or local-name(.) = 'entrytbl'">
+      <xsl:when test="../@frame='none' or (not(../@frame) and $default.table.frame='none') or local-name(.) = 'entrytbl'">
         <xsl:attribute name="border">0</xsl:attribute>
       </xsl:when>
       <xsl:otherwise>
@@ -525,6 +525,44 @@
 <xsl:template match="row">
   <xsl:param name="spans"/>
 
+  <xsl:choose>
+    <xsl:when test="contains($spans, '0')">
+      <xsl:call-template name="normal-row">
+	<xsl:with-param name="spans" select="$spans"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <!--
+      <xsl:message>
+	<xsl:text>Ignoring row: </xsl:text>
+	<xsl:value-of select="$spans"/>
+	<xsl:text> = </xsl:text>
+	<xsl:call-template name="consume-row">
+	  <xsl:with-param name="spans" select="$spans"/>
+	</xsl:call-template>
+      </xsl:message>
+      -->
+
+      <xsl:if test="normalize-space(.//text()) != ''">
+	<xsl:message>Warning: overlapped row contains content!</xsl:message>
+      </xsl:if>
+
+      <tr><xsl:comment> This row intentionally left blank </xsl:comment></tr>
+
+      <xsl:apply-templates select="following-sibling::row[1]">
+	<xsl:with-param name="spans">
+	  <xsl:call-template name="consume-row">
+	    <xsl:with-param name="spans" select="$spans"/>
+	  </xsl:call-template>
+	</xsl:with-param>
+      </xsl:apply-templates>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template name="normal-row">
+  <xsl:param name="spans"/>
+
   <xsl:variable name="row-height">
     <xsl:if test="processing-instruction('dbhtml')">
       <xsl:call-template name="dbhtml-attribute">
@@ -681,6 +719,10 @@
       <xsl:when test="not(ancestor-or-self::row[1]/following-sibling::row
                           or ancestor-or-self::thead/following-sibling::tbody
                           or ancestor-or-self::tbody/preceding-sibling::tfoot)">
+        <xsl:value-of select="0"/>
+      </xsl:when>
+      <xsl:when test="@morerows and not(@morerows &lt; 
+                 count(ancestor-or-self::row[1]/following-sibling::row))">
         <xsl:value-of select="0"/>
       </xsl:when>
       <xsl:otherwise>

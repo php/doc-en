@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: fop.xsl,v 1.4 2005-07-15 08:27:48 techtonik Exp $
+     $Id: fop.xsl,v 1.5 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
      (c) Stephane Bline Peregrine Systems 2001
      Driver file to allow pdf bookmarking (based on fop implementation).
@@ -23,6 +23,9 @@ translates characters with code>255 back to ASCII.
 "'aaaccccddeeeeeegggghhiiiiijklllllnnnnooorrrsssstttuuuuuuwyzzzAAACCCCDDEEEEEEGGGGHHIIIIIJKLLLLLNNNNOOORRRSSSSTTTUUUUUUWYYZZZ'"/>
 
 <xsl:template match="*" mode="fop.outline">
+  <xsl:if test="@id">
+    <fox:destination internal-destination="{@id}"/>
+  </xsl:if>
   <xsl:apply-templates select="*" mode="fop.outline"/>
 </xsl:template>
 
@@ -79,6 +82,7 @@ translates characters with code>255 back to ASCII.
       <xsl:apply-templates select="*" mode="fop.outline"/>
     </xsl:otherwise>
   </xsl:choose>
+  <fox:destination internal-destination="{$id}"/>
 </xsl:template>
 
 </xsl:stylesheet>

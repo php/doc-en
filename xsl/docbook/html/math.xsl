@@ -1,9 +1,11 @@
 <?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:mml="http://www.w3.org/1998/Math/MathML"
+                exclude-result-prefixes="mml"
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: math.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: math.xsl,v 1.4 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -17,6 +19,12 @@
 </xsl:template>
 
 <xsl:template match="alt">
+</xsl:template>
+
+<xsl:template match="mathphrase">
+  <span class="{local-name(.)}">
+    <xsl:apply-templates/>
+  </span>
 </xsl:template>
 
 <!-- "Support" for MathML -->

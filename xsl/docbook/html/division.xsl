@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: division.xsl,v 1.3 2004-10-01 16:32:08 techtonik Exp $
+     $Id: division.xsl,v 1.4 2007-01-22 11:35:12 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -15,7 +15,12 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="set">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
@@ -25,14 +30,18 @@
 
     <xsl:call-template name="set.titlepage"/>
 
+    <xsl:variable name="toc.params">
+      <xsl:call-template name="find.path.params">
+	<xsl:with-param name="table" select="normalize-space($generate.toc)"/>
+      </xsl:call-template>
+    </xsl:variable>
+
     <xsl:call-template name="make.lots">
-      <xsl:with-param name="toc.params">
-        <xsl:call-template name="find.path.params">
-          <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
-        </xsl:call-template>
-      </xsl:with-param>
+      <xsl:with-param name="toc.params" select="$toc.params"/>
       <xsl:with-param name="toc">
-        <xsl:call-template name="set.toc"/>
+        <xsl:call-template name="set.toc">
+	  <xsl:with-param name="toc.title.p" select="contains($toc.params, 'title')"/>
+	</xsl:call-template>
       </xsl:with-param>
     </xsl:call-template>
 
@@ -48,7 +57,12 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="book">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
@@ -60,14 +74,18 @@
 
     <xsl:apply-templates select="dedication" mode="dedication"/>
 
+    <xsl:variable name="toc.params">
+      <xsl:call-template name="find.path.params">
+	<xsl:with-param name="table" select="normalize-space($generate.toc)"/>
+      </xsl:call-template>
+    </xsl:variable>
+
     <xsl:call-template name="make.lots">
-      <xsl:with-param name="toc.params">
-        <xsl:call-template name="find.path.params">
-          <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
-        </xsl:call-template>
-      </xsl:with-param>
+      <xsl:with-param name="toc.params" select="$toc.params"/>
       <xsl:with-param name="toc">
-        <xsl:call-template name="division.toc"/>
+        <xsl:call-template name="division.toc">
+	  <xsl:with-param name="toc.title.p" select="contains($toc.params, 'title')"/>
+	</xsl:call-template>
       </xsl:with-param>
     </xsl:call-template>
 
@@ -83,7 +101,12 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="part">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
@@ -120,7 +143,12 @@
 <xsl:template match="part/subtitle"></xsl:template>
 
 <xsl:template match="partintro">
+  <xsl:call-template name="id.warning"/>
+
   <div class="{name(.)}">
+    <xsl:call-template name="dir">
+      <xsl:with-param name="inherit" select="1"/>
+    </xsl:call-template>
     <xsl:call-template name="language.attribute"/>
     <xsl:if test="$generate.id.attributes != 0">
       <xsl:attribute name="id">
@@ -169,6 +197,23 @@
 
 <xsl:template match="part" mode="division.number">
   <xsl:number from="book" count="part" format="I."/>
+</xsl:template>
+
+<!-- ==================================================================== -->
+
+<xsl:template name="division.title">
+  <xsl:param name="node" select="."/>
+
+  <h1>
+    <xsl:attribute name="class">title</xsl:attribute>
+    <xsl:call-template name="anchor">
+      <xsl:with-param name="node" select="$node"/>
+      <xsl:with-param name="conditional" select="0"/>
+    </xsl:call-template>
+    <xsl:apply-templates select="$node" mode="object.title.markup">
+      <xsl:with-param name="allow-anchors" select="1"/>
+    </xsl:apply-templates>
+  </h1>
 </xsl:template>
 
 </xsl:stylesheet>

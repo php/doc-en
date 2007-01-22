@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: subtitles.xsl,v 1.2 2004-10-01 16:32:09 techtonik Exp $
+     $Id: subtitles.xsl,v 1.3 2007-01-22 11:35:11 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -106,6 +106,14 @@ subtitle of the element.
                                 |docinfo/subtitle
                                 |info/subtitle
                                 |subtitle)[1]"
+                       mode="subtitle.markup">
+    <xsl:with-param name="allow-anchors" select="$allow-anchors"/>
+  </xsl:apply-templates>
+</xsl:template>
+
+<xsl:template match="qandaset" mode="subtitle.markup">
+  <xsl:param name="allow-anchors" select="'0'"/>
+  <xsl:apply-templates select="blockinfo/subtitle[1]"
                        mode="subtitle.markup">
     <xsl:with-param name="allow-anchors" select="$allow-anchors"/>
   </xsl:apply-templates>
