@@ -356,9 +356,9 @@
 %ISOgrk3;
 ]]>
 
-<![ %ISOgrk4.module; [
+<!-- <![ %ISOgrk4.module; [
 %ISOgrk4;
-]]>
+]]>-->
 
 <![ %ISOlat1.module; [
 %ISOlat1;
