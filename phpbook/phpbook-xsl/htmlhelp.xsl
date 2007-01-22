@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.1 2007-01-22 14:09:56 bjori Exp $
+  $Id: htmlhelp.xsl,v 1.2 2007-01-22 22:19:09 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -44,8 +44,8 @@
 
 <!-- - BASED ON 1.66.1 HTMLHELP.XSL DOCBOOK XSL STYLESHEET - -->
 
-<xsl:import href="./docbook/docbook-xsl/html/chunk.xsl"/>
-<xsl:import href="./docbook/docbook-xsl/htmlhelp/htmlhelp-common.xsl"/>
+<xsl:import href="../../docbook/docbook-xsl/html/chunk.xsl"/>
+<xsl:import href="../../docbook/docbook-xsl/htmlhelp/htmlhelp-common.xsl"/>
 <xsl:import href="common.xsl"/>
 
 <!-- configure/able/ parameters -->
