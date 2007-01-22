@@ -1,0 +1,352 @@
+<!DOCTYPE style-sheet PUBLIC "-//James Clark//DTD DSSSL Style Sheet//EN" [
+<!ENTITY docbook.dsl SYSTEM "@DOCBOOK_PRINT@" CDATA DSSSL>
+<!ENTITY common.dsl SYSTEM "common.dsl">
+<!ENTITY pdflevels.dsl SYSTEM "@srcdir@/pdflevels.dsl">
+<!ENTITY version.dsl SYSTEM "@srcdir@/version.dsl">
+]>
+
+<!--
+
+  $Id$
+
+  This file contains printout-specific stylesheet customization.
+
+-->
+
+<style-sheet>
+<style-specification id="local-php-print" use="docbook">
+<style-specification-body>
+
+<!-- 
+  override default setting for some output parameters 
+  (defaults are defined in /usr/share/sgml/docbkdsl/print/dbparam.dsl)
+-->
+(define %paper-type% "@PAPER_TYPE@")
+@LEFT_MARGIN@
+@RIGHT_MARGIN@
+@TOP_MARGIN@
+@HEADER_MARGIN@
+@FOOTER_MARGIN@
+@BOTTOM_MARGIN@
+@LINE_SPACING@
+@HEAD_BEFORE@
+@HEAD_AFTER@
+@BODY_START@
+@BLOCK_SEP@
+
+&version.dsl;
+
+&pdflevels.dsl;
+
+(define (linebreak) (literal " \\linebreak "))
+
+(define ($refentry-title$)
+  (let* ((refmeta (select-elements (children (current-node)) (normalize "refmeta")))
+	 (refentrytitle (select-elements (children refmeta)        (normalize "refentrytitle")))
+	 (refnamediv    (select-elements (children (current-node)) (normalize "refnamediv")))
+	 (refdescriptor (select-elements (children refnamediv)     (normalize "refdescriptor")))
+	 (refname       (select-elements (children refnamediv)     (normalize "refname")))
+	 (title         (if (node-list-empty? refentrytitle)
+											(if (node-list-empty? refdescriptor)
+													(node-list-first refname)
+													refdescriptor)
+											refentrytitle))
+	 (slevel (SECTLEVEL)) ;; the true level in the section hierarchy
+	 (hlevel (if (> slevel 2) 2 slevel)) ;; limit to sect2 equiv.
+	 (hs (HSIZE (- 4 hlevel))))
+    (make paragraph
+      font-family-name: %title-font-family%
+      font-weight: 'bold
+      font-size: hs
+      line-spacing: (* hs %line-spacing-factor%)
+      space-before: (* hs %head-before-factor%)
+      space-after: (* hs %head-after-factor%)
+      start-indent: %body-start-indent%
+      first-line-start-indent: (- %body-start-indent%)
+      quadding: 'start
+      heading-level: (if %generate-heading-level% 3 0)
+      keep-with-next?: #t
+			(make sequence
+				(process-node-list (children title))
+				(make sequence
+					font-weight: 'light
+					font-size: (* 0.5 (inherited-font-size))
+					font-posture: 'italic
+					(literal "    (")
+					(version-info title)
+					(literal ")")
+					)
+				)
+			)
+		)
+	)
+
+(element refentry 
+  (make display-group
+    keep: %refentry-keep%
+    (if (or %refentry-new-page%
+	    (node-list=? (current-node) (sgml-root-element)))
+	(make simple-page-sequence
+	  page-n-columns: %page-n-columns%
+	  page-number-format: ($page-number-format$)
+	  use: default-text-style
+	  left-header:   ($left-header$)
+	  center-header: ($center-header$)
+	  right-header:  ($right-header$)
+	  left-footer:   ($left-footer$)
+	  center-footer: ($center-footer$)
+	  right-footer:  ($right-footer$)
+	  input-whitespace-treatment: 'collapse
+	  quadding: %default-quadding%
+	  ($refentry-title$)
+	  (process-children))
+	(make sequence
+	  ($refentry-title$)
+	  ($block-container$)))
+    (make-endnotes)))
+
+
+
+(element refname
+  (make sequence
+    (if (and %refentry-generate-name% (first-sibling? (current-node)))
+        ($lowtitlewithsosofo$ 1 (literal (gentext-element-name
+                                          (current-node))))
+        (empty-sosofo))
+		)
+	)
+
+(element refsect1
+  (if (node-list=? (current-node) (sgml-root-element))
+      (make simple-page-sequence
+        page-n-columns: %page-n-columns%
+        page-number-restart?: (or %page-number-restart%
+                                  (book-start?)
+                                  (first-chapter?))
+        page-number-format: ($page-number-format$)
+        use: default-text-style
+        left-header:   ($left-header$)
+        center-header: ($center-header$)
+        right-header:  ($right-header$)
+        left-footer:   ($left-footer$)
+        center-footer: ($center-footer$)
+        right-footer:  ($right-footer$)
+        start-indent: %body-start-indent%
+        input-whitespace-treatment: 'collapse
+        quadding: %default-quadding%
+        (make sequence         
+          (process-children)))
+      (make display-group
+        space-before: %block-sep%
+        space-after: 0in
+        start-indent: %body-start-indent%
+        (make sequence         
+          (process-children)))))
+
+(element (funcdef function) 
+	($bold-seq$
+	 (make sequence
+		 (process-children)
+		 )
+	 )
+	)
+
+
+(element refpurpose
+  (make sequence
+        font-family-name: %body-font-family%
+    (make sequence
+      (process-children))
+))
+
+
+(element funcsynopsis
+  (let* ((width-in-chars (if (attribute-string "width")
+                             (string->number (attribute-string "width"))
+                             %verbatim-default-width%))
+         (fsize (lambda () (if (or (attribute-string (normalize "width"))
+                                   (not %verbatim-size-factor%))
+                               (/ (/ (- %text-width% (inherited-start-indent))
+                                     width-in-chars)
+                                  0.7)
+                               (* (inherited-font-size)
+                                  %verbatim-size-factor%)))))
+    ;; This used to be a sequence, but that caused the start-indent to be
+    ;; wrong when it was the first element of a RefSect.  Making it a
+    ;; paragraph makes the bug go away and doesn't seem to have any ill
+    ;; effects.  Need to investigate further...
+    (make paragraph
+      font-family-name: %mono-font-family%
+      font-size: (fsize)
+      font-weight: 'medium
+      font-posture: 'upright
+      line-spacing: (* (fsize) %line-spacing-factor%)
+      ($informal-object$))))
+
+
+
+;; there are two different kinds of optionals
+;; optional parameters and optional parameter parts
+;; an optional parameter is identified by an optional tag
+;; with a parameter tag as its parent 
+;; and only whitespace between them
+
+(element optional 
+	;;check for true optional parameter
+    (if (is-true-optional (current-node))
+				;; yes - handle '[...]' in paramdef
+				(process-children-trim) 
+				;; no - do '[...]' output
+				(make sequence
+					(literal %arg-choice-opt-open-str%)
+					(process-children-trim)
+					(literal %arg-choice-opt-close-str%)
+					)
+				)
+		)		
+
+(element (paramdef parameter)
+	(make sequence
+    font-posture: 'italic                                                       
+		(process-children-trim)
+		)
+	)                                                       
+
+;; now this is going to be tricky
+(element paramdef  
+  (make sequence
+		;; special treatment for first parameter in funcsynopsis
+    (if (equal? (child-number (current-node)) 1)
+				;; is first ?
+				(make sequence
+					;; start parameter list
+					(literal " (") 
+					;; is optional ?
+					( if (has-true-optional (current-node))
+							 (literal %arg-choice-opt-open-str%)
+							 (empty-sosofo)
+							 )
+					)
+				;; not first
+				(empty-sosofo)
+				)
+
+		;;
+    (process-children-trim)
+
+		;; special treatment for last parameter 
+    (if (equal? (gi (ifollow (current-node))) (normalize "paramdef"))					
+				;; more parameters will follow
+				(make sequence
+					;; next is optional ?
+					( if (has-true-optional (ifollow (current-node)))
+						;; optional
+						(make sequence
+							(literal " ")
+							(literal %arg-choice-opt-open-str%)
+							)
+						;; not optional
+						(empty-sosofo)
+						)
+					(literal ", " )				 				 
+					)
+				;; last parameter
+				(make sequence
+					(literal 
+					 (let loop ((result "")(count (count-true-optionals (parent (current-node)))))
+						 (if (<= count 0)
+								 result
+								 (loop (string-append result %arg-choice-opt-close-str%)(- count 1))
+								 )
+						 )
+					 )
+					 ( literal ")" )
+					 )
+					)
+				)
+		)
+
+(element function
+	;; TODO make context aware as in html-common.dsl, maybe merge code into a common function?
+  (let* ((function-name (data (current-node)))
+     (linkend 
+      (string-append
+       "function." 
+       (string-replace
+        (string-replace function-name "_" "-")
+        "::" ".")))
+     (target (element-with-id linkend))
+     (parent-gi (gi (parent))))
+    (cond
+     ;; function names should be plain in FUNCDEF
+     ((equal? parent-gi "funcdef")
+      (process-children))
+     
+     ;; if a valid ID for the target function is not found, or if the
+     ;; FUNCTION tag is within the definition of the same function,
+     ;; make it bold, add (), but don't make a link
+     ((or (node-list-empty? target)
+      (equal? (case-fold-down
+           (data (node-list-first
+              (select-elements
+               (node-list-first
+                (children
+                 (select-elements
+                  (children
+                   (ancestor-member (parent) (list "refentry")))
+                  "refnamediv")))
+               "refname"))))
+          function-name))
+      ($bold-seq$
+       (make sequence
+     (process-children)
+     (literal "()"))))
+     
+     ;; else make a link to the function and add ()
+     (else
+      (make sequence
+	(make link
+	  destination: (node-list-address target)
+	  )
+	(literal "()"))))))
+
+;; Special handling of note role="seealso"
+(define ($admonpara$)
+  (let* ((title     (select-elements 
+		     (children (parent (current-node))) (normalize "title")))
+	 (has-title (not (node-list-empty? title)))
+	 (adm-title (if has-title 
+			(make sequence
+			  (with-mode title-sosofo-mode
+			    (process-node-list (node-list-first title)))
+			  (literal (gentext-label-title-sep 
+				    (gi (parent (current-node))))))
+			(literal
+			 (gentext-element-name 
+			  (if (equal? (normalize "seealso") (attribute-string (normalize "role") (parent (current-node))))
+			   (normalize "seealsoie")
+			   (parent (current-node))))
+			 (gentext-label-title-sep 
+			  (gi (parent (current-node))))))))
+    (make paragraph
+      space-before: %para-sep%
+      space-after: %para-sep%
+      (if (and (not %admon-graphics%) (= (child-number) 1))
+	  (make sequence
+	    font-family-name: %title-font-family%
+	    font-weight: 'bold
+	    adm-title)
+	  (empty-sosofo))
+      (process-children-trim))))
+
+
+&common.dsl;
+
+
+
+</style-specification-body>
+</style-specification>
+
+<external-specification id="docbook" document="docbook.dsl">
+
+</style-sheet>
