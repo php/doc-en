@@ -29,7 +29,8 @@
 (define (dbhtml-findvalue pi-field-list name)
   ;; pi-field-list is '(pitarget name1 value1 name2 value2 ...)
   (let loop ((slist (cdr pi-field-list)))
-    (if (null? slist)
+    (if (or (null? slist)
+            (not (pair? slist)))
 	#f
 	(if (string=? (car slist) name)
 	    (car (cdr slist))

@@ -8,9 +8,7 @@
 ;; following definition:
 
 (define (stylesheet-version)
-  (let* ((version "&VERSION;")
-	 (verslen (string-length version)))
-    (string-append
-     "Modular DocBook Print Stylesheet Version "
-     ;; trim off the trailing newline
-     (substring version 0 (- verslen 1)))))
+  (string-append
+   "Modular DocBook Print Stylesheet Version "
+   ;; Trim off bounding white space.
+   (strip "&VERSION;")))

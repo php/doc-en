@@ -57,6 +57,7 @@
   (let ((id (attribute-string (normalize "id"))))
     (make sequence
       (make element gi: "LI"
+            attributes: (list (list "CLASS" (gi)))
 	    (if id
 		(make element gi: "A"
 		      attributes: (list

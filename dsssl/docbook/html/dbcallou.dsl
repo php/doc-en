@@ -62,7 +62,7 @@
 					       (string-append
 						%callout-graphics-path%
 						number
-						%callout-graphics-extension%)))
+						%stock-graphics-extension%)))
 					(list "HSPACE" "0")
 					(list "VSPACE" "0")
 					(list "BORDER" "0")

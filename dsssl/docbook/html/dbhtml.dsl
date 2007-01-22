@@ -97,21 +97,31 @@
     (if make-entity?
 	(make entity
 	  system-id: (html-entity-file (html-file))
-	  (if %html-pubid%
-	      (make document-type
-		name: "HTML"
-		public-id: %html-pubid%)
-	      (empty-sosofo))
+	  (html-doctype)
 	  doc-sosofo)
 	(if (node-list=? (current-node) (sgml-root-element))
 	    (make sequence
-	      (if %html-pubid%
-		  (make document-type
-		    name: "HTML"
-		    public-id: %html-pubid%)
-		  (empty-sosofo))
+	      (html-doctype)
 	      doc-sosofo)
 	    doc-sosofo))))
+
+(define (html-doctype)
+  (cond
+   ((and %html-pubid% %html-sysid%)
+    (make document-type
+      name: "HTML"
+      public-id: %html-pubid%
+      system-id: %html-sysid%))
+   (%html-pubid%
+    (make document-type
+      name: "HTML"
+      public-id: %html-pubid%))
+   (%html-sysid%
+    (make document-type
+      name: "HTML"
+      system-id: %html-sysid%))
+   (else
+    (empty-sosofo))))
 
 (define ($standard-html-header$ #!optional
 				(prev  (prev-chunk-element))

@@ -721,10 +721,19 @@
       (process-children)))
 
   (element othercredit
-    (make paragraph
-      use: set-titlepage-recto-style
-      quadding: %division-title-quadding%
-      (process-children)))
+    (let ((author-name  (author-string))
+	  (author-affil (select-elements (children (current-node)) 
+					 (normalize "affiliation"))))
+      (make sequence      
+	(make paragraph
+          use: set-titlepage-recto-style
+	  font-size: (HSIZE 3)
+	  line-spacing: (* (HSIZE 3) %line-spacing-factor%)
+	  space-before: (* (HSIZE 2) %head-before-factor%)
+	  quadding: %division-title-quadding%
+	  keep-with-next?: #t
+	  (literal author-name))
+	(process-node-list author-affil))))
 
   (element othername
     (make paragraph
@@ -805,7 +814,9 @@
 	  (revauthor (select-elements (descendants (current-node))
 				      (normalize "authorinitials")))
 	  (revremark (select-elements (descendants (current-node))
-				      (normalize "revremark"))))
+				      (normalize "revremark")))
+	  (revdescription (select-elements (descendants (current-node))
+				      (normalize "revdescription"))))
       (make sequence
 	(make table-row
 	  (make table-cell
@@ -859,21 +870,28 @@
 	    n-columns-spanned: 3
 	    n-rows-spanned: 1
 	    start-indent: 0pt
-	    (if (not (node-list-empty? revremark))
-		(make paragraph
-		  use: set-titlepage-recto-style
-		  font-size: %bf-size%
-		  font-weight: 'medium
-		  space-after: (if (last-sibling?) 
-				   0pt
-				   (/ %block-sep% 2))
-		  (process-node-list revremark))
-		(empty-sosofo)))))))
+	    (cond ((not (node-list-empty? revremark))
+		   (make paragraph
+		     use: set-titlepage-recto-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     space-after: (if (last-sibling?) 
+				      0pt
+				      (/ %block-sep% 2))
+		     (process-node-list revremark)))
+		  ((not (node-list-empty? revdescription))
+		   (make sequence
+		     use: set-titlepage-recto-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     (process-node-list revdescription)))
+		(else (empty-sosofo))))))))
   
   (element (revision revnumber) (process-children-trim))
   (element (revision date) (process-children-trim))
   (element (revision authorinitials) (process-children-trim))
   (element (revision revremark) (process-children-trim))
+  (element (revision revdescription) (process-children))
 
   (element seriesvolnums
     (make paragraph
@@ -1177,9 +1195,18 @@
       (process-children)))
 
   (element othercredit
-    (make paragraph
-      use: set-titlepage-verso-style
-      (process-children)))
+    ;; Print the author name.  Handle the case where there's no AUTHORGROUP
+    (let ((in-group (have-ancestor? (normalize "authorgroup") (current-node))))
+      (if (not in-group)
+	  (make paragraph
+	    ;; Hack to get the spacing right below the author name line...
+	    space-after: (* %bf-size% %line-spacing-factor%)
+	    (make sequence
+	      (literal (gentext-by))
+	      (literal "\no-break-space;")
+	      (literal (author-list-string))))
+	  (make sequence 
+	    (literal (author-list-string))))))  
 
   (element othername
     (make paragraph
@@ -1250,7 +1277,9 @@
 	  (revauthor (select-elements (descendants (current-node))
 				      (normalize "authorinitials")))
 	  (revremark (select-elements (descendants (current-node))
-				      (normalize "revremark"))))
+				      (normalize "revremark")))
+	  (revdescription (select-elements (descendants (current-node))
+				      (normalize "revdescription"))))
       (make sequence
 	(make table-row
 	  (make table-cell
@@ -1304,21 +1333,29 @@
 	    n-columns-spanned: 3
 	    n-rows-spanned: 1
 	    start-indent: 0pt
-	    (if (not (node-list-empty? revremark))
-		(make paragraph
-		  use: set-titlepage-verso-style
-		  font-size: %bf-size%
-		  font-weight: 'medium
-		  space-after: (if (last-sibling?) 
-				   0pt
-				   (/ %block-sep% 2))
-		  (process-node-list revremark))
-		(empty-sosofo)))))))
+	    (cond ((not (node-list-empty? revremark))
+		   (make paragraph
+		     use: set-titlepage-verso-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     space-after: (if (last-sibling?) 
+				      0pt
+				      (/ %block-sep% 2))
+		     ;(process-node-list revremark)))
+		     (empty-sosofo)))
+		  ((not (node-list-empty? revdescription))
+		   (make sequence
+		     use: set-titlepage-verso-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     (process-node-list revdescription)))
+		(else (empty-sosofo))))))))
   
   (element (revision revnumber) (process-children-trim))
   (element (revision date) (process-children-trim))
   (element (revision authorinitials) (process-children-trim))
   (element (revision revremark) (process-children-trim))
+  (element (revision revdescription) (process-children))
 
   (element seriesvolnums
     (make paragraph
@@ -2028,10 +2065,19 @@
       (process-children)))
 
   (element othercredit
-    (make paragraph
-      use: book-titlepage-recto-style
-      quadding: %division-title-quadding%
-      (process-children)))
+    (let ((author-name  (author-string))
+	  (author-affil (select-elements (children (current-node)) 
+					 (normalize "affiliation"))))
+      (make sequence      
+	(make paragraph
+	  use: book-titlepage-recto-style
+	  font-size: (HSIZE 3)
+	  line-spacing: (* (HSIZE 3) %line-spacing-factor%)
+	  space-before: (* (HSIZE 2) %head-before-factor%)
+	  quadding: %division-title-quadding%
+	  keep-with-next?: #t
+	  (literal author-name))
+	(process-node-list author-affil))))
 
   (element othername
     (make paragraph
@@ -2112,7 +2158,9 @@
 	  (revauthor (select-elements (descendants (current-node))
 				      (normalize "authorinitials")))
 	  (revremark (select-elements (descendants (current-node))
-				      (normalize "revremark"))))
+				      (normalize "revremark")))
+	  (revdescription (select-elements (descendants (current-node))
+				      (normalize "revdescription"))))
       (make sequence
 	(make table-row
 	  (make table-cell
@@ -2166,21 +2214,28 @@
 	    n-columns-spanned: 3
 	    n-rows-spanned: 1
 	    start-indent: 0pt
-	    (if (not (node-list-empty? revremark))
-		(make paragraph
-		  use: book-titlepage-recto-style
-		  font-size: %bf-size%
-		  font-weight: 'medium
-		  space-after: (if (last-sibling?) 
-				   0pt
-				   (/ %block-sep% 2))
-		  (process-node-list revremark))
-		(empty-sosofo)))))))
+	    (cond ((not (node-list-empty? revremark))
+		   (make paragraph
+		     use: book-titlepage-recto-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     space-after: (if (last-sibling?) 
+				      0pt
+				      (/ %block-sep% 2))
+		     (process-node-list revremark)))
+		  ((not (node-list-empty? revdescription))
+		   (make sequence
+		     use: book-titlepage-recto-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     (process-node-list revremark)))
+		  (else (empty-sosofo))))))))
   
   (element (revision revnumber) (process-children-trim))
   (element (revision date) (process-children-trim))
   (element (revision authorinitials) (process-children-trim))
   (element (revision revremark) (process-children-trim))
+  (element (revision revdescription) (process-children))
 
   (element seriesvolnums
     (make paragraph
@@ -2487,9 +2542,18 @@
       (process-children)))
 
   (element othercredit
-    (make paragraph
-      use: book-titlepage-verso-style
-      (process-children)))
+    ;; Print the author name.  Handle the case where there's no AUTHORGROUP
+    (let ((in-group (have-ancestor? (normalize "authorgroup") (current-node))))
+      (if (not in-group)
+	  (make paragraph
+	    ;; Hack to get the spacing right below the author name line...
+	    space-after: (* %bf-size% %line-spacing-factor%)
+	    (make sequence
+	      (literal (gentext-by))
+	      (literal "\no-break-space;")
+	      (literal (author-list-string))))
+	  (make sequence 
+	    (literal (author-list-string))))))  
 
   (element othername
     (make paragraph
@@ -2560,7 +2624,9 @@
 	  (revauthor (select-elements (descendants (current-node))
 				      (normalize "authorinitials")))
 	  (revremark (select-elements (descendants (current-node))
-				      (normalize "revremark"))))
+				      (normalize "revremark")))
+	  (revdescription (select-elements (descendants (current-node))
+				      (normalize "revdescription"))))
       (make sequence
 	(make table-row
 	  (make table-cell
@@ -2614,21 +2680,28 @@
 	    n-columns-spanned: 3
 	    n-rows-spanned: 1
 	    start-indent: 0pt
-	    (if (not (node-list-empty? revremark))
-		(make paragraph
-		  use: book-titlepage-verso-style
-		  font-size: %bf-size%
-		  font-weight: 'medium
-		  space-after: (if (last-sibling?) 
-				   0pt
-				   (/ %block-sep% 2))
-		  (process-node-list revremark))
-		(empty-sosofo))))))) 
+	    (cond ((not (node-list-empty? revremark))
+		   (make paragraph
+		     use: book-titlepage-verso-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     space-after: (if (last-sibling?) 
+				      0pt
+				      (/ %block-sep% 2))
+		     (process-node-list revremark)))
+		  ((not (node-list-empty? revdescription))
+		   (make sequence
+		     use: book-titlepage-verso-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     (process-node-list revdescription)))
+		(else (empty-sosofo)))))))) 
   
   (element (revision revnumber) (process-children-trim))
   (element (revision date) (process-children-trim))
   (element (revision authorinitials) (process-children-trim))
   (element (revision revremark) (process-children-trim))
+  (element (revision revdescription) (process-children))
 
   (element seriesvolnums
     (make paragraph
@@ -3340,10 +3413,19 @@
       (process-children)))
 
   (element othercredit
-    (make paragraph
-      use: part-titlepage-recto-style
-      quadding: %division-title-quadding%
-      (process-children)))
+    (let ((author-name  (author-string))
+	  (author-affil (select-elements (children (current-node)) 
+					 (normalize "affiliation"))))
+      (make sequence      
+	(make paragraph
+          use: part-titlepage-recto-style
+	  font-size: (HSIZE 3)
+	  line-spacing: (* (HSIZE 3) %line-spacing-factor%)
+	  space-before: (* (HSIZE 2) %head-before-factor%)
+	  quadding: %division-title-quadding%
+	  keep-with-next?: #t
+	  (literal author-name))
+	(process-node-list author-affil))))
 
   (element othername
     (make paragraph
@@ -3424,7 +3506,9 @@
 	  (revauthor (select-elements (descendants (current-node))
 				      (normalize "authorinitials")))
 	  (revremark (select-elements (descendants (current-node))
-				      (normalize "revremark"))))
+				      (normalize "revremark")))
+	  (revdescription (select-elements (descendants (current-node))
+				      (normalize "revdescription"))))
       (make sequence
 	(make table-row
 	  (make table-cell
@@ -3478,21 +3562,28 @@
 	    n-columns-spanned: 3
 	    n-rows-spanned: 1
 	    start-indent: 0pt
-	    (if (not (node-list-empty? revremark))
-		(make paragraph
-		  use: part-titlepage-recto-style
-		  font-size: %bf-size%
-		  font-weight: 'medium
-		  space-after: (if (last-sibling?) 
-				   0pt
-				   (/ %block-sep% 2))
-		  (process-node-list revremark))
-		(empty-sosofo))))))) 
+	    (cond ((not (node-list-empty? revremark))
+		   (make paragraph
+		     use: part-titlepage-recto-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     space-after: (if (last-sibling?) 
+				      0pt
+				      (/ %block-sep% 2))
+		     (process-node-list revremark)))
+		  ((not (node-list-empty? revdescription))
+		   (make sequence
+		     use: part-titlepage-recto-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     (process-node-list revdescription)))
+		  (else (empty-sosofo)))))))) 
   
   (element (revision revnumber) (process-children-trim))
   (element (revision date) (process-children-trim))
   (element (revision authorinitials) (process-children-trim))
   (element (revision revremark) (process-children-trim))
+  (element (revision revdescription) (process-children))
 
   (element seriesvolnums
     (make paragraph
@@ -3801,9 +3892,18 @@
       (process-children)))
 
   (element othercredit
-    (make paragraph
-      use: part-titlepage-verso-style
-      (process-children)))
+    ;; Print the author name.  Handle the case where there's no AUTHORGROUP
+    (let ((in-group (have-ancestor? (normalize "authorgroup") (current-node))))
+      (if (not in-group)
+	  (make paragraph
+	    ;; Hack to get the spacing right below the author name line...
+	    space-after: (* %bf-size% %line-spacing-factor%)
+	    (make sequence
+	      (literal (gentext-by))
+	      (literal "\no-break-space;")
+	      (literal (author-list-string))))
+	  (make sequence 
+	    (literal (author-list-string))))))  
 
   (element othername
     (make paragraph
@@ -3874,7 +3974,9 @@
 	  (revauthor (select-elements (descendants (current-node))
 				      (normalize "authorinitials")))
 	  (revremark (select-elements (descendants (current-node))
-				      (normalize "revremark"))))
+				      (normalize "revremark")))
+	  (revdescription (select-elements (descendants (current-node))
+				      (normalize "revdescription"))))
       (make sequence
 	(make table-row
 	  (make table-cell
@@ -3928,21 +4030,28 @@
 	    n-columns-spanned: 3
 	    n-rows-spanned: 1
 	    start-indent: 0pt
-	    (if (not (node-list-empty? revremark))
-		(make paragraph
-		  use: part-titlepage-verso-style
-		  font-size: %bf-size%
-		  font-weight: 'medium
-		  space-after: (if (last-sibling?) 
-				   0pt
-				   (/ %block-sep% 2))
-		  (process-node-list revremark))
-		(empty-sosofo))))))) 
+	    (cond ((not (node-list-empty? revremark))
+		   (make paragraph
+		     use: part-titlepage-verso-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     space-after: (if (last-sibling?) 
+				      0pt
+				      (/ %block-sep% 2))
+		     (process-node-list revremark)))
+		  ((not (node-list-empty? revdescription))
+		   (make sequence
+		     use: part-titlepage-verso-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     (process-node-list revremark)))
+		  (else (empty-sosofo)))))))) 
   
   (element (revision revnumber) (process-children-trim))
   (element (revision date) (process-children-trim))
   (element (revision authorinitials) (process-children-trim))
   (element (revision revremark) (process-children-trim))
+  (element (revision revdescription) (process-children))
 
   (element seriesvolnums
     (make paragraph
@@ -3999,11 +4108,15 @@
 ;;
 
 (define (article-titlepage-recto-elements)
-  (list (normalize "title") 
-	(normalize "subtitle") 
-	(normalize "corpauthor") 
-	(normalize "authorgroup") 
-	(normalize "author") 
+  (list (normalize "title")
+	(normalize "subtitle")
+	(normalize "corpauthor")
+	(normalize "authorgroup")
+	(normalize "author")
+	(normalize "releaseinfo")
+	(normalize "copyright")
+	(normalize "pubdate")
+	(normalize "revhistory")
 	(normalize "abstract")))
 
 (define (article-titlepage-verso-elements)
@@ -4619,10 +4732,19 @@
       (process-children)))
 
   (element othercredit
-    (make paragraph
-      use: article-titlepage-recto-style
-      quadding: %article-title-quadding%
-      (process-children)))
+    (let ((author-name  (author-string))
+	  (author-affil (select-elements (children (current-node)) 
+					 (normalize "affiliation"))))
+      (make sequence      
+	(make paragraph
+          use: article-titlepage-recto-style
+	  font-size: (HSIZE 3)
+	  line-spacing: (* (HSIZE 3) %line-spacing-factor%)
+	  space-before: (* (HSIZE 2) %head-before-factor%)
+	  quadding: %article-title-quadding%
+	  keep-with-next?: #t
+	  (literal author-name))
+	(process-node-list author-affil))))
 
   (element othername
     (make paragraph
@@ -4703,7 +4825,9 @@
 	  (revauthor (select-elements (descendants (current-node))
 				      (normalize "authorinitials")))
 	  (revremark (select-elements (descendants (current-node))
-				      (normalize "revremark"))))
+				      (normalize "revremark")))
+	  (revdescription (select-elements (descendants (current-node))
+				      (normalize "revdescription"))))
       (make sequence
 	(make table-row
 	  (make table-cell
@@ -4757,21 +4881,28 @@
 	    n-columns-spanned: 3
 	    n-rows-spanned: 1
 	    start-indent: 0pt
-	    (if (not (node-list-empty? revremark))
-		(make paragraph
-		  use: article-titlepage-recto-style
-		  font-size: %bf-size%
-		  font-weight: 'medium
-		  space-after: (if (last-sibling?) 
-				   0pt
-				   (/ %block-sep% 2))
-		  (process-node-list revremark))
-		(empty-sosofo)))))))
+	    (cond ((not (node-list-empty? revremark))
+		   (make paragraph
+		     use: article-titlepage-recto-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     space-after: (if (last-sibling?) 
+				      0pt
+				      (/ %block-sep% 2))
+		     (process-node-list revremark)))
+		  ((not (node-list-empty? revdescription))
+		   (make sequence
+		     use: article-titlepage-recto-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     (process-node-list revdescription)))
+		  (else (empty-sosofo))))))))
   
   (element (revision revnumber) (process-children-trim))
   (element (revision date) (process-children-trim))
   (element (revision authorinitials) (process-children-trim))
   (element (revision revremark) (process-children-trim))
+  (element (revision revdescription) (process-children))
 
   (element seriesvolnums
     (make paragraph
@@ -5074,9 +5205,18 @@
       (process-children)))
 
   (element othercredit
-    (make paragraph
-      use: article-titlepage-verso-style
-      (process-children)))
+    ;; Print the author name.  Handle the case where there's no AUTHORGROUP
+    (let ((in-group (have-ancestor? (normalize "authorgroup") (current-node))))
+      (if (not in-group)
+	  (make paragraph
+	    ;; Hack to get the spacing right below the author name line...
+	    space-after: (* %bf-size% %line-spacing-factor%)
+	    (make sequence
+	      (literal (gentext-by))
+	      (literal "\no-break-space;")
+	      (literal (author-list-string))))
+	  (make sequence 
+	    (literal (author-list-string))))))  
 
   (element othername
     (make paragraph
@@ -5149,7 +5289,9 @@
 	  (revauthor (select-elements (descendants (current-node))
 				      (normalize "authorinitials")))
 	  (revremark (select-elements (descendants (current-node))
-				      (normalize "revremark"))))
+				      (normalize "revremark")))
+	  (revdescription (select-elements (descendants (current-node))
+				      (normalize "revdescription"))))
       (make sequence
 	(make table-row
 	  cell-after-row-border: #f
@@ -5204,21 +5346,28 @@
 	    n-columns-spanned: 3
 	    n-rows-spanned: 1
 	    start-indent: 0pt
-	    (if (not (node-list-empty? revremark))
-		(make paragraph
-		  use: article-titlepage-verso-style
-		  font-size: %bf-size%
-		  font-weight: 'medium
-		  space-after: (if (last-sibling?) 
-				   0pt
-				   (/ %block-sep% 2))
-		  (process-node-list revremark))
-		(empty-sosofo))))))) 
+	    (cond ((not (node-list-empty? revremark))
+		   (make paragraph
+		     use: article-titlepage-verso-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     space-after: (if (last-sibling?) 
+				      0pt
+				      (/ %block-sep% 2))
+		     (process-node-list revremark)))
+		  ((not (node-list-empty? revdescription))
+		   (make sequence
+		     use: article-titlepage-verso-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     (process-node-list revdescription)))
+		  (else (empty-sosofo)))))))) 
   
   (element (revision revnumber) (process-children-trim))
   (element (revision date) (process-children-trim))
   (element (revision authorinitials) (process-children-trim))
   (element (revision revremark) (process-children-trim))
+  (element (revision revdescription) (process-children))
 
   (element seriesvolnums
     (make paragraph
@@ -5935,10 +6084,19 @@
       (process-children)))
 
   (element othercredit
-    (make paragraph
-      use: reference-titlepage-recto-style
-      quadding: %division-title-quadding%
-      (process-children)))
+    (let ((author-name  (author-string))
+	  (author-affil (select-elements (children (current-node)) 
+					 (normalize "affiliation"))))
+      (make sequence      
+	(make paragraph
+	  use: reference-titlepage-recto-style
+	  font-size: (HSIZE 3)
+	  line-spacing: (* (HSIZE 3) %line-spacing-factor%)
+	  space-before: (* (HSIZE 2) %head-before-factor%)
+	  quadding: %division-title-quadding%
+	  keep-with-next?: #t
+	  (literal author-name))
+	(process-node-list author-affil))))
 
   (element othername
     (make paragraph
@@ -6019,7 +6177,9 @@
 	  (revauthor (select-elements (descendants (current-node))
 				      (normalize "authorinitials")))
 	  (revremark (select-elements (descendants (current-node))
-				      (normalize "revremark"))))
+				      (normalize "revremark")))
+	  (revdescription (select-elements (descendants (current-node))
+				      (normalize "revdescription"))))
       (make sequence
 	(make table-row
 	  (make table-cell
@@ -6073,21 +6233,28 @@
 	    n-columns-spanned: 3
 	    n-rows-spanned: 1
 	    start-indent: 0pt
-	    (if (not (node-list-empty? revremark))
-		(make paragraph
-		  use: reference-titlepage-recto-style
-		  font-size: %bf-size%
-		  font-weight: 'medium
-		  space-after: (if (last-sibling?) 
-				   0pt
-				   (/ %block-sep% 2))
-		  (process-node-list revremark))
-		(empty-sosofo))))))) 
+	    (cond ((not (node-list-empty? revremark))
+		   (make paragraph
+		     use: reference-titlepage-recto-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     space-after: (if (last-sibling?) 
+				      0pt
+				      (/ %block-sep% 2))
+		     (process-node-list revremark)))
+		  ((not (node-list-empty? revdescription))
+		   (make sequence
+		     use: reference-titlepage-recto-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     (process-node-list revdescription)))
+		(else (empty-sosofo)))))))) 
   
   (element (revision revnumber) (process-children-trim))
   (element (revision date) (process-children-trim))
   (element (revision authorinitials) (process-children-trim))
   (element (revision revremark) (process-children-trim))
+  (element (revision revdescription) (process-children))
 
   (element seriesvolnums
     (make paragraph
@@ -6395,9 +6562,18 @@
       (process-children)))
 
   (element othercredit
-    (make paragraph
-      use: reference-titlepage-verso-style
-      (process-children)))
+    ;; Print the author name.  Handle the case where there's no AUTHORGROUP
+    (let ((in-group (have-ancestor? (normalize "authorgroup") (current-node))))
+      (if (not in-group)
+	  (make paragraph
+	    ;; Hack to get the spacing right below the author name line...
+	    space-after: (* %bf-size% %line-spacing-factor%)
+	    (make sequence
+	      (literal (gentext-by))
+	      (literal "\no-break-space;")
+	      (literal (author-list-string))))
+	  (make sequence 
+	    (literal (author-list-string))))))  
 
   (element othername
     (make paragraph
@@ -6468,7 +6644,9 @@
 	  (revauthor (select-elements (descendants (current-node))
 				      (normalize "authorinitials")))
 	  (revremark (select-elements (descendants (current-node))
-				      (normalize "revremark"))))
+				      (normalize "revremark")))
+	  (revdescription (select-elements (descendants (current-node))
+				      (normalize "revdescription"))))
       (make sequence
 	(make table-row
 	  (make table-cell
@@ -6522,21 +6700,28 @@
 	    n-columns-spanned: 3
 	    n-rows-spanned: 1
 	    start-indent: 0pt
-	    (if (not (node-list-empty? revremark))
-		(make paragraph
-		  use: reference-titlepage-verso-style
-		  font-size: %bf-size%
-		  font-weight: 'medium
-		  space-after: (if (last-sibling?) 
-				   0pt
-				   (/ %block-sep% 2))
-		  (process-node-list revremark))
-		(empty-sosofo))))))) 
+	    (cond ((not (node-list-empty? revremark))
+		   (make paragraph
+		     use: reference-titlepage-verso-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     space-after: (if (last-sibling?) 
+				      0pt
+				      (/ %block-sep% 2))
+		     (process-node-list revremark)))
+		  ((not (node-list-empty? revdescription))
+		   (make sequence
+		     use: reference-titlepage-verso-style
+		     font-size: %bf-size%
+		     font-weight: 'medium
+		     (process-node-list revdescription)))
+		(else (empty-sosofo)))))))) 
   
   (element (revision revnumber) (process-children-trim))
   (element (revision date) (process-children-trim))
   (element (revision authorinitials) (process-children-trim))
   (element (revision revremark) (process-children-trim))
+  (element (revision revdescription) (process-children))
 
   (element seriesvolnums
     (make paragraph

@@ -108,8 +108,7 @@
 		  center-footer: ($center-footer$ (normalize "lot"))
 		  right-footer:  ($right-footer$ (normalize "lot"))
 		  input-whitespace-treatment: 'collapse
-		  (build-lot (current-node) (car gilist))
-		  (loop (cdr gilist)))
+		  (build-lot (current-node) (car gilist)))
 		(loop (cdr gilist)))))
 
       (if (generate-toc-in-front)
@@ -143,9 +142,10 @@
 	  (empty-sosofo))
 
       (if (not (generate-toc-in-front))
-	  (process-children)
+          (process-children)
 	  (empty-sosofo))
-      
+
+      ;; generate a part TOC on a separate page
       (if (and %generate-part-toc%
 	       (not %generate-part-toc-on-titlepage%))
 	  (make simple-page-sequence
@@ -163,6 +163,8 @@
 		       (toc-depth (current-node))))
 	  (empty-sosofo))
 
+      ;; this seems wrong relative to generate-toc-in-front,
+      ;; goes *after* the content ??!
       (if (and (not (node-list-empty? partintro))
 	       (not %generate-partintro-on-titlepage%))
 	  ($process-partintro$ partintro #t)

@@ -37,6 +37,7 @@
 <!ENTITY dbchunk.dsl  SYSTEM "dbchunk.dsl">
 <!ENTITY dbpi.dsl     SYSTEM "dbpi.dsl">
 <!ENTITY dbprocdr.dsl SYSTEM "dbprocdr.dsl">
+<!ENTITY dbqanda.dsl  SYSTEM "dbqanda.dsl">
 <!ENTITY dbrfntry.dsl SYSTEM "dbrfntry.dsl">
 <!ENTITY dbsect.dsl   SYSTEM "dbsect.dsl">
 <!ENTITY dbsynop.dsl  SYSTEM "dbsynop.dsl">
@@ -46,19 +47,18 @@
 <!ENTITY dbttlpg.dsl  SYSTEM "dbttlpg.dsl">
 <!ENTITY dbverb.dsl   SYSTEM "dbverb.dsl">
 <!ENTITY version.dsl  SYSTEM "version.dsl">
-<!ENTITY db31.dsl     SYSTEM "db31.dsl">
 ]>
 
 <style-sheet>
 <style-specification id="docbook" 
-    use="af ca cs da de el en es et eu fi fr hu id it ja ko nl nn no pl pt ptbr ro ru sk sl sr sv tr uk xh zhcn zhtw zhhk dbparam dblib">
+    use="af bg bs ca cs da de el en es et eu fi fr hu id it ja ko nl nn no pl pt ptbr ro ru sk sl sr sv tr uk xh zhcn zhtw dbparam dblib">
 
 <style-specification-body>
 
 ;; $Id$
 ;;
 ;; This file is part of the Modular DocBook Stylesheet distribution.
-;; See ../README or http://www.berkshire.net/~norm/dsssl/
+;; See ../README or http://docbook.sourceforge.net/projects/dsssl/
 ;;
 
 (declare-flow-object-class element
@@ -183,6 +183,7 @@
 &dbchunk.dsl;   <!-- Chunking                                              -->
 &dbpi.dsl;      <!-- HTML PIs (dbhtml)                                     -->
 &dbprocdr.dsl;  <!-- Procedures                                            -->
+&dbqanda.dsl;   <!-- QandASet                                              -->
 &dbrfntry.dsl;  <!-- References and RefEntrys                              -->
 &dbsect.dsl;    <!-- Sections                                              -->
 &dbsynop.dsl;   <!-- Synopsis                                              -->
@@ -191,8 +192,7 @@
 &dbtitle.dsl;   <!-- Titles                                                -->
 &dbttlpg.dsl;   <!-- Title Page                                            -->
 &dbverb.dsl;    <!-- Verbatim (ProgramListing, LiteralLayout, etc.)        -->
-&version.dsl;   <!-- Version -->
-&db31.dsl;      <!-- DocBook 3.1 elements -->
+&version.dsl;   <!-- Version                                               -->
 
 </style-specification-body>
 </style-specification>
@@ -201,6 +201,8 @@
 <external-specification id="dblib" document="dblib.dsl">
 
 <external-specification id="af" document="dbl1af">
+<external-specification id="bg" document="dbl1bg">
+<external-specification id="bs" document="dbl1bs">
 <external-specification id="ca" document="dbl1ca">
 <external-specification id="cs" document="dbl1cs">
 <external-specification id="da" document="dbl1da">
@@ -234,7 +236,6 @@
 <external-specification id="xh" document="dbl1xh">
 <external-specification id="zhcn" document="dbl1zhcn">
 <external-specification id="zhtw" document="dbl1zhtw">
-<external-specification id="zhhk" document="dbl1zhhk">
 
 </style-sheet>
 

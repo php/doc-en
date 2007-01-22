@@ -291,6 +291,9 @@
 (element informalexample
   ($informal-object$ %informalexample-rules% %informalexample-rules%))
 
+(element informalfigure
+  ($informal-object$ %informalfigure-rules% %informalfigure-rules%))
+
 (element (figure title) (empty-sosofo)) ; don't show caption below figure
 
 (element figure
@@ -435,9 +438,13 @@
 (define (count-footnote? footnote)
   ;; don't count footnotes in comments (unless you're showing comments)
   ;; or footnotes in tables which are handled locally in the table
+  ;; or footnotes for empty ulinks which don't need a footnote
   (if (or (and (has-ancestor-member? footnote (list (normalize "comment")))
 	       (not %show-comments%))
-	  (has-ancestor-member? footnote (list (normalize "tgroup"))))
+	  (has-ancestor-member? footnote (list (normalize "tgroup")))
+          (and (has-ancestor-member? footnote (list (normalize "ulink")))
+               (node-list-empty? (children footnote))
+               %footnote-ulinks%))
       #f
       #t))
 

@@ -269,6 +269,9 @@
 (element informalexample
   ($informal-object$ %informalexample-rules% %informalexample-rules%))
 
+(element informalfigure
+  ($informal-object$ %informalfigure-rules% %informalfigure-rules%))
+
 (element (figure title) (empty-sosofo)) ; don't show caption below figure
 
 (element figure 
@@ -285,13 +288,14 @@
 ;; remark and comment use the same rendering
 (define ($remark$)
   (if %show-comments%
-      (let ((inpara (equal? (gi (parent (current-node))) (normalize "para"))))
+      (let ((inpara (equal? (gi (parent (current-node))) (normalize "para")))
+            (attrib '(("CLASS" "COMMENT"))))
         (if inpara
             (make element gi: "SPAN"
-                  attributes: '(("CLASS" "COMMENT"))
+                  attributes: attrib
                   (process-children))
             (make element gi: "P"
-                  attributes: '(("CLASS" "COMMENT"))
+                  attributes: attrib
                   (process-children))))
       (empty-sosofo)))
 

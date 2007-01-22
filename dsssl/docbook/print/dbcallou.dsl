@@ -182,23 +182,40 @@
 (define ($callout-verbatim-display$ indent line-numbers?)
   (let* ((width-in-chars (if (attribute-string "width")
 			     (string->number (attribute-string "width"))
-			     80)) ;; seems like a reasonable default...
-	 (fsize (lambda () (if %verbatim-size-factor%
-			       (* (inherited-font-size) %verbatim-size-factor%)
+			     %verbatim-default-width%))
+	 (fsize (lambda () (if (or (attribute-string (normalize "width"))
+				   (not %verbatim-size-factor%))
 			       (/ (/ (- %text-width% (inherited-start-indent))
-				     width-in-chars) 0.7)))))
+				     width-in-chars) 
+				  0.7)
+			       (* (inherited-font-size) 
+				  %verbatim-size-factor%))))
+	 (vspace-before (if (INBLOCK?)
+			    0pt
+			    (if (INLIST?)
+				%para-sep%
+				%block-sep%)))
+	 (vspace-after (if (INBLOCK?)
+			   0pt
+			   (if (INLIST?)
+			       0pt
+			       %block-sep%))))
     (make paragraph
-	  space-before: (if (INLIST?) %para-sep% %block-sep%)
-	  space-after:  (if (INLIST?) %para-sep% %block-sep%)
-	  font-family-name: %mono-font-family%
-	  font-size: (fsize)
-	  font-weight: 'medium
-	  font-posture: 'upright
-	  line-spacing: (* (fsize) %line-spacing-factor%)
-	  start-indent: (inherited-start-indent)
-	  lines: 'asis
-          input-whitespace-treatment: 'preserve
-	  quadding: 'start
-	  ($callout-linespecific-content$ indent line-numbers?))))
+      use: verbatim-style
+      space-before: (if (and (string=? (gi (parent)) (normalize "entry"))
+ 			     (absolute-first-sibling?))
+			0pt
+			vspace-before)
+      space-after:  (if (and (string=? (gi (parent)) (normalize "entry"))
+ 			     (absolute-last-sibling?))
+			0pt
+			vspace-after)
+      font-size: (fsize)
+      line-spacing: (* (fsize) %line-spacing-factor%)
+      start-indent: (if (INBLOCK?)
+			(inherited-start-indent)
+			(+ %block-start-indent% (inherited-start-indent)))
+      quadding: 'start
+      ($callout-linespecific-content$ indent line-numbers?))))
 
 ;; EOF dbcallout.dsl

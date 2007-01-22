@@ -6,10 +6,13 @@
 
 ;; ============================== INLINES ===============================
 
+(element abbrev ($charseq$))
 (element accel ($score-seq$ 'after))
+(element acronym ($charseq$))
 (element action ($charseq$))
 (element application ($charseq$))
 (element classname ($mono-seq$))
+(element constant ($mono-seq$))
 (element command ($bold-seq$))
 (element computeroutput ($mono-seq$))
 (element database ($charseq$))
@@ -112,8 +115,7 @@
 (element token ($charseq$))
 (element type ($charseq$))
 (element userinput ($bold-mono-seq$))
-(element abbrev ($charseq$))
-(element acronym ($charseq$))
+(element varname ($mono-seq$))
 
 (element citation 
   (if biblio-citation-check

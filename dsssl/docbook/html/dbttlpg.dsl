@@ -71,11 +71,7 @@
 	      (make entity
 		system-id: (html-entity-file
 			    ($legalnotice-link-file$ node))
-		(if %html-pubid%
-		    (make document-type
-		      name: "HTML"
-		      public-id: %html-pubid%)
-		    (empty-sosofo))
+		(html-doctype)
 		(make element gi: "HTML"
 		      (make element gi: "HEAD"
 			    ($standard-html-header$))

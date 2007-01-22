@@ -35,7 +35,7 @@
 (element errorcode ($charseq$))
 (element errorname ($charseq$))
 (element errortype ($charseq$))
-(element envar ($var-seq$))
+(element envar ($code-seq$))
 (element filename ($mono-seq$))         ; unsure
 (element function ($code-seq$))
 (element guibutton ($charseq$))
@@ -74,7 +74,7 @@
 		(loop (node-list-rest nl) (+ count 1))))))))
 
 (element keysym ($charseq$))
-(element literal ($var-seq$))
+(element literal ($mono-seq$))
 (element medialabel ($italic-seq$))
 
 (element menuchoice
@@ -111,7 +111,7 @@
 (element methodname ($code-seq$))
 (element shortcut ($bold-seq$))
 (element mousebutton ($charseq$))
-(element option ($var-seq$))
+(element option ($code-seq$))
 
 (element optional 
   (make sequence 
@@ -119,19 +119,19 @@
     ($charseq$)
     (literal %arg-choice-opt-close-str%)))
 
-(element parameter ($var-seq$))
+(element parameter ($code-seq$))
 (element property ($charseq$))
 (element prompt ($samp-seq$))
-(element replaceable ($var-seq$))
+(element replaceable ($italic-mono-seq$))
 (element returnvalue ($charseq$))
 (element structfield ($code-seq$))
 (element structname ($code-seq$))
-(element symbol ($var-seq$))
+(element symbol ($code-seq$))
 (element systemitem ($charseq$))        ; ambiguous, should look at class
 (element token ($charseq$))
 (element type ($charseq$))              ; ambiguous
 (element userinput ($kbd-seq$))
-(element varname ($var-seq$))
+(element varname ($code-seq$))
 
 (element citation 
   (if biblio-citation-check

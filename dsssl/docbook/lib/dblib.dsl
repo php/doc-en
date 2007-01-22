@@ -94,9 +94,10 @@
 
 ;; === Some additional units ============================================
 
-(define-unit pi (/ 1in 6))
-(define-unit pt (/ 1in 72))
-(define-unit px (/ 1in 96))
+(define-unit pi (/ 1in 6))              ;pica
+(define-unit pc (/ 1in 6))              ;pica, another name
+(define-unit pt (/ 1in 72))             ;point
+(define-unit px (/ 1in 96))             ;pixel
 
 ;; REFERENCE ISO/IEC 10179
 
@@ -329,7 +330,7 @@
 			  ((glyph-subst-table? x)
 			   (list 'glyph-subst-table x))
 			  (else x)))))
-    x))
+    return-value))
 
 ;; REFERENCE Miscellaneous
 
@@ -843,7 +844,7 @@
   ;; REFENTRY ancestor-member
   ;; PURP Returns the first ancestor in a list of GIs
   ;; DESC
-  ;; Returns the first ancestor of 'nd' whose GI that is a member of 'gilist'.
+  ;; Returns the first ancestor of 'nd' whose GI is a member of 'gilist'.
   ;; /DESC
   ;; /REFENTRY
   (if (node-list-empty? nd)
@@ -1815,7 +1816,7 @@
   ;; PURP Parses a structured PI and returns a list of values
   ;; DESC
   ;; It has become common practice to give PIs structured values.  The
-  ;; resultis a PI that looks a lot like a start tag with attributes:
+  ;; result is a PI that looks a lot like a start tag with attributes:
   ;;
   ;; &#60;?pitarget name1="value1" name2='value2' name3="value '3'">
   ;; 

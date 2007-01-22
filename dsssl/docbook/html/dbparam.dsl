@@ -360,15 +360,15 @@
   ;; AUTHOR N/A
   ;; /REFENTRY
   (cond ((equal? (gi nd) (normalize "tip"))
-	 (string-append %admon-graphics-path% "tip.gif"))
+	 (string-append %admon-graphics-path% "tip" %stock-graphics-extension%))
 	((equal? (gi nd) (normalize "note"))
-	 (string-append %admon-graphics-path% "note.gif"))
+	 (string-append %admon-graphics-path% "note" %stock-graphics-extension%))
 	((equal? (gi nd) (normalize "important"))
-	 (string-append %admon-graphics-path% "important.gif"))
+	 (string-append %admon-graphics-path% "important" %stock-graphics-extension%))
 	((equal? (gi nd) (normalize "caution"))
-	 (string-append %admon-graphics-path% "caution.gif"))
+	 (string-append %admon-graphics-path% "caution" %stock-graphics-extension%))
 	((equal? (gi nd) (normalize "warning"))
-	 (string-append %admon-graphics-path% "warning.gif"))
+	 (string-append %admon-graphics-path% "warning" %stock-graphics-extension%))
 	(else (error (string-append (gi nd) " is not an admonition.")))))
 
 (define ($admon-graphic-width$ #!optional (nd (current-node)))
@@ -397,16 +397,6 @@
   ;; AUTHOR N/A
   ;; /REFENTRY
   #t)
-
-(define %callout-graphics-extension%
-  ;; REFENTRY callout-graphics-extension
-  ;; PURP Extension for callout graphics
-  ;; DESC
-  ;; Sets the extension to use on callout graphics.
-  ;; /DESC
-  ;; AUTHOR N/A
-  ;; /REFENTRY
-  ".gif")
 
 (define %callout-graphics-path%
   ;; REFENTRY callout-graphics-path
@@ -1049,6 +1039,19 @@
   ;; /REFENTRY
   #f)
 
+(define %stock-graphics-extension%
+  ;; REFENTRY stock-graphics-extension
+  ;; PURP Suffix for "stock" graphic files
+  ;; DESC
+  ;; The extension to for the graphic files which ship with the
+  ;; Modular DocBook Stylesheet distribution.  This applies to callout
+  ;; graphics and admonition graphics.  Should include the intervening
+  ;; period in the suffix, if any.
+  ;; /DESC
+  ;; AUTHOR Yann Dirson, Adam Di Carlo
+  ;; /REFENTRY
+  ".gif")
+
 (define %graphic-extensions% 
   ;; REFENTRY graphic-extensions
   ;; PURP List of graphic filename extensions
@@ -1163,13 +1166,28 @@
   ;; REFENTRY html-pubid
   ;; PURP What public ID are you declaring your HTML compliant with?
   ;; DESC
-  ;; The public ID used in output HTML files.  If '#f', then no doctype
-  ;; declaration is produced.
+  ;; The public ID used in output HTML files.  If '#f', then no public ID
+  ;; is produced.  If both this and %html-sysid% are '#f', then no
+  ;; doctype declaration is produced.
   ;; /DESC
   ;; AUTHOR N/A
   ;; /REFENTRY
   (if %html40%
       "-//W3C//DTD HTML 4.01 Transitional//EN"
+      #f))
+
+(define %html-sysid%
+  ;; REFENTRY html-sysid
+  ;; PURP What system ID are you declaring your HTML compliant with?
+  ;; DESC
+  ;; The system ID used in output HTML files.  If '#f', then no system ID
+  ;; is produced.  If both this and %html-pubid% are '#f', then no
+  ;; doctype declaration is produced.
+  ;; /DESC
+  ;; AUTHOR N/A
+  ;; /REFENTRY
+  (if %html40%
+      "http://www.w3.org/TR/html4/loose.dtd"
       #f))
 
 (define %root-filename%
@@ -1398,7 +1416,7 @@
   ;; DESC
   ;; If '%html40%' is true then the output more closely resembles HTML 4.0.
   ;; In particular, the HTML table module includes COL, THEAD, TBODY, and TFOOT
-  ;; elements.
+  ;; elements, and the output documents have a proper doctype declaration.
   ;; /DESC
   ;; AUTHOR N/A
   ;; /REFENTRY

@@ -33,6 +33,7 @@
 	  (make display-group
 	    (make paragraph
 	      first-line-start-indent: (- ($admon-graphic-width$))
+	      keep-with-next?: #t
 	      (make line-field
 		field-width: ($admon-graphic-width$)
 		graphic)

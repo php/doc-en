@@ -154,21 +154,26 @@
 				  0.7)
 			       (* (inherited-font-size) 
 				  %verbatim-size-factor%))))
-	 (vspace (if (INBLOCK?)
-		     0pt
-		     (if (INLIST?)
-			 %para-sep% 
-			 %block-sep%))))
+	 (vspace-before (if (INBLOCK?)
+			    0pt
+			    (if (INLIST?)
+				%para-sep%
+				%block-sep%)))
+	 (vspace-after (if (INBLOCK?)
+			   0pt
+			   (if (INLIST?)
+			       0pt
+			       %block-sep%))))
     (make paragraph
       use: verbatim-style
       space-before: (if (and (string=? (gi (parent)) (normalize "entry"))
  			     (absolute-first-sibling?))
 			0pt
-			vspace)
+			vspace-before)
       space-after:  (if (and (string=? (gi (parent)) (normalize "entry"))
  			     (absolute-last-sibling?))
 			0pt
-			vspace)
+			vspace-after)
       font-size: (fsize)
       line-spacing: (* (fsize) %line-spacing-factor%)
       start-indent: (if (INBLOCK?)

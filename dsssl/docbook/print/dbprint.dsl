@@ -74,7 +74,9 @@
 				     %para-indent-firstpara%
 				     %para-indent%)
 	space-before: %para-sep%
-	space-after: %para-sep%
+	space-after: (if (INLIST?)
+			 0pt
+			 %para-sep%)
 	quadding: %default-quadding%
 	hyphenate?: %hyphenation%
 	language: (dsssl-language-code)
@@ -84,7 +86,9 @@
 				     %para-indent-firstpara%
 				     %para-indent%)
 	space-before: %para-sep%
-	space-after: %para-sep%
+	space-after: (if (INLIST?)
+			 0pt
+			 %para-sep%)
 	quadding: %default-quadding%
 	hyphenate?: %hyphenation%
 	language: (dsssl-language-code)
@@ -149,16 +153,24 @@
       sosofo)))
 
 (define ($italic-mono-seq$ #!optional (sosofo (process-children)))
-  (make sequence
-    font-family-name: %mono-font-family%
-    font-posture: 'italic
-    sosofo))
+  (let ((%factor% (if %verbatim-size-factor% 
+		      %verbatim-size-factor% 
+		      1.0)))
+    (make sequence
+      font-family-name: %mono-font-family%
+      font-size: (* (inherited-font-size) %factor%)
+      font-posture: 'italic
+      sosofo)))
 
 (define ($bold-mono-seq$ #!optional (sosofo (process-children)))
-  (make sequence
-    font-family-name: %mono-font-family%
-    font-weight: 'bold
-    sosofo))
+  (let ((%factor% (if %verbatim-size-factor% 
+		      %verbatim-size-factor% 
+		      1.0)))
+    (make sequence
+      font-family-name: %mono-font-family%
+      font-size: (* (inherited-font-size) %factor%)
+      font-weight: 'bold
+      sosofo)))
 
 (define ($score-seq$ stype #!optional (sosofo (process-children)))
   (make score

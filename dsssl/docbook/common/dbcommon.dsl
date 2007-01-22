@@ -266,7 +266,7 @@
 			 1)))
     (string-append
      (if (and (> author-count 1)
-	      (last-sibling? author))
+	      (absolute-last-sibling? author))
 	 (string-append (gentext-and) " ")
 	 "")
 
@@ -280,7 +280,7 @@
 		 ""))
 	 "")
      (if (and (> author-count 1)
-	      (not (last-sibling? author)))
+	      (not (absolute-last-sibling? author)))
 	 " "
 	 ""))))
 
@@ -1067,16 +1067,16 @@
 	""
 	(node-list-first titles))))
 
-(define (article-title nd)
-  (let* ((artchild  (children nd))
-	 (artheader (select-elements artchild (normalize "artheader")))
-	 (ahtitles  (select-elements (children artheader) 
-				     (normalize "title")))
-	 (artitles  (select-elements artchild (normalize "title")))
-	 (titles    (if (node-list-empty? artitles)
-			ahtitles
-			artitles)))
-    (if (node-list-empty? titles)
+ (define (article-title nd)
+   (let* ((titles
+	   (or (select-elements (children
+				 (node-list-filter-by-gi (children nd)
+							 (list (normalize "artheader")
+							       (normalize "articleinfo"))))
+				(normalize "title"))
+	       (select-elements (children nd)
+				(normalize "title")))))
+     (if (node-list-empty? titles)
 	""
 	(node-list-first titles))))
 
@@ -1484,9 +1484,8 @@
    ((equal? (gi nd) (normalize "refsynopsisdiv"))
     (select-elements (children nd) (normalize "refsynopsisdivinfo")))
    ((equal? (gi nd) (normalize "article"))
-    (node-list-filter-by-gi (children nd) (list
-					   (normalize "artheader")
-					   (normalize "articleinfo"))))
+    (node-list-filter-by-gi (children nd) (list (normalize "artheader")
+						(normalize "articleinfo"))))
    (else ;; BIBLIODIV, GLOSSDIV, INDEXDIV, PARTINTRO, SIMPLESECT
     (select-elements (children nd) (normalize "docinfo")))))
 
@@ -1823,9 +1822,10 @@
 	(normalize "seriesinfo")))
 
 (define (biblioentry-flatten-elements)
-  (list (normalize "artheader")
+  (list (normalize "articleinfo")
 	(normalize "biblioset")
-	(normalize "bookbiblio")))
+	(normalize "bookbiblio")
+        (normalize "artheader")))
 
 ;; === db31 common ======================================================
 

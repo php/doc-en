@@ -196,8 +196,8 @@
 	   (termlen    (if (attribute-string (normalize "termlength")
 					     (parent (current-node)))
 			   (string->number (attribute-string
-					    (normalize "termlength")
-					    (parent (current-node))))
+                                            (normalize "termlength")
+                                            (parent (current-node))))
 			   %default-variablelist-termlength%))
 	   (too-long? (varlistentry-term-too-long? (current-node) termlen)))
       (if too-long?

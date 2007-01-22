@@ -72,3 +72,63 @@
     ($img$ (current-node) #t)))
 
 (element inlinegraphic ($img$))
+
+
+;; ======================================================================
+;; MediaObject and friends...
+
+(define preferred-mediaobject-notations
+  (list "EPS" "PS" "JPG" "JPEG" "PNG" "linespecific"))
+
+(define preferred-mediaobject-extensions
+  (list "eps" "ps" "jpg" "jpeg" "png"))
+
+(define acceptable-mediaobject-notations
+  (list "GIF" "GIF87a" "GIF89a" "BMP" "WMF"))
+
+(define acceptable-mediaobject-extensions
+  (list "gif" "bmp" "wmf"))
+
+(element mediaobject
+  (make paragraph
+    ($mediaobject$)))
+
+(element inlinemediaobject
+  (make sequence
+    ($mediaobject$)))
+
+(element mediaobjectco
+  (error "MediaObjectCO is not supported yet."))
+
+(element imageobjectco
+  (error "ImageObjectCO is not supported yet."))
+
+(element objectinfo
+  (empty-sosofo))
+
+(element videoobject
+  (process-children))
+
+(element videodata
+  (empty-sosofo))
+
+(element audioobject
+  (process-children))
+
+(element audiodata
+  (empty-sosofo))
+
+(element imageobject
+  (process-children))
+
+(element imagedata
+  (if (have-ancestor? (normalize "mediaobject"))
+      ($img$ (current-node) #t)
+      ($img$ (current-node) #f)))
+
+(element textobject
+  (make display-group
+    (process-children)))
+
+(element caption
+  (process-children))
