@@ -44,6 +44,10 @@ function filterFiles()
     }
     closedir($handle);
 
+    // Copy all the images to the target directory
+    exec("mkdir $HTML_TARGET\\figures");
+    exec("copy $HTML_SRC\\figures $HTML_TARGET\\figures /Y");
+
     // Copy all supplemental files to the target directory
     exec("copy suppfiles\\html $HTML_TARGET /Y");
     
@@ -83,10 +87,18 @@ function filterFiles()
         }
         $supp_files .= $delim."_index.html";
 
-        // Insert [MERGE] section and supplemental files 
+	// Build list of figures
+	$d = dir("$HTML_TARGET/figures");
+	$figure_files = "";
+        while (false !== ($entry = $d->read())) {
+            if ($entry != "." && $entry != ".." && !is_dir($entry))
+                $figure_files .= $delim.'figures\\'.$entry;
+        }
+
+        // Insert [MERGE] section, figures and supplemental files 
         $php_hhp = preg_replace(
            "|\[FILES\]((\W+)\w)|i",
-           "[MERGE FILES]$2php_manual_notes.chm$2$2[FILES]$supp_files$1",
+           "[MERGE FILES]$2php_manual_notes.chm$2$2[FILES]$figure_files$supp_files$1",
            $php_hhp);
         $fp = fopen($hhp_file, "w");
         fwrite($fp, $php_hhp);
