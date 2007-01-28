@@ -71,7 +71,7 @@ function fix_name($name)
   $name = strtr($name, $replace);
   $name = strtr($name, array('---' => '-'));
 
-  return $name;
+  return strtolower($name);
 }
 
 function function_add_name($num, $name)
