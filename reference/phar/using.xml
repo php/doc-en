@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+<section id="phar.using.basics">
+ <title>Using Phar Archives: Introduction</title>
+ <para>
+  Phar archives are similar in concept to Java JAR archives, but are
+  tailored to the needs and to the flexibility of PHP applications.  A
+  Phar archive is used to distribute a complete PHP application
+  or library in a single file.  Unlike Java's implementation of JAR archives,
+  no external tool is required to process or run a PHP Phar archive.  A
+  Phar archive application is processed exactly like any other PHP application:
+ </para>
+ <screen>
+  <![CDATA[
+php coolapplication.phar
+  ]]>
+ </screen>
+ <para>
+  Using a Phar archive library is identical to using any other PHP library:
+ </para>
+ <programlisting role="php">
+  <![CDATA[
+<?php
+include 'coollibrary.phar';
+?>
+  ]]>
+ </programlisting>
+ <para>
+  What makes Phar archives incredibly useful is the <literal>phar</literal>
+  stream wrapper, which is explained in depth <link linkend="phar.using.stream">here</link>.
+  Using this stream wrapper, it is possible to access
+  individual files within a phar as if the phar were its own filesystem.
+  The <literal>phar</literal> stream wrapper supports all read/write operations
+  on files, and <function>opendir</function> on directories.
+ </para>
+ <programlisting role="php">
+  <![CDATA[
+<?php
+include 'phar://coollibrary.phar/internal/file.php';
+header('Content-type: image/jpeg');
+// phars can be accessed by full path or by alias
+echo file_get_contents('phar:///fullpath/to/coollibrary.phar/images/wow.jpg');
+?>
+  ]]>
+ </programlisting>
+ <para>
+  Also provided with the Phar extension is the <classname>Phar</classname> class,
+  which allows accessing the files of the Phar archive as if it were an
+  associative array, and other functionality.  The Phar class is explained
+  <link linkend="phar.using.object">here</link>.
+ </para>
+ <programlisting role="php">
+  <![CDATA[
+<?php
+try {
+    // open an existing phar
+    $p = new Phar('coollibrary.phar');
+    foreach ($p as $file) {
+        // $file is a PharFileInfo class, and inherits from SplFileInfo
+        echo $file->getFileName() . "\n";
+        echo $file . "\n"; // display contents;
+    }
+    if (isset($p['internal/file.php'])) {
+        var_dump($p['internal/file.php']->getMetaData());
+    }
+
+    // create a new phar - phar.readonly must be 0 in php.ini
+    // phar.readonly is enabled by default for security reasons.
+    // On production servers, Phars need never be created,
+    // only executed.
+    if (Phar::canWrite()) {
+        $p = new Phar(dirname(__FILE__) . '/newphar.phar', 0, 'newphar.phar');
+        // create transaction - nothing is written to disk until commit() is called
+        $p->begin();
+        // add a new file, set its contents
+        $p['file1.txt'] = 'Information';
+        $fp = fopen('hugefile.dat', 'rb');
+        // copy from the stream
+        $p['data/hugefile.dat'] = $fp;
+        if (Phar::canCompress()) {
+            $p['data/hugefile.dat']->setCompressedGZ();
+        }
+        $p['images/wow.jpg'] = file_get_contents('images/wow.jpg');
+        // any value can be saved as file-specific meta-data
+        $p['images/wow.jpg']->setMetaData(array('mime-type' => 'image/jpeg'));
+        $p['index.php'] = file_get_contents('index.php');
+        $p->setMetaData(array('bootstrap' => 'index.php'));
+        // save the Phar, and set the loader stub
+        $p->commit('<?php
+$p = new Phar(__FILE__);
+$m = $p->getMetaData();
+require "phar://" . __FILE__ . "/" . $m["bootstrap"];
+__HALT_COMPILER();');
+    }
+} catch (BadMethodCallException $e) {
+    echo 'Could not open Phar: ', $e;
+}
+?>
+  ]]>
+ </programlisting>
+</section>
+<section id="phar.using.stream">
+ <title>Using Phar Archives: the phar stream wrapper</title>
+ <para>
+  The Phar stream wrapper fully supports <function>fopen</function> for
+  read, write or append, <function>unlink</function>, <function>stat</function>,
+  <function>fstat</function>, <function>fseek</function>, <function>rename</function>
+  and directory stream operation <function>opendir</function>.  The Phar stream wrapper
+  does not support creating or erasing a directory, as files are stored only
+  as files, and the concept of an abstract directory does not exist.
+ </para>
+ <para>
+  Individual file compression and per-file metadata can also be manipulated
+  in a Phar archive using stream contexts:
+ </para>
+ <programlisting role="php">
+  <![CDATA[
+<?php
+$context = stream_context_create(array('phar' =>
+                                    array('compression' => Phar::GZ)),
+                                    array('metadata' => array('user' => 'cellog')));
+file_put_contents('phar://my.phar/somefile.php', 0, $context);
+?>
+  ]]>
+ </programlisting>
+ <para>
+  The <literal>phar</literal> stream wrapper does not operate on remote files,
+  and cannot operate on remote files, and so is allowed even when the
+  <link linkend="ini.allow-url-fopen">allow_url_fopen</link> INI option
+  is disabled.
+ </para>
+ <para>
+  Although it is possible to create phar archives from scratch just using
+  stream operations, it is best to use the functionality built into
+  the Phar class.  The stream wrapper is best used for read operations.
+ </para>
+</section>
+<section id="phar.using.object">
+ <title>Using Phar Archives: the Phar class</title>
+ <para>
+  The <classname>Phar</classname> class supports reading and manipulation
+  of Phar archives, as well as iteration through inherited functionality of
+  the
+  <ulink url="http://www.php.net/~helly/php/ext/spl/classRecursiveDirectoryIterator.html"><classname>RecursiveDirectoryIterator</classname></ulink>
+  class.  With support for the <interface>ArrayAccess</interface>
+  interface, files inside a Phar archive can be accessed as if they were
+  part of an associative array.
+ </para>
+ <para>
+  Assuming that <literal>$p</literal> is a Phar object initialized as follows:
+  <programlisting role="php">
+   <![CDATA[
+<?php
+$p = new Phar('myphar.phar');
+?>
+   ]]>
+  </programlisting>
+  The following is possible:
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <literal>$a = $p['file.php']</literal> creates a <classname>PharFileInfo</classname>
+     class that refers to the contents of <literal>phar://myphar.phar/file.php</literal>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <literal>$p['file.php'] = $v</literal> creates a new file
+     (<literal>phar://myphar.phar/file.php</literal>), or overwrites
+     an existing file within <literal>myphar.phar</literal>.  <literal>$v</literal>
+     can be either a string or an open file pointer, in which case the entire
+     contents of the file will be used to create the new file.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <literal>isset($p['file.php'])</literal> can be used to determine
+     whether <literal>phar://myphar.phar/file.php</literal> exists within
+     <literal>myphar.phar</literal>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <literal>unset($p['file.php'])</literal> erases
+     <literal>phar://myphar.phar/file.php</literal> from
+     <literal>myphar.phar</literal>.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </para>
+ <para>
+  In addition, the <classname>Phar</classname> object is the only way to access
+  Phar-specific metadata, through
+  <link linkend="function.Phar-getMetaData"><function>Phar-&gt;getMetaData</function></link>,
+  and the only way to set or retrieve a Phar archive's PHP loader stub through
+  <link linkend="function.Phar-getStub"><function>Phar-&gt;getStub</function></link> and
+  <link linkend="function.Phar-commit"><function>Phar-&gt;commit</function></link>.
+  Additionally, compression for the entire Phar archive at once can only be manipulated
+  using the <classname>Phar</classname> class.
+ </para>
+ <para>
+  The full list of <classname>Phar</classname> object functionality is documented
+  below.
+ </para>
+ <para>
+  The <classname>PharFileInfo</classname> class extends the
+  <ulink url="http://www.php.net/~helly/php/ext/spl/classSplFileInfo.html"><classname>SplFileInfo</classname></ulink>
+  class, and adds several methods for manipulating Phar-specific details of a file
+  contained within a Phar, such as manipulating compression and metadata.
+ </para>
+</section>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
