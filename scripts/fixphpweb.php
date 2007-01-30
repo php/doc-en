@@ -29,7 +29,7 @@ Deletes the HTML !DOCTYPE lines from 'phpweb_xsl' generated files
 
   <dir> is the folder, where the phpweb_xsl output
   files are located. The files will be rewritten to
-  get the !DOCTYPE removed.
+  get the !DOCTYPE && ?xml removed.
 
 <?php
     exit;
@@ -59,7 +59,7 @@ while (($filename = readdir($dh)) !== FALSE) {
         $contents = file($fullname);
         
         // If !DOCTYPE is not found, skip file rewrite
-        if (strpos($contents[0], "<!DOCTYPE") === FALSE) { continue; }
+        if (strpos($contents[0], "<!DOCTYPE") === FALSE && strpos($contents[0], "<?xml ") === FALSE) { continue; }
         
         // Otherwise, rewrite the contents of the
         // file, skiping the first line
