@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- 
+<!-- vim600: ts=2 
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.1 2007-01-22 14:09:56 bjori Exp $
+  $Id: html-common.xsl,v 1.2 2007-01-30 18:27:41 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -193,7 +193,7 @@ set       toc
 <!-- ======================== END TITLEPAGE =============================== -->
 
 <!-- METHODNAMES are bold like in DSSSL -->
-<xsl:template match="methodsynopsis/methodname">
+<xsl:template match="methodsynopsis/methodname|fieldsynopsis/varname|constructorsynopsis/methodname">
   <b><xsl:apply-templates/></b>
 </xsl:template>
 
@@ -205,7 +205,7 @@ set       toc
 
 <!-- We need a newline after methodsynopsis, as we have
      multiple methodsynopsys parts sometimes -->
-<xsl:template match="methodsynopsis">
+<xsl:template match="methodsynopsis|fieldsynopsis|constructorsynopsis">
   <xsl:apply-templates/><br/>
 </xsl:template>
 
@@ -227,8 +227,11 @@ set       toc
   </xsl:variable>
 
   <xsl:choose>
+    <xsl:when test="parent::fieldsynopsis">
+        <xsl:copy-of select="$mytype"/><xsl:text> </xsl:text>
+    </xsl:when>
     <xsl:when test="count(/*/part[@id='langref']/chapter[@id='language.types']/sect1[@id=$name]) = 1
-                    and not(ancestor::sect1[@id=$name])">
+                    and not(ancestor::sect1[@id=$name]) and not(parent::fieldsynopsis)">
       <a>
         <xsl:attribute name="href">
           <xsl:call-template name="href.target">
@@ -252,9 +255,17 @@ set       toc
       <xsl:apply-templates select="refname[1]"/>
     </h1>
     <xsl:if test="ancestor::part/@id='funcref' or ancestor::part/@id='pecl-funcref'">
+      <xsl:param name="versionInfo" select="$version/function[@name=string(current()/refname)]/@from" />
       <p>
         <xsl:text>(</xsl:text>
-        <xsl:value-of select="$version/function[@name=string(current()/refname)]/@from"/>
+        <xsl:choose>
+          <xsl:when test="$versionInfo">
+            <xsl:value-of select="$versionInfo" />
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>No version information available, might be only in CVS</xsl:text>
+          </xsl:otherwise>
+        </xsl:choose>
         <xsl:text>)</xsl:text>
       </p>
     </xsl:if>
@@ -419,7 +430,7 @@ set       toc
   <xsl:element name="h{$level}">
     <xsl:if test="$css.decoration != '0'">
       <xsl:if test="$level&lt;3">
-        <xsl:attribute name="style">clear:both</xsl:attribute>
+          <!--<xsl:attribute name="style">clear:both</xsl:attribute>-->
       </xsl:if>
     </xsl:if>
     <xsl:if test="$allow-anchors != 0">
@@ -560,7 +571,7 @@ set       toc
 </xsl:template>
 
 <xsl:template match="filename|literal|option|varname">
-  <tt><xsl:apply-templates/></tt>
+  <var><xsl:apply-templates/></var>
 </xsl:template>
 
 <xsl:template match="constant">
@@ -608,15 +619,43 @@ set       toc
   </h2>
 </xsl:template>
 
-<xsl:template match="programlisting|screen|synopsis">
-  <xsl:param name="suppress-numbers" select="'0'"/>
+ <xsl:template match="programlisting|screen|synopsis">
+   <xsl:param name="suppress-numbers" select="'0'"/>
   <table xsl:use-attribute-sets="shade.verbatim.style">
     <tr>
       <td>
-        <pre><xsl:apply-templates/></pre>
+          <xsl:element name="pre">
+              <xsl:attribute name="class"><xsl:value-of select="./@role" /></xsl:attribute>
+              <xsl:value-of select="." disable-output-escaping="yes" />
+          </xsl:element>
       </td>
     </tr>
   </table>
 </xsl:template>
 
+<xsl:template match="modifier">
+    <!-- Creates f.e. <span class="public modifier">public</span> -->
+    <xsl:element name="span">
+        <xsl:attribute name="class"><xsl:value-of select="." /><xsl:text> modifier</xsl:text></xsl:attribute>
+        <xsl:value-of select="." />
+    </xsl:element>
+    <!-- FIXME: Silly workaround for applying space after the method modifier -->
+    <xsl:text> </xsl:text>
+</xsl:template>
+
+<xsl:template match="classsynopsis">
+    <xsl:text>class </xsl:text>
+    <xsl:apply-templates />
+    }
+</xsl:template>
+
+<xsl:template match="ooclass/classname">
+    <b><xsl:value-of select="." /></b> {<br />
+</xsl:template>
+
+<xsl:template match="ooclass">
+    <xsl:apply-templates />
+</xsl:template>
+
 </xsl:stylesheet>
+

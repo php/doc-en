@@ -3,13 +3,13 @@
 
   PHP.net web site specific stylesheet
 
-  $Id: phpweb.xsl,v 1.1 2007-01-22 14:09:56 bjori Exp $
+  $Id: phpweb.xsl,v 1.2 2007-01-30 18:27:41 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0">
 
-<xsl:import href="./docbook/docbook-xsl/html/chunkfast.xsl"/>
+<xsl:import href="../../docbook/docbook-xsl/html/chunkfast.xsl"/>
 <xsl:include href="html-common.xsl"/>
 <xsl:include href="html-chunk.xsl"/>
 
