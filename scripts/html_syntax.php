@@ -31,7 +31,7 @@ function callback_html_number_entities_decode($matches) {
 }
 
 function callback_highlight_php($matches) {
-	$with_tags = preg_replace_callback("!&#([0-9]+);!", "callback_html_number_entities_decode", $matches[1]);
+	$with_tags = preg_replace_callback("!&#([0-9]+);!", "callback_html_number_entities_decode", trim($matches[1]));
 	if ($GLOBALS["TYPE"] == "php") {
 		return "\n<?php\nhighlight_php('". addcslashes($with_tags, "'\\") ."');\n?>\n";
 	} else { // "html"
@@ -58,6 +58,7 @@ while (($file = array_shift($files)) !== null) {
 		//~ echo "$filename\n";
 		$original = file_get_contents($filename);
 		$highlighted = preg_replace_callback("!<PRE\r?\nCLASS=\"php\"\r?\n>(.*)</PRE\r?\n>!sU", "callback_highlight_php", $original);
+		$highlighted = preg_replace_callback("!<pre class=\"php\">(.*)</pre>!sU", "callback_highlight_php", $highlighted); /* XSL build */
 		if ($original != $highlighted) {
 			// file_put_contents is only in PHP >= 5
 			$fp = fopen($filename, "wb");
