@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: component.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: component.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -366,6 +366,7 @@
 </xsl:template>
 
 <xsl:template match="preface/docinfo|prefaceinfo"></xsl:template>
+<xsl:template match="preface/info"></xsl:template>
 <xsl:template match="preface/title"></xsl:template>
 <xsl:template match="preface/titleabbrev"></xsl:template>
 <xsl:template match="preface/subtitle"></xsl:template>
@@ -455,6 +456,7 @@
 </xsl:template>
 
 <xsl:template match="chapter/docinfo|chapterinfo"></xsl:template>
+<xsl:template match="chapter/info"></xsl:template>
 <xsl:template match="chapter/title"></xsl:template>
 <xsl:template match="chapter/titleabbrev"></xsl:template>
 <xsl:template match="chapter/subtitle"></xsl:template>
@@ -545,6 +547,7 @@
 </xsl:template>
 
 <xsl:template match="appendix/docinfo|appendixinfo"></xsl:template>
+<xsl:template match="appendix/info"></xsl:template>
 <xsl:template match="appendix/title"></xsl:template>
 <xsl:template match="appendix/titleabbrev"></xsl:template>
 <xsl:template match="appendix/subtitle"></xsl:template>
@@ -636,6 +639,7 @@
 
 <xsl:template match="article/artheader"></xsl:template>
 <xsl:template match="article/articleinfo"></xsl:template>
+<xsl:template match="article/info"></xsl:template>
 <xsl:template match="article/title"></xsl:template>
 <xsl:template match="article/subtitle"></xsl:template>
 <xsl:template match="article/titleabbrev"></xsl:template>

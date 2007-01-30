@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: footnote.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: footnote.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -119,9 +119,9 @@
   </xsl:variable>
   <p>
     <xsl:if test="@role and $para.propagates.style != 0">
-      <xsl:attribute name="class">
-        <xsl:value-of select="@role"/>
-      </xsl:attribute>
+      <xsl:apply-templates select="." mode="class.attribute">
+        <xsl:with-param name="class" select="@role"/>
+      </xsl:apply-templates>
     </xsl:if>
     <sup>
       <xsl:text>[</xsl:text>
@@ -194,8 +194,8 @@
   <xsl:param name="from" select=".."/>
   <xsl:param name="to" select="."/>
   <xsl:param name="count" select="0"/>
-  <xsl:param name="list" select="$from/following::*[name(.)=name($to)]
-                                 |$from/descendant-or-self::*[name(.)=name($to)]"/>
+  <xsl:param name="list" select="$from/following::*[local-name(.)=local-name($to)]
+                                 |$from/descendant-or-self::*[local-name(.)=local-name($to)]"/>
 
   <xsl:choose>
     <xsl:when test="not($list)">
@@ -247,13 +247,15 @@
 <xsl:template match="footnote" name="process.footnote" mode="process.footnote.mode">
   <xsl:choose>
     <xsl:when test="local-name(*[1]) = 'para' or local-name(*[1]) = 'simpara'">
-      <div class="{name(.)}">
+      <div>
+        <xsl:apply-templates select="." mode="class.attribute"/>
         <xsl:apply-templates/>
       </div>
     </xsl:when>
 
     <xsl:when test="$html.cleanup != 0 and function-available('exsl:node-set')">
-      <div class="{name(.)}">
+      <div>
+        <xsl:apply-templates select="." mode="class.attribute"/>
         <xsl:apply-templates select="*[1]" mode="footnote.body.number"/>
         <xsl:apply-templates select="*[position() &gt; 1]"/>
       </div>
@@ -266,7 +268,8 @@
         <xsl:value-of select="local-name(*[1])"/>
         <xsl:text> unexpected as first child of footnote.</xsl:text>
       </xsl:message>
-      <div class="{name(.)}">
+      <div>
+        <xsl:apply-templates select="." mode="class.attribute"/>
         <xsl:apply-templates/>
       </div>
     </xsl:otherwise>

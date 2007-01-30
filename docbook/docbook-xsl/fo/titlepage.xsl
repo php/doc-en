@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: titlepage.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: titlepage.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -242,9 +242,7 @@
 
 <xsl:template match="authorgroup" mode="titlepage.mode">
   <fo:wrapper>
-    <xsl:if test="@id">
-      <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
-    </xsl:if>
+    <xsl:call-template name="anchor"/>
     <xsl:apply-templates mode="titlepage.mode"/>
   </fo:wrapper>
 </xsl:template>
@@ -668,9 +666,7 @@
 <xsl:template match="bookinfo/authorgroup|info/authorgroup"
               mode="titlepage.mode" priority="2">
   <fo:block>
-    <xsl:if test="@id">
-      <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
-    </xsl:if>
+    <xsl:call-template name="anchor"/>
     <xsl:apply-templates mode="titlepage.mode"/>
   </fo:block>
 </xsl:template>

@@ -14,7 +14,7 @@
                 xmlns:i="urn:cz-kosek:functions:index">
 
 <!-- ********************************************************************
-     $Id: autoidx-kosek.xsl,v 1.1 2007-01-22 22:11:00 bjori Exp $
+     $Id: autoidx-kosek.xsl,v 1.2 2007-01-30 18:12:37 bjori Exp $
      ********************************************************************
 
      This file is part of the DocBook XSL Stylesheet distribution.

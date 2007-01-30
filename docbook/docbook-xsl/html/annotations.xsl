@@ -8,7 +8,7 @@
     <xsl:when test="contains($scripts, ' ')">
       <script type="text/javascript" src="{substring-before($scripts, ' ')}"/>
       <xsl:call-template name="add.annotation.links">
-	<xsl:with-param name="scripts" select="substring-after($scripts, ' ')"/>
+        <xsl:with-param name="scripts" select="substring-after($scripts, ' ')"/>
       </xsl:call-template>
     </xsl:when>
     <xsl:otherwise>
@@ -27,18 +27,18 @@
   <xsl:variable name="aids">
     <xsl:for-each select="//annotation">
       <xsl:if test="@annotates=$id
-	            or starts-with(@annotates, concat($id, ' '))
-		    or contains(@annotates, concat(' ', $id, ' '))
-		    or substring(@annotates, string-length(@annotates)-3)
-		       = concat(' ', $id)">
-	<xsl:value-of select="generate-id()"/>
-	<xsl:text> </xsl:text>
+                    or starts-with(@annotates, concat($id, ' '))
+                    or contains(@annotates, concat(' ', $id, ' '))
+                    or substring(@annotates, string-length(@annotates)-3)
+                       = concat(' ', $id)">
+        <xsl:value-of select="generate-id()"/>
+        <xsl:text> </xsl:text>
       </xsl:if>
     </xsl:for-each>
     <xsl:if test="normalize-space(@annotations) != ''">
       <xsl:call-template name="annotations-pointed-to">
-	<xsl:with-param name="annotations"
-			select="normalize-space(@annotations)"/>
+        <xsl:with-param name="annotations"
+                        select="normalize-space(@annotations)"/>
       </xsl:call-template>
     </xsl:if>
   </xsl:variable>
@@ -56,22 +56,22 @@
   <xsl:choose>
     <xsl:when test="contains($annotations, ' ')">
       <xsl:variable name='a'
-		    select="key('id', substring-before($annotations, ' '))"/>
+                    select="key('id', substring-before($annotations, ' '))"/>
       <xsl:if test="$a">
-	<xsl:value-of select="generate-id($a)"/>
-	<xsl:text> </xsl:text>
+        <xsl:value-of select="generate-id($a)"/>
+        <xsl:text> </xsl:text>
       </xsl:if>
       <xsl:call-template name="annotations-pointed-to">
-	<xsl:with-param name="annotations"
-			select="substring-after($annotations, ' ')"/>
+        <xsl:with-param name="annotations"
+                        select="substring-after($annotations, ' ')"/>
       </xsl:call-template>
     </xsl:when>
     <xsl:otherwise>
       <xsl:variable name='a'
-		    select="key('id', $annotations)"/>
+                    select="key('id', $annotations)"/>
       <xsl:if test="$a">
-	<xsl:value-of select="generate-id($a)"/>
-	<xsl:text> </xsl:text>
+        <xsl:value-of select="generate-id($a)"/>
+        <xsl:text> </xsl:text>
       </xsl:if>
     </xsl:otherwise>
   </xsl:choose>
@@ -84,15 +84,15 @@
     <xsl:when test="contains($gids, ' ')">
       <xsl:variable name="gid" select="substring-before($gids, ' ')"/>
       <xsl:apply-templates select="key('gid', $gid)"
-			   mode="annotation-inline"/>
+                           mode="annotation-inline"/>
       <xsl:call-template name="apply-annotations-by-gid">
-	<xsl:with-param name="gids"
-			select="substring-after($gids, ' ')"/>
+        <xsl:with-param name="gids"
+                        select="substring-after($gids, ' ')"/>
       </xsl:call-template>
     </xsl:when>
     <xsl:otherwise>
       <xsl:apply-templates select="key('gid', $gids)"
-			   mode="annotation-inline"/>
+                           mode="annotation-inline"/>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -101,12 +101,12 @@
   <xsl:variable name="title">
     <xsl:choose>
       <xsl:when test="title">
-	<xsl:value-of select="title"/>
+        <xsl:value-of select="title"/>
       </xsl:when>
       <xsl:otherwise>
-	<xsl:text>[Annotation #</xsl:text>
-	<xsl:number count="annotation" level="any" format="1"/>
-	<xsl:text>]</xsl:text>
+        <xsl:text>[Annotation #</xsl:text>
+        <xsl:number count="annotation" level="any" format="1"/>
+        <xsl:text>]</xsl:text>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
@@ -145,7 +145,7 @@
     </div>
     <div class="annotation-close">
       <a href="#" onclick="popup_{generate-id(.)}.hidePopup();return false;">
-	<img src="{$annotation.graphic.close}" alt="X" border="0"/>
+        <img src="{$annotation.graphic.close}" alt="X" border="0"/>
       </a>
     </div>
   </div>
@@ -155,10 +155,10 @@
   <div class="annotation-title">
     <xsl:choose>
       <xsl:when test="title">
-	<xsl:apply-templates select="title/node()"/>
+        <xsl:apply-templates select="title/node()"/>
       </xsl:when>
       <xsl:otherwise>
-	<xsl:text>Annotation</xsl:text>
+        <xsl:text>Annotation</xsl:text>
       </xsl:otherwise>
     </xsl:choose>
   </div>

@@ -4,7 +4,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:src="http://nwalsh.com/xmlns/litprog/fragment" exclude-result-prefixes="src" version="1.0">
 
 <!-- ********************************************************************
-     $Id: param.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: param.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -175,6 +175,7 @@ set       toc,title
 </xsl:param>
 
 <xsl:param name="glossary.collection" select="''"/>
+<xsl:param name="glossary.sort" select="0"/>
 <xsl:param name="glossentry.show.acronym" select="'no'"/>
 <xsl:param name="glossterm.auto.link" select="0"/>
 <xsl:param name="graphic.default.extension"/>
@@ -288,6 +289,7 @@ set       toc,title
 <xsl:param name="olink.base.uri" select="''"/> 
 <xsl:param name="olink.debug" select="0"/>
 <xsl:attribute-set name="olink.properties">
+  <xsl:attribute name="show-destination">replace</xsl:attribute>
 </xsl:attribute-set>
 <xsl:param name="insert.olink.page.number">no</xsl:param>
 <xsl:param name="insert.olink.pdf.frag" select="0"/>
@@ -327,6 +329,7 @@ set       toc,title
 <xsl:param name="punct.honorific" select="'.'"/>
 <xsl:param name="qanda.defaultlabel">number</xsl:param>
 <xsl:param name="qanda.inherit.numeration" select="1"/>
+<xsl:param name="qanda.in.toc" select="0"/>
 <xsl:param name="qanda.nested.in.toc" select="0"/>
 <xsl:param name="qandadiv.autolabel" select="1"/>
 <xsl:param name="refentry.generate.name" select="1"/>

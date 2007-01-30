@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: info.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: info.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -23,7 +23,8 @@
 <!-- called from named templates in a given mode -->
 
 <xsl:template match="corpauthor">
-  <span class="{name(.)}">
+  <span>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:apply-templates/>
   </span>
 </xsl:template>
@@ -31,7 +32,8 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="jobtitle">
-  <span class="{name(.)}">
+  <span>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:apply-templates/>
   </span>
 </xsl:template>

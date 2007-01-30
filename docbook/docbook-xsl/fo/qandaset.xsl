@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: qandaset.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: qandaset.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -83,10 +83,10 @@
 
       <xsl:call-template name="qandaset.toc.separator"/>
 
-      <xsl:apply-templates select="*[name(.) != 'title'
-                                   and name(.) != 'titleabbrev'
-                                   and name(.) != 'qandadiv'
-                                   and name(.) != 'qandaentry']"/>
+      <xsl:apply-templates select="*[local-name(.) != 'title'
+                                   and local-name(.) != 'titleabbrev'
+                                   and local-name(.) != 'qandadiv'
+                                   and local-name(.) != 'qandaentry']"/>
       <xsl:apply-templates select="qandadiv"/>
   
       <xsl:if test="qandaentry">
@@ -147,7 +147,7 @@
   </xsl:call-template>
 </xsl:template>
 
-<xsl:template match="qandaset/blockinfo">
+<xsl:template match="qandaset/blockinfo|qandaset/info">
   <!-- what should this template really do? -->
   <xsl:apply-templates select="legalnotice" mode="titlepage.mode"/>
 </xsl:template>
@@ -181,10 +181,10 @@
 
   <fo:block id="{$id}">
     <xsl:apply-templates select="(blockinfo/title|info/title|title)[1]"/>
-    <xsl:apply-templates select="*[name(.) != 'title'
-                                 and name(.) != 'titleabbrev'
-                                 and name(.) != 'qandadiv'
-                                 and name(.) != 'qandaentry']"/>
+    <xsl:apply-templates select="*[local-name(.) != 'title'
+                                 and local-name(.) != 'titleabbrev'
+                                 and local-name(.) != 'qandadiv'
+                                 and local-name(.) != 'qandaentry']"/>
     <fo:block>
       <xsl:apply-templates select="qandadiv"/>
 

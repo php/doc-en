@@ -13,7 +13,7 @@
 <xsl:include href="../common/table.xsl"/>
 
 <!-- ********************************************************************
-     $Id: table.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: table.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -25,7 +25,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: table.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+$Id: table.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>
@@ -247,7 +247,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   <xsl:variable name="colsep">
     <xsl:choose>
       <!-- If this is the last column, colsep never applies. -->
-      <xsl:when test="$colnum &gt;= ancestor::tgroup/@cols">0</xsl:when>
+      <xsl:when test="number($colnum) &gt;= ancestor::tgroup/@cols">0</xsl:when>
       <xsl:otherwise>
         <xsl:call-template name="inherited.table.attribute">
           <xsl:with-param name="entry" select="NOT-AN-ELEMENT-NAME"/>
@@ -272,7 +272,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
       </xsl:call-template>
     </xsl:if>
 
-    <xsl:if test="$colsep &gt; 0 and $colnum &lt; ancestor::tgroup/@cols">
+    <xsl:if test="$colsep &gt; 0 and number($colnum) &lt; ancestor::tgroup/@cols">
       <xsl:call-template name="border">
         <xsl:with-param name="side" select="'right'"/>
       </xsl:call-template>
@@ -686,36 +686,36 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   <xsl:choose>
     <xsl:when test="contains($spans, '0')">
       <xsl:call-template name="normal-row">
-	<xsl:with-param name="spans" select="$spans"/>
+        <xsl:with-param name="spans" select="$spans"/>
       </xsl:call-template>
     </xsl:when>
     <xsl:otherwise>
       <!--
       <xsl:message>
-	<xsl:text>Ignoring row: </xsl:text>
-	<xsl:value-of select="$spans"/>
-	<xsl:text> = </xsl:text>
-	<xsl:call-template name="consume-row">
-	  <xsl:with-param name="spans" select="$spans"/>
-	</xsl:call-template>
+        <xsl:text>Ignoring row: </xsl:text>
+        <xsl:value-of select="$spans"/>
+        <xsl:text> = </xsl:text>
+        <xsl:call-template name="consume-row">
+          <xsl:with-param name="spans" select="$spans"/>
+        </xsl:call-template>
       </xsl:message>
       -->
 
       <xsl:if test="normalize-space(.//text()) != ''">
-	<xsl:message>Warning: overlapped row contains content!</xsl:message>
+        <xsl:message>Warning: overlapped row contains content!</xsl:message>
       </xsl:if>
 
       <fo:table-row>
-	<xsl:comment> This row intentionally left blank </xsl:comment>
-	<fo:table-cell><fo:block/></fo:table-cell>
+        <xsl:comment> This row intentionally left blank </xsl:comment>
+        <fo:table-cell><fo:block/></fo:table-cell>
       </fo:table-row>
 
       <xsl:apply-templates select="following-sibling::row[1]">
-	<xsl:with-param name="spans">
-	  <xsl:call-template name="consume-row">
-	    <xsl:with-param name="spans" select="$spans"/>
-	  </xsl:call-template>
-	</xsl:with-param>
+        <xsl:with-param name="spans">
+          <xsl:call-template name="consume-row">
+            <xsl:with-param name="spans" select="$spans"/>
+          </xsl:call-template>
+        </xsl:with-param>
       </xsl:apply-templates>
     </xsl:otherwise>
   </xsl:choose>
@@ -724,20 +724,9 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 <xsl:template name="normal-row">
   <xsl:param name="spans"/>
 
-  <xsl:variable name="bgcolor">
-    <xsl:call-template name="dbfo-attribute">
-      <xsl:with-param name="pis" select="processing-instruction('dbfo')"/>
-      <xsl:with-param name="attribute" select="'bgcolor'"/>
-    </xsl:call-template>
-  </xsl:variable>
-
   <fo:table-row>
+    <xsl:call-template name="table.row.properties"/>
     <xsl:call-template name="anchor"/>
-    <xsl:if test="$bgcolor != ''">
-      <xsl:attribute name="background-color">
-        <xsl:value-of select="$bgcolor"/>
-      </xsl:attribute>
-    </xsl:if>
 
     <xsl:apply-templates select="(entry|entrytbl)[1]">
       <xsl:with-param name="spans" select="$spans"/>
@@ -755,6 +744,22 @@ to be incomplete. Don't forget to read the source, too :-)</para>
       <xsl:with-param name="spans" select="$nextspans"/>
     </xsl:apply-templates>
   </xsl:if>
+</xsl:template>
+
+<!-- customize this template to add row properties -->
+<xsl:template name="table.row.properties">
+  <xsl:variable name="bgcolor">
+    <xsl:call-template name="dbfo-attribute">
+      <xsl:with-param name="pis" select="processing-instruction('dbfo')"/>
+      <xsl:with-param name="attribute" select="'bgcolor'"/>
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:if test="$bgcolor != ''">
+    <xsl:attribute name="background-color">
+      <xsl:value-of select="$bgcolor"/>
+    </xsl:attribute>
+  </xsl:if>
+
 </xsl:template>
 
 <xsl:template match="entry|entrytbl" name="entry">
@@ -874,7 +879,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
       </xsl:call-template>
     </xsl:when>
 
-    <xsl:when test="$entry.colnum &gt; $col">
+    <xsl:when test="number($entry.colnum) &gt; $col">
       <xsl:call-template name="empty.table.cell">
         <xsl:with-param name="colnum" select="$col"/>
       </xsl:call-template>
@@ -1186,7 +1191,7 @@ to be incomplete. Don't forget to read the source, too :-)</para>
       </xsl:call-template>
     </xsl:when>
 
-    <xsl:when test="$entry.colnum &gt; $col">
+    <xsl:when test="number($entry.colnum) &gt; $col">
       <xsl:text>0:</xsl:text>
       <xsl:call-template name="sentry">
         <xsl:with-param name="col" select="$col+$entry.colspan"/>

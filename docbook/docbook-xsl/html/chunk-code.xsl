@@ -7,7 +7,7 @@
                 exclude-result-prefixes="exsl cf ng db">
 
 <!-- ********************************************************************
-     $Id: chunk-code.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: chunk-code.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -50,7 +50,8 @@
 
   <xsl:choose>
     <xsl:when test="$chunk != 0">
-      <cf:div class="{local-name(.)}" id="{generate-id()}">
+      <cf:div id="{generate-id()}">
+        <xsl:apply-templates select="." mode="class.attribute"/>
         <xsl:apply-templates select="*" mode="find.chunks"/>
       </cf:div>
     </xsl:when>
@@ -72,15 +73,15 @@
       <xsl:variable name="chunks" select="exsl:node-set($chunk.hierarchy)//cf:div"/>
       <xsl:variable name="genid" select="generate-id()"/>
 
-      <xsl:variable name="div" select="$chunks[@id=$genid]"/>
+      <xsl:variable name="div" select="$chunks[@id=$genid or @xml:id=$genid]"/>
 
       <xsl:variable name="prevdiv"
                     select="($div/preceding-sibling::cf:div|$div/preceding::cf:div|$div/parent::cf:div)[last()]"/>
-      <xsl:variable name="prev" select="key('genid', $prevdiv/@id)"/>
+      <xsl:variable name="prev" select="key('genid', ($prevdiv/@id|$prevdiv/@xml:id)[1])"/>
 
       <xsl:variable name="nextdiv"
                     select="($div/following-sibling::cf:div|$div/following::cf:div|$div/cf:div)[1]"/>
-      <xsl:variable name="next" select="key('genid', $nextdiv/@id)"/>
+      <xsl:variable name="next" select="key('genid', ($nextdiv/@id|$nextdiv/@xml:id)[1])"/>
 
       <xsl:choose>
         <xsl:when test="$onechunk != 0 and parent::*">

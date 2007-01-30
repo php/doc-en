@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: html.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: html.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -19,12 +19,67 @@
 <!-- inline.boldseq), which in turn are called by other (element) -->
 <!-- templates, so it results, currently, in supporting generation of the -->
 <!-- HTML "title" attribute for a total of about 92 elements. -->
+<!-- You can use mode="html.title.attribute" to get a title for -->
+<!-- an element specified by a param, including targets of cross references. -->
 <xsl:template name="generate.html.title">
-  <xsl:if test="alt">
-    <xsl:attribute name="title">
-      <xsl:value-of select="normalize-space(alt)"/>
-    </xsl:attribute>
-  </xsl:if>
+  <xsl:apply-templates select="." mode="html.title.attribute"/>
+</xsl:template>
+
+<!-- Generate a title attribute for the context node -->
+<xsl:template match="*" mode="html.title.attribute">
+  <xsl:variable name="is.title">
+    <xsl:call-template name="gentext.template.exists">
+      <xsl:with-param name="context" select="'title'"/>
+      <xsl:with-param name="name" select="local-name(.)"/>
+      <xsl:with-param name="lang">
+        <xsl:call-template name="l10n.language"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:variable name="is.title-numbered">
+    <xsl:call-template name="gentext.template.exists">
+      <xsl:with-param name="context" select="'title-numbered'"/>
+      <xsl:with-param name="name" select="local-name(.)"/>
+      <xsl:with-param name="lang">
+        <xsl:call-template name="l10n.language"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:variable name="is.title-unnumbered">
+    <xsl:call-template name="gentext.template.exists">
+      <xsl:with-param name="context" select="'title-unnumbered'"/>
+      <xsl:with-param name="name" select="local-name(.)"/>
+      <xsl:with-param name="lang">
+        <xsl:call-template name="l10n.language"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:variable name="gentext.title">
+    <xsl:if test="$is.title != 0 or
+                  $is.title-numbered != 0 or
+                  $is.title-unnumbered != 0">
+      <xsl:apply-templates select="."
+                           mode="object.title.markup.textonly"/>
+    </xsl:if>
+  </xsl:variable>
+
+  <xsl:choose>
+    <xsl:when test="string-length($gentext.title) != 0">
+      <xsl:attribute name="title">
+        <xsl:value-of select="$gentext.title"/>
+      </xsl:attribute>
+    </xsl:when>
+    <!-- Fall back to alt if available -->
+    <xsl:when test="alt">
+      <xsl:attribute name="title">
+        <xsl:value-of select="normalize-space(alt)"/>
+      </xsl:attribute>
+    </xsl:when>
+  </xsl:choose>
+
 </xsl:template>
 
 <xsl:template name="dir">
@@ -33,10 +88,10 @@
   <xsl:variable name="dir">
     <xsl:choose>
       <xsl:when test="@dir">
-	<xsl:value-of select="@dir"/>
+        <xsl:value-of select="@dir"/>
       </xsl:when>
       <xsl:when test="$inherit != 0">
-	<xsl:value-of select="ancestor::*/@dir[1]"/>
+        <xsl:value-of select="ancestor::*/@dir[1]"/>
       </xsl:when>
     </xsl:choose>
   </xsl:variable>
@@ -128,20 +183,20 @@
   <xsl:if test="$id.warnings != 0 and not(@id) and not(@xml:id) and parent::*">
     <xsl:variable name="title">
       <xsl:choose>
-	<xsl:when test="title">
-	  <xsl:value-of select="title[1]"/>
-	</xsl:when>
-	<xsl:when test="substring(local-name(*[1]),
-			          string-length(local-name(*[1])-3) = 'info')
-			and *[1]/title">
-	  <xsl:value-of select="*[1]/title[1]"/>
-	</xsl:when>
-	<xsl:when test="refmeta/refentrytitle">
-	  <xsl:value-of select="refmeta/refentrytitle"/>
-	</xsl:when>
-	<xsl:when test="refnamediv/refname">
-	  <xsl:value-of select="refnamediv/refname[1]"/>
-	</xsl:when>
+        <xsl:when test="title">
+          <xsl:value-of select="title[1]"/>
+        </xsl:when>
+        <xsl:when test="substring(local-name(*[1]),
+                                  string-length(local-name(*[1])-3) = 'info')
+                        and *[1]/title">
+          <xsl:value-of select="*[1]/title[1]"/>
+        </xsl:when>
+        <xsl:when test="refmeta/refentrytitle">
+          <xsl:value-of select="refmeta/refentrytitle"/>
+        </xsl:when>
+        <xsl:when test="refnamediv/refname">
+          <xsl:value-of select="refnamediv/refname[1]"/>
+        </xsl:when>
       </xsl:choose>
     </xsl:variable>
 
@@ -149,19 +204,28 @@
       <xsl:text>ID recommended on </xsl:text>
       <xsl:value-of select="local-name(.)"/>
       <xsl:if test="$title != ''">
-	<xsl:text>: </xsl:text>
-	<xsl:choose>
-	  <xsl:when test="string-length($title) &gt; 40">
-	    <xsl:value-of select="substring($title,1,40)"/>
-	    <xsl:text>...</xsl:text>
-	  </xsl:when>
-	  <xsl:otherwise>
-	    <xsl:value-of select="$title"/>
-	  </xsl:otherwise>
-	</xsl:choose>
+        <xsl:text>: </xsl:text>
+        <xsl:choose>
+          <xsl:when test="string-length($title) &gt; 40">
+            <xsl:value-of select="substring($title,1,40)"/>
+            <xsl:text>...</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="$title"/>
+          </xsl:otherwise>
+        </xsl:choose>
       </xsl:if>
     </xsl:message>
   </xsl:if>
+</xsl:template>
+
+<xsl:template match="*" mode="class.attribute">
+  <xsl:param name="class" select="local-name(.)"/>
+  <!-- permit customization of class attributes -->
+  <!-- Use element name by default -->
+  <xsl:attribute name="class">
+    <xsl:value-of select="$class"/>
+  </xsl:attribute>
 </xsl:template>
 
 </xsl:stylesheet>

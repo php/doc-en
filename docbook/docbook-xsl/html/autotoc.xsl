@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: autotoc.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: autotoc.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -31,6 +31,8 @@
   <xsl:param name="toc-context" select="."/>
   <xsl:param name="toc.title.p" select="true()"/>
   <xsl:param name="nodes" select="/NOT-AN-ELEMENT"/>
+
+  <xsl:variable name="nodes.plus" select="$nodes | qandaset"/>
 
   <xsl:variable name="toc.title">
     <xsl:if test="$toc.title.p">
@@ -63,16 +65,33 @@
       </xsl:if>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:if test="$nodes">
-        <div class="toc">
-          <xsl:copy-of select="$toc.title"/>
-          <xsl:element name="{$toc.list.type}">
-            <xsl:apply-templates select="$nodes" mode="toc">
-              <xsl:with-param name="toc-context" select="$toc-context"/>
-            </xsl:apply-templates>
-          </xsl:element>
-        </div>
-      </xsl:if>
+      <xsl:choose>
+        <xsl:when test="$qanda.in.toc != 0">
+          <xsl:if test="$nodes.plus">
+            <div class="toc">
+              <xsl:copy-of select="$toc.title"/>
+              <xsl:element name="{$toc.list.type}">
+                <xsl:apply-templates select="$nodes.plus" mode="toc">
+                  <xsl:with-param name="toc-context" select="$toc-context"/>
+                </xsl:apply-templates>
+              </xsl:element>
+            </div>
+          </xsl:if>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:if test="$nodes">
+            <div class="toc">
+              <xsl:copy-of select="$toc.title"/>
+              <xsl:element name="{$toc.list.type}">
+                <xsl:apply-templates select="$nodes" mode="toc">
+                  <xsl:with-param name="toc-context" select="$toc-context"/>
+                </xsl:apply-templates>
+              </xsl:element>
+            </div>
+          </xsl:if>
+        </xsl:otherwise>
+      </xsl:choose>
+
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -109,7 +128,7 @@
   <xsl:if test="contains($toc.params, 'equation')">
     <xsl:call-template name="list.of.titles">
       <xsl:with-param name="titles" select="'equation'"/>
-      <xsl:with-param name="nodes" select=".//equation[title]"/>
+      <xsl:with-param name="nodes" select=".//equation[title or info/title]"/>
     </xsl:call-template>
   </xsl:if>
 
@@ -199,11 +218,22 @@
   <xsl:param name="toc-context" select="."/>
   <xsl:param name="nodes" select="NOT-AN-ELEMENT"/>
 
+  <xsl:variable name="nodes.plus" select="$nodes | qandaset"/>
+
   <xsl:variable name="subtoc">
     <xsl:element name="{$toc.list.type}">
-      <xsl:apply-templates mode="toc" select="$nodes">
-        <xsl:with-param name="toc-context" select="$toc-context"/>
-      </xsl:apply-templates>
+      <xsl:choose>
+        <xsl:when test="$qanda.in.toc != 0">
+          <xsl:apply-templates mode="toc" select="$nodes.plus">
+            <xsl:with-param name="toc-context" select="$toc-context"/>
+          </xsl:apply-templates>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:apply-templates mode="toc" select="$nodes">
+            <xsl:with-param name="toc-context" select="$toc-context"/>
+          </xsl:apply-templates>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:element>
   </xsl:variable>
 
@@ -261,13 +291,17 @@
       <xsl:with-param name="toc-context" select="$toc-context"/>
     </xsl:call-template>
     <xsl:if test="$toc.listitem.type = 'li'
-                  and $toc.section.depth > $depth and count($nodes)&gt;0
+                  and $toc.section.depth > $depth and 
+                  ( ($qanda.in.toc = 0 and count($nodes)&gt;0) or
+                    ($qanda.in.toc != 0 and count($nodes.plus)&gt;0) )
                   and $toc.max.depth > $depth.from.context">
       <xsl:copy-of select="$subtoc.list"/>
     </xsl:if>
   </xsl:element>
   <xsl:if test="$toc.listitem.type != 'li'
-                and $toc.section.depth > $depth and count($nodes)&gt;0
+                and $toc.section.depth > $depth and 
+                ( ($qanda.in.toc = 0 and count($nodes)&gt;0) or
+                  ($qanda.in.toc != 0 and count($nodes.plus)&gt;0) )
                 and $toc.max.depth > $depth.from.context">
     <xsl:copy-of select="$subtoc.list"/>
   </xsl:if>
@@ -615,6 +649,19 @@
       <xsl:apply-templates select="." mode="titleabbrev.markup"/>
     </a>
   </xsl:element>
+</xsl:template>
+
+<!-- Used only if qanda.in.toc parameter is non-zero -->
+<xsl:template match="qandaset" mode="toc">
+  <xsl:param name="toc-context" select="."/>
+  <xsl:call-template name="subtoc">
+    <xsl:with-param name="toc-context" select="$toc-context"/>
+    <xsl:with-param name="nodes" select="qandadiv | qandaentry"/>
+  </xsl:call-template>
+</xsl:template>
+
+<xsl:template match="qandadiv|qandaentry" mode="toc">
+  <xsl:apply-templates select="." mode="qandatoc.mode"/>
 </xsl:template>
 
 </xsl:stylesheet>

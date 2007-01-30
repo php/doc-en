@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: xep.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: xep.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
      (c) Stephane Bline Peregrine Systems 2001
      Implementation of xep extensions:
@@ -55,7 +55,9 @@
     <xsl:element name="rx:meta-field">
       <xsl:attribute name="name">creator</xsl:attribute>
       <xsl:attribute name="value">
-        <xsl:text>DocBook XSL Stylesheets V</xsl:text>
+        <xsl:text>DocBook </xsl:text>
+        <xsl:value-of select="$DistroTitle"/>
+        <xsl:text> V</xsl:text>
         <xsl:value-of select="$VERSION"/>
       </xsl:attribute>
     </xsl:element>

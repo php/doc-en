@@ -11,7 +11,7 @@
 <xsl:include href="../common/table.xsl"/>
 
 <!-- ********************************************************************
-     $Id: table.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: table.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -48,7 +48,7 @@
   <xsl:variable name="colsep">
     <xsl:choose>
       <!-- If this is the last column, colsep never applies. -->
-      <xsl:when test="$colnum &gt;= ancestor::tgroup/@cols">0</xsl:when>
+      <xsl:when test="number($colnum) &gt;= ancestor::tgroup/@cols">0</xsl:when>
       <xsl:otherwise>
         <xsl:call-template name="inherited.table.attribute">
           <xsl:with-param name="entry" select="NOT-AN-ELEMENT-NAME"/>
@@ -455,7 +455,7 @@
 <xsl:template match="spanspec"></xsl:template>
 
 <xsl:template match="thead|tfoot">
-  <xsl:element name="{name(.)}">
+  <xsl:element name="{local-name(.)}">
     <xsl:if test="@align">
       <xsl:attribute name="align">
         <xsl:value-of select="@align"/>
@@ -789,7 +789,7 @@
       </xsl:call-template>
     </xsl:when>
 
-    <xsl:when test="$entry.colnum &gt; $col">
+    <xsl:when test="number($entry.colnum) &gt; $col">
       <xsl:call-template name="empty.table.cell"/>
       <xsl:call-template name="entry">
         <xsl:with-param name="col" select="$col+1"/>
@@ -815,9 +815,9 @@
         </xsl:if>
 
         <xsl:if test="$entry.propagates.style != 0 and @role">
-          <xsl:attribute name="class">
-            <xsl:value-of select="@role"/>
-          </xsl:attribute>
+          <xsl:apply-templates select="." mode="class.attribute">
+            <xsl:with-param name="class" select="@role"/>
+          </xsl:apply-templates>
         </xsl:if>
 
         <xsl:if test="$show.revisionflag and @revisionflag">
@@ -877,7 +877,8 @@
           </xsl:attribute>
         </xsl:if>
 
-        <xsl:if test="not(preceding-sibling::*) and ancestor::row/@id">
+        <xsl:if test="not(preceding-sibling::*) and 
+                    (ancestor::row[1]/@id or ancestor::row[1]/@xml:id)">
           <xsl:call-template name="anchor">
             <xsl:with-param name="node" select="ancestor::row[1]"/>
           </xsl:call-template>
@@ -951,7 +952,7 @@
       </xsl:call-template>
     </xsl:when>
 
-    <xsl:when test="$entry.colnum &gt; $col">
+    <xsl:when test="number($entry.colnum) &gt; $col">
       <xsl:text>0:</xsl:text>
       <xsl:call-template name="sentry">
         <xsl:with-param name="col" select="$col+$entry.colspan"/>

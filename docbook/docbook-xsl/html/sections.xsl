@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: sections.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: sections.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -19,7 +19,8 @@
 
   <xsl:call-template name="id.warning"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -99,7 +100,8 @@
 <xsl:template match="sect1">
   <xsl:call-template name="id.warning"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -151,7 +153,8 @@
 <xsl:template match="sect2">
   <xsl:call-template name="id.warning"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -203,7 +206,8 @@
 <xsl:template match="sect3">
   <xsl:call-template name="id.warning"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -255,7 +259,8 @@
 <xsl:template match="sect4">
   <xsl:call-template name="id.warning"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -307,7 +312,8 @@
 <xsl:template match="sect5">
   <xsl:call-template name="id.warning"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -359,7 +365,8 @@
 <xsl:template match="simplesect">
   <xsl:call-template name="id.warning"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -378,35 +385,42 @@
 <xsl:template match="section/titleabbrev"></xsl:template>
 <xsl:template match="section/subtitle"></xsl:template>
 <xsl:template match="sectioninfo"></xsl:template>
+<xsl:template match="section/info"></xsl:template>
 
 <xsl:template match="sect1/title"></xsl:template>
 <xsl:template match="sect1/titleabbrev"></xsl:template>
 <xsl:template match="sect1/subtitle"></xsl:template>
 <xsl:template match="sect1info"></xsl:template>
+<xsl:template match="sect1/info"></xsl:template>
 
 <xsl:template match="sect2/title"></xsl:template>
 <xsl:template match="sect2/subtitle"></xsl:template>
 <xsl:template match="sect2/titleabbrev"></xsl:template>
 <xsl:template match="sect2info"></xsl:template>
+<xsl:template match="sect2/info"></xsl:template>
 
 <xsl:template match="sect3/title"></xsl:template>
 <xsl:template match="sect3/subtitle"></xsl:template>
 <xsl:template match="sect3/titleabbrev"></xsl:template>
 <xsl:template match="sect3info"></xsl:template>
+<xsl:template match="sect3/info"></xsl:template>
 
 <xsl:template match="sect4/title"></xsl:template>
 <xsl:template match="sect4/subtitle"></xsl:template>
 <xsl:template match="sect4/titleabbrev"></xsl:template>
 <xsl:template match="sect4info"></xsl:template>
+<xsl:template match="sect4/info"></xsl:template>
 
 <xsl:template match="sect5/title"></xsl:template>
 <xsl:template match="sect5/subtitle"></xsl:template>
 <xsl:template match="sect5/titleabbrev"></xsl:template>
 <xsl:template match="sect5info"></xsl:template>
+<xsl:template match="sect5/info"></xsl:template>
 
 <xsl:template match="simplesect/title"></xsl:template>
 <xsl:template match="simplesect/subtitle"></xsl:template>
 <xsl:template match="simplesect/titleabbrev"></xsl:template>
+<xsl:template match="simplesect/info"></xsl:template>
 
 <!-- ==================================================================== -->
 

@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: labels.xsl,v 1.1 2007-01-22 22:11:00 bjori Exp $
+     $Id: labels.xsl,v 1.2 2007-01-30 18:12:37 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -38,7 +38,7 @@ element label.</para>
   <xsl:if test="$verbose">
     <xsl:message>
       <xsl:text>Request for label of unexpected element: </xsl:text>
-      <xsl:value-of select="name(.)"/>
+      <xsl:value-of select="local-name(.)"/>
     </xsl:message>
   </xsl:if>
 </xsl:template>
@@ -702,10 +702,12 @@ element label.</para>
             <xsl:apply-templates select="$pchap" mode="label.markup"/>
             <xsl:apply-templates select="$pchap" mode="intralabel.punctuation"/>
           </xsl:if>
-          <xsl:number format="1" count="equation[title]" from="chapter|appendix" level="any"/>
+          <xsl:number format="1" count="equation[title or info/title]" 
+	              from="chapter|appendix" level="any"/>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:number format="1" count="equation[title]" from="book|article" level="any"/>
+          <xsl:number format="1" count="equation[title or info/title]" 
+	              from="book|article" level="any"/>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:otherwise>
@@ -745,6 +747,10 @@ element label.</para>
 </xsl:template>
 
 <xsl:template match="abstract" mode="label.markup">
+  <!-- nop -->
+</xsl:template>
+
+<xsl:template match="sidebar" mode="label.markup">
   <!-- nop -->
 </xsl:template>
 
@@ -800,7 +806,7 @@ Custom stylesheets may override it to get more selective behavior.</para>
   <xsl:choose>
     <xsl:when test="string($format) != 0">
       <xsl:choose>
-        <xsl:when test="$format='arabic' or $format='1'">1</xsl:when>
+        <xsl:when test="string($format)='arabic' or $format='1'">1</xsl:when>
         <xsl:when test="$format='loweralpha' or $format='a'">
           <xsl:value-of select="'a'"/>
         </xsl:when>
@@ -813,6 +819,9 @@ Custom stylesheets may override it to get more selective behavior.</para>
         <xsl:when test="$format='upperroman' or $format='I'">
           <xsl:value-of select="'I'"/>
         </xsl:when>      
+	<xsl:when test="$format='arabicindic' or $format='&#x661;'">
+	  <xsl:value-of select="'&#x661;'"/>
+	</xsl:when>
         <xsl:otherwise>
           <xsl:message>
             <xsl:text>Unexpected </xsl:text><xsl:value-of select="local-name(.)"/><xsl:text>.autolabel value: </xsl:text>
@@ -830,7 +839,8 @@ Custom stylesheets may override it to get more selective behavior.</para>
 <refdescription>
 <para>Returns format passed as parameter if non zero. Supported
   format are 'arabic' or '1', 'loweralpha' or 'a', 'lowerroman' or 'i', 
-  'uppoerlapha' or 'A', 'upperroman' or 'I'. If its not one of these then 
+  'upperlapha' or 'A', 'upperroman' or 'I', 'arabicindic' or '&#x661;'.
+  If its not one of these then 
   returns the default format.</para>
 </refdescription>
 </doc:template>

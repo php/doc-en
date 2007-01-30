@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: l10n.xsl,v 1.1 2007-01-22 22:11:00 bjori Exp $
+     $Id: l10n.xsl,v 1.2 2007-01-30 18:12:37 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -194,7 +194,7 @@
 </xsl:template>
 
 <xsl:template name="gentext.element.name">
-  <xsl:param name="element.name" select="name(.)"/>
+  <xsl:param name="element.name" select="local-name(.)"/>
   <xsl:param name="lang">
     <xsl:call-template name="l10n.language"/>
   </xsl:param>
@@ -314,6 +314,7 @@
   <xsl:param name="lang">
     <xsl:call-template name="l10n.language"/>
   </xsl:param>
+  <xsl:param name="verbose" select="1"/>
 
   <xsl:variable name="local.localization.node"
                 select="($local.l10n.xml//l:i18n/l:l10n[@language=$lang])[1]"/>
@@ -322,7 +323,8 @@
                 select="($l10n.xml/l:i18n/l:l10n[@language=$lang])[1]"/>
 
   <xsl:if test="count($localization.node) = 0
-                and count($local.localization.node) = 0">
+                and count($local.localization.node) = 0
+                and $verbose != 0">
     <xsl:message>
       <xsl:text>No "</xsl:text>
       <xsl:value-of select="$lang"/>
@@ -337,7 +339,8 @@
                 select="$localization.node/l:context[@name=$context]"/>
 
   <xsl:if test="count($context.node) = 0
-                and count($local.context.node) = 0">
+                and count($local.context.node) = 0
+                and $verbose != 0">
     <xsl:message>
       <xsl:text>No context named "</xsl:text>
       <xsl:value-of select="$context"/>
@@ -379,7 +382,11 @@
             <xsl:with-param name="xrefstyle" select="$xrefstyle"/>
             <xsl:with-param name="referrer" select="$referrer"/>
             <xsl:with-param name="lang" select="$lang"/>
+            <xsl:with-param name="verbose" select="$verbose"/>
           </xsl:call-template>
+        </xsl:when>
+        <xsl:when test="$verbose = 0">
+          <!-- silence -->
         </xsl:when>
         <xsl:otherwise>
           <xsl:message>
@@ -398,6 +405,8 @@ in the context named "</xsl:text>
   </xsl:choose>
 </xsl:template>
 
+<!-- silently test if a gentext template exists -->
+
 <xsl:template name="gentext.template.exists">
   <xsl:param name="context" select="'default'"/>
   <xsl:param name="name" select="'default'"/>
@@ -409,51 +418,22 @@ in the context named "</xsl:text>
     <xsl:call-template name="l10n.language"/>
   </xsl:param>
 
-  <xsl:variable name="local.localization.node"
-                select="($local.l10n.xml//l:i18n/l:l10n[@language=$lang])[1]"/>
-
-  <xsl:variable name="localization.node"
-                select="($l10n.xml/l:i18n/l:l10n[@language=$lang])[1]"/>
-
-  <xsl:variable name="local.context.node"
-                select="$local.localization.node/l:context[@name=$context]"/>
-
-  <xsl:variable name="context.node"
-                select="$localization.node/l:context[@name=$context]"/>
-
-  <xsl:variable name="local.template.node"
-                select="($local.context.node/l:template[@name=$name
-                                                        and @style
-                                                        and @style=$xrefstyle]
-                        |$local.context.node/l:template[@name=$name
-                                                        and not(@style)])[1]"/>
-
-  <xsl:variable name="template.node"
-                select="($context.node/l:template[@name=$name
-                                                  and @style
-                                                  and @style=$xrefstyle]
-                        |$context.node/l:template[@name=$name
-                                                  and not(@style)])[1]"/>
-
+  <xsl:variable name="template">
+    <xsl:call-template name="gentext.template">
+      <xsl:with-param name="context" select="$context"/>
+      <xsl:with-param name="name" select="$name"/>
+      <xsl:with-param name="origname" select="$origname"/>
+      <xsl:with-param name="purpose" select="$purpose"/>
+      <xsl:with-param name="xrefstyle" select="$xrefstyle"/>
+      <xsl:with-param name="referrer" select="$referrer"/>
+      <xsl:with-param name="lang" select="$lang"/>
+      <xsl:with-param name="verbose" select="0"/>
+    </xsl:call-template>
+  </xsl:variable>
+  
   <xsl:choose>
-    <xsl:when test="$local.template.node/@text">1</xsl:when>
-    <xsl:when test="$template.node/@text">1</xsl:when>
-    <xsl:otherwise>
-      <xsl:choose>
-        <xsl:when test="contains($name, '/')">
-          <xsl:call-template name="gentext.template.exists">
-            <xsl:with-param name="context" select="$context"/>
-            <xsl:with-param name="name" select="substring-after($name, '/')"/>
-            <xsl:with-param name="origname" select="$origname"/>
-            <xsl:with-param name="purpose" select="$purpose"/>
-            <xsl:with-param name="xrefstyle" select="$xrefstyle"/>
-            <xsl:with-param name="referrer" select="$referrer"/>
-            <xsl:with-param name="lang" select="$lang"/>
-          </xsl:call-template>
-        </xsl:when>
-        <xsl:otherwise>0</xsl:otherwise>
-      </xsl:choose>
-    </xsl:otherwise>
+    <xsl:when test="string-length($template) != 0">1</xsl:when>
+    <xsl:otherwise>0</xsl:otherwise>
   </xsl:choose>
 </xsl:template>
 

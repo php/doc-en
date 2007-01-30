@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: keywords.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
+     $Id: annotations.xsl,v 1.1 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -13,9 +13,6 @@
 
      ******************************************************************** -->
 
-<xsl:template match="keywordset"></xsl:template>
-<xsl:template match="subjectset"></xsl:template>
-
-<!-- ==================================================================== -->
+<xsl:template match="annotation"/>
 
 </xsl:stylesheet>

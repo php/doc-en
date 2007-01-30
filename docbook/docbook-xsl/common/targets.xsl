@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: targets.xsl,v 1.1 2007-01-22 22:11:00 bjori Exp $
+     $Id: targets.xsl,v 1.2 2007-01-30 18:12:37 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -64,7 +64,7 @@ document output.
             <xsl:with-param name="omit-xml-declaration" select="'yes'"/>
             <xsl:with-param name="doctype-public" select="''"/>
             <xsl:with-param name="doctype-system" select="''"/>
-            <xsl:with-param name="indent" select="'yes'"/>
+            <xsl:with-param name="indent" select="'no'"/>
             <xsl:with-param name="quiet" select="0"/>
             <xsl:with-param name="content">
               <xsl:apply-templates select="." mode="olink.mode"/>
@@ -254,7 +254,7 @@ document output.
   <xsl:apply-templates mode="olink.mode"/>
 </xsl:template>
 
-<xsl:template match="equation[title]" mode="olink.mode">
+<xsl:template match="equation[title or info/title]" mode="olink.mode">
   <xsl:call-template name="obj"/>
 </xsl:template>
 

@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: admon.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: admon.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -35,11 +35,11 @@
   <xsl:variable name="filename">
     <xsl:value-of select="$admon.graphics.path"/>
     <xsl:choose>
-      <xsl:when test="name($node)='note'">note</xsl:when>
-      <xsl:when test="name($node)='warning'">warning</xsl:when>
-      <xsl:when test="name($node)='caution'">caution</xsl:when>
-      <xsl:when test="name($node)='tip'">tip</xsl:when>
-      <xsl:when test="name($node)='important'">important</xsl:when>
+      <xsl:when test="local-name($node)='note'">note</xsl:when>
+      <xsl:when test="local-name($node)='warning'">warning</xsl:when>
+      <xsl:when test="local-name($node)='caution'">caution</xsl:when>
+      <xsl:when test="local-name($node)='tip'">tip</xsl:when>
+      <xsl:when test="local-name($node)='important'">important</xsl:when>
       <xsl:otherwise>note</xsl:otherwise>
     </xsl:choose>
     <xsl:value-of select="$admon.graphics.extension"/>
@@ -83,7 +83,7 @@
             </fo:block>
           </fo:list-item-label>
           <fo:list-item-body start-indent="body-start()">
-            <xsl:if test="$admon.textlabel != 0 or title">
+            <xsl:if test="$admon.textlabel != 0 or title or info/title">
               <fo:block xsl:use-attribute-sets="admonition.title.properties">
                 <xsl:apply-templates select="." mode="object.title.markup"/>
               </fo:block>
@@ -104,7 +104,7 @@
 
   <fo:block id="{$id}"
             xsl:use-attribute-sets="nongraphical.admonition.properties">
-    <xsl:if test="$admon.textlabel != 0 or title">
+    <xsl:if test="$admon.textlabel != 0 or title or info/title">
       <fo:block keep-with-next.within-column='always'
                 xsl:use-attribute-sets="admonition.title.properties">
          <xsl:apply-templates select="." mode="object.title.markup"/>

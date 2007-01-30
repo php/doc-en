@@ -11,7 +11,7 @@
             indent="no"/>
 
 <!-- ********************************************************************
-     $Id: docbook.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: docbook.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -69,7 +69,6 @@
 <xsl:include href="ebnf.xsl"/>
 <xsl:include href="chunker.xsl"/>
 <xsl:include href="html-rtf.xsl"/>
-<xsl:include href="docbookng.xsl"/>
 <xsl:include href="annotations.xsl"/>
 <xsl:include href="../common/stripns.xsl"/>
 
@@ -145,7 +144,7 @@
     <base href="{$html.base}"/>
   </xsl:if>
 
-  <meta name="generator" content="DocBook XSL Stylesheets V{$VERSION}"/>
+  <meta name="generator" content="DocBook {$DistroTitle} V{$VERSION}"/>
 
   <xsl:if test="$generate.meta.abstract != 0">
     <xsl:variable name="info" select="(articleinfo

@@ -9,7 +9,7 @@
 <xsl:output method="xml" indent="no"/>
 
 <!-- ********************************************************************
-     $Id: profile-docbook.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: profile-docbook.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -68,8 +68,8 @@
 <xsl:include href="pi.xsl"/>
 <xsl:include href="spaces.xsl"/>
 <xsl:include href="ebnf.xsl"/>
-<xsl:include href="docbookng.xsl"/>
 <xsl:include href="../html/chunker.xsl"/>
+<xsl:include href="annotations.xsl"/>
 <xsl:include href="../common/stripns.xsl"/>
 
 <xsl:include href="fop.xsl"/>

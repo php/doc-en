@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: lists.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: lists.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -15,7 +15,8 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="itemizedlist">
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="anchor"/>
     <xsl:if test="title">
       <xsl:call-template name="formal.object.heading"/>
@@ -135,7 +136,8 @@
     </xsl:choose>
   </xsl:variable>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="anchor"/>
 
     <xsl:if test="title">
@@ -254,7 +256,8 @@
     </xsl:call-template>
   </xsl:variable>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="anchor"/>
     <xsl:if test="title">
       <xsl:call-template name="formal.object.heading"/>
@@ -343,9 +346,9 @@
     <xsl:otherwise>
       <p>
         <xsl:if test="@role and $para.propagates.style != 0">
-          <xsl:attribute name="class">
-            <xsl:value-of select="@role"/>
-          </xsl:attribute>
+           <xsl:apply-templates select="." mode="class.attribute">
+             <xsl:with-param name="class" select="@role"/>
+           </xsl:apply-templates>
         </xsl:if>
 
         <xsl:call-template name="anchor"/>
@@ -426,7 +429,11 @@
 <xsl:template match="varlistentry/term">
   <span class="term">
     <xsl:call-template name="anchor"/>
-    <xsl:apply-templates/>
+    <xsl:call-template name="simple.xlink">
+      <xsl:with-param name="content">
+        <xsl:apply-templates/>
+      </xsl:with-param>
+    </xsl:call-template>
     <xsl:choose>
       <xsl:when test="position() = last()"/> <!-- do nothing -->
       <xsl:otherwise>
@@ -475,7 +482,8 @@
 </xsl:template>
 
 <xsl:template match="simplelist[@type='inline']">
-  <span class="{name(.)}">
+  <span>
+    <xsl:apply-templates select="." mode="class.attribute"/>
   <!-- if dbchoice PI exists, use that to determine the choice separator -->
   <!-- (that is, equivalent of "and" or "or" in current locale), or literal -->
   <!-- value of "choice" otherwise -->
@@ -491,7 +499,11 @@
   </xsl:variable>
 
   <xsl:for-each select="member">
-    <xsl:apply-templates/>
+    <xsl:call-template name="simple.xlink">
+      <xsl:with-param name="content">
+        <xsl:apply-templates/>
+      </xsl:with-param>
+    </xsl:call-template>
     <xsl:choose>
       <xsl:when test="position() = last()"/> <!-- do nothing -->
       <xsl:otherwise>
@@ -652,7 +664,11 @@
 
 <xsl:template match="member">
   <xsl:call-template name="anchor"/>
-  <xsl:apply-templates/>
+  <xsl:call-template name="simple.xlink">
+    <xsl:with-param name="content">
+      <xsl:apply-templates/>
+    </xsl:with-param>
+  </xsl:call-template>
 </xsl:template>
 
 <!-- ==================================================================== -->
@@ -682,7 +698,8 @@
                 |comment()[not(preceding-sibling::step)]
                 |processing-instruction()[not(preceding-sibling::step)]"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="anchor">
       <xsl:with-param name="conditional">
         <xsl:choose>
@@ -775,7 +792,8 @@
     </xsl:call-template>
   </xsl:variable>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="anchor"/>
 
     <xsl:choose>
@@ -916,9 +934,10 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="calloutlist">
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="anchor"/>
-    <xsl:if test="title">
+    <xsl:if test="title|info/title">
       <xsl:call-template name="formal.object.heading"/>
     </xsl:if>
 
@@ -996,9 +1015,9 @@
     <xsl:otherwise>
       <p>
         <xsl:if test="@role and $para.propagates.style != 0">
-          <xsl:attribute name="class">
-            <xsl:value-of select="@role"/>
-          </xsl:attribute>
+          <xsl:apply-templates select="." mode="class.attribute">
+            <xsl:with-param name="class" select="@role"/>
+          </xsl:apply-templates>
         </xsl:if>
 
         <xsl:call-template name="anchor"/>

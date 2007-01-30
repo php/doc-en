@@ -7,7 +7,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: common.xsl,v 1.1 2007-01-22 22:11:00 bjori Exp $
+     $Id: common.xsl,v 1.2 2007-01-30 18:12:37 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -21,7 +21,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: common.xsl,v 1.1 2007-01-22 22:11:00 bjori Exp $
+$Id: common.xsl,v 1.2 2007-01-30 18:12:37 bjori Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>
@@ -64,7 +64,7 @@ copyright dedication docinfo editor entrytbl epigraph equation
 example figure footnote footnoteref formalpara funcprototype
 funcsynopsis glossary glossdef glossdiv glossentry glosslist graphicco
 group highlights imagedata imageobject imageobjectco important index
-indexdiv indexentry indexterm informalequation informalexample
+indexdiv indexentry indexterm info informalequation informalexample
 informalfigure informaltable inlineequation inlinemediaobject
 itemizedlist itermset keycombo keywordset legalnotice listitem lot
 mediaobject mediaobjectco menuchoice msg msgentry msgexplan msginfo
@@ -210,12 +210,12 @@ Defaults to the context node.</para>
 <xsl:template name="section.level">
   <xsl:param name="node" select="."/>
   <xsl:choose>
-    <xsl:when test="name($node)='sect1'">1</xsl:when>
-    <xsl:when test="name($node)='sect2'">2</xsl:when>
-    <xsl:when test="name($node)='sect3'">3</xsl:when>
-    <xsl:when test="name($node)='sect4'">4</xsl:when>
-    <xsl:when test="name($node)='sect5'">5</xsl:when>
-    <xsl:when test="name($node)='section'">
+    <xsl:when test="local-name($node)='sect1'">1</xsl:when>
+    <xsl:when test="local-name($node)='sect2'">2</xsl:when>
+    <xsl:when test="local-name($node)='sect3'">3</xsl:when>
+    <xsl:when test="local-name($node)='sect4'">4</xsl:when>
+    <xsl:when test="local-name($node)='sect5'">5</xsl:when>
+    <xsl:when test="local-name($node)='section'">
       <xsl:choose>
         <xsl:when test="$node/../../../../../../section">6</xsl:when>
         <xsl:when test="$node/../../../../../section">5</xsl:when>
@@ -225,16 +225,16 @@ Defaults to the context node.</para>
         <xsl:otherwise>1</xsl:otherwise>
       </xsl:choose>
     </xsl:when>
-    <xsl:when test="name($node)='refsect1' or
-                    name($node)='refsect2' or
-                    name($node)='refsect3' or
-                    name($node)='refsection' or
-                    name($node)='refsynopsisdiv'">
+    <xsl:when test="local-name($node)='refsect1' or
+                    local-name($node)='refsect2' or
+                    local-name($node)='refsect3' or
+                    local-name($node)='refsection' or
+                    local-name($node)='refsynopsisdiv'">
       <xsl:call-template name="refentry.section.level">
         <xsl:with-param name="node" select="$node"/>
       </xsl:call-template>
     </xsl:when>
-    <xsl:when test="name($node)='simplesect'">
+    <xsl:when test="local-name($node)='simplesect'">
       <xsl:choose>
         <xsl:when test="$node/../../sect1">2</xsl:when>
         <xsl:when test="$node/../../sect2">3</xsl:when>
@@ -308,11 +308,11 @@ Defaults to the context node.</para>
 
   <xsl:variable name="levelinRE">
     <xsl:choose>
-      <xsl:when test="name($node)='refsynopsisdiv'">1</xsl:when>
-      <xsl:when test="name($node)='refsect1'">1</xsl:when>
-      <xsl:when test="name($node)='refsect2'">2</xsl:when>
-      <xsl:when test="name($node)='refsect3'">3</xsl:when>
-      <xsl:when test="name($node)='refsection'">
+      <xsl:when test="local-name($node)='refsynopsisdiv'">1</xsl:when>
+      <xsl:when test="local-name($node)='refsect1'">1</xsl:when>
+      <xsl:when test="local-name($node)='refsect2'">2</xsl:when>
+      <xsl:when test="local-name($node)='refsect3'">3</xsl:when>
+      <xsl:when test="local-name($node)='refsection'">
         <xsl:choose>
           <xsl:when test="$node/../../../../../refsection">5</xsl:when>
           <xsl:when test="$node/../../../../refsection">4</xsl:when>
@@ -378,30 +378,30 @@ Defaults to the context node.</para>
 <!--
  (hnr      (hierarchical-number-recursive (normalize "qandadiv") node))
 
-	 (parsect  (ancestor-member node (section-element-list)))
+         (parsect  (ancestor-member node (section-element-list)))
 
-	 (defnum   (if (and %qanda-inherit-numeration% 
-			    %section-autolabel%)
-		       (if (node-list-empty? parsect)
-			   (section-autolabel-prefix node)
-			   (section-autolabel parsect))
-		       ""))
+         (defnum   (if (and %qanda-inherit-numeration% 
+                            %section-autolabel%)
+                       (if (node-list-empty? parsect)
+                           (section-autolabel-prefix node)
+                           (section-autolabel parsect))
+                       ""))
 
-	 (hnumber  (let loop ((numlist hnr) (number defnum) 
-			      (sep (if (equal? defnum "") "" ".")))
-		     (if (null? numlist)
-			 number
-			 (loop (cdr numlist) 
-			       (string-append number
-					      sep
-					      (number->string (car numlist)))
-			       "."))))
-	 (cnumber  (child-number (parent node)))
-	 (number   (string-append hnumber 
-				  (if (equal? hnumber "")
-				      ""
-				      ".")
-				  (number->string cnumber))))
+         (hnumber  (let loop ((numlist hnr) (number defnum) 
+                              (sep (if (equal? defnum "") "" ".")))
+                     (if (null? numlist)
+                         number
+                         (loop (cdr numlist) 
+                               (string-append number
+                                              sep
+                                              (number->string (car numlist)))
+                               "."))))
+         (cnumber  (child-number (parent node)))
+         (number   (string-append hnumber 
+                                  (if (equal? hnumber "")
+                                      ""
+                                      ".")
+                                  (number->string cnumber))))
 -->
 
   <xsl:choose>
@@ -506,16 +506,16 @@ Defaults to the context node.</para>
     </xsl:when>
 
     <!-- handle corpauthor as a special case...-->
-    <xsl:when test="name($node)='corpauthor'">
+    <xsl:when test="local-name($node)='corpauthor'">
       <xsl:apply-templates select="$node"/>
     </xsl:when>
 
     <xsl:otherwise>
       <xsl:choose>
-	<!-- Handle case when personname contains only general markup (DocBook 5.0) -->
-	<xsl:when test="$node/self::personname and not($node/firstname or $node/honorific or $node/lineage or $node/othername or $node/surname)">
-	  <xsl:apply-templates select="$node/node()"/>
-	</xsl:when>
+        <!-- Handle case when personname contains only general markup (DocBook 5.0) -->
+        <xsl:when test="$node/self::personname and not($node/firstname or $node/honorific or $node/lineage or $node/othername or $node/surname)">
+          <xsl:apply-templates select="$node/node()"/>
+        </xsl:when>
         <xsl:when test="$style = 'family-given'">
           <xsl:call-template name="person.name.family-given">
             <xsl:with-param name="node" select="$node"/>
@@ -684,7 +684,7 @@ Defaults to the context node.</para>
     <xsl:when test="contains($string, $subst)">
       <xsl:value-of select="substring-before($string, $subst)"/>
       <xsl:call-template name="gentext.element.name">
-        <xsl:with-param name="element.name" select="name($target)"/>
+        <xsl:with-param name="element.name" select="local-name($target)"/>
       </xsl:call-template>
       <xsl:call-template name="xref.g.subst">
         <xsl:with-param name="string"
@@ -975,23 +975,23 @@ recursive process.</para>
         <xsl:variable name="useobject">
           <xsl:choose>
             <!-- The phrase is used only when contains TeX Math and output is FO -->
-            <xsl:when test="name($object)='textobject' and $object/phrase
+            <xsl:when test="local-name($object)='textobject' and $object/phrase
                             and $object/@role='tex' and $stylesheet.result.type = 'fo'
                             and $tex.math.in.alt != ''">
               <xsl:text>1</xsl:text> 
             </xsl:when>
             <!-- The phrase is never used -->
-            <xsl:when test="name($object)='textobject' and $object/phrase">
+            <xsl:when test="local-name($object)='textobject' and $object/phrase">
               <xsl:text>0</xsl:text>
             </xsl:when>
-            <xsl:when test="name($object)='textobject'
+            <xsl:when test="local-name($object)='textobject'
                             and $object/ancestor::equation ">
             <!-- The first textobject is not a reasonable fallback
                  for equation image -->
               <xsl:text>0</xsl:text>
             </xsl:when>
             <!-- The first textobject is a reasonable fallback -->
-            <xsl:when test="name($object)='textobject'
+            <xsl:when test="local-name($object)='textobject'
                             and $object[not(@role) or @role!='tex']">
               <xsl:text>1</xsl:text>
             </xsl:when>
@@ -1247,12 +1247,12 @@ pointed to by the link is one of the elements listed in
     <xsl:variable name="target" select="$targets[1]"/>
 
     <xsl:if test="count($target) &gt; 0">
-      <xsl:if test="not(contains(concat(' ', $element-list, ' '), name($target)))">
+      <xsl:if test="not(contains(concat(' ', $element-list, ' '), local-name($target)))">
         <xsl:message>
           <xsl:text>Error: linkend (</xsl:text>
           <xsl:value-of select="$linkend"/>
           <xsl:text>) points to "</xsl:text>
-          <xsl:value-of select="name($target)"/>
+          <xsl:value-of select="local-name($target)"/>
           <xsl:text>" not (one of): </xsl:text>
           <xsl:value-of select="$element-list"/>
         </xsl:message>
@@ -1346,16 +1346,16 @@ pointed to by the link is one of the elements listed in
   <xsl:choose>
     <xsl:when test="not($list/@continuation = 'continues')">
       <xsl:choose>
-	<xsl:when test="@startingnumber">
-	  <xsl:value-of select="@startingnumber"/>
-	</xsl:when>
-	<xsl:when test="$pi-html-start != ''">
-	  <xsl:value-of select="$pi-html-start"/>
-	</xsl:when>
-	<xsl:when test="$pi-fo-start != ''">
-	  <xsl:value-of select="$pi-fo-start"/>
-	</xsl:when>
-	<xsl:otherwise>1</xsl:otherwise>
+        <xsl:when test="@startingnumber">
+          <xsl:value-of select="@startingnumber"/>
+        </xsl:when>
+        <xsl:when test="$pi-html-start != ''">
+          <xsl:value-of select="$pi-html-start"/>
+        </xsl:when>
+        <xsl:when test="$pi-fo-start != ''">
+          <xsl:value-of select="$pi-fo-start"/>
+        </xsl:when>
+        <xsl:otherwise>1</xsl:otherwise>
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
@@ -1909,13 +1909,13 @@ unchanged.</para>
 
     <itemizedlist>
       <listitem>
-	<simpara>if the value of the <sgmltag>choice</sgmltag>
-	pseudo-attribute is "and" or "or", returns a localized "and"
-	or "or"</simpara>
+        <simpara>if the value of the <sgmltag>choice</sgmltag>
+        pseudo-attribute is "and" or "or", returns a localized "and"
+        or "or"</simpara>
       </listitem>
       <listitem>
-	<simpara>otherwise returns the literal value of the
-	<sgmltag>choice</sgmltag> pseudo-attribute</simpara>
+        <simpara>otherwise returns the literal value of the
+        <sgmltag>choice</sgmltag> pseudo-attribute</simpara>
       </listitem>
     </itemizedlist>
 
@@ -1951,7 +1951,7 @@ unchanged.</para>
     <!-- current locale -->
     <xsl:when test="$choice = 'and' or $choice = 'or'">
       <xsl:call-template name="gentext">
-	<xsl:with-param name="key" select="$choice"/>
+        <xsl:with-param name="key" select="$choice"/>
       </xsl:call-template>
     </xsl:when>
     <!--  otherwise, just output value of $choice, whatever it is -->

@@ -6,7 +6,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: refentry.xsl,v 1.1 2007-01-22 22:11:00 bjori Exp $
+     $Id: refentry.xsl,v 1.2 2007-01-30 18:12:37 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -20,7 +20,7 @@
 <doc:reference xmlns="">
   <referenceinfo>
     <releaseinfo role="meta">
-      $Id: refentry.xsl,v 1.1 2007-01-22 22:11:00 bjori Exp $
+      $Id: refentry.xsl,v 1.2 2007-01-30 18:12:37 bjori Exp $
     </releaseinfo>
     <corpauthor>The DocBook Project</corpauthor>
     <copyright><year>2005</year>

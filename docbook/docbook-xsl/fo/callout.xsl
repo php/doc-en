@@ -8,7 +8,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: callout.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: callout.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -84,7 +84,8 @@
 </xsl:template>
 
 <xsl:template match="co">
-  <fo:inline id="{@id}">
+  <fo:inline>
+    <xsl:call-template name="anchor"/>
     <xsl:apply-templates select="." mode="callout-bug"/>
   </fo:inline>
 </xsl:template>
@@ -94,7 +95,6 @@
   <!-- "over there" as if it were "right here" -->
 
   <xsl:variable name="co" select="key('id', @linkend)"/>
-  <xsl:variable name="id" select="@id"/>
   <xsl:choose>
     <xsl:when test="not($co)">
       <xsl:message>
@@ -110,11 +110,7 @@
     </xsl:when>
     <xsl:otherwise>
       <fo:inline>
-        <xsl:if test="$id != ''">
-	  <xsl:attribute name="id">
-	    <xsl:value-of select="$id"/>
-	  </xsl:attribute>
-	</xsl:if>
+        <xsl:call-template name="anchor"/>
         <xsl:apply-templates select="$co" mode="callout-bug"/>
       </fo:inline>
     </xsl:otherwise>

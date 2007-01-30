@@ -7,7 +7,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: callout.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: callout.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -50,7 +50,8 @@
       <xsl:choose>
         <xsl:when test="$verbatim/@linenumbering = 'numbered'
                         and $linenumbering.extension != '0'">
-          <div class="{name(.)}">
+          <div>
+            <xsl:apply-templates select="." mode="class.attribute"/>
             <xsl:call-template name="number.rtf.lines">
               <xsl:with-param name="rtf" select="$rtf-with-callouts"/>
               <xsl:with-param name="pi.context"
@@ -60,7 +61,8 @@
           </div>
         </xsl:when>
         <xsl:otherwise>
-          <div class="{name(.)}">
+          <div>
+            <xsl:apply-templates select="." mode="class.attribute"/>
             <xsl:copy-of select="$rtf-with-callouts"/>
             <xsl:apply-templates select="calloutlist"/>
           </div>
@@ -68,7 +70,8 @@
       </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <div class="{name(.)}">
+      <div>
+        <xsl:apply-templates select="." mode="class.attribute"/>
         <xsl:apply-templates/>
       </div>
     </xsl:otherwise>
@@ -93,9 +96,9 @@
   <xsl:choose>
     <xsl:when test="$target">
       <a>
-        <xsl:if test="@id">
+        <xsl:if test="@id or @xml:id">
           <xsl:attribute name="name">
-            <xsl:value-of select="@id"/>
+            <xsl:value-of select="(@id|@xml:id)[1]"/>
           </xsl:attribute>
         </xsl:if>
         <xsl:attribute name="href">

@@ -6,7 +6,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: html-rtf.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: html-rtf.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -175,7 +175,8 @@
         <xsl:variable name="leading" select="set:leading($nodes,$block)"/>
         <xsl:variable name="trailing" select="set:trailing($nodes,$block)"/>
 
-        <xsl:if test="($wrap/@id and $first = 1) or $leading">
+        <xsl:if test="(($wrap/@id or $wrap/@xml:id) 
+                        and $first = 1) or $leading">
           <xsl:element name="{local-name($wrap)}" namespace="{namespace-uri($wrap)}">
             <xsl:for-each select="$wrap/@*">
               <xsl:if test="$first != 0 or local-name(.) != 'id'">
@@ -198,7 +199,7 @@
       </xsl:when>
 
       <xsl:otherwise>
-        <xsl:if test="($wrap/@id and $first = 1) or $nodes">
+        <xsl:if test="(($wrap/@id or $wrap/@xml:id) and $first = 1) or $nodes">
           <xsl:element name="{local-name($wrap)}" namespace="{namespace-uri($wrap)}">
             <xsl:for-each select="$wrap/@*">
               <xsl:if test="$first != 0 or local-name(.) != 'id'">

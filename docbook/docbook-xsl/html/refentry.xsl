@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: refentry.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: refentry.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -17,7 +17,8 @@
 <xsl:template match="reference">
   <xsl:call-template name="id.warning"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -85,7 +86,8 @@
 <xsl:template match="refentry">
   <xsl:call-template name="id.warning"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -105,6 +107,7 @@
 </xsl:template>
 
 <xsl:template match="refentry/docinfo|refentry/refentryinfo"></xsl:template>
+<xsl:template match="refentry/info"></xsl:template>
 
 <xsl:template match="refentrytitle|refname|refdescriptor" mode="title">
   <xsl:apply-templates/>
@@ -129,7 +132,8 @@
 </xsl:template>
 
 <xsl:template match="refnamediv">
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -205,7 +209,8 @@
 </xsl:template>
 
 <xsl:template match="refsynopsisdiv">
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -237,7 +242,8 @@
 </xsl:template>
 
 <xsl:template match="refsection|refsect1|refsect2|refsect3">
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -290,9 +296,11 @@
   </h4>
 </xsl:template>
 
-<xsl:template match="refsect1info"></xsl:template>
-<xsl:template match="refsect2info"></xsl:template>
-<xsl:template match="refsect3info"></xsl:template>
+<xsl:template match="refsectioninfo|refsection/info"></xsl:template>
+<xsl:template match="refsect1info|refsect1/info"></xsl:template>
+<xsl:template match="refsect2info|refsect2/info"></xsl:template>
+<xsl:template match="refsect3info|refsect3/info"></xsl:template>
+
 
 <!-- ==================================================================== -->
 

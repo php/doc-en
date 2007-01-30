@@ -4,7 +4,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:doc="http://nwalsh.com/xsl/documentation/1.0" xmlns:exsl="http://exslt.org/common" xmlns:set="http://exslt.org/sets" xmlns:h="urn:x-hex" xmlns:ng="http://docbook.org/docbook-ng" xmlns:db="http://docbook.org/ns/docbook" xmlns:exslt="http://exslt.org/common" exslt:dummy="dummy" ng:dummy="dummy" db:dummy="dummy" extension-element-prefixes="exslt" version="1.0" exclude-result-prefixes="doc exsl set h db ng exslt">
 
 <!-- ********************************************************************
-     $Id: profile-htmlhelp-common.xsl,v 1.1 2007-01-22 15:54:43 bjori Exp $
+     $Id: profile-htmlhelp-common.xsl,v 1.2 2007-01-30 18:17:54 bjori Exp $
      ******************************************************************** -->
 
 <!-- ==================================================================== -->

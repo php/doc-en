@@ -9,7 +9,7 @@
                 extension-element-prefixes="saxon redirect lxslt exsl">
 
 <!-- ********************************************************************
-     $Id: chunker.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: chunker.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -104,9 +104,9 @@
       <xsl:if test="name(.) != '' and $suppress-context-node-name = 0">
         <xsl:text> for </xsl:text>
         <xsl:value-of select="name(.)"/>
-        <xsl:if test="@id">
+        <xsl:if test="@id or @xml:id">
           <xsl:text>(</xsl:text>
-          <xsl:value-of select="@id"/>
+          <xsl:value-of select="(@id|@xml:id)[1]"/>
           <xsl:text>)</xsl:text>
         </xsl:if>
       </xsl:if>

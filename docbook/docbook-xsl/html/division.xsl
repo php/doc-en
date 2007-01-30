@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: division.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: division.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -17,7 +17,8 @@
 <xsl:template match="set">
   <xsl:call-template name="id.warning"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -32,7 +33,7 @@
 
     <xsl:variable name="toc.params">
       <xsl:call-template name="find.path.params">
-	<xsl:with-param name="table" select="normalize-space($generate.toc)"/>
+        <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
       </xsl:call-template>
     </xsl:variable>
 
@@ -40,8 +41,8 @@
       <xsl:with-param name="toc.params" select="$toc.params"/>
       <xsl:with-param name="toc">
         <xsl:call-template name="set.toc">
-	  <xsl:with-param name="toc.title.p" select="contains($toc.params, 'title')"/>
-	</xsl:call-template>
+          <xsl:with-param name="toc.title.p" select="contains($toc.params, 'title')"/>
+        </xsl:call-template>
       </xsl:with-param>
     </xsl:call-template>
 
@@ -59,7 +60,8 @@
 <xsl:template match="book">
   <xsl:call-template name="id.warning"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -76,7 +78,7 @@
 
     <xsl:variable name="toc.params">
       <xsl:call-template name="find.path.params">
-	<xsl:with-param name="table" select="normalize-space($generate.toc)"/>
+        <xsl:with-param name="table" select="normalize-space($generate.toc)"/>
       </xsl:call-template>
     </xsl:variable>
 
@@ -84,8 +86,8 @@
       <xsl:with-param name="toc.params" select="$toc.params"/>
       <xsl:with-param name="toc">
         <xsl:call-template name="division.toc">
-	  <xsl:with-param name="toc.title.p" select="contains($toc.params, 'title')"/>
-	</xsl:call-template>
+          <xsl:with-param name="toc.title.p" select="contains($toc.params, 'title')"/>
+        </xsl:call-template>
       </xsl:with-param>
     </xsl:call-template>
 
@@ -94,6 +96,7 @@
 </xsl:template>
 
 <xsl:template match="book/bookinfo"></xsl:template>
+<xsl:template match="book/info"></xsl:template>
 <xsl:template match="book/title"></xsl:template>
 <xsl:template match="book/titleabbrev"></xsl:template>
 <xsl:template match="book/subtitle"></xsl:template>
@@ -103,7 +106,8 @@
 <xsl:template match="part">
   <xsl:call-template name="id.warning"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>
@@ -138,6 +142,7 @@
 
 <xsl:template match="part/docinfo"></xsl:template>
 <xsl:template match="part/partinfo"></xsl:template>
+<xsl:template match="part/info"></xsl:template>
 <xsl:template match="part/title"></xsl:template>
 <xsl:template match="part/titleabbrev"></xsl:template>
 <xsl:template match="part/subtitle"></xsl:template>
@@ -145,7 +150,8 @@
 <xsl:template match="partintro">
   <xsl:call-template name="id.warning"/>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="dir">
       <xsl:with-param name="inherit" select="1"/>
     </xsl:call-template>

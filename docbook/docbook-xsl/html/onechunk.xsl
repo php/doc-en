@@ -5,7 +5,7 @@
                 exclude-result-prefixes="doc">
 
 <!-- ********************************************************************
-     $Id: onechunk.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: onechunk.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.

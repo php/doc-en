@@ -9,7 +9,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: verbatim.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: verbatim.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -49,9 +49,6 @@
   <xsl:choose>
     <xsl:when test="$shade.verbatim != 0">
       <fo:block id="{$id}"
-                white-space-collapse='false'
-                white-space-treatment='preserve'
-                linefeed-treatment='preserve'
                 xsl:use-attribute-sets="monospace.verbatim.properties shade.verbatim.style">
         <xsl:choose>
           <xsl:when test="$hyphenate.verbatim != 0 and function-available('exsl:node-set')">
@@ -65,9 +62,6 @@
     </xsl:when>
     <xsl:otherwise>
       <fo:block id="{$id}"
-                white-space-collapse='false'
-                white-space-treatment='preserve'
-                linefeed-treatment="preserve"
                 xsl:use-attribute-sets="monospace.verbatim.properties">
         <xsl:choose>
           <xsl:when test="$hyphenate.verbatim != 0 and function-available('exsl:node-set')">
@@ -110,9 +104,6 @@
       <xsl:choose>
         <xsl:when test="$shade.verbatim != 0">
           <fo:block id="{$id}"
-                    white-space-collapse='false'
-                    white-space-treatment='preserve'
-                    linefeed-treatment="preserve"
                     xsl:use-attribute-sets="monospace.verbatim.properties shade.verbatim.style">
 
             <xsl:copy-of select="$content"/>
@@ -120,9 +111,6 @@
         </xsl:when>
         <xsl:otherwise>
           <fo:block id="{$id}"
-                    white-space-collapse='false'
-                    white-space-treatment='preserve'
-                    linefeed-treatment="preserve"
                     xsl:use-attribute-sets="monospace.verbatim.properties">
             <xsl:copy-of select="$content"/>
           </fo:block>
@@ -133,22 +121,12 @@
       <xsl:choose>
         <xsl:when test="$shade.verbatim != 0">
           <fo:block id="{$id}"
-                    wrap-option='no-wrap'
-                    white-space-collapse='false'
-                    white-space-treatment='preserve'
-                    text-align='start'
-                    linefeed-treatment="preserve"
                     xsl:use-attribute-sets="verbatim.properties shade.verbatim.style">
             <xsl:copy-of select="$content"/>
           </fo:block>
         </xsl:when>
         <xsl:otherwise>
           <fo:block id="{$id}"
-                    wrap-option='no-wrap'
-                    white-space-collapse='false'
-                    white-space-treatment='preserve'
-                    text-align='start'
-                    linefeed-treatment="preserve"
                     xsl:use-attribute-sets="verbatim.properties">
             <xsl:copy-of select="$content"/>
           </fo:block>
@@ -179,11 +157,7 @@
     </xsl:choose>
   </xsl:variable>
 
-  <fo:block wrap-option='no-wrap'
-            white-space-collapse='false'
-            white-space-treatment='preserve'
-            linefeed-treatment="preserve"
-            xsl:use-attribute-sets="verbatim.properties">
+  <fo:block xsl:use-attribute-sets="verbatim.properties">
     <xsl:copy-of select="$content"/>
   </fo:block>
 </xsl:template>

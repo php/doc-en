@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: ebnf.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: ebnf.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -17,7 +17,7 @@
 <doc:reference xmlns="">
 <referenceinfo>
 <releaseinfo role="meta">
-$Id: ebnf.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+$Id: ebnf.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
 </releaseinfo>
 <author><surname>Walsh</surname>
 <firstname>Norman</firstname></author>
@@ -54,44 +54,45 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   <table width="100%" cellpadding="5">
     <xsl:if test="$ebnf.table.bgcolor != ''">
       <xsl:attribute name="bgcolor">
-	<xsl:value-of select="$ebnf.table.bgcolor"/>
+        <xsl:value-of select="$ebnf.table.bgcolor"/>
       </xsl:attribute>
     </xsl:if>
     <xsl:if test="$ebnf.table.border != 0">
       <xsl:attribute name="border">1</xsl:attribute>
     </xsl:if>
     <xsl:attribute name="class">
-      <xsl:value-of select="name(.)"/>
+      <xsl:value-of select="local-name(.)"/>
     </xsl:attribute>
     <xsl:attribute name="summary">
       <xsl:text>EBNF</xsl:text>
       <xsl:if test="title">
-	<xsl:text> for </xsl:text>
-	<xsl:value-of select="title"/>
+        <xsl:text> for </xsl:text>
+        <xsl:value-of select="title"/>
       </xsl:if>
     </xsl:attribute>
 
     <xsl:if test="title">
       <tr>
-	<th align="left" valign="top" class="{name(.)}">
-	  <xsl:apply-templates select="title"/>
-	</th>
+        <th align="left" valign="top">
+          <xsl:apply-templates select="." mode="class.attribute"/>
+          <xsl:apply-templates select="title"/>
+        </th>
       </tr>
     </xsl:if>
     <tr>
       <td>
-	<table border="0" width="99%" cellpadding="0">
-	  <xsl:if test="$ebnf.table.bgcolor != ''">
-	    <xsl:attribute name="bgcolor">
-	      <xsl:value-of select="$ebnf.table.bgcolor"/>
-	    </xsl:attribute>
-	  </xsl:if>
-	  <xsl:attribute name="class">
-	    <xsl:value-of select="name(.)"/>
-	  </xsl:attribute>
-	  <xsl:attribute name="summary">EBNF productions</xsl:attribute>
-	  <xsl:apply-templates select="production|productionrecap"/>
-	</table>
+        <table border="0" width="99%" cellpadding="0">
+          <xsl:if test="$ebnf.table.bgcolor != ''">
+            <xsl:attribute name="bgcolor">
+              <xsl:value-of select="$ebnf.table.bgcolor"/>
+            </xsl:attribute>
+          </xsl:if>
+          <xsl:attribute name="class">
+            <xsl:value-of select="local-name(.)"/>
+          </xsl:attribute>
+          <xsl:attribute name="summary">EBNF productions</xsl:attribute>
+          <xsl:apply-templates select="production|productionrecap"/>
+        </table>
       </td>
     </tr>
   </table>
@@ -111,20 +112,20 @@ to be incomplete. Don't forget to read the source, too :-)</para>
     </td>
     <td align="right" valign="top" width="10%">
       <xsl:choose>
-	<xsl:when test="$recap">
-	  <a>
-	    <xsl:attribute name="href">
-	      <xsl:call-template name="href.target">
-		<xsl:with-param name="object" select="."/>
-	      </xsl:call-template>
-	    </xsl:attribute>
-	    <xsl:apply-templates select="lhs"/>
-	  </a>
-	</xsl:when>
-	<xsl:otherwise>
+        <xsl:when test="$recap">
+          <a>
+            <xsl:attribute name="href">
+              <xsl:call-template name="href.target">
+                <xsl:with-param name="object" select="."/>
+              </xsl:call-template>
+            </xsl:attribute>
+            <xsl:apply-templates select="lhs"/>
+          </a>
+        </xsl:when>
+        <xsl:otherwise>
           <xsl:call-template name="anchor"/>
-	  <xsl:apply-templates select="lhs"/>
-	</xsl:otherwise>
+          <xsl:apply-templates select="lhs"/>
+        </xsl:otherwise>
       </xsl:choose>
     </td>
     <td valign="top" width="5%" align="center">
@@ -136,13 +137,13 @@ to be incomplete. Don't forget to read the source, too :-)</para>
     </td>
     <td align="left" valign="top" width="30%">
       <xsl:choose>
-	<xsl:when test="rhs/lineannotation|constraint">
+        <xsl:when test="rhs/lineannotation|constraint">
           <xsl:apply-templates select="rhs/lineannotation" mode="rhslo"/>
           <xsl:apply-templates select="constraint"/>
-	</xsl:when>
-	<xsl:otherwise>
-	  <xsl:text>&#160;</xsl:text>
-	</xsl:otherwise>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:text>&#160;</xsl:text>
+        </xsl:otherwise>
       </xsl:choose>
     </td>
   </tr>
@@ -206,14 +207,14 @@ to be incomplete. Don't forget to read the source, too :-)</para>
     <xsl:when test="*|text()"><!--nop--></xsl:when>
     <xsl:otherwise>
       <xsl:if test="$linkend = ''">
-	<xsl:message>
-	  <xsl:text>Non-terminals with no content must point to </xsl:text>
-	  <xsl:text>production elements in the current document.</xsl:text>
-	</xsl:message>
-	<xsl:message>
-	  <xsl:text>Invalid xpointer for empty nt: </xsl:text>
-	  <xsl:value-of select="@def"/>
-	</xsl:message>
+        <xsl:message>
+          <xsl:text>Non-terminals with no content must point to </xsl:text>
+          <xsl:text>production elements in the current document.</xsl:text>
+        </xsl:message>
+        <xsl:message>
+          <xsl:text>Invalid xpointer for empty nt: </xsl:text>
+          <xsl:value-of select="@def"/>
+        </xsl:message>
       </xsl:if>
     </xsl:otherwise>
   </xsl:choose>
@@ -221,14 +222,14 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   <xsl:variable name="href">
     <xsl:choose>
       <xsl:when test="$linkend != ''">
-	<xsl:variable name="targets" select="key('id',$linkend)"/>
-	<xsl:variable name="target" select="$targets[1]"/>
-	<xsl:call-template name="href.target">
-	  <xsl:with-param name="object" select="$target"/>
-	</xsl:call-template>
+        <xsl:variable name="targets" select="key('id',$linkend)"/>
+        <xsl:variable name="target" select="$targets[1]"/>
+        <xsl:call-template name="href.target">
+          <xsl:with-param name="object" select="$target"/>
+        </xsl:call-template>
       </xsl:when>
       <xsl:otherwise>
-	<xsl:value-of select="@def"/>
+        <xsl:value-of select="@def"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
@@ -236,19 +237,19 @@ to be incomplete. Don't forget to read the source, too :-)</para>
   <a href="{$href}">
     <xsl:choose>
       <xsl:when test="*|text()">
-	<xsl:apply-templates/>
+        <xsl:apply-templates/>
       </xsl:when>
       <xsl:otherwise>
-	<xsl:choose>
-	  <xsl:when test="$linkend != ''">
-	    <xsl:variable name="targets" select="key('id',$linkend)"/>
-	    <xsl:variable name="target" select="$targets[1]"/>
-	    <xsl:apply-templates select="$target/lhs"/>
-	  </xsl:when>
-	  <xsl:otherwise>
-	    <xsl:text>???</xsl:text>
-	  </xsl:otherwise>
-	</xsl:choose>
+        <xsl:choose>
+          <xsl:when test="$linkend != ''">
+            <xsl:variable name="targets" select="key('id',$linkend)"/>
+            <xsl:variable name="target" select="$targets[1]"/>
+            <xsl:apply-templates select="$target/lhs"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>???</xsl:text>
+          </xsl:otherwise>
+        </xsl:choose>
       </xsl:otherwise>
     </xsl:choose>
   </a>
@@ -294,8 +295,8 @@ to be incomplete. Don't forget to read the source, too :-)</para>
       <xsl:variable name="targets" select="key('id',@linkend)"/>
       <xsl:variable name="target" select="$targets[1]"/>
       <xsl:if test="$target/@role">
-	<xsl:value-of select="$target/@role"/>
-	<xsl:text>: </xsl:text>
+        <xsl:value-of select="$target/@role"/>
+        <xsl:text>: </xsl:text>
       </xsl:if>
     </xsl:otherwise>
   </xsl:choose>
@@ -312,7 +313,8 @@ to be incomplete. Don't forget to read the source, too :-)</para>
 </xsl:template>
 
 <xsl:template match="constraintdef">
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:call-template name="anchor"/>
     <xsl:apply-templates/>
   </div>

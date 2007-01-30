@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: axf.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: axf.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ******************************************************************** -->
 
 <xsl:template name="axf-document-information">
@@ -81,6 +81,30 @@
       </xsl:element>
     </xsl:if>
 
+</xsl:template>
+
+<!-- These properties are added to fo:simple-page-master -->
+<xsl:template name="axf-page-master-properties">
+  <xsl:param name="page.master" select="''"/>
+
+  <xsl:if test="$crop.marks != 0">
+    <xsl:attribute name="axf:printer-marks">crop</xsl:attribute>
+    <xsl:attribute name="axf:bleed"><xsl:value-of
+                          select="$crop.mark.bleed"/></xsl:attribute>
+    <xsl:attribute name="axf:printer-marks-line-width"><xsl:value-of
+                          select="$crop.mark.width"/></xsl:attribute>
+    <xsl:attribute name="axf:crop-offset"><xsl:value-of
+                          select="$crop.mark.offset"/></xsl:attribute>
+  </xsl:if>
+
+  <xsl:call-template name="user-axf-page-master-properties">
+    <xsl:with-param name="page.master" select="$page.master"/>
+  </xsl:call-template>
+
+</xsl:template>
+
+<xsl:template name="user-axf-page-master-properties">
+  <xsl:param name="page.master" select="''"/>
 </xsl:template>
 
 </xsl:stylesheet>

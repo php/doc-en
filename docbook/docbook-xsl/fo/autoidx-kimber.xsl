@@ -21,7 +21,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: autoidx-kimber.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: autoidx-kimber.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
 
      This file is part of the DocBook XSL Stylesheet distribution.
@@ -152,7 +152,7 @@
   <xsl:variable name="label"
           select="k:getIndexGroupLabel(&lang;, $key)"/>
 
-  <xsl:if test="key('k-group', $label)[&scope;]
+  <xsl:if test="key('k-group', $key)[&scope;]
                 [count(.|key('primary', &primary;)[&scope;][1]) = 1]">
     <fo:block>
       <xsl:call-template name="indexdiv.title">

@@ -12,14 +12,17 @@
 
 <xsl:template match="/">
   <xsl:choose>
-    <xsl:when test="function-available('exsl:node-set')
-		    and (*/self::ng:* or */self::db:*)">
+    <!-- include extra test for Xalan quirk -->
+    <xsl:when test="(function-available('exsl:node-set') or
+                     contains(system-property('xsl:vendor'),
+                       'Apache Software Foundation'))
+                    and (*/self::ng:* or */self::db:*)">
       <!-- Hack! If someone hands us a DocBook V5.x or DocBook NG document,
 	   toss the namespace and continue. Someday we'll reverse this logic
 	   and add the namespace to documents that don't have one.
 	   But not before the whole stylesheet has been converted to use
 	   namespaces. i.e., don't hold your breath -->
-      <xsl:message>Stripping NS from DocBook 5/NG document.</xsl:message>
+      <xsl:message>Stripping namespace from DocBook 5 document.</xsl:message>
       <xsl:apply-templates mode="stripNS"/>
     </xsl:when>
     <xsl:otherwise>

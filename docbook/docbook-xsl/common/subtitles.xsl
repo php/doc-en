@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: subtitles.xsl,v 1.1 2007-01-22 22:11:00 bjori Exp $
+     $Id: subtitles.xsl,v 1.2 2007-01-30 18:12:37 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -31,7 +31,7 @@ subtitle of the element.
 <xsl:template match="*" mode="subtitle.markup">
   <xsl:message>
     <xsl:text>Request for subtitle of unexpected element: </xsl:text>
-    <xsl:value-of select="name(.)"/>
+    <xsl:value-of select="local-name(.)"/>
   </xsl:message>
   <xsl:text>???SUBTITLE???</xsl:text>
 </xsl:template>
@@ -94,7 +94,7 @@ subtitle of the element.
 
 <xsl:template match="dedication|colophon" mode="subtitle.markup">
   <xsl:param name="allow-anchors" select="'0'"/>
-  <xsl:apply-templates select="subtitle"
+  <xsl:apply-templates select="(subtitle|info/subtitle)[1]"
                        mode="subtitle.markup">
     <xsl:with-param name="allow-anchors" select="$allow-anchors"/>
   </xsl:apply-templates>
@@ -113,7 +113,7 @@ subtitle of the element.
 
 <xsl:template match="qandaset" mode="subtitle.markup">
   <xsl:param name="allow-anchors" select="'0'"/>
-  <xsl:apply-templates select="blockinfo/subtitle[1]"
+  <xsl:apply-templates select="(blockinfo/subtitle|info/subtitle)[1]"
                        mode="subtitle.markup">
     <xsl:with-param name="allow-anchors" select="$allow-anchors"/>
   </xsl:apply-templates>

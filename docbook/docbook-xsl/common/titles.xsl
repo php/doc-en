@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: titles.xsl,v 1.1 2007-01-22 22:11:00 bjori Exp $
+     $Id: titles.xsl,v 1.2 2007-01-30 18:12:37 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -47,12 +47,19 @@ title of the element. This does not include the label.
       <xsl:if test="$verbose != 0">
         <xsl:message>
           <xsl:text>Request for title of element with no title: </xsl:text>
-          <xsl:value-of select="name(.)"/>
-          <xsl:if test="@id">
-            <xsl:text> (id="</xsl:text>
-            <xsl:value-of select="@id"/>
-            <xsl:text>")</xsl:text>
-          </xsl:if>
+          <xsl:value-of select="local-name(.)"/>
+          <xsl:choose>
+            <xsl:when test="@id">
+              <xsl:text> (id="</xsl:text>
+              <xsl:value-of select="@id"/>
+              <xsl:text>")</xsl:text>
+            </xsl:when>
+            <xsl:when test="@xml:id">
+              <xsl:text> (xml:id="</xsl:text>
+              <xsl:value-of select="@xml:id"/>
+              <xsl:text>")</xsl:text>
+            </xsl:when>
+          </xsl:choose>
         </xsl:message>
       </xsl:if>
       <xsl:text>???TITLE???</xsl:text>
@@ -116,7 +123,7 @@ title of the element. This does not include the label.
 
 <!--
   <xsl:message>
-    <xsl:value-of select="name(.)"/>
+    <xsl:value-of select="local-name(.)"/>
     <xsl:text> </xsl:text>
     <xsl:value-of select="$allow-anchors"/>
   </xsl:message>
@@ -137,7 +144,7 @@ title of the element. This does not include the label.
   <xsl:param name="allow-anchors" select="0"/>
   <xsl:choose>
     <xsl:when test="title">
-      <xsl:apply-templates select="title" mode="title.markup">
+      <xsl:apply-templates select="(title|info/title)[1]" mode="title.markup">
         <xsl:with-param name="allow-anchors" select="$allow-anchors"/>
       </xsl:apply-templates>
     </xsl:when>
@@ -153,7 +160,7 @@ title of the element. This does not include the label.
   <xsl:param name="allow-anchors" select="0"/>
   <xsl:choose>
     <xsl:when test="title">
-      <xsl:apply-templates select="title" mode="title.markup">
+      <xsl:apply-templates select="(title|info/title)[1]" mode="title.markup">
         <xsl:with-param name="allow-anchors" select="$allow-anchors"/>
       </xsl:apply-templates>
     </xsl:when>
@@ -230,7 +237,7 @@ title of the element. This does not include the label.
               mode="title.markup">
   <xsl:param name="allow-anchors" select="0"/>
   <xsl:variable name="title" select="(info/title
-		                      |sectioninfo/title
+                                      |sectioninfo/title
                                       |sect1info/title
                                       |sect2info/title
                                       |sect3info/title
@@ -294,8 +301,23 @@ title of the element. This does not include the label.
     </xsl:when>
     <xsl:otherwise>
       <xsl:call-template name="gentext.element.name">
-        <xsl:with-param name="element.name" select="name(.)"/>
+        <xsl:with-param name="element.name" select="local-name(.)"/>
       </xsl:call-template>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="glossdiv" mode="title.markup">
+  <xsl:param name="allow-anchors" select="0"/>
+  <xsl:variable name="title" select="(info/title|title)[1]"/>
+  <xsl:choose>
+    <xsl:when test="$title">
+      <xsl:apply-templates select="$title" mode="title.markup">
+        <xsl:with-param name="allow-anchors" select="$allow-anchors"/>
+      </xsl:apply-templates>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:message>ERROR: glossdiv missing its required title</xsl:message>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -393,8 +415,8 @@ title of the element. This does not include the label.
 <xsl:template match="abstract" mode="title.markup">
   <xsl:param name="allow-anchors" select="0"/>
   <xsl:choose>
-    <xsl:when test="title">
-      <xsl:apply-templates select="title" mode="title.markup">
+    <xsl:when test="title|info/title">
+      <xsl:apply-templates select="(title|info/title)[1]" mode="title.markup">
         <xsl:with-param name="allow-anchors" select="$allow-anchors"/>
       </xsl:apply-templates>
     </xsl:when>
@@ -408,7 +430,7 @@ title of the element. This does not include the label.
 
 <xsl:template match="caution|tip|warning|important|note" mode="title.markup">
   <xsl:param name="allow-anchors" select="0"/>
-  <xsl:variable name="title" select="title[1]"/>
+  <xsl:variable name="title" select="(title|info/title)[1]"/>
   <xsl:choose>
     <xsl:when test="$title">
       <xsl:apply-templates select="$title" mode="title.markup">
@@ -450,7 +472,7 @@ title of the element. This does not include the label.
   <xsl:param name="allow-anchors" select="0"/>
   <xsl:variable name="title" select="(info/title|
                                       blockinfo/title|
-				      title)[1]"/>
+                                      title)[1]"/>
   <xsl:choose>
     <xsl:when test="$title">
       <xsl:apply-templates select="$title" mode="title.markup">
@@ -562,16 +584,16 @@ title of the element. This does not include the label.
   <xsl:param name="verbose" select="1"/>
 
   <xsl:variable name="titleabbrev" select="(info/titleabbrev
-		                            |sectioninfo/titleabbrev
-		                            |sect1info/titleabbrev
-					    |sect2info/titleabbrev
-					    |sect3info/titleabbrev
-					    |sect4info/titleabbrev
-					    |sect5info/titleabbrev
-					    |refsect1info/titleabbrev
-					    |refsect2info/titleabbrev
-					    |refsect3info/titleabbrev
-					    |titleabbrev)[1]"/>
+                                            |sectioninfo/titleabbrev
+                                            |sect1info/titleabbrev
+                                            |sect2info/titleabbrev
+                                            |sect3info/titleabbrev
+                                            |sect4info/titleabbrev
+                                            |sect5info/titleabbrev
+                                            |refsect1info/titleabbrev
+                                            |refsect2info/titleabbrev
+                                            |refsect3info/titleabbrev
+                                            |titleabbrev)[1]"/>
 
   <xsl:choose>
     <xsl:when test="$titleabbrev">
@@ -668,23 +690,23 @@ title of the element. This does not include the label.
       <xsl:variable name="etargets" select="key('id',@endterm)"/>
       <xsl:variable name="etarget" select="$etargets[1]"/>
       <xsl:choose>
-	<xsl:when test="count($etarget) = 0">
-	  <xsl:message>
+        <xsl:when test="count($etarget) = 0">
+          <xsl:message>
             <xsl:value-of select="count($etargets)"/>
             <xsl:text>Endterm points to nonexistent ID: </xsl:text>
             <xsl:value-of select="@endterm"/>
-	  </xsl:message>
-	  <xsl:text>???</xsl:text>
-	</xsl:when>
-	<xsl:otherwise>
-	  <xsl:apply-templates select="$etarget" mode="endterm"/>
-	</xsl:otherwise>
+          </xsl:message>
+          <xsl:text>???</xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:apply-templates select="$etarget" mode="endterm"/>
+        </xsl:otherwise>
       </xsl:choose>
     </xsl:when>
 
     <xsl:when test="$target/@xreflabel">
       <xsl:call-template name="xref.xreflabel">
-	<xsl:with-param name="target" select="$target"/>
+        <xsl:with-param name="target" select="$target"/>
       </xsl:call-template>
     </xsl:when>
 
@@ -692,17 +714,17 @@ title of the element. This does not include the label.
       <xsl:apply-templates select="$target" mode="xref-to-prefix"/>
 
       <xsl:apply-templates select="$target" mode="xref-to">
-	<xsl:with-param name="referrer" select="."/>
-	<xsl:with-param name="xrefstyle">
-	  <xsl:choose>
-	    <xsl:when test="@role and not(@xrefstyle) and $use.role.as.xrefstyle != 0">
-	      <xsl:value-of select="@role"/>
-	    </xsl:when>
-	    <xsl:otherwise>
-	      <xsl:value-of select="@xrefstyle"/>
-	    </xsl:otherwise>
-	  </xsl:choose>
-	</xsl:with-param>
+        <xsl:with-param name="referrer" select="."/>
+        <xsl:with-param name="xrefstyle">
+          <xsl:choose>
+            <xsl:when test="@role and not(@xrefstyle) and $use.role.as.xrefstyle != 0">
+              <xsl:value-of select="@role"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="@xrefstyle"/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:with-param>
       </xsl:apply-templates>
 
       <xsl:apply-templates select="$target" mode="xref-to-suffix"/>

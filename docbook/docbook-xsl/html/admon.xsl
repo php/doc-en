@@ -3,7 +3,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: admon.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: admon.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -60,7 +60,8 @@
     </xsl:call-template>
   </xsl:variable>
 
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:if test="$admon.style != ''">
       <xsl:attribute name="style">
         <xsl:value-of select="$admon.style"/>
@@ -70,9 +71,9 @@
     <table border="0">
       <xsl:attribute name="summary">
         <xsl:value-of select="$admon.type"/>
-        <xsl:if test="title">
+        <xsl:if test="title|info/title">
           <xsl:text>: </xsl:text>
-          <xsl:value-of select="title"/>
+          <xsl:value-of select="(title|info/title)[1]"/>
         </xsl:if>
       </xsl:attribute>
       <tr>
@@ -88,7 +89,7 @@
         </td>
         <th align="left">
           <xsl:call-template name="anchor"/>
-          <xsl:if test="$admon.textlabel != 0 or title">
+          <xsl:if test="$admon.textlabel != 0 or title or info/title">
             <xsl:apply-templates select="." mode="object.title.markup"/>
           </xsl:if>
         </th>
@@ -103,7 +104,8 @@
 </xsl:template>
 
 <xsl:template name="nongraphical.admonition">
-  <div class="{name(.)}">
+  <div>
+    <xsl:apply-templates select="." mode="class.attribute"/>
     <xsl:if test="$admon.style">
       <xsl:attribute name="style">
         <xsl:value-of select="$admon.style"/>
@@ -112,7 +114,7 @@
 
     <h3 class="title">
       <xsl:call-template name="anchor"/>
-      <xsl:if test="$admon.textlabel != 0 or title">
+      <xsl:if test="$admon.textlabel != 0 or title or info/title">
         <xsl:apply-templates select="." mode="object.title.markup"/>
       </xsl:if>
     </h3>

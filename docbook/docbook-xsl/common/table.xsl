@@ -5,7 +5,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: table.xsl,v 1.1 2007-01-22 22:11:00 bjori Exp $
+     $Id: table.xsl,v 1.2 2007-01-30 18:12:37 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -213,11 +213,11 @@ or 0 (the empty string)</para>
   <xsl:choose>
     <xsl:when test="$namest != '' and $nameend != ''">
       <xsl:choose>
-        <xsl:when test="$ecol &gt;= $scol">
-          <xsl:value-of select="$ecol - $scol + 1"/>
+        <xsl:when test="number($ecol) &gt;= number($scol)">
+          <xsl:value-of select="number($ecol) - number($scol) + 1"/>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:value-of select="$scol - $ecol + 1"/>
+          <xsl:value-of select="number($scol) - number($ecol) + 1"/>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:when>
@@ -471,6 +471,33 @@ or 0 (the empty string)</para>
       <xsl:with-param name="spans" select="substring-after($spans,':')"/>
     </xsl:call-template>
   </xsl:if>
+</xsl:template>
+
+<!-- Returns the table style for the context element -->
+<xsl:template name="tabstyle">
+  <xsl:param name="node" select="."/>
+
+  <xsl:variable name="tgroup" select="$node/tgroup[1] | 
+                                      $node/ancestor-or-self::tgroup[1]"/>
+
+  <xsl:variable name="table" 
+                select="($node/ancestor-or-self::table | 
+                         $node/ancestor-or-self::informaltable)[1]"/>
+
+  <xsl:variable name="tabstyle">
+    <xsl:choose>
+      <xsl:when test="$table/@tabstyle != ''">
+        <xsl:value-of select="normalize-space($table/@tabstyle)"/>
+      </xsl:when>
+      <xsl:when test="$tgroup/@tgroupstyle != ''">
+        <xsl:value-of select="normalize-space($tgroup/@tgroupstyle)"/>
+      </xsl:when>
+      <xsl:otherwise>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:value-of select="$tabstyle"/>
 </xsl:template>
 
 </xsl:stylesheet>

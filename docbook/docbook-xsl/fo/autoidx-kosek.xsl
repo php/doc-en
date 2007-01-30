@@ -26,7 +26,7 @@
                 version="1.0">
 
 <!-- ********************************************************************
-     $Id: autoidx-kosek.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: autoidx-kosek.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
 
      This file is part of the DocBook XSL Stylesheet distribution.

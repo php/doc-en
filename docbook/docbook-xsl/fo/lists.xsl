@@ -4,7 +4,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: lists.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: lists.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -587,7 +587,13 @@
 </xsl:template>
 
 <xsl:template match="varlistentry/term">
-  <fo:inline><xsl:apply-templates/></fo:inline>
+  <fo:inline>
+    <xsl:call-template name="simple.xlink">
+      <xsl:with-param name="content">
+        <xsl:apply-templates/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </fo:inline>
   <xsl:choose>
     <xsl:when test="not(following-sibling::term)"/> <!-- do nothing -->
     <xsl:otherwise>
@@ -875,7 +881,11 @@
 </xsl:template>
 
 <xsl:template match="member">
-  <xsl:apply-templates/>
+  <xsl:call-template name="simple.xlink">
+    <xsl:with-param name="content">
+      <xsl:apply-templates/>
+    </xsl:with-param>
+  </xsl:call-template>
 </xsl:template>
 
 <!-- ==================================================================== -->
@@ -1142,8 +1152,9 @@
   <fo:block id="{$id}"
             text-align="{$alignment}">
     <!-- The above restores alignment altered by image align attribute -->
-    <xsl:if test="title">
-      <xsl:apply-templates select="title" mode="list.title.mode"/>
+    <xsl:if test="title|info/title">
+      <xsl:apply-templates select="(title|info/title)[1]" 
+                           mode="list.title.mode"/>
     </xsl:if>
 
     <!-- Preserve order of PIs and comments -->

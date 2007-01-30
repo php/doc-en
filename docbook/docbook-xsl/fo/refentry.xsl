@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: refentry.xsl,v 1.1 2007-01-22 15:54:42 bjori Exp $
+     $Id: refentry.xsl,v 1.2 2007-01-30 18:11:31 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -174,6 +174,7 @@
 </xsl:template>
 
 <xsl:template match="reference/docinfo|refentry/refentryinfo"></xsl:template>
+<xsl:template match="reference/info"></xsl:template>
 <xsl:template match="reference/title"></xsl:template>
 <xsl:template match="reference/subtitle"></xsl:template>
 
@@ -615,6 +616,11 @@
     </xsl:call-template>
   </fo:block>
 </xsl:template>
+
+<xsl:template match="refsectioninfo|refsection/info"></xsl:template>
+<xsl:template match="refsect1info|refsect1/info"></xsl:template>
+<xsl:template match="refsect2info|refsect2/info"></xsl:template>
+<xsl:template match="refsect3info|refsect3/info"></xsl:template>
 
 <!-- ==================================================================== -->
 
