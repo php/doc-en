@@ -85,7 +85,7 @@ function get_release_tags()
             break;
         }
         list($tag,) = explode(': ', trim($l));
-        if (preg_match('/^PHP_[456]_[0-9]+_[0-9+]$/i', $tag)) {
+        if (preg_match('/^PHP_[456]_[0-9]+_[0-9]+$/i', $tag)) {
             $tags[] = $tag;
         }
     }
