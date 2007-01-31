@@ -15,9 +15,10 @@
 +----------------------------------------------------------------------+
 | Authors:    Sean Coates <sean@php.net>                               |
 +----------------------------------------------------------------------+
+$Id$
 */
 
-// direct the output of this fine into phpdoc/phpbook/phpbook-xsl/version.xml
+// direct the output of this file into phpdoc/phpbook/phpbook-xsl/version.xml
 // errors go to STDERR
 
 // To do:
