@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.4 2007-01-31 11:53:14 bjori Exp $
+  $Id: html-common.xsl,v 1.5 2007-02-01 09:38:02 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -626,7 +626,14 @@ set       toc
       <td>
           <xsl:element name="pre">
               <xsl:attribute name="class"><xsl:value-of select="./@role" /></xsl:attribute>
-              <xsl:value-of select="." disable-output-escaping="yes" />
+              <xsl:choose>
+                  <xsl:when test="./@role = 'php'">
+                    <xsl:value-of select="." disable-output-escaping="yes" />
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:value-of select="." disable-output-escaping="no" />
+                </xsl:otherwise>
+            </xsl:choose>
           </xsl:element>
       </td>
     </tr>
