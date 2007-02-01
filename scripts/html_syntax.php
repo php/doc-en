@@ -58,7 +58,7 @@ while (($file = array_shift($files)) !== null) {
 		//~ echo "$filename\n";
 		$original = file_get_contents($filename);
 		$highlighted = preg_replace_callback("!<PRE\r?\nCLASS=\"php\"\r?\n>(.*)</PRE\r?\n>!sU", "callback_highlight_php", $original);
-		$highlighted = preg_replace_callback("!<pre class=\"php\">(.*)</pre>!sU", "callback_highlight_php", $highlighted); /* XSL build */
+		$highlighted = preg_replace_callback("@<HIGHLIGHTME>(.*)</HIGHLIGHTME>@sU", "callback_highlight_php", $highlighted); /* XSL build */
 		if ($original != $highlighted) {
 			// file_put_contents is only in PHP >= 5
 			$fp = fopen($filename, "wb");
