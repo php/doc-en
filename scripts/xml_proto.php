@@ -231,7 +231,7 @@ function write_functions_xml()
                " <refnamediv>\n" .
                "  <refname>$funcname</refname>\n" .
                "  <refpurpose>$purpose</refpurpose>\n" .
-               " </refnamediv>\n" .
+               " </refnamediv>\n\n" .
                " <refsect1 role=\"description\">\n" .
                "  &reftitle.description;\n" .
                "  <methodsynopsis>\n" .
@@ -254,9 +254,12 @@ function write_functions_xml()
       fwrite($fp, "   <void/>\n");
     }
 
-    fwrite($fp, "  </methodsynopsis>\n\n" .
-               "  &warn.undocumented.func;\n\n" .
-               " </refsect1>\n" .
+    fwrite($fp, "  </methodsynopsis>\n" .
+               "  &warn.undocumented.func;\n" .
+               "  <para>\n" .
+               "   $purpose\n" .
+               "  </para>\n" .
+               " </refsect1>\n\n" .
                " <refsect1 role=\"parameters\">\n" .
                "  &reftitle.parameters;\n" .
                "  <para>\n"
@@ -277,7 +280,7 @@ function write_functions_xml()
         $tmp .= "   </variablelist>\n";
         fwrite($fp, $tmp);
     }
-    fwrite ($fp, "  </para>\n </refsect1>\n");
+    fwrite ($fp, "  </para>\n\n </refsect1>\n");
     fwrite($fp, 
         " <refsect1 role=\"returnvalues\">\n" .
         "  &reftitle.returnvalues;\n" .
@@ -295,7 +298,7 @@ function write_functions_xml()
         "   When does this function throw E_* level errors, or exceptions?\n" .
         "  </para>\n" .
         " </refsect1>\n" .
-        " -->\n\n"
+        " -->\n"
     );
     fwrite($fp,
         "\n <!-- Use when a CHANGELOG exists\n" .
@@ -320,7 +323,7 @@ function write_functions_xml()
         "   </informaltable>\n" .
         "  </para>\n" .
         " </refsect1>\n" .
-        " -->\n\n"
+        " -->\n"
     );
     fwrite($fp,
         "\n <!-- Use when examples exist\n" .
@@ -352,7 +355,7 @@ function write_functions_xml()
         "   </example>\n" .
         "  </para>\n" .
         " </refsect1>\n" .
-        " -->\n\n"
+        " -->\n"
     );
     fwrite($fp,
         "\n <!-- Use when adding See Also links\n" .
@@ -365,7 +368,7 @@ function write_functions_xml()
         "   </simplelist>\n" .
         "  </para>\n" .
         " </refsect1>\n" .
-        " -->\n\n"
+        " -->\n"
     );
     fwrite($fp,
         "\n</refentry>\n\n" .
