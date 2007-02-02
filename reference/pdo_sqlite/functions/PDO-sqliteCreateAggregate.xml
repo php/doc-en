@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='iso-8859-1'?>
-<!-- $Revision: 1.4 $ -->
+<!-- $Revision: 1.5 $ -->
 <refentry id="function.PDO-sqliteCreateAggregate">
  <refnamediv>
-  <refname>PDO::sqliteCreateAggregate</refname>
+  <refname>PDO->sqliteCreateAggregate()</refname>
   <refpurpose>
    Registers an aggregating User Defined Function for use in SQL statements
   </refpurpose>
@@ -10,31 +10,26 @@
 
  <refsect1 role="description">
   &reftitle.description;
-  <methodsynopsis>
-   <type>bool</type><methodname>PDO::sqliteCreateAggregate</methodname>
-   <methodparam><type>string</type><parameter>function_name</parameter></methodparam>
-   <methodparam><type>callback</type><parameter>step_func</parameter></methodparam>
-   <methodparam><type>callback</type><parameter>finalize_func</parameter></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>num_args</parameter></methodparam>
-  </methodsynopsis>
+  <classsynopsis>
+   <ooclass><classname>PDO</classname></ooclass>
+   <methodsynopsis>
+    <type>bool</type><methodname>sqliteCreateAggregate</methodname>
+    <methodparam><type>string</type><parameter>function_name</parameter></methodparam>
+    <methodparam><type>callback</type><parameter>step_func</parameter></methodparam>
+    <methodparam><type>callback</type><parameter>finalize_func</parameter></methodparam>
+    <methodparam choice="opt"><type>int</type><parameter>num_args</parameter></methodparam>
+   </methodsynopsis>
+  </classsynopsis>
   &warn.experimental.func;
   <para>
-   <function>PDO::sqliteCreateAggregate</function> is similar to
-   <function>PDO::sqliteCreateFunction</function> except that it registers
-   functions that can be used to calculate a result aggregated across all the
-   rows of a query.
+   This method is similar to <xref linkend="function.PDO-sqliteCreateFunction"
+   /> except that it registers functions that can be used to calculate a
+   result aggregated across all the rows of a query.
   </para>
   <para>
-   The key difference between this function and
-   <function>PDO::sqliteCreateFunction</function> is that two functions are
-   required to manage the aggregate; <parameter>step_func</parameter> is
-   called for each row of the result set.  Your PHP function should
-   accumulate the result and store it into the aggregation context.
-   Once all the rows have been processed,
-   <parameter>finalize_func</parameter> will be called and it should then
-   take the data from the aggregation context and return the result.
-   Callback functions should return a type understood by SQLite (i.e.
-   <link linkend="language.types.intro">scalar type</link>).
+   The key difference between this method and <xref
+   linkend="function.PDO-sqliteCreateFunction" /> is that two functions are
+   required to manage the aggregate. 
   </para>
  </refsect1>
 
@@ -54,7 +49,29 @@
      <term><parameter>step_func</parameter></term>
      <listitem>
       <para>
-       Callback function called for each row of the result set.
+       Callback function called for each row of the result set. Your PHP
+       function should accumulate the result and store it in the aggregation
+       context.
+      </para>
+      <para>
+       This function need to be defined as:
+       <methodsynopsis>
+        <methodname><replaceable>step</replaceable></methodname>
+        <methodparam><type>mixed</type><parameter>context</parameter></methodparam>
+        <methodparam><type>int</type><parameter>rownumber</parameter></methodparam>
+        <methodparam><type>mixed</type><parameter>value1</parameter></methodparam>
+        <methodparam choice="opt"><type>mixed</type><parameter>value2</parameter></methodparam>
+        <methodparam choice="opt"><type>mixed</type><parameter>..</parameter></methodparam>
+       </methodsynopsis>
+      </para>
+      <para>
+       <varname>context</varname> will be &null; for the first row; on
+       subsequent rows it will have the value that was previously returned
+       from the step function; you should use this to maintain the aggregate
+       state.
+      </para>
+      <para>
+       <varname>rownumber</varname> will hold the current row number.
       </para>
      </listitem>
     </varlistentry>
@@ -62,7 +79,32 @@
      <term><parameter>finalize_func</parameter></term>
      <listitem>
       <para>
-       Callback function to aggregate the "stepped" data from each row.
+       Callback function to aggregate the "stepped" data from each row. 
+       Once all the rows have been processed, this function will be called
+       and it should then take the data from the aggregation context and
+       return the result. Callback functions should return a type understood
+       by SQLite (i.e. <link 
+       linkend="language.types.intro">scalar type</link>).
+      </para>
+      <para>
+       This function need to be defined as:
+       <methodsynopsis>
+        <methodname><replaceable>fini</replaceable></methodname>
+        <methodparam><type>mixed</type><parameter>context</parameter></methodparam>
+        <methodparam><type>int</type><parameter>rownumber</parameter></methodparam>
+       </methodsynopsis>
+      </para>
+      <para>
+       <varname>context</varname> will hold the return value from the very
+       last call to the step function.
+      </para>
+      <para>
+       <varname>rownumber</varname> will hold the number of rows over which
+       the aggregate was performed.
+      </para>
+      <para>
+       The return value of this function will be used as the return value for
+       the aggregate.
       </para>
      </listitem>
     </varlistentry>
@@ -107,14 +149,14 @@ foreach ($data as $str) {
 }
 $insert = null;
 
-function max_len_step(&$context, $string) 
+function max_len_step(&$context, $rownumber, $string) 
 {
     if (strlen($string) > $context) {
         $context = strlen($string);
     }
 }
 
-function max_len_finalize(&$context) 
+function max_len_finalize(&$context, $rownumber) 
 {
     return $context;
 }
@@ -158,9 +200,9 @@ var_dump($db->query('SELECT max_len(a) from strings')->fetchAll());
   </tip>
   <tip>
    <para>
-    You can use <function>PDO::sqliteCreateFunction</function> and
-    <function>PDO::sqliteCreateAggregate</function> to override SQLite native
-    SQL functions.
+    You can use <xref linkend="function.PDO-sqliteCreateFunction" /> and
+    <xref linkend="function.PDO-sqliteCreateAggregate" /> to override SQLite
+    native SQL functions.
    </para>
   </tip>
   <note>
@@ -177,7 +219,7 @@ var_dump($db->query('SELECT max_len(a) from strings')->fetchAll());
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>PDO::sqliteCreateFunction</function></member>
+    <member><xref linkend="function.PDO-sqliteCreateFunction" /></member>
     <member><function>sqlite_create_function</function></member>
     <member><function>sqlite_create_aggregate</function></member>
    </simplelist>
