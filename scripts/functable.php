@@ -25,6 +25,10 @@ $Id$
 //  - TEST, please
 //  - PECL support
 
+// You'll need to set up an SQLite DB (see PATH_DB, below) with the following:
+// CREATE TABLE func_tag (func_name VARCHAR(50), tag_name VARCHAR(50),
+//   has_proto INT, is_alias INT, unicode_safe INT, source VARCHAR(255));
+
 // set up config:
 
 // set $_ENV['PATH_TMP'] to change the temporary directory
