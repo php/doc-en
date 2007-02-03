@@ -39,6 +39,44 @@ function callback_highlight_php($matches) {
 	}
 }
 
+function callback_highlight_xml($matches) {
+        $color = array(
+        'attributes' => '#333366',
+        'tags' => '#000066',
+        'comment' => '#666666',
+        'keyword' => '#cc6600',
+        'string' => '#006600',
+        'cdata' => '#990000',
+        );
+
+        $source = htmlentities($matches[1]);
+
+        $match = array(
+            '/(\w+)=(&quot;|"|\')(.*?)(&quot;|"|\')/',
+            '/!DOCTYPE (\w+) (\w+) (&quot;|\'|")(.*?)(&quot;|\'|")/',
+            '/&lt;([a-zA-Z_][a-zA-Z0-9_:-]*)/',
+            '/&lt;\/([a-zA-Z_][a-zA-Z0-9_:-]*)&gt;/',
+            '/&lt;!--/',
+            '/--&gt;/',
+            '/&lt;\?xml (.*?) ?\?&gt;/i',
+            '/&lt;!\[CDATA\[(.*)\]\]&gt;/i',
+        );
+
+
+        $replace = array(
+            '<span style="color: ' .$color['attributes']. '">$1</span>=<span style="color: ' .$color['string']. '">$2$3$2</span>',
+            '<span style="color: ' .$color['tags']. ';">!DOCTYPE</span> <span style="color: ' .$color['attributes']. '">$1 $2 $3$4$3</span>',
+            '&lt;<span style="color: ' .$color['tags']. ';">$1</span>',
+            '&lt;/<span style="color: ' .$color['tags']. ';">$1</span>&gt;',
+            '<span style="color: ' .$color['comment']. '"><!--',
+            '--&gt;</span>',
+            '&lt;<span style="color: ' .$color['tags']. ';">?xml</span> $1 <span style="color: ' .$color['tags']. ';">?</span>&gt;',
+            '<span style="color: ' .$color['tags']. ';">&lt;![<span style="color: ' . $color['keyword']. '">CDATA</span>[</span><span style="color: ' .$color['cdata']. ';">$1</span><span style="color: ' .$color['tags']. ';">]]&gt;</span>'
+        );
+
+	 return preg_replace($match, $replace, $source);
+}
+
 $files = $_SERVER["argv"];
 array_shift($files); // $argv[0] - script filename
 $TYPE = array_shift($files); // "html" or "php"
