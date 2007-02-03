@@ -18,7 +18,7 @@
 $Id$
 */
 
-// direct the output of this fiel into phpdoc/phpbook/phpbook-xsl/version.xml
+// direct the output of this file into phpdoc/phpbook/phpbook-xsl/version.xml
 // errors go to STDERR
 
 // To do:
@@ -170,13 +170,6 @@ function parse_protos($path)
     return $funcs;
 }
 
-function tag2ver($tag, $vertical)
-{
-    if ($vertical) {
-        return chunk_split(str_replace('_', ' ', $tag), 1, "\n");
-    }
-}
-
 function convert_array_to_words($func)
 {
     // globals suck )-:
@@ -235,6 +228,9 @@ function convert_array_to_words($func)
         die("Error.");
     }
 }
+
+///////////////
+///////////////
 
 if (getenv('SKIP_CVS')) {
 	fwrite(STDERR, "Skipping CVS\n");
