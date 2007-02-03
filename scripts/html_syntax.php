@@ -64,7 +64,7 @@ function callback_highlight_xml($matches) {
             '<span class="tags">&lt;![<span class="keyword">CDATA</span>[</span><span class="cdata">$1</span><span class="tags">]]&gt;</span>'
         );
 
-	 return '<div class="xmlcode">' . preg_replace($match, $replace, $source) . '</div>';
+	 return '<div class="xmlcode">' . nl2br(preg_replace($match, $replace, $source)) . '</div>';
 }
 
 $files = $_SERVER["argv"];
