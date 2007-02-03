@@ -40,15 +40,6 @@ function callback_highlight_php($matches) {
 }
 
 function callback_highlight_xml($matches) {
-        $color = array(
-        'attributes' => '#333366',
-        'tags' => '#000066',
-        'comment' => '#666666',
-        'keyword' => '#cc6600',
-        'string' => '#006600',
-        'cdata' => '#990000',
-        );
-
         $source = htmlentities($matches[1]);
 
         $match = array(
@@ -62,19 +53,18 @@ function callback_highlight_xml($matches) {
             '/&lt;!\[CDATA\[(.*)\]\]&gt;/i',
         );
 
-
         $replace = array(
-            '<span style="color: ' .$color['attributes']. '">$1</span>=<span style="color: ' .$color['string']. '">$2$3$2</span>',
-            '<span style="color: ' .$color['tags']. ';">!DOCTYPE</span> <span style="color: ' .$color['attributes']. '">$1 $2 $3$4$3</span>',
-            '&lt;<span style="color: ' .$color['tags']. ';">$1</span>',
-            '&lt;/<span style="color: ' .$color['tags']. ';">$1</span>&gt;',
-            '<span style="color: ' .$color['comment']. '"><!--',
+            '<span class="attributes">$1</span>=<span class="string">$2$3$2</span>',
+            '<span class="tags">!DOCTYPE</span> <span class="attributes">$1 $2 $3$4$3</span>',
+            '&lt;<span class="tags">$1</span>',
+            '&lt;/<span class="tags">$1</span>&gt;',
+            '<span class="comment"><!--',
             '--&gt;</span>',
-            '&lt;<span style="color: ' .$color['tags']. ';">?xml</span> $1 <span style="color: ' .$color['tags']. ';">?</span>&gt;',
-            '<span style="color: ' .$color['tags']. ';">&lt;![<span style="color: ' . $color['keyword']. '">CDATA</span>[</span><span style="color: ' .$color['cdata']. ';">$1</span><span style="color: ' .$color['tags']. ';">]]&gt;</span>'
+            '&lt;<span class="tags">?xml</span> $1 <span class="tags">?</span>&gt;',
+            '<span class="tags">&lt;![<span class="keyword">CDATA</span>[</span><span class="cdata">$1</span><span class="tags">]]&gt;</span>'
         );
 
-	 return preg_replace($match, $replace, $source);
+	 return '<div class="xmlcode">' . preg_replace($match, $replace, $source) . '</div>';
 }
 
 $files = $_SERVER["argv"];
