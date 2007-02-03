@@ -141,7 +141,7 @@ function parse_protos($path)
             ([^(\s]+?)\s?               # functon name
             \((.*)\)\s*                 # params
             ([^*;{]*)                   # suffix
-        /ix';
+            /ix'; /* }}} annoying folding */
     
         $protos = preg_grep($protoRegex, file($f));
         if ($protos) {
@@ -150,7 +150,7 @@ function parse_protos($path)
                 $thisProto = array(
                     'file' => substr($f, strlen(SRC_DIR) + 1),
                     'type' => $m[1],
-                    'func' => $m[2],
+                    'func' => strtolower($m[2]),
                     'params' => $m[3],
                     'suffix' => $m[4],
                     'line' => $line + 1
@@ -350,3 +350,4 @@ foreach ($funcs as $funcname => $func) {
 }
 ?>
 </versions>
+
