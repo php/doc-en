@@ -39,8 +39,11 @@ function callback_highlight_php($matches) {
 	}
 }
 
+function callback_highlight_xml_indent($match) {
+    return strtr($match[0], array(' ' => '&nbsp;', "\t" => '&nbsp;&nbsp;&nbsp;&nbsp;')); 
+}
 function callback_highlight_xml($matches) {
-        $source = htmlentities($matches[1]);
+        $source = trim(htmlentities($matches[1]));
 
         $match = array(
             '/(\w+)=(&quot;|"|\')(.*?)(&quot;|"|\')/',
@@ -58,13 +61,15 @@ function callback_highlight_xml($matches) {
             '<span class="tags">!DOCTYPE</span> <span class="attributes">$1 $2 $3$4$3</span>',
             '&lt;<span class="tags">$1</span>',
             '&lt;/<span class="tags">$1</span>&gt;',
-            '<span class="comment"><!--',
+            '<span class="comment">&lt;!--',
             '--&gt;</span>',
             '&lt;<span class="tags">?xml</span> $1 <span class="tags">?</span>&gt;',
             '<span class="tags">&lt;![<span class="keyword">CDATA</span>[</span><span class="cdata">$1</span><span class="tags">]]&gt;</span>'
         );
-
-	 return '<div class="xmlcode">' . nl2br(preg_replace($match, $replace, $source)) . '</div>';
+        
+        $result = preg_replace($match, $replace, $source);
+        $result = preg_replace_callback('/^([ \t]+)/m', 'callback_highlight_xml_indent', $result);
+        return '<div class="xmlcode">' . nl2br($result) . '</div>';
 }
 
 $files = $_SERVER["argv"];
