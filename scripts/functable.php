@@ -122,7 +122,7 @@ function get_pecl_releases($package)
         $XE = @new SimpleXMLElement("http://pecl.php.net/rest/r/$package/allreleases.xml", NULL, true); //@ sucks, but the XML doesn't like me
         foreach ($XE as $Element) {
             if ($Element->getName() == 'r') {
-                if (preg_match('/[0-9]+\.[0-9]+(\.[0-9]+)?$/i', (string) $Element->v)) {
+                if (preg_match('/[0-9]+\.[0-9]+(\.[0-9]+)?$/', (string) $Element->v)) {
                     $releases[] = (string) $Element->v;
                 }
             }
