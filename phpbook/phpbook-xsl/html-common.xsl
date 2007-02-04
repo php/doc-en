@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.7 2007-02-04 01:05:29 bjori Exp $
+  $Id: html-common.xsl,v 1.8 2007-02-04 23:08:51 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -633,13 +633,10 @@ set       toc
       </xsl:element>
     </xsl:when>
     <xsl:otherwise>
-      <!-- FIXME: Get rid of this table -->
-      <table xsl:use-attribute-sets="shade.verbatim.style"><tr><td>
-        <xsl:element name="pre">
-          <xsl:attribute name="class"><xsl:value-of select="./@role" /></xsl:attribute>
-          <xsl:value-of select="." disable-output-escaping="no" />
-        </xsl:element>
-      </td></tr></table>
+      <xsl:element name="pre">
+        <xsl:attribute name="class"><xsl:value-of select="./@role" /></xsl:attribute>
+        <xsl:value-of select="." disable-output-escaping="no" />
+      </xsl:element>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
