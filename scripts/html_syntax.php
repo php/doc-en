@@ -1,6 +1,6 @@
 #!/usr/bin/php -q
 <?php
-/*
+/* vim: noet
   +----------------------------------------------------------------------+
   | PHP Version 4                                                        |
   +----------------------------------------------------------------------+
@@ -91,7 +91,8 @@ while (($file = array_shift($files)) !== null) {
 		//~ echo "$filename\n";
 		$original = file_get_contents($filename);
 		$highlighted = preg_replace_callback("!<PRE\r?\nCLASS=\"php\"\r?\n>(.*)</PRE\r?\n>!sU", "callback_highlight_php", $original);
-		$highlighted = preg_replace_callback("@<HIGHLIGHTME>(.*)</HIGHLIGHTME>@sU", "callback_highlight_php", $highlighted); /* XSL build */
+		$highlighted = preg_replace_callback("@<HIGHLIGHTPHPCODE>(.*)</HIGHLIGHTPHPCODE>@sU", "callback_highlight_php", $highlighted); /* Used in the XSL build for PHP code */
+		$highlighted = preg_replace_callback("@<HIGHLIGHTXMLCODE>(.*)</HIGHLIGHTXMLCODE>@sU", "callback_highlight_xml", $highlighted); /* Used in the XSL build for XML code */
 		if ($original != $highlighted) {
 			// file_put_contents is only in PHP >= 5
 			$fp = fopen($filename, "wb");

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- vim600: ts=2 
+<!-- vim600: ts=2 sw=2
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.6 2007-02-01 14:51:15 bjori Exp $
+  $Id: html-common.xsl,v 1.7 2007-02-04 01:05:29 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -619,27 +619,29 @@ set       toc
   </h2>
 </xsl:template>
 
- <xsl:template match="programlisting|screen|synopsis">
-   <xsl:param name="suppress-numbers" select="'0'"/>
-  <table xsl:use-attribute-sets="shade.verbatim.style">
-    <tr>
-        <td>
-            <xsl:choose>
-                <xsl:when test="./@role = 'php'">
-                    <xsl:element name="HIGHLIGHTME">
-                        <xsl:value-of select="." disable-output-escaping="yes" />
-                    </xsl:element>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:element name="pre">
-                      <xsl:attribute name="class"><xsl:value-of select="./@role" /></xsl:attribute>
-                      <xsl:value-of select="." disable-output-escaping="no" />
-                    </xsl:element>
-                </xsl:otherwise>
-            </xsl:choose>
-      </td>
-    </tr>
-  </table>
+<xsl:template match="programlisting|screen|synopsis">
+  <xsl:param name="suppress-numbers" select="'0'"/>
+  <xsl:choose>
+    <xsl:when test="./@role = 'php'">
+      <xsl:element name="HIGHLIGHTPHPCODE">
+        <xsl:value-of select="." disable-output-escaping="yes" />
+      </xsl:element>
+    </xsl:when>
+    <xsl:when test="./@role = 'xml'">
+      <xsl:element name="HIGHLIGHTXMLCODE">
+        <xsl:value-of select="." disable-output-escaping="yes" />
+      </xsl:element>
+    </xsl:when>
+    <xsl:otherwise>
+      <!-- FIXME: Get rid of this table -->
+      <table xsl:use-attribute-sets="shade.verbatim.style"><tr><td>
+        <xsl:element name="pre">
+          <xsl:attribute name="class"><xsl:value-of select="./@role" /></xsl:attribute>
+          <xsl:value-of select="." disable-output-escaping="no" />
+        </xsl:element>
+      </td></tr></table>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 <xsl:template match="modifier">
