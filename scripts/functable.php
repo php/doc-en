@@ -346,7 +346,7 @@ if (!getenv('DO_CVS')) {
     }
 }
 
-if (getenv('DO_PECL')) {
+if (!getenv('DO_PECL')) {
 	fwrite(STDERR, "Skipping PECL\n");
 } else {
 	fwrite(STDERR, "Using PECL\n");
