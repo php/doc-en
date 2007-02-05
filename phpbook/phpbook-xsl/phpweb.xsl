@@ -3,7 +3,7 @@
 
   PHP.net web site specific stylesheet
 
-  $Id: phpweb.xsl,v 1.2 2007-01-30 18:27:41 bjori Exp $
+  $Id: phpweb.xsl,v 1.3 2007-02-05 22:28:36 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -12,6 +12,10 @@
 <xsl:import href="../../docbook/docbook-xsl/html/chunkfast.xsl"/>
 <xsl:include href="html-common.xsl"/>
 <xsl:include href="html-chunk.xsl"/>
+
+<!-- Ignore the annoying "ID recommended on..." warnings
+     They are flooding the real warnings -->
+<xsl:param name="id.warnings" select="0"/>
 
 <!-- Write files to the 'php' dir, use the '.php' extension -->
 <xsl:param name="base.dir" select="'php/'"/>
