@@ -26,7 +26,8 @@ if "%1" == "" set PHP_HELP_COMPILE_LANG=en
 
 echo Language choosen: %PHP_HELP_COMPILE_LANG%
 
-if a%2a == anormala goto skipfancy
+REM %1 = en, %2 = -D %3 = . %4 = normal
+if a%4a == anormala goto skipfancy
 
 echo Now generating the fancy manual in %PHP_HELP_COMPILE_FANCYDIR% dir...
 IF NOT EXIST %PHP_HELP_COMPILE_FANCYDIR%\NUL md %PHP_HELP_COMPILE_FANCYDIR%
