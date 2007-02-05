@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.1 2007-01-22 14:09:56 bjori Exp $
+  $Id: common.xsl,v 1.2 2007-02-05 13:36:01 bjori Exp $
 
   What is done in this stylesheet as common to all HTML output formats:
 
@@ -128,6 +128,7 @@
   <xsl:if test="@role='reference'">
     <xsl:text>&amp;</xsl:text>
   </xsl:if>
+  <xsl:text>$</xsl:text>
   <xsl:apply-templates />
 </xsl:template>
 
