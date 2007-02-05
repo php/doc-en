@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.2 2007-02-05 13:36:01 bjori Exp $
+  $Id: common.xsl,v 1.3 2007-02-05 23:11:46 bjori Exp $
 
   What is done in this stylesheet as common to all HTML output formats:
 
@@ -109,7 +109,7 @@
   <xsl:text> </xsl:text>
 </xsl:template>
 
-<xsl:template match="methodsynopsis/void">
+<xsl:template match="methodsynopsis/void|constructorsynopsis/void">
   <xsl:text> ( void )</xsl:text>
 </xsl:template>
 
