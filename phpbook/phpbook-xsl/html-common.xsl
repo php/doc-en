@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.9 2007-02-05 13:38:17 bjori Exp $
+  $Id: html-common.xsl,v 1.10 2007-02-05 22:14:58 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -563,7 +563,7 @@ set       toc
 </xsl:template>
 
 <xsl:template match="filename|literal|option|varname">
-  <var><xsl:if test="name(.) = 'varname' and substring(., 1, 1) != '$'"><xsl:text>$</xsl:text></xsl:if><xsl:apply-templates/></var>
+  <var><xsl:apply-templates/></var>
 </xsl:template>
 
 <xsl:template match="constant">
