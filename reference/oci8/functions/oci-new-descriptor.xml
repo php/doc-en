@@ -1,54 +1,90 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.8 $ -->
+<!-- $Revision: 1.9 $ -->
 <refentry id="function.oci-new-descriptor">
  <refnamediv>
   <refname>oci_new_descriptor</refname>
   <refpurpose>Initializes a new empty LOB or FILE descriptor</refpurpose>
  </refnamediv>
- <refsect1>
-  <title>Description</title>
+ 
+ <refsect1 role="description">
+  &reftitle.description;
   <methodsynopsis>
    <type>OCI-Lob</type><methodname>oci_new_descriptor</methodname>
    <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>type</parameter></methodparam>
   </methodsynopsis>
   <para>
-   <function>oci_new_descriptor</function> allocates resources to hold
-   descriptor or LOB locator. Valid values for <parameter>type</parameter>
-   are: <constant>OCI_D_FILE</constant>,
-   <constant>OCI_D_LOB</constant> and <constant>OCI_D_ROWID</constant>.
+   Allocates resources to hold descriptor or LOB locator. 
   </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>connection</parameter></term>
+     <listitem>
+      <para>
+       An Oracle connection identifier, returned by 
+       <function>oci_connect</function> or <function>oci_pconnect</function>.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>type</parameter></term>
+     <listitem>
+      <para>
+       Valid values for <parameter>type</parameter> are: 
+       <constant>OCI_D_FILE</constant>, <constant>OCI_D_LOB</constant> and
+       <constant>OCI_D_ROWID</constant>.
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   Returns a new LOB or FILE descriptor on success, &false; on error.
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
   <para>
    <example>
     <title><function>oci_new_descriptor</function> example</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-    /* This script is designed to be called from a HTML form.
-     * It expects $user, $password, $table, $where, and $commitsize
-     * to be passed in from the form.  The script then deletes
-     * the selected rows using the ROWID and commits after each
-     * set of $commitsize rows. (Use with care, there is no rollback)
-     */
-    $conn = oci_connect($user, $password);
-    $stmt = oci_parse($conn, "select rowid from $table $where");
-    $rowid = oci_new_descriptor($conn, OCI_D_ROWID);
-    oci_define_by_name($stmt, "ROWID", $rowid);
-    oci_execute($stmt);
-    while (oci_fetch($stmt)) {
-       $nrows = oci_num_rows($stmt);
-       $delete = oci_parse($conn, "delete from $table where ROWID = :rid");
-       oci_bind_by_name($delete, ":rid", $rowid, -1, OCI_B_ROWID);
-       oci_execute($delete);
-       echo "$nrows\n";
-       if (($nrows % $commitsize) == 0) {
-           oci_commit($conn);
-       }
-    }
+/* This script is designed to be called from a HTML form.
+ * It expects $user, $password, $table, $where, and $commitsize
+ * to be passed in from the form.  The script then deletes
+ * the selected rows using the ROWID and commits after each
+ * set of $commitsize rows. (Use with care, there is no rollback)
+ */
+$conn = oci_connect($user, $password);
+$stmt = oci_parse($conn, "select rowid from $table $where");
+$rowid = oci_new_descriptor($conn, OCI_D_ROWID);
+oci_define_by_name($stmt, "ROWID", $rowid);
+oci_execute($stmt);
+while (oci_fetch($stmt)) {
     $nrows = oci_num_rows($stmt);
-    echo "$nrows deleted...\n";
-    oci_free_statement($stmt);
-    oci_close($conn);
+    $delete = oci_parse($conn, "delete from $table where ROWID = :rid");
+    oci_bind_by_name($delete, ":rid", $rowid, -1, OCI_B_ROWID);
+    oci_execute($delete);
+    echo "$nrows\n";
+    if (($nrows % $commitsize) == 0) {
+        oci_commit($conn);
+    }
+}
+$nrows = oci_num_rows($stmt);
+echo "$nrows deleted...\n";
+oci_free_statement($stmt);
+oci_close($conn);
 ?>
 ]]>
     </programlisting>
@@ -100,36 +136,37 @@ Upload file: <input type="file" name="lob_upload" /><br />
     <programlisting role="php">
 <![CDATA[
 <?php
-    /* Calling PL/SQL stored procedures which contain clobs as input
-     * parameters (PHP 4 >= 4.0.6).
-     * Example PL/SQL stored procedure signature is:
-     *
-     * PROCEDURE save_data
-     *   Argument Name                  Type                    In/Out Default?
-     *   ------------------------------ ----------------------- ------ --------
-     *   KEY                            NUMBER(38)              IN
-     *   DATA                           CLOB                    IN
-     *
-     */
+/* Calling PL/SQL stored procedures which contain clobs as input
+ * parameters (PHP 4 >= 4.0.6).
+ * Example PL/SQL stored procedure signature is:
+ *
+ * PROCEDURE save_data
+ *   Argument Name                  Type                    In/Out Default?
+ *   ------------------------------ ----------------------- ------ --------
+ *   KEY                            NUMBER(38)              IN
+ *   DATA                           CLOB                    IN
+ *
+ */
 
-    $conn = oci_connect($user, $password);
-    $stmt = oci_parse($conn, "begin save_data(:key, :data); end;");
-    $clob = oci_new_descriptor($conn, OCI_D_LOB);
-    oci_bind_by_name($stmt, ':key', $key);
-    oci_bind_by_name($stmt, ':data', $clob, -1, OCI_B_CLOB);
-    $clob->write($data);
-    oci_execute($stmt, OCI_DEFAULT);
-    oci_commit($conn);
-    $clob->free();
-    oci_free_statement($stmt);
+$conn = oci_connect($user, $password);
+$stmt = oci_parse($conn, "begin save_data(:key, :data); end;");
+$clob = oci_new_descriptor($conn, OCI_D_LOB);
+oci_bind_by_name($stmt, ':key', $key);
+oci_bind_by_name($stmt, ':data', $clob, -1, OCI_B_CLOB);
+$clob->write($data);
+oci_execute($stmt, OCI_DEFAULT);
+oci_commit($conn);
+$clob->free();
+oci_free_statement($stmt);
 ?>
 ]]>
     </programlisting>
    </example>
   </para>
-  <para>
-   <function>oci_new_descriptor</function> returns &false; on error.
-  </para>
+ </refsect1>
+
+ <refsect1 role="notes">
+  &reftitle.notes;
   <note>
    <para>
     In PHP versions before 5.0.0 you must use <function>ocinewdescriptor</function> instead.
@@ -139,6 +176,7 @@ Upload file: <input type="file" name="lob_upload" /><br />
    </para>
   </note>
  </refsect1>
+
 </refentry>
 
 <!-- Keep this comment at the end of the file
