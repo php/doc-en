@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.8 2007-02-04 23:08:51 bjori Exp $
+  $Id: html-common.xsl,v 1.9 2007-02-05 13:38:17 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -321,7 +321,7 @@ set       toc
   </blockquote>
 </xsl:template>
 
-<xsl:template match="warning|caution">
+<xsl:template match="warning|caution|tip">
   <xsl:variable name="pos">
     <xsl:choose>
       <xsl:when test="count(title[1])=1">2</xsl:when>
@@ -329,35 +329,26 @@ set       toc
     </xsl:choose>
   </xsl:variable>
   <div class="{name(.)}">
-    <p style="font-size:10px"></p>
-    <table border="1" width="96%" align="center">
-      <tr>
-        <td align="center"><b>
-          <xsl:choose>
-            <xsl:when test="$pos=2">
-              <xsl:apply-templates select="title" mode="note.single.entry"/>
-            </xsl:when>
-            <xsl:otherwise>
-              <xsl:call-template name="gentext"/>
-            </xsl:otherwise>
-          </xsl:choose>
-        </b></td>
-      </tr>
-      <tr><td>
-        <xsl:apply-templates select="*[position()=$pos]" mode="note.single.entry" />
-        <xsl:choose>
-          <xsl:when test="(count(child::*)-$pos) > 1">
-            <xsl:apply-templates select="*[position()>$pos and position()!=last()]" />
-            <xsl:apply-templates select="*[position()=last()]" mode="note.single.entry" />
-          </xsl:when>
-          <xsl:otherwise>
-            <p style="font-size=8px"></p>
-            <xsl:apply-templates select="*[position()>$pos]" mode="note.single.entry" />
-          </xsl:otherwise>
-        </xsl:choose>
-      </td></tr>
-    </table>
-    <p style="font-size:10px"></p>
+    <b class="{name(.)}">
+      <xsl:choose>
+        <xsl:when test="$pos=2">
+          <xsl:apply-templates select="title" mode="note.single.entry"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:call-template name="gentext"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </b>
+    <p><xsl:apply-templates select="*[position()=$pos]" mode="note.single.entry" /></p>
+    <xsl:choose>
+      <xsl:when test="(count(child::*)-$pos) > 1">
+        <xsl:apply-templates select="*[position()>$pos and position()!=last()]" />
+        <p><xsl:apply-templates select="*[position()=last()]" mode="note.single.entry" /></p>
+      </xsl:when>
+      <xsl:otherwise>
+        <p><xsl:apply-templates select="*[position()>$pos]" mode="note.single.entry" /></p>
+      </xsl:otherwise>
+    </xsl:choose>
   </div>
 </xsl:template>
 
@@ -567,11 +558,12 @@ set       toc
 </xsl:template>
 
 <xsl:template match="parameter">
-  <i><tt><xsl:apply-templates/></tt></i>
+  <!-- FIXME: Nuke the if when $ has been removed from <parameter> in all translations -->
+  <i><tt><xsl:if test="substring(., 1, 1) != '$'"><xsl:text>$</xsl:text></xsl:if><xsl:apply-templates/></tt></i>
 </xsl:template>
 
 <xsl:template match="filename|literal|option|varname">
-  <var><xsl:apply-templates/></var>
+  <var><xsl:if test="name(.) = 'varname' and substring(., 1, 1) != '$'"><xsl:text>$</xsl:text></xsl:if><xsl:apply-templates/></var>
 </xsl:template>
 
 <xsl:template match="constant">
