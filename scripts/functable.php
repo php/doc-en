@@ -144,7 +144,7 @@ function grab_pecl_release($package, $release)
     // should probably do this as natively as possible.. @@@fixme
     exec('which tar', $tar, $success);
     if($success == 0) {
-        exec($tar . 'zxf pecl_tarball.tgz');
+        exec($tar[0] . ' zxf pecl_tarball.tgz');
     } else {
         fwrite(STDERR, " WARN: CAN'T FIND `tar`! .oO(what kind of system are you running?)");
     }
