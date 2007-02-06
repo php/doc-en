@@ -83,7 +83,7 @@ foreach (glob($fullpath_dir . "*.xml") as $file) {
  
  $result = array(); 
  // Write parameters and return values
- preg_match('@<methodsynopsis>((.|\n)*)</methodsynopsis>@m', $old, $result);
+ preg_match('@<methodsynopsis>([(.\n]*)</methodsynopsis>@m', $old, $result);
 
  if (count($result)) {
      $params = array();
