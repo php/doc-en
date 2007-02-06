@@ -184,17 +184,22 @@ function parse_protos($path)
     $funcs = array();
     $protoFuncs = array();
 
+    $protoRegex = '/
+        {{{\s*proto\s+              # proto identifier
+        (.*?)\s+                    # type
+        ([^(\s]+?)\s?               # functon name
+        \((.*)\)\s*                 # params
+        ([^*;{]*)                   # suffix
+        /ix';                           // }}} annoying folding
+    $ZendFB_regex  = "`^[ \t]*(?:static)?[ \t]*(?:zend_)?function_entry\s*(?!php_hw_api_)\w+(?<!_class_functions)\s*\[\]\s*=\s*\{(.*)(?:\{\s*NULL\s*,\s*NULL\s*,\s*NULL\s*\}|\{0\})`msU";
+    $FB_instance_regex = "`^[ \t]*(?:($macronames)\s*\(|\{)\s*\"?(\w+)`im";
+    $macronames = "ZEND_FE|ZEND_FALIAS|PHP_FE|PHP_FALIAS|ZEND_NAMED_FE|PHP_NAMED_FE|PHP_STATIC_FE";
+
     $files = get_src_files($path);
+
     foreach ($files AS $f) {
 
-        $protoRegex = '/
-            {{{\s*proto\s+              # proto identifier
-            (.*?)\s+                    # type
-            ([^(\s]+?)\s?               # functon name
-            \((.*)\)\s*                 # params
-            ([^*;{]*)                   # suffix
-            /ix'; /* }}} annoying folding */
-    
+        // protos are more verbose than source, check them first
         $protos = preg_grep($protoRegex, file($f));
         if ($protos) {
             foreach ($protos AS $line => $p) {
@@ -217,7 +222,34 @@ function parse_protos($path)
                 $protoFuncs[] = $m[2];
 
             }
-           }
+        }
+
+        // check source
+        // this section from phpdoc/scripts/genfunclist.php, see that file for (c) info
+        // same goes for ZendFB_regex, above
+        // macronames and FB_instance_regex
+
+        // this could probably be optimized -- please feel free
+
+        // function blocks
+        $file_contents = file_get_contents($f);
+        if (preg_match_all($ZendFB_regex, $file_contents, $matches)) {
+            foreach ($matches[0] as $mk => $mv) {
+                $block_titles[$mk] = strtok($mv, "\n");
+            }
+            $tok = strtok($matches[1], "\n");
+            while ($tok) {
+                if (preg_match($FB_instance_regex, $tok, $matches)) {
+                    if (!in_array($matches[2], $protoFuncs)) {
+                        $funcs[] = array(
+                            'file' => substr($f, strlen(SRC_DIR) + 1),
+                            'func' => strtolower($matches[2]),
+                        );
+                    }
+                }
+                $tok = strtok("\n");
+            }
+        }
     }
     return $funcs;
 }
