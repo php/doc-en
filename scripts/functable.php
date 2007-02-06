@@ -87,10 +87,7 @@ function get_php_release_tags()
         }
     } while (1);
 
-    if (!$standalone) {
-        $tags = array();
-    }
-
+    $tags = array();
     foreach ($log as $l) {
         if (substr($l, 0, 1) != "\t") {
             break;
@@ -205,7 +202,7 @@ function parse_protos($path)
             foreach ($protos AS $line => $p) {
                 preg_match($protoRegex, $p, $m);
                 $thisProto = array(
-                    'file' => substr($f, strlen(SRC_DIR) + 1),
+                    'file' => substr($f, strlen(PATH_TMP) + 1),
                     'type' => $m[1],
                     'func' => strtolower($m[2]),
                     'params' => $m[3],
@@ -241,7 +238,7 @@ function parse_protos($path)
                     if (!in_array($matches[2], $protoFuncs)) {
                         fwrite(STDERR, "Missing proto: $func\n");
                         $funcs[] = array(
-                            'file' => substr($f, strlen(SRC_DIR) + 1),
+                            'file' => substr($f, strlen(PATH_TMP) + 1),
                             'func' => $func,
                         );
                     }
