@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
 <section id="phar.using.basics">
  <title>Using Phar Archives: Introduction</title>
  <para>
@@ -70,7 +70,8 @@ try {
     // only executed.
     if (Phar::canWrite()) {
         $p = new Phar(dirname(__FILE__) . '/newphar.phar', 0, 'newphar.phar');
-        // create transaction - nothing is written to disk until commit() is called
+        // create transaction - nothing is written to newphar.phar
+        // until commit() is called, although temporary storage is needed
         $p->begin();
         // add a new file, set its contents
         $p['file1.txt'] = 'Information';
@@ -85,14 +86,16 @@ try {
         $p['images/wow.jpg']->setMetaData(array('mime-type' => 'image/jpeg'));
         $p['index.php'] = file_get_contents('index.php');
         $p->setMetaData(array('bootstrap' => 'index.php'));
-        // save the Phar, and set the loader stub
-        $p->commit('<?php
+        // set the loader stub
+        $p->setStub('<?php
 $p = new Phar(__FILE__);
 $m = $p->getMetaData();
 require "phar://" . __FILE__ . "/" . $m["bootstrap"];
 __HALT_COMPILER();');
+        // save the phar archive to disk
+        $p->commit();
     }
-} catch (BadMethodCallException $e) {
+} catch (Exception $e) {
     echo 'Could not open Phar: ', $e;
 }
 ?>
@@ -126,8 +129,9 @@ file_put_contents('phar://my.phar/somefile.php', 0, $context);
  <para>
   The <literal>phar</literal> stream wrapper does not operate on remote files,
   and cannot operate on remote files, and so is allowed even when the
-  <link linkend="ini.allow-url-fopen">allow_url_fopen</link> INI option
-  is disabled.
+  <link linkend="ini.allow-url-fopen">allow_url_fopen</link> and
+  <link linkend="ini.allow-url-include">allow_url_include</link> INI options
+  are disabled.
  </para>
  <para>
   Although it is possible to create phar archives from scratch just using
@@ -147,15 +151,37 @@ file_put_contents('phar://my.phar/somefile.php', 0, $context);
   part of an associative array.
  </para>
  <para>
+  It is important to note that when creating a Phar archive, the full path
+  should be passed to the <classname>Phar</classname> object constructor.
+  Relative paths will fail to initialize.
+ </para>
+ <para>
   Assuming that <literal>$p</literal> is a Phar object initialized as follows:
   <programlisting role="php">
    <![CDATA[
 <?php
-$p = new Phar('myphar.phar');
+$p = new Phar('/path/to/myphar.phar', 0, 'myphar.phar');
 ?>
    ]]>
   </programlisting>
-  The following is possible:
+  An empty Phar archive will be created at <literal>/path/to/myphar.phar</literal>,
+  or if <literal>/path/to/myphar.phar</literal> already exists, it will be opened
+  again.  The literal <literal>myphar.phar</literal> deomnstrates the concept of an alias
+  that can be used to reference <literal>/path/to/myphar.phar</literal> in URLs as in:
+  <programlisting role="php">
+   <![CDATA[
+<?php
+// these two calls to file_get_contents() are equivalent if
+// /path/to/myphar.phar has an explicit alias of "myphar.phar"
+// in its manifest, or if the phar was initialized with the
+// previous example's Phar object setup
+$f = file_get_contents('phar:///path/to/myphar.phar/whatever.txt');
+$f = file_get_contents('phar://myphar.phar/whatever.txt');
+?>
+   ]]>
+  </programlisting>
+  With the newly created <literal>$p</literal> <classname>Phar</classname> object,
+  the following is possible:
   <itemizedlist>
    <listitem>
     <simpara>
