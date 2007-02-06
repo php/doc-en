@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.10 2007-02-05 22:14:58 bjori Exp $
+  $Id: html-common.xsl,v 1.11 2007-02-06 10:44:27 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -558,8 +558,7 @@ set       toc
 </xsl:template>
 
 <xsl:template match="parameter">
-  <!-- FIXME: Nuke the if when $ has been removed from <parameter> in all translations -->
-  <i><tt><xsl:if test="substring(., 1, 1) != '$'"><xsl:text>$</xsl:text></xsl:if><xsl:apply-templates/></tt></i>
+  <i><tt><xsl:apply-templates/></tt></i>
 </xsl:template>
 
 <xsl:template match="filename|literal|option|varname">
