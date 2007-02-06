@@ -142,7 +142,13 @@ function grab_pecl_release($package, $release)
     file_put_contents(PATH_TMP . '/pecl_tarball.tgz', file_get_contents($remoteTarball));
     
     // should probably do this as natively as possible.. @@@fixme
-    exec('/bin/tar zxf pecl_tarball.tgz');
+    exec('which tar', $tar, $success);
+    if($success == 0) {
+        exec($tar . 'zxf pecl_tarball.tgz');
+    } else {
+        fwrite(STDERR, " WARN: CAN'T FIND `tar`! .oO(what kind of system are you running?)");
+    }
+    return !$success;
 }
 
 function checkout_tag($tag)
