@@ -192,8 +192,8 @@ function parse_protos($path)
         ([^*;{]*)                   # suffix
         /ix';                           // }}} annoying folding
     $ZendFB_regex  = "`^[ \t]*(?:static)?[ \t]*(?:zend_)?function_entry\s*(?!php_hw_api_)\w+(?<!_class_functions)\s*\[\]\s*=\s*\{(.*)(?:\{\s*NULL\s*,\s*NULL\s*,\s*NULL\s*\}|\{0\})`msU";
-    $FB_instance_regex = "`^[ \t]*(?:($macronames)\s*\(|\{)\s*\"?(\w+)`im";
     $macronames = "ZEND_FE|ZEND_FALIAS|PHP_FE|PHP_FALIAS|ZEND_NAMED_FE|PHP_NAMED_FE|PHP_STATIC_FE";
+    $FB_instance_regex = "`^[ \t]*(?:($macronames)\s*\(|\{)\s*\"?(\w+)`im";
 
     $files = get_src_files($path);
 
@@ -234,16 +234,15 @@ function parse_protos($path)
         // function blocks
         $file_contents = file_get_contents($f);
         if (preg_match_all($ZendFB_regex, $file_contents, $matches)) {
-            foreach ($matches[0] as $mk => $mv) {
-                $block_titles[$mk] = strtok($mv, "\n");
-            }
-            $tok = strtok($matches[1], "\n");
+            $tok = strtok($matches[1][0], "\n");
             while ($tok) {
                 if (preg_match($FB_instance_regex, $tok, $matches)) {
+                    $func = strtolower($matches[2]);
                     if (!in_array($matches[2], $protoFuncs)) {
+                        fwrite(STDERR, "Missing proto: $func\n");
                         $funcs[] = array(
                             'file' => substr($f, strlen(SRC_DIR) + 1),
-                            'func' => strtolower($matches[2]),
+                            'func' => $func,
                         );
                     }
                 }
