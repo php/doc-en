@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!-- $Revision: 1.1 $ -->
-<refentry id="function.swishresults-getParsedWords">
+<refentry id="function.swishsearch-setphrasedelimiter">
  <refnamediv>
-  <refname>SwishResults-&gt;getParsedWords</refname>
-  <refpurpose>Get an array of parsed words</refpurpose>
+  <refname>SwishSearch-&gt;setPhraseDelimiter</refname>
+  <refpurpose>Set the phrase delimiter</refpurpose>
  </refnamediv>
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <type>array</type><methodname>SwishResults-&gt;getParsedWords</methodname>
-   <methodparam><type>string</type><parameter>index_name</parameter></methodparam>
+   <type>void</type><methodname>SwishSearch-&gt;setPhraseDelimiter</methodname>
+   <methodparam><type>string</type><parameter>delimiter</parameter></methodparam>
   </methodsynopsis>
   &warn.experimental.func;
  </refsect1>
@@ -18,29 +18,21 @@
   <para>
    <variablelist>
     <varlistentry>
-     <term><parameter>indexi_name</parameter></term>
+     <term><parameter>delimiter</parameter></term>
      <listitem>
       <para>
-       The name of the index used to initialize <classname>Swish</classname>
-       object.
+       Phrase delimiter character. The default delimiter is double-quotes.
       </para>
      </listitem>
     </varlistentry>
    </variablelist>
   </para>
  </refsect1>
- <refsect1 role="returnvalues">
-  &reftitle.returnvalues;
-  <para>
-   An array of parsed words with stopwords removed. The list of parsed words
-   may be useful for highlighting search terms in the results.
-  </para>
- </refsect1>
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
    <example>
-    <title>Basic <function>SwishResults-&gt;getParsedWords</function> example</title>
+    <title>Basic <function>SwishSearch-&gt;setPhraseDelimiter</function> example</title>
     <programlisting role="php">
 <![CDATA[
 <?php
@@ -48,13 +40,24 @@
 try {
 
     $swish = new Swish("index.swish-e");
-    $results = $swish->query("'some characters' and numbers");
+    $search = $swish->prepare();
 
+    $results = $search->execute('"every time"'); //looking for "every time"
+    echo "First query found: ", $results->hits, " hits\n";
+
+    $search->setPhraseDelimiter("'");
+    $results = $search->execute("'every time'"); //the same query, but using different delimiter
+    echo "Second query found: ", $results->hits, " hits\n";
+
+    $search->setPhraseDelimiter('"');
+    $results = $search->execute("'every time'"); //looking for "every" and "time"
+    echo "Third query found: ", $results->hits, " hits\n";
+
+    //let's look at parsed words
     var_dump($results->getParsedWords("index.swish-e"));
-    var_dump($results->indexes[0]['parsed_words']); //same result in a different way
 
 } catch (SwishException $e) {
-    echo "Error: ", $e->getMessage(), "\n";
+    echo $e->getMessage(), "\n";
 }
 
 ?>
@@ -63,25 +66,14 @@ try {
     <para>The above example will output something like this:</para>
     <screen>
 <![CDATA[
-array(4) {
+First query found: 1 hits
+Second query found: 1 hits
+Third query found: 2 hits
+array(2) {
   [0]=>
-  string(4) "some"
+  string(5) "every"
   [1]=>
-  string(10) "characters"
-  [2]=>
-  string(3) "and"
-  [3]=>
-  string(7) "numbers"
-}
-array(4) {
-  [0]=>
-  string(4) "some"
-  [1]=>
-  string(10) "characters"
-  [2]=>
-  string(3) "and"
-  [3]=>
-  string(7) "numbers"
+  string(4) "time"
 }
 ]]>
     </screen>
