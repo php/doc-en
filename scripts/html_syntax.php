@@ -26,16 +26,12 @@ if ($_SERVER["argc"] < 3) {
 }
 set_time_limit(5*60); // can run long, but not more than 5 minutes
 
-function callback_html_number_entities_decode($matches) {
-	return chr($matches[1]);
-}
-
 function callback_highlight_php($matches) {
-	$with_tags = preg_replace_callback("!&#([0-9]+);!", "callback_html_number_entities_decode", trim($matches[1]));
+	$matches[1] = trim($matches[1]);
 	if ($GLOBALS["TYPE"] == "php") {
-		return "\n<?php\nhighlight_php('". addcslashes($with_tags, "'\\") ."');\n?>\n";
+		return "\n<?php\nhighlight_php('". addcslashes($matches[1], "'\\") ."');\n?>\n";
 	} else { // "html"
-		return highlight_string($with_tags, true);
+		return highlight_string($matches[1], true);
 	}
 }
 
