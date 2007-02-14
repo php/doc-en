@@ -60,11 +60,11 @@ HOWTO_XSL_SHEET=$(PHPXSL)/howto.xsl
 QUICKREF_XSL_SHEET=$(PHPXSL)/quickref.xsl
 XUL_XSL_SHEET=$(PHPXSL)/htmlhelp.xsl
 
-BIGHTML_DEPS=$(HTML_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/html-locale.dsl.in $(PHPDSSSL)/common.dsl.in zendapi
-HTML_DEPS=$(HTML_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/html-locale.dsl.in $(PHPDSSSL)/common.dsl.in zendapihtml
+BIGHTML_DEPS=$(HTML_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/html-locale.dsl.in $(PHPDSSSL)/common.dsl.in images
+HTML_DEPS=$(HTML_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/html-locale.dsl.in $(PHPDSSSL)/common.dsl.in images_html
 HOWTO_DEPS=$(HOWTO_STYLESHEET) $(HOWTOPHP_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/html-locale.dsl.in $(PHPDSSSL)/common.dsl.in howto/howto.ent
-PRINT_DEPS=$(PRINT_STYLESHEET) $(PHPDSSSL)/common.dsl.in $(PHPDSSSL)/print.dsl.in zendapi
-PHPWEB_DEPS=$(PHPWEB_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/common.dsl zendapiphp
+PRINT_DEPS=$(PRINT_STYLESHEET) $(PHPDSSSL)/common.dsl.in $(PHPDSSSL)/print.dsl.in images
+PHPWEB_DEPS=$(PHPWEB_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/common.dsl images_php
 KDEVELOP_TOC_DEPS=$(KDEVELOP_TOC_STYLESHEET) Makefile
 
 DIST_FILES=@MANUAL@.tar.gz @MANUAL@.html.gz
@@ -91,25 +91,25 @@ manual.xml: $(srcdir)/manual.xml.in .manual.xml
 .manual.xml: $(DEPEND_FILES) entities/global.ent
 	touch .manual.xml
 
-zendapi:
-	cp $(srcdir)/en/internals/zendapi/figures/*.png .
+images:
+	for i in `find en -type d -name figures`; do sect=`echo $$i | awk -F\/ '{print $$3}'`; for file in $$i/*; do if test -f $$file; then name=`basename $$file`; cp $$file $$sect.$$name; fi; done; done;
 
-zendapihtml: 
+images_html: 
 	rm -rf html && mkdir html && mkdir html/figures
-	cp $(srcdir)/en/internals/zendapi/figures/*.png ./html/figures
+	for i in `find en -type d -name figures`; do sect=`echo $$i | awk -F\/ '{print $$3}'`; for file in $$i/*; do if test -f $$file; then name=`basename $$file`; cp $$file html/figures/$$sect.$$name; fi; done; done;
 
-zendapixul: 
+images_xul: 
 	rm -rf xul && mkdir xul
 	@if test "@FIGURES@" != ""; then mkdir xul/@FIGURES@ ; fi
-	@ZEND_FIGURES_HTML@
+	for i in `find en -type d -name figures`; do sect=`echo $$i | awk -F\/ '{print $$3}'`; for file in $$i/*; do if test -f $$file; then name=`basename $$file`; cp $$file xul/@FIGURES@/$$sect.$$name; fi; done; done;
 
-zendapiphp: 
+images_php: 
 	rm -rf php && mkdir php && mkdir php/figures
-	cp $(srcdir)/en/internals/zendapi/figures/*.png ./php/figures
+	for i in `find en -type d -name figures`; do sect=`echo $$i | awk -F\/ '{print $$3}'`; for file in $$i/*; do if test -f $$file; then name=`basename $$file`; cp $$file php/figures/$$sect.$$name; fi; done; done;
 
-zendapihtmlhelp: 
+images_htmlhelp: 
 	rm -rf ./htmlhelp/html && mkdir ./htmlhelp/html && mkdir htmlhelp/html/figures
-	cp $(srcdir)/en/internals/zendapi/figures/*.png ./htmlhelp/html/figures
+	for i in `find en -type d -name figures`; do sect=`echo $$i | awk -F\/ '{print $$3}'`; for file in $$i/*; do if test -f $$file; then name=`basename $$file`; cp $$file htmlhelp/figures/$$sect.$$name; fi; done; done;
 
 html: html/index.html
 bightml: @MANUAL@.html
@@ -209,35 +209,32 @@ html/index.html: manual.xml $(HTML_DEPS)
 	$(HACK_RTL_LANGS_PAGES)
 
 # still needs more tweaks!!
-html_xsl: manual.xml zendapihtml
+html_xsl: manual.xml images_html
 	${XSLTPROC} $(PHPXSL)/html.xsl manual.xml
 	$(PHP) -q $(scriptdir)/html_syntax.php html html/
 
-xul_xsl: manual.xml zendapixul
+xul_xsl: manual.xml images_xul
 	${XSLTPROC} xsl/xul.xsl manual.xml
 
-bightml_xsl: manual.xml zendapi
+bightml_xsl: manual.xml images
 	${XSLTPROC} -o @MANUAL@.html $(PHPXSL)/bightml.xsl manual.xml
 
-fo: manual.xml zendapi
+fo: manual.xml images
 	${XSLTPROC} -o manual.fo $(PHPXSL)/fo.xsl manual.xml
 
 howto_xsl:
 	rm -rf ./howto/html && mkdir ./howto/html
 	${XSLTPROC} $(HOWTO_XSL_SHEET) ./howto/howto.xml
 
-chm_xsl: manual.xml zendapihtmlhelp
-	for i in `find en -type d -name figures`; do sect=`echo $$i | awk -F\/ '{print $$3}'`; for file in $$i/*; do if test -f $$file; then name=`basename $$file`; cp $$file htmlhelp/html/figures/$$sect.$$name; fi; done; done;
+chm_xsl: manual.xml images_htmlhelp
 	${XSLTPROC} $(CHM_XSL_SHEET) manual.xml
  
-phpweb_xsl: manual.xml zendapiphp
-	for i in `find en -type d -name figures`; do sect=`echo $$i | awk -F\/ '{print $$3}'`; for file in $$i/*; do if test -f $$file; then name=`basename $$file`; cp $$file php/figures/$$sect.$$name; fi; done; done;
+phpweb_xsl: manual.xml images_php
 	${XSLTPROC} $(PHPXSL)/phpweb.xsl manual.xml
 	$(PHP) -q $(scriptdir)/html_syntax.php php php/
 	#$(PHP) -q $(scriptdir)/fixphpweb.php `pwd`/php
 
 php/index.php: manual.xml $(PHPWEB_DEPS)
-	for i in `find en -type d -name figures`; do sect=`echo $$i | awk -F\/ '{print $$3}'`; for file in $$i/*; do if test -f $$file; then name=`basename $$file`; cp $$file php/figures/$$sect.$$name; fi; done; done;
 	$(PHP) -q $(scriptdir)/phpweb-entities.php `pwd` phpweb
 	$(PHP) -q $(scriptdir)/rtlpatch/hackmanuallang.php $(LANGDIR)
 	-$(JADE) $(CATALOG) -d $(PHPWEB_STYLESHEET) -V use-output-dir -t sgml $(XMLDCL) manual.xml
