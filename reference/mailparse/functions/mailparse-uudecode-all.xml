@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.4 $ -->
+<!-- $Revision: 1.5 $ -->
 <refentry id="function.mailparse-uudecode-all">
  <refnamediv>
   <refname>mailparse_uudecode_all</refname>
@@ -13,12 +13,107 @@
    <type>array</type><methodname>mailparse_uudecode_all</methodname>
    <methodparam><type>resource</type><parameter>fp</parameter></methodparam>
   </methodsynopsis>
-  &warn.experimental.func;
-  &warn.undocumented.func;
   <para>
-   Returns an array listing filename information.
+   Scans the data from the given file pointer and extract each embedded
+   uuencoded file into a temporary file.
   </para>
  </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>fp</parameter></term>
+     <listitem>
+      <para>
+       A valid file pointer.
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   Returns an array of associative arrays listing filename information.
+   <informaltable>
+    <tgroup cols="2">
+     <tbody>
+      <row>
+       <entry><literal>filename</literal></entry>
+       <entry>Path to the temporary file name created</entry>
+      </row>
+      <row>
+       <entry><literal>origfilename</literal></entry>
+       <entry>The original filename, for uuencoded parts only</entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
+   The first filename entry is the message body. The next entries are the
+   decoded uuencoded files.
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>mailparse_uudecode_all</function> example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$text = <<<EOD
+To: fred@example.com
+
+hello, this is some text hello.
+blah blah blah.
+
+begin 644 test.txt
+/=&AI<R!I<R!A('1E<W0*
+`
+end
+
+EOD;
+
+$fp = tmpfile();
+fwrite($fp, $text);
+
+$data = mailparse_uudecode_all($fp);
+
+echo "BODY\n";
+readfile($data[0]["filename"]);
+echo "UUE ({$data[1]['origfilename']})\n";
+readfile($data[1]["filename"]);
+
+// Clean up
+unlink($data[0]["filename"]);
+unlink($data[1]["filename"]);
+
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+BODY
+To: fred@example.com
+
+hello, this is some text hello.
+blah blah blah.
+
+UUE (test.txt)
+this is a test
+]]>
+    </screen>
+   </example>
+  </para>
+ </refsect1>
+
 </refentry>
 
 <!-- Keep this comment at the end of the file
