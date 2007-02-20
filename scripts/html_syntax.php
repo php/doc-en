@@ -18,20 +18,28 @@
   +----------------------------------------------------------------------+
 */
 
-if ($_SERVER["argc"] < 3) {
+if ($_SERVER["argc"] < 4) {
 	exit("Purpose: Syntax highlight PHP examples in DSSSL generated HTML manual.\n"
-		.'Usage: html_syntax.php [ "html" | "php" ] [ filename.ext | dir | wildcard ] ...' ."\n"
+		.'Usage: html_syntax.php [ "html" | "php" ] [ "xsl" | "dsssl" ] [ filename.ext | dir | wildcard ] ...' ."\n"
 		.'"html" - highlight_string() is applied, "php" - highlight_php() is added' ."\n"
 	);
 }
 set_time_limit(5*60); // can run long, but not more than 5 minutes
 
+function callback_html_number_entities_decode($matches) {
+	return chr($matches[1]);
+}
+
 function callback_highlight_php($matches) {
-	$matches[1] = trim($matches[1]);
-	if ($GLOBALS["TYPE"] == "php") {
-		return "\n<?php\nhighlight_php('". addcslashes($matches[1], "'\\") ."');\n?>\n";
+    if ($GLOBALS['DECODE'] === true) {
+        $with_tags = preg_replace_callback("!&#([0-9]+);!", "callback_html_number_entities_decode", trim($matches[1]));
+    } else {
+        $with_tags = trim($matches[1]);
+    }
+    if ($GLOBALS["TYPE"] == "php") {
+		return "\n<?php\nhighlight_php('". addcslashes($with_tags, "'\\") ."');\n?>\n";
 	} else { // "html"
-		return highlight_string($matches[1], true);
+		return highlight_string($with_tags, true);
 	}
 }
 
@@ -71,6 +79,10 @@ function callback_highlight_xml($matches) {
 $files = $_SERVER["argv"];
 array_shift($files); // $argv[0] - script filename
 $TYPE = array_shift($files); // "html" or "php"
+
+$build_medium = array_shift($files);
+$DECODE = ($build_medium !== "xsl");
+
 while (($file = array_shift($files)) !== null) {
 	if (is_file($file)) {
 		$process = array($file);
