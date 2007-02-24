@@ -3,7 +3,7 @@
 
   HTML Help specific stylesheet
 
-  $Id: htmlhelp.xsl,v 1.2 2007-01-22 22:19:09 bjori Exp $
+  $Id: htmlhelp.xsl,v 1.3 2007-02-24 22:59:43 philip Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -28,7 +28,7 @@
   - add root DHTML div with id ="PageContent" for skinning purposes
   - header off, footer on (also custom with some js handlers and custom ids)
 
-  - turn on function index page building (in appendixes) and turn off ToC for it
+  - turn on function index page building (in appendices) and turn off ToC for it
   - output formal object titles enclosed in <h3> tags 
     (abstract title, examples, tables, ...?)
   - simple bold text for admonitions (note|important|warning|caution|tip)

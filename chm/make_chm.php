@@ -27,7 +27,7 @@ $MAIN_FILES = array(
     "funcref.html",
     "internals.html",
     "faq.html",
-    "appendixes.html"
+    "appendices.html"
 );
 
 // Header for index and toc 
