@@ -31,7 +31,7 @@ error_reporting(E_ALL);
 
 $status = array();
 
-foreach (glob('../en/reference/*/*/*.xml') as $function) {
+foreach (glob('../../en/reference/*/*/*.xml') as $function) {
 
     $path = explode('/', $function);
     $extension = $path[count($path) - 3];
@@ -217,9 +217,7 @@ foreach (glob('../en/reference/*/*/*.xml') as $function) {
 
 $idx = sqlite_open("check_phpdoc.sqlite");
 
-$qry_str = '
-DROP TABLE IF EXISTS reference;
-CREATE TABLE reference (
+sqlite_query($idx, 'CREATE TABLE reference (
 extension char(40),
 funcname char(200),
 oldstyle integer,
@@ -231,16 +229,16 @@ noreturnvalues integer,
 noparameters integer,
 noexamples integer,
 noerrors integer
-);';
+);');
 
 
+$qry_str = '';
 foreach ($status as $extension => $functions) {
     foreach ($functions as $function => $attrs) {
         $qry_str .= 'INSERT INTO reference (extension, funcname, ' . implode(', ', array_keys($attrs)) . ') VALUES ("' . $extension . '", "' . $function . '", ' . implode(', ', $attrs) . ');';
     }
 }
-echo $qry_str;
-sqlite_exec($idx, 'BEGIN TRANSACTION; '.$qry_str.' COMMIT');
+sqlite_query($idx, $qry_str);
 unset($qry_str);
 sqlite_close($idx);
 
