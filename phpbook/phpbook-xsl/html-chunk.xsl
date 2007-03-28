@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-chunk.xsl,v 1.1 2007-01-22 14:09:56 bjori Exp $
+  $Id: html-chunk.xsl,v 1.2 2007-03-28 13:33:46 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -95,9 +95,14 @@
   <xsl:variable name="targetid">
    <xsl:choose>
     <xsl:when test="$rolename='php'">
-     <xsl:if test="count(//refentry[@id=concat('function.',$idbase)])>0">
-      <xsl:copy-of select="concat('function.',$idbase)"/>
-     </xsl:if>
+     <xsl:choose>
+      <xsl:when test="count(//refentry[@id=concat('function.',$idbase)])>0">
+       <xsl:copy-of select="concat('function.',$idbase)"/>
+      </xsl:when>
+      <xsl:when test="//sect1[@id=concat('function.', $idbase)] != ''">
+       <xsl:copy-of select="concat('function.', $idbase)" />
+      </xsl:when>
+     </xsl:choose>
     </xsl:when>
     <xsl:when test="$rolename='zend-api'">
      <xsl:if test="count(//refentry[@id=concat('zend-api.',$idbase)])>0">
@@ -115,7 +120,7 @@
    </xsl:choose>
   </xsl:variable>
   <xsl:choose>
-    <xsl:when test="ancestor::refentry/@id=$targetid
+    <xsl:when test="(ancestor::refentry/@id=$targetid or ancestor::sect1/@id=$targetid)
                     or string-length($targetid) = 0">
       <b><xsl:copy-of select="$content"/></b>
     </xsl:when>
@@ -131,3 +136,7 @@
 </xsl:template>
 
 </xsl:stylesheet>
+<!--
+vim: et
+-->
+
