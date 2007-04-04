@@ -145,7 +145,7 @@ function write_reference_xml()
        "<!-- Purpose:  -->\n" .
        "<!-- Membership:  -->\n" .
        "<reference id=\"ref." . $extension_name . "\">\n" .
-       " <title>$extension_name Functions</title>\n" .
+       " <title>$extension_name &Functions;</title>\n" .
        " <titleabbrev>$extension_name</titleabbrev>\n" .
        "\n" .
        " <partintro>\n" .
