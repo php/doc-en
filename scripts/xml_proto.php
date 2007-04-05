@@ -461,14 +461,16 @@ function add_constant_to_list($name, $type)
 
 function scan_for_constants($buffer)
 {
-  preg_match_all('/REGISTER_(?:MAIN_)?([A-Z]+)_CONSTANT\("(\S+)"/', $buffer, $matches, PREG_SET_ORDER);
+  preg_match_all('/REGISTER_(?:MAIN_)?([A-Z]+)_CONST(?:ANT)?\(([^),]+)/', $buffer, $matches, PREG_SET_ORDER);
 
   foreach ($matches as $const) {
+    $const[2] = trim($const[2], '"');
     switch ($const[1]) {
       case 'LONG':
         $type = 'integer'; break;
       case 'DOUBLE':
         $type = 'float'; break;
+      case 'U':
       case 'STRINGL':
       case 'STRING':
         $type = 'string'; break;
