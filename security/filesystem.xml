@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.3 $ -->
+<!-- $Revision: 1.4 $ -->
 <!-- splitted from ./index.xml, last change in rev 1.66 -->
   <chapter id="security.filesystem">
    <title>Filesystem Security</title>
@@ -34,16 +34,19 @@
 <?php
 // remove a file from the user's home directory
 $username = $_POST['user_submitted_name'];
-$homedir = "/home/$username";
-$file_to_delete = "$userfile";
-unlink ("$homedir/$userfile");
-echo "$file_to_delete has been deleted!";
+$userfile = $_POST['user_submitted_filename'];
+$homedir  = "/home/$username";
+
+unlink("$homedir/$userfile");
+
+echo "The file has been deleted!";
 ?>
 ]]>
      </programlisting>
     </example>
-   Since the username is postable from a user form, they can submit
-   a username and file belonging to someone else, and delete files.
+   Since the username and the filename are postable from a user form, 
+   they can submit a username and a filename belonging to someone else, 
+   and delete it even if they're not supposed to be allowed to do so.
    In this case, you'd want to use some other form of authentication.
    Consider what could happen if the variables submitted were
    "../etc/" and "passwd". The code would then effectively read:
@@ -54,11 +57,13 @@ echo "$file_to_delete has been deleted!";
 <?php
 // removes a file from anywhere on the hard drive that
 // the PHP user has access to. If PHP has root access:
-$username = "../etc/";
-$homedir = "/home/../etc/";
-$file_to_delete = "passwd";
-unlink ("/home/../etc/passwd");
-echo "/home/../etc/passwd has been deleted!";
+$username = $_POST['user_submitted_name']; // "../etc"
+$userfile = $_POST['user_submitted_filename']; // "passwd"
+$homedir  = "/home/$username"; // "/home/../etc"
+
+unlink("$homedir/$userfile"); // "/home/../etc/passwd"
+
+echo "The file has been deleted!";
 ?>
 ]]>
      </programlisting>
@@ -86,23 +91,27 @@ echo "/home/../etc/passwd has been deleted!";
 // removes a file from the hard drive that
 // the PHP user has access to.
 $username = $_SERVER['REMOTE_USER']; // using an authentication mechanisim
+$userfile = basename($_POST['user_submitted_filename']);
+$homedir  = "/home/$username";
 
-$homedir = "/home/$username";
+$filepath = "$homedir/$userfile";
 
-$file_to_delete = basename("$userfile"); // strip paths
-unlink ($homedir/$file_to_delete);
-
-$fp = fopen("/home/logging/filedelete.log","+a"); //log the deletion
-$logstring = "$username $homedir $file_to_delete";
-fwrite ($fp, $logstring);
+if (file_exists($filepath) && unlink($filepath)) {
+    $logstring = "Deleted $filepath\n";
+} else {
+    $logstring = "Failed to delete $filepath\n";
+}
+$fp = fopen("/home/logging/filedelete.log", "a");
+fwrite($fp, $lo gstring);
 fclose($fp);
 
-echo "$file_to_delete has been deleted!";
+echo htmlentities($logstring, ENT_QUOTES);
+
 ?>
 ]]>
      </programlisting>
     </example>
-    However, even this is not without it's flaws. If your authentication
+    However, even this is not without its flaws. If your authentication
     system allowed users to create their own user logins, and a user
     chose the login "../etc/", the system is once again exposed. For
     this reason, you may prefer to write a more customized check:
@@ -111,14 +120,16 @@ echo "$file_to_delete has been deleted!";
      <programlisting role="php">
 <![CDATA[
 <?php
-$username = $_SERVER['REMOTE_USER']; // using an authentication mechanisim
-$homedir = "/home/$username";
+$username     = $_SERVER['REMOTE_USER']; // using an authentication mechanisim
+$userfile     = $_POST['user_submitted_filename'];
+$homedir      = "/home/$username";
 
-if (!ereg('^[^./][^/]*$', $userfile))
-     die('bad filename'); //die, do not process
+$filepath     = "$homedir/$userfile";
 
-if (!ereg('^[^./][^/]*$', $username))
-     die('bad username'); //die, do not process
+if (!ctype_alnum($username) || !preg_match('/^(?:[a-z0-9_-]|\.(?!\.))+$/iD', $userfile)) {
+    die("Bad username/filename");
+}
+
 //etc...
 ?>
 ]]>
