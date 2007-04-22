@@ -3,7 +3,7 @@
 
   quickref.xsl: Stylesheet for generating quick-reference
 
-  $Id: quickref.xsl,v 1.1 2007-01-22 14:09:56 bjori Exp $
+  $Id: quickref.xsl,v 1.2 2007-04-22 09:37:31 hholzgra Exp $
 
 -->
 <!DOCTYPE xsl:stylesheet [
@@ -24,13 +24,13 @@
 <xsl:template match="/">
   <xsl:choose>
   <xsl:when test="$sortbycase">
-    <xsl:apply-templates select="//refnamediv">
+    <xsl:apply-templates select="//part[@id != 'internals']/descendant::refnamediv">
         <xsl:sort select="refname"/>
     </xsl:apply-templates>
   </xsl:when>
   <xsl:otherwise>
-    <xsl:apply-templates select="//refnamediv">
-        <xsl:sort select="translate(refname,&lowercase;,&uppercase;)"/>
+    <xsl:apply-templates select="//part[@id != 'internals']/descendant::refnamediv">
+      <xsl:sort select="translate(refname,&lowercase;,&uppercase;)"/>
     </xsl:apply-templates>
   </xsl:otherwise>
   </xsl:choose>
