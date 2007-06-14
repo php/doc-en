@@ -36,16 +36,20 @@ sort($files);
 $Purpose = $Membership = $State = $debug = array();
 
 // read the files and save the tags' info
-foreach ($files as $file) {
+foreach ($files as $filename) {
 
-	$file = file_get_contents($file);
+	$file = file_get_contents($filename);
 	$miss = array('Purpose'=>1, 'Membership'=>1);
 
 	// get the extension's name
 	preg_match('/<reference\s+id=[\'"]([^\'"]+)[\'"]>/S', $file, $match);
-	$ext = $match[1];
-
-
+	if (empty($match[1])) {
+		$debug['unknown-extension'][] = $filename;
+		continue;
+	} else {
+		$ext = $match[1];
+	}
+	
 	if (preg_match_all('/<!--\s*(\w+):\s*([^-]+)-->/S', $file, $matches, PREG_SET_ORDER)) {
 
 		foreach ($matches as $match) {
@@ -195,5 +199,15 @@ if (isset($debug['bogus-membership'])) {
 	echo "\nExtensions with bogus Membership:\n";
 	print_r($debug['bogus-membership']);
 }
+
+if (isset($debug['unknown-extension'])) {
+	echo "\nExtensions with unknown extension title:\n";
+	print_r($debug['unknown-extension']);
+}
+
+if (empty($debug)) {
+	echo "Success: Check {$basedir}/en/appendices/extensions.xml for details\n";
+}
+
 
 ?>
