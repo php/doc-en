@@ -29,7 +29,7 @@ if (isset($_SERVER["argv"][1])) {
 
 if (!isset($_SERVER["argv"][1]) || !is_dir($phpdoc_dir)) {
 	echo "Purpose: Check parameters (types, optional, reference, count) and return types.\n";
-	echo "Usage: check-references.php language\n";
+	echo "Usage: check-references.php language [path_to_extension]\n";
 	echo "Notes:\n";
 	echo "- Compares documentation with PHP sources (Zend, extensions, PECL, SAPI).\n";
 	echo "- Functions not found in sources are checked as without references.\n";
@@ -37,51 +37,23 @@ if (!isset($_SERVER["argv"][1]) || !is_dir($phpdoc_dir)) {
 	exit();
 }
 
+$extension = $_SERVER["argv"][2];
+
 // various names for parameters passed by reference
 // array() means list of parameters, number is position from which all parameters are passed by reference
 $number_refs = array(
+	"first_arg_force_ref" => array(1),
 	"second_arg_force_ref" => array(2),
 	"second_args_force_ref" => array(2),
-	"second_argument_force_ref" => array(2),
-	"exif_thumbnail_force_ref" => array(2, 3, 4),
-	"third_and_rest_force_ref" => 3,
 	"third_arg_force_ref" => array(3),
-	"third_args_force_ref" => array(3),
-	"third_argument_force_ref" => array(3),
-	"third_arg_force_by_ref_rest" => 3,
-	"second_arg_force_by_ref_rest" => 2,
-	"arg3to6of6_force_ref" => array(3, 4, 5, 6),
-	"second_thru_fourth_args_force_ref" => array(2, 3, 4),
-	"secondandthird_args_force_ref" => array(2, 3),
-	"first_arg_force_ref" => array(1),
-	"first_args_force_ref" => array(1),
-	"first_argument_force_ref" => array(1),
-	"firstandsecond_args_force_ref" => array(1, 2),
-	"arg2and3_force_ref" => array(2, 3),
-	"first_through_third_args_force_ref" => array(1, 2, 3),
 	"fourth_arg_force_ref" => array(4),
-	"second_and_third_args_force_ref" => array(2, 3),
-	"second_fifth_and_sixth_args_force_ref" => array(2, 5, 6),
-	"first_and_second__args_force_ref" => array(1, 2),
-	"third_and_fourth_args_force_ref" => array(3, 4),
-	"sixth_arg_force_ref" => array(6),
-	"msg_receive_args_force_ref" => array(3, 5, 8),
-	"all_args_force_by_ref" => 1,
+	"fifth_arg_force_ref" => array(5),
 	"all_args_by_ref" => 1,
-	"http_request_info_ref_3" => array(3),
-	"http_request_info_ref_4" => array(4),
-	"http_arg_pass_ref_3" => array(3),
-	"http_arg_pass_ref_4" => array(4),
-	"http_arg_pass_ref_5" => array(5),
-	"secondandthird_arg_force_ref" => array(2, 3),
-	"fifthandsixth_arg_force_ref" => array(5, 6),
-	"seventh_arg_force_ref" => array(7),
-	"eighth_arg_force_ref" => array(8),
 );
 
 $valid_types = "int|float|string|bool|resource|array|object|mixed|number";
 $invalid_types = "integer|long|double|boolean|class"; // objects are written as appropriate class name so there is no complete list of valid types
-$retval_mapping = array("TRUE" => "bool", "BOOL" => "bool", "LONG" => "int", "DOUBLE" => "float", "STRING" => "string", "STRINGL" => "string", "ARRAY" => "array", "OBJECT" => "object", "RESOURCE" => "resource", "ZVAL" => "mixed"); // FALSE and NULL omitted because they are used for errors
+$retval_mapping = array("TRUE" => "bool", "BOOL" => "bool", "LONG" => "int", "DOUBLE" => "float", "STRING" => "string", "STRINGL" => "string", "TEXT" => "string", "TEXTL" => "string", "UNICODE" => "unicode", "UNICODEL" => "unicode", "ASCII_STRING" => "unicode", "ASCII_STRINGL" => "unicode", "ARRAY" => "array", "OBJECT" => "object", "RESOURCE" => "resource", "ZVAL" => "mixed"); // FALSE and NULL omitted because they are used for errors
 $retval_types = implode('|', array_keys($retval_mapping));
 $operators = "!=|<=?|>=?|==";
 $max_args = 12; // maximum number of regular function arguments
@@ -190,7 +162,7 @@ $source_refs = array(); // array("function_name" => number_ref, ...)
 $source_types = array(); // array("function_name" => array("type_spec", filename, lineno), ...)
 $return_types = array(); // array("function_name" => array("doc_type", filename, lineno), ...)
 $source_arg_counts = array(); // array("function_name" => array(disallowed_count => true, ...), ...)
-foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), glob("$pecl_dir/*", GLOB_ONLYDIR), glob("$phpsrc_dir/sapi/*", GLOB_ONLYDIR)) as $dirname) {
+foreach ((isset($extension) ? array($extension) : array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), glob("$pecl_dir/*", GLOB_ONLYDIR), glob("$phpsrc_dir/sapi/*", GLOB_ONLYDIR))) as $dirname) {
 	if (dirname($dirname) == $pecl_dir && !file_exists("$phpdoc_dir/reference/" . strtolower(basename($dirname)))) {
 		continue; // skip undocumented PECL extensions
 	}
@@ -198,7 +170,8 @@ foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), 
 	$aliases = array(); // php_function => sources_function
 	$macros = array(); // MACRO => array(body, array(params))
 	$largedir = ($dirname == $zend_dir || $dirname == "$phpsrc_dir/ext/standard");
-	foreach (array_merge((array) glob("$dirname/*.c*"), (array) glob("$dirname/*.h")) as $filename) {
+	$local_refs = array();
+	foreach (array_merge((array) glob("$dirname/*.h"), (array) glob("$dirname/*.c*")) as $filename) {
 		$file = file_get_contents($filename);
 		// macros
 		if (!$largedir) {
@@ -206,6 +179,22 @@ foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), 
 			foreach ($matches as $val) {
 				$params = preg_split('~,\\s*~', trim($val[2], '()'));
 				$macros[$val[1]] = array(trim(str_replace(array("\r", "\\\n"), "", $val[3])), $params);
+			}
+		}
+		
+		preg_match_all('~ZEND_BEGIN_ARG_INFO(?:_EX)?\\(([^,]*),\\s*([^,)]+)(.*?)ZEND_END_ARG_INFO~s', $file, $matches, PREG_SET_ORDER);
+		foreach ($matches as $val) {
+			$function_name = trim($val[1]);
+			$local_refs[$function_name] = array();
+			preg_match_all('~ZEND_ARG(?:_PASS)?_INFO\\(\\s*([^,)]+)~', $val[3], $matches2);
+			$i = -1;
+			foreach ($matches2[1] as $i => $val2) {
+				if ($val2 && $val2 != "ZEND_SEND_BY_VAL") {
+					$local_refs[$function_name][] = $i+1;
+				}
+			}
+			if ($val[2] && $val2 != "ZEND_SEND_BY_VAL") {
+				$local_refs[$function_name] = ($local_refs[$function_name] ? min($local_refs[$function_name]) : $i+2);
 			}
 		}
 		
@@ -226,14 +215,19 @@ foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), 
 		}
 		
 		// references
-		preg_match_all("~^[ \t]*(?:ZEND|PHP)_FE\\((\\w+)\\s*,\\s*(\\w+)\\s*[,)]~m", $file, $matches, PREG_SET_ORDER);
-		preg_match_all("~^[ \t]*(?:ZEND|PHP)_FALIAS\\((\\w+)\\s*,[^,]+,\\s*(\\w+)\\s*[,)]~m", $file, $matches2, PREG_SET_ORDER);
+		preg_match_all("~^[ \t]*(?:ZEND|PHP)_FE\\((\\w+)\\s*,\\s*(\\w+)\\s*[,)]~m", $file, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
+		preg_match_all("~^[ \t]*(?:ZEND|PHP)_FALIAS\\((\\w+)\\s*,[^,]+,\\s*(\\w+)\\s*[,)]~m", $file, $matches2, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
 		foreach (array_merge($matches, $matches2) as $val) {
-			if ($val[2] != "NULL") {
-				if (empty($number_refs[$val[2]])) {
-					echo "! $val[2] from $filename is not defined.\n";
+			if ($val[2][0] != "NULL") {
+				$lineno = substr_count(substr($file, 0, $val[0][1]), "\n") + 1;
+				if (isset($local_refs[$val[2][0]])) {
+					$source_refs[strtolower($val[1][0])] = array($local_refs[$val[2][0]], $filename, $lineno);
+				} elseif (isset($number_refs[$val[2][0]])) {
+					$source_refs[strtolower($val[1][0])] = array($number_refs[$val[2][0]], $filename, $lineno);
+				} else {
+					$source_refs[strtolower($val[1][0])] = array(null, $filename, $lineno);
+					echo "! " . $val[2][0] . " from $filename is not defined.\n";
 				}
-				$source_refs[strtolower($val[1])] = $number_refs[$val[2]];
 			}
 		}
 		
@@ -245,7 +239,9 @@ foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), 
 			$lineno = substr_count(substr($file, 0, $val[3][1]), "\n") + 1;
 			
 			// return type
-			if (!in_array($function_name, $difficult_retvals)) {
+			if (preg_match('~(.+)::__construct$~', $function_name, $match)) {
+				$return_types[$function_name] = array($match[1], $filename, $lineno);
+			} elseif (!in_array($function_name, $difficult_retvals)) {
 				preg_match_all("~\\b(?:RETURN|RETVAL|(?:return_value->type|Z_TYPE_P\\(return_value\\))\\s*=\\s*IS)_($retval_types)|(?:ZVAL_|convert_to_)((?i)$retval_types)(?:_ex)?\\(return_value~", $function_body, $types, PREG_SET_ORDER);
 				if (preg_match_all('~()(array|object)(?:_and_properties)?_init\\(return_value~', $function_body, $matches, PREG_SET_ORDER)) {
 					$types = array_merge($types, $matches);
@@ -361,7 +357,8 @@ echo "Sources were read.\n";
 
 // compare with documentation
 $counts = array("refs" => 0, "types" => 0, "arg_counts" => 0, "return" => 0);
-foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
+$reference_path = "$phpdoc_dir/reference/" . (isset($extension) ? basename($extension) : "*");
+foreach (array_merge(glob("$reference_path/*/*.xml"), glob("$reference_path/*/*/*.xml")) as $filename) {
 	if (preg_match('~^(.*(?:(\\w+)</classname></ooclass>\\s*)?<methodsynopsis>(.*))<methodname>([^<]+)<(.*)</methodsynopsis>~sU', file_get_contents($filename), $matches)) {
 		$lineno = substr_count($matches[1], "\n") + 1;
 		$return_type = $matches[3];
@@ -371,16 +368,17 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 		// return type
 		if (isset($return_types[$function_name])) {
 			$counts["return"]++;
-			if (!preg_match("~<type>(" . $return_types[$function_name][0] . ")</type>~", $return_type) && ($return_types[$function_name][0] != "object" || preg_match("~<type>($valid_types|$invalid_types)</type>~", $return_type))) {
-				echo "Wrong return type in $filename on line $lineno.\n";
-				echo ": (" . $return_types[$function_name][0] . ") in " . $return_types[$function_name][1] . " on line " . $return_types[$function_name][2] . ".\n";
+			$modifier = (preg_match('~::__construct$~', $function_name) ? "i" : "");
+			if (!preg_match("~<type>(" . $return_types[$function_name][0] . ")</type>~$modifier", $return_type) && ($return_types[$function_name][0] != "object" || preg_match("~<type>($valid_types|$invalid_types)</type>~", $return_type))) {
+				//~ echo "Wrong return type in $filename on line $lineno.\n";
+				//~ echo ": (" . $return_types[$function_name][0] . ") in " . $return_types[$function_name][1] . " on line " . $return_types[$function_name][2] . ".\n";
 			}
 		} elseif (preg_match("~<type>(callback|$invalid_types)</type>~", $return_type)) {
-			echo "Wrong return type in $filename on line $lineno.\n";
+			//~ echo "Wrong return type in $filename on line $lineno.\n";
 		}
 		
 		// references
-		$source_ref = (isset($source_refs[$function_name]) ? $source_refs[$function_name] : null);
+		$source_ref = (isset($source_refs[$function_name]) ? $source_refs[$function_name] : array(null));
 		preg_match_all('~<parameter( role="reference")?>~', $methodsynopsis, $matches);
 		$byref = array();
 		foreach ($matches[1] as $key => $val) {
@@ -389,9 +387,9 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 			}
 		}
 		if (!in_array($function_name, $wrong_refs) 
-		&& (is_int($source_ref) ? $byref[0] != $source_ref || count($byref) != count($matches[1]) - $source_ref + 1 : $byref != $source_ref)
+		&& (is_int($source_ref[0]) ? $byref[0] != $source_ref[0] || count($byref) != count($matches[1]) - $source_ref[0] + 1 : $byref != $source_ref[0])
 		) {
-			echo (isset($source_ref) ? "Parameter(s) " . (is_int($source_ref) ? "$source_ref and rest" : implode(", ", $source_ref)) : "Nothing") . " should be passed by reference in $filename on line $lineno.\n";
+			echo (isset($source_ref[0]) ? "Parameter(s) " . (is_int($source_ref[0]) ? "$source_ref[0] and rest" : implode(", ", $source_ref[0])) : "Nothing") . " should be passed by reference in $filename on line $lineno" . (isset($source_ref[1]) ? "\n: source in $source_ref[1] on line $source_ref[2]" : "") . ".\n";
 		}
 		if (isset($source_ref)) {
 			$counts["refs"]++;
@@ -448,14 +446,14 @@ foreach (glob("$phpdoc_dir/reference/*/functions/*.xml") as $filename) {
 			$count = count($matches[3]);
 			if (!$matches[3] || substr($matches[3][$count - 1], -3) != "...") {
 				if ($count > $max_args) {
-					echo "Warning: Too much parameters in $function_name.\n";
+					//~ echo "Warning: Too much parameters in $function_name.\n";
 				} elseif ($count < $max_args) {
 					$disallowed += array_fill($count + 1, $max_args - $count, true);
 				}
 			}
 			if ($source_arg_count[0] != $disallowed) {
-				echo "Wrong arguments count in $filename on line $lineno.\n";
-				echo ": source in $source_arg_count[1] on line $source_arg_count[2].\n";
+				//~ echo "Wrong arguments count in $filename on line $lineno.\n";
+				//~ echo ": source in $source_arg_count[1] on line $source_arg_count[2].\n";
 			}
 		}
 	}
