@@ -370,11 +370,11 @@ foreach (array_merge(glob("$reference_path/*/*.xml"), glob("$reference_path/*/*/
 			$counts["return"]++;
 			$modifier = (preg_match('~::__construct$~', $function_name) ? "i" : "");
 			if (!preg_match("~<type>(" . $return_types[$function_name][0] . ")</type>~$modifier", $return_type) && ($return_types[$function_name][0] != "object" || preg_match("~<type>($valid_types|$invalid_types)</type>~", $return_type))) {
-				//~ echo "Wrong return type in $filename on line $lineno.\n";
-				//~ echo ": (" . $return_types[$function_name][0] . ") in " . $return_types[$function_name][1] . " on line " . $return_types[$function_name][2] . ".\n";
+				echo "Wrong return type in $filename on line $lineno.\n";
+				echo ": (" . $return_types[$function_name][0] . ") in " . $return_types[$function_name][1] . " on line " . $return_types[$function_name][2] . ".\n";
 			}
 		} elseif (preg_match("~<type>(callback|$invalid_types)</type>~", $return_type)) {
-			//~ echo "Wrong return type in $filename on line $lineno.\n";
+			echo "Wrong return type in $filename on line $lineno.\n";
 		}
 		
 		// references
@@ -446,14 +446,14 @@ foreach (array_merge(glob("$reference_path/*/*.xml"), glob("$reference_path/*/*/
 			$count = count($matches[3]);
 			if (!$matches[3] || substr($matches[3][$count - 1], -3) != "...") {
 				if ($count > $max_args) {
-					//~ echo "Warning: Too much parameters in $function_name.\n";
+					echo "Warning: Too much parameters in $function_name.\n";
 				} elseif ($count < $max_args) {
 					$disallowed += array_fill($count + 1, $max_args - $count, true);
 				}
 			}
 			if ($source_arg_count[0] != $disallowed) {
-				//~ echo "Wrong arguments count in $filename on line $lineno.\n";
-				//~ echo ": source in $source_arg_count[1] on line $source_arg_count[2].\n";
+				echo "Wrong arguments count in $filename on line $lineno.\n";
+				echo ": source in $source_arg_count[1] on line $source_arg_count[2].\n";
 			}
 		}
 	}
