@@ -73,6 +73,10 @@ $number_refs = array(
 	"http_arg_pass_ref_3" => array(3),
 	"http_arg_pass_ref_4" => array(4),
 	"http_arg_pass_ref_5" => array(5),
+	"secondandthird_arg_force_ref" => array(2, 3),
+	"fifthandsixth_arg_force_ref" => array(5, 6),
+	"seventh_arg_force_ref" => array(7),
+	"eighth_arg_force_ref" => array(8),
 );
 
 $valid_types = "int|float|string|bool|resource|array|object|mixed|number";
@@ -96,12 +100,22 @@ function params_source_to_doc($type_spec)
 		"O" => "object",
 		"z" => "mixed",
 		"Z" => "mixed",
+		"t" => "string",
+		"u" => "unicode",
+		"C" => "class",
+		"h" => "array",
+		"U" => "unicode",
+		"S" => "string",
+		"f" => "callback",
+		"x" => "string",
+		"T" => "unicode",
+		
 		"|" => "optional"
 	);
 	$return = array();
 	for ($i=0; $i < strlen($type_spec); $i++) {
 		$ch = $type_spec[$i];
-		if ($ch != "/" && $ch != "!") {
+		if ($ch != "/" && $ch != "!" && $ch != "&" && $ch != "^" && $ch != "*" && $ch != "+") {
 			if (!isset($zend_params[$ch])) {
 				echo "! Unknown formatting specifier '$ch' in '$type_spec'.\n";
 				$zend_params[$ch] = "unknown";
@@ -176,7 +190,6 @@ $source_refs = array(); // array("function_name" => number_ref, ...)
 $source_types = array(); // array("function_name" => array("type_spec", filename, lineno), ...)
 $return_types = array(); // array("function_name" => array("doc_type", filename, lineno), ...)
 $source_arg_counts = array(); // array("function_name" => array(disallowed_count => true, ...), ...)
-//~ foreach (array("$phpsrc_dir/ext/standard") as $dirname) {
 foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), glob("$pecl_dir/*", GLOB_ONLYDIR), glob("$phpsrc_dir/sapi/*", GLOB_ONLYDIR)) as $dirname) {
 	if (dirname($dirname) == $pecl_dir && !file_exists("$phpdoc_dir/reference/" . strtolower(basename($dirname)))) {
 		continue; // skip undocumented PECL extensions
@@ -225,7 +238,7 @@ foreach (array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), 
 		}
 		
 		// read parameters
-		preg_match_all('~^(?:ZEND|PHP)(_NAMED)?_(?:FUNCTION|METHOD)\\(([^)]+)\\)(.*)^\\}~msU', $file, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE); // }}} is not in all sources so ^} is used instead
+		preg_match_all('~^(?:static )?(?:ZEND|PHP)(_NAMED)?_(?:FUNCTION|METHOD)\\(([^)]+)\\)(.*)^\\}~msU', $file, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE); // }}} is not in all sources so ^} is used instead
 		foreach ($matches as $val) {
 			$function_name = strtolower(trim(preg_replace('~\\s*,\\s*~', '::', ($val[1][0] ? $aliases[$val[2][0]] : $val[2][0]))));
 			$function_body = $val[3][0];
