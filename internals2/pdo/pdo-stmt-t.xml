@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+<sect1 id="internals2.pdo.pdo_stmt_t">
+ <title>pdo_stmt_t definition</title>
+ <para>
+  All fields should be treated as read-only unless explicitly stated
+  otherwise.
+ </para>
+ <figure>
+  <title>pdo_stmt_t</title>
+  <programlisting role="c">
+/* represents a prepared statement */
+struct _pdo_stmt_t {
+    /* driver specifics */
+    struct pdo_stmt_methods *methods;   <co id="internals2.pdo.stmt.co.methods" linkends="internals2.pdo.stmt.co.methods-co"/>
+    void *driver_data;                  <co
+    id="internals2.pdo.stmt.co.driver-data"
+    linkends="internals2.pdo.stmt.co.driver-data-co"/>
+
+    /* if true, we've already successfully executed this statement at least
+     * once */
+    unsigned executed:1;                <co
+    id="internals2.pdo.stmt.co.executed"
+    linkends="internals2.pdo.stmt.co.executed-co"/>
+    /* if true, the statement supports placeholders and can implement
+     * bindParam() for its prepared statements, if false, PDO should
+     * emulate prepare and bind on its behalf */
+    unsigned supports_placeholders:2;   <co id="internals2.pdo.stmt.co.holder"
+    linkends="internals2.pdo.stmt.co.holder-co"/>
+
+    /* the number of columns in the result set; not valid until after
+     * the statement has been executed at least once.  In some cases, might
+     * not be valid until fetch (at the driver level) has been called at least once.
+     * */
+    int column_count;                   <co
+    id="internals2.pdo.stmt.co.colcount"
+    linkends="internals2.pdo.stmt.co.colcount-co"/>
+    struct pdo_column_data *columns;    <co
+    id="internals2.pdo.stmt.co.cols" linkends="internals2.pdo.stmt.co.cols-co"/>
+
+    /* points at the dbh that this statement was prepared on */
+    pdo_dbh_t *dbh;
+
+    /* keep track of bound input parameters.  Some drivers support
+     * input/output parameters, but you can't rely on that working */
+    HashTable *bound_params;
+    /* When rewriting from named to positional, this maps positions to names */
+    HashTable *bound_param_map; 
+    /* keep track of PHP variables bound to named (or positional) columns
+     * in the result set */
+    HashTable *bound_columns;
+
+    /* not always meaningful */
+    long row_count;
+
+    /* used to hold the statement's current query */
+    char *query_string;
+    int query_stringlen;
+
+    /* the copy of the query with expanded binds ONLY for emulated-prepare drivers */
+    char *active_query_string;
+    int active_query_stringlen;
+
+    /* the cursor specific error code. */
+    pdo_error_type error_code;
+
+    /* used by the query parser for driver specific
+     * parameter naming (see pgsql driver for example) */
+    const char *named_rewrite_template;
+};
+  </programlisting>
+ </figure>
+ <calloutlist>
+  <callout id="internals2.pdo.stmt.co.methods-co"
+   arearefs="internals2.pdo.stmt.co.methods">
+   <para>
+    The driver <emphasis>must</emphasis> set this during
+    <function>SKEL_handle_preparer</function>.
+   </para>
+  </callout>
+  <callout arearefs="internals2.pdo.stmt.co.driver-data"
+   id="internals2.pdo.stmt.co.driver-data-co">
+   <para>
+    This item is for use by the driver; the intended usage is to store a
+    pointer (during <function>SKEL_handle_factory</function>) 
+    to whatever instance data is required to maintain a connection to
+    the database.
+   </para>
+  </callout>
+  <callout arearefs="internals2.pdo.stmt.co.executed"
+   id="internals2.pdo.stmt.co.executed-co">
+   <para>
+    This is set by PDO after the statement has been executed for the first
+    time.  Your driver can inspect this value to determine if it can skip
+    one-time actions as an optimization.
+   </para>
+  </callout>
+  <callout arearefs="internals2.pdo.stmt.co.holder"
+   id="internals2.pdo.stmt.co.holder-co">
+   <para>
+    Discussed in more detail in <xref linkend="internals2.pdo.preparer"/>.
+   </para>
+  </callout>
+  <callout arearefs="internals2.pdo.stmt.co.colcount"
+   id="internals2.pdo.stmt.co.colcount-co">
+   <para>
+    Your driver is responsible for setting this field to the number of
+    columns available in a result set.  This is usually set during
+    <function>SKEL_stmt_execute</function> but with some database
+    implementations, the column count may not be available until
+    <function>SKEL_stmt_fetch</function> has been called at least once.
+    Drivers that implement <function>SKEL_stmt_next_rowset</function> should
+    update the column count when a new rowset is available.
+   </para>
+  </callout>
+  <callout arearefs="internals2.pdo.stmt.co.cols"
+   id="internals2.pdo.stmt.co.cols-co">
+   <para>
+    PDO will allocate this field based on the value that you set for the
+    column count.  You are responsible for populating each column during
+    <function>SKEL_stmt_describe</function>.  You must set the
+    <parameter>precision</parameter>, <parameter>maxlen</parameter>,
+    <parameter>name</parameter>, <parameter>namelen</parameter> and
+    <parameter>param_type</parameter> members for each column.
+    The <parameter>name</parameter> is expected to be allocated using
+    <function>emalloc</function>; PDO will call <function>efree</function> at
+    the appropriate time.
+   </para>
+  </callout>
+ </calloutlist>
+</sect1>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
