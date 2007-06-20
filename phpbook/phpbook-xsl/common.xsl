@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.3 2007-02-05 23:11:46 bjori Exp $
+  $Id: common.xsl,v 1.4 2007-06-20 22:25:41 bjori Exp $
 
   What is done in this stylesheet as common to all HTML output formats:
 
@@ -25,7 +25,7 @@
 
 <!-- Colorize background for programlisting and screens
      will go into CSS probably in next DocBook version --> 
-<xsl:param name="shade.verbatim" select="1"/>
+<xsl:param name="shade.verbatim" select="0"/>
 
 
 
