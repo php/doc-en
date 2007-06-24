@@ -50,7 +50,7 @@ function callback_highlight_xml($matches) {
         $source = trim(htmlentities($matches[1]));
 
         $match = array(
-            '/(\w+)=(&quot;|"|\')(.*?)(&quot;|"|\')/',
+            '/(\w+)=(&quot;|\')(.*?)(\2)/',
             '/!DOCTYPE (\w+) (\w+) (&quot;|\'|")(.*?)(&quot;|\'|")/',
             '/&lt;([a-zA-Z_][a-zA-Z0-9_:-]*)/',
             '/&lt;\/([a-zA-Z_][a-zA-Z0-9_:-]*)&gt;/',
