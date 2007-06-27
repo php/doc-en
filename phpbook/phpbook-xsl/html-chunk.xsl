@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-chunk.xsl,v 1.2 2007-03-28 13:33:46 bjori Exp $
+  $Id: html-chunk.xsl,v 1.3 2007-06-27 20:24:02 gwynne Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -13,7 +13,8 @@
 <xsl:param name="use.id.as.filename" select="1"/>
 
 <!-- Speed up generation (no file name printouts) -->
-<xsl:param name="chunk.quietly">1</xsl:param>
+<!-- <xsl:param name="chunk.quietly">1</xsl:param> -->
+<!-- This is now configured in param_html.xsl -->
 
 <!-- Make LEGALNOTICE an extra-file, omit extra-link on start-page (link
      directly from the original <COPYRIGHT>), and make nav-header/footer -->
