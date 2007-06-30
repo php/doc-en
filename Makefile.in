@@ -128,6 +128,9 @@ revcheck: revcheck.html
 
 FORCE:
 
+stripns:
+	${XSLTPROC} -o stripped.xml docbook/docbook-xsl/common/stripns.xsl .manual.xml
+
 funclist.txt: FORCE
 	@if test "$(PHP_SOURCE)" = "no"; then \
 	    echo "WARNING: recreating the function list needs php sources" ;\
@@ -201,10 +204,10 @@ scripts/makedoc: $(scriptdir)/makedoc.cc
 
 @MANUAL@.html: @MANUAL@.xml $(BIGHTML_DEPS)
 
-html/index.html: manual.xml $(HTML_DEPS)
+html/index.html: manual.xml $(HTML_DEPS) stripns
 	for i in `find en -type d -name figures`; do sect=`echo $$i | awk -F\/ '{print $$3}'`; for file in $$i/*; do if test -f $$file; then name=`basename $$file`; cp $$file html/figures/$$sect.$$name; fi; done; done;
 	$(PHP) -q $(scriptdir)/rtlpatch/hackmanuallang.php $(LANGDIR)
-	$(JADE) $(CATALOG) -d $(HTML_STYLESHEET) -V use-output-dir -t sgml $(XMLDCL) manual.xml
+	$(JADE) $(CATALOG) -d $(HTML_STYLESHEET) -V use-output-dir -t sgml $(XMLDCL) stripped.xml
 	$(PHP) -q $(scriptdir)/html_syntax.php html dsssl html/
 	$(PHP) -q $(scriptdir)/rtlpatch/hackmanuallang.php en
 	$(HACK_RTL_LANGS_PAGES)
@@ -227,8 +230,8 @@ howto_xsl:
 	rm -rf ./howto/html && mkdir ./howto/html
 	${XSLTPROC} $(HOWTO_XSL_SHEET) ./howto/howto.xml
 
-chm_xsl: manual.xml images_htmlhelp
-	${XSLTPROC} $(CHM_XSL_SHEET) manual.xml
+chm_xsl: manual.xml images_htmlhelp stripns
+	${XSLTPROC} $(CHM_XSL_SHEET) stripped.xml
  
 phpweb_xsl: manual.xml images_php
 	${XSLTPROC} $(PHPXSL)/phpweb.xsl manual.xml
