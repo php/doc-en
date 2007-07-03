@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-chunk.xsl,v 1.3 2007-06-27 20:24:02 gwynne Exp $
+  $Id: html-chunk.xsl,v 1.4 2007-07-03 17:02:06 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -67,10 +67,26 @@
   <xsl:variable name="content">
     <xsl:apply-templates/><xsl:text>()</xsl:text>
   </xsl:variable>
+
+  <xsl:variable name="clean">
+    <xsl:choose>
+      <xsl:when test="contains(current(), '->')">
+        <xsl:value-of select="concat(substring-before(current(), '->'), '-', substring-after(current(), '->'))"/>
+      </xsl:when>
+      <xsl:when test="contains(current(), '::')">
+        <xsl:value-of select="concat(substring-before(current(), '::'), '-', substring-after(current(), '::'))"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="string(current())" />
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
   <xsl:variable name="idbase">
     <xsl:value-of select="translate(translate(string(current()),'_','-'),
                       'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')"/>
   </xsl:variable>
+
   <xsl:variable name="rolename">
    <xsl:choose>
     <xsl:when test="./@role">
@@ -93,6 +109,7 @@
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
+
   <xsl:variable name="targetid">
    <xsl:choose>
     <xsl:when test="$rolename='php'">
@@ -102,6 +119,12 @@
       </xsl:when>
       <xsl:when test="//sect1[@id=concat('function.', $idbase)] != ''">
        <xsl:copy-of select="concat('function.', $idbase)" />
+      </xsl:when>
+      <xsl:when test="count(//refentry[@id=concat('function.',$clean)])>0">
+       <xsl:copy-of select="concat('function.',$clean)"/>
+      </xsl:when>
+      <xsl:when test="//sect1[@id=concat('function.', $clean)] != ''">
+       <xsl:copy-of select="concat('function.', $clean)" />
       </xsl:when>
      </xsl:choose>
     </xsl:when>
@@ -138,6 +161,6 @@
 
 </xsl:stylesheet>
 <!--
-vim: et
+vim: et ts=2 sw=2
 -->
 
