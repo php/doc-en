@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-chunk.xsl,v 1.4 2007-07-03 17:02:06 bjori Exp $
+  $Id: html-chunk.xsl,v 1.5 2007-07-03 17:11:34 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -83,7 +83,7 @@
   </xsl:variable>
 
   <xsl:variable name="idbase">
-    <xsl:value-of select="translate(translate(string(current()),'_','-'),
+    <xsl:value-of select="translate(translate(string($clean),'_','-'),
                       'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')"/>
   </xsl:variable>
 
