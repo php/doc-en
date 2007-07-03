@@ -35,11 +35,14 @@ LANG=@LANG@ -D .
 JADE=@SP_OPTIONS@ @JADE@ -D . -wno-idref
 NSGMLS=@SP_OPTIONS@ @NSGMLS@
 PHP=@PHP@
-XSLTPROC=@XSLTPROC@ -V
+XSLTPROC=@XSLTPROC@
 XMLLINT=@XMLLINT@
 
 CATALOG=@CATALOG@
 PARTIAL_STYLE=@PARTIAL_STYLE@
+
+MANUAL_STRIPPED=stripped.xml
+MANUAL_COMPLETE=.manual.xml
 
 PHPBOOK=phpbook
 PHPDSSSL=$(PHPBOOK)/phpbook-dsssl
@@ -61,11 +64,11 @@ QUICKREF_XSL_SHEET=$(PHPXSL)/quickref.xsl
 XUL_XSL_SHEET=$(PHPXSL)/htmlhelp.xsl
 PARTIAL_STYLESHEET=$(PHPXSL)/@PARTIAL_STYLESHEET@
 
-BIGHTML_DEPS=$(HTML_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/html-locale.dsl.in $(PHPDSSSL)/common.dsl.in images
-HTML_DEPS=$(HTML_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/html-locale.dsl.in $(PHPDSSSL)/common.dsl.in images_html
+BIGHTML_DEPS=$(HTML_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/html-locale.dsl.in $(PHPDSSSL)/common.dsl.in $(MANUAL_STRIPPED) images
+HTML_DEPS=$(HTML_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/html-locale.dsl.in $(PHPDSSSL)/common.dsl.in $(MANUAL_STRIPPED) images_html
 HOWTO_DEPS=$(HOWTO_STYLESHEET) $(HOWTOPHP_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/html-locale.dsl.in $(PHPDSSSL)/common.dsl.in howto/howto.ent
-PRINT_DEPS=$(PRINT_STYLESHEET) $(PHPDSSSL)/common.dsl.in $(PHPDSSSL)/print.dsl.in images
-PHPWEB_DEPS=$(PHPWEB_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/common.dsl images_php
+PRINT_DEPS=$(PRINT_STYLESHEET) $(PHPDSSSL)/common.dsl.in $(PHPDSSSL)/print.dsl.in $(MANUAL_STRIPPED) images
+PHPWEB_DEPS=$(PHPWEB_STYLESHEET) $(PHPDSSSL)/html-common.dsl $(PHPDSSSL)/common.dsl $(MANUAL_STRIPPED) images_php
 KDEVELOP_TOC_DEPS=$(KDEVELOP_TOC_STYLESHEET) Makefile
 
 DIST_FILES=@MANUAL@.tar.gz @MANUAL@.html.gz
@@ -86,11 +89,8 @@ HACK_RTL_LANGS_PHPWEB=@HACK_RTL_LANGS_PHPWEB@
 entities: FORCE
 	$(PHP) -c $(scriptdir) -q $(scriptdir)/entities.php
 
-manual.xml: $(srcdir)/manual.xml.in .manual.xml
+manual.xml: $(srcdir)/manual.xml.in $(MANUAL_COMPLETE)
 	CONFIG_FILES=$@ CONFIG_HEADERS= ./config.status
-
-.manual.xml: $(DEPEND_FILES) entities/global.ent
-	-$(XMLLINT) --nsclean --xinclude --noent --output .manual.xml manual.xml
 
 images:
 	for i in `find en -type d -name figures`; do sect=`echo $$i | awk -F\/ '{print $$3}'`; for file in $$i/*; do if test -f $$file; then name=`basename $$file`; cp $$file $$sect.$$name; fi; done; done;
@@ -127,9 +127,17 @@ funcindex: funcindex.xml
 revcheck: revcheck.html
 
 FORCE:
+	-@rm -f $(MANUAL_COMPLETE) $(MANUAL_STRIPPED)
 
-stripns:
-	${XSLTPROC} -o stripped.xml docbook/docbook-xsl/common/stripns.xsl .manual.xml
+$(MANUAL_STRIPPED): $(MANUAL_COMPLETE)
+	@echo -n "Stripping it..."
+	@${XSLTPROC} -o $(MANUAL_STRIPPED) docbook/docbook-xsl/common/stripns.xsl $(MANUAL_COMPLETE)
+	@echo " done"
+
+$(MANUAL_COMPLETE): FORCE entities/global.ent
+	@echo -n "Generating the manual..."
+	@$(XMLLINT) --nsclean --xinclude --noent --output $(MANUAL_COMPLETE) manual.xml
+	@echo " done"
 
 funclist.txt: FORCE
 	@if test "$(PHP_SOURCE)" = "no"; then \
@@ -154,14 +162,14 @@ funcsummary.txt: FORCE
 revcheck.html: FORCE
 	PHPDOCDIR=$(srcdir) $(PHP) -c $(scriptdir) -f $(scriptdir)/revcheck.php $(LANGDIR) > revcheck.html
 
-funcindex.xml: FORCE
+funcindex.xml: FORCE $(MANUAL_COMPLETE)
 	@if test "$(PHP)" = "no"; then \
 	echo "WARNING: recreating the function index needs php" ;\
 	echo "         which was not found by configure" ;\
 	echo "         reusing old file" ;\
 	touch funcindex.xml ;\
 	else \
-	$(XSLTPROC) -o quickref-temp.txt $(QUICKREF_XSL_SHEET) manual.xml ;\
+	$(XSLTPROC) -o quickref-temp.txt $(QUICKREF_XSL_SHEET) $(MANUAL_COMPLETE) ;\
 	echo "$(PHP) -q $(scriptdir)/genfuncindex.php quickref-temp.txt > funcindex.xml" ;\
 	$(PHP) -q $(scriptdir)/genfuncindex.php quickref-temp.txt > funcindex.xml ;\
 	rm -f quickref-temp.txt ;\
@@ -185,12 +193,12 @@ summary: ./funcsummary.txt
 quickref: quickref.txt
 quickref.txt: FORCE
 	@if test ! -f funcindex.xml; then touch funcindex.xml; fi 
-	$(XSLTPROC) -o quickref.txt $(QUICKREF_XSL_SHEET) manual.xml
+	$(XSLTPROC) -o quickref.txt $(QUICKREF_XSL_SHEET) $(MANUAL_COMPLETE)
 
 kdevelop_toc: php.toc
-php.toc: manual.xml $(KDEVELOP_TOC_DEPS)
+php.toc: $(MANUAL_COMPLETE) $(KDEVELOP_TOC_DEPS)
 	echo '<!DOCTYPE kdeveloptoc>' > $@
-	$(JADE) $(CATALOG) -d $(KDEVELOP_TOC_STYLESHEET) -V nochunks -t sgml $(XMLDCL) manual.xml | sed -e's/\& /\&amp; /g' >> $@
+	$(JADE) $(CATALOG) -d $(KDEVELOP_TOC_STYLESHEET) -V nochunks -t sgml $(XMLDCL) $(MANUAL_COMPLETE) | sed -e's/\& /\&amp; /g' >> $@
 
 scripts/makedoc: $(scriptdir)/makedoc.cc
 	mkdir -p scripts
@@ -199,49 +207,48 @@ scripts/makedoc: $(scriptdir)/makedoc.cc
 # intermediate file for name change 
 .SECONDARY: @MANUAL@.xml
 
-@MANUAL@.xml: manual.xml
-	cp manual.xml $@
+@MANUAL@.xml: $(MANUAL_COMPLETE)
+	cp $(MANUAL_COMPLETE) $@
 
 @MANUAL@.html: @MANUAL@.xml $(BIGHTML_DEPS)
 
-html/index.html: manual.xml $(HTML_DEPS) stripns
-	for i in `find en -type d -name figures`; do sect=`echo $$i | awk -F\/ '{print $$3}'`; for file in $$i/*; do if test -f $$file; then name=`basename $$file`; cp $$file html/figures/$$sect.$$name; fi; done; done;
+html/index.html: $(HTML_DEPS)
 	$(PHP) -q $(scriptdir)/rtlpatch/hackmanuallang.php $(LANGDIR)
-	$(JADE) $(CATALOG) -d $(HTML_STYLESHEET) -V use-output-dir -t sgml $(XMLDCL) stripped.xml
+	$(JADE) $(CATALOG) -d $(HTML_STYLESHEET) -V use-output-dir -t sgml $(XMLDCL) $(MANUAL_STRIPPED)
 	$(PHP) -q $(scriptdir)/html_syntax.php html dsssl html/
 	$(PHP) -q $(scriptdir)/rtlpatch/hackmanuallang.php en
 	$(HACK_RTL_LANGS_PAGES)
 
 # still needs more tweaks!!
-html_xsl: manual.xml images_html
-	${XSLTPROC} $(PHPXSL)/html.xsl manual.xml
+html_xsl: $(MANUAL_STRIPPED) images_html
+	${XSLTPROC} $(PHPXSL)/html.xsl $(MANUAL_STRIPPED)
 	$(PHP) -q $(scriptdir)/html_syntax.php html xsl html/
 
-xul_xsl: manual.xml images_xul
-	${XSLTPROC} xsl/xul.xsl manual.xml
+xul_xsl: $(MANUAL_STRIPPED) images_xul
+	${XSLTPROC} xsl/xul.xsl $(MANUAL_STRIPPED)
 
-bightml_xsl: manual.xml images
-	${XSLTPROC} -o @MANUAL@.html $(PHPXSL)/bightml.xsl manual.xml
+bightml_xsl: $(MANUAL_COMPLETE) images
+	${XSLTPROC} -o @MANUAL@.html $(PHPXSL)/bightml.xsl $(MANUAL_STRIPPED)
 
-fo: manual.xml images
-	${XSLTPROC} -o manual.fo $(PHPXSL)/fo.xsl manual.xml
+fo: $(MANUAL_STRIPPED) images
+	${XSLTPROC} -o manual.fo $(PHPXSL)/fo.xsl $(MANUAL_STRIPPED)
 
-howto_xsl:
+howto_xsl: $(MANUAL_STRIPPED)
 	rm -rf ./howto/html && mkdir ./howto/html
 	${XSLTPROC} $(HOWTO_XSL_SHEET) ./howto/howto.xml
 
-chm_xsl: manual.xml images_htmlhelp stripns
-	${XSLTPROC} $(CHM_XSL_SHEET) stripped.xml
+chm_xsl: $(MANUAL_STRIPPED) images_htmlhelp
+	${XSLTPROC} $(CHM_XSL_SHEET) $(MANUAL_STRIPPED)
  
-phpweb_xsl: manual.xml images_php
-	${XSLTPROC} $(PHPXSL)/phpweb.xsl manual.xml
+phpweb_xsl: $(MANUAL_STRIPPED) images_php
+	${XSLTPROC} $(PHPXSL)/phpweb.xsl $(MANUAL_STRIPPED)
 	$(PHP) -q $(scriptdir)/html_syntax.php php xsl php/
 	#$(PHP) -q $(scriptdir)/fixphpweb.php `pwd`/php
 
-php/index.php: manual.xml $(PHPWEB_DEPS)
+php/index.php: $(MANUAL_STRIPPED) $(PHPWEB_DEPS)
 	$(PHP) -q $(scriptdir)/phpweb-entities.php `pwd` phpweb
 	$(PHP) -q $(scriptdir)/rtlpatch/hackmanuallang.php $(LANGDIR)
-	-$(JADE) $(CATALOG) -d $(PHPWEB_STYLESHEET) -V use-output-dir -t sgml $(XMLDCL) manual.xml
+	-$(JADE) $(CATALOG) -d $(PHPWEB_STYLESHEET) -V use-output-dir -t sgml $(XMLDCL) $(MANUAL_STRIPPED)
 	$(PHP) -q $(scriptdir)/html_syntax.php php dsssl php/
 	$(PHP) -q $(scriptdir)/rtlpatch/hackmanuallang.php en
 	$(PHP) -q $(scriptdir)/phpweb-entities.php `pwd` remove
@@ -329,39 +336,39 @@ chm: html FORCE
 	-jadetex $<
 
 # {{{ partial builds
-part/%: manual.xml
+part/%: $(MANUAL_STRIPPED)
 	@if test ! -d $(PARTIAL_STYLE); then mkdir $(PARTIAL_STYLE); fi
-	${XSLTPROC} --stringparam rootid $(@F) $(PARTIAL_STYLESHEET) manual.xml
+	${XSLTPROC} --stringparam rootid $(@F) $(PARTIAL_STYLESHEET) $(MANUAL_STRIPPED)
 	$(PHP) -q $(scriptdir)/html_syntax.php $(PARTIAL_STYLE) xsl $(PARTIAL_STYLE)/
 # }}}
 
 # {{{ tests
 
 # test all possible errors
-test: manual.xml
+test: $(MANUAL_STRIPPED)
 	@if test ! -f funcindex.xml; then touch funcindex.xml; fi 
 	@if test ! -f entities/missing-entities.ent; then touch entities/missing-entities.ent; fi 
 	@if test ! -f entities/missing-ids.xml; then touch entities/missing-ids.xml; fi 
-	$(NSGMLS) -i lang-$(LANG) -s $(XMLDCL) manual.xml 
+	$(NSGMLS) -i lang-$(LANG) -s $(XMLDCL) $(MANUAL_STRIPPED) 
 
 # ignore missing IDs and check if the manual can be generated anyway
-test_man_gen: manual.xml
+test_man_gen: $(MANUAL_STRIPPED)
 	@if test ! -f funcindex.xml; then touch funcindex.xml; fi 
 	@if test ! -f entities/missing-entities.ent; then touch entities/missing-entities.ent; fi 
 	@if test ! -f entities/missing-ids.xml; then touch entities/missing-ids.xml; fi
-	$(NSGMLS) -wno-idref -i lang-$(LANG) -s $(XMLDCL) manual.xml
+	$(NSGMLS) -wno-idref -i lang-$(LANG) -s $(XMLDCL) $(MANUAL_STRIPPED)
 
-test_xml: manual.xml
+test_xml: $(MANUAL_COMPLETE)
 	@if test ! -f funcindex.xml; then touch funcindex.xml; fi 
 	@if test ! -f entities/missing-entities.ent; then touch entities/missing-entities.ent; fi 
 	@if test ! -f entities/missing-ids.xml; then touch entities/missing-ids.xml; fi
-	$(XMLLINT) --noent --noout --valid manual.xml 
+	$(XMLLINT) --noent --noout --valid $(MANUAL_COMPLETE)
 
-test_xsd: manual.xml
-	xmllint --noent --noout --schema docbook/docbook-xml/docbook.xsd .manual.xml
+test_xsd: $(MANUAL_COMPLETE)
+	xmllint --noent --noout --schema docbook/docbook-xml/docbook.xsd $(MANUAL_COMPLETE)
 
-test_rng: manual.xml
-	xmllint --noent --noout --relaxng docbook/docbook-xml/docbook.rng .manual.xml
+test_rng: $(MANUAL_COMPLETE)
+	xmllint --noent --noout --relaxng docbook/docbook-xml/docbook.rng $(MANUAL_COMPLETE)
 
 test_howto:
 	$(XMLLINT) --noent --noout --valid ./howto/howto.xml
@@ -373,7 +380,7 @@ test_howto:
 clean:
 	rm -rf html php fancy howto/html howto/php htmlhelp/html
 	rm -f @MANUAL@.txt [a-z]*.html @MANUAL@.rtf manual.info
-	rm -f @MANUAL@.zip @MANUAL@.tar.gz .manual.xml
+	rm -f @MANUAL@.zip @MANUAL@.tar.gz .$(MANUAL_COMPLETE)
 	rm -f manual_*.pdb @srcdir@/scripts/makedoc *.manifest
 	rm -f *.aux *.tex *.log *.dvi *.toc *.ps *.gz
 	rm -f status.txt missing.txt infiles.cache
