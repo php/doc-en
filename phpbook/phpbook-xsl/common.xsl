@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.4 2007-06-20 22:25:41 bjori Exp $
+  $Id: common.xsl,v 1.5 2007-07-05 14:19:23 bjori Exp $
 
   What is done in this stylesheet as common to all HTML output formats:
 
@@ -411,14 +411,10 @@
     </xsl:choose>
   </xsl:variable>
   
-  <xsl:variable name="function.href">
-    <xsl:call-template name="href.target">
-      <xsl:with-param name="object" select="id(concat('function.', translate($argument,'_','-')))"/> 
-    </xsl:call-template>
-  </xsl:variable>
+  <xsl:variable name="function.href" select="concat('function.', translate($argument,'_','-'))"/> 
 
   <xsl:choose>
-    <xsl:when test="ancestor::refentry/@id=concat('function.', translate($argument,'_','-'))">
+    <xsl:when test="ancestor::refentry/@id=$function.href">
        <xsl:copy-of select="$content"/>
     </xsl:when>
     <xsl:when test="string-length($function.href) != 0">
