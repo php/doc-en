@@ -3,7 +3,7 @@
 
   common.xsl: Common customizations for all HTML formats
 
-  $Id: common.xsl,v 1.5 2007-07-05 14:19:23 bjori Exp $
+  $Id: common.xsl,v 1.6 2007-07-12 11:53:59 rquadling Exp $
 
   What is done in this stylesheet as common to all HTML output formats:
 
@@ -411,7 +411,7 @@
     </xsl:choose>
   </xsl:variable>
   
-  <xsl:variable name="function.href" select="concat('function.', translate($argument,'_','-'))"/> 
+  <xsl:variable name="function.href" select="concat('function.', translate($argument,'_','-'), '.html')"/> 
 
   <xsl:choose>
     <xsl:when test="ancestor::refentry/@id=$function.href">
