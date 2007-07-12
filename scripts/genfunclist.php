@@ -132,7 +132,7 @@ if ($argc != 2 ||
         foreach ($blocks[$key] as $bk => $bv) {
             // output function block title
             if ($show_block_names) {
-                echo "# ".$block_titles[$key][$bk]."\n";
+                echo "# ".str_replace('/* {{{ */', '', $block_titles[$key][$bk])."\n";
             }
             $resultecho = array();
             $tok = strtok($bv, "\n");
