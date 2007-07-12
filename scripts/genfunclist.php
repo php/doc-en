@@ -122,7 +122,7 @@ if ($argc != 2 ||
 //    print_r($parsefiles);
 //    print_r($block_titles);
 
-    $macronames = "ZEND_FE|ZEND_FALIAS|PHP_FE|PHP_FALIAS|ZEND_NAMED_FE|PHP_NAMED_FE|PHP_STATIC_FE";
+    $macronames = "ZEND_FE|ZEND_FALIAS|PHP_FE|PHP_FALIAS|ZEND_NAMED_FE|PHP_NAMED_FE|PHP_STATIC_FE|PHP_HASH_FE";
     if ($PHP3_lex) $macronames .= "|UODBC_FE(?:_ALIAS)?";
     $FB_instance_regex = "`^[ \t]*(?:($macronames)\s*\(|\{)\s*\"?(\w+)`im";
 
