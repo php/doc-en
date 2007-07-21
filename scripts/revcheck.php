@@ -335,6 +335,7 @@ function get_dir_status($dir)
 	  || $file == "reserved.constants.xml"
 	  || $file == 'DO_NOT_TRANSLATE'
 	  || strpos($dir, '/internals/')
+	  || strpos($dir, '/internals2/')
 	  || ($file == "functions.xml" && strpos($dir, '/reference/')))
         continue;
 
