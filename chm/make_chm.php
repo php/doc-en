@@ -88,7 +88,7 @@ function makeContentFiles()
 
     $MAIN_REGEXP = join("|", $MAIN_FILES);
 
-    preg_match_all("![IVX]+[^<]*<A\\s+HREF=\"($MAIN_REGEXP)\"\\s*>([^<]+)</A\\s*>(.+)</DT\\s*></DL\\s*></DD\\s*><DT\\s*>!Ui", $indexline, $matches, PREG_SET_ORDER);
+    preg_match_all("![IVX]+[^<]*<A\\s+HREF=\"($MAIN_REGEXP)\"\\s*>([^<]+)</A\\s*>(.+)</DT\\s*></DL\\s*></DD\\s*><(?:DT|/DL)\\s*>!Ui", $indexline, $matches, PREG_SET_ORDER);
     
     // Go through the main files, and link in subpages
     foreach ($matches as $matchinfo) {
