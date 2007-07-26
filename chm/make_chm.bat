@@ -19,6 +19,7 @@ rem ==========================================================
 rem !!!!!    DO NOT MODIFY ANYTHING BELOW THIS LINE      !!!!!
 rem ==========================================================
 
+
 echo.
 
 set PHP_HELP_COMPILE_LANG=%1
