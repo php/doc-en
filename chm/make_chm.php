@@ -25,7 +25,7 @@ $MAIN_FILES = array(
     "security.html",
     "features.html",
     "funcref.html",
-    "internals.html",
+    "internals2.html",
     "faq.html",
     "appendices.html"
 );
