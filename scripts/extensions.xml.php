@@ -42,7 +42,7 @@ foreach ($files as $filename) {
 	$miss = array('Purpose'=>1, 'Membership'=>1);
 
 	// get the extension's name
-	preg_match('/<reference\s+id=[\'"]([^\'"]+)[\'"]>/S', $file, $match);
+	preg_match('/<reference[^>]+(?:xml:)?id=[\'"]([^\'"]+)[\'"]/S', $file, $match);
 	if (empty($match[1])) {
 		$debug['unknown-extension'][] = $filename;
 		continue;
@@ -113,17 +113,17 @@ $simplexml = simplexml_load_string($xml);
 
 foreach ($simplexml->children() as $node) {
 
-	$tmp = explode('.', (string)$node->attributes());
+	$tmp = explode('.', (string)$node->attributes('xml', true));
 	$section = ucfirst($tmp[1]); // Purpose, State or Membership
 
 	foreach ($node->children() as $topnode) {
-		$tmp     = explode('.', (string)$topnode->attributes());
+		$tmp     = explode('.', (string)$topnode->attributes('xml', true));
 		$topname = $tmp[count($tmp)-1];
 
 		// this means that we have 2 levels (e.g. basic.*)
 		if ($topnode->section->itemizedlist) {
 			foreach ($topnode as $lastnode) {
-				$tmp  = explode('.', (string)$lastnode->attributes());
+				$tmp  = explode('.', (string)$lastnode->attributes('xml', true));
 				$name = $tmp[1].'.'.$tmp[2];
 
 				$lastnode->itemizedlist = PHP_EOL; // clean the list
