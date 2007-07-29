@@ -3,7 +3,7 @@
 
   html.xsl: Chunked HTML specific stylesheet
 
-  $Id: html.xsl,v 1.2 2007-01-31 19:53:11 bjori Exp $
+  $Id: html.xsl,v 1.3 2007-07-29 10:10:37 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -16,6 +16,9 @@
 <!-- Output files to the 'html' dir, and name them
      using the IDs in documents -->
 <xsl:param name="base.dir" select="'html/'"/>
+
+<!-- Ignore the annoying "ID recommended on..." warnings -->
+<xsl:param name="id.warnings" select="0"/>
 
 <!-- NAVIGATION-HEADERS: let them look similar to dsssl
      (not in 1st page, 1st line always "PHP manual", titles
