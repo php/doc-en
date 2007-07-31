@@ -9,7 +9,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: stripns.xsl,v 1.2 2007-01-30 18:12:37 bjori Exp $
+     $Id: stripns.xsl,v 1.3 2007-07-31 12:53:30 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -259,11 +259,13 @@
           <xsl:value-of select="NodeInfo:systemId()"/>
         </xsl:when>
         <xsl:otherwise>
+          <xsl:if test="$debug.silent = 0">
           <xsl:message>
             <xsl:text>WARNING: cannot add @xml:base to node </xsl:text>
             <xsl:text>set root element.  </xsl:text>
             <xsl:text>Relative paths may not work.</xsl:text>
           </xsl:message>
+          </xsl:if>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:variable>
@@ -328,11 +330,15 @@
                      contains(system-property('xsl:vendor'),
                        'Apache Software Foundation'))
                     and (*/self::ng:* or */self::db:*)">
+      <xsl:if test="$debug.silent = 0">
       <xsl:message>Stripping namespace from DocBook 5 document.</xsl:message>
+      </xsl:if>
       <xsl:variable name="nons">
         <xsl:apply-templates mode="stripNS"/>
       </xsl:variable>
+      <xsl:if test="$debug.silent = 0">
       <xsl:message>Processing stripped document.</xsl:message>
+      </xsl:if>
       <xsl:apply-templates select="exsl:node-set($nons)"/>
     </xsl:when>
     <xsl:otherwise>
