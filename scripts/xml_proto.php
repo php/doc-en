@@ -144,19 +144,19 @@ function write_reference_xml()
        '<!-- $'.'Revision: 1.1 $ -->'."\n" .
        "<!-- Purpose:  -->\n" .
        "<!-- Membership:  -->\n" .
-       "<reference id=\"ref." . $extension_name . "\">\n" .
+       "<reference xmlns=\"http://docbook.org/ns/docbook\" xml:id=\"ref." . $extension_name . "\">\n" .
        " <title>$extension_name &Functions;</title>\n" .
        " <titleabbrev>$extension_name</titleabbrev>\n" .
        "\n" .
        " <partintro>\n" .
-       "  <section id=\"" . $extension_name . ".intro\">\n" .
+       "  <section xml:id=\"" . $extension_name . ".intro\">\n" .
        "   &reftitle.intro;\n" .
        "   <para>\n" .
        "    This is the " . $extension_name . " extension.  It\n" .
        "    currently only lists the proto definitions.\n" .
        "   </para>\n" .
        "  </section>\n" .
-       "  <section id=\"" . $extension_name . ".requirements\">\n" .
+       "  <section xml:id=\"" . $extension_name . ".requirements\">\n" .
        "   &reftitle.required;\n" .
        "   <para>\n" .
        "    To be written. For example what external libraries are required\n" .
@@ -166,7 +166,7 @@ function write_reference_xml()
        "  <!-- reference.".$extension_name.".configure; -->\n" .
        "  <!-- Information found in ini.xml -->\n" .
        "  <!-- reference.".$extension_name.".ini; -->\n\n" .
-       "  <section id=\"" . $extension_name . ".resources\">\n" .
+       "  <section xml:id=\"" . $extension_name . ".resources\">\n" .
        "   &reftitle.resources;\n" .
        "   <para>\n" .
        "    Type of resource types (link id, etc.) this extension returns.\n" .
@@ -227,7 +227,7 @@ function write_functions_xml()
 
     fwrite($fp, '<?xml version="1.0" encoding="iso-8859-1"?>'."\n" .
                '<!-- $'.'Revision: 1.1 $ -->'."\n" .
-               "<refentry id=\"function." . $fixname . "\">\n" .
+               "<refentry xmlns=\"http://docbook.org/ns/docbook\" xml:id=\"function." . $fixname . "\">\n" .
                " <refnamediv>\n" .
                "  <refname>$funcname</refname>\n" .
                "  <refpurpose>$purpose</refpurpose>\n" .
@@ -505,7 +505,7 @@ function write_constants_xml()
 
   fwrite($fp, "<?xml version='1.0' encoding='iso-8859-1'?>\n" .
               "<!-- $" . "Revision: 1.1 $ -->\n" .
-               "<section id=\"" . $extension_name . ".constants\">\n" .
+               "<section xmlns=\"http://docbook.org/ns/docbook\" xml:id=\"" . $extension_name . ".constants\">\n" .
                " &reftitle.constants;\n" .
                " &extension.constants;\n" .
                " <variablelist>\n");
