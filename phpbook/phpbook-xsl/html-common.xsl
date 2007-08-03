@@ -3,7 +3,7 @@
 
   html-common.xsl: Common HTML customizations
 
-  $Id: html-common.xsl,v 1.12 2007-03-01 01:02:02 bjori Exp $
+  $Id: html-common.xsl,v 1.13 2007-08-03 12:06:21 bjori Exp $
 
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -234,9 +234,7 @@ set       toc
                     and not(ancestor::sect1[@id=$name]) and not(parent::fieldsynopsis)">
       <a>
         <xsl:attribute name="href">
-          <xsl:call-template name="href.target">
-            <xsl:with-param name="object" select="id($name)"/> 
-          </xsl:call-template>
+            <xsl:copy-of select="concat($name, $html.ext)"/>
         </xsl:attribute>
         <xsl:copy-of select="$mytype"/>
       </a>
