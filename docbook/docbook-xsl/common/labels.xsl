@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: labels.xsl,v 1.2 2007-01-30 18:12:37 bjori Exp $
+     $Id: labels.xsl,v 1.3 2007-08-08 11:54:14 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -35,7 +35,7 @@ element label.</para>
 
 <xsl:template match="*" mode="label.markup">
   <xsl:param name="verbose" select="1"/>
-  <xsl:if test="$verbose">
+  <xsl:if test="$verbose and $debug.silent = 0">
     <xsl:message>
       <xsl:text>Request for label of unexpected element: </xsl:text>
       <xsl:value-of select="local-name(.)"/>

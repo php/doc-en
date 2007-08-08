@@ -7,7 +7,7 @@
                 exclude-result-prefixes="exsl cf ng db">
 
 <!-- ********************************************************************
-     $Id: chunk-code.xsl,v 1.2 2007-01-30 18:16:38 bjori Exp $
+     $Id: chunk-code.xsl,v 1.3 2007-08-08 11:54:14 bjori Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
@@ -30,7 +30,9 @@
   <xsl:if test="$chunk.fast != 0">
     <xsl:choose>
       <xsl:when test="function-available('exsl:node-set')">
-        <xsl:message>Computing chunks...</xsl:message>
+        <xsl:if test="$debug.silent = 0">
+          <xsl:message>Computing chunks...</xsl:message>
+        </xsl:if>
         <xsl:apply-templates select="/*" mode="find.chunks"/>
       </xsl:when>
       <xsl:otherwise>
