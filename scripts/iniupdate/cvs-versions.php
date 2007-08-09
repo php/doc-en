@@ -17,27 +17,75 @@
   +----------------------------------------------------------------------+
 */
 
+
+/** fetch the PHP release tags */
+function get_php_release_tags()
+{
+    static $tags = null;
+
+    if ($tags) return $tags;
+
+    chdir('sources');
+    `cvs -q -d :pserver:cvsread@cvs.php.net:/repository co php-src > /dev/null`;
+    chdir('php-src');
+
+    $log = explode("\n", `cvs log ChangeLog`);
+    chdir('../..');
+
+    do {
+        $l = array_shift($log);
+        if ($l == 'symbolic names:') {
+            break;
+        }
+    } while (1);
+
+    $tags = array();
+    foreach ($log as $l) {
+        if (substr($l, 0, 1) != "\t") {
+            break;
+        }
+        list($tag) = explode(': ', trim($l));
+        if (preg_match('/^PHP_[456]_[0-9]+_[0-9]+$/i', $tag)) {
+            $tags[] = $tag;
+        }
+    }
+
+    natcasesort($tags);
+    $tags = array_map('strtoupper', $tags);
+    $tags = array_unique($tags);
+
+    return $tags;
+}
+
+
 // fetch all version tags
-$tags = array();
-foreach (glob('*.tags') as $file) {
-    $tmp  = array_map('rtrim', file($file));
-    $last_versions[] = substr(end($tmp), 4); // this is the last released version from a major version
-    $tags = array_merge($tags, $tmp);
+$tags    = get_php_release_tags();
+$lasttag = 'PHP_4_0_0';
+
+foreach (array_merge($tags, array('php_head')) as $tag) {
+    if ($tag[4] === $lasttag[4]) {
+        $lasttag = $tag;
+        continue;
+    }
+
+    $last_versions[] = substr($lasttag, 4); // this is the last released version from a major version
+    $lasttag = $tag;
 }
 
 
 // fetch cvs versions
-$file = file_get_contents('./update-all');
+$file = file_get_contents('./cvs-versions');
 preg_match_all('/PHP_(\d)_CVS=(\w+)/', $file, $data, PREG_SET_ORDER);
 
-$cvs_versions = array();
+$cvs_versions = $cvs_branches = array();
 foreach ($data as $v) {
-	if ($v[2] == 'HEAD') {
-		$version = "$v[1].0.0";
-	} else {
-		$version = make_cvs_version(substr($v[2], 4));
-	}
-	$cvs_versions["php_$v[1]_cvs"] = $version;
+    if ($v[2] == 'HEAD') {
+        $version = "$v[1].0.0";
+    } else {
+        $version = make_cvs_version(substr($v[2], 4));
+    }
+    $cvs_versions["php_$v[1]_cvs"] = $version;
+    $cvs_branches[$v[1]] = $v[2];
 }
 
 $tags = array_merge(array_keys($cvs_versions), $tags);

@@ -17,36 +17,10 @@
   +----------------------------------------------------------------------+
 */
 
-/** fetch the PHP release tags */
-function get_php_release_tags()
-{
-    chdir('php-src');
+require_once './cvs-versions.php';
 
-    $log = explode("\n", `cvs log ChangeLog`);
 
-    do {
-        $l = array_shift($log);
-        if ($l == 'symbolic names:') {
-            break;
-        }
-    } while (1);
-
-    $tags = array();
-    foreach ($log as $l) {
-        if (substr($l, 0, 1) != "\t") {
-            break;
-        }
-        list($tag,) = explode(': ', trim($l));
-        if (preg_match('/^PHP_[456]_[0-9]+_[0-9]+$/i', $tag)) {
-            $tags[] = $tag;
-        }
-    }
-
-    chdir('..');
-
-    return array_reverse($tags);
-}
-
+/** fetch a tag sources */
 function checkout_tag($tag)
 {
     if (is_dir($tag)) {
@@ -75,16 +49,16 @@ function checkout_tag($tag)
 }
 
 
-// update HEAD
-echo "updating cvs HEAD... ";
-chdir('sources');
-$cmd = 'cvs -q -d :pserver:cvsread@cvs.php.net:/repository co php-src > /dev/null';
-//exec($cmd);
-echo "done\n";
-
 foreach (get_php_release_tags() as $tag) {
     $tag = strtoupper($tag);
     echo "Getting tag: $tag... ";
     checkout_tag($tag);
+}
+
+foreach ($cvs_branches as $tag => $branch) {
+    echo "Getting tag: $tag... ";
+    $cmd = "cvs -q -d :pserver:cvsread@cvs.php.net:/repository co -d ".strtolower($tag)." -r $branch php-src";
+    exec($cmd);
+    echo "done\n";
 }
 
