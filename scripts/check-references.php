@@ -391,7 +391,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml"), glob("$reference_path/*/*/
 		) {
 			echo (isset($source_ref[0]) ? "Parameter(s) " . (is_int($source_ref[0]) ? "$source_ref[0] and rest" : implode(", ", $source_ref[0])) : "Nothing") . " should be passed by reference in $filename on line $lineno" . (isset($source_ref[1]) ? "\n: source in $source_ref[1] on line $source_ref[2]" : "") . ".\n";
 		}
-		if (isset($source_ref)) {
+		if (isset($source_refs[$function_name])) {
 			$counts["refs"]++;
 		}
 		
