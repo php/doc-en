@@ -140,11 +140,11 @@ function write_reference_xml()
     return(0);
   }
 
-  fwrite($fp, '<?xml version="1.0" encoding="iso-8859-1"?>'."\n" .
+  fwrite($fp, '<?xml version="1.0" encoding="utf-8"?>'."\n" .
        '<!-- $'.'Revision: 1.1 $ -->'."\n" .
        "<!-- Purpose:  -->\n" .
        "<!-- Membership:  -->\n" .
-       "<reference xmlns=\"http://docbook.org/ns/docbook\" xml:id=\"ref." . $extension_name . "\">\n" .
+       '<reference xml:id="ref.' . $extension_name . '" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">' . "\n" .
        " <title>$extension_name &Functions;</title>\n" .
        " <titleabbrev>$extension_name</titleabbrev>\n" .
        "\n" .
@@ -225,9 +225,9 @@ function write_functions_xml()
     $purpose  = trim($funclist[$i]["purpose"]);
     $functype = trim($funclist[$i]["function_type"]);
 
-    fwrite($fp, '<?xml version="1.0" encoding="iso-8859-1"?>'."\n" .
+    fwrite($fp, '<?xml version="1.0" encoding="utf-8"?>'."\n" .
                '<!-- $'.'Revision: 1.1 $ -->'."\n" .
-               "<refentry xmlns=\"http://docbook.org/ns/docbook\" xml:id=\"function." . $fixname . "\">\n" .
+               '<reference xml:id="function.' . $fixname . '" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">' . "\n" .
                " <refnamediv>\n" .
                "  <refname>$funcname</refname>\n" .
                "  <refpurpose>$purpose</refpurpose>\n" .
@@ -503,9 +503,9 @@ function write_constants_xml()
     return(0);
   }
 
-  fwrite($fp, "<?xml version='1.0' encoding='iso-8859-1'?>\n" .
+  fwrite($fp, "<?xml version='1.0' encoding='utf-8'?>\n" .
               "<!-- $" . "Revision: 1.1 $ -->\n" .
-               "<section xmlns=\"http://docbook.org/ns/docbook\" xml:id=\"" . $extension_name . ".constants\">\n" .
+               '<section xml:id="' . $extension_name . '.constants" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">' . "\n" .
                " &reftitle.constants;\n" .
                " &extension.constants;\n" .
                " <variablelist>\n");
