@@ -84,7 +84,7 @@ foreach ($parsefiles as $key => $file) {
         // output source file name
         echo preg_replace("|^[./]+|", "# ", $file)."\n";
         $preturn = array();
-	$prest = array();
+        $prest = array();
         $pdesc = array();
         foreach($matches[1] as $mk => $mv) {
            $preturn[] = $matches[1][$mk];
