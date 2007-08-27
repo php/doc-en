@@ -272,7 +272,6 @@ function write_functions_xml()
             "     <term><parameter>{$argname}</parameter></term>\n" .
             "     <listitem>\n" .
             "      <para>\n" .
-            "       Its description\n" .
             "      </para>\n" .
             "     </listitem>\n" .
             "    </varlistentry>\n";
@@ -285,8 +284,6 @@ function write_functions_xml()
         " <refsect1 role=\"returnvalues\">\n" .
         "  &reftitle.returnvalues;\n" .
         "  <para>\n" .
-        "   What the function returns, first on success, then on failure. See\n" .
-        "   also the &amp;return.success; entity\n" .
         "  </para>\n" .
         " </refsect1>\n"
     );
