@@ -111,6 +111,6 @@ foreach ($cvs_branches as $tag => $branch) {
     echo "done\n";
 }
 
-updare_pecl_sources();
+update_pecl_sources();
 
 chdir('..');

@@ -71,7 +71,7 @@ function grab_pecl_release($package, $release)
 
 
 /** update PECL sources */
-function updare_pecl_sources()
+function update_pecl_sources()
 {
     foreach (get_pecl_packages() as $pkg) {
         $releases = get_pecl_releases($pkg);
