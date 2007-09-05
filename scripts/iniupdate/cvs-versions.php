@@ -27,7 +27,7 @@ function get_php_release_tags()
 
     chdir('sources');
 
-    if (empty($GLOBALS['skip_download'])) {
+    if (empty($GLOBALS['skip_download']) || !is_dir('php-src')) {
         `cvs -q -d :pserver:cvsread@cvs.php.net:/repository co php-src > /dev/null`;
     }
 
@@ -42,7 +42,7 @@ function get_php_release_tags()
 
     do {
         $l = array_shift($log);
-        if ($l == 'symbolic names:') {
+        if (rtrim($l) === 'symbolic names:' || $l === NULL) {
             break;
         }
     } while (1);
