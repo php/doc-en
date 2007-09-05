@@ -45,10 +45,10 @@ if (empty($skip_download)) {
 }
 
 if (is_file('ini_changelog.sqlite')) {
+    require_once './update_db.php';
+} else {
     require_once './make_db.php';
     require_once './insert_db.php';
-} else {
-    require_once './update_db.php';
 }
 
 require_once './ini-update.php';
