@@ -39,7 +39,12 @@ function get_pecl_releases($package)
 {
     try {
         $releases = array();
-        $XE = @new SimpleXMLElement("http://pecl.php.net/rest/r/$package/allreleases.xml", NULL, true); //@ sucks, but the XML doesn't like me
+        $url      = "http://pecl.php.net/rest/r/$package/allreleases.xml";
+
+        // simplexml doesnt seem to be able to handle the 404 errors as I would like..
+        if (@file_get_contents($url, null, 0, 0, 1) === false) return $releases;
+
+        $XE = @new SimpleXMLElement($url, NULL, true);
 
         foreach ($XE as $Element) {
             if ($Element->getName() == 'r') {
