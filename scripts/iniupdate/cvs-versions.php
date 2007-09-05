@@ -33,7 +33,11 @@ function get_php_release_tags()
 
     chdir('php-src');
 
-    $log = explode("\n", `cvs log ChangeLog`);
+    if (empty($GLOBALS['skip_download']) || !is_file('.ChangeLog.log')) {
+        `cvs -q log ChangeLog > .ChangeLog.log`;
+    }
+
+    $log = file('.ChangeLog.log');
     chdir('../..');
 
     do {
