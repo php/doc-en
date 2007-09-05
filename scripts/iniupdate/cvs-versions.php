@@ -37,12 +37,12 @@ function get_php_release_tags()
         `cvs -q log ChangeLog > .ChangeLog.log`;
     }
 
-    $log = file('.ChangeLog.log');
+    $log = file('.ChangeLog.log', FILE_SKIP_EMPTY_LINES|FILE_IGNORE_NEW_LINES);
     chdir('../..');
 
     do {
         $l = array_shift($log);
-        if (rtrim($l) === 'symbolic names:' || $l === NULL) {
+        if ($l === 'symbolic names:' || $l === NULL) {
             break;
         }
     } while (1);
