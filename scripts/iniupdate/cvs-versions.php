@@ -75,7 +75,7 @@ foreach (array_merge($tags, array('php_head')) as $tag) {
 
 // fetch cvs versions
 $file = file_get_contents('./cvs-versions');
-preg_match_all('/PHP_(\d)_CVS=(\w+)/', $file, $data, PREG_SET_ORDER);
+preg_match_all('/PHP_(\d+)_CVS=(\w+)/', $file, $data, PREG_SET_ORDER);
 
 $cvs_versions = $cvs_branches = array();
 foreach ($data as $v) {
@@ -85,7 +85,7 @@ foreach ($data as $v) {
         $version = make_cvs_version(substr($v[2], 4));
     }
     $cvs_versions["php_$v[1]_cvs"] = $version;
-    $cvs_branches[$v[1]] = $v[2];
+    $cvs_branches["php_$v[1]_cvs"] = $v[2];
 }
 
 $tags = array_merge(array_keys($cvs_versions), $tags);

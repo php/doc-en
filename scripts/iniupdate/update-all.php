@@ -33,7 +33,10 @@ function checkout_tag($tag)
     $dir          = 'php-'.strtr(substr($tag, 4), '_', '.');
     $filename     = "$dir.tar.gz";
 
-    copy("http://museum.php.net/php$majorversion/$filename", $filename);
+    if (!@copy("http://museum.php.net/php$majorversion/$filename", $filename)) {
+        echo "\033[1;31mFAILED\033[0m\n";
+        return;
+    }
 
     $cmds[] = "tar xfz $filename";
     $cmds[] = "mv $dir $tag";
@@ -45,7 +48,7 @@ function checkout_tag($tag)
         exec($cmd);
     }
 
-    echo "done\n";
+    echo "\033[1;32mdone\033[0m\n";
 }
 
 
