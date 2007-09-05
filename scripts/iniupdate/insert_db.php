@@ -17,7 +17,7 @@
   +----------------------------------------------------------------------+
 */
 
-require './ini_search_lib.php';
+require_once './ini_search_lib.php';
 require_once './cvs-versions.php';
 
 function insert_in_db($tag) {
@@ -46,7 +46,7 @@ if (!$db_open && !$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {
     die("Couldn't create the DB: $error");
 }
 
-foreach($tags as $tag) {
+foreach ($tags as $tag) {
     $array = array();
     recurse("./sources/$tag");
     insert_in_db($tag);

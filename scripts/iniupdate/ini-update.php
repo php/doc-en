@@ -27,7 +27,7 @@ $phpdoc_dir  = '../..';            //phpdoc path
 
 /******* END of configurations *****/
 
-require './ini_search_lib.php';
+require_once './ini_search_lib.php';
 
 
 /* Fix ini.xml files */
@@ -97,7 +97,7 @@ echo 'Found ' . count($array) . " entries\n";
 
 // get the changelog info
 $included = true;
-require('./generate_changelog.php');
+require_once './generate_changelog.php';
 unset($info, $included, $error, $row);
 
 
