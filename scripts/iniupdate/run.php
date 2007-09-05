@@ -19,7 +19,30 @@
 
 @mkdir('sources');
 
-require_once './update-all.php';
+array_shift($argv);
+
+foreach ($argv as $arg) {
+    if ($arg === '-h' || $arg === '--help') {
+        echo <<< HELP
+possible options:
+--skip-download		Do not download or update anything
+
+
+HELP;
+        exit;
+
+    } elseif ($arg === '--skip-download') {
+        $skip_download = true;
+    } else {
+        die("option not recognized: '$arg'\n");
+    }
+
+}
+
+
+if (empty($skip_download)) {
+    require_once './update-all.php';
+}
 
 if (is_file('ini_changelog.sqlite')) {
     require_once './make_db.php';
@@ -29,4 +52,3 @@ if (is_file('ini_changelog.sqlite')) {
 }
 
 require_once './ini-update.php';
-

@@ -26,7 +26,11 @@ function get_php_release_tags()
     if ($tags) return $tags;
 
     chdir('sources');
-    `cvs -q -d :pserver:cvsread@cvs.php.net:/repository co php-src > /dev/null`;
+
+    if (empty($GLOBALS['skip_download'])) {
+        `cvs -q -d :pserver:cvsread@cvs.php.net:/repository co php-src > /dev/null`;
+    }
+
     chdir('php-src');
 
     $log = explode("\n", `cvs log ChangeLog`);
