@@ -359,6 +359,11 @@ function store_protos($tag, $protos, $source = 'php-src')
 ///////////////
 ///////////////
 
+if (!is_readable(PATH_DB)) {
+	echo 'Error: PATH_DB (', PATH_DB, ') must be a readable sqlite3 database. RTFS.', "\n";
+	exit;
+}
+
 if (!getenv('DO_CVS')) {
 	fwrite(STDERR, "Skipping CVS\n");
 } else {
