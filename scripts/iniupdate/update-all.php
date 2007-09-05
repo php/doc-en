@@ -18,37 +18,81 @@
 */
 
 require_once './cvs-versions.php';
+require_once './pecl.php';
+
+
+/** find a dir in a case-insensitive way */
+function try_dir_combinations($dir)
+{
+    $len = strlen($dir);
+    $pattern = '';
+
+    for ($i=0; $i<$len; ++$i) {
+        if (ctype_alpha($dir[$i])) {
+            $pattern .= '['.strtolower($dir[$i]).strtoupper($dir[$i]).']';
+        } else {
+            $pattern .= $dir[$i];
+        }
+    }
+
+    $match = glob($pattern);
+
+    return $match ? $match[0] : null;
+}
 
 
 /** fetch a tag sources */
-function checkout_tag($tag)
+function download_sources($url, $dir, $filename, $finaldir)
 {
-    if (is_dir($tag)) {
+    if (is_dir(try_dir_combinations($finaldir))) {
         echo "already there\n";
         return;
     }
 
-    // $tag = PHP_x_x_x
-    $majorversion = substr($tag, 4, 1);
-    $dir          = 'php-'.strtr(substr($tag, 4), '_', '.');
-    $filename     = "$dir.tar.gz";
-
-    if (!@copy("http://museum.php.net/php$majorversion/$filename", $filename)) {
+    if (!@copy($url, $filename)) {
         echo "\033[1;31mFAILED\033[0m\n";
         return;
     }
 
-    $cmds[] = "tar xfz $filename";
-    $cmds[] = "mv $dir $tag";
+    $filename = escapeshellarg($filename);
+
+    `tar xfz $filename 2>&1 | grep -v "A lone zero block at"`; // also skip some warnings from tar
+
+    // this is needed because PECL packages differ
+    $dir = try_dir_combinations($dir);
+    if (!$dir) {
+        die("directory not found for the following file: $filename\n");
+    }
+
+    $dir      = escapeshellarg($dir);
+    $finaldir = escapeshellarg($finaldir);
+
+    if ($finaldir != $dir) {
+        $cmds[] = "mv $dir $finaldir";
+    }
+
     $cmds[] = "rm $filename";
-    $cmds[] = 'find ' .escapeshellarg($tag). ' -type f -and -not -name "*.[chly]" -and -not -name "*.ec" -and -not -name "*.lex" | xargs rm -f';
-    $cmds[] = 'while ( find ' .escapeshellarg($tag). ' -depth -type d -and -empty | xargs rm -r 2>/dev/null ) ; do true ; done';
+    $cmds[] = 'find ' .$finaldir. ' -type f -and -not -name "*.[chly]" -and -not -name "*.ec" -and -not -name "*.lex" | xargs rm -f';
+    $cmds[] = 'while ( find ' .$finaldir. ' -depth -type d -and -empty | xargs rm -r 2>/dev/null ) ; do true ; done';
 
     foreach ($cmds as $cmd) {
         exec($cmd);
     }
 
     echo "\033[1;32mdone\033[0m\n";
+}
+
+
+/** fetch a tag sources */
+function checkout_tag($tag)
+{
+    // $tag = PHP_x_x_x
+    $majorversion = substr($tag, 4, 1);
+    $dir          = 'php-'.strtr(substr($tag, 4), '_', '.');
+    $filename     = "$dir.tar.gz";
+    $url          = "http://museum.php.net/php$majorversion/$filename";
+
+    download_sources($url, $dir, $filename, $tag);
 }
 
 
@@ -66,5 +110,7 @@ foreach ($cvs_branches as $tag => $branch) {
     exec($cmd);
     echo "done\n";
 }
+
+updare_pecl_sources();
 
 chdir('..');
