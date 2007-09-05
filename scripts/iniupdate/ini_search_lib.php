@@ -49,7 +49,8 @@ function recurse_aux($dir, $search_macros, &$cfg_get) {
         $dir   = dirname($dir);
     } else {
         if (!is_file($dir) && !$files = scandir($dir)) {
-            die ("couldn't open the specified dir ($dir)");
+            echo "$dir - FAILED TO SCAN DIR\n";
+            return;
         }
         unset($files[0], $files[1]); //remove the . and ..
     }
