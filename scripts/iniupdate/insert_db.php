@@ -56,6 +56,7 @@ foreach($tags as $tag) {
 
 if (!$db_open) {
     sqlite_close($idx);
+    unset($idx);
 }
 
 ?>

@@ -37,6 +37,7 @@ sqlite_query($idx, $sql);
 
 if (!$db_open) {
     sqlite_close($idx);
+    unset($idx);
 }
 
 ?>
