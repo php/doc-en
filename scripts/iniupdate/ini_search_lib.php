@@ -48,7 +48,7 @@ function recurse_aux($dir, $search_macros, &$cfg_get) {
         $files = array(basename($dir));
         $dir   = dirname($dir);
     } else {
-        if (!is_file($dir) && !$files = scandir($dir)) {
+        if (!is_file($dir) && !$files = @scandir($dir)) {
             echo "$dir - FAILED TO SCAN DIR\n";
             return;
         }

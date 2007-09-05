@@ -35,7 +35,7 @@ function insert_in_db($tag) {
 
     }
 
-    sqlite_query($idx, $sql);
+    if ($sql) sqlite_query($idx, $sql);
 }
 
 
