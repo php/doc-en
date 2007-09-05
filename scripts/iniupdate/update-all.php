@@ -49,6 +49,8 @@ function checkout_tag($tag)
 }
 
 
+chdir('sources');
+
 foreach (get_php_release_tags() as $tag) {
     $tag = strtoupper($tag);
     echo "Getting tag: $tag... ";
@@ -62,3 +64,4 @@ foreach ($cvs_branches as $tag => $branch) {
     echo "done\n";
 }
 
+chdir('..');
