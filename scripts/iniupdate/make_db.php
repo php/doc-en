@@ -25,7 +25,7 @@ if (!$db_open && !$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {
 }
 
 $sql = '
-CREATE TABLE pecl-changelog (
+CREATE TABLE pecl_changelog (
 	package TEXT,
 	version TEXT,
 	name TEXT,
