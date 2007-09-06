@@ -54,7 +54,7 @@ function get_pecl_releases($package)
             }
         }
 
-        sort($releases);
+        natsort($releases);
         return $releases;
 
     } catch (Exception $e) {
