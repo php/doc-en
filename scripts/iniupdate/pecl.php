@@ -86,4 +86,8 @@ function update_pecl_sources()
             grab_pecl_release($pkg, $ver);
         }
     }
+
+    // cleanup garbage left by the extraction of the .tgz files
+    @unlink('package.xml');
+    @unlink('package2.xml');
 }
