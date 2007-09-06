@@ -65,9 +65,19 @@ function get_php_release_tags()
     return $tags;
 }
 
+// if run alone, it means debug mode and thus no slow network access
+if (basename(__FILE__) == $_SERVER['PHP_SELF']) {
+    $skip_download = true;
+}
+
 
 // fetch all version tags
-$tags    = get_php_release_tags();
+$tags = get_php_release_tags();
+
+// PHP 4.0.7 wasn't released, although it was tagged in CVS
+$key = array_search('PHP_4_0_7', $tags);
+if ($key !== false) unset($tags[$key]);
+
 $lasttag = 'PHP_4_0_0';
 
 foreach (array_merge($tags, array('php_head')) as $tag) {
