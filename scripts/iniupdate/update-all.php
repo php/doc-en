@@ -67,7 +67,7 @@ function download_sources($url, $dir, $filename, $finaldir)
         $cmds[] = "mv $dir $finaldir";
     }
 
-    $cmds[] = 'find ' .$finaldir. ' -type f -and -not -name "*.[chly]" -and -not -name "*.ec" -and -not -name "*.lex" -delete';
+    $cmds[] = 'find ' .$finaldir. ' -type f -and -not -regex ".*\.\([chly]\|cpp\|cc\)" -and -not -name "*.ec" -and -not -name "*.lex" -delete';
     $cmds[] = 'while ( find ' .$finaldir. ' -depth -mindepth 1 -type d -and -empty | xargs rm -r 2>/dev/null ) ; do true ; done';
     $cmds[] = "mv $finaldir ..";
 
