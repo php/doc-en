@@ -21,45 +21,41 @@ require_once './cvs-versions.php';
 require_once './pecl.php';
 
 
-/** find a dir in a case-insensitive way */
-function try_dir_combinations($dir)
+/** find a dir inside the current pwd */
+function find_a_dir()
 {
-    $len = strlen($dir);
-    $pattern = '';
-
-    for ($i=0; $i<$len; ++$i) {
-        if (ctype_alpha($dir[$i])) {
-            $pattern .= '['.strtolower($dir[$i]).strtoupper($dir[$i]).']';
-        } else {
-            $pattern .= $dir[$i];
-        }
+    foreach (scandir('.') as $f) {
+        if ($f !== '.' && $f !== '..' && is_dir($f)) return $f;
     }
 
-    $match = glob($pattern);
-
-    return $match ? $match[0] : null;
+    return false;
 }
 
 
 /** fetch a tag sources */
 function download_sources($url, $dir, $filename, $finaldir)
 {
-    if (is_dir(try_dir_combinations($finaldir))) {
+    if (is_dir($finaldir)) {
         echo "already there\n";
         return;
     }
 
+    @mkdir('tmp');
+    chdir('tmp');
+
     if (!@copy($url, $filename)) {
         echo "\033[1;31mFAILED\033[0m\n";
+        chdir('..');
+        `rm -fr tmp`;
         return;
     }
 
     $filename = escapeshellarg($filename);
 
-    `tar xfz $filename 2>&1 | grep -v "A lone zero block at"`; // also skip some warnings from tar
+    `tar xfz $filename 2>&1 | grep -v "A lone zero block at"`; // silence some warnings from tar
 
-    // this is needed because PECL packages differ
-    $dir = try_dir_combinations($dir);
+    // this is needed because PECL packages don't have a naming standard for directories
+    $dir = find_a_dir();
     if (!$dir) {
         die("directory not found for the following file: $filename\n");
     }
@@ -67,17 +63,20 @@ function download_sources($url, $dir, $filename, $finaldir)
     $dir      = escapeshellarg($dir);
     $finaldir = escapeshellarg($finaldir);
 
-    if ($finaldir != $dir) {
+    if ($finaldir !== $dir) {
         $cmds[] = "mv $dir $finaldir";
     }
 
-    $cmds[] = "rm $filename";
     $cmds[] = 'find ' .$finaldir. ' -type f -and -not -name "*.[chly]" -and -not -name "*.ec" -and -not -name "*.lex" | xargs rm -f';
-    $cmds[] = 'while ( find ' .$finaldir. ' -depth -type d -and -empty | xargs rm -r 2>/dev/null ) ; do true ; done';
+    $cmds[] = 'while ( find ' .$finaldir. ' -depth -mindepth 1 -type d -and -empty | xargs rm -r 2>/dev/null ) ; do true ; done';
+    $cmds[] = "mv $finaldir ..";
 
     foreach ($cmds as $cmd) {
         exec($cmd);
     }
+
+    chdir('..');
+    `rm -fr tmp`;
 
     echo "\033[1;32mdone\033[0m\n";
 }
