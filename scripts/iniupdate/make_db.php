@@ -24,7 +24,15 @@ if (!$db_open && !$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {
     die("Couldn't create the DB: $error");
 }
 
-$sql = 'CREATE TABLE changelog (
+$sql = '
+CREATE TABLE pecl-changelog (
+	package TEXT,
+	version TEXT,
+	name TEXT,
+	value TEXT
+);
+
+CREATE TABLE changelog (
 name TEXT PRIMARY KEY,';
 
 foreach($tags as $tag) {

@@ -3,7 +3,7 @@
   +----------------------------------------------------------------------+
   | ini doc settings updater                                             |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2005 The PHP Group                                |
+  | Copyright (c) 1997-2007 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.0 of the PHP license,       |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -64,6 +64,25 @@ function get_php_release_tags()
 
     return $tags;
 }
+
+
+/** fetch the PECL's packages releases that have been downloaded */
+function get_pecl_releases_local()
+{
+    foreach (scandir('sources') as $dir) {
+        if ($dir !== '.' &&
+            $dir !== '..' &&
+            $dir !== 'php-src' &&
+            $dir !== 'pecl' &&
+            substr_compare($dir, 'PHP_', 0, 4, true) !== 0)
+        {
+            $releases[] = $dir;
+        }
+    }
+
+    return $releases;
+}
+
 
 // if run alone, it means debug mode and thus no slow network access
 if (basename(__FILE__) == $_SERVER['PHP_SELF']) {

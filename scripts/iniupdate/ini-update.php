@@ -21,9 +21,9 @@
 
 /* Configuration Options */
 
-$php_src_dir = '../../../php-src'; //php-src path
-$pecl_dir    = '../../../pecl';    //pecl path
-$phpdoc_dir  = '../..';            //phpdoc path
+$php_src_dir = 'sources/php-src'; //php-src path
+$pecl_dir    = 'sources/pecl';    //pecl path
+$phpdoc_dir  = '../..';           //phpdoc path
 
 /******* END of configurations *****/
 
