@@ -59,7 +59,7 @@ function recurse_aux($dir, $search_macros, &$cfg_get) {
 
         $path = $dir . '/' .$file;
 
-        if(is_dir($path)) {
+        if (is_dir($path)) {
             recurse_aux($path, $search_macros, $cfg_get);
         } else {
             $file = file_get_contents($path);
@@ -68,10 +68,10 @@ function recurse_aux($dir, $search_macros, &$cfg_get) {
             $file = preg_replace('@(//.*$)|(/\*.*\*/)@SmsU', '', $file);
 
             /* The MAGIC Regexp :) */
-            if(preg_match_all('/(?:PHP|ZEND)_INI_(?:ENTRY(?:_EX)?|BOOLEAN)\s*\(\s*"([^"]+)"\s*,((?:".*"|[^,])+)\s*,\s*([^,]+)/S', $file, $matches)) {
+            if (preg_match_all('/(?:PHP|ZEND)_INI_(?:ENTRY(?:_EX)?|BOOLEAN)\s*\(\s*"([^"]+)"\s*,((?:".*"|[^,])+)\s*,\s*([^,]+)/S', $file, $matches)) {
 
                 $count = count($matches[0]);
-                for($i=0;$i<$count;$i++) {
+                for ($i=0; $i<$count; ++$i) {
 
                     $default = htmlspecialchars(trim($matches[2][$i]), ENT_NOQUOTES);
 
@@ -85,12 +85,13 @@ function recurse_aux($dir, $search_macros, &$cfg_get) {
 
 
             // find the nasty cfg_get_*() stuff
-            if(preg_match_all('/cfg_get_([^(]+)\s*\(\s*"([^"]+)",\s*&([^\s=]+)\s*\)/S', $file, $match, PREG_SET_ORDER)) {
+            if (preg_match_all('/cfg_get_([^(]+)\s*\(\s*"([^"]+)",\s*&([^\s=]+)\s*\)/S', $file, $match, PREG_SET_ORDER)) {
 
-                foreach($match as $arr) {
+                foreach ($match as $arr) {
                     preg_match('/(?:(FAILURE|SUCCESS)\s*==\s*)?'.preg_quote($arr[0]).'(?:\s*==\s*(FAILURE|SUCCESS))?(?:(?:[^=]|==){1,40}'.preg_quote($arr[3]).'\s*=\s*(.+);)?/', $file, $m);
 
-                    if ($m[1] == 'FAILURE' || $m[2] == 'FAILURE') {
+                    // if the default value wasn't found default to SUCCESS
+                    if (isset($m[1]) && ($m[1] === 'FAILURE' || $m[2] === 'FAILURE')) {
                         $cfg_get[] = array($arr[2], $arr[1] == 'string' ? $m[3] : '"'.$m[3].'"');
 
                     } else { //$m[1] == 'SUCCESS'
