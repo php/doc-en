@@ -854,10 +854,10 @@ foreach ($infiles as $in) {
 globbetyglob($ac['INIPATH'], 'make_scripts_executable');
 file_put_contents('./entities/phpweb.ent', '');
 
-passthru('"' .escapeshellcmd($ac['PHP']) . '" ' . ' -c ' . escapeshellarg($ac['INIPATH']) . ' -q ./scripts/file-entities.php');
+passthru('"' .$ac['PHP'] . '" ' . ' -c ' . $ac['INIPATH'] . ' -q ./scripts/file-entities.php');
 passthru('rm -f entities/missing*');
 passthru('rm -f entities/missing-ids.xml');
-passthru('"' .escapeshellcmd($ac['PHP']) . '" ' . ' -c ' . escapeshellarg($ac['INIPATH']) . ' -q ./scripts/missing-entities.php');
+passthru('"' .$ac['PHP'] . '" ' . ' -c ' . $ac['INIPATH'] . ' -q ./scripts/missing-entities.php');
 
 //print_r($ac);
 
