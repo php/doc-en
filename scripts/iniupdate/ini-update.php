@@ -102,7 +102,7 @@ unset($info, $included, $error, $row);
 
 
 /* &php.ini; only */
-$special = array('disable_functions' => 1, 'disable_classes' => 1, 'expose_php' => 1);
+$special = array('disable_functions' => 1, 'disable_classes' => 1, 'expose_php' => 1, 'mail.force_extra_parameters' => 1);
 
 /* Find links to documentation */
 $links       = array();
