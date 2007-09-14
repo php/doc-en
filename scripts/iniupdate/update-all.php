@@ -105,8 +105,19 @@ foreach (get_php_release_tags() as $tag) {
 
 foreach ($cvs_branches as $tag => $branch) {
     echo "Getting tag: $tag... ";
-    $cmd = "cvs -q -d :pserver:cvsread@cvs.php.net:/repository co -d ".strtolower($tag)." -r $branch php-src";
-    exec($cmd);
+    $dir = strtolower($tag);
+
+    // if the dir already exists, perform an update rather than a checkout
+    if (is_dir($dir)) {
+        `cd $dir && cvs -q up -dP`;
+
+         // zend dirs require special handling because cvs is damn stupid..
+         if (is_dir("$dir/Zend")) `cd $dir/Zend && cvs -q up -dP`;
+         if (is_dir("$dir/ZendEngine2")) `cd $dir/ZendEngine2 && cvs -q up -dP`;
+    } else {
+        `cvs -q -d :pserver:cvsread@cvs.php.net:/repository co -d $dir -r $branch -P php-src`;
+    }
+
     echo "done\n";
 }
 
