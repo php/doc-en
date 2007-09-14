@@ -113,7 +113,7 @@ $ini_files[] = "$phpdoc_dir/en/appendices/ini.xml";
 
 foreach ($ini_files as $filename) {
 
-    preg_match_all('~<varlistentry id="(ini.[^"]*)">(.*)</varlistentry>~USs', file_get_contents($filename), $matches, PREG_SET_ORDER);
+    preg_match_all('~<varlistentry\s+(?:xml:)?id="(ini\.[^"]+)">(.*)</varlistentry>~USs', file_get_contents($filename), $matches, PREG_SET_ORDER);
     foreach ($matches as $varlistentry) {
         preg_match_all('~<term>.*<parameter>(.*)</parameter>~USs', $varlistentry[2], $matches2);
         foreach ($matches2[1] as $parameter) {
