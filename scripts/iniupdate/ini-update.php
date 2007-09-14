@@ -25,6 +25,8 @@ $php_src_dir = 'sources/php-src'; //php-src path
 $pecl_dir    = 'sources/pecl';    //pecl path
 $phpdoc_dir  = '../..';           //phpdoc path
 
+define('MAX_MACRO_EXPAND_DEPTH', 10);
+
 /******* END of configurations *****/
 
 require_once './ini_search_lib.php';
@@ -137,12 +139,13 @@ foreach($array as $entry => $arr) {
 
     /* replace macros and make the $default var */
     $new = $arr[0];
+    $i = 0;
 
     do {
         $old = $new;
         $new = strtr($new,$replace);
 
-    } while($new != $old);
+    } while ($new !== $old && ++$i < MAX_MACRO_EXPAND_DEPTH);
 
     $default = $new;
 
