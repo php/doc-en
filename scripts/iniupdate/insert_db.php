@@ -3,7 +3,7 @@
   +----------------------------------------------------------------------+
   | ini doc settings updater                                             |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2005 The PHP Group                                |
+  | Copyright (c) 1997-2007 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.0 of the PHP license,       |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -46,6 +46,7 @@ if (!$db_open && !$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {
     die("Couldn't create the DB: $error");
 }
 
+// process PHP sources
 foreach ($tags as $tag) {
     $array = array();
     recurse("./sources/$tag");
@@ -53,6 +54,23 @@ foreach ($tags as $tag) {
 
     echo "$tag\n";
 }
+
+// process PECL sources
+foreach (get_pecl_releases_local() as $release) {
+
+    preg_match('/(.+)-(\d+\.\d+(?:\.\d+)?)/S', $release, $m);
+    $pkg     = $m[1];
+    $version = $m[2];
+
+    // if it has an entry already, just skip it
+    if (sqlite_single_query($idx, "SELECT COUNT(*) FROM pecl_changelog WHERE package='".sqlite_escape_string($pkg)."' AND version='$version'") > 1) {
+        continue;
+    }
+
+    $array = array();
+    recurse("./sources/$release");
+}
+
 
 if (!$db_open) {
     sqlite_close($idx);

@@ -3,7 +3,7 @@
   +----------------------------------------------------------------------+
   | ini doc settings updater                                             |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2005 The PHP Group                                |
+  | Copyright (c) 1997-2007 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.0 of the PHP license,       |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -31,8 +31,13 @@ CREATE TABLE pecl_changelog (
 	name TEXT,
 	value TEXT
 );
+';
 
-CREATE TABLE changelog (
+// the query may fail if the table already exists
+@sqlite_query($idx, $sql);
+
+
+$sql = 'CREATE TABLE changelog (
 name TEXT PRIMARY KEY,';
 
 foreach($tags as $tag) {
