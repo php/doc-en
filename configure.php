@@ -20,7 +20,7 @@
   $Id$
 */
 
-$cvs_id = "$Id$";
+$cvs_id = '$Id$';
 $srcdir = "./";
 
 echo "configure.php: $cvs_id\n";
@@ -66,6 +66,7 @@ $ac = array();
 $ac['srcdir'] = $srcdir;
 $ac['WORKDIR'] = $srcdir;
 $ac['PHP'] = '';
+$ac['CYGWIN'] = false;
 $ac['INIPATH'] = './scripts';
 $ac['JADE'] = '';
 $ac['WINJADE'] = 0;
@@ -133,12 +134,20 @@ $allowed_opts = array(
 );
 
 foreach ($_SERVER['argv'] as $opt) {
-    list($o, $v) = explode("=", $opt);
+    if (strpos($opt, "=") !== false) {
+        list($o, $v) = explode("=", $opt);
+    } else {
+        $o = $opt;
+        $v = true;
+    }
 
     switch ($o) {
         case '--help':
             usage();
             exit();
+        case '--with-cygwin';
+            $ac['CYGWIN'] = $v;
+            break;
         case '--with-php':
             $ac['PHP'] = $v;
             break;
