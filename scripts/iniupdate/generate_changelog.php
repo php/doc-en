@@ -112,7 +112,6 @@ function last_version($array)
 /** generate the changelog column */
 function generate_changelog($array)
 {
-    array_shift($array); // remove the 'name' column
     return trim(last_version($array) . ' ' . available_since($array));
 }
 
@@ -126,9 +125,19 @@ $q = sqlite_unbuffered_query($idx, 'SELECT * FROM changelog');
 
 /* This hack is needed because sqlite 2 sort case-sensitive */
 while ($row = sqlite_fetch_array($q, SQLITE_ASSOC)) {
+    $name = $row['name'];
+    unset($row['name']);
     uksort($row, 'strnatcasecmp');
-    $info[$row['name']] = $row;
+    $info[$name] = $row;
 }
+
+
+$q = sqlite_unbuffered_query($idx, 'SELECT * FROM pecl_changelog');
+
+while ($row = sqlite_fetch_array($q, SQLITE_ASSOC)) {
+    $info[$row['name']][$row['package'].'-'.$row['version']] = $row['value'];
+}
+
 
 uksort($info, 'strnatcasecmp');
 
