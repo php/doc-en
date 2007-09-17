@@ -138,7 +138,7 @@ foreach ($_SERVER['argv'] as $opt) {
         list($o, $v) = explode("=", $opt);
     } else {
         $o = $opt;
-        $v = true;
+        $v = "yes";
     }
 
     switch ($o) {
@@ -146,7 +146,11 @@ foreach ($_SERVER['argv'] as $opt) {
             usage();
             exit();
         case '--with-cygwin';
-            $ac['CYGWIN'] = $v;
+            if ($v == "yes") {
+                $ac['CYGWIN'] = 1;
+            } else {
+                $ac['GYGWIN'] = 0;
+            }
             break;
         case '--with-php':
             $ac['PHP'] = $v;
