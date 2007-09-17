@@ -69,6 +69,16 @@ foreach (get_pecl_releases_local() as $release) {
 
     $array = array();
     recurse("./sources/$release");
+
+    $sql = '';
+
+    foreach ($array as $key => $data) {
+        $sql .= "INSERT INTO pecl_changelog (package, version, name, value) VALUES ('".sqlite_escape_string($pkg)."', '$version', '$key', '$data[1]');";
+    }
+
+    if ($sql) sqlite_query($idx, $sql);
+
+    echo "$release\n";
 }
 
 
