@@ -35,7 +35,7 @@ function tag2version($tag)
     if (isset($cvs_versions[$tag]))
         return $cvs_versions[$tag];
 
-    return substr(strpbrk($tag, '_-'), 1);
+    return strtr(substr(strpbrk($tag, '_-'), 1), '_', '.');
 }
 
 
