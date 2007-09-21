@@ -25,6 +25,7 @@ if (empty($included)) {
 
 require_once './cvs-versions.php';
 
+
 /** converts a tag like php_5_0_0 into a version like 5.0.0 */
 function tag2version($tag)
 {
@@ -44,28 +45,35 @@ function in_php($array)
 }
 
 
-/** checks if an ini setting has changed its value in PHP 5  */
-function check_php4($array)
+/** returns the package name of the given array/string */
+function pkg_name($array)
 {
-    foreach ($array as $key => $val) {
-        if (substr($key, 0, 5) != 'php_4') {
-            continue;
-        }
+    $input = is_array($array) ? key($array) : $array;
+    preg_match('/(.+)-(\d+\.\d+(?:\.\d+)?)/S', $input, $m);
+    return $m[1];
+}
 
-        if ($val) {
-            if (isset($old)) {
-                if ($val != $old) {
-                    return '';
-                }
-            } else {
-                $old = $val;
-            }
+
+/** fetch the local PECL releases of the given pkg name */
+function get_local_pecl_releases($array)
+{
+    static $cache = array();
+
+    $pecl_releases = get_pecl_releases_local();
+
+    $pkg = pkg_name($array);
+
+    if (isset($cache[$pkg])) return $cache[$pkg];
+
+    $pkg_strlen = strlen($pkg);
+
+    foreach ($pecl_releases as $release) {
+        if (substr_compare($pkg, $release, 0, $pkg_strlen) == 0) {
+            $cache[$pkg][] = $release;
         }
     }
 
-    if (isset($old) && !empty($array['php_5_0_0']) && $old !== $array['php_5_0_0']) {
-        return "$old in PHP 4.";
-    }
+    return $cache[$pkg];
 }
 
 
@@ -86,7 +94,16 @@ function available_since($array)
 
     // PECL only
     } else {
-        // TODO
+        $releases = get_local_pecl_releases($array);
+
+        if (key($array) !== current($releases)) {
+            foreach ($releases as $rel) {
+                if ($rel === key($array)) {
+                    $ver = pkg_name($array) .' '. tag2version($rel);
+                    break;
+                }
+            }
+        }
     }
 
     return $ver ? "Available since $ver." : '';
@@ -96,31 +113,7 @@ function available_since($array)
 /** check for changes between versions */
 function last_version($array)
 {
-    $php4 = check_php4($array);
-    $str  = '';
-
-    foreach ($array as $key => $val) {
-        if ($php4 && substr($key, 0, 5) == 'php_4') {
-            continue;
-        }
-
-        if ($val) {
-            if (isset($old)) {
-                if ($val != $old) {
-                    if ($old_tag == 'php_4_cvs') {
-                        $str .= " $old in PHP &lt; 5.";
-                    } else {
-                        $str .= " $old in PHP &lt;= " . tag2version($old_tag) . '.';
-                    }
-                }
-            }
-
-            $old     = $val;
-            $old_tag = $key;
-        }
-    }
-
-    return $php4 . $str;
+    // TODO again
 }
 
 
@@ -144,7 +137,22 @@ function removed_in($array)
 
     // PECL only
     } else {
-        // TODO
+        $releases = get_local_pecl_releases($array);
+
+        $on = false;
+        end($array);
+
+        if (end($releases) !== key($array)) {
+            foreach ($releases as $release) {
+                if ($release === key($array)) {
+                    $on = true;
+
+                } else if ($on) {
+                    $ver = pkg_name($array) .' '. tag2version($release);
+                    break;
+                }
+            }
+        }
     }
 
 
@@ -194,6 +202,7 @@ $q = sqlite_unbuffered_query($idx, 'SELECT * FROM pecl_changelog');
 
 while ($row = sqlite_fetch_array($q, SQLITE_ASSOC)) {
     $info[$row['name']][$row['package'].'-'.$row['version']] = $row['value'];
+    uksort($info[$row['name']], 'strnatcasecmp');
 }
 
 
