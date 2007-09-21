@@ -21,16 +21,19 @@
 /** returns an array with the PECL packages */
 function get_pecl_packages()
 {
+    static $cache = null;
+    if ($cache) return $cache;
+
     $packages = array();
     $XE = @new SimpleXMLElement('http://pecl.php.net/rest/p/packages.xml', NULL, true);
 
     foreach ($XE as $Element) {
         if ($Element->getName() == 'p') {
-            $packages[] = strtolower((string) $Element);
+            $packages[] = (string) $Element;
         }
     }
 
-    return $packages;
+    return $cache = $packages;
 }
 
 
@@ -39,6 +42,7 @@ function get_pecl_releases($package)
 {
     try {
         $releases = array();
+        $package  = strtolower($package);
         $url      = "http://pecl.php.net/rest/r/$package/allreleases.xml";
 
         // simplexml doesnt seem to be able to handle the 404 errors as I would like..

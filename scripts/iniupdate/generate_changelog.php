@@ -24,6 +24,7 @@ if (empty($included)) {
 }
 
 require_once './cvs-versions.php';
+require_once './pecl.php';
 
 
 /** converts a tag like php_5_0_0 into a version like 5.0.0 */
@@ -50,7 +51,13 @@ function pkg_name($array)
 {
     $input = is_array($array) ? key($array) : $array;
     preg_match('/(.+)-(\d+\.\d+(?:\.\d+)?)/S', $input, $m);
-    return $m[1];
+    $lowered = $m[1];
+
+    foreach (get_pecl_packages() as $pkg) {
+        if (strcasecmp($pkg, $lowered) === 0) {
+            return $pkg;
+        }
+    }
 }
 
 
@@ -68,7 +75,7 @@ function get_local_pecl_releases($array)
     $pkg_strlen = strlen($pkg);
 
     foreach ($pecl_releases as $release) {
-        if (substr_compare($pkg, $release, 0, $pkg_strlen) == 0) {
+        if (substr_compare($pkg, $release, 0, $pkg_strlen, true) == 0) {
             $cache[$pkg][] = $release;
         }
     }
