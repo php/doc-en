@@ -28,7 +28,7 @@ function get_php_release_tags()
     chdir('sources');
 
     if (empty($GLOBALS['skip_download']) || !is_dir('php-src')) {
-        `cvs -q -d :pserver:cvsread@cvs.php.net:/repository co php-src > /dev/null`;
+        `cvs -q -d :pserver:cvsread@cvs.php.net:/repository co -P php-src > /dev/null`;
     }
 
     chdir('php-src');
