@@ -141,8 +141,8 @@ while ($row = sqlite_fetch_array($q, SQLITE_ASSOC)) {
 
 uksort($info, 'strnatcasecmp');
 
-foreach ($info as $row) {
-    $changelog[$row['name']] = generate_changelog($row);
+foreach ($info as $name => $row) {
+    $changelog[$name] = generate_changelog($row);
 }
 
 // if in debug mode
