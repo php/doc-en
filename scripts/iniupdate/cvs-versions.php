@@ -83,6 +83,8 @@ function get_pecl_releases_local()
         }
     }
 
+    natsort($releases);
+
     return $cache = $releases;
 }
 
