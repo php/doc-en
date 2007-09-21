@@ -35,7 +35,7 @@ function tag2version($tag)
     if (isset($cvs_versions[$tag]))
         return $cvs_versions[$tag];
 
-    return strtr(substr($tag, 4), '_', '.');
+    return substr(strpbrk($tag, '_-'), 1);
 }
 
 
@@ -50,7 +50,7 @@ function in_php($array)
 function pkg_name($array)
 {
     $input = is_array($array) ? key($array) : $array;
-    preg_match('/(.+)-(\d+\.\d+(?:\.\d+)?)/S', $input, $m);
+    preg_match('/^(.+)-\d+\.\d+(?:\.\d+)?$/S', $input, $m);
     $lowered = $m[1];
 
     foreach (get_pecl_packages() as $pkg) {
