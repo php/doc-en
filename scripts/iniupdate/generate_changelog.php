@@ -35,7 +35,11 @@ function tag2version($tag)
     if (isset($cvs_versions[$tag]))
         return $cvs_versions[$tag];
 
-    return strtr(substr(strpbrk($tag, '_-'), 1), '_', '.');
+    if (substr_compare($tag, 'PHP_', 0, 4, true) == 0) {
+        return strtr(substr($tag, 4), '_', '.');
+    } else { // PECL
+        return substr($tag, strpos($tag, '-')+1);
+    }
 }
 
 
