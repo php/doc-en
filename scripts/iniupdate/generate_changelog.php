@@ -37,6 +37,13 @@ function tag2version($tag)
 }
 
 
+/** returns TRUE if the opt is/was present in PHP (i.e. it is not in PECL only) */
+function in_php($array)
+{
+   return (substr_compare(key($array), 'PHP_', 0, 4, true) == 0);
+}
+
+
 /** checks if an ini setting has changed its value in PHP 5  */
 function check_php4($array)
 {
@@ -65,16 +72,24 @@ function check_php4($array)
 /** return when the option become available */
 function available_since($array)
 {
-    if (!empty($array['php_4_0_0'])) {
-        return '';
-    }
+    $ver = null;
 
-    foreach ($array as $key => $val) {
-        if ($val) {
-            return 'Available since PHP ' . tag2version($key) . '.';
+    if (in_php($array)) {
+        if (!current($array)) {
+            foreach ($array as $tag => $val) {
+                if ($val) {
+                    $ver = 'PHP '. tag2version($tag);
+                    break;
+                }
+            }
         }
+
+    // PECL only
+    } else {
+        // TODO
     }
 
+    return $ver ? "Available since $ver." : '';
 }
 
 
@@ -109,10 +124,53 @@ function last_version($array)
 }
 
 
+/** return when the option was removed */
+function removed_in($array)
+{
+    $ver = null;
+
+    if (in_php($array)) {
+        $on = false;
+
+        foreach ($array as $tag => $val) {
+            if ($val) {
+                $on = true;
+
+            } elseif ($on) {
+                $ver = 'PHP '. tag2version($tag);
+                break;
+            }
+        }
+
+    // PECL only
+    } else {
+        // TODO
+    }
+
+
+    return $ver ? "Removed in $ver." : '';
+}
+
+
 /** generate the changelog column */
 function generate_changelog($array)
 {
-    return trim(last_version($array) . ' ' . available_since($array));
+    $data = array(
+        last_version($array),
+        available_since($array),
+        removed_in($array),
+    );
+
+
+    $str = '';
+
+    foreach ($data as $s) {
+        if ($s) {
+            $str .= ($str ? ' ' : '') . $s;
+        }
+    }
+
+    return $str;
 }
 
 
