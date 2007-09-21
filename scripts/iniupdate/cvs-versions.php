@@ -69,6 +69,9 @@ function get_php_release_tags()
 /** fetch the PECL's packages releases that have been downloaded */
 function get_pecl_releases_local()
 {
+    static $cache = null;
+    if ($cache) return $cache;
+
     foreach (scandir('sources') as $dir) {
         if ($dir !== '.' &&
             $dir !== '..' &&
@@ -80,7 +83,7 @@ function get_pecl_releases_local()
         }
     }
 
-    return $releases;
+    return $cache = $releases;
 }
 
 
