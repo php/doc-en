@@ -43,10 +43,25 @@ function tag2version($tag)
 }
 
 
+/** return the major version of a given release tag */
+function major_version($tag)
+{
+    $v = tag2version($tag);
+    return substr($v, 0, strpos($v, '.'));
+}
+
+
+/** returns TRUE if the tag is a PHP release */
+function is_php($tag)
+{
+   return (substr_compare($tag, 'PHP_', 0, 4, true) == 0);
+}
+
+
 /** returns TRUE if the opt is/was present in PHP (i.e. it is not in PECL only) */
 function in_php($array)
 {
-   return (substr_compare(key($array), 'PHP_', 0, 4, true) == 0);
+   return is_php(key($array));
 }
 
 
@@ -124,7 +139,54 @@ function available_since($array)
 /** check for changes between versions */
 function last_version($array)
 {
-    // TODO again
+    $majors   = array();
+    $last     = null;
+    $tast_tag = null;
+    $last_php = true;
+    $output   = '';
+
+    foreach ($array as $tag => $val) {
+        if (!$val) continue;
+        if (!$last) $last = $val;
+        if (!$last_tag) $last_tag = $tag;
+
+        $majorver = major_version($tag);
+        $first_major_release = false;
+
+        if (!is_php($tag) && $last_php) { // now we have PECl stuff. reset the major versions array
+            $majors   = array();
+            $last_php = false;
+        }
+
+        if (!isset($majors[$majorver])) {
+            $majors[$majorver]   = $val;
+            $first_major_release = true;
+
+        } elseif ($majors[$majorver] !== $val) { // the value isnt the same in this major version
+            $majors[$majorver] = null;
+        }
+
+
+        if ($val !== $last) {
+
+            $pkg = is_php($tag) ? 'PHP' : pkg_name($array);
+            if ($output) $output .= ' ';
+
+            if ($first_major_release && !empty($majors[$majorver-1])) {
+                $ver = $majorver-1;
+            } else {
+                $ver = '&lt= ' . tag2version($last_tag);
+            }
+
+            $output .= "$val in $pkg ". $ver . '.';
+        }
+
+        $last     = $val;
+        $last_tag = $tag;
+
+    }
+
+    return $output;
 }
 
 
