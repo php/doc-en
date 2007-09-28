@@ -173,7 +173,7 @@ function last_version($array)
             if ($output) $output .= ' ';
 
             if ($first_major_release && !empty($majors[$majorver-1])) {
-                $ver = count($majorver) === 2 ? $majorver-1 : "&lt; $majorver";
+                $ver = count($majors) === 2 ? $majorver-1 : "&lt; $majorver";
             } else {
                 $ver = '&lt;= ' . tag2version($last_tag);
             }
