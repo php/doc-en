@@ -58,7 +58,7 @@ foreach ($tags as $tag) {
 // process PECL sources
 foreach (get_pecl_releases_local() as $release) {
 
-    preg_match('/^(.+)-(\d+\.\d+(?:\.\d+)?)$/S', $release, $m);
+    preg_match('/^(.+)-(\d+(?:\.\d+)+)$/S', $release, $m);
     $pkg     = $m[1];
     $version = $m[2];
 

@@ -69,7 +69,7 @@ function in_php($array)
 function pkg_name($array)
 {
     $input = is_array($array) ? key($array) : $array;
-    preg_match('/^(.+)-\d+\.\d+(?:\.\d+)?$/S', $input, $m);
+    preg_match('/^(.+)-\d+(?:\.\d+)+$/S', $input, $m);
     $lowered = $m[1];
 
     foreach (get_pecl_packages() as $pkg) {
