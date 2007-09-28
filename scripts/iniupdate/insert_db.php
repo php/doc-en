@@ -63,7 +63,7 @@ foreach (get_pecl_releases_local() as $release) {
     $version = $m[2];
 
     // if it has an entry already, just skip it
-    if (sqlite_single_query($idx, "SELECT COUNT(*) FROM pecl_changelog WHERE package='".sqlite_escape_string($pkg)."' AND version='$version'") > 1) {
+    if (sqlite_single_query($idx, "SELECT COUNT(*) FROM pecl_changelog WHERE package='".sqlite_escape_string($pkg)."' AND version='$version'") > 0) {
         continue;
     }
 

@@ -109,11 +109,11 @@ foreach ($cvs_branches as $tag => $branch) {
 
     // if the dir already exists, perform an update rather than a checkout
     if (is_dir($dir)) {
-        `cd $dir && cvs -q up -dP`;
+        `cd $dir && cvs -q up -dP -r $branch`;
 
          // zend dirs require special handling because cvs is damn stupid..
-         if (is_dir("$dir/Zend")) `cd $dir/Zend && cvs -q up -dP`;
-         if (is_dir("$dir/ZendEngine2")) `cd $dir/ZendEngine2 && cvs -q up -dP`;
+         if (is_dir("$dir/Zend")) `cd $dir/Zend && cvs -q up -dP -r $branch`;
+         if (is_dir("$dir/ZendEngine2")) `cd $dir/ZendEngine2 && cvs -q up -dP -r $branch`;
     } else {
         `cvs -q -d :pserver:cvsread@cvs.php.net:/repository co -d $dir -r $branch -P php-src`;
     }

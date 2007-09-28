@@ -82,7 +82,7 @@ function grab_pecl_release($package, $release)
 /** update PECL sources */
 function update_pecl_sources()
 {
-    `cvs -q -d :pserver:cvsread@cvs.php.net:/repository co pecl > /dev/null`;
+    `cvs -q -d :pserver:cvsread@cvs.php.net:/repository co -P pecl > /dev/null`;
 
     foreach (get_pecl_packages() as $pkg) {
         $releases = get_pecl_releases($pkg);
