@@ -71,6 +71,8 @@ function get_pecl_releases($package)
 /** download a PECL release (if needed) */
 function grab_pecl_release($package, $release)
 {
+    $package  = strtolower($package);
+
     $url  = 'http://pecl.php.net/get/'. urlencode($package) . '-' . urlencode($release);
     $dir  = "$package-$release";
     $file = "$dir.tgz";
