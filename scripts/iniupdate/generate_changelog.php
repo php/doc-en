@@ -289,6 +289,13 @@ uksort($info, 'strnatcasecmp');
 
 foreach ($info as $name => $row) {
     $changelog[$name] = generate_changelog($row);
+
+    // WARNING: DEBUG STUFF
+    if (isset($argv[1]) && $name === $argv[1]) {
+        print_r($row);
+        var_dump($changelog[$name]);
+        exit;
+    }
 }
 
 // if in debug mode
