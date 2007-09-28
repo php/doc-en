@@ -141,7 +141,7 @@ function last_version($array)
 {
     $majors   = array();
     $last     = null;
-    $tast_tag = null;
+    $last_tag = null;
     $last_php = true;
     $output   = '';
 
