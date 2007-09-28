@@ -173,12 +173,12 @@ function last_version($array)
             if ($output) $output .= ' ';
 
             if ($first_major_release && !empty($majors[$majorver-1])) {
-                $ver = $majorver-1;
+                $ver = count($majorver) === 2 ? $majorver-1 : "&lt; $majorver";
             } else {
-                $ver = '&lt= ' . tag2version($last_tag);
+                $ver = '&lt;= ' . tag2version($last_tag);
             }
 
-            $output .= "$val in $pkg ". $ver . '.';
+            $output .= "$last in $pkg ". $ver . '.';
         }
 
         $last     = $val;
