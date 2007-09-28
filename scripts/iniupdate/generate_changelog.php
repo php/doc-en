@@ -150,12 +150,12 @@ function last_version($array)
         if (!$last) $last = $val;
         if (!$last_tag) $last_tag = $tag;
 
-        $majorver = major_version($tag);
+        $majorver            = major_version($tag);
         $first_major_release = false;
+        $now_php             = is_php($tag);
 
-        if (!is_php($tag) && $last_php) { // now we have PECl stuff. reset the major versions array
-            $majors   = array();
-            $last_php = false;
+        if (!$now_php && $last_php) { // now we have PECl stuff. reset the major versions array
+            $majors = array();
         }
 
         if (!isset($majors[$majorver])) {
@@ -163,17 +163,22 @@ function last_version($array)
             $first_major_release = true;
 
         } elseif ($majors[$majorver] !== $val) { // the value isnt the same in this major version
-            $majors[$majorver] = null;
+            $majors[$majorver] = false;
         }
 
 
-        if ($val !== $last) {
+        // the change is only significant if not comparing between PHP and PECL releases
+        if ($val !== $last && ($now_php || !$last_php)) {
 
             $pkg = is_php($tag) ? 'PHP' : pkg_name($array);
             if ($output) $output .= ' ';
 
-            if ($first_major_release && !empty($majors[$majorver-1])) {
-                $ver = count($majors) === 2 ? $majorver-1 : "&lt; $majorver";
+            if ($first_major_release) {
+                if (empty($majors[$majorver-1]) || count($majors) > 2) {
+                    $ver = "&lt; $majorver";
+                } else {
+                    $ver = $majorver-1;
+                }
             } else {
                 $ver = '&lt;= ' . tag2version($last_tag);
             }
@@ -183,6 +188,7 @@ function last_version($array)
 
         $last     = $val;
         $last_tag = $tag;
+        $last_php = $now_php;
 
     }
 
