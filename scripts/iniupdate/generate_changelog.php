@@ -170,7 +170,7 @@ function last_version($array)
         // the change is only significant if not comparing between PHP and PECL releases
         if ($val !== $last && ($now_php || !$last_php)) {
 
-            $pkg = is_php($tag) ? 'PHP' : pkg_name($array);
+            $pkg = is_php($tag) ? 'PHP' : pkg_name($tag);
             if ($output) $output .= ' ';
 
             if ($first_major_release) {
