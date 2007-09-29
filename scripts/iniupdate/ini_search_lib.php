@@ -3,7 +3,7 @@
   +----------------------------------------------------------------------+
   | ini doc settings updater                                             |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2005 The PHP Group                                |
+  | Copyright (c) 1997-2007 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.0 of the PHP license,       |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -16,6 +16,11 @@
   | Authors:    Nuno Lopes <nlopess@php.net>                             |
   +----------------------------------------------------------------------+
 */
+
+// limit the macro expansion to avoid possible infinite loops
+define('MAX_MACRO_EXPAND_DEPTH', 10);
+
+
 
 function recurse($dirs, $search_macros = false) {
     global $array;
@@ -116,4 +121,21 @@ function recurse_aux($dir, $search_macros, &$cfg_get) {
         } //!is_dir()
     } //while() loop
 }
-?>
+
+
+/** expand macros on the given string */
+function expand_macros($str)
+{
+    global $replace;
+
+    $new = $str;
+    $old = null;
+    $i = 0;
+
+    while ($new[0] !== '"' && $new !== $old && ++$i < MAX_MACRO_EXPAND_DEPTH) {
+        $old = $new;
+        $new = strtr($new,$replace);
+    }
+
+    return $new;
+}

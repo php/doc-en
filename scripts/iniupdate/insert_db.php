@@ -33,7 +33,7 @@ function insert_in_db($tag) {
             $sql .= "INSERT INTO changelog (name, $tag) VALUES ('$key', '{$data[1]}');";
         }
 
-        $sql .= "REPLACE INTO last_seen_values (name, defaultval, permissions) VALUES ('$key', '".sqlite_escape_string($data[0])."', '$data[1]');";
+        $sql .= "REPLACE INTO last_seen_values (name, defaultval, permissions) VALUES ('$key', '".sqlite_escape_string(expand_macros($data[0]))."', '$data[1]');";
 
     }
 
@@ -50,8 +50,8 @@ if (!$db_open && !$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {
 
 // process PHP sources
 foreach ($tags as $tag) {
-    $array = array();
-    recurse("./sources/$tag");
+    $array = $replace = array();
+    recurse("./sources/$tag", true);
     insert_in_db($tag);
 
     echo "$tag\n";
@@ -69,8 +69,8 @@ foreach (get_pecl_releases_local() as $release) {
         continue;
     }
 
-    $array = array();
-    recurse("./sources/$release");
+    $array = $replace = array();
+    recurse("./sources/$release", true);
 
     $sql = '';
 
@@ -79,7 +79,7 @@ foreach (get_pecl_releases_local() as $release) {
 
         // prefer information from PHP sources
         if (!sqlite_single_query($idx, "SELECT name FROM changelog WHERE name='$key'")) {
-            $sql .= "REPLACE INTO last_seen_values (name, defaultval, permissions) VALUES ('$key', '".sqlite_escape_string($data[0])."', '$data[1]');";
+            $sql .= "REPLACE INTO last_seen_values (name, defaultval, permissions) VALUES ('$key', '".sqlite_escape_string(expand_macros($data[0]))."', '$data[1]');";
         }
     }
 
