@@ -207,7 +207,7 @@ foreach($array as $entry => $arr) {
 
 
 /* Print unmatched links */
-$deprecated = array('debugger.host', 'debugger.port', 'debugger.enabled', 'sesam_oml', 'sesam_configfile', 'sesam_messagecatalog', 'allow_webdav_methods');
+$deprecated = array('debugger.host', 'debugger.port', 'debugger.enabled', 'sesam_oml', 'sesam_configfile', 'sesam_messagecatalog', 'allow_webdav_methods', 'warn_plus_overloading');
 foreach ($deprecated as $val) {
     unset($link_files[$val]);
 }
