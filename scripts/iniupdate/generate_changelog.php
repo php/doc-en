@@ -281,7 +281,22 @@ $q = sqlite_unbuffered_query($idx, 'SELECT * FROM pecl_changelog');
 
 while ($row = sqlite_fetch_array($q, SQLITE_ASSOC)) {
     $info[$row['name']][$row['package'].'-'.$row['version']] = $row['value'];
-    uksort($info[$row['name']], 'strnatcasecmp');
+}
+
+
+/** custom sorting callback, so that PHP releases are listed before PECL ones. */
+function my_strnatcasecmp($a, $b)
+{
+    if (is_php($a)) {
+        return is_php($b) ? strnatcasecmp($a, $b) : -1;
+    } else {
+        return is_php($b) ? 1 : strnatcasecmp($a, $b);
+    }
+}
+
+// sort releases with the callback above
+foreach ($info as &$r) {
+    uksort($r, 'my_strnatcasecmp');
 }
 
 
