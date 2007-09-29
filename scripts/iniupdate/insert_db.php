@@ -33,6 +33,8 @@ function insert_in_db($tag) {
             $sql .= "INSERT INTO changelog (name, $tag) VALUES ('$key', '{$data[1]}');";
         }
 
+        $sql .= "REPLACE INTO last_seen_values (name, defaultval, permissions) VALUES ('$key', '".sqlite_escape_string($data[0])."', '$data[1]');";
+
     }
 
     if ($sql) sqlite_query($idx, $sql);
@@ -74,6 +76,11 @@ foreach (get_pecl_releases_local() as $release) {
 
     foreach ($array as $key => $data) {
         $sql .= "INSERT INTO pecl_changelog (package, version, name, value) VALUES ('".sqlite_escape_string($pkg)."', '$version', '$key', '$data[1]');";
+
+        // prefer information from PHP sources
+        if (!sqlite_single_query($idx, "SELECT name FROM changelog WHERE name='$key'")) {
+            $sql .= "REPLACE INTO last_seen_values (name, defaultval, permissions) VALUES ('$key', '".sqlite_escape_string($data[0])."', '$data[1]');";
+        }
     }
 
     if ($sql) sqlite_query($idx, $sql);

@@ -33,8 +33,17 @@ CREATE TABLE pecl_changelog (
 );
 ';
 
-// the query may fail if the table already exists
+$sql2 = '
+CREATE TABLE last_seen_values (
+	name TEXT PRIMARY KEY,
+	defaultval TEXT,
+	permissions TEXT
+);
+';
+
+// the query may fail if the tables already exists
 @sqlite_query($idx, $sql);
+@sqlite_query($idx, $sql2);
 
 
 $sql = 'CREATE TABLE changelog (

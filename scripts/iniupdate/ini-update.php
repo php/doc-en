@@ -3,7 +3,7 @@
   +----------------------------------------------------------------------+
   | ini doc settings updater                                             |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2005 The PHP Group                                |
+  | Copyright (c) 1997-2007 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.0 of the PHP license,       |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -125,6 +125,32 @@ foreach ($ini_files as $filename) {
     }
 }
 
+
+if (!$idx = sqlite_open('ini_changelog.sqlite', 0666, $error)) {
+    die("Couldn't open the DB: $error");
+}
+
+// fetch info from removed opts
+foreach ($changelog as $name => $entry) {
+    if (empty($array[$name])) {
+        $q = sqlite_unbuffered_query($idx, "SELECT defaultval, permissions FROM last_seen_values WHERE name='$name'");
+        $array[$name] = sqlite_fetch_array($q, SQLITE_NUM);
+    }
+}
+
+sqlite_close($idx);
+unset($idx);
+
+
+// remove bogus ini opt values
+$bogus = array('pdo.global_value');
+foreach ($bogus as $x) {
+    unset($array[$x]);
+}
+
+uksort($array, 'strnatcasecmp');
+
+
 /* Generate the XML code */
 foreach($array as $entry => $arr) {
 
@@ -181,7 +207,7 @@ foreach($array as $entry => $arr) {
 
 
 /* Print unmatched links */
-$deprecated = array('track_vars', 'debugger.host', 'debugger.port', 'debugger.enabled', 'sesam_oml', 'sesam_configfile', 'sesam_messagecatalog', 'gpc_order', 'allow_webdav_methods');
+$deprecated = array('debugger.host', 'debugger.port', 'debugger.enabled', 'sesam_oml', 'sesam_configfile', 'sesam_messagecatalog', 'allow_webdav_methods');
 foreach ($deprecated as $val) {
     unset($link_files[$val]);
 }
