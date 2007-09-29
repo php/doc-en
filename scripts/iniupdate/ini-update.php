@@ -165,13 +165,13 @@ foreach($array as $entry => $arr) {
 
     /* replace macros and make the $default var */
     $new = $arr[0];
+    $old = null;
     $i = 0;
 
-    do {
+    while ($new[0] !== '"' && $new !== $old && ++$i < MAX_MACRO_EXPAND_DEPTH) {
         $old = $new;
         $new = strtr($new,$replace);
-
-    } while ($new !== $old && ++$i < MAX_MACRO_EXPAND_DEPTH);
+    }
 
     $default = $new;
 
