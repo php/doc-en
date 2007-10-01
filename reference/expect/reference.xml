@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.6 $ -->
+<!-- $Revision: 1.7 $ -->
 <!-- Purpose: fileprocess.process -->
 <!-- Membership: pecl -->
 
@@ -60,8 +60,7 @@ $cases = array (
   array (0 => "password:", 1 => PASSWORD)
 );
 
-switch (expect_expectl ($stream, $cases))
-{
+switch (expect_expectl ($stream, $cases)) {
  case PASSWORD:
   fwrite ($stream, "password\n");
   break;
@@ -73,6 +72,80 @@ switch (expect_expectl ($stream, $cases))
 while ($line = fgets ($stream)) {
   print $line;
 }
+fclose ($stream);
+?>
+]]>
+     </programlisting>
+    </example>
+
+    <para>
+     The following example connects to the remote host, determines whether
+     installed OS is for 32 or 64 bit, then runs update for specific package.
+    </para>
+    <example>
+     <title>Another Expect Usage Example</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+ini_set ("expect.timeout", -1);
+ini_set ("expect.loguser", "Off");
+
+$stream = expect_popen ("ssh root@remotehost");
+
+while (true) {
+	switch (expect_expectl ($stream, array (
+			array ("password:", PASSWORD), // SSH is asking for password
+			array ("yes/no)?", YESNO), // SSH is asking whether to store the host entry
+			array ("~$ ", SHELL, EXP_EXACT), // We've got the shell!
+	))) {
+		case PASSWORD:
+			fwrite ($stream, "secret\n");
+			break;
+
+		case YESNO:
+			fwrite ($stream, "yes\n");
+			break;
+
+		case SHELL:
+			fwrite ($stream, "uname -a\n");
+			while (true) {
+					switch (expect_expectl ($stream, array (
+							array ("~$ ", SHELL, EXP_EXACT), // We've got the shell!
+							array ("^Linux.*$", UNAME, EXP_REGEXP), // uname -a output
+					), $match)) {
+						case UNAME:
+							$uname .= $match[0];
+							break;
+							
+						case SHELL:
+							// Run update:
+							if (strstr ($uname, "x86_64")) {
+									fwrite ($stream, "rpm -Uhv http://mirrorsite/somepath/some_64bit.rpm\n");
+							} else {
+									fwrite ($stream, "rpm -Uhv http://mirrorsite/somepath/some_32bit.rpm\n");
+							}
+							fwrite ($stream, "exit\n");
+							break 2;
+						
+						case EXP_TIMEOUT:
+						case EXP_EOF:
+							break 2;
+
+						default:
+							die ("Error has occurred!\n");
+					}	
+			}
+			break 2;
+
+		case EXP_TIMEOUT:
+		case EXP_EOF:
+			break 2;
+
+		default:
+			die ("Error has occurred!\n");
+	}
+}
+
 fclose ($stream);
 ?>
 ]]>
