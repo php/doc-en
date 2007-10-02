@@ -879,7 +879,7 @@ $dom->load("manual.xml", LIBXML_NOENT);
 if ($dom->validate()) {
   echo "All good.\n";
   $dom->save(".manual.xml");
-  echo "All you have to do now is run 'php build.php' in your phd checkout folder\n";
+  echo "All you have to do now is run 'phd " .realpath("."). "'\n";
 } else {
   echo "eyh man. No worries. Happ shittens. Try again after fixing the errors above\n";
 }
