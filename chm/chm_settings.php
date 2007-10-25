@@ -105,6 +105,12 @@ $LANGUAGES = array(
                    "mime_charset_name" => "Windows-1252",
                    "preferred_font" => $DEFAULT_FONT
                ),
+    "no"    => array(
+                   "langcode" => "0x414 Norwegian (Bokmal)",
+                   "preferred_charset" => "Windows-1252",
+                   "mime_charset_name" => "Windows-1252",
+                   "preferred_font" => $DEFAULT_FONT
+               ),
     "pl"    => array(
                    "langcode" => "0x415 Polish",
                    "preferred_charset" => "Windows-1250",
