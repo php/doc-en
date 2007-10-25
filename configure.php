@@ -880,7 +880,9 @@ if ($dom->validate()) {
   echo "All good.\n";
   $dom->save(".manual.xml");
   echo "All you have to do now is run 'phd " .realpath("."). "'\n";
+  exit(0); // Tell the shell that this script finished successfully.
 } else {
   echo "eyh man. No worries. Happ shittens. Try again after fixing the errors above\n";
+  exit(1); // Tell the shell that this script finished with an error.
 }
   
