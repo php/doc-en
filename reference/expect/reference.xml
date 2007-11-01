@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.7 $ -->
+<!-- $Revision: 1.8 $ -->
 <!-- Purpose: fileprocess.process -->
 <!-- Membership: pecl -->
 
@@ -93,57 +93,57 @@ ini_set ("expect.loguser", "Off");
 $stream = expect_popen ("ssh root@remotehost");
 
 while (true) {
-	switch (expect_expectl ($stream, array (
-			array ("password:", PASSWORD), // SSH is asking for password
-			array ("yes/no)?", YESNO), // SSH is asking whether to store the host entry
-			array ("~$ ", SHELL, EXP_EXACT), // We've got the shell!
-	))) {
-		case PASSWORD:
-			fwrite ($stream, "secret\n");
-			break;
+    switch (expect_expectl ($stream, array (
+            array ("password:", PASSWORD), // SSH is asking for password
+            array ("yes/no)?", YESNO), // SSH is asking whether to store the host entry
+            array ("~$ ", SHELL, EXP_EXACT), // We've got the shell!
+    ))) {
+        case PASSWORD:
+            fwrite ($stream, "secret\n");
+            break;
 
-		case YESNO:
-			fwrite ($stream, "yes\n");
-			break;
+        case YESNO:
+            fwrite ($stream, "yes\n");
+            break;
 
-		case SHELL:
-			fwrite ($stream, "uname -a\n");
-			while (true) {
-					switch (expect_expectl ($stream, array (
-							array ("~$ ", SHELL, EXP_EXACT), // We've got the shell!
-							array ("^Linux.*$", UNAME, EXP_REGEXP), // uname -a output
-					), $match)) {
-						case UNAME:
-							$uname .= $match[0];
-							break;
-							
-						case SHELL:
-							// Run update:
-							if (strstr ($uname, "x86_64")) {
-									fwrite ($stream, "rpm -Uhv http://mirrorsite/somepath/some_64bit.rpm\n");
-							} else {
-									fwrite ($stream, "rpm -Uhv http://mirrorsite/somepath/some_32bit.rpm\n");
-							}
-							fwrite ($stream, "exit\n");
-							break 2;
-						
-						case EXP_TIMEOUT:
-						case EXP_EOF:
-							break 2;
+        case SHELL:
+            fwrite ($stream, "uname -a\n");
+            while (true) {
+                    switch (expect_expectl ($stream, array (
+                            array ("~$ ", SHELL, EXP_EXACT), // We've got the shell!
+                            array ("^Linux.*$", UNAME, EXP_REGEXP), // uname -a output
+                    ), $match)) {
+                        case UNAME:
+                            $uname .= $match[0];
+                            break;
+                        
+                        case SHELL:
+                            // Run update:
+                            if (strstr ($uname, "x86_64")) {
+                                    fwrite ($stream, "rpm -Uhv http://mirrorsite/somepath/some_64bit.rpm\n");
+                            } else {
+                                    fwrite ($stream, "rpm -Uhv http://mirrorsite/somepath/some_32bit.rpm\n");
+                            }
+                            fwrite ($stream, "exit\n");
+                            break 2;
+                    
+                        case EXP_TIMEOUT:
+                        case EXP_EOF:
+                            break 2;
 
-						default:
-							die ("Error has occurred!\n");
-					}	
-			}
-			break 2;
+                        default:
+                            die ("Error has occurred!\n");
+                    }
+            }
+            break 2;
 
-		case EXP_TIMEOUT:
-		case EXP_EOF:
-			break 2;
+        case EXP_TIMEOUT:
+        case EXP_EOF:
+            break 2;
 
-		default:
-			die ("Error has occurred!\n");
-	}
+        default:
+            die ("Error has occurred!\n");
+    }
 }
 
 fclose ($stream);
