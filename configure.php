@@ -113,9 +113,11 @@ $ac['ENCODING'] = '';
 $ac['PALMDOCTITLE'] = '';
 $ac['HTMLHELP_ENCODING'] = '';
 $ac['SP_OPTIONS'] = 'SP_ENCODING=XML SP_CHARSET_FIXED=YES';
+$ac['FORCE_DOM_SAVE'] = false;
 
 $allowed_opts = array(
     'help',
+    'force-dom-save',
     'with-php=',
     'with-jade=',
     'with-nsgmls=',
@@ -200,6 +202,9 @@ foreach ($_SERVER['argv'] as $opt) {
             break;
         case '--with-treesaving':
             $ac['TREESAVING'] = '#t';
+            break;
+        case '--force-dom-save':
+            $ac['FORCE_DOM_SAVE'] = true;
             break;
     }
 }
@@ -718,6 +723,17 @@ else {
     echo "no\n";
 }
 
+// Force creation of .manual.xml
+echo 'checking for forced .manual.xml: ';
+
+if ($ac['FORCE_DOM_SAVE']) {
+    echo "yes\n";
+}
+else {
+    echo "no\n";
+}
+
+
 // Encoding
 switch ($ac['LANG']) {
     case 'zh_tw':
@@ -876,13 +892,16 @@ passthru('"' .$ac['PHP'] . '" ' . ' -c ' . $ac['INIPATH'] . ' -q ./scripts/missi
 
 $dom = new DOMDocument();
 $dom->load("manual.xml", LIBXML_NOENT);
+$dom->xinclude();
 if ($dom->validate()) {
   echo "All good.\n";
   $dom->save(".manual.xml");
-  echo "All you have to do now is run 'phd " .realpath("."). "'\n";
+  echo "All you have to do now is run 'php build.php' in your phd checkout folder\n";
   exit(0); // Tell the shell that this script finished successfully.
 } else {
   echo "eyh man. No worries. Happ shittens. Try again after fixing the errors above\n";
+  if ($ac['FORCE_DOM_SAVE']) // Allow the .manual.xml file to be created, even if it is not valid.
+    $dom->save(".manual.xml");
   exit(1); // Tell the shell that this script finished with an error.
 }
   
