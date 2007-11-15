@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Revision: 1.1 $ -->
+<chapter xml:id="language.namespaces" xmlns="http://docbook.org/ns/docbook"
+ version="1.1">
+ <title>Namespaces</title>
+
+ <sect1 xml:id="language.namespaces.rationale">
+  <title>Namespaces overview</title>
+  <simpara>
+   Namespaces in PHP are designed to solve scoping problem in large PHP
+   libraries. In PHP, all class definitions are global. Thus, when a library
+   author creates various utility or public API classes for the library, he must
+   be aware of the possibility that other libraries with similar functionality
+   would exist and thus choose unique names so that these libraries could be
+   used together. Usually it is solved by prefixing the class names with an
+   unique string - e.g., database classes would have prefix
+   <classname>My_Library_DB</classname>, etc. As the library grows, prefixes add up,
+   leading to the very long names.
+  </simpara>
+  <simpara>
+   The namespaces allow the developer to manage naming scopes without using the
+   long names each time the class is referred to, and solve the problem of
+   shared globals space without making code unreadable.
+  </simpara>
+  <simpara>
+   Namespaces are available in PHP as of PHP 5.3.0. This section is experimental
+   and subject to changes.
+  </simpara>
+ </sect1>
+
+ <sect1 xml:id="language.namespaces.definition">
+  <title>Namespace definition</title>
+  <para>
+   The namespace is declared using <literal>namespace</literal>
+   keyword, which should be at the very beginning of the file. Example:
+   <example>
+    <title>Defining namespace</title>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+    namespace MyProject::DB;
+    
+    const CONNECT_OK = 1;
+
+    class Connection { /* ... */ }
+    
+    function connect() { /* ... */  }
+    
+?>
+]]>
+    </programlisting>
+   </example>
+   Same namespace name can be used in multiple files.
+  </para>
+  
+  <para>
+  Namespace can contain class, constant and function definitions, but no free code.   
+  </para>
+
+  <para>
+   Namespace definition does the following:
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      Inside namespace, all class, function and constant names in definitions are
+      automatically prefixed with namespace name. The class name is always the
+      full name, i.e. in the example above the class is called
+      <classname>MyProject::DB::Connection</classname>.
+     </simpara>
+    </listitem>
+    <listitem>
+    <simpara>
+     Constant definitions create constant which is composed of namespace name and constant name.
+     Like class constants, namespace constant can only contains static values.
+    </simpara>
+    </listitem>
+    <listitem>
+     <para>
+      Unqualified class name (i.e., name not containing <literal>::</literal>)
+       is resolved at runtime following this procedure:
+      <orderedlist>
+       <listitem>
+        <simpara>
+         Class is looked up inside the current namespace (i.e. prefixing the
+         name with the current namespace name) without attempting to
+         <link linkend="language.oop5.autoload">autoload</link>.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         Class is looked up inside the global namespace without attempting to
+         autoload.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         Autoloading for name in current namespace is attempted.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>If previous failed, lookup fails.</simpara>
+       </listitem>
+      </orderedlist>
+     </para>
+    </listitem>
+    <listitem>
+     <para>
+      Unqualified function name (i.e., name not containing
+      <literal>::</literal>) is looked up at runtime first in the current namespace 
+      and then in the global space.
+     </para>
+    </listitem>
+    <listitem>
+    <para>
+     Unqualified constant names are looked up first at current namespace and then 
+     among globally defined constants.
+    </para>
+    </listitem>
+   </itemizedlist>
+  See also the full <link linkend="language.namespaces.rules">name resolution rules</link>.
+  </para>
+ 
+ </sect1>
+
+ <sect1 xml:id="language.namespaces.using">
+  <title>Using namespaces</title>
+  <para>
+   Every class and function in a namespace can be referred to by the full name -
+   e.g.  <classname>MyProject::DB::Connection</classname> or
+   <classname>MyProject::DB::connect</classname> - at any time.
+   <example>
+    <title>Using namespaced name</title>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+    require 'MyProject/Db/Connection.php';
+    $x = new MyProject::DB::Connection;
+    MyProject::DB::connect();
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   Namespaces can be imported into current context (global or namespace) using
+   the <literal>use</literal> operator. The syntax for the operator is:
+   <informalexample>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+/* ... */
+use Some::Name as Othername;
+
+// The simplified form of use:
+use Foo::Bar;
+// which is the same as :
+use Foo::Bar as Bar;
+?>
+]]>
+    </programlisting>
+   </informalexample>
+   The imported name works as follows: every time that the compiler encounters
+   the local name <literal>Othername</literal> (as stand-alone name or as 
+   prefix to the longer name separated by <literal>::</literal>) the imported 
+   name <literal>Some::Name</literal> is substituted instead.
+  </para>
+
+  <para>
+   <literal>use</literal> can be used only in global scope, not inside 
+   function or class. Imported names have effect from the point of import to 
+   the end of the current file. It is recommended to put imports at the 
+   beginning of the file to avoid confusion.
+  </para>
+
+  <para>
+   <example>
+    <title>Importing and accessing namespace</title>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+    require 'MyProject/Db/Connection.php';
+    use MyProject::DB;
+    use MyProject::DB::Connection as DbConnection;
+    
+    $x = new MyProject::DB::Connection();
+    $y = new DB::connection();
+    $z = new DbConnection();
+    DB::connect();
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <note>
+    <simpara>
+     The import operation is compile-time only, all local names are converted to
+     their full equivalents by the compiler. Note that it won't translate names
+     in strings, so callbacks can't rely on import rules.
+    </simpara>
+   </note>
+  </para>
+ </sect1>
+
+ <sect1 xml:id="language.namespaces.global">
+  <title>Global space</title>
+  <para>
+   Without any namespace definition, all class and function definitions are
+   placed into the global space - as it was in PHP before namespaces were
+   supported. Prefixing a name with <literal>::</literal> will specify that 
+   the name is required from the global space even in the context of the 
+   namespace.
+   <example>
+    <title>Using global space specification</title>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+    namespace A::B::C;
+ 
+ /* This function is A::B::C::fopen */
+    function fopen() { 
+         /* ... */
+         $f = ::fopen(...); // call global fopen
+         return $f;
+    } 
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </sect1>
+
+ <sect1 xml:id="language.namespaces.constant">
+  <title>__NAMESPACE__</title>
+  <para>
+   The compile-time constant <constant>__NAMESPACE__</constant> is defined to
+   the name of the current namespace. Outside namespace this constant has the 
+   value of empty string. This constant is useful when one needs to compose 
+   full name for local namespaced names.
+   <example>
+    <title>Using __NAMESPACE__</title>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+namespace A::B::C;
+         
+function foo() {
+// do stuff
+}
+
+set_error_handler(__NAMESPACE__ . "::foo");
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </sect1>
+
+ <sect1 xml:id="language.namespaces.rules">
+  <title>Name resolution rules</title>
+  <para>
+   Names are resolved following these resolution rules:
+   <orderedlist>
+    <listitem>
+     <simpara>
+      All qualified names are translated during compilation according to current
+      import rules. In example, if the namespace A::B::C is imported, a call to 
+      <code>C::D::e()</code> is translated to <code>A::B::C::D::e()</code>.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Unqualified class names are translated during compilation according to current
+      import rules (full name substituted for short imported name). In example, if 
+      the namespace <literal>A::B::C</literal> is imported, <code>new C()</code> is 
+      translated to <code>new A::B::C()</code>.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Inside namespace, calls to unqualified functions that are defined in the
+      current namespace (and are known at the time the call is parsed) are
+      interpreted as calls to these namespace functions, at compile time.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Inside namespace (say A::B), calls to unqualified functions that are not
+      defined in current namespace are resolved at run-time. Here is how a 
+      call to function <literal>foo()</literal> is resolved:
+     </simpara>
+      <orderedlist>
+       <listitem>
+        <simpara>
+         It looks for a function from the current namespace :
+         <literal>A::B::foo()</literal>.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         It tries to find and call the <emphasis>internal</emphasis> function
+         <literal>foo()</literal>.
+        </simpara>
+       </listitem>
+      </orderedlist>
+      <simpara>
+      To call a user defined function in the global namespace, 
+      <literal>::foo()</literal> has to be used.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Inside namespace (say A::B), calls to unqualified class names are 
+      resolved at run-time. Here is how a call to 
+      <code>new C()</code> is resolved:
+     </simpara>
+     <orderedlist>
+      <listitem>
+       <simpara>
+        It looks for a class from the current namespace :
+        <literal>A::B::C()</literal>.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        It tries to find and call the <emphasis>internal</emphasis> class
+        <literal>C()</literal>.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        It attemts to autoload <literal>A::B::C()</literal>.
+        <literal>C()</literal>.
+       </simpara>
+      </listitem>
+     </orderedlist>
+     <simpara>
+      To reference a user defined class in the global namespace, 
+      <code>new ::C()</code> has to be used.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Calls to qualified functions are resolved at run-time. Here is how a call
+      to <literal>A::B::foo()</literal> is resolved:
+     </simpara>
+      <orderedlist>
+       <listitem>
+        <simpara>
+         It looks for a function <literal>foo()</literal> in the namespace
+         <literal>A::B</literal>.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         It looks for a class <literal>A::B</literal> and call its static 
+         method <literal>foo()</literal>. It will autoload the class if 
+         necessary.
+        </simpara>
+       </listitem>
+      </orderedlist>
+    </listitem>
+    <listitem>
+     <simpara>
+      Qualified class names are resolved in compile-time as class from corresponding
+      namespace. For example, <code>new A::B::C()</code> refers to class 
+      <classname>C</classname> from namespace <literal>>A::B</literal>.
+     </simpara>
+    </listitem>
+   </orderedlist>
+  </para>
+  <example>
+   <title>Name resolutions illustrated</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+namespace A;
+
+// function calls
+
+foo();      // first tries to call "foo" defined in namespace "A"
+            // then calls internal function "foo"
+
+::foo();    // calls function "foo" defined in global scope
+
+// class references
+
+new B();    // first tries to create object of class "B" defined in namespace "A"
+            // then creates object of internal class "B"
+
+new ::B();  // creates object of class "B" defined in global scope
+
+// static methods/namespace functions from another namespace
+
+B::foo();   // first tries to call function "foo" from namespace "A::B"
+            // then calls method "foo" of internal class "B"
+
+::B::foo(); // first tries to call function "foo" from namespace "B"
+            // then calls method "foo" of class "B" from global scope
+
+// static methods/namespace functions of current namespace
+
+A::foo();   // first tries to call function "foo" from namespace "A::A"
+            // then tries to call method "foo" of class "A" from namespace "A"
+            // then tries to call function "foo" from namespace "A"
+            // then calls method "foo" of internal class "A" 
+
+::A::foo(); // first tries to call function "foo" from namespace "A"
+            // then calls method "foo" of class "A" from global scope
+?>
+]]>
+   </programlisting>
+  </example>
+ </sect1>
+</chapter>
+
+<!-- Keep this comment at the end of the file
+ Local variables:
+ mode: sgml
+ sgml-omittag:t
+ sgml-shorttag:t
+ sgml-minimize-attributes:nil
+ sgml-always-quote-attributes:t
+ sgml-indent-step:1
+ sgml-indent-data:t
+ indent-tabs-mode:nil
+ sgml-parent-document:nil
+ sgml-default-dtd-file:"../../manual.ced"
+ sgml-exposed-tags:nil
+ sgml-local-catalogs:nil
+ sgml-local-ecat-files:nil
+ End:
+ vim600: syn=xml fen fdm=syntax fdl=2 si
+ vim: et tw=78 syn=sgml
+ vi: ts=1 sw=1
+-->
