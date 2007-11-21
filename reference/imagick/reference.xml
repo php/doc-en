@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.11.2.1 $ -->
+<!-- $Revision: 1.11.2.2 $ -->
 <!-- Purpose: utilspec.image -->
 <!-- Membership: pecl, external -->
 <!-- State: experimental -->
@@ -41,7 +41,7 @@
   <title>Imagick Examples</title>
 
   <section xml:id="imagick.examples-1">
-   &reftitle.examples; 
+   &reftitle.examples;
    <para>
     Imagick makes image manipulation in PHP extremely easy through an OO
     interface. Here is a quick example on how to make a thumbnail:
@@ -68,7 +68,7 @@ echo $image;
    </para>
 
    <para>
-    Using SPL and other OO features supported in Imagick, it can be simple 
+    Using SPL and other OO features supported in Imagick, it can be simple
     to resize all files in a directory (useful for batch resizing large
     digital camera images to be web viewable). Here we use resize, as we might
     want to retain certain meta-data:
@@ -89,6 +89,61 @@ foreach($images as $image) {
 
 $images->writeImages();
 
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+   <para>
+    This is an example of creating a reflection of an image.
+    The reflection is created by flipping the image and overlaying a gradient on it.
+    Then both, the original image and the reflection is overlayed on a canvas.
+    <example>
+     <title>Creating a reflection of an image</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+/* Read the image */
+$im = new Imagick("test.png");
+
+/* Thumbnail the image */
+$im->thumbnailImage(200, null);
+
+/* Create a border for the image */
+$im->borderImage(new ImagickPixel("white"), 5, 5);
+
+/* Clone the image and flip it */
+$reflection = $im->clone();
+$reflection->flipImage();
+
+/* Create gradient. It will be overlayd on the reflection */
+$gradient = new Imagick();
+
+/* Gradient needs to be large enough for the image and the borders */
+$gradient->newPseudoImage($reflection->getImageWidth() + 10, $reflection->getImageHeight() + 10, "gradient:transparent-black");
+
+/* Composite the gradient on the reflection */
+$reflection->compositeImage($gradient, imagick::COMPOSITE_OVER, 0, 0);
+
+/* Add some opacity. Requires ImageMagick 6.2.9 or later */
+$reflection->setImageOpacity( 0.3 );
+
+/* Create an empty canvas */
+$canvas = new Imagick();
+
+/* Canvas needs to be large enough to hold the both images */
+$width = $im->getImageWidth() + 40;
+$height = ($im->getImageHeight() * 2) + 30;
+$canvas->newImage($width, $height, new ImagickPixel("black"));
+$canvas->setImageFormat("png");
+
+/* Composite the original image and the reflection on the canvas */
+$canvas->compositeImage($im, imagick::COMPOSITE_OVER, 20, 10);
+$canvas->compositeImage($reflection, imagick::COMPOSITE_OVER, 20, $im->getImageHeight() + 10);
+
+/* Output the image*/
+header("Content-Type: image/png");
+echo $canvas;
 ?>
 ]]>
      </programlisting>
