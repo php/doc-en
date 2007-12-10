@@ -166,6 +166,9 @@ fputs(
 );
 
 // The missing id file is generated after this pass
+// and due to stupid linux realpath() implementation we need to create an empty
+// file for realpath() to work
+touch("$out_dir/entities/missing-ids.xml");
 fputs(
    $fp,
    "<!-- generated file with missing ids -->\n" .
@@ -235,16 +238,21 @@ function file_entities($work_dir, $trans_dir, $orig_dir, &$entities, $prefix=fal
     }
 
     // If the working directory is a reference functions directory,
-    // then start to generate a functions.xml file for that folder.
-    if (preg_match("!/functions$!", $work_dir) || preg_match("!/macros$!", $work_dir)) {
+    // then start to generate a entities.<dirname>.xml file for that folder.
+    if (strpos($work_dir, "reference") !== false || preg_match("!/macros$!", $work_dir)) {
         // Start new functions file with empty entity set
         $function_entities = array();
-        $functions_file = "$work_dir.xml";
+
+        // Create ..reference/<extname>/entities.<dirname>.xml where <dirname>
+        // is "functions" for instance
+        $functions_file = sprintf("%s/entities.%s.xml", dirname($work_dir), basename($work_dir));
+        touch($functions_file);
 
         // Get relative file path to original directory, and form an entity
-        $functions_file_entity = str_replace("$orig_dir/", "", $work_dir);
+        $functions_file_entity = str_replace("$orig_dir/", "", dirname($work_dir). "/entities." .basename($work_dir));
         $functions_file_entity = fname2entname($functions_file_entity, $prefix);
         $entities[] = entstr($functions_file_entity, $functions_file);
+		//var_dump($functions_file_entity);exit;
     }
 
     // While we can read that directory
