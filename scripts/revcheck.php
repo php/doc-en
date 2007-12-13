@@ -336,7 +336,8 @@ function get_dir_status($dir)
 	  || $file == 'DO_NOT_TRANSLATE'
 	  || strpos($dir, '/internals/')
 	  || strpos($dir, '/internals2/')
-	  || ($file == "functions.xml" && strpos($dir, '/reference/')))
+	  || (strpos($file, 'entities.') === 0 && strpos($dir, '/reference/'))
+	  )
         continue;
 
       // Collect files and directories
