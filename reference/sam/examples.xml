@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 1.2 $ -->
+
+<chapter xml:id="sam.examples" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ &reftitle.examples;
+ <section xml:id='sam.connections'>
+  <title>Connections</title>
+  <para>
+   In order to perform any messaging and queueing functions a connection
+   must be established with a messaging server by creating a SAMConnection
+   object and calling its "connect" method, with a set of connection
+   properties, to connect the PHP script to the messaging server.  Until
+   such time as the SAMConnection object is destroyed the connection
+   will be maintained and available for use. All SAMConnection objects
+   are destroyed when the PHP script exits.
+  </para>
+  <para>
+   A set of default properties may be used in connecting to a messaging
+   server but as a minimum the PHP script must specify a protocol to be
+   used.
+  </para>
+  <para>
+   <example>
+    <title>Creating a connection and connecting to a remote WebSphere MQSeries Messaging Server</title>
+    <programlisting role='php'>
+<![CDATA[
+<?php
+$conn = new SAMConnection();
+$conn->connect(SAM_WMQ, array(SAM_HOST => 'myhost.mycompany.com',
+                              SAM_PORT => 1506,
+                              SAM_BROKER => 'mybroker'));
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Creating a connection and connecting to a remote WebSphere Application Server</title>
+    <programlisting role='php'>
+<![CDATA[
+<?php
+$conn = new SAMConnection();
+$conn->connect(SAM_WPM, array(SAM_ENDPOINTS => 'localhost:7278:BootstrapBasicMessaging',
+                              SAM_BUS => 'Bus1',
+                              SAM_TARGETCHAIN => 'InboundBasicMessaging'));
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Creating a connection and connecting to an MQTT server</title>
+    <programlisting role='php'>
+<![CDATA[
+<?php
+$conn = new SAMConnection();
+$conn->connect(SAM_MQTT, array(SAM_HOST => 'myhost.mycompany.com',
+                               SAM_PORT => 1883));
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </section>  <!-- xml:id=sam.connections -->
+
+ <section xml:id='sam.messages'>
+  <title>Messages</title>
+  <para>
+   Messages sent to and received from queues are represented by the
+   SAMMessage object. The SAMMessage object encapsulates the body of
+   the message (if one exists) and the header properties associated with
+   the message. A SAMMessage object is either supplied as a parameter to
+   a messaging operation or returned as a result.
+  </para>
+  <para>
+   <example>
+    <title>Creating a message with a simple text body</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$msg = new SAMMessage('This is a simple text message');
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Messages may have header properties associated with them that provide
+   control over the transport of the message or further information to the
+   receiving application. By default message properties are delivered to
+   the underlying messaging system as strings and in this case they may be
+   set with the following simple syntax:
+  </para>
+  <para>
+   <example>
+    <title>Setting a text format property using the default syntax</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$msg->header->myPropertyName = 'textData';
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   If it is desired to pass type information an alternative syntax may be
+   used where the value and the type hint are passed in an associative
+   array:
+  </para>
+  <para>
+   <example>
+    <title>Setting a property using a type hint</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$msg->header->myPropertyName = array(3.14159, SAM_FLOAT);
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Properties may also be extracted from the header of a message.
+  </para>
+  <para>
+   <example>
+    <title>Retrieving a property from a message header</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$myProperty = $msg->header->myPropertyName;
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </section>  <!-- xml:id=sam.messages -->
+
+ <section xml:id='sam.operations'>
+  <title>Messaging operations</title>
+  <para>
+   All messaging operations are performed through calls to methods on the
+   connection object.
+   To add a message to a queue the "send" method is used, to obtain a
+   message from a queue the "receive" method is used. Other methods
+   provide publish and subscribe functionality and control of transaction
+   boundaries.
+  </para>
+  <para>
+   <example>
+    <title>Adding a message to a queue and receiving a response</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$msg = new SAMMessage('This is a simple text message');
+$msg->header->SAM_REPLY_TO = 'queue://receive/test';
+$correlid = $conn->send('queue://send/test', $msg);
+
+if (!$correlid) {
+  // The Send failed!
+  echo "Send failed ($conn->errno) $conn->error";
+} else {
+  $resp = $conn->receive('queue://receive/test', array(SAM_CORRELID => $correlid));
+}
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </section>  <!-- xml:id=sam.operations -->
+
+ <section xml:id='sam.pubsub'>
+  <title>Publish/Subscribe and suscriptions to topics</title>
+  <para>
+   SAM allows messages to be sent either to queues or, for WebSphere MQ
+   and WPM, to publish/subscribe topics.
+   A topic desintation is specified to SAM in the usual way, i.e. in the
+   form 'topic://fred', rather than the form 'queue://AQUEUE' used for
+   point to point operation. To use publish/subscribe it is simply
+   necessary to specify the correct broker name on the SAMConnect
+   "connect" call and the desired topic in the destination argument to
+   the SAMConnect "send" and "receive" calls. The PHP interface is
+   otherwise identical to the point to point model.
+  </para>
+  <para>
+   By default, SAM creates non-durable subscriptions when using
+   publish/subscribe. This means that if a client application is
+   inactive when messages are published to a topic, then it will not
+   receive them when it subsequently restarted. SAM does also allow
+   durable subscriptions to be made to topics when using WPM or WebSphere
+   MQ publish/subscribe. The purpose of these subscriptions is to allow
+   data to be received by a client application even if that client was not
+   active at the time the data was published.
+  </para>
+  <para>
+   Durable subscriptions are specified by using the SAMConnect "subscribe"
+   call. This method takes the destination topic as an input parameter and
+   returns a subscription identifier that may be used on subsequent
+   "receive" calls. When the subscription is no longer required the
+   SAMConnection "unsubscribe" method should be used to delete the
+   subscription.
+  </para>
+  <para>
+   <example>
+    <title>Creating a durable subscription to a topic</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$subName = $conn->subscribe('topic://A');
+
+if (!$subName) {
+   echo "Subscribe failed";
+} else {
+   # Subscribe was OK
+   // ...
+}
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Subscribing to a topic using a WebSphere Platform Messaging (WPM) server</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$conn = new SAMConnection();
+// Note: For pub/sub on WPM, when connecting the name of a messaging engine
+//   to hold the durable subscription (SAM_WPM_DUR_SUB_HOME) must be specified.
+$conn->connect(SAM_WMQ, array(SAM_ENDPOINTS => 'localhost:7278:BootstrapBasicMessaging',
+                              SAM_BUS => 'Bus1',
+                              SAM_TARGETCHAIN => 'InboundBasicMessaging'
+                              SAM_WPM_DUR_SUB_HOME => 'MyMachineNode01.server1-Bus1'));
+
+$subName = $conn->subscribe('topic://A');
+
+if (!$subName) {
+   echo "Subscribe failed";
+} else {
+   # Subscribe was OK
+   // ...
+}
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Receiving published data using a durable subscription</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$msg = $conn->receive($subName);
+if ($msg) {
+   echo "Received a message OK";
+} else {
+   echo "The receive failed";
+}
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Deleting a durable subscription to a topic</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+if (!$conn->unsubscribe($subName)) {
+   echo "Unsubscribe failed";
+}
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </section>  <!-- xml:id=sam.pubsub -->
+
+ <section xml:id='sam.errors'>
+  <title>Error handling</title>
+  <para>
+   All SAMConnection methods that provide access to messaging operations
+   return &false; if an error occurred in processing the request.
+   In addition the SAMConnection object has two properties, "errno"
+   and "error", that provide respectively the error number and
+   text description of the last error to occur on the connection.
+  </para>
+  <para>
+   <example>
+    <title>Handling an error from a method that returns no result</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+if (!$conn->commit()) {
+    // The commit failed!
+    echo "Commit failed ($conn->errno) $conn->error";
+}
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Handling an error from a method that returns a result</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$correlid = $conn->send('queue://send/test', $msg);
+
+if (!$correlid) {
+  // The Send failed!
+  echo "Send failed ($conn->errno) $conn->error";
+} else {
+  ...
+}
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </section>  <!-- xml:id=sam.errors -->
+
+</chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+
