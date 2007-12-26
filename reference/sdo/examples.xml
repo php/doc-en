@@ -1,0 +1,810 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 1.2 $ -->
+
+<chapter xml:id="sdo.examples" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ &reftitle.examples;
+ <section xml:id='sdo.examples-basic'>
+  <title>Basic Usage</title>
+  <para>
+   The examples below assume an SDO created with the schema
+   and instance information shown below, using the XML Data Access Service.
+  </para>
+  <para>
+   The instance document below describes a single company, 
+   called 'MegaCorp', which contains a single department, 
+   called 'Advanced Technologies'.
+   The Advanced Technologies department contains three employees.
+   The company employeeOfTheMonth is referencing the second employee,
+   'Jane Doe'.
+  </para>
+  <para>
+   <programlisting role="xml">
+<![CDATA[
+<?xml version="1.0" encoding="UTF-8" ?> 
+<company xmlns="companyNS" name="MegaCorp" 
+  employeeOfTheMonth="E0003">
+  <departments name="Advanced Technologies" location="NY" number="123">
+    <employees name="John Jones" SN="E0001"/>
+    <employees name="Jane Doe" SN="E0003"/>
+    <employees name="Al Smith" SN="E0004" manager="true"/>
+  </departments>
+</company>
+]]>
+   </programlisting>
+  </para>
+  <para> The root element of the schema is a company. The company contains departments, and
+   each department contains employees. Each element has a number of attributes to store
+   things like name, serial number, and so on. Finally, the company also has an IDREF
+   attribute which identifies one of the employees as the 'employeeOfTheMonth'.
+  </para>
+  <para>
+   <programlisting role="xml">
+<![CDATA[
+<xsd:schema  
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:sdo="commonj.sdo"
+  xmlns:sdoxml="commonj.sdo/xml"
+  xmlns:company="companyNS"
+  targetNamespace="companyNS">
+  <xsd:element name="company" type="company:CompanyType"/>
+  <xsd:complexType name="CompanyType">
+    <xsd:sequence>
+      <xsd:element name="departments" type="company:DepartmentType" 
+        maxOccurs="unbounded"/>
+    </xsd:sequence>
+    <xsd:attribute name="name" type="xsd:string"/>
+    <xsd:attribute name="employeeOfTheMonth" type="xsd:IDREF" 
+      sdoxml:propertyType="company:EmployeeType"/> 
+  </xsd:complexType>
+  <xsd:complexType name="DepartmentType">
+    <xsd:sequence>
+      <xsd:element name="employees" type="company:EmployeeType"  
+        maxOccurs="unbounded"/>
+    </xsd:sequence>
+    <xsd:attribute name="name" type="xsd:string"/>
+    <xsd:attribute name="location" type="xsd:string"/>
+    <xsd:attribute name="number" type="xsd:int"/>
+  </xsd:complexType>
+  <xsd:complexType name="EmployeeType">
+    <xsd:attribute name="name" type="xsd:string"/>
+    <xsd:attribute name="SN" type="xsd:ID"/>
+    <xsd:attribute name="manager" type="xsd:boolean"/>
+  </xsd:complexType>
+</xsd:schema>
+]]>
+   </programlisting>
+  </para>
+  <para>The XML Data Access Service maps the schema to an SDO. Attributes such as "name"
+   become primitive properties, the sequence of employees becomes a many-valued
+   containment relationship, and so on. Note that the containment relationships are
+   expressed as one complex type within another, whereas non-containment references are
+   expressed in terms of ID and IDREF, with a special
+   <command>sdoxml:propertyType</command> attribute specifying the type of the
+   non-containment reference.
+  </para>
+ </section>
+
+ <section xml:id="sdo.sample.getset">
+  <title>Setting and Getting Property Values</title>
+  <para> The following examples assume
+   <command>$company</command> is the root of a tree of data objects created from the
+   schema and instance document shown above.
+  </para>
+  <para>
+   <example>
+    <title>Access via property name</title>
+    <para>
+     Data object properties can be accessed using the object property
+     access syntax.  The following sets the company name to 'Acme'.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.propname">
+<![CDATA[
+<?php
+$company->name = 'Acme';
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Access via property name as array index</title>
+    <para>We can also access properties using associative array syntax. The simplest
+     form of this uses the property name as the array index. For example, the following sets
+     the company name and gets the employeeOfTheMonth.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.simplexpath">
+<![CDATA[
+<?php
+$company['name'] = 'UltraCorp';
+$eotm = $company['employeeOfTheMonth'];
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Data Object iteration</title>
+    <para>
+     We can iterate over the properties of a data object using foreach.
+     The following iterates over the properties of the employee of the month.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.doiter">
+<![CDATA[
+<?php
+  $eotm = $company->employeeOfTheMonth;
+  foreach ($eotm as $name => $value) {
+      echo "$name: $value\n";
+  }
+?>
+]]>
+    </programlisting>
+    <para> 
+     which will output:
+    </para>     
+    <programlisting xml:id="sdo.examples.doiter-output">
+<![CDATA[
+name: Jane Doe
+SN: E0003
+]]>
+    </programlisting>
+    <para> 
+     The 'manager' property is not output, because it has not been set.
+    </para>
+   </example>
+  </para>
+  
+  <para>
+   <example>
+    <title>Access many-valued property by name</title>
+    <para> Many-valued data object properties can also be accessed using the object
+     property name syntax. The following gets the list of departments.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.mvpname">
+<![CDATA[
+<?php
+$departments = $company->departments;
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  
+  <para>
+   <example>
+    <title>Many-valued element access</title>
+    <para>
+     We can access individual elements of many-valued properties using array
+     syntax. The following accesses the first department in the company.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.mvaccess">
+<![CDATA[
+<?php
+$ad_tech_dept = $company->departments[0];
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Many-valued property iteration</title>
+    <para>
+     Many-valued properties can also be iterated over using
+     foreach.  The following iterates over the company's departments.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.mvpiter">
+<![CDATA[
+<?php
+  foreach ($company->departments as $department) {
+    // ...
+  }
+?>
+]]>
+    </programlisting>
+    <para>
+     Each iteration will assign the next department in the
+     list to the variable <command>$department</command>.
+    </para>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Chained property access</title>
+    <para> We can chain property references on a single line. 
+     The following sets and gets the name of the first department.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.nestedprop">
+<![CDATA[
+<?php
+  $company->departments[0]->name = 'Emerging Technologies';
+  $dept_name = $company->departments[0]->name;
+?>
+]]>
+    </programlisting>
+    <para>Using the associative array syntax, this is equivalent to</para>
+    <programlisting role="php" xml:id="sdo.examples.chainarray">
+<![CDATA[
+<?php
+  $company['departments'][0]['name'] = 'Emerging Technologies';
+  $dept_name = $company['departments'][0]['name'];
+?>
+]]>
+    </programlisting>
+    <para> In either case, the dept_name variable is set to 'Emerging Technologies'.
+    </para>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>XPath navigation</title>    
+    <para> The associative array index can be an XPath-like expression. Valid
+     expressions are defined by an augmented sub-set of XPath.
+    </para>
+    <para>
+     Two forms of indexing into many-valued properties are supported.  
+     The first is the standard XPath array syntax with the indexing
+     starting at one, the second is an SDO extension to XPath with an index
+     starting at zero.  The standard syntax is:
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.xpath1nav">
+<![CDATA[
+<?php
+  $jane_doe = $company["departments[1]/employees[2]"];
+?>
+]]>
+    </programlisting>    
+    <para>and the SDO XPath extension syntax is:</para> 
+    <programlisting role="php" xml:id="sdo.examples.xpath0nav">
+<![CDATA[
+<?php
+  $jane_doe = $company["departments.0/employees.1"];
+?>
+]]>
+    </programlisting>
+    <para>
+     Both these examples get the second employee from the first department.
+    </para>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>XPath querying</title>
+    <para>
+     We can use XPath to query and identify parts of a data object based
+     on instance data.  The following retrieves the manager from the
+     'Advanced Technologies' department.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.xpathquery">
+<![CDATA[
+<?php
+ $ad_tech_mgr = 
+  $company["departments[name='Advanced Technologies']/employees[manager=true]"];
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Creating child data objects</title>
+    <para>
+     A data object can be a factory for its child data objects.  
+     A child data object is automatically part of the data graph.  
+     The following add a new employee to the 'Advanced Technologies' 
+     department.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.create">
+<![CDATA[
+<?php
+  $ad_tech_dept = $company["departments[name='Advanced Technologies']"];
+  $new_hire = $ad_tech_dept->createDataObject('employees');
+  $new_hire->name = 'John Johnson';
+  $new_hire->SN = 'E0005';
+  $new_hire->manager = false;
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Unset a primitive property</title>
+    <para>
+     We can use the <function>isset</function> and
+     <function>unset</function> functions to test and remove items
+     from the data object.
+    </para>
+    <para>
+     The following clears the name of the first department.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.unsetprim">
+<![CDATA[ 
+<?php
+  unset($company->departments[0]->name);
+?>
+]]>
+   </programlisting>
+  </example>
+  </para>
+     
+  <para>
+   <example>
+    <title>Unset a data object</title>
+    <para>
+     unset can also be used to remove a data object from the tree.
+     The following example shows John Jones leaving the company. 
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.unsetdo">
+<![CDATA[ 
+<?php
+  unset($company->departments[0]->employees[0]);
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  
+  <para>
+   <example>
+    <title>Unset a referenced data object</title>
+    <para>
+     The following removes the 'employeeOfTheMonth' from the company.
+     If this were a containment relationship then the
+     employee would be removed from the company 
+     (probably not a good idea to sack your best employee each month!), 
+     but since this is a non-containment reference, 
+     the employee being referenced will remain in the 
+     department in the company,
+     but will no longer be accessible via the employeeOfTheMonth property.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.unsetrefdo">
+<![CDATA[ 
+<?php
+  if (isset($company->employeeOfTheMonth)) {
+    unset($company->employeeOfTheMonth);
+  }
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  
+  <para>
+   <example>
+    <title>Access via property index</title>
+    <para> Data object properties can be accessed via their property index using array
+     syntax. The property index is the position at which the property's definition
+     appears in the model (in this case the xml schema). We can see from the schema listing
+     above that the company name attribute is the second company property (the SDO
+     interface makes no distinction between XML attributes and elements). The following
+     sets the company name to 'Acme', with the same result as
+     <link linkend="sdo.examples.propname">Access via property name</link>
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.propindex">
+<![CDATA[
+<?php
+  $company[1] = 'Acme';
+?>
+]]>
+    </programlisting>
+    <para> Using the index directly in this way is likely to be fragile. Normally the
+     property name syntax should be preferred, but the property index may be required
+    in special cases.
+    </para>
+   </example>
+  </para>
+
+ </section>
+
+ <section xml:id="sdo.sample.sequence">
+  <title>Working with Sequenced Data Objects</title>
+  <para>
+   Sequenced data objects are SDOs which can track property
+   ordering across the properties of a data object. They can also
+   contain unstructured text elements (text element which do not
+   belong to any of the SDO's properties).  Sequenced data objects are
+   useful for working with XML documents which allow unstructured text (i.e.
+   mixed=true) or if the elements can be interleaved (
+   <![CDATA[<A/><B/><A/>]]>).  This can occur for example when
+   the schema defines maxOccurs>1 on a
+   element which is a complexType with a choice order indicator.
+  </para>
+  <para>
+   The examples below assume an SDO created with the following schema
+   and instance information, using the XML Data Access Service.
+  </para>
+  <para>
+   The schema below describes the format of a letter.  The letter can
+   optionally contain three properties; date, firstName, and lastName.
+   The schema states <command>mixed="true"</command> which means that
+   unstructured text can be interspersed between the three properties.
+  </para>
+  <para>
+   <programlisting role="xml">
+<![CDATA[
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:letter="http://letterSchema"
+  targetNamespace="http://letterSchema">
+  <xsd:element name="letters" type="letter:FormLetter"/>
+  <xsd:complexType name="FormLetter" mixed="true">
+    <xsd:sequence>
+      <xsd:element name="date" minOccurs="0" type="xsd:string"/>
+      <xsd:element name="firstName" minOccurs="0" type="xsd:string"/>
+      <xsd:element name="lastName" minOccurs="0" type="xsd:string"/>
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:schema>
+]]>
+   </programlisting>
+  </para>
+
+  <para>
+   The following is an instance letter document.  It contains the
+   three letter properties; date, firstName and lastName, and has
+   unstructured text elements for the address and letter body.
+  </para>
+  <para>
+   <programlisting role="xml">
+<![CDATA[
+<letter:letters xmlns:letter="http://letterSchema">
+  <date>March 1, 2005</date>
+  Mutual of Omaha
+  Wild Kingdom, USA
+  Dear
+  <firstName>Casy</firstName>
+  <lastName>Crocodile</lastName>
+  Please buy more shark repellent.
+  Your premium is past due.
+</letter:letters>
+]]>
+   </programlisting>
+  </para>
+  <para>
+   When loaded, the letter data object will have the sequence and
+   property indices shown in the table below:
+   <informaltable>
+    <tgroup cols='3'>
+     <thead>
+      <row>
+       <entry>Sequence Index</entry>
+       <entry>Property Index:Name</entry>
+       <entry>Value</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>0</entry>
+       <entry>0:date</entry>
+       <entry>March 1, 2005</entry>
+      </row>
+      <row>
+       <entry>1</entry>
+       <entry>-</entry>
+       <entry>Mutual of Omaha</entry>
+      </row>
+      <row>
+       <entry>2</entry>
+       <entry>-</entry>
+       <entry>Wild Kingdom, USA</entry>
+      </row>
+      <row>
+       <entry>3</entry>
+       <entry>-</entry>
+       <entry>Dear</entry>
+      </row>
+      <row>
+       <entry>4</entry>
+       <entry>1:firstName</entry>
+       <entry>Casy</entry>
+      </row>
+      <row>
+       <entry>5</entry>
+       <entry>2:lastName</entry>
+       <entry>Crocodile</entry>
+      </row>
+      <row>
+       <entry>6</entry>
+       <entry>-</entry>
+       <entry>Please buy more shark repellent.</entry>
+      </row>
+      <row>
+       <entry>7</entry>
+       <entry>-</entry>
+       <entry>Your premium is past due.</entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
+  </para>
+
+  <para>
+   To ensure sequence indices are maintained, sequenced data objects
+   should be manipulated through the SDO_Sequence interface.  
+   This allows the data object's instance data to be manipulated 
+   in terms of the sequence index as opposed to the property index 
+   (shown in the table above).  
+   The following examples assume the letter instance has been 
+   loaded into a data object referenced by the variable
+   <command>$letter</command>.
+   <example>
+    <title>Getting the SDO_Sequence interface</title>
+    <para>
+     We obtain a data object's sequence using the
+     <function>getSequence</function>
+     method. The follow gets the
+     sequence for the letter data object.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.seqinterface">
+<![CDATA[ 
+<?php
+  $letter_seq = $letter->getSequence();
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   All subsequent examples assume that the
+   <command>$letter_seq</command>
+   variable has been assigned the sequence for the letter data object.
+  </para>
+
+  <para>
+   <example>
+    <title>Get/set sequence values</title>
+    <para>
+     We can get and set individual values (including unstructured text)
+     using the sequence index.  
+     The following sets the firstName to 'Snappy' and gets the last 
+     sequence values (the unstructured text, 'Your premium is past due.').
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.getsetseq">
+<![CDATA[ 
+<?php
+  $letter_seq[4] = 'Snappy';
+  $text = $letter_seq[count($letter_seq) - 1];
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Sequence iteration</title>
+    <para>
+     We can iterate through the individual sequence values using foreach.
+     The following runs through the individual values in sequence order.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.seqiter">
+<![CDATA[ 
+<?php
+foreach ($letter->getSequence() as $value) {
+    // ...
+}
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Sequence versus Data Object</title>
+    <para>
+     Setting values through the data object interface may result in the
+     value not being part of the sequence.  A value set through the data
+     object will only be accessible through the sequence if the property was
+     already part of the sequence. The following example sets the
+     lastName through the data object and gets it through the sequence.
+     This is fine because lastName already exists in the sequence.  If
+     it had not previously been set, then lastName would be set to
+     'Smith', but would not be part of the sequence.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.seqvsdo">
+<![CDATA[ 
+<?php
+  $letter[2] = 'Smith';
+  $last_name = $letter_seq[5];
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Adding to a sequence</title>
+    <para>
+     We can add new values to a sequence using the
+     <link linkend='function.SDO-Sequence-insert'><function>SDO_Sequence::insert</function></link>
+     method.  The following examples assume that the 'firstName' and 
+     'lastName' properties are initially unset.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.seqadd">
+<![CDATA[ 
+<?php
+  // Append a firstName value to the sequence
+  // value: 'Smith'
+  // sequence index: NULL (append)
+  // propertyIdentifier: 1 (firtName property index)
+  $letter_seq->insert('Smith', NULL, 1);
+
+  // Append a lastName value to the sequence
+  // value: 'Jones'
+  // sequence index: NULL (append)
+  // propertyIdentifier: 'lastName' (lastName property name)
+  $letter_seq->insert('Jones', NULL, 'lastName');
+
+  // Append unstructured text
+  // value: 'Cancel Subscription.'
+  // sequence index: absent (append)
+  // propertyIdentifier: absent (unstructured text)
+  $letter_seq->insert('Cancel Subscription.');
+
+  // Insert new unstructured text.  Subsequent sequence values
+  // are shifted up.                                       
+  // value: 'Care of:'
+  // sequence index: 1 (insert as second element)
+  // propertyIdentifier: absent (unstructured text)
+  $letter_seq->insert('Care of:', 1);
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Removing from a sequence</title>
+    <para>
+     We can use the <function>isset</function>  and
+     <function>unset</function> functions to test and remove items
+     from the sequence (Note: <function>unset</function> currently
+     leaves the values in the data object, but this behaviour is
+     likely to change to also remove the data from the data object).
+     A sequence behaves like a contiguous list; therefore, removing
+     items from the middle will shift entries at higher indices
+     down. The following example tests to see if the first sequence
+     element is set and unsets it if is.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.seqremove">
+<![CDATA[ 
+<?php
+  if (isset($letter_seq[0])) {
+    unset($letter_seq[0]);
+  }
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+ </section>
+
+
+ <section xml:id="sdo.sample.reflection">
+  <title>Reflecting on Service Data Objects</title>
+  <para>
+   SDOs have a knowledge of the structure they have been created to 
+   represent (the model).  For example, a Company SDO created using 
+   <link linkend="sdo.examples">the Company XML schema</link> above
+   would only be permitted to contain DepartmentType data objects 
+   which in turn could only contain EmployeeType data objects.
+  </para>
+  <para>
+   Sometimes it is useful to be able to access this model information at 
+   runtime.  For example, this could be used to automatically generate 
+   a user interface for populating a data object.  The model information 
+   is accessed using reflection.  
+  </para>
+
+  <para>
+   <example>
+    <title>Reflecting on a Data Object</title>
+    <para>
+     The following example shows how we can reflect on an empty Employee 
+     data object.
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.reflection">
+<![CDATA[ 
+<?php
+  // Create the employee data object (e.g. from an XML Data Access Service)
+  $employee = ...;
+  $reflection = new SDO_Model_ReflectionDataObject($employee);
+  print($reflection);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+
+    <screen>
+<![CDATA[
+object(SDO_Model_ReflectionDataObject)#4 { - ROOT OBJECT - Type { 
+companyNS:EmployeeType[3] { commonj.sdo:String $name; 
+commonj.sdo:String $SN; commonj.sdo:Boolean $manager; } }
+]]>
+   </screen>
+   <para>
+     Using print on the SDO_Model_ReflectionDataObject writes out the data 
+     object's model.  We can see from the output how the type 
+     companyNS:EmployeeType has three properties and we can see the names 
+     of the properties along with their types.  Note, the primitive types
+     are listed as SDO types (e.g. commonj.sdo namespace, String type).  
+     It is worth noting that this is the SDO model and when these are 
+     surfaced to an application they can be treated as the PHP equivalent 
+     types (e.g. string and boolean).
+    </para>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Accessing the type information</title>
+    <para>
+     We can query the type information of a data object using reflection.  
+     The following example checks the type corresponds to a data object
+     rather than a primitive and then iterates through the properties of
+     the type, writing out the name of each property ($type and $property 
+     are SDO_Model_Type and SDO_Model_Property objects, respectively).
+    </para>
+    <programlisting role="php" xml:id="sdo.examples.reflection.type">
+<![CDATA[ 
+<?php
+    // Create the employee data object (e.g. from an XML Data Access Service)
+    $employee = ...;
+    $reflection = new SDO_Model_ReflectionDataObject($employee);
+    $type = $reflection->getType();
+    if (! $type->isDataType()) {
+        foreach ($type->getProperties() as $property) {
+            print $property->getName() . "\n";
+        }
+    }
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+name
+SN
+manager
+]]>
+    </screen>
+   </example>
+  </para>
+
+ </section>
+</chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+
