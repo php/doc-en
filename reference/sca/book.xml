@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 1.2 $ -->
+<!-- Purpose: xml -->
+<!-- Membership: pecl -->
+<!-- State: experimental -->
+ 
+<book xml:id="book.sca" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>SCA</title>
+ 
+ <!-- {{{ preface -->
+ <preface xml:id="intro.sca">
+  &reftitle.intro;
+  &warn.experimental;
+  <para> 
+   SCA for PHP makes it possible for a PHP programmer to write
+   reusable components, which can be called in a variety of ways, with an
+   identical interface and with a minimum of fuss. At present
+   components can call each other either locally or via Web services,
+   but in the future it is expected that other ways will be possible. It
+   provides the programmer with a way of doing this which will look as
+   natural as possible in PHP. 
+  </para>
+  
+  <para> 
+   SCA components use phpDocumentor-style (see
+   http://www.phpdoc.org/) annotations to declare dependencies on
+   other SCA components or Web services. The SCA for PHP runtime
+   resolves these dependencies at runtime on behalf of the components,
+   and thus allows the PHP programmer to focus on the business logic
+   rather than on locating and obtaining references to dependencies.
+  </para>
+  
+  <para> 
+   The SCA for PHP programming model can be extended to support a
+   number of service types, such as REST and Atompub. However, Web
+   services (more accurately, WSDL defined, SOAP/HTTP services), are
+   the only type currently specified. 
+  </para>
+  
+  <para> 
+   Components also use annotations to define the interface which
+   they expose as a service. The SCA for PHP runtime will automatically
+   generate WSDL from these annotations, so that an SCA component is
+   easily exposed as a web service. These annotations are a natural
+   extension to those provided by phpDocumentor. Deploying a Web
+   service can be as simple as placing a PHP component under the document
+   root of a web server. 
+  </para>
+  
+  <para> 
+   Components also use annotations to specify data structures
+   (expressed using XML schema complex types) which are then handled
+   using Service Data Objects (SDOs). 
+  </para>
+  
+  <para> 
+   A PHP script which is not an SCA component and which contains no
+   annotations can use the services of an SCA component. A PHP script or
+   component can make calls to a web service that is not an SCA component,
+   but using the same system of calls or annotations to obtain a
+   reference.
+  </para>
+
+  <para> 
+   First we show a single SCA component, ConvertedStockQuote
+   which illustrates many of the features of SCA for PHP. It has one
+   method,
+   <function>getQuote</function>, which given a stock "ticker"
+   obtains a price quote for that stock, converted to a given currency.
+   We shall be using this example as a basis for explaining the SCA for PHP
+   throughout the rest of this document. 
+  </para>
+  
+  <para>
+   <example>
+    <title> A sample SCA component </title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+include "SCA/SCA.php";
+
+/**
+ * Calculate a stock price for a given ticker symbol in a given currency.
+ *
+ * @service
+ * @binding.soap
+ */
+class ConvertedStockQuote {
+
+    /**
+     * The currency exchange rate service to use.
+     *
+     * @reference
+     * @binding.php ../ExchangeRate/ExchangeRate.php
+     */
+    public $exchange_rate;
+
+    /**
+     * The stock quote service to use.
+     *
+     * @reference
+     * @binding.soap ../StockQuote/StockQuote.wsdl
+     */
+    public $stock_quote;
+
+    /**
+     * Get a stock quote for a given ticker symbol in a given currency.
+     *
+     * @param string $ticker The ticker symbol.
+     * @param string $currency What currency to convert the value to.
+     * @return float The stock value is the target currency.
+     */
+    function getQuote($ticker, $currency)
+    {
+        $quote  = $this->stock_quote->getQuote($ticker);
+        $rate   = $this->exchange_rate->getRate($currency);
+        return  $rate * $quote;
+    }
+}
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  
+  <para> 
+   In this example, we see that an SCA component is implemented by a
+   script containing a PHP class and includes
+   <filename>SCA.php</filename>. The class contains a mixture of
+   business logic and references to other components or services. In
+   the illustrated
+   <function>getQuote</function> method there is only business
+   logic, but it relies on the instance variables
+   <varname>$stock_quote</varname> and
+   <varname>$exchange_rate</varname> having been initialized.
+   These refer to two other components and will be initialized by the SCA
+   runtime with proxies for these two services, whenever this
+   component executes. The annotations for these two services show one
+   to be a local component, which will be called within the same PHP
+   runtime, and one to be a remote component which will be called via a
+   SOAP request. This component also exposes the
+   <function>getQuote</function> method both locally and as a web
+   service, so it in turn can be called either locally or remotely.
+  </para>
+ </preface>
+ <!-- }}} -->
+ 
+ &reference.sca.setup;
+ &reference.sca.constants;
+ &reference.sca.examples;
+ &reference.sca.reference;
+
+</book>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+
