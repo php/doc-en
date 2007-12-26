@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 1.2 $ -->
+
+<chapter xml:id="pdo.lobs" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Large Objects (LOBs)</title>
+ <para>
+   At some point in your application, you might find that you need to store
+   "large" data in your database. Large typically means "around 4kb or
+   more", although some databases can happily handle up to 32kb before data becomes
+   "large". Large objects can be either textual or binary in nature. PDO
+   allows you to work with this large data type by using the
+   <constant>PDO::PARAM_LOB</constant>
+   type code in your <xref linkend="function.PDOStatement-bindParam" /> or
+   <xref linkend="function.PDOStatement-bindColumn" /> calls.
+   <constant>PDO::PARAM_LOB</constant> tells
+   PDO to map the data as a stream, so that you can manipulate it using the
+   <link linkend='ref.stream'>PHP Streams API</link>.
+ </para>
+ <para>
+  <example>
+   <title>Displaying an image from a database</title>
+   <para>
+    This example binds the LOB into the variable named $lob and then sends
+    it to the browser using <function>fpassthru</function>.  Since the LOB
+    is represented as a stream, functions such as
+    <function>fgets</function>, <function>fread</function> and
+    <function>stream_get_contents</function> can be used on it.
+   </para>
+   <programlisting role='php'>
+<![CDATA[
+<?php
+$db = new PDO('odbc:SAMPLE', 'db2inst1', 'ibmdb2');
+$stmt = $db->prepare("select contenttype, imagedata from images where id=?");
+$stmt->execute(array($_GET['id']));
+$stmt->bindColumn(1, $type, PDO::PARAM_STR, 256);
+$stmt->bindColumn(2, $lob, PDO::PARAM_LOB);
+$stmt->fetch(PDO::FETCH_BOUND);
+
+header("Content-Type: $type");
+fpassthru($lob);
+?>
+]]>
+   </programlisting>
+  </example>
+ </para>
+ <para>
+  <example>
+   <title>Inserting an image into a database</title>
+   <para>
+    This example opens up a file and passes the file handle to PDO to insert
+    it as a LOB.  PDO will do its best to get the contents of the file up
+    to the database in the most efficient manner possible.
+   </para>
+   <programlisting role='php'>
+<![CDATA[
+<?php
+$db = new PDO('odbc:SAMPLE', 'db2inst1', 'ibmdb2');
+$stmt = $db->prepare("insert into images (id, contenttype, imagedata) values (?, ?, ?)");
+$id = get_new_id(); // some function to allocate a new ID
+
+// assume that we are running as part of a file upload form
+// You can find more information in the PHP documentation
+
+$fp = fopen($_FILES['file']['tmp_name'], 'rb');
+
+$stmt->bindParam(1, $id);
+$stmt->bindParam(2, $_FILES['file']['type']);
+$stmt->bindParam(3, $fp, PDO::PARAM_LOB);
+
+$db->beginTransaction();
+$stmt->execute();
+$db->commit();
+?>
+]]>
+   </programlisting>
+  </example>
+ </para>
+ <para>
+  <example>
+   <title>Inserting an image into a database: Oracle</title>
+   <para>
+    Oracle requires a slightly different syntax for inserting a lob from a
+    file.  It's also essential that you perform the insert under a
+    transaction, otherwise your newly inserted LOB will be committed with a
+    zero-length as part of the implicit commit that happens when the query
+    is executed:
+   </para>
+   <programlisting role='php'>
+<![CDATA[
+<?php
+$db = new PDO('oci:', 'scott', 'tiger');
+$stmt = $db->prepare("insert into images (id, contenttype, imagedata) " .
+"VALUES (?, ?, EMPTY_BLOB()) RETURNING imagedata INTO ?");
+$id = get_new_id(); // some function to allocate a new ID
+
+// assume that we are running as part of a file upload form
+// You can find more information in the PHP documentation
+
+$fp = fopen($_FILES['file']['tmp_name'], 'rb');
+
+$stmt->bindParam(1, $id);
+$stmt->bindParam(2, $_FILES['file']['type']);
+$stmt->bindParam(3, $fp, PDO::PARAM_LOB);
+
+$stmt->beginTransaction();
+$stmt->execute();
+$stmt->commit();
+?>
+]]>
+   </programlisting>
+  </example>
+ </para>
+</chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+

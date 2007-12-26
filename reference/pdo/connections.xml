@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 1.2 $ -->
+
+<chapter xml:id="pdo.connections" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Connections and Connection management</title>
+ <para>
+  Connections are established by creating instances of the PDO base class.
+  It doesn't matter which driver you want to use; you always use the PDO
+  class name. The constructor accepts parameters for specifying the
+  database source (known as the DSN) and optionally for the username and
+  password (if any).
+ </para>
+ <para>
+  <example>
+   <title>Connecting to MySQL</title>
+   <programlisting role='php'>
+<![CDATA[
+<?php
+$dbh = new PDO('mysql:host=localhost;dbname=test', $user, $pass);
+?>
+]]> 
+   </programlisting>
+  </example>
+ </para>
+ <para>
+  If there are any connection errors, a <literal>PDOException</literal>
+  object will be thrown.  You may catch the exception if you want to handle
+  the error condition, or you may opt to leave it for an application
+  global exception handler that you set up via
+  <function>set_exception_handler</function>.
+ </para>
+ <para>
+  <example><title>Handling connection errors</title>
+   <programlisting role='php'>
+<![CDATA[
+<?php
+try {
+    $dbh = new PDO('mysql:host=localhost;dbname=test', $user, $pass);
+    foreach($dbh->query('SELECT * from FOO') as $row) {
+        print_r($row);
+    }
+    $dbh = null;
+} catch (PDOException $e) {
+    print "Error!: " . $e->getMessage() . "<br/>";
+    die();
+}
+?>
+]]>
+   </programlisting>
+  </example>
+ </para>
+ <warning>
+  <para>
+   If your application does not catch the exception thrown from the PDO
+   constructor, the default action taken by the zend engine is to terminate
+   the script and display a back trace.  This back trace will likely reveal
+   the full database connection details, including the username and
+   password.  It is your responsibility to catch this exception, either
+   explicitly (via a <literal>catch</literal> statement) or implicitly via
+   <function>set_exception_handler</function>.
+  </para>
+ </warning>
+ <para>
+  Upon successful connection to the database, an instance of the PDO class
+  is returned to your script.  The connection remains active for the
+  lifetime of that PDO object.  To close the connection, you need to
+  destroy the object by ensuring that all remaining references to it are
+  deleted--you do this by assigning &null; to the variable that holds the
+  object.  If you don't do this explicitly, PHP will automatically close
+  the connection when your script ends.
+ </para>
+ <para>
+  <example>
+   <title>Closing a connection</title>
+   <programlisting role='php'>
+<![CDATA[
+<?php
+$dbh = new PDO('mysql:host=localhost;dbname=test', $user, $pass);
+// use the connection here
+
+
+// and now we're done; close it
+$dbh = null;
+?>
+]]>
+   </programlisting>
+  </example>
+ </para>
+ <para>
+  Many web applications will benefit from making persistent connections to
+  database servers.  Persistent connections are not closed at the end of the
+  script, but are cached and re-used when another script requests a
+  connection using the same credentials.  The persistent connection cache
+  allows you to avoid the overhead of establishing a new connection every
+  time a script needs to talk to a database, resulting in a faster web
+  application.
+ </para>
+ <para>
+  <example>
+   <title>Persistent connections</title>
+   <programlisting role='php'>
+<![CDATA[
+<?php
+$dbh = new PDO('mysql:host=localhost;dbname=test', $user, $pass, array(
+    PDO::ATTR_PERSISTENT => true
+));
+?>
+]]>
+   </programlisting>
+  </example>
+ </para>
+ <note>
+  <para>
+   If you're using the PDO ODBC driver and your ODBC libraries support ODBC
+   Connection Pooling (unixODBC and Windows are two that do; there may be
+   more), then it's recommended that you don't use persistent PDO
+   connections, and instead leave the connection caching to the ODBC
+   Connection Pooling layer.  The ODBC Connection Pool is shared with other
+   modules in the process; if PDO is told to cache the connection, then
+   that connection would never be returned to the ODBC connection pool,
+   resulting in additional connections being created to service those other
+   modules.
+  </para>
+ </note>
+</chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+ 
