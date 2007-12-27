@@ -654,7 +654,7 @@ if ($ac['LANG'] != 'en') {
             $ac['PHP_BUILD_DATE'] = date('Y/m/d');
             break;
         case 'he':
-            $ac['LANG'] = 'en';
+            $ac['LANG'] = 'he';
             $ac['LANGWEB'] = 'he';
             $ac['LANGDIR'] = 'he';
             $ac['LANG_HACK_FOR_HE'] = 'yes';
