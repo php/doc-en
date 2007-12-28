@@ -63,7 +63,7 @@ else {
 echo "\n";
 
 $ac = array();
-$ac['srcdir'] = $srcdir;
+$ac['SRCDIR'] = $ac['srcdir'] = $srcdir;
 $ac['WORKDIR'] = $srcdir;
 $ac['PHP'] = '';
 $ac['CYGWIN'] = 0;
