@@ -118,10 +118,11 @@ foreach (glob('../../en/reference/*/*/*.xml') as $function) {
                                 break;
 
                             case 'methodparam':
+                            case 'modifier':
                                 break;
 
                             default:
-                                echo 'Unknown child for methodsynopsis: ' . $child->nodeName . "\n";
+                                echo "Unknown child for methodsynopsis: {$child->nodeName} in $function\n";
                         }
                     }
                 }
