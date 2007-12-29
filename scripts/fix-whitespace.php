@@ -103,7 +103,7 @@ while (false !== ($file = readdir($dh))) {
                 }
                 
                 // remove front spaces
-                if (preg_match('#^([ ]+)<refentry id=(?:"|\')function.#', $line, $match)) {
+                if (preg_match('#^([ ]+)<refentry xml:id=(?:"|\')function.#', $line, $match)) {
                     $states['front_spaces'] = strlen($match[1]);
 
                     if ($states['front_spaces'] !== 2) {
