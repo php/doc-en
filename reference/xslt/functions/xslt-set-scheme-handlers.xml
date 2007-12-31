@@ -1,20 +1,68 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.5 $ -->
+<!-- $Revision: 1.6 $ -->
 <refentry xml:id='function.xslt-set-scheme-handlers' xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>xslt_set_scheme_handlers</refname>
   <refpurpose>Set the scheme handlers for the XSLT processor</refpurpose>
  </refnamediv>
- 
+
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
    <type>void</type><methodname>xslt_set_scheme_handlers</methodname>
-   <methodparam><type>resource</type><parameter>processor</parameter></methodparam>
+   <methodparam><type>resource</type><parameter>xh</parameter></methodparam>
    <methodparam><type>array</type><parameter>handlers</parameter></methodparam>
   </methodsynopsis>
   <para>
-   &warn.undocumented.func;
+   Registers the scheme handlers (XPath handlers) for the document.
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>xh</parameter></term>
+     <listitem>
+      <para>
+       The XSLT processor link identifier, created with
+       <function>xslt_create</function>.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>handlers</parameter></term>
+     <listitem>
+      <para>
+       An array with the following keys: "get_all", "open", "get", "put",
+       and "close".
+      </para>
+      <para>
+       Every entry must be a function name or an array in the following
+       format: array($obj, "method").
+      </para>
+      <para>
+       Note that the given array does not need to contain all of the
+       different scheme handler elements (although it can), but it only needs
+       to conform to the "handler" =&gt; "function" format described above.
+      </para>
+      <para>
+       Each of the individual scheme handler functions called are in the
+       formats below:
+       <screen>
+<![CDATA[
+string   get_all(resource processor, string scheme, string rest)
+resource open(resource processor, string scheme, string rest)
+int      get(resource processor, resource fp, string &data)
+int      put(resource processor, resource fp, string data)
+void     close(resource processor, resource fp)
+]]>
+       </screen>
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
   </para>
  </refsect1>
 
@@ -22,6 +70,67 @@
   &reftitle.returnvalues;
   <para>
    &return.void;
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>xslt_set_scheme_handlers</function> example</title>
+    <para>
+     For example, here is an implementation of the "file_exists()" PHP function.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+// Definition of the handler
+function mySchemeHandler($processor, $scheme, $rest)
+{
+    $rest = substr($rest,1);    // to remove the first / automatically added by the engine
+    if ($scheme == 'file_exists') {
+        // result is embedded in a small xml string
+        return '<?xml version="1.0" encoding="UTF-8"?><root>' . (file_exists($rest) ? 'true' : 'false') . '</root>';
+    }
+}
+
+$SchemeHandlerArray = array('get_all' => 'mySchemeHandler');
+
+// Start the engine
+$params = array();
+$xh = xslt_create();
+
+xslt_set_scheme_handlers($xh, $SchemeHandlerArray);
+
+$result = xslt_process($xh, "myFile.xml", "myFile.xsl", NULL, array(), $params);
+xslt_free($xh);
+
+echo $result;
+
+?>
+]]>
+    </programlisting>
+    <para>
+     Then, inside the stylesheet, you can test whether a certain file exists with:
+    </para>
+    <programlisting role="xml">
+<![CDATA[
+<xsl:if test="document('file_exists:anotherXMLfile.xml�)/root='true'">
+ <!-- The file exist -->
+</xsl:if>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><function>xslt_set_scheme_handler</function></member>
+   </simplelist>
   </para>
  </refsect1>
 
