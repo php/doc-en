@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
-<!-- $Revision: 1.3 $ -->
+<!-- $Revision: 1.4 $ -->
  <sect1 xml:id="internals2.structure.modstruct" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
   <title>The zend_module structure</title>
   <para>
@@ -91,13 +91,247 @@ struct _zend_module_entry {
 #define STANDARD_MODULE_HEADER_EX sizeof(zend_module_entry), ZEND_MODULE_API_NO, ZEND_DEBUG, USING_ZTS
 #define STANDARD_MODULE_HEADER \
     STANDARD_MODULE_HEADER_EX, NULL, NULL
-#define ZE2_STANDARD_MODULE_HEADER \
-    STANDARD_MODULE_HEADER_EX, ini_entries, NULL
+#define NO_VERSION_YET NULL
 
 #define STANDARD_MODULE_PROPERTIES_EX 0, 0, NULL, 0
+#define STANDARD_MODULE_PROPERTIES \
+	NO_MODULE_GLOBALS, NULL, STANDARD_MODULE_PROPERTIES_EX
+#define NO_MODULE_GLOBALS 0, NULL, NULL, NULL
 ]]>
    </programlisting>
   </example>
+
+  <variablelist>
+
+   <varlistentry>
+    <term><literal>size</literal></term>
+    <listitem>
+     <para>
+      The size in bytes of the structure. This will always be to
+      <literal>sizeof(zend_module_entry)</literal>.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><literal>zend_api</literal></term>
+    <listitem>
+     <para>
+      The version of the Zend API this module was compiled against. This is
+      always the constant <constant>ZEND_MODULE_API_NO</constant>.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><literal>zend_debug</literal></term>
+    <term><literal>zts</literal></term>
+    <listitem>
+     <para>
+      Flags indicating whether the module was compiled with debugging turned on
+      or ZTS (TSRM) enabled. These are always the constants
+      <constant>ZEND_DEBUG</constant> and <constant>USING_ZTS</constant>.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><literal>ini_entry</literal></term>
+    <listitem>
+     <para>
+      This pointer is used by Zend internally to keep a non-local reference to
+      any INI entries declared for the module. It is managed by Zend and will
+      always be given the initial value &null;.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><literal>deps</literal></term>
+    <listitem>
+     <para>
+      A pointer to a list of dependencies for the module.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><literal>name</literal></term>
+    <listitem>
+     <para>
+      The name of the module. This is the short name, such as
+      &quot;spl&quot; or &quot;standard&quot;.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><literal>functions</literal></term>
+    <listitem>
+     <para>
+      A pointer to the module's function table, which Zend uses to expose
+      functions in the module to user space.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><literal>module_startup_func</literal></term>
+    <term><literal>module_shutdown_func</literal></term>
+    <term><literal>request_startup_func</literal></term>
+    <term><literal>request_shutdown_func</literal></term>
+    <listitem>
+     <para>
+      These are callback functions that Zend will call at particular times
+      during PHP's processing. Specifically, at first initialization, at final
+      shutdown, at the start of each particular request, and at the end of each
+      request.
+     </para>
+    </listitem>
+   </varlistentry>
+    
+   <varlistentry>
+    <term><literal>info_func</literal></term>
+    <listitem>
+     <para>
+      This is another callback function, which Zend will call when a script
+      invokes <function>phpinfo</function>.
+     </para>
+    </listitem>
+   </varlistentry>
+    
+   <varlistentry>
+    <term><literal>version</literal></term>
+    <listitem>
+     <para>
+      A string giving the version of the module, as specified by the module
+      developer. It is <emphasis>strongly</emphasis> recommended that the
+      version number be either in the format expected by
+      <function>version_compare</function>, or a CVS or SVN revision number
+      (i.e. &quot;$Rev$&quot;).
+     </para>
+    </listitem>
+   </varlistentry>
+    
+   <varlistentry>
+    <term><literal>globals_size</literal></term>
+    <listitem>
+     <para>
+      The size of the globals structure for this module, if any.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><literal>globals_id_ptr</literal></term>
+    <term><literal>globals_ptr</literal></term>
+    <listitem>
+     <para>
+      Only one of these two fields will exist, depending upon whether the
+      <constant>USING_ZTS</constant> constant is &true;. The former is an index
+      into TSRM&apos;s allocation table for the module&apos;s globals, and the
+      latter is a pointer directly to the globals.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><literal>globals_ctor</literal></term>
+    <term><literal>globals_dtor</literal></term>
+    <listitem>
+     <para>
+      These functions are called by Zend to set up and destroy a module&apos;s
+      globals.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><literal>post_deactivate_func</literal></term>
+    <listitem>
+     <para>
+      This function is called by Zend after request shutdown. It is rarely used.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><literal>module_started</literal></term>
+    <term><literal>type</literal></term>
+    <term><literal>handle</literal></term>
+    <term><literal>module_number</literal></term>
+    <listitem>
+     <para>
+      These fields are used for Zend's internal tracking information and must be
+      considered reserved.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><constant>STANDARD_MODULE_HEADER_EX</constant></term>
+    <listitem>
+     <para>
+      This macro is used by module developers to start the
+      <varname>zend_module</varname> structure when the module will specify INI
+      entries, dependencies, or both.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><constant>STANDARD_MODULE_HEADER</constant></term>
+    <listitem>
+     <para>
+      This macro is used to start the <varname>zend_module</varname>
+      structure when the developer will not specify INI entries or dependencies.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><constant>NO_VERSION_YET</constant></term>
+    <listitem>
+     <para>
+      This macro should be used by module developers to specify that the module
+      has no version. It is not recommended that this be used.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><constant>STANDARD_MODULE_PROPERTIES_EX</constant></term>
+    <listitem>
+     <para>
+      This macro is used by module developers to end the
+      <varname>zend_module</varname> when the module will make use of
+      automatic globals, a post-deactivate callback, or both.
+     </para>
+    </listitem>
+   </varlistentry>
+   
+   <varlistentry>
+    <term><constant>STANDARD_MODULE_PROPERTIES</constant></term>
+    <listitem>
+     <para>
+      This macro is used by module developers to end the
+      <varname>zend_module</varname> when the module will not make use of
+      automatic globals or a post-deactivate callback.
+     </para>
+    </listitem>
+   </varlistentry>
+
+   <varlistentry>
+    <term><constant>NO_MODULE_GLOBALS</constant></term>
+    <listitem>
+     <para>
+      This macro is used by module developers to specify values that tell Zend
+      that the module has no global variables.
+     </para>
+    </listitem>
+   </varlistentry>
+
+  </variablelist>
   
  </sect1>
 
