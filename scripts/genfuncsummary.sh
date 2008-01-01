@@ -3,7 +3,7 @@
 # +----------------------------------------------------------------------+
 # | PHP Version 4                                                        |
 # +----------------------------------------------------------------------+
-# | Copyright (c) 1997-2002 The PHP Group                                |
+# | Copyright (c) 1997-2008 The PHP Group                                |
 # +----------------------------------------------------------------------+
 # | This source file is subject to version 2.02 of the PHP licience,     |
 # | that is bundled with this package in the file LICENCE and is         |
@@ -16,7 +16,7 @@
 # | Authors:    Gabor Hoitsy <goba@php.net>                              |
 # +----------------------------------------------------------------------+
 #
-# $Id: genfuncsummary.sh,v 1.10 2004-01-28 16:10:26 nlopess Exp $
+# $Id: genfuncsummary.sh,v 1.11 2008-01-01 13:42:56 bjori Exp $
 
 if test -f funcsummary.awk; then
   awkscript=funcsummary.awk
