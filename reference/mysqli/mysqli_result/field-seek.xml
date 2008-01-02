@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.17 $ -->
-<refentry xml:id="function.mysqli-fetch-field-direct" xmlns="http://docbook.org/ns/docbook">
+<!-- $Revision: 1.1 $ -->
+<refentry xml:id="function.mysqli-field-seek" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
-  <refname>mysqli_fetch_field_direct</refname>
-  <refname>result->fetch_field_direct()</refname>
-  <refpurpose>Fetch meta-data for a single field</refpurpose>
+  <refname>mysqli_field_seek</refname>
+  <refname>result->field_seek()</refname>
+  <refpurpose>Set result pointer to a specified field offset</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <para>Procedural style:</para>
   <methodsynopsis>
-   <type>object</type><methodname>mysqli_fetch_field_direct</methodname>
+   <type>bool</type><methodname>mysqli_field_seek</methodname>
    <methodparam><type>mysqli_result</type><parameter>result</parameter></methodparam>
    <methodparam><type>int</type><parameter>fieldnr</parameter></methodparam>
   </methodsynopsis>
@@ -19,14 +19,20 @@
   <classsynopsis>
    <ooclass><classname>mysqli_result</classname></ooclass>
    <methodsynopsis>
-    <type>object</type><methodname>fetch_field_direct</methodname>
+    <type>bool</type><methodname>field_seek</methodname>
     <methodparam><type>int</type><parameter>fieldnr</parameter></methodparam>
    </methodsynopsis>
   </classsynopsis>
   <para>
-   Returns an object which contains field definition informations from
-   specified resultset. 
+   Sets the field cursor to the given offset. The next call to 
+   <function>mysqli_fetch_field</function> will retrieve the field definition
+   of the column associated with that offset.
   </para>
+  <note>
+   <para>
+    To seek to the beginning of a row, pass an offset value of zero.
+   </para>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -50,68 +56,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns an object which contains field definition information or &false;
-   if no field information for specified <literal>fieldnr</literal> is 
-   available.
-  </para>
-  <para>
-  <table>
-   <title>Object attributes</title>
-   <tgroup cols='2'>
-    <thead>
-     <row>
-      <entry>Attribute</entry>
-      <entry>Description</entry>
-     </row>
-    </thead>
-    <tbody>
-     <row>
-      <entry>name</entry>
-      <entry>The name of the column</entry>
-     </row>
-     <row>
-      <entry>orgname</entry>
-      <entry>Original column name if an alias was specified</entry>
-     </row>
-     <row>
-      <entry>table</entry>
-      <entry>The name of the table this field belongs to (if not calculated)</entry>
-     </row>
-     <row>
-      <entry>orgtable</entry>
-      <entry>Original table name if an alias was specified</entry>
-     </row>
-     <row>
-      <entry>def</entry>
-      <entry>The default value for this field, represented as a string</entry>
-     </row>
-     <row>
-      <entry>max_length</entry>
-      <entry>The maximum width of the field for the result set.</entry>
-     </row>
-     <row>
-      <entry>length</entry>
-      <entry>The width of the field, as specified in the tabl definition.</entry>
-     </row>
-     <row>
-      <entry>charsetnr</entry>
-      <entry>The character set number for the field.</entry>
-     </row>
-     <row>
-      <entry>flags</entry>
-      <entry>An integer representing the bit-flags for the field.</entry>
-     </row>
-     <row>
-      <entry>type</entry>
-      <entry>The data type used for this field</entry>
-     </row>
-     <row>
-      <entry>decimals</entry>
-      <entry>The number of decimals used (for integer fields)</entry>
-     </row>
-    </tbody>
-   </tgroup>
-  </table>
+   Returns the previous value of field cursor.
   </para>
  </refsect1>
 
@@ -130,18 +75,19 @@ if (mysqli_connect_errno()) {
     exit();
 }
 
-$query = "SELECT Name, SurfaceArea from Country ORDER BY Name LIMIT 5";
+$query = "SELECT Name, SurfaceArea from Country ORDER BY Code LIMIT 5";
 
 if ($result = $mysqli->query($query)) {
 
-    /* Get field information for column 'SurfaceArea' */
-    $finfo = $result->fetch_field_direct(1);
+    /* Get field information for 2nd column */
+    $result->field_seek(1);
+    $finfo = $result->fetch_field();
 
     printf("Name:     %s\n", $finfo->name);
     printf("Table:    %s\n", $finfo->table);
     printf("max. Len: %d\n", $finfo->max_length);
     printf("Flags:    %d\n", $finfo->flags);
-    printf("Type:     %d\n", $finfo->type);
+    printf("Type:     %d\n\n", $finfo->type);
 
     $result->close();
 }
@@ -165,18 +111,19 @@ if (mysqli_connect_errno()) {
     exit();
 }
 
-$query = "SELECT Name, SurfaceArea from Country ORDER BY Name LIMIT 5";
+$query = "SELECT Name, SurfaceArea from Country ORDER BY Code LIMIT 5";
 
 if ($result = mysqli_query($link, $query)) {
 
-    /* Get field information for column 'SurfaceArea' */
-    $finfo = mysqli_fetch_field_direct($result, 1);
+    /* Get field information for 2nd column */
+    mysqli_field_seek($result, 1);
+    $finfo = mysqli_fetch_field($result);
 
     printf("Name:     %s\n", $finfo->name);
     printf("Table:    %s\n", $finfo->table);
     printf("max. Len: %d\n", $finfo->max_length);
     printf("Flags:    %d\n", $finfo->flags);
-    printf("Type:     %d\n", $finfo->type);
+    printf("Type:     %d\n\n", $finfo->type);
 
     mysqli_free_result($result);
 }
@@ -195,6 +142,7 @@ Table:    Country
 max. Len: 10
 Flags:    32769
 Type:     4
+
 ]]>
   </screen>
  </refsect1>
@@ -203,9 +151,7 @@ Type:     4
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>mysqli_num_fields</function></member>
     <member><function>mysqli_fetch_field</function></member>
-    <member><function>mysqli_fetch_fields</function></member>
    </simplelist>
   </para>
  </refsect1>
