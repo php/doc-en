@@ -1,41 +1,30 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.13 $ -->
-<refentry xml:id="function.mysqli-stmt-store-result" xmlns="http://docbook.org/ns/docbook">
+<!-- $Revision: 1.1 $ -->
+<refentry xml:id="function.mysqli-stmt-sqlstate" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
-  <refname>mysqli_stmt_store_result</refname>
-  <refname>mysqli_stmt->store_result()</refname>
-  <refpurpose>Transfers a result set from a prepared statement</refpurpose>
+  <refname>mysqli_stmt_sqlstate</refname>
+  <refname>mysqli_stmt->sqlstate()</refname>
+  <refpurpose>Returns SQLSTATE error from previous statement operation</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
-  <para>Procedural style:</para>
   <methodsynopsis>
-   <type>bool</type><methodname>mysqli_stmt_store_result</methodname>
+   <type>string</type><methodname>mysqli_stmt_sqlstate</methodname>
    <methodparam><type>mysqli_stmt</type><parameter>stmt</parameter></methodparam>
   </methodsynopsis>
-  <para>Object oriented style (method):</para>
+  <para>Object oriented style (property):</para>
   <classsynopsis>
    <ooclass><classname>mysqli_stmt</classname></ooclass>
-   <methodsynopsis>
-    <type>bool</type><methodname>store_result</methodname>
-    <void />
-   </methodsynopsis>
+   <fieldsynopsis><type>string</type><varname>sqlstate</varname></fieldsynopsis>
   </classsynopsis>
   <para>
-   You must call <function>mysqli_stmt_store_result</function> for every query that
-   successfully produces a result set (<literal>SELECT, SHOW, DESCRIBE, EXPLAIN</literal>),
-   and only if you want to buffer the complete result set by the client,
-   so that the subsequent <function>mysqli_stmt_fetch</function> call returns buffered data.
+   Returns a string containing the SQLSTATE error code
+   for the most recently invoked prepared statement function that can succeed or fail.
+   The error code consists of five characters. <literal>'00000'</literal> means no error.
+   The values are specified by ANSI SQL and ODBC. For a list of possible values, see
+   <link xlink:href="&url.mysql.docs.error;">&url.mysql.docs.error;</link>.
   </para>
-  <note>
-   <para>
-    It is unnecessary to call <function>mysqli_stmt_store_result</function> for other queries,
-    but if you do, it will not harm or cause any notable performance in all cases.
-    You can detect whether the query produced a result set by checking if
-    <function>mysqli_stmt_result_metadata</function> returns NULL.
-   </para>
-  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -50,8 +39,19 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   &return.success;
+   Returns a string containing the SQLSTATE error code for the last error.
+   The error code consists of five characters. <literal>'00000'</literal> means no error.
   </para>
+ </refsect1>
+
+ <refsect1 role="notes">
+  &reftitle.notes;
+  <note>
+   <para>
+    Note that not all MySQL errors are yet mapped to SQLSTATE's.
+    The value <literal>HY000</literal> (general error) is used for unmapped errors.
+   </para>
+  </note>
  </refsect1>
 
  <refsect1 role="examples">
@@ -70,19 +70,20 @@ if (mysqli_connect_errno()) {
     exit();
 }
 
-$query = "SELECT Name, CountryCode FROM City ORDER BY Name LIMIT 20";
+$mysqli->query("CREATE TABLE myCountry LIKE Country");
+$mysqli->query("INSERT INTO myCountry SELECT * FROM Country");
+
+
+$query = "SELECT Name, Code FROM myCountry ORDER BY Name";
 if ($stmt = $mysqli->prepare($query)) {
+
+    /* drop table */
+    $mysqli->query("DROP TABLE myCountry");
 
     /* execute query */
     $stmt->execute();
 
-    /* store result */
-    $stmt->store_result();
-
-    printf("Number of rows: %d.\n", $stmt->num_rows);
-
-    /* free result */
-    $stmt->free_result();
+    printf("Error: %s.\n", $stmt->sqlstate);
 
     /* close statement */
     $stmt->close();
@@ -108,19 +109,20 @@ if (mysqli_connect_errno()) {
     exit();
 }
 
-$query = "SELECT Name, CountryCode FROM City ORDER BY Name LIMIT 20";
+mysqli_query($link, "CREATE TABLE myCountry LIKE Country");
+mysqli_query($link, "INSERT INTO myCountry SELECT * FROM Country");
+
+
+$query = "SELECT Name, Code FROM myCountry ORDER BY Name";
 if ($stmt = mysqli_prepare($link, $query)) {
+
+    /* drop table */
+    mysqli_query($link, "DROP TABLE myCountry");
 
     /* execute query */
     mysqli_stmt_execute($stmt);
 
-    /* store result */
-    mysqli_stmt_store_result($stmt);
-
-    printf("Number of rows: %d.\n", mysqli_stmt_num_rows($stmt));
-
-    /* free result */
-    mysqli_stmt_free_result($stmt);
+    printf("Error: %s.\n", mysqli_stmt_sqlstate($stmt));
 
     /* close statement */
     mysqli_stmt_close($stmt);
@@ -135,7 +137,7 @@ mysqli_close($link);
   &example.outputs;
   <screen>
 <![CDATA[
-Number of rows: 20.
+Error: 42S02.
 ]]>
   </screen>
  </refsect1>
@@ -144,9 +146,8 @@ Number of rows: 20.
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>mysqli_prepare</function></member>
-    <member><function>mysqli_stmt_result_metadata</function></member>
-    <member><function>mysqli_stmt_fetch</function></member>
+    <member><function>mysqli_stmt_errno</function></member>
+    <member><function>mysqli_stmt_error</function></member>
    </simplelist>
   </para>
  </refsect1>

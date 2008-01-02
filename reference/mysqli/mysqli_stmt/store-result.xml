@@ -1,37 +1,41 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.10 $ -->
-<refentry xml:id="function.mysqli-stmt-errno" xmlns="http://docbook.org/ns/docbook">
+<!-- $Revision: 1.1 $ -->
+<refentry xml:id="function.mysqli-stmt-store-result" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
-  <refname>mysqli_stmt_errno</refname>
-  <refname>mysqli_stmt->errno</refname>
-  <refpurpose>Returns the error code for the most recent statement call</refpurpose>
+  <refname>mysqli_stmt_store_result</refname>
+  <refname>mysqli_stmt->store_result()</refname>
+  <refpurpose>Transfers a result set from a prepared statement</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
-  <para>Procedural style :</para>
+  <para>Procedural style:</para>
   <methodsynopsis>
-   <type>int</type><methodname>mysqli_stmt_errno</methodname>
+   <type>bool</type><methodname>mysqli_stmt_store_result</methodname>
    <methodparam><type>mysqli_stmt</type><parameter>stmt</parameter></methodparam>
   </methodsynopsis>
-  <para>Object oriented style (property):</para>
+  <para>Object oriented style (method):</para>
   <classsynopsis>
    <ooclass><classname>mysqli_stmt</classname></ooclass>
-   <fieldsynopsis><type>int</type><varname>errno</varname></fieldsynopsis>
+   <methodsynopsis>
+    <type>bool</type><methodname>store_result</methodname>
+    <void />
+   </methodsynopsis>
   </classsynopsis>
   <para>
-   Returns the error code for the most recently invoked statement function
-   that can succeed or fail.
+   You must call <function>mysqli_stmt_store_result</function> for every query that
+   successfully produces a result set (<literal>SELECT, SHOW, DESCRIBE, EXPLAIN</literal>),
+   and only if you want to buffer the complete result set by the client,
+   so that the subsequent <function>mysqli_stmt_fetch</function> call returns buffered data.
   </para>
-  <para>
-   Client error message numbers are listed in the MySQL
-   <filename>errmsg.h</filename> header file,
-   server error message numbers are listed in
-   <filename>mysqld_error.h</filename>.
-   In the MySQL source distribution you can find a complete list of error
-   messages and error numbers in the file 
-   <filename>Docs/mysqld_error.txt</filename>.
-  </para>
+  <note>
+   <para>
+    It is unnecessary to call <function>mysqli_stmt_store_result</function> for other queries,
+    but if you do, it will not harm or cause any notable performance in all cases.
+    You can detect whether the query produced a result set by checking if
+    <function>mysqli_stmt_result_metadata</function> returns NULL.
+   </para>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -46,7 +50,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   An error code value. Zero means no error occurred.
+   &return.success;
   </para>
  </refsect1>
 
@@ -66,20 +70,19 @@ if (mysqli_connect_errno()) {
     exit();
 }
 
-$mysqli->query("CREATE TABLE myCountry LIKE Country");
-$mysqli->query("INSERT INTO myCountry SELECT * FROM Country");
-
-
-$query = "SELECT Name, Code FROM myCountry ORDER BY Name";
+$query = "SELECT Name, CountryCode FROM City ORDER BY Name LIMIT 20";
 if ($stmt = $mysqli->prepare($query)) {
-
-    /* drop table */
-    $mysqli->query("DROP TABLE myCountry");
 
     /* execute query */
     $stmt->execute();
 
-    printf("Error: %d.\n", $stmt->errno);
+    /* store result */
+    $stmt->store_result();
+
+    printf("Number of rows: %d.\n", $stmt->num_rows);
+
+    /* free result */
+    $stmt->free_result();
 
     /* close statement */
     $stmt->close();
@@ -105,20 +108,19 @@ if (mysqli_connect_errno()) {
     exit();
 }
 
-mysqli_query($link, "CREATE TABLE myCountry LIKE Country");
-mysqli_query($link, "INSERT INTO myCountry SELECT * FROM Country");
-
-
-$query = "SELECT Name, Code FROM myCountry ORDER BY Name";
+$query = "SELECT Name, CountryCode FROM City ORDER BY Name LIMIT 20";
 if ($stmt = mysqli_prepare($link, $query)) {
-
-    /* drop table */
-    mysqli_query($link, "DROP TABLE myCountry");
 
     /* execute query */
     mysqli_stmt_execute($stmt);
 
-    printf("Error: %d.\n", mysqli_stmt_errno($stmt));
+    /* store result */
+    mysqli_stmt_store_result($stmt);
+
+    printf("Number of rows: %d.\n", mysqli_stmt_num_rows($stmt));
+
+    /* free result */
+    mysqli_stmt_free_result($stmt);
 
     /* close statement */
     mysqli_stmt_close($stmt);
@@ -133,7 +135,7 @@ mysqli_close($link);
   &example.outputs;
   <screen>
 <![CDATA[
-Error: 1146.
+Number of rows: 20.
 ]]>
   </screen>
  </refsect1>
@@ -142,8 +144,9 @@ Error: 1146.
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>mysqli_stmt_error</function></member>
-    <member><function>mysqli_stmt_sqlstate</function></member>
+    <member><function>mysqli_prepare</function></member>
+    <member><function>mysqli_stmt_result_metadata</function></member>
+    <member><function>mysqli_stmt_fetch</function></member>
    </simplelist>
   </para>
  </refsect1>

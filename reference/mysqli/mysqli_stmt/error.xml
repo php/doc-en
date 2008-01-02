@@ -1,37 +1,28 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.13 $ -->
-<refentry xml:id="function.mysqli-stmt-fetch" xmlns="http://docbook.org/ns/docbook">
+<!-- $Revision: 1.1 $ -->
+<refentry xml:id="function.mysqli-stmt-error" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
-  <refname>mysqli_stmt_fetch</refname>
-  <refname>stmt->fetch()</refname>
-  <refpurpose>Fetch results from a prepared statement into the bound variables</refpurpose>
+  <refname>mysqli_stmt_error</refname>
+  <refname>mysqli_stmt->error</refname>
+  <refpurpose>Returns a string description for last statement error</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <para>Procedural style:</para>
   <methodsynopsis>
-   <type>bool</type><methodname>mysqli_stmt_fetch</methodname>
+   <type>string</type><methodname>mysqli_stmt_error</methodname>
    <methodparam><type>mysqli_stmt</type><parameter>stmt</parameter></methodparam>
   </methodsynopsis>
-  <para>Object oriented style (method):</para>
+  <para>Object oriented style (property):</para>
   <classsynopsis>
    <ooclass><classname>mysqli_stmt</classname></ooclass>
-   <methodsynopsis>
-    <type>bool</type><methodname>fetch</methodname>
-    <void />
-   </methodsynopsis>
+   <fieldsynopsis><type>string</type><varname>error</varname></fieldsynopsis>
   </classsynopsis>
   <para>
-   Fetch the result from a prepared statement into the variables bound by
-   <function>mysqli_stmt_bind_result</function>.
+   Returns a containing the error message for the most recently invoked
+   statement function that can succeed or fail.
   </para>
-  <note>
-   <para>
-    Note that all columns must be bound by the application before calling
-    <function>mysqli_stmt_fetch</function>.
-   </para>
-  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -45,31 +36,9 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <table>
-   &reftitle.returnvalues;
-   <tgroup cols='2'>
-    <thead>
-     <row>
-      <entry>Value</entry>
-      <entry>Description</entry>
-     </row>
-    </thead>
-    <tbody>
-     <row>
-      <entry>&true;</entry>
-      <entry>Success. Data has been fetched</entry>
-     </row>
-     <row>
-      <entry>&false;</entry>
-      <entry>Error occured</entry>
-     </row>
-     <row>
-      <entry>&null;</entry>
-      <entry>No more rows/data exists or data truncation occurred</entry>
-     </row>
-    </tbody>
-   </tgroup>
-  </table>
+  <para>
+   A string that describes the error. An empty string if no error occurred.
+  </para>
  </refsect1>
 
  <refsect1 role="examples">
@@ -79,6 +48,7 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+/* Open a connection */
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
 /* check connection */
@@ -87,20 +57,20 @@ if (mysqli_connect_errno()) {
     exit();
 }
 
-$query = "SELECT Name, CountryCode FROM City ORDER by ID DESC LIMIT 150,5";
+$mysqli->query("CREATE TABLE myCountry LIKE Country");
+$mysqli->query("INSERT INTO myCountry SELECT * FROM Country");
 
+
+$query = "SELECT Name, Code FROM myCountry ORDER BY Name";
 if ($stmt = $mysqli->prepare($query)) {
 
-    /* execute statement */
+    /* drop table */
+    $mysqli->query("DROP TABLE myCountry");
+
+    /* execute query */
     $stmt->execute();
 
-    /* bind result variables */
-    $stmt->bind_result($name, $code);
-
-    /* fetch values */
-    while ($stmt->fetch()) {
-        printf ("%s (%s)\n", $name, $code);
-    }
+    printf("Error: %s.\n", $stmt->error);
 
     /* close statement */
     $stmt->close();
@@ -117,6 +87,7 @@ $mysqli->close();
    <programlisting role="php">
 <![CDATA[
 <?php
+/* Open a connection */
 $link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
 /* check connection */
@@ -125,20 +96,20 @@ if (mysqli_connect_errno()) {
     exit();
 }
 
-$query = "SELECT Name, CountryCode FROM City ORDER by ID DESC LIMIT 150,5";
+mysqli_query($link, "CREATE TABLE myCountry LIKE Country");
+mysqli_query($link, "INSERT INTO myCountry SELECT * FROM Country");
 
+
+$query = "SELECT Name, Code FROM myCountry ORDER BY Name";
 if ($stmt = mysqli_prepare($link, $query)) {
 
-    /* execute statement */
+    /* drop table */
+    mysqli_query($link, "DROP TABLE myCountry");
+
+    /* execute query */
     mysqli_stmt_execute($stmt);
 
-    /* bind result variables */
-    mysqli_stmt_bind_result($stmt, $name, $code);
-
-    /* fetch values */
-    while (mysqli_stmt_fetch($stmt)) {
-        printf ("%s (%s)\n", $name, $code);
-    }
+    printf("Error: %s.\n", mysqli_stmt_error($stmt));
 
     /* close statement */
     mysqli_stmt_close($stmt);
@@ -153,11 +124,7 @@ mysqli_close($link);
   &example.outputs;
   <screen>
 <![CDATA[
-Rockford (USA)
-Tallahassee (USA)
-Salinas (USA)
-Santa Clarita (USA)
-Springfield (USA)
+Error: Table 'world.myCountry' doesn't exist.
 ]]>
   </screen>
  </refsect1>
@@ -166,10 +133,8 @@ Springfield (USA)
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>mysqli_prepare</function></member>
     <member><function>mysqli_stmt_errno</function></member>
-    <member><function>mysqli_stmt_error</function></member>
-    <member><function>mysqli_stmt_bind_result</function></member>
+    <member><function>mysqli_stmt_sqlstate</function></member>
    </simplelist>
   </para>
  </refsect1>
