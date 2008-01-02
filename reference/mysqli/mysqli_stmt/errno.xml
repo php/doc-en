@@ -1,34 +1,36 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.12 $ -->
-<refentry xml:id="function.mysqli-stmt-affected-rows" xmlns="http://docbook.org/ns/docbook">
+<!-- $Revision: 1.1 $ -->
+<refentry xml:id="function.mysqli-stmt-errno" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
-  <refname>mysqli_stmt_affected_rows</refname>
-  <refname>mysqli_stmt->affected_rows</refname>
-  <refpurpose>Returns the total number of rows changed, deleted, or
-  inserted by the last executed statement
-  </refpurpose>
+  <refname>mysqli_stmt_errno</refname>
+  <refname>mysqli_stmt->errno</refname>
+  <refpurpose>Returns the error code for the most recent statement call</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <para>Procedural style :</para>
   <methodsynopsis>
-   <type>int</type><methodname>mysqli_stmt_affected_rows</methodname>
+   <type>int</type><methodname>mysqli_stmt_errno</methodname>
    <methodparam><type>mysqli_stmt</type><parameter>stmt</parameter></methodparam>
   </methodsynopsis>
   <para>Object oriented style (property):</para>
   <classsynopsis>
    <ooclass><classname>mysqli_stmt</classname></ooclass>
-   <fieldsynopsis><type>int</type><varname>affected_rows</varname></fieldsynopsis>
+   <fieldsynopsis><type>int</type><varname>errno</varname></fieldsynopsis>
   </classsynopsis>
   <para>
-   Returns the number of rows affected by <literal>INSERT</literal>,
-   <literal>UPDATE</literal>, or <literal>DELETE</literal> query. 
+   Returns the error code for the most recently invoked statement function
+   that can succeed or fail.
   </para>
   <para>
-   This function only works with queries which update a table. In order to
-   get the number of rows from a SELECT query, use 
-   <function>mysqli_stmt_num_rows</function> instead.
+   Client error message numbers are listed in the MySQL
+   <filename>errmsg.h</filename> header file,
+   server error message numbers are listed in
+   <filename>mysqld_error.h</filename>.
+   In the MySQL source distribution you can find a complete list of error
+   messages and error numbers in the file 
+   <filename>Docs/mysqld_error.txt</filename>.
   </para>
  </refsect1>
 
@@ -44,27 +46,18 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   An integer greater than zero indicates the number of rows affected or
-   retrieved.
-   Zero indicates that no records where updated for an UPDATE/DELETE
-   statement, no rows matched the WHERE clause in the query or that no query
-   has yet been executed. -1 indicates that the query has returned an error.
+   An error code value. Zero means no error occurred.
   </para>
-  <note>
-   <para>
-    If the number of affected rows is greater than maximal PHP int value, the
-    number of affected rows will be returned as a string value.
-   </para>
-  </note>
  </refsect1>
 
  <refsect1 role="examples">
- &reftitle.examples;
+  &reftitle.examples;
   <example>
    <title>Object oriented style</title>
    <programlisting role="php">
 <![CDATA[
 <?php
+/* Open a connection */
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
 /* check connection */
@@ -73,22 +66,20 @@ if (mysqli_connect_errno()) {
     exit();
 }
 
-/* create temp table */
-$mysqli->query("CREATE TEMPORARY TABLE myCountry LIKE Country");
+$mysqli->query("CREATE TABLE myCountry LIKE Country");
+$mysqli->query("INSERT INTO myCountry SELECT * FROM Country");
 
-$query = "INSERT INTO myCountry SELECT * FROM Country WHERE Code LIKE ?";
 
-/* prepare statement */
+$query = "SELECT Name, Code FROM myCountry ORDER BY Name";
 if ($stmt = $mysqli->prepare($query)) {
 
-    /* Bind variable for placeholder */
-    $code = 'A%';
-    $stmt->bind_param("s", $code);
+    /* drop table */
+    $mysqli->query("DROP TABLE myCountry");
 
-    /* execute statement */
+    /* execute query */
     $stmt->execute();
 
-    printf("rows inserted: %d\n", $stmt->affected_rows);
+    printf("Error: %d.\n", $stmt->errno);
 
     /* close statement */
     $stmt->close();
@@ -105,6 +96,7 @@ $mysqli->close();
    <programlisting role="php">
 <![CDATA[
 <?php
+/* Open a connection */
 $link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
 /* check connection */
@@ -113,22 +105,20 @@ if (mysqli_connect_errno()) {
     exit();
 }
 
-/* create temp table */
-mysqli_query($link, "CREATE TEMPORARY TABLE myCountry LIKE Country");
+mysqli_query($link, "CREATE TABLE myCountry LIKE Country");
+mysqli_query($link, "INSERT INTO myCountry SELECT * FROM Country");
 
-$query = "INSERT INTO myCountry SELECT * FROM Country WHERE Code LIKE ?";
 
-/* prepare statement */
+$query = "SELECT Name, Code FROM myCountry ORDER BY Name";
 if ($stmt = mysqli_prepare($link, $query)) {
 
-    /* Bind variable for placeholder */
-    $code = 'A%';
-    mysqli_stmt_bind_param($stmt, "s", $code);
+    /* drop table */
+    mysqli_query($link, "DROP TABLE myCountry");
 
-    /* execute statement */
+    /* execute query */
     mysqli_stmt_execute($stmt);
 
-    printf("rows inserted: %d\n", mysqli_stmt_affected_rows($stmt));
+    printf("Error: %d.\n", mysqli_stmt_errno($stmt));
 
     /* close statement */
     mysqli_stmt_close($stmt);
@@ -143,7 +133,7 @@ mysqli_close($link);
   &example.outputs;
   <screen>
 <![CDATA[
-rows inserted: 17
+Error: 1146.
 ]]>
   </screen>
  </refsect1>
@@ -152,8 +142,8 @@ rows inserted: 17
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>mysqli_stmt_num_rows</function></member>
-    <member><function>mysqli_prepare</function></member>
+    <member><function>mysqli_stmt_error</function></member>
+    <member><function>mysqli_stmt_sqlstate</function></member>
    </simplelist>
   </para>
  </refsect1>

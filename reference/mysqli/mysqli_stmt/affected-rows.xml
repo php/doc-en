@@ -1,29 +1,34 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.10 $ -->
-<refentry xml:id="function.mysqli-stmt-sqlstate" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- $Revision: 1.1 $ -->
+<refentry xml:id="function.mysqli-stmt-affected-rows" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
-  <refname>mysqli_stmt_sqlstate</refname>
-  <refname>mysqli_stmt->sqlstate()</refname>
-  <refpurpose>Returns SQLSTATE error from previous statement operation</refpurpose>
+  <refname>mysqli_stmt_affected_rows</refname>
+  <refname>mysqli_stmt->affected_rows</refname>
+  <refpurpose>Returns the total number of rows changed, deleted, or
+  inserted by the last executed statement
+  </refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
+  <para>Procedural style :</para>
   <methodsynopsis>
-   <type>string</type><methodname>mysqli_stmt_sqlstate</methodname>
+   <type>int</type><methodname>mysqli_stmt_affected_rows</methodname>
    <methodparam><type>mysqli_stmt</type><parameter>stmt</parameter></methodparam>
   </methodsynopsis>
   <para>Object oriented style (property):</para>
   <classsynopsis>
    <ooclass><classname>mysqli_stmt</classname></ooclass>
-   <fieldsynopsis><type>string</type><varname>sqlstate</varname></fieldsynopsis>
+   <fieldsynopsis><type>int</type><varname>affected_rows</varname></fieldsynopsis>
   </classsynopsis>
   <para>
-   Returns a string containing the SQLSTATE error code
-   for the most recently invoked prepared statement function that can succeed or fail.
-   The error code consists of five characters. <literal>'00000'</literal> means no error.
-   The values are specified by ANSI SQL and ODBC. For a list of possible values, see
-   <link xlink:href="&url.mysql.docs.error;">&url.mysql.docs.error;</link>.
+   Returns the number of rows affected by <literal>INSERT</literal>,
+   <literal>UPDATE</literal>, or <literal>DELETE</literal> query. 
+  </para>
+  <para>
+   This function only works with queries which update a table. In order to
+   get the number of rows from a SELECT query, use 
+   <function>mysqli_stmt_num_rows</function> instead.
   </para>
  </refsect1>
 
@@ -39,29 +44,27 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns a string containing the SQLSTATE error code for the last error.
-   The error code consists of five characters. <literal>'00000'</literal> means no error.
+   An integer greater than zero indicates the number of rows affected or
+   retrieved.
+   Zero indicates that no records where updated for an UPDATE/DELETE
+   statement, no rows matched the WHERE clause in the query or that no query
+   has yet been executed. -1 indicates that the query has returned an error.
   </para>
- </refsect1>
-
- <refsect1 role="notes">
-  &reftitle.notes;
   <note>
    <para>
-    Note that not all MySQL errors are yet mapped to SQLSTATE's.
-    The value <literal>HY000</literal> (general error) is used for unmapped errors.
+    If the number of affected rows is greater than maximal PHP int value, the
+    number of affected rows will be returned as a string value.
    </para>
   </note>
  </refsect1>
 
  <refsect1 role="examples">
-  &reftitle.examples;
+ &reftitle.examples;
   <example>
    <title>Object oriented style</title>
    <programlisting role="php">
 <![CDATA[
 <?php
-/* Open a connection */
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
 /* check connection */
@@ -70,20 +73,22 @@ if (mysqli_connect_errno()) {
     exit();
 }
 
-$mysqli->query("CREATE TABLE myCountry LIKE Country");
-$mysqli->query("INSERT INTO myCountry SELECT * FROM Country");
+/* create temp table */
+$mysqli->query("CREATE TEMPORARY TABLE myCountry LIKE Country");
 
+$query = "INSERT INTO myCountry SELECT * FROM Country WHERE Code LIKE ?";
 
-$query = "SELECT Name, Code FROM myCountry ORDER BY Name";
+/* prepare statement */
 if ($stmt = $mysqli->prepare($query)) {
 
-    /* drop table */
-    $mysqli->query("DROP TABLE myCountry");
+    /* Bind variable for placeholder */
+    $code = 'A%';
+    $stmt->bind_param("s", $code);
 
-    /* execute query */
+    /* execute statement */
     $stmt->execute();
 
-    printf("Error: %s.\n", $stmt->sqlstate);
+    printf("rows inserted: %d\n", $stmt->affected_rows);
 
     /* close statement */
     $stmt->close();
@@ -100,7 +105,6 @@ $mysqli->close();
    <programlisting role="php">
 <![CDATA[
 <?php
-/* Open a connection */
 $link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
 /* check connection */
@@ -109,20 +113,22 @@ if (mysqli_connect_errno()) {
     exit();
 }
 
-mysqli_query($link, "CREATE TABLE myCountry LIKE Country");
-mysqli_query($link, "INSERT INTO myCountry SELECT * FROM Country");
+/* create temp table */
+mysqli_query($link, "CREATE TEMPORARY TABLE myCountry LIKE Country");
 
+$query = "INSERT INTO myCountry SELECT * FROM Country WHERE Code LIKE ?";
 
-$query = "SELECT Name, Code FROM myCountry ORDER BY Name";
+/* prepare statement */
 if ($stmt = mysqli_prepare($link, $query)) {
 
-    /* drop table */
-    mysqli_query($link, "DROP TABLE myCountry");
+    /* Bind variable for placeholder */
+    $code = 'A%';
+    mysqli_stmt_bind_param($stmt, "s", $code);
 
-    /* execute query */
+    /* execute statement */
     mysqli_stmt_execute($stmt);
 
-    printf("Error: %s.\n", mysqli_stmt_sqlstate($stmt));
+    printf("rows inserted: %d\n", mysqli_stmt_affected_rows($stmt));
 
     /* close statement */
     mysqli_stmt_close($stmt);
@@ -137,7 +143,7 @@ mysqli_close($link);
   &example.outputs;
   <screen>
 <![CDATA[
-Error: 42S02.
+rows inserted: 17
 ]]>
   </screen>
  </refsect1>
@@ -146,8 +152,8 @@ Error: 42S02.
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>mysqli_stmt_errno</function></member>
-    <member><function>mysqli_stmt_error</function></member>
+    <member><function>mysqli_stmt_num_rows</function></member>
+    <member><function>mysqli_prepare</function></member>
    </simplelist>
   </para>
  </refsect1>
