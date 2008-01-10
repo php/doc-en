@@ -1,4 +1,4 @@
-<?php
+<?php // vim: ts=4 sw=4 et tw=78 fdm=marker
 
 /*
   +----------------------------------------------------------------------+
@@ -25,7 +25,7 @@ $srcdir = "./";
 
 echo "configure.php: $cvs_id\n";
 
-// Settings
+// {{{ Settings
 $cygwin_php_bat = '../phpdoc-tools/php.bat';
 $cygwin_jade = '../phpdoc-tools/jade/jade.exe';
 $cygwin_openjade = '../phpdoc-tools/openjade/openjade.exe';
@@ -50,18 +50,20 @@ $sources = array("$srcdir/../php-src", "$srcdir/../php5");
 $pear_sources = array("$srcdir/../pear");
 $pecl_sources = array("$srcdir/../pecl");
 $infiles_cache = "$srcdir/infiles.cache";
+// }}}
 
-// Reject old PHP installations
+// Reject old PHP installations {{{
 if (phpversion() < 5) {
     echo "PHP 5 or above is required. Version detected: " . phpversion() . "\n";
     exit(100);
 }
 else {
     echo "PHP version: " . phpversion() . "\n";
-}
+} // }}}
 
 echo "\n";
 
+// $ac defaults {{{
 $ac = array();
 $ac['SRCDIR'] = $ac['srcdir'] = $srcdir;
 $ac['WORKDIR'] = $srcdir;
@@ -115,8 +117,9 @@ $ac['HTMLHELP_ENCODING'] = '';
 $ac['SP_OPTIONS'] = 'SP_ENCODING=XML SP_CHARSET_FIXED=YES';
 $ac['FORCE_DOM_SAVE'] = false;
 $ac['PARTIAL'] = false;
+// }}}
 
-$allowed_opts = array(
+$allowed_opts = array( // {{{
     'help',
     'force-dom-save',
     'partial',
@@ -135,9 +138,9 @@ $allowed_opts = array(
     'without-internals',
     'with-lang=',
     'with-treesaving',
-);
+); // }}}
 
-foreach ($_SERVER['argv'] as $opt) {
+foreach ($_SERVER['argv'] as $opt) { // {{{
     if (strpos($opt, "=") !== false) {
         list($o, $v) = explode("=", $opt);
     } else {
@@ -145,7 +148,7 @@ foreach ($_SERVER['argv'] as $opt) {
         $v = "yes";
     }
 
-    switch ($o) {
+    switch ($o) { // {{{
         case '--help':
             usage();
             exit();
@@ -212,10 +215,10 @@ foreach ($_SERVER['argv'] as $opt) {
         case '--force-dom-save':
             $ac['FORCE_DOM_SAVE'] = true;
             break;
-    }
-}
+    } // }}}
+} // }}}
 
-function find_file($file_array)
+function find_file($file_array) // {{{
 {
     $paths = explode(PATH_SEPARATOR, getenv('PATH'));
 
@@ -230,9 +233,9 @@ function find_file($file_array)
     }
 
     return '';
-}
+} // }}}
 
-// Check for PHP executable
+// Check for PHP executable {{{
 echo 'checking for php: ';
 
 if ($ac['PHP'] == '') {
@@ -262,10 +265,10 @@ else if (!is_file($ac['PHP'])) {
 }
 else {
     echo $ac['PHP'] . "\n";
-}
+} // }}}
 
 
-// Check for Jade/OpenJade executable
+// Check for Jade/OpenJade executable {{{
 echo 'checking for jade: ';
 
 if ($ac['JADE'] != '') {
@@ -301,10 +304,10 @@ if ($ac['JADE'] == '') {
 }
 else {
     echo $ac['JADE'] . "\n";
-}
+} // }}}
 
 
-// Check for NSGMLS executable
+// Check for NSGMLS executable {{{
 echo 'checking for nsgmls: ';
 
 if ($ac['NSGMLS'] != '') {
@@ -338,10 +341,10 @@ if ($ac['NSGMLS'] == '') {
 }
 else {
     echo $ac['NSGMLS'] . "\n";
-}
+} // }}}
 
 
-// Check for XSLTPROC executable
+// Check for XSLTPROC executable {{{
 echo 'checking for xsltproc: ';
 
 if ($ac['XSLTPROC'] != '') {
@@ -372,10 +375,10 @@ if ($ac['XSLTPROC'] == '') {
 }
 else {
     echo $ac['XSLTPROC'] . "\n";
-}
+} // }}}
 
 
-// Check for XMLLINT executable
+// Check for XMLLINT executable {{{
 echo 'checking for xmllint: ';
 
 if ($ac['XMLLINT'] != '') {
@@ -406,10 +409,10 @@ if ($ac['XMLLINT'] == '') {
 }
 else {
     echo $ac['XMLLINT'] . "\n";
-}
+} // }}}
 
 
-// Check for DocBook DSLs
+// Check for DocBook DSLs {{{
 echo 'checking for docbook (HTML): ';
 
 if (!file_exists($ac['DOCBOOK_HTML'])) {
@@ -436,10 +439,10 @@ else if (!is_file($ac['DOCBOOK_PRINT'])) {
 }
 else {
     echo $ac['DOCBOOK_PRINT'] . "\n";
-}
+} // }}}
 
 
-// Check for Catalogs
+// Check for Catalogs {{{
 echo 'checking catalogs: ';
 
 foreach ($catalogs as $catalog) {
@@ -456,10 +459,10 @@ else {
     $ac['CATALOG'] = substr($ac['CATALOG'], 1);
 
     echo $ac['CATALOG'] . "\n";
-}
+} // }}}
 
 
-// Check for PHP Source
+// Check for PHP Source {{{
 echo 'checking for PHP source: ';
 
 if ($ac['PHP_SOURCE'] != '') {
@@ -490,10 +493,10 @@ else {
     else {
         echo $ac['PHP_SOURCE'] . "\n";
     }
-}
+} // }}}
 
 
-// Check for PEAR Source
+// Check for PEAR Source {{{
 echo 'checking for PEAR source: ';
 
 if ($ac['PEAR_SOURCE'] != '') {
@@ -530,9 +533,9 @@ if ($ac['PEAR_SOURCE'] != '') {
 else {
     $ac['PEAR_SOURCE'] = 'no';
     echo "no\n";
-}
+} // }}}
 
-// Check for PECL Source
+// Check for PECL Source {{{
 echo 'checking for PECL source: ';
 
 if ($ac['PECL_SOURCE'] != '') {
@@ -569,9 +572,9 @@ if ($ac['PECL_SOURCE'] != '') {
 else {
     $ac['PECL_SOURCE'] = 'no';
     echo "no\n";
-}
+} // }}}
 
-// Check for additional PHP extensions
+// Check for additional PHP extensions {{{
 
 if ($ac['EXT_SOURCE'] != '') {
     echo "checking for additional PHP extensions:\n";
@@ -588,10 +591,10 @@ if ($ac['EXT_SOURCE'] != '') {
             echo "  extension '$ext' ignored\n";
         }
     }
-}
+} //}}}
 
 
-// Check for CSS to use for HTML docs
+// Check for CSS to use for HTML docs {{{
 echo 'checking for CSS to use for HTML docs: ';
 
 if ($ac['HTMLCSS'] != '') {
@@ -600,10 +603,10 @@ if ($ac['HTMLCSS'] != '') {
 }
 else {
     echo "none\n";
-}
+} // }}}
 
 
-// Check for CHM
+// Check for CHM {{{
 echo 'checking for CHM-only inclusion: ';
 if ($ac['CHMENABLED'] == 'yes') {
     $ac['CHMONLY_INCL_BEGIN'] = '';
@@ -613,10 +616,10 @@ if ($ac['CHMENABLED'] == 'yes') {
 else {
     $ac['CHMENABLED'] = 'no';
     echo "disabled\n";
-}
+} // }}}
 
 
-// Check for internals
+// Check for internals {{{
 echo 'checking for internals doc exclusion: ';
 if ($ac['INTERNALSDISABLED'] == 'yes') {
     $ac['INTERNALS_EXCL_BEGIN'] = '<!--';
@@ -626,10 +629,10 @@ if ($ac['INTERNALSDISABLED'] == 'yes') {
 else {
     $ac['INTERNALSDISABLED'] = 'no';
     echo "no\n";
-}
+} // }}}
 
 
-// Check for language
+// Check for language {{{
 echo 'checking for language: ';
 
 if ($ac['LANG'] != 'en') {
@@ -688,10 +691,10 @@ else {
     $ac['LANGDIR'] = $ac['LANG'];
     $ac['LANGWEB'] = $ac['LANG'];
     echo "en (default)\n";
-}
+} // }}}
 
 
-// Check paper type
+// Check paper type {{{
 if (in_array($ac['LANG'], explode('|', 'ar|cs|de|hu|it|ja|ko|pl|ro|sk|tr|zh_hk|zh_tw|zh_cn'))) {
     $ac['PAPER_TYPE'] = 'A4';
     $ac['PDF_PAPER_TYPE'] = 'a4';
@@ -699,16 +702,16 @@ if (in_array($ac['LANG'], explode('|', 'ar|cs|de|hu|it|ja|ko|pl|ro|sk|tr|zh_hk|z
 else {
     $ac['PAPER_TYPE'] = 'USletter';
     $ac['PDF_PAPER_TYPE'] = 'letter';
-}
+} // }}}
 
 
-// Localize order of number and element name in some headers autogenerated by Jade
+// Localize order of number and element name in some headers autogenerated by Jade {{{
 if (in_array($ac['LANG'], explode('|', 'hu|ko'))) {
     $ac['NUMBER_FIRST'] = '#t';
-}
+} // }}}
 
 
-// Reduce margins?
+// Reduce margins? {{{
 echo 'checking for treesaving: ';
 
 if ($ac['TREESAVING'] == '#t') {
@@ -727,9 +730,9 @@ if ($ac['TREESAVING'] == '#t') {
 }
 else {
     echo "no\n";
-}
+} // }}}
 
-// Force creation of .manual.xml
+// Force creation of .manual.xml {{{
 echo 'checking for forced .manual.xml: ';
 
 if ($ac['FORCE_DOM_SAVE']) {
@@ -737,10 +740,10 @@ if ($ac['FORCE_DOM_SAVE']) {
 }
 else {
     echo "no\n";
-}
+} // }}}
 
 
-// Encoding
+// Encoding {{{
 switch ($ac['LANG']) {
     case 'zh_tw':
     case 'zh_hk':
@@ -774,10 +777,10 @@ switch ($ac['LANG']) {
 
 if ($ac['LANG_HACK_FOR_HE'] == 'yes') {
     $ac['ENCODING'] = 'ISO-8859-8';
-}
+} // }}}
 
 
-// Palm doc title
+// Palm doc title {{{
 switch ($ac['LANG']) {
     case 'de':    $ac['PALMDOCTITLE'] = "'PHP Handbuch'"; break;
     case 'es':    $ac['PALMDOCTITLE']="'Manual de PHP'"; break;
@@ -799,11 +802,11 @@ switch ($ac['ENCODING']) {
     case 'ISO-8859-8': $ac['HTMLHELP_ENCODING'] = 'windows-1255'; break;
     case 'ISO-8859-9': $ac['HTMLHELP_ENCODING'] = 'windows-1254'; break;
     default:           $ac['HTMLHELP_ENCODING'] = $ac['ENCODING']; break;
-}
+} // }}}
 
 $ac['ENCODING'] = 'UTF-8';
 
-/* recursive glob() with a callback function */
+// recursive glob() with a callback function {{{
 function globbetyglob($globber, $userfunc)
 {
     foreach (glob("$globber/*") as $file) {
@@ -814,15 +817,15 @@ function globbetyglob($globber, $userfunc)
             call_user_func($userfunc, $file);
         }
     }
-}
+} // }}}
 
-function find_dot_in($filename) {
+function find_dot_in($filename) { // {{{
     if (substr($filename, -3) == '.in') {
         $GLOBALS['infiles'][] = $filename;
     }
-}
+} // }}}
 
-function generate_output_file($in, $out, $ac) {
+function generate_output_file($in, $out, $ac) { // {{{
     $data = file_get_contents($in);
 
     if ($data === false)
@@ -833,14 +836,15 @@ function generate_output_file($in, $out, $ac) {
     }
 
     return file_put_contents($out, $data);
-}
+} // }}}
 
-function make_scripts_executable($filename) {
+function make_scripts_executable($filename) { // {{{
     if (substr($filename, -3) == '.sh') {
         chmod($filename, 0755);
     }
-}
+} // }}}
 
+// Locate and generate all the *.in files {{{
 if (file_exists($infiles_cache)) {
     $infiles = file($infiles_cache);
 }
@@ -884,7 +888,7 @@ foreach ($infiles as $in) {
         echo "fail\n";
         exit(117);
     }
-}
+} // }}}
 
 globbetyglob($ac['INIPATH'], 'make_scripts_executable');
 file_put_contents('./entities/phpweb.ent', '');
@@ -900,7 +904,7 @@ $dom = new DOMDocument();
 $dom->load("manual.xml", LIBXML_NOENT);
 $dom->xinclude();
 
-if ($ac['PARTIAL']) {
+if ($ac['PARTIAL']) { // {{{
     $node = $dom->getElementById($ac['PARTIAL']);
     if (!$node) exit("Failed to find partial ID in source XML: " . $ac['PARTIAL']);
     if ($node->tagName !== 'book' && $node->tagName !== 'set') {
@@ -929,22 +933,23 @@ if ($ac['PARTIAL']) {
     $dom->save($filename);
     echo "Partial manual saved to $filename, to build it run 'phd -d" . realpath($filename). "'\n";
     exit(0);
-}
+} // }}} 
 
 if ($dom->validate()) {
-  echo "All good.\n";
-  $dom->save(".manual.xml");
-  echo "All you have to do now is run 'phd -d " . realpath(".manual.xml") . "'\n";
-  exit(0); // Tell the shell that this script finished successfully.
-} else {
-  echo "eyh man. No worries. Happ shittens. Try again after fixing the errors above\n";
+    echo "All good.\n";
+    $dom->save(".manual.xml");
 
-  if ($ac['FORCE_DOM_SAVE']) { 
+    echo "All you have to do now is run 'phd -d " . realpath(".manual.xml") . "'\n";
+    exit(0); // Tell the shell that this script finished successfully.
+} else {
+    echo "eyh man. No worries. Happ shittens. Try again after fixing the errors above\n";
+
+    if ($ac['FORCE_DOM_SAVE']) {
     // Allow the .manual.xml file to be created, even if it is not valid.
     echo "Writing .manual.xml anyway\n";
     $dom->save(".manual.xml");
-  }
+    }
 
-  exit(1); // Tell the shell that this script finished with an error.
+    exit(1); // Tell the shell that this script finished with an error.
 }
 
