@@ -900,8 +900,37 @@ passthru('"' .$ac['PHP'] . '" ' . ' -c ' . $ac['INIPATH'] . ' -q ./scripts/missi
 
 //print_r($ac);
 
+libxml_use_internal_errors(true);
+
+// Loop through and print out all XML validation errors {{{
+function print_errors($errors, $die = true) {
+    $errors = libxml_get_errors();
+    if ($errors) {
+        array_walk($errors, "xmlerr");
+        if ($die) {
+            echo "eyh man. No worries. Happ shittens. Try again after fixing the errors above\n";
+            exit(1);
+        }
+    }
+    libxml_clear_errors();
+} // }}}
+
+function xmlerr($err) { // {{{
+    // Skip all XInclude errors
+    if (!strpos($err->message, "include")) {
+        $file = file($err->file);
+        $line = rtrim($file[$err->line-1]);
+        $padding = str_repeat("-", $err->column) . "^";
+
+        printf("\nERROR (%s:%d)\n%s\n%s\n\t%s\n", $err->file, $err->line-1, $line, $padding, $err->message);
+    }
+} // }}}
+
 $dom = new DOMDocument();
-$dom->load("manual.xml", LIBXML_NOENT);
+$die = $dom->load("manual.xml", LIBXML_DTDVALID|LIBXML_NOENT);
+
+print_errors(libxml_get_errors(), $die === false ? true : !$ac['FORCE_DOM_SAVE']);
+
 $dom->xinclude();
 
 if ($ac['PARTIAL']) { // {{{
@@ -942,13 +971,12 @@ if ($dom->validate()) {
     echo "All you have to do now is run 'phd -d " . realpath(".manual.xml") . "'\n";
     exit(0); // Tell the shell that this script finished successfully.
 } else {
-    echo "eyh man. No worries. Happ shittens. Try again after fixing the errors above\n";
+    print_errors(libxml_get_errors(), !$ac['FORCE_DOM_SAVE']);
 
-    if ($ac['FORCE_DOM_SAVE']) {
+    // print_errors() will terminate the script if FORCE_DOM_SAVE isn't enabled
     // Allow the .manual.xml file to be created, even if it is not valid.
     echo "Writing .manual.xml anyway\n";
     $dom->save(".manual.xml");
-    }
 
     exit(1); // Tell the shell that this script finished with an error.
 }
