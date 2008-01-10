@@ -906,24 +906,26 @@ libxml_use_internal_errors(true);
 function print_errors($errors, $die = true) {
     $errors = libxml_get_errors();
     if ($errors) {
-        array_walk($errors, "xmlerr");
-        if ($die) {
+        $valid = true;
+        foreach($errors as $err) {
+            // Skip all XInclude errors
+            if (!strpos($err->message, "include")) {
+                $valid = false;
+
+                $file = file($err->file);
+                $line = rtrim($file[$err->line-1]);
+                $padding = str_repeat("-", $err->column) . "^";
+
+                printf("\nERROR (%s:%d)\n%s\n%s\n\t%s\n", $err->file, $err->line, $line, $padding, $err->message);
+            }
+        }
+
+        if (!$valid && $die) {
             echo "eyh man. No worries. Happ shittens. Try again after fixing the errors above\n";
             exit(1);
         }
     }
     libxml_clear_errors();
-} // }}}
-
-function xmlerr($err) { // {{{
-    // Skip all XInclude errors
-    if (!strpos($err->message, "include")) {
-        $file = file($err->file);
-        $line = rtrim($file[$err->line-1]);
-        $padding = str_repeat("-", $err->column) . "^";
-
-        printf("\nERROR (%s:%d)\n%s\n%s\n\t%s\n", $err->file, $err->line-1, $line, $padding, $err->message);
-    }
 } // }}}
 
 $dom = new DOMDocument();
