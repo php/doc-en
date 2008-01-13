@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
 <refentry xml:id="mysqli.set-local-infile-handler" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>mysqli::set_local_infile_handler</refname>
   <refname>mysqli_set_local_infile_handler</refname>
-  <refpurpose>Set callback functions for LOAD DATA LOCAL INFILE command</refpurpose>
+  <refpurpose>Set callback function for LOAD DATA LOCAL INFILE command</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -14,9 +14,172 @@
    <methodparam><type>mysqli</type><parameter>link</parameter></methodparam>
    <methodparam><type>callback</type><parameter>read_func</parameter></methodparam>
   </methodsynopsis>
+  <para>Object oriented style (method)</para>
+  <classsynopsis>
+   <ooclass><classname>mysqli</classname></ooclass>
+   <methodsynopsis>
+    <type>bool</type><methodname>set_local_infile_handler</methodname>
+    <methodparam><type>mysqli</type><parameter>link</parameter></methodparam>
+    <methodparam><type>callback</type><parameter>read_func</parameter></methodparam>
+   </methodsynopsis>
+  </classsynopsis>
+  
+  <para>Set callback function for LOAD DATA LOCAL INFILE command</para>
 
-  &warn.undocumented.func;
+  <para>
+   The callbacks task is to read input from the file specified in the 
+   <literal>LOAD DATA LOCAL INFILE</literal> and to reformat it into
+   the format understood by <literal>LOAD DATA INFILE</literal>.
+  </para>
 
+  <para>
+   The returned data needs to match the format speficied in the
+   <literal>LOAD DATA</literal> 
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    &mysqli.link.description;
+    <varlistentry>
+     <term><parameter>read_func</parameter></term>
+     <listitem>
+      <para>
+       A callback function or object method taking the following parameters:
+      </para>
+      <variablelist>
+       <varlistentry>
+        <term><parameter>stream</parameter></term>
+        <listitem><para>A PHP stream associated with the SQL commands INFILE</para></listitem>
+       </varlistentry>
+       <varlistentry>
+        <term><parameter>&amp;buffer</parameter></term>
+        <listitem><para>A string buffer to store the rewritten input into</para></listitem>
+       </varlistentry>
+       <varlistentry>
+        <term><parameter>buflen</parameter></term>
+        <listitem><para>The maximum number of characters to be stored in the buffer</para></listitem>
+       </varlistentry>
+       <varlistentry>
+        <term><parameter>&amp;errormsg</parameter></term>
+        <listitem><para>If an error occures you can store an error message in here</para></listitem>
+       </varlistentry>
+      </variablelist>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+  <para>
+   The callback function should return the number of characters stored
+   in the <parameter>buffer</parameter> or a negative value if an error
+   occured.
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   &return.success;
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title>Object oriented style</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+  $db = mysqli_init();
+  $db->real_connect("localhost","root","","test");
+
+  function callme($stream, &$buffer, $buflen, &$errmsg)
+  {
+    $buffer = fgets($stream);
+
+    echo $buffer;
+
+    // convert to upper case and replace "," delimiter with [TAB]
+    $buffer = strtoupper(str_replace(",", "\t", $buffer));
+
+    return strlen($buffer);
+  }
+
+  $db->set_local_infile_handler("callme");
+
+  echo "Input:\n";
+
+  $db->query("LOAD DATA LOCAL INFILE 'input.txt' INTO TABLE t1");
+
+  $res = $db->query("SELECT * FROM t1");
+
+  echo "\nResult:\n";
+  while ($row = $res->fetch_assoc()) {
+    echo join(",", $row)."\n";
+  }
+?>
+]]>
+   </programlisting>
+  </example>
+  <example>
+   <title>Procedural style</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+  $db = mysqli_init();
+  mysqli_real_connect($db, "localhost","root","","test");
+
+  function callme($stream, &$buffer, $buflen, &$errmsg)
+  {
+    $buffer = fgets($stream);
+
+    echo $buffer;
+
+    // convert to upper case and replace "," delimiter with [TAB]
+    $buffer = strtoupper(str_replace(",", "\t", $buffer));
+
+    return strlen($buffer);
+  }
+
+  mysqli_set_local_infile_handler($db, "callme");
+
+  echo "Input:\n";
+
+  mysqli_query($db, "LOAD DATA LOCAL INFILE 'input.txt' INTO TABLE t1");
+
+  $res = mysqli_query($db, "SELECT * FROM t1");
+
+  echo "\nResult:\n";
+  while ($row = mysqli_fetch_assoc($res)) {
+    echo join(",", $row)."\n";
+  }
+?>
+]]>
+   </programlisting>
+  </example>
+  &example.outputs;
+  <screen>
+<![CDATA[
+Input:
+23,foo
+42,bar
+
+Output:
+23,FOO
+42,BAR
+]]>
+  </screen>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><function>mysqli_set_local_infile_default</function></member>
+   </simplelist>
+  </para>
  </refsect1>
 
 </refentry>
