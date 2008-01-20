@@ -227,7 +227,7 @@ function write_functions_xml()
 
     fwrite($fp, '<?xml version="1.0" encoding="utf-8"?>'."\n" .
                '<!-- $'.'Revision: 1.1 $ -->'."\n" .
-               '<reference xml:id="function.' . $fixname . '" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">' . "\n" .
+               '<refentry xml:id="function.' . $fixname . '" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">' . "\n" .
                " <refnamediv>\n" .
                "  <refname>$funcname</refname>\n" .
                "  <refpurpose>$purpose</refpurpose>\n" .
