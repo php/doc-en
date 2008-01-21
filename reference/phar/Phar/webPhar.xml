@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.1 $ -->
-<refentry xml:id="Phar.webPhar" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- $Revision: 1.2 $ -->
+<refentry xml:id="phar.webphar" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Phar::webPhar</refname>
-  <refpurpose>mapPhar for web-based phars. Reads the currently executed file (a phar)</refpurpose>
+  <refpurpose>mapPhar for web-based phars. front controller for web applications</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -16,9 +16,20 @@
    <methodparam><type>array</type><parameter>mimetypes</parameter></methodparam>
    <methodparam><type>array</type><parameter>rewrites</parameter></methodparam>
   </methodsynopsis>
-  &warn.undocumented.func;
   <para>
-   mapPhar for web-based phars. Reads the currently executed file (a phar)
+   <function>Phar::mapPhar</function> for web-based phars.  This method parses
+   <literal>$_SERVER['REQUEST_URI']</literal> and routes a request from a web
+   browser to an internal file within the phar archive.  In essence, it simulates
+   a web server, routing requests to the correct file, echoing the correct headers
+   and parsing PHP files as needed.  This powerful method is part of what makes it easy
+   to convert an existing PHP application into a phar archive.  Combined with
+   <function>Phar::mungServer</function> and <function>Phar::interceptFileFuncs</function>,
+   any web application can be used unmodified from a phar archive.
+  </para>
+  <para>
+   <function>Phar::webPhar</function> should only be
+   called from the stub of a phar archive (see <link linkend="phar.fileformat.stub">here</link>
+   for more information on what a stub is).
   </para>
  </refsect1>
 
@@ -30,6 +41,8 @@
      <term><parameter>alias</parameter></term>
      <listitem>
       <para>
+       The alias that can be used in <literal>phar://</literal> URLs to
+       refer to this archive, rather than its full path.
       </para>
      </listitem>
     </varlistentry>
@@ -37,6 +50,8 @@
      <term><parameter>index</parameter></term>
      <listitem>
       <para>
+       The location within the phar of the directory index, defaults to
+       <literal>index.php</literal>.
       </para>
      </listitem>
     </varlistentry>
@@ -44,6 +59,8 @@
      <term><parameter>f404</parameter></term>
      <listitem>
       <para>
+       The location of the script to run when a file is not found.  This
+       script should output the proper HTTP 404 headers.
       </para>
      </listitem>
     </varlistentry>
@@ -51,6 +68,54 @@
      <term><parameter>mimetypes</parameter></term>
      <listitem>
       <para>
+       An array mapping additional file extensions to MIME type.  By default,
+       these extensions are mapped to these mime types:
+       <programlisting role="php">
+        <![CDATA[
+$mimes = array(
+    'phps' => 2, // pass to highlight_file()
+    'c' => 'text/plain',
+    'cc' => 'text/plain',
+    'cpp' => 'text/plain',
+    'c++' => 'text/plain',
+    'dtd' => 'text/plain',
+    'h' => 'text/plain',
+    'log' => 'text/plain',
+    'rng' => 'text/plain',
+    'txt' => 'text/plain',
+    'xsd' => 'text/plain',
+    'php' => 1, // parse as PHP
+    'inc' => 1, // parse as PHP
+    'avi' => 'video/avi',
+    'bmp' => 'image/bmp',
+    'css' => 'text/css',
+    'gif' => 'image/gif',
+    'htm' => 'text/html',
+    'html' => 'text/html',
+    'htmls' => 'text/html',
+    'ico' => 'image/x-ico',
+    'jpe' => 'image/jpeg',
+    'jpg' => 'image/jpeg',
+    'jpeg' => 'image/jpeg',
+    'js' => 'application/x-javascript',
+    'midi' => 'audio/midi',
+    'mid' => 'audio/midi',
+    'mod' => 'audio/mod',
+    'mov' => 'movie/quicktime',
+    'mp3' => 'audio/mp3',
+    'mpg' => 'video/mpeg',
+    'mpeg' => 'video/mpeg',
+    'pdf' => 'application/pdf',
+    'png' => 'image/png',
+    'swf' => 'application/shockwave-flash',
+    'tif' => 'image/tiff',
+    'tiff' => 'image/tiff',
+    'wav' => 'audio/wav',
+    'xbm' => 'image/xbm',
+    'xml' => 'text/xml',
+);
+        ]]>
+       </programlisting>
       </para>
      </listitem>
     </varlistentry>
@@ -58,6 +123,19 @@
      <term><parameter>rewrites</parameter></term>
      <listitem>
       <para>
+       An array mapping URI to internal file, simulating mod_rewrite of apache.
+       For example:
+       <programlisting role="php">
+        <![CDATA[
+array(
+    'myinfo' => 'myinfo.php'
+);
+        ]]>
+       </programlisting>
+       would route calls to <literal>http://&lt;host&gt;/myphar.phar/myinfo</literal>
+       to the file <literal>phar:///path/to/myphar.phar/myinfo.php</literal>, preserving
+       GET/POST.  This does not quite work like mod_rewrite in that it would not
+       match <literal>http://&lt;host&gt;/myphar.phar/myinfo/another</literal>.
       </para>
      </listitem>
     </varlistentry>
@@ -68,84 +146,63 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
+   No return values
   </para>
  </refsect1>
 
- <!-- Use when ERRORS exist
  <refsect1 role="errors">
   &reftitle.errors;
   <para>
-   When does this function throw E_* level errors, or exceptions?
+   Throws <classname>PharException</classname> when unable to open the internal
+   file to output, if <function>Phar::webPhar</function> is used from within
+   an <link linkend="ini.phar.extract-list">extracted Phar archive</link>, or if
+   called from a non-stub.  If an invalid array value is passed into
+   <parameter>mimetypes</parameter> or to <parameter>rewrites</parameter>, then
+   <classname>UnexpectedValueException</classname> is thrown.
   </para>
  </refsect1>
- -->
 
- <!-- Use when a CHANGELOG exists
- <refsect1 role="changelog">
-  &reftitle.changelog;
-  <para>
-   <informaltable>
-    <tgroup cols="2">
-     <thead>
-      <row>
-       <entry>&Version;</entry>
-       <entry>&Description;</entry>
-      </row>
-     </thead>
-     <tbody>
-      <row>
-       <entry>Enter the PHP version of change here</entry>
-       <entry>Description of change</entry>
-      </row>
-     </tbody>
-    </tgroup>
-   </informaltable>
-  </para>
- </refsect1>
- -->
-
- <!-- Use when examples exist
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
    <example>
     <title>A <function>Phar::webPhar</function> example</title>
     <para>
-     Any text that describes the purpose of the example, or
-     what goes on in the example should go here (inside the
-     <example> tag, not out
+     With the example below, the created phar will display <literal>Hello World</literal>
+     if one browses to <literal>/myphar.phar/index.php</literal> or to
+     <literal>/myphar.phar</literal>, and will display the source of
+     <literal>index.phps</literal> if one browses to <literal>/myphar.phar/index.phps</literal>.
     </para>
     <programlisting role="php">
 <![CDATA[
 <?php
-if ($anexample === true) {
-    echo 'Use the PEAR Coding Standards';
+// creating the phar archive:
+try {
+    $phar = new Phar('myphar.phar');
+    $phar['index.php'] = '<?php echo "Hello World"; ?>';
+    $phar['index.phps'] = '<?php echo "Hello World"; ?>';
+    $phar->setStub('<?php
+Phar::webPhar();
+__HALT_COMPILER(); ?>');
+} catch (Exception $e) {
+    // handle error here
 }
 ?>
 ]]>
     </programlisting>
-    &example.outputs;
-    <screen>
-<![CDATA[
-Use the PEAR Coding Standards
-]]>
-    </screen>
    </example>
   </para>
  </refsect1>
- -->
 
- <!-- Use when adding See Also links
  <refsect1 role="seealso">
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function></function></member>
-    <member>Or <link linkend="somethingelse">something else</link></member>
+    <member><function>Phar::mungServer</function></member>
+    <member><function>Phar::interceptFileFuncs</function></member>
    </simplelist>
   </para>
  </refsect1>
- -->
 
 </refentry>
 
