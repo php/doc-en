@@ -213,7 +213,7 @@ if (function_exists('realpath')) {
     }
 }
 function find_file($file_array) {
-    $paths = explode(PATH_SEPARATOR, $_ENV['PATH']);
+    $paths = explode(PATH_SEPARATOR, getenv('PATH'));
 
     if (is_array($paths)) {
         foreach ($paths as $path) {
