@@ -28,8 +28,8 @@ $cvs_id = '$Id$';
 echo "configure.php: $cvs_id\n";
 
 // Settings
-$cygwin_php_bat = '{$srcdir}/../phpdoc-tools/php.bat';
-$cygwin_phd_bat = '{$srcdir]/../phpdoc-tools/phd.bat';
+$cygwin_php_bat = $srcdir .'/../phpdoc-tools/php.bat';
+$cygwin_phd_bat = $srcdir .'/../phpdoc-tools/phd.bat';
 $php_bin_names = array('php', 'php5', 'cli/php', 'php.exe', 'php5.exe', 'php-cli.exe', 'php-cgi.exe');
 $phd_bin_names = array('phd', 'phd.exe');
 $nsgmls_bin_names = array('nsgmls', 'onsgmls', 'nsgmls.exe', 'onsgmls.exe');
