@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.7 $ -->
-<chapter xml:id="phar.using.basics" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- $Revision: 1.8 $ -->
+<chapter xml:id="phar.using" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <title>Using Phar Archives</title>
 
  <section>
@@ -11,7 +11,7 @@
   Phar archive is used to distribute a complete PHP application
   or library in a single file.  Unlike Java's implementation of JAR archives,
   no external tool is required to process or run a PHP Phar archive.  A
-  Phar archive application is processed exactly like any other PHP application:
+  Phar archive application is used exactly like any other PHP application:
  </para>
  <screen>
   <![CDATA[
@@ -33,12 +33,12 @@ include 'coollibrary.phar';
   </informalexample>
  </para>
  <para>
-  What makes Phar archives incredibly useful is the <literal>phar</literal>
-  stream wrapper, which is explained in depth <link linkend="phar.using.stream">here</link>.
-  Using this stream wrapper, it is possible to access
-  individual files within a phar as if the phar were its own filesystem.
-  The <literal>phar</literal> stream wrapper supports all read/write operations
-  on files, and <function>opendir</function> on directories.
+  The <literal>phar</literal> stream wrapper provides the core of the phar extension, and
+  is explained in detail <link linkend="phar.using.stream">here</link>.
+  The phar stream wrapper allows accessing the files within a phar archive using
+  PHP's standard file functions <function>fopen</function>, <function>opendir</function>, and
+  others that work on regular files.  The <literal>phar</literal> stream wrapper supports all
+  read/write operations on both files and directories.
  </para>
  <para>
   <informalexample>
@@ -55,9 +55,8 @@ echo file_get_contents('phar:///fullpath/to/coollibrary.phar/images/wow.jpg');
   </informalexample>
  </para>
  <para>
-  Also provided with the Phar extension is the <classname>Phar</classname> class,
-  which allows accessing the files of the Phar archive as if it were an
-  associative array, and other functionality.  The Phar class is explained
+  The <classname>Phar</classname> class implements advanced functionality for accessing
+  files and for creating phar archives.  The Phar class is explained in detail
   <link linkend="phar.using.object">here</link>.
  </para>
  <para>
@@ -67,11 +66,12 @@ echo file_get_contents('phar:///fullpath/to/coollibrary.phar/images/wow.jpg');
 <?php
 try {
     // open an existing phar
-    $p = new Phar('coollibrary.phar');
-    foreach ($p as $file) {
+    $p = new Phar('coollibrary.phar', 0);
+    // Phar extends SPL's DirectoryIterator class
+    foreach (new RecursiveIteratorIterator($p) as $file) {
         // $file is a PharFileInfo class, and inherits from SplFileInfo
         echo $file->getFileName() . "\n";
-        echo $file . "\n"; // display contents;
+        echo file_get_contents($file->getPathName()) . "\n"; // display contents;
     }
     if (isset($p['internal/file.php'])) {
         var_dump($p['internal/file.php']->getMetaData());
@@ -82,29 +82,32 @@ try {
     // On production servers, Phars need never be created,
     // only executed.
     if (Phar::canWrite()) {
-        $p = new Phar(dirname(__FILE__) . '/newphar.phar', 0, 'newphar.phar');
+        $p = new Phar('newphar.tar.phar', 0, 'newphar.tar.phar');
+        // make this a tar-based phar archive, compressed with gzip compression (.tar.gz)
+        $p->convertToTar(Phar::GZ);
+
         // create transaction - nothing is written to newphar.phar
         // until stopBuffering() is called, although temporary storage is needed
         $p->startBuffering();
-        // add a new file, set its contents
+        // add all files in /path/to/project, saving in the phar with the prefix "project"
+        $p->buildFromIterator(new RecursiveIteratorIterator(new DirectoryIterator('/path/to/project')), '/path/to/');
+
+        // add a new file via the array access API
         $p['file1.txt'] = 'Information';
         $fp = fopen('hugefile.dat', 'rb');
-        // copy from the stream
+        // copy all data from the stream
         $p['data/hugefile.dat'] = $fp;
-        if (Phar::canCompress()) {
+
+        if (Phar::canCompress(Phar::GZ)) {
             $p['data/hugefile.dat']->setCompressedGZ();
         }
+
         $p['images/wow.jpg'] = file_get_contents('images/wow.jpg');
         // any value can be saved as file-specific meta-data
         $p['images/wow.jpg']->setMetaData(array('mime-type' => 'image/jpeg'));
         $p['index.php'] = file_get_contents('index.php');
         $p->setMetaData(array('bootstrap' => 'index.php'));
-        // set the loader stub
-        $p->setStub('<?php
-$p = new Phar(__FILE__);
-$m = $p->getMetaData();
-require "phar://" . __FILE__ . "/" . $m["bootstrap"];
-__HALT_COMPILER();');
+
         // save the phar archive to disk
         $p->stopBuffering();
     }
@@ -116,6 +119,68 @@ __HALT_COMPILER();');
    </programlisting>
   </informalexample>
  </para>
+ <para>
+  As of version 2.0.0, The <classname>Phar</classname> class also provides 3 static methods, <function>Phar::webPhar</function>,
+  <function>Phar::mungServer</function> and <function>Phar::interceptFileFuncs</function> that are crucial
+  to packaging up PHP applications designed for usage on regular filesystems and for web-based applications.
+  <function>Phar::webPhar</function> implements a front controller that routes HTTP calls to the correct
+  location within the phar archive.  <function>Phar::mungServer</function> is used to modify the values of
+  the <literal>$_SERVER</literal> array to trick applications that process these values.
+  <function>Phar::interceptFileFuncs</function> instructs Phar to intercept calls to
+  <function>fopen</function>, <function>file_get_contents</function>, <function>opendir</function>, and
+  all of the stat-based functions (<function>file_exists</function>, <function>is_readable</function> and so on) and
+  route all relative paths to locations within the phar archive.
+ </para>
+ <para>
+  As an example, packaging up a release of the popular phpMyAdmin application for use as a phar archive requires
+  only this simple script and then <literal>phpMyAdmin.phar.tar.php</literal> can be accessed as a regular file
+  from your web server after modifying the user/password:
+ </para>
+ <para>
+  <informalexample>
+   <programlisting>
+    <![CDATA[
+<?php
+@unlink('phpMyAdmin.phar.tar.php');
+copy('phpMyAdmin-2.11.3-english.tar.gz', 'phpMyAdmin.phar.tar.php');
+$a = new Phar('phpMyAdmin.phar.tar.php');
+$a->startBuffering();
+$a["phpMyAdmin-2.11.3-english/config.inc.php"] = '<?php
+/* Servers configuration */
+$i = 0;
+
+/* Server localhost (config:root) [1] */
+$i++;
+$cfg[\'Servers\'][$i][\'host\'] = \'localhost\';
+$cfg[\'Servers\'][$i][\'extension\'] = \'mysqli\';
+$cfg[\'Servers\'][$i][\'connect_type\'] = \'tcp\';
+$cfg[\'Servers\'][$i][\'compress\'] = false;
+$cfg[\'Servers\'][$i][\'auth_type\'] = \'config\';
+$cfg[\'Servers\'][$i][\'user\'] = \'root\';
+$cfg[\'Servers\'][$i][\'password\'] = \'\';
+
+
+/* End of servers configuration */
+if (strpos(PHP_OS, \'WIN\') !== false) {
+    $cfg[\'UploadDir\'] = getcwd();
+} else {
+    $cfg[\'UploadDir\'] = \'/tmp/pharphpmyadmin\';
+    @mkdir(\'/tmp/pharphpmyadmin\');
+    @chmod(\'/tmp/pharphpmyadmin\', 0777);
+}';
+$a->setStub('<?php
+Phar::interceptFileFuncs();
+Phar::webPhar("phpMyAdmin.phar", "phpMyAdmin-2.11.3-english/index.php");
+echo "phpMyAdmin is intended to be executed from a web browser\n";
+exit -1;
+__HALT_COMPILER();
+');
+$a->stopBuffering();
+?>
+    ]]>
+   </programlisting>
+  </informalexample>
+ </para>
 </section>
 <section xml:id="phar.using.stream"  xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <title>Using Phar Archives: the phar stream wrapper</title>
@@ -123,9 +188,8 @@ __HALT_COMPILER();');
   The Phar stream wrapper fully supports <function>fopen</function> for
   read, write or append, <function>unlink</function>, <function>stat</function>,
   <function>fstat</function>, <function>fseek</function>, <function>rename</function>
-  and directory stream operation <function>opendir</function>.  The Phar stream wrapper
-  does not support creating or erasing a directory, as files are stored only
-  as files, and the concept of an abstract directory does not exist.
+  and directory stream operations <function>opendir</function> and as of version 2.0.0, <function>rmdir</function>
+  and <function>mkdir</function>.
  </para>
  <para>
   Individual file compression and per-file metadata can also be manipulated
@@ -155,7 +219,7 @@ file_put_contents('phar://my.phar/somefile.php', 0, $context);
  <para>
   Although it is possible to create phar archives from scratch just using
   stream operations, it is best to use the functionality built into
-  the Phar class.  The stream wrapper is best used for read operations.
+  the Phar class.  The stream wrapper is best used for read-only operations.
  </para>
 </section>
 <section xml:id="phar.using.object" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -248,10 +312,10 @@ $f = file_get_contents('phar://myphar.phar/whatever.txt');
  <para>
   In addition, the <classname>Phar</classname> object is the only way to access
   Phar-specific metadata, through
-  <link linkend="function.phar-getmetadata"><function>Phar-&gt;getMetaData</function></link>,
+  <function>Phar::getMetaData</function>,
   and the only way to set or retrieve a Phar archive's PHP loader stub through
-  <link linkend="function.phar-getstub"><function>Phar-&gt;getStub</function></link> and
-  <link linkend="function.phar-setstub"><function>Phar-&gt;setStub</function></link>.
+  <function>Phar::getStub</function> and
+  <function>Phar::setStub</function>.
   Additionally, compression for the entire Phar archive at once can only be manipulated
   using the <classname>Phar</classname> class.
  </para>

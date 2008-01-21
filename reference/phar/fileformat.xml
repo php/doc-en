@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.7 $ -->
+<!-- $Revision: 1.8 $ -->
 <chapter xml:id="phar.fileformat" xmlns="http://docbook.org/ns/docbook">
- <title>Phar File format</title>
+ <title>What makes a phar a phar and not a tar or a zip?</title>
  <section>
-  <title>Phar file format</title>
+  <title>Ingredients of all Phar archives, independent of file format</title>
   <para>
-   All Phar files contain three to four sections:
+   All Phar archives contain three to four sections:
    <orderedlist>
     <listitem>
      <para>a stub</para>
@@ -17,7 +17,7 @@
      <para>the file contents</para>
     </listitem>
     <listitem>
-     <para>[optional] a signature for verifying Phar integrity</para>
+     <para>[optional] a signature for verifying Phar integrity (phar file format only)</para>
     </listitem>
    </orderedlist>
   </para>
@@ -55,9 +55,161 @@ __HALT_COMPILER();
   <literal><![CDATA[?>]]></literal> or the phar extension will be unable
   to process the Phar archive's manifest.
  </para>
-</section>
-<section>
- <title>Phar Manifest Format</title>
+ <para>
+  In a tar or zip-based phar archive, the stub is stored in the
+  <literal>.phar/stub.php</literal> file.  The default stub for phar-based
+  Phar archives contains approximately 7k of code to extract the contents
+  of the phar and execute them.  See <function>Phar::createDefaultStub</function>
+  for more detail.
+ </para>
+ <para>
+  The phar alias is stored in a tar or zip-based phar archive in the
+  <literal>.phar/alias.txt</literal> file as plain text.
+ </para>
+ </section>
+ <section>
+  <title>Head-to-head comparison of Phar, Tar and Zip</title>
+  <para>
+   What are the good and the bad things about the three supported file formats in
+   the phar extension?  This table attempts to address that question.
+  <table>
+   <title>Feature matrix: Phar vs. Tar vs. Zip</title>
+   <tgroup cols="4">
+    <thead>
+     <row>
+      <entry>Feature</entry>
+      <entry>Phar</entry>
+      <entry>Tar</entry>
+      <entry>Zip</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>Standard File Format</entry>
+      <entry>No</entry>
+      <entry>Yes</entry>
+      <entry>Yes</entry>
+     </row>
+     <row>
+      <entry>Can be executed without the Phar Extension
+       <link linkend="phar.fileformat.phartip">[1]</link>
+      </entry>
+      <entry>Yes</entry>
+      <entry>No</entry>
+      <entry>No</entry>
+     </row>
+     <row>
+      <entry>Per-file compression</entry>
+      <entry>Yes</entry>
+      <entry>No</entry>
+      <entry>Yes</entry>
+     </row>
+     <row>
+      <entry>Whole-archive compression</entry>
+      <entry>Yes</entry>
+      <entry>Yes</entry>
+      <entry>No</entry>
+     </row>
+     <row>
+      <entry>Whole-archive signature validation</entry>
+      <entry>Yes</entry>
+      <entry>No</entry>
+      <entry>No</entry>
+     </row>
+     <row>
+      <entry>Web-specific application support</entry>
+      <entry>Yes</entry>
+      <entry>Yes</entry>
+      <entry>Yes</entry>
+     </row>
+     <row>
+      <entry>Per-file Meta-data</entry>
+      <entry>Yes</entry>
+      <entry>No</entry>
+      <entry>Yes</entry>
+     </row>
+     <row>
+      <entry>Whole-Archive Meta-data</entry>
+      <entry>Yes</entry>
+      <entry>No</entry>
+      <entry>Yes</entry>
+     </row>
+     <row>
+      <entry>Archive creation/modification
+       <link linkend="phar.fileformat.phartip2">[2]</link>
+      </entry>
+      <entry>Yes</entry>
+      <entry>Yes</entry>
+      <entry>Yes</entry>
+     </row>
+     <row>
+      <entry>Full support for all stream wrapper functions</entry>
+      <entry>Yes</entry>
+      <entry>Yes</entry>
+      <entry>Yes</entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </table>
+  </para>
+  <para xml:id="phar.fileformat.phartip">
+   <tip>
+    <para>
+    [1] PHP can only directly access the contents of a Phar archive
+    without the Phar extension if it is using a <literal>stub</literal>
+    that extracts the contents of the phar archive.  The stub
+    created by <function>Phar::createDefaultStub</function> extracts
+    the phar archive and runs its contents from a temporary directory
+    if no phar extension is found.
+    </para>
+   </tip>
+  </para>
+  <para xml:id="phar.fileformat.phartip2">
+   <tip>
+    <para>
+    [2] All write access requires <literal>phar.readonly</literal> to
+    be disabled in php.ini or on the command-line directly.
+    </para>
+   </tip>
+  </para>
+ </section>
+ <section>
+  <title>Tar-based phars</title>
+  <para>
+   Archives based on the tar file format follow the more modern USTAR
+   file format.  The design of the tar file header makes them more efficient
+   to access than the zip file format, and almost as efficient as the phar
+   file format.  File names are limited to 255 bytes, including
+   full path within the phar archive.  There is no limit on the number of files
+   within a tar-based phar archive.  These archives can fully compressed in
+   gzip or bzip2 format and still be executed by the Phar extension.
+  </para>
+  <para>
+   To compress an entire archive, use <function>Phar::compressAllFilesGZ</function>
+   or <function>Phar::compressAllFilesBZIP2</function>.  To decompress an entire
+   archive, use <function>Phar::uncompressAllFiles</function>
+  </para>
+ </section>
+ <section>
+  <title>Zip-based phars</title>
+  <para>
+   Archives based on the zip file format support several features built into
+   the zip file format.  Per-file and whole-archive metadata is stored in
+   the zip file comment and zip archive comment as a serialized string.  Pre-existing
+   zip comments will be successfully read as a string.  Per-file compression
+   read/write is supported with zlib compression, and read access is supported
+   with bzip2 compression.  There is no limit on the number of files
+   within a zip-based phar archive.  Empty directories are stored in the zip archive
+   as files with a trailing slash like <literal>my/directory/</literal>
+  </para>
+ </section>
+ <section>
+ <title>Phar File Format</title>
+ <para>
+  The phar file format is literally laid out as stub/manifest/contents/signature, and
+  stores the crucial information of what is included in the phar archive in its
+  <literal>manifest</literal>.
+ </para>
  <para>
   The Phar manifest is a highly optimized format that allows per-file
   specification of file compression, file permissions, and even user-defined
@@ -222,6 +374,10 @@ __HALT_COMPILER();
   </table>
  </para>
  <para>
+  Note that as of API version 1.1.1, empty directories are stored as filenames
+  with a trailing slash like <literal>my/directory/</literal>
+ </para>
+ <para>
   The File-specific bitmap values recognized are:
  </para>
  <para>
@@ -282,15 +438,19 @@ __HALT_COMPILER();
       <entry>16 or 20 bytes</entry>
       <entry>
        The actual signature, 20 bytes for an SHA1 signature,
-       16 bytes for an MD5 signature.
+       16 bytes for an MD5 signature, 32 bytes for an SHA256 signature,
+       and 64 bytes for an SHA512 signature.
       </entry>
      </row>
      <row>
       <entry>4 bytes</entry>
       <entry>
        Signature flags.  <literal>0x0001</literal> is used to
-       define an MD5 signature, and <literal>0x0002</literal> is used
-       to define an SHA1 signature.
+       define an MD5 signature, <literal>0x0002</literal> is used
+       to define an SHA1 signature, <literal>0x0004</literal> is used
+       to define an SHA256 signature, and <literal>0x0008</literal> is
+       used to define an SHA512 signature.  The SHA256 and SHA512 signature
+       support was introduced with API version 1.1.0.
       </entry>
      </row>
      <row>
