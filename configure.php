@@ -288,10 +288,11 @@ if ($ac['LANG'] == 'yes')
 checkvalue($ac['LANG']);
 
 checking("whether the language is supported");
-$ac['LANGDIR'] = "{$ac['srcdir']}/{$ac['LANG']}";
-if (!file_exists($ac['LANGDIR']) || !is_readable($ac['LANGDIR']))
+$LANGDIR = "{$ac['srcdir']}/{$ac['LANG']}";
+if (!file_exists($LANGDIR) || !is_readable($LANGDIR))
     checkerror("No language directory found.");
-$ac['LANGDIR'] = 'en';
+
+$ac['LANGDIR'] = basename($LANGDIR);
 checkvalue("yes");
 
 checking("for partial build");
