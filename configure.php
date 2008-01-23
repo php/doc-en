@@ -110,6 +110,7 @@ HELPCHUNK;
 
 $srcdir_dependant_settings = array( 'INIPATH', 'LANGDIR' );
 $overridden_settings = array();
+
 foreach ($_SERVER['argv'] as $opt) {
     $parts = explode('=', $opt, 2);
     if (strncmp($opt, '--enable-', 9) == 0) {
@@ -127,8 +128,9 @@ foreach ($_SERVER['argv'] as $opt) {
     } else if ($opt[0] == '-') {
         $o = $opt[1];
         $v = substr($opt, 2);
-    } else
+    } else {
         continue;
+    }
     
     $overridden_settings[] = strtoupper($o);
     switch ($o) {
@@ -136,18 +138,23 @@ foreach ($_SERVER['argv'] as $opt) {
         case 'help':
             usage();
             exit();
+
         case 'V':
         case 'version':
+            // Version/revision is always printed out
             exit();
+
         case 'q':
         case 'quiet':
         case 'silent':
             $ac['quiet'] = $v;
             break;
+
         case 'srcdir':
             foreach ($srcdir_dependant_settings as $s) {
-                if (!in_array($s, $overridden_settings))
+                if (!in_array($s, $overridden_settings)) {
                     $ac[$s] = $v . substr($ac[$s], strlen($ac['srcdir']));
+                }
             }
             $ac['srcdir'] = $v;
             break;
@@ -155,9 +162,11 @@ foreach ($_SERVER['argv'] as $opt) {
         case 'force-dom-save':
             $ac['FORCE_DOM_SAVE'] = $v;
             break;
+
         case 'chm':
             $ac['CHMENABLED'] = $v;
             break;
+
         case 'internals':
             $ac['INTERNALSENABLED'] = $v;
             break;
@@ -165,15 +174,19 @@ foreach ($_SERVER['argv'] as $opt) {
         case 'php':
             $ac['PHP'] = $v;
             break;
+
         case 'phd':
             $ac['PHD'] = $v;
             break;
+
         case 'inipath':
             $ac['INIPATH'] = $v;
             break;
+
         case 'lang':
             $ac['LANG'] = $v;
             break;
+
         case 'partial':
             $ac['PARTIAL'] = $v;
             break;
@@ -191,16 +204,18 @@ function checking($for) {
 function checkerror($msg) {
     global $ac;
     
-    if ($ac['quiet'] != 'yes')
+    if ($ac['quiet'] != 'yes') {
         echo "\n";
+    }
     echo "error: {$msg}\n";
     exit(1);
 }
 function checkvalue($v) {
     global $ac;
     
-    if ($ac['quiet'] != 'yes')
+    if ($ac['quiet'] != 'yes') {
         echo "{$v}\n";
+    }
 }
 
 if (function_exists('realpath')) {
@@ -226,11 +241,12 @@ function find_file($file_array) {
     }
 
     return '';
-} // }}}
+}
 
 checking('for source directory');
-if (!file_exists($ac['srcdir']) || !is_dir($ac['srcdir']) || !is_writable($ac['srcdir']))
+if (!file_exists($ac['srcdir']) || !is_dir($ac['srcdir']) || !is_writable($ac['srcdir'])) {
     checkerror("Source directory doesn't exist or can't be written to.");
+}
 $ac['srcdir'] = abspath($ac['srcdir']);
 checkvalue($ac['srcdir']);
 
@@ -248,49 +264,63 @@ $ac['INTERNALS_EXCL_END'] = ($ac['INTERNALSENABLED'] == 'yes' ? '' : '-->');
 checkvalue($ac['INTERNALSENABLED']);
 
 checking("for PHP executable");
-if ($ac['PHP'] == '' || $ac['PHP'] == 'no')
+if ($ac['PHP'] == '' || $ac['PHP'] == 'no') {
     $ac['PHP'] = find_file($php_bin_names);
-else if (file_exists($cygwin_php_bat))
+}
+else if (file_exists($cygwin_php_bat)) {
     $ac['PHP'] = $cygwin_php_bat;
-if ($ac['PHP'] == '')
+}
+
+if ($ac['PHP'] == '') {
     checkerror("Could not find a PHP executable. Use --with-php=/path/to/php.");
-if (!file_exists($ac['PHP']) || !is_executable($ac['PHP']))
+}
+if (!file_exists($ac['PHP']) || !is_executable($ac['PHP'])) {
     checkerror("PHP executable is invalid - how are you running configure? " .
                "Use --with-php=/path/to/php.");
+}
 $ac['PHP'] = abspath($ac['PHP']);
 checkvalue($ac['PHP']);
 
 checking("for PHD executable");
-if ($ac['PHD'] == '' || $ac['PHD'] == 'no')
+if ($ac['PHD'] == '' || $ac['PHD'] == 'no') {
     $ac['PHD'] = find_file($phd_bin_names);
-else if (file_exists($cygwin_phd_bat))
+}
+else if (file_exists($cygwin_phd_bat)) {
     $ac['PHD'] = $cygwin_phd_bat;
-if ($ac['PHD'] == '')
+}
+
+if ($ac['PHD'] == '') {
     checkerror("Could not find a PHD executable. Use --with-phd=/path/to/phd.");
-if (!file_exists($ac['PHD']) || !is_executable($ac['PHD']))
+}
+if (!file_exists($ac['PHD']) || !is_executable($ac['PHD'])) {
     checkerror("PHD executable is invalid. Use --with-phd=/path/to/phd.");
+}
 $ac['PHD'] = abspath($ac['PHD']);
 checkvalue($ac['PHD']);
 
 checking("for PHP INI path");
 if ($ac['INIPATH'] != '' && $ac['INIPATH'] != 'no') {
-    if (!file_exists($ac['INIPATH']) || !is_readable($ac['INIPATH']))
+    if (!file_exists($ac['INIPATH']) || !is_readable($ac['INIPATH'])) {
         checkerror("INI path doesn't exist or isn't readable.");
+    }
     $ac['INIPATH'] = abspath($ac['INIPATH']);
 }
 checkvalue($ac['INIPATH']);
 
 checking("for language to build");
-if ($ac['LANG'] == '' || $ac['LANG'] == 'no')
+if ($ac['LANG'] == '' || $ac['LANG'] == 'no') {
     checkerror("Using '--with-lang=' or '--without-lang' is just going to cause trouble.");
-if ($ac['LANG'] == 'yes')
+}
+if ($ac['LANG'] == 'yes') {
     $ac['LANG'] = 'en';
+}
 checkvalue($ac['LANG']);
 
 checking("whether the language is supported");
 $LANGDIR = "{$ac['srcdir']}/{$ac['LANG']}";
-if (!file_exists($LANGDIR) || !is_readable($LANGDIR))
+if (!file_exists($LANGDIR) || !is_readable($LANGDIR)) {
     checkerror("No language directory found.");
+}
 
 $ac['LANGDIR'] = basename($LANGDIR);
 checkvalue("yes");
@@ -310,7 +340,7 @@ function globbetyglob($globber, $userfunc) {
             call_user_func($userfunc, $file);
         }
     }
-} // }}}
+}
 
 function find_dot_in($filename) { // {{{
     if (substr($filename, -3) == '.in') {
@@ -321,8 +351,9 @@ function find_dot_in($filename) { // {{{
 function generate_output_file($in, $out, $ac) { // {{{
     $data = file_get_contents($in);
 
-    if ($data === false)
+    if ($data === false) {
         return false;
+    }
 
     foreach ($ac as $k => $v) {
         $data = preg_replace('/@' . preg_quote($k) . '@/', $v, $data);
@@ -343,8 +374,9 @@ globbetyglob($ac['srcdir'], 'find_dot_in');
 foreach ($infiles as $in) {
     $in = chop($in);
 
-    if (basename($in) == 'configure.in')
+    if (basename($in) == 'configure.in') {
         continue;
+    }
 
     $out = substr($in, 0, -3);
     echo "generating $out: ";
@@ -358,8 +390,9 @@ foreach ($infiles as $in) {
 } // }}}
 
 function quietechorun($e) {
-    if ($GLOBALS['ac']['quiet'] != 'yes')
+    if ($GLOBALS['ac']['quiet'] != 'yes') {
         echo "{$e}\n";
+    }
     passthru($e);
 }
 
@@ -410,7 +443,9 @@ $dom->xinclude();
 
 if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') {
     $node = $dom->getElementById($ac['PARTIAL']);
-    if (!$node) exit("Failed to find partial ID in source XML: " . $ac['PARTIAL']);
+    if (!$node) {
+        exit("Failed to find partial ID in source XML: " . $ac['PARTIAL']);
+    }
     if ($node->tagName !== 'book' && $node->tagName !== 'set') {
         // this node is not normally allowed here, attempt to wrap it
         // in something else
@@ -418,6 +453,7 @@ if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') {
         switch ($node->tagName) {
             case 'refentry':
                 $parents[] = 'reference';
+                // Break omitted intentionally
             case 'part':
                 $parents[] = 'book';
                 break;
@@ -433,6 +469,7 @@ if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') {
     $set->appendChild($dom->createElement('title', 'PHP Manual (Partial)')); // prevent validate from complaining unnecessarily
     $set->appendChild($node);
     $dom->validate(); // we don't care if the validation works or not
+
     $filename = '.manual.' . $ac['PARTIAL'] . '.xml';
     $dom->save($filename);
     echo "Partial manual saved to $filename, to build it run 'phd -d" . realpath($filename). "'\n";
