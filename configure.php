@@ -437,7 +437,7 @@ function print_errors($errors, $die = true) {
 $dom = new DOMDocument();
 $die = $dom->load("manual.xml", LIBXML_DTDVALID|LIBXML_NOENT);
 
-print_errors(libxml_get_errors(), $die === false ? true : !$ac['FORCE_DOM_SAVE']);
+print_errors(libxml_get_errors(), $die === false ? true : $ac['FORCE_DOM_SAVE'] == "no");
 
 $dom->xinclude();
 
