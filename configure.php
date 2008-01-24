@@ -97,7 +97,7 @@ function abspath($path) // {{{
     if ($path == '') {
         return '';
     }
-    return function_exists('realpath') ? realpath($path) : $path;
+    return str_replace('\\', '/', function_exists('realpath') ? realpath($path) : $path);
 } // }}}
 
 function quietechorun($e) // {{{
@@ -176,7 +176,7 @@ function print_xml_errors() {
         $valid = true;
         foreach($errors as $err) {
             // Skip all XInclude errors
-            if (!strpos($err->message, "include")) {
+            if (!strpos($err->message, 'element "xi:include"')) {
                 $valid = false;
 
                 $file = file(urldecode($err->file)); // libxml appears to urlencode() its errors strings
@@ -243,7 +243,7 @@ $acd = array( // {{{
     'PEAR_SOURCE' => 'no',
     'PECL_SOURCE' => 'no',
     'EXT_SOURCE' => 'no',
-    'CYGWIN' => 'no',
+    'CYGWIN' => '0',
     'WINJADE' => '0',
     'NSGMLS' => 'no',
     'SP_OPTIONS' => 'SP_ENCODING=XML SP_CHARSET_FIXED=YES',
@@ -458,7 +458,7 @@ $ini = ($ac['INIPATH'] != '' && $ac['INIPATH'] != 'no') ? " -c \"{$ac['INIPATH']
 $redir = ($ac['quiet'] == 'yes') ? " > /dev/null" : '';
 quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/file-entities.php\"{$redir}");
 echo "file-entities.php is done.\n";
-quietechorun("rm -f \"{$ac['srcdir']}/entities/missing*\"");
+quietechorun("rm \"{$ac['srcdir']}/entities/\"missing*");
 quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/missing-entities.php\"{$redir}");
 echo "missing-entities.php is done.\n";
 
@@ -467,14 +467,10 @@ libxml_use_internal_errors(true);
 $dom = new DOMDocument();
 $didLoad = $dom->load( "{$ac['srcdir']}/manual.xml", LIBXML_DTDLOAD | LIBXML_NOENT );
 
-// XXX: What errors can happen here that aren't fatal? Why do we continue only if we want a forced save?
 if ($didLoad === false) {
     if (print_xml_errors() === true) {
         echo "These errors came from load(). We can't save a partial .manual.xml.\n";
-        exit(1);
     }
-} else if (print_xml_errors() === true && $ac['FORCE_DOM_SAVE'] == 'no') {
-    echo "Not sure what happened here, but we're bailing!\n";
     exit(1);
 }
 
@@ -530,8 +526,6 @@ if ($dom->validate()) {
         } else {
             echo "Didn't write .manual.xml. Sorry.\n";
         }
-    } else {
-        echo "This doesn't seem quite right. Validation failed but there aren't any errors.\n";
     }
     exit(1); // Tell the shell that this script finished with an error.
 }
