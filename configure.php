@@ -369,8 +369,8 @@ if ($ac['PHD'] == '' || $ac['PHD'] == 'no') {
 if ($ac['PHD'] == '') {
     checkerror("Could not find a PHD executable. Use --with-phd=/path/to/phd.");
 }
-if (!file_exists($ac['PHD']) || !is_executable($ac['PHD'])) {
-    checkerror("PHD executable is invalid. Use --with-phd=/path/to/phd.");
+if (!file_exists($ac['PHD']) && !is_readable($ac['PHD'])) { 
+    checkerror("PHD file is invalid. Use --with-phd=/path/to/phd.");
 }
 $ac['PHD'] = abspath($ac['PHD']);
 checkvalue($ac['PHD']);
