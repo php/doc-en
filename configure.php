@@ -21,63 +21,12 @@
 */
 
 error_reporting(E_ALL);
-
-$srcdir = ".";
 $cvs_id = '$Id$';
 
 echo "configure.php: $cvs_id\n";
 
-// Settings
-$cygwin_php_bat = $srcdir .'/../phpdoc-tools/php.bat';
-$cygwin_phd_bat = $srcdir .'/../phpdoc-tools/phd.bat';
-$php_bin_names = array('php', 'php5', 'cli/php', 'php.exe', 'php5.exe', 'php-cli.exe', 'php-cgi.exe');
-$phd_bin_names = array('phd', 'phd.exe');
-$nsgmls_bin_names = array('nsgmls', 'onsgmls', 'nsgmls.exe', 'onsgmls.exe');
-
-// Reject old PHP installations {{{
-if (phpversion() < 5) {
-    echo "PHP 5 or above is required. Version detected: " . phpversion() . "\n";
-    exit(100);
-} else {
-    echo "PHP version: " . phpversion() . "\n";
-} // }}}
-
-echo "\n";
-
-$acd = array(
-    'srcdir' => $srcdir,
-    'quiet' => 'no',
-    'WORKDIR' => $srcdir,
-    'PHP' => '',
-    'PHD' => '',
-    'INIPATH' => "{$srcdir}/scripts",
-    'CHMENABLED' => 'no',
-    'CHMONLY_INCL_BEGIN' => '<!--',
-    'CHMONLY_INCL_END' => '-->',
-    'INTERNALSENABLED' => 'yes',
-    'INTERNALS_EXCL_BEGIN' => '',
-    'INTERNALS_EXCL_END' => '',
-    'LANG' => 'en',
-    'LANGDIR' => "{$srcdir}/en",
-    'PHP_BUILD_DATE' => date('Y-m-d'),
-    'ENCODING' => 'utf-8',
-    'FORCE_DOM_SAVE' => 'no',
-    'PARTIAL' => 'no',
-
-    // Junk to make the old scripts (file-entities.php and missing-entities.php) cooperative
-    'PHP_SOURCE' => 'no',
-    'PEAR_SOURCE' => 'no',
-    'PECL_SOURCE' => 'no',
-    'EXT_SOURCE' => 'no',
-    'CYGWIN' => 'no',
-    'WINJADE' => '0',
-    'NSGMLS' => 'nsgmls',
-    'SP_OPTIONS' => 'SP_ENCODING=XML SP_CHARSET_FIXED=YES',
-);
-
-$ac = $acd;
-
-function usage() {
+function usage() // {{{
+{
     global $acd;
     
     echo <<<HELPCHUNK
@@ -106,12 +55,192 @@ Package-specific:
   --with-partial=ID         Root ID to build [{$acd['PARTIAL']}]
 
 HELPCHUNK;
-}
+} // }}}
+
+function checking($for) // {{{
+{
+    global $ac;
+    
+    if ($ac['quiet'] != 'yes') {
+        echo "Checking {$for}... ";
+        flush( STDOUT );
+    }
+} // }}}
+
+function checkerror($msg) // {{{
+{
+    global $ac;
+    
+    if ($ac['quiet'] != 'yes') {
+        echo "\n";
+    }
+    echo "error: {$msg}\n";
+    exit(1);
+} // }}}
+
+function checkvalue($v) // {{{
+{
+    global $ac;
+    
+    if ($ac['quiet'] != 'yes') {
+        echo "{$v}\n";
+    }
+} // }}}
+
+function abspath($path) // {{{
+{
+    return function_exists('realpath' ? realpath($path) : $path);
+} // }}}
+
+function quietechorun($e) // {{{
+{
+    if ($GLOBALS['ac']['quiet'] != 'yes') {
+        echo "{$e}\n";
+    }
+    passthru($e);
+} // }}}
+
+function find_file($file_array) // {{{
+{
+    $paths = explode(PATH_SEPARATOR, getenv('PATH'));
+
+    if (is_array($paths)) {
+        foreach ($paths as $path) {
+            foreach ($file_array as $name) {
+                if (file_exists("{$path}/{$name}") && is_file("{$path}/{$name}")) {
+                    return "{$path}/{$name}";
+                }
+            }
+        }
+    }
+
+    return '';
+} // }}}
+
+// Recursive glob() with a callback function {{{
+function globbetyglob($globber, $userfunc)
+{
+    foreach (glob("$globber/*") as $file) {
+        if (is_dir($file)) {
+            globbetyglob($file, $userfunc);
+        } else {
+            call_user_func($userfunc, $file);
+        }
+    }
+} // }}}
+
+function find_dot_in($filename) // {{{
+{
+    if (substr($filename, -3) == '.in') {
+        $GLOBALS['infiles'][] = $filename;
+    }
+} // }}}
+
+function generate_output_file($in, $out, $ac) // {{{
+{
+    $data = file_get_contents($in);
+
+    if ($data === false) {
+        return false;
+    }
+    foreach ($ac as $k => $v) {
+        $data = preg_replace('/@' . preg_quote($k) . '@/', $v, $data);
+    }
+
+    return file_put_contents($out, $data);
+} // }}}
+
+function make_scripts_executable($filename) // {{{
+{
+    if (substr($filename, -3) == '.sh') {
+        chmod($filename, 0755);
+    }
+} // }}}
+
+// Loop through and print out all XML validation errors {{{
+function print_errors($errors, $die = true) {
+    $errors = libxml_get_errors();
+    if ($errors) {
+        $valid = true;
+        foreach($errors as $err) {
+            // Skip all XInclude errors
+            if (!strpos($err->message, "include")) {
+                $valid = false;
+
+                $file = file($err->file);
+                $line = rtrim($file[$err->line-1]);
+                $padding = str_repeat("-", $err->column) . "^";
+
+                printf("\nERROR (%s:%d)\n%s\n%s\n\t%s\n", $err->file, $err->line, $line, $padding, $err->message);
+            }
+        }
+
+        if (!$valid && $die) {
+            echo "eyh man. No worries. Happ shittens. Try again after fixing the errors above\n";
+            exit(1);
+        }
+    }
+    libxml_clear_errors();
+} // }}}
+
+
+$srcdir = ".";
+
+// Settings {{{
+$cygwin_php_bat = $srcdir .'/../phpdoc-tools/php.bat';
+$cygwin_phd_bat = $srcdir .'/../phpdoc-tools/phd.bat';
+$php_bin_names = array('php', 'php5', 'cli/php', 'php.exe', 'php5.exe', 'php-cli.exe', 'php-cgi.exe');
+$phd_bin_names = array('phd', 'phd.exe');
+$nsgmls_bin_names = array('nsgmls', 'onsgmls', 'nsgmls.exe', 'onsgmls.exe');
+// }}}
+
+// Reject old PHP installations {{{
+if (phpversion() < 5) {
+    echo "PHP 5 or above is required. Version detected: " . phpversion() . "\n";
+    exit(100);
+} else {
+    echo "PHP version: " . phpversion() . "\n";
+} // }}}
+
+echo "\n";
+
+$acd = array( // {{{
+    'srcdir' => $srcdir,
+    'quiet' => 'no',
+    'WORKDIR' => $srcdir,
+    'PHP' => '',
+    'PHD' => '',
+    'INIPATH' => "{$srcdir}/scripts",
+    'CHMENABLED' => 'no',
+    'CHMONLY_INCL_BEGIN' => '<!--',
+    'CHMONLY_INCL_END' => '-->',
+    'INTERNALSENABLED' => 'yes',
+    'INTERNALS_EXCL_BEGIN' => '',
+    'INTERNALS_EXCL_END' => '',
+    'LANG' => 'en',
+    'LANGDIR' => "{$srcdir}/en",
+    'PHP_BUILD_DATE' => date('Y-m-d'),
+    'ENCODING' => 'utf-8',
+    'FORCE_DOM_SAVE' => 'no',
+    'PARTIAL' => 'no',
+
+    // Junk to make the old scripts (file-entities.php and missing-entities.php) cooperative
+    'PHP_SOURCE' => 'no',
+    'PEAR_SOURCE' => 'no',
+    'PECL_SOURCE' => 'no',
+    'EXT_SOURCE' => 'no',
+    'CYGWIN' => 'no',
+    'WINJADE' => '0',
+    'NSGMLS' => 'nsgmls',
+    'SP_OPTIONS' => 'SP_ENCODING=XML SP_CHARSET_FIXED=YES',
+); // }}}
+
+$ac = $acd;
 
 $srcdir_dependant_settings = array( 'INIPATH', 'LANGDIR' );
 $overridden_settings = array();
 
-foreach ($_SERVER['argv'] as $opt) {
+foreach ($_SERVER['argv'] as $opt) { // {{{
     $parts = explode('=', $opt, 2);
     if (strncmp($opt, '--enable-', 9) == 0) {
         $o = substr($parts[0], 9);
@@ -191,57 +320,7 @@ foreach ($_SERVER['argv'] as $opt) {
             $ac['PARTIAL'] = $v;
             break;
     }
-}
-
-function checking($for) {
-    global $ac;
-    
-    if ($ac['quiet'] != 'yes') {
-        echo "Checking {$for}... ";
-        flush( STDOUT );
-    }
-}
-function checkerror($msg) {
-    global $ac;
-    
-    if ($ac['quiet'] != 'yes') {
-        echo "\n";
-    }
-    echo "error: {$msg}\n";
-    exit(1);
-}
-function checkvalue($v) {
-    global $ac;
-    
-    if ($ac['quiet'] != 'yes') {
-        echo "{$v}\n";
-    }
-}
-
-if (function_exists('realpath')) {
-    function abspath($path) {
-        return realpath($path);
-    }
-} else {
-    function abspath($path) {
-        return $path;
-    }
-}
-function find_file($file_array) {
-    $paths = explode(PATH_SEPARATOR, getenv('PATH'));
-
-    if (is_array($paths)) {
-        foreach ($paths as $path) {
-            foreach ($file_array as $name) {
-                if (file_exists("{$path}/{$name}") && is_file("{$path}/{$name}")) {
-                    return "{$path}/{$name}";
-                }
-            }
-        }
-    }
-
-    return '';
-}
+} // }}}
 
 checking('for source directory');
 if (!file_exists($ac['srcdir']) || !is_dir($ac['srcdir']) || !is_writable($ac['srcdir'])) {
@@ -266,8 +345,7 @@ checkvalue($ac['INTERNALSENABLED']);
 checking("for PHP executable");
 if ($ac['PHP'] == '' || $ac['PHP'] == 'no') {
     $ac['PHP'] = find_file($php_bin_names);
-}
-else if (file_exists($cygwin_php_bat)) {
+} else if (file_exists($cygwin_php_bat)) {
     $ac['PHP'] = $cygwin_php_bat;
 }
 
@@ -284,8 +362,7 @@ checkvalue($ac['PHP']);
 checking("for PHD executable");
 if ($ac['PHD'] == '' || $ac['PHD'] == 'no') {
     $ac['PHD'] = find_file($phd_bin_names);
-}
-else if (file_exists($cygwin_phd_bat)) {
+} else if (file_exists($cygwin_phd_bat)) {
     $ac['PHD'] = $cygwin_phd_bat;
 }
 
@@ -310,8 +387,7 @@ checkvalue($ac['INIPATH']);
 checking("for language to build");
 if ($ac['LANG'] == '' || $ac['LANG'] == 'no') {
     checkerror("Using '--with-lang=' or '--without-lang' is just going to cause trouble.");
-}
-if ($ac['LANG'] == 'yes') {
+} else if ($ac['LANG'] == 'yes') {
     $ac['LANG'] = 'en';
 }
 checkvalue($ac['LANG']);
@@ -328,45 +404,9 @@ checkvalue("yes");
 checking("for partial build");
 checkvalue($ac['PARTIAL']);
 
+// Do NOT add a commandline setting for this. We only support $ac[ 'NSGMLS' ] to
+//  keep missing-entities.php.in working.
 $ac['NSGMLS'] = abspath(find_file($nsgmls_bin_names));
-
-/* recursive glob() with a callback function */
-function globbetyglob($globber, $userfunc) {
-    foreach (glob("$globber/*") as $file) {
-        if (is_dir($file)) {
-            globbetyglob($file, $userfunc);
-        }
-        else {
-            call_user_func($userfunc, $file);
-        }
-    }
-}
-
-function find_dot_in($filename) { // {{{
-    if (substr($filename, -3) == '.in') {
-        $GLOBALS['infiles'][] = $filename;
-    }
-} // }}}
-
-function generate_output_file($in, $out, $ac) { // {{{
-    $data = file_get_contents($in);
-
-    if ($data === false) {
-        return false;
-    }
-
-    foreach ($ac as $k => $v) {
-        $data = preg_replace('/@' . preg_quote($k) . '@/', $v, $data);
-    }
-
-    return file_put_contents($out, $data);
-} // }}}
-
-function make_scripts_executable($filename) { // {{{
-    if (substr($filename, -3) == '.sh') {
-        chmod($filename, 0755);
-    }
-} // }}}
 
 $infiles = array();
 globbetyglob($ac['srcdir'], 'find_dot_in');
@@ -382,18 +422,10 @@ foreach ($infiles as $in) {
     echo "generating $out: ";
     if (generate_output_file($in, $out, $ac)) {
         echo "done\n";
-    }
-    else {
+    } else {
         echo "fail\n";
         exit(117);
     }
-} // }}}
-
-function quietechorun($e) {
-    if ($GLOBALS['ac']['quiet'] != 'yes') {
-        echo "{$e}\n";
-    }
-    passthru($e);
 }
 
 globbetyglob("{$ac['srcdir']}/scripts", 'make_scripts_executable');
@@ -403,36 +435,9 @@ $ini = ($ac['INIPATH'] != '' && $ac['INIPATH'] != 'no') ? "-c \"{$ac['INIPATH']}
 $redir = ($ac['quiet'] == 'yes') ? "> /dev/null" : '';
 quietechorun("\"{$ac['PHP']}\" {$ini} -q \"{$ac['srcdir']}/scripts/file-entities.php\" {$redir}");
 quietechorun("rm -f \"{$ac['srcdir']}/entities/missing*\"");
-quietechorun("rm -f \"{$ac['srcdir']}/entities/missing-ids.xml\"");
 quietechorun("\"{$ac['PHP']}\" {$ini} -q \"{$ac['srcdir']}/scripts/missing-entities.php\" {$redir}");
 
 libxml_use_internal_errors(true);
-
-// Loop through and print out all XML validation errors {{{
-function print_errors($errors, $die = true) {
-    $errors = libxml_get_errors();
-    if ($errors) {
-        $valid = true;
-        foreach($errors as $err) {
-            // Skip all XInclude errors
-            if (!strpos($err->message, "include")) {
-                $valid = false;
-
-                $file = file($err->file);
-                $line = rtrim($file[$err->line-1]);
-                $padding = str_repeat("-", $err->column) . "^";
-
-                printf("\nERROR (%s:%d)\n%s\n%s\n\t%s\n", $err->file, $err->line, $line, $padding, $err->message);
-            }
-        }
-
-        if (!$valid && $die) {
-            echo "eyh man. No worries. Happ shittens. Try again after fixing the errors above\n";
-            exit(1);
-        }
-    }
-    libxml_clear_errors();
-} // }}}
 
 $dom = new DOMDocument();
 $die = $dom->load("manual.xml", LIBXML_DTDVALID|LIBXML_NOENT);
@@ -494,3 +499,5 @@ if ($dom->validate()) {
         exit(1); // Tell the shell that this script finished with an error.
     }
 }
+
+?>
