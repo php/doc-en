@@ -473,7 +473,7 @@ if ($didLoad === false) {
         echo "These errors came from load(). We can't save a partial .manual.xml.\n";
         exit(1);
     }
-} else if ($ac['FORCE_DOM_SAVE'] == 'no' && print_xml_errors() === true) {
+} else if (print_xml_errors() === true && $ac['FORCE_DOM_SAVE'] == 'no') {
     echo "Not sure what happened here, but we're bailing!\n";
     exit(1);
 }
