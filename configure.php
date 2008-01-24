@@ -57,6 +57,10 @@ Package-specific:
 HELPCHUNK;
 } // }}}
 
+function is_windows() {
+    return strncmp(strtoupper(PHP_OS), "WIN", 3) === 0;
+}
+
 function checking($for) // {{{
 {
     global $ac;
@@ -89,11 +93,19 @@ function checkvalue($v) // {{{
 
 function abspath($path) // {{{
 {
+    // realpath() doesn't return empty for empty on Windows
+    if ($path == '') {
+        return '';
+    }
     return function_exists('realpath') ? realpath($path) : $path;
 } // }}}
 
 function quietechorun($e) // {{{
 {
+    // enclose in "" on Windows
+    if (is_windows()) {
+        $e = '"'.$e.'"';
+    }
     if ($GLOBALS['ac']['quiet'] != 'yes') {
         echo "{$e}\n";
     }
@@ -158,37 +170,38 @@ function make_scripts_executable($filename) // {{{
 } // }}}
 
 // Loop through and print out all XML validation errors {{{
-function print_errors($errors, $die = true) {
+function print_xml_errors() {
     $errors = libxml_get_errors();
-    if ($errors) {
+    if ($errors && count($errors) > 0) {
         $valid = true;
         foreach($errors as $err) {
             // Skip all XInclude errors
             if (!strpos($err->message, "include")) {
                 $valid = false;
 
-                $file = file($err->file);
-                $line = rtrim($file[$err->line-1]);
+                $file = file(urldecode($err->file)); // libxml appears to urlencode() its errors strings
+                $line = rtrim($file[$err->line - 1]);
                 $padding = str_repeat("-", $err->column) . "^";
 
                 printf("\nERROR (%s:%d)\n%s\n%s\n\t%s\n", $err->file, $err->line, $line, $padding, $err->message);
             }
         }
 
-        if (!$valid && $die) {
+        if (!$valid) {
             echo "eyh man. No worries. Happ shittens. Try again after fixing the errors above\n";
-            exit(1);
+            return true;
         }
     }
     libxml_clear_errors();
+    return false;
 } // }}}
 
 
 $srcdir = ".";
 
 // Settings {{{
-$cygwin_php_bat = $srcdir .'/../phpdoc-tools/php.bat';
-$cygwin_phd_bat = $srcdir .'/../phpdoc-tools/phd.bat';
+$cygwin_php_bat = "{$srcdir}/../phpdoc-tools/php.bat";
+$cygwin_phd_bat = "{$srcdir}/../phpdoc-tools/phd.bat";
 $php_bin_names = array('php', 'php5', 'cli/php', 'php.exe', 'php5.exe', 'php-cli.exe', 'php-cgi.exe');
 $phd_bin_names = array('phd', 'phd.exe');
 $nsgmls_bin_names = array('nsgmls', 'onsgmls', 'nsgmls.exe', 'onsgmls.exe');
@@ -208,6 +221,7 @@ $acd = array( // {{{
     'srcdir' => $srcdir,
     'quiet' => 'no',
     'WORKDIR' => $srcdir,
+    'SRCDIR' => $srcdir,
     'PHP' => '',
     'PHD' => '',
     'INIPATH' => "{$srcdir}/scripts",
@@ -231,7 +245,7 @@ $acd = array( // {{{
     'EXT_SOURCE' => 'no',
     'CYGWIN' => 'no',
     'WINJADE' => '0',
-    'NSGMLS' => 'nsgmls',
+    'NSGMLS' => 'no',
     'SP_OPTIONS' => 'SP_ENCODING=XML SP_CHARSET_FIXED=YES',
 ); // }}}
 
@@ -286,6 +300,8 @@ foreach ($_SERVER['argv'] as $opt) { // {{{
                 }
             }
             $ac['srcdir'] = $v;
+            $ac['SRCDIR'] = $v;
+            $ac['WORKDIR'] = $v;
             break;
 
         case 'force-dom-save':
@@ -318,6 +334,10 @@ foreach ($_SERVER['argv'] as $opt) { // {{{
 
         case 'partial':
             $ac['PARTIAL'] = $v;
+            break;
+        
+        default:
+            echo "WARNING: Unknown option '{$o}'!\n";
             break;
     }
 } // }}}
@@ -406,7 +426,10 @@ checkvalue($ac['PARTIAL']);
 
 // Do NOT add a commandline setting for this. We only support $ac[ 'NSGMLS' ] to
 //  keep missing-entities.php.in working.
-$ac['NSGMLS'] = abspath(find_file($nsgmls_bin_names));
+checking("for nsgmls");
+if (!is_windows() && ($nsgmls = abspath(find_file($nsgmls_bin_names))) != '')
+    $ac['NSGMLS'] = $nsgmls;
+checkvalue($ac['NSGMLS']);
 
 $infiles = array();
 globbetyglob($ac['srcdir'], 'find_dot_in');
@@ -431,22 +454,33 @@ foreach ($infiles as $in) {
 globbetyglob("{$ac['srcdir']}/scripts", 'make_scripts_executable');
 file_put_contents("{$ac['srcdir']}/entities/phpweb.ent", '');
 
-$ini = ($ac['INIPATH'] != '' && $ac['INIPATH'] != 'no') ? "-c \"{$ac['INIPATH']}\"" : '';
-$redir = ($ac['quiet'] == 'yes') ? "> /dev/null" : '';
-quietechorun("\"{$ac['PHP']}\" {$ini} -q \"{$ac['srcdir']}/scripts/file-entities.php\" {$redir}");
+$ini = ($ac['INIPATH'] != '' && $ac['INIPATH'] != 'no') ? " -c \"{$ac['INIPATH']}\"" : '';
+$redir = ($ac['quiet'] == 'yes') ? " > /dev/null" : '';
+quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/file-entities.php\"{$redir}");
+echo "file-entities.php is done.\n";
 quietechorun("rm -f \"{$ac['srcdir']}/entities/missing*\"");
-quietechorun("\"{$ac['PHP']}\" {$ini} -q \"{$ac['srcdir']}/scripts/missing-entities.php\" {$redir}");
+quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/missing-entities.php\"{$redir}");
+echo "missing-entities.php is done.\n";
 
 libxml_use_internal_errors(true);
 
 $dom = new DOMDocument();
-$die = $dom->load("manual.xml", LIBXML_DTDVALID|LIBXML_NOENT);
+$didLoad = $dom->load( "{$ac['srcdir']}/manual.xml", LIBXML_DTDLOAD | LIBXML_NOENT );
 
-print_errors(libxml_get_errors(), $die === false ? true : $ac['FORCE_DOM_SAVE'] == "no");
+// XXX: What errors can happen here that aren't fatal? Why do we continue only if we want a forced save?
+if ($didLoad === false) {
+    if (print_xml_errors() === true) {
+        echo "These errors came from load(). We can't save a partial .manual.xml.\n";
+        exit(1);
+    }
+} else if ($ac['FORCE_DOM_SAVE'] == 'no' && print_xml_errors() === true) {
+    echo "Not sure what happened here, but we're bailing!\n";
+    exit(1);
+}
 
 $dom->xinclude();
 
-if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') {
+if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') { // {{{
     $node = $dom->getElementById($ac['PARTIAL']);
     if (!$node) {
         exit("Failed to find partial ID in source XML: " . $ac['PARTIAL']);
@@ -476,28 +510,30 @@ if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') {
     $dom->validate(); // we don't care if the validation works or not
 
     $filename = '.manual.' . $ac['PARTIAL'] . '.xml';
-    $dom->save($filename);
+    $dom->save("{$ac['srcdir']}/{$filename}");
     echo "Partial manual saved to $filename, to build it run 'phd -d" . realpath($filename). "'\n";
     exit(0);
 } // }}} 
 
 if ($dom->validate()) {
     echo "All good.\n";
-    $dom->save(".manual.xml");
+    $dom->save("{$ac['srcdir']}/.manual.xml");
 
     echo "All you have to do now is run 'phd -d " . realpath(".manual.xml") . "'\n";
     exit(0); // Tell the shell that this script finished successfully.
 } else {
-    print_errors(libxml_get_errors(), $ac['FORCE_DOM_SAVE'] == 'no');
-
-    if ($ac['FORCE_DOM_SAVE'] == 'yes') { 
-        // print_errors() will terminate the script if FORCE_DOM_SAVE isn't enabled
-        // Allow the .manual.xml file to be created, even if it is not valid.
-        echo "Writing .manual.xml anyway\n";
-        $dom->save(".manual.xml");
-
-        exit(1); // Tell the shell that this script finished with an error.
+    if (print_xml_errors() === true) {
+        if ($ac['FORCE_DOM_SAVE'] == 'yes') { 
+            // Allow the .manual.xml file to be created, even if it is not valid.
+            echo "Writing .manual.xml anyway\n";
+            $dom->save("{$ac['srcdir']}/.manual.xml");
+        } else {
+            echo "Didn't write .manual.xml. Sorry.\n";
+        }
+    } else {
+        echo "This doesn't seem quite right. Validation failed but there aren't any errors.\n";
     }
+    exit(1); // Tell the shell that this script finished with an error.
 }
 
 ?>
