@@ -89,7 +89,7 @@ function checkvalue($v) // {{{
 
 function abspath($path) // {{{
 {
-    return function_exists('realpath' ? realpath($path) : $path);
+    return function_exists('realpath') ? realpath($path) : $path;
 } // }}}
 
 function quietechorun($e) // {{{
