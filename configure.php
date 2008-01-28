@@ -54,7 +54,7 @@ Package-specific:
   --with-lang=LANG          Language to build [{$acd['LANG']}]
   --with-partial=ID         Root ID to build [{$acd['PARTIAL']}]
 
-  --enable-xml-detailes     Enable detailed XML error messages [{$acd['XML_DETAILES']}]
+  --enable-xml-detailes     Enable detailed XML error messages [{$acd['DETAILED_ERRORMSG']}]
 
 HELPCHUNK;
 } // }}}
@@ -252,7 +252,7 @@ $acd = array( // {{{
     'ENCODING' => 'utf-8',
     'FORCE_DOM_SAVE' => 'no',
     'PARTIAL' => 'no',
-    'DETAILED_ERRORMSG' => 'yes',
+    'DETAILED_ERRORMSG' => 'no',
 
     // Junk to make the old scripts (file-entities.php and missing-entities.php) cooperative
     'PHP_SOURCE' => 'no',
