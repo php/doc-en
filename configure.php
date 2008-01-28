@@ -54,6 +54,8 @@ Package-specific:
   --with-lang=LANG          Language to build [{$acd['LANG']}]
   --with-partial=ID         Root ID to build [{$acd['PARTIAL']}]
 
+  --enable-xml-detailes     Enable detailed XML error messages [{$acd['XML_DETAILES']}]
+
 HELPCHUNK;
 } // }}}
 
@@ -170,20 +172,33 @@ function make_scripts_executable($filename) // {{{
 } // }}}
 
 // Loop through and print out all XML validation errors {{{
-function print_xml_errors() {
+function print_xml_errors($details = true) {
     $errors = libxml_get_errors();
     if ($errors && count($errors) > 0) {
         $valid = true;
         foreach($errors as $err) {
             // Skip all XInclude errors
-            if (!strpos($err->message, 'element "xi:include"')) {
+            if (!strpos($err->message, 'xi:include') && !strpos($err->message, 'element include')) {
                 $valid = false;
 
-                $file = file(urldecode($err->file)); // libxml appears to urlencode() its errors strings
-                $line = rtrim($file[$err->line - 1]);
-                $padding = str_repeat("-", $err->column) . "^";
-
-                printf("\nERROR (%s:%d)\n%s\n%s\n\t%s\n", $err->file, $err->line, $line, $padding, $err->message);
+                $errmsg = trim($err->message);
+                if ($details) {
+                    $file = file(urldecode($err->file)); // libxml appears to urlencode() its errors strings
+                    if (isset($file[$err->line])) {
+                        $line = rtrim($file[$err->line - 1]);
+                        $padding = str_repeat("-", $err->column) . "^";
+                        printf("\nERROR (%s:%s)\n%s\n%s\n\t%s\n", $err->file, $err->line, $line, $padding, $errmsg);
+                    } else {
+                        printf("\nERROR (%s:unknown)\n\t%s", $err->file, $errmsg);
+                    }
+                } else {
+                    echo $errmsg, "\n";
+                }
+                if (strpos($errmsg, "chunk is not well balanced") !== false || strpos($errmsg, "Failure to process entity") !== false) {
+                    echo "\n\nPrevious errors to severe. Not displaying more\n\n";
+                    // Unbalanced chunk, no point in displaying more errors
+                    break;
+                }
             }
         }
 
@@ -237,6 +252,7 @@ $acd = array( // {{{
     'ENCODING' => 'utf-8',
     'FORCE_DOM_SAVE' => 'no',
     'PARTIAL' => 'no',
+    'DETAILED_ERRORMSG' => 'yes',
 
     // Junk to make the old scripts (file-entities.php and missing-entities.php) cooperative
     'PHP_SOURCE' => 'no',
@@ -335,6 +351,10 @@ foreach ($_SERVER['argv'] as $opt) { // {{{
         case 'partial':
             $ac['PARTIAL'] = $v;
             break;
+
+        case 'xml-detailes':
+            $ac['DETAILED_ERRORMSG'] = $v;
+            break;
         
         default:
             echo "WARNING: Unknown option '{$o}'!\n";
@@ -424,6 +444,10 @@ checkvalue("yes");
 checking("for partial build");
 checkvalue($ac['PARTIAL']);
 
+checking('whether to enable detailed XML errormsg');
+checkvalue($ac['DETAILED_ERRORMSG']);
+
+
 // Do NOT add a commandline setting for this. We only support $ac[ 'NSGMLS' ] to
 //  keep missing-entities.php.in working.
 checking("for nsgmls");
@@ -457,20 +481,20 @@ file_put_contents("{$ac['srcdir']}/entities/phpweb.ent", '');
 $ini = ($ac['INIPATH'] != '' && $ac['INIPATH'] != 'no') ? " -c \"{$ac['INIPATH']}\"" : '';
 $redir = ($ac['quiet'] == 'yes') ? " > /dev/null" : '';
 quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/file-entities.php\"{$redir}");
-echo "file-entities.php is done.\n";
+echo "file-entities.php is done.\n\n";
 quietechorun("rm \"{$ac['srcdir']}/entities/\"missing*");
 quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/missing-entities.php\"{$redir}");
-echo "missing-entities.php is done.\n";
+echo "missing-entities.php is done.\n\nn";
 
 libxml_use_internal_errors(true);
 
 $dom = new DOMDocument();
-$didLoad = $dom->load( "{$ac['srcdir']}/manual.xml", LIBXML_DTDLOAD | LIBXML_NOENT );
+$LIBXML_OPTS = LIBXML_NOENT | LIBXML_NSCLEAN | LIBXML_COMPACT;
+$didLoad = $dom->load( "{$ac['srcdir']}/manual.xml", $LIBXML_OPTS);
 
+// Check if the XML was simply broken, if so then just bail out
 if ($didLoad === false) {
-    if (print_xml_errors() === true) {
-        echo "These errors came from load(). We can't save a partial .manual.xml.\n";
-    }
+    print_xml_errors();
     exit(1);
 }
 
@@ -518,15 +542,26 @@ if ($dom->validate()) {
     echo "All you have to do now is run 'phd -d " . realpath(".manual.xml") . "'\n";
     exit(0); // Tell the shell that this script finished successfully.
 } else {
-    if (print_xml_errors() === true) {
-        if ($ac['FORCE_DOM_SAVE'] == 'yes') { 
-            // Allow the .manual.xml file to be created, even if it is not valid.
-            echo "Writing .manual.xml anyway\n";
-            $dom->save("{$ac['srcdir']}/.manual.xml");
-        } else {
-            echo "Didn't write .manual.xml. Sorry.\n";
-        }
+    echo "The document didn't validate, ";
+
+    // Allow the .manual.xml file to be created, even if it is not valid.
+    if ($ac['FORCE_DOM_SAVE'] == 'yes') { 
+        echo "writing .manual.xml anyway, ";
+        $dom->save("{$ac['srcdir']}/.manual.xml");
     }
+
+    if ($ac['DETAILED_ERRORMSG'] == 'yes') {
+        echo "trying to figure out what went wrong...\n";
+        echo "(if you experience segfaults here, try again with --disable-xml-detailes)\n";
+        libxml_clear_errors(); // Clear the errrors, they contain incorrect filename&linenr
+
+        $dom->load( "{$ac['srcdir']}/manual.xml", $LIBXML_OPTS | LIBXML_DTDVALID);
+        print_xml_errors();
+    } else {
+        echo "No details requested, here are the errors I got:\n";
+        print_xml_errors(false);
+    }
+
     exit(1); // Tell the shell that this script finished with an error.
 }
 
