@@ -23,7 +23,7 @@
 set_time_limit(0);
 
 // Print out info for the viewer and log files
-echo "\nTesting the manual for missing elements...\n";
+echo "Testing the manual for missing elements...\n";
 
 // If we are in a scripts dir, go one dir up
 // (because the NSGMLS path is relative to that directory!)
@@ -32,6 +32,7 @@ if (strpos($wrkdir, "scripts") !== FALSE) {
     chdir("..");
 }
 
+$outdir = "@SRCDIR@";
 $NSGMLS = "@NSGMLS@"; 
 $NSGMLS_OUTPUT = "missing-entities.out"; 
 
@@ -65,12 +66,12 @@ $envy = explode(" ", "@SP_OPTIONS@");
 array_map('putenv', $envy);
 exec(
     "$NSGMLS -f $NSGMLS_OUTPUT -i lang-@LANG@ -D . " .
-    "-s @SRCDIR@/phpbook/phpbook-xml/phpdocxml.dcl manual.xml"
+    "-s {$outdir}/phpbook/phpbook-xml/phpdocxml.dcl manual.xml"
 );
 
 // Try to open files for rewriting
-$ment = fopen("entities/missing-entities.ent", "w");
-$mids = fopen("entities/missing-ids.xml", "w");
+$ment = fopen("{$outdir}/entities/missing-entities.ent", "w");
+$mids = fopen("{$outdir}/entities/missing-ids.xml", "w");
 
 // Exit if we cannot rewrite the files
 if (!$ment || !$mids) {
@@ -121,6 +122,7 @@ $missing_ids_display=isset($missing_ids_display) ? array_unique($missing_ids_dis
 sort($missing_ids_display);
 
 // Write out missing entities to file
+echo "Creating file {$outdir}/entities/missing-entities.ent... ";
 foreach ($missing_entities as $ent) {
     fwrite($ment, $ent);
 }
@@ -128,7 +130,18 @@ foreach ($missing_entities as $ent) {
 // That's all for missing entities
 fclose($ment);
 
+// print out success info
+echo "done\n";
+if (!empty($missing_entities)) {
+    foreach ($missing_entities as $k => $v) {
+            echo "* " . preg_replace('@[\s]+@', ' ', $v) . "\n";
+    }
+} else {
+    echo "* No missing entities were found\n";
+}
+
 // If we have missing IDs, write them out as an appendix
+echo "Creating file {$outdir}/entities/missing-ids.xml... ";
 if (count($missing_ids) > 0) {
 
     fwrite($mids, "<appendix xml:id=\"missing-stuff\"><title>&MissingStuff;</title>\n");
@@ -142,16 +155,7 @@ if (count($missing_ids) > 0) {
 fclose($mids);
 
 // print out success info
-echo "\nCreated file: entities/missing-entities.ent\n";
-if (!empty($missing_entities)) {
-    foreach ($missing_entities as $k => $v) {
-            echo "* " . preg_replace('@[\s]+@', ' ', $v) . "\n";
-    }
-} else {
-    echo "* No missing entities were found\n";
-}
-
-echo "\nCreated file: entities/missing-ids.xml\n";
+echo "done\n";
 if (!empty($missing_ids_display)) {
     foreach ($missing_ids_display as $k => $v) {
         echo "* " . preg_replace('@[\s]+@', ' ', $v) . "\n";

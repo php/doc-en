@@ -38,26 +38,30 @@ Usage: ./configure [OPTION]...
 Defaults for the options are specified in brackets.
 
 Configuration:
-  -h, --help                display this help and exit
-  -V, --version             display version information and exit
-  -q, --quiet, --silent     do not print `checking...' messages
-      --srcdir=DIR          find the sources in DIR [configure dir or `.']
+  -h, --help                Display this help and exit
+  -V, --version             Display version information and exit
+  -q, --quiet, --silent     Do not print `checking...' messages
+      --srcdir=DIR          Find the sources in DIR [configure dir or `.']
 
 Package-specific:
-  --enable-force-dom-save   force .manual.xml to be saved in a full build even
+  --enable-force-dom-save   Force .manual.xml to be saved in a full build even
                             if it fails validation [{$acd['FORCE_DOM_SAVE']}]
-  --enable-chm              enable Windows HTML Help Edition pages [{$acd['CHMENABLED']}]
-  --enable-internals        include internals documentation [{$acd['INTERNALSENABLED']}]
+  --enable-chm              Wnable Windows HTML Help Edition pages [{$acd['CHMENABLED']}]
+  --enable-internals        Include internals documentation [{$acd['INTERNALSENABLED']}]
+  --enable-xml-details      Enable detailed XML error messages [{$acd['DETAILED_ERRORMSG']}]
   --with-php=PATH           Path to php CLI executable [detect]
   --with-phd=PATH           Path to phd [detect]
   --with-inipath=PATH       Path to php.ini file [@srcdir@/scripts]
   --with-lang=LANG          Language to build [{$acd['LANG']}]
   --with-partial=ID         Root ID to build [{$acd['PARTIAL']}]
 
-  --enable-xml-detailes     Enable detailed XML error messages [{$acd['DETAILED_ERRORMSG']}]
-
 HELPCHUNK;
 } // }}}
+
+function errors_are_bad($status) {
+    echo "\nEyh man. No worries. Happ shittens. Try again after fixing the errors above.\n";
+    exit($status);
+}
 
 function is_windows() {
     return strncmp(strtoupper(PHP_OS), "WIN", 3) === 0;
@@ -107,9 +111,6 @@ function quietechorun($e) // {{{
     // enclose in "" on Windows
     if (is_windows()) {
         $e = '"'.$e.'"';
-    }
-    if ($GLOBALS['ac']['quiet'] != 'yes') {
-        echo "{$e}\n";
     }
     passthru($e);
 } // }}}
@@ -175,40 +176,31 @@ function make_scripts_executable($filename) // {{{
 function print_xml_errors($details = true) {
     $errors = libxml_get_errors();
     if ($errors && count($errors) > 0) {
-        $valid = true;
         foreach($errors as $err) {
             // Skip all XInclude errors
             if (!strpos($err->message, 'xi:include') && !strpos($err->message, 'element include')) {
-                $valid = false;
-
-                $errmsg = trim($err->message);
+                $errmsg = wordwrap(" " . trim($err->message), 80, "\n ");
                 if ($details) {
                     $file = file(urldecode($err->file)); // libxml appears to urlencode() its errors strings
                     if (isset($file[$err->line])) {
                         $line = rtrim($file[$err->line - 1]);
-                        $padding = str_repeat("-", $err->column) . "^";
-                        printf("\nERROR (%s:%s)\n%s\n%s\n\t%s\n", $err->file, $err->line, $line, $padding, $errmsg);
+                        $padding = str_repeat("-", $err->column-1) . "^";
+                        printf("\nERROR (%s:%s:%s)\n%s\n%s\n%s\n", $err->file, $err->line, $err->column, $line, $padding, $errmsg);
                     } else {
-                        printf("\nERROR (%s:unknown)\n\t%s", $err->file, $errmsg);
+                        printf("\nERROR (%s:unknown)\n%s\n", $err->file, $errmsg);
                     }
                 } else {
-                    echo $errmsg, "\n";
+                    echo "{$errmsg}\n";
                 }
                 if (strpos($errmsg, "chunk is not well balanced") !== false || strpos($errmsg, "Failure to process entity") !== false) {
-                    echo "\n\nPrevious errors to severe. Not displaying more\n\n";
+                    echo "\n\nPrevious errors too severe. Stopping here.\n\n";
                     // Unbalanced chunk, no point in displaying more errors
                     break;
                 }
             }
         }
-
-        if (!$valid) {
-            echo "eyh man. No worries. Happ shittens. Try again after fixing the errors above\n";
-            return true;
-        }
     }
     libxml_clear_errors();
-    return false;
 } // }}}
 
 
@@ -316,8 +308,6 @@ foreach ($_SERVER['argv'] as $opt) { // {{{
                 }
             }
             $ac['srcdir'] = $v;
-            $ac['SRCDIR'] = $v;
-            $ac['WORKDIR'] = $v;
             break;
 
         case 'force-dom-save':
@@ -352,7 +342,7 @@ foreach ($_SERVER['argv'] as $opt) { // {{{
             $ac['PARTIAL'] = $v;
             break;
 
-        case 'xml-detailes':
+        case 'xml-details':
             $ac['DETAILED_ERRORMSG'] = $v;
             break;
         
@@ -367,6 +357,8 @@ if (!file_exists($ac['srcdir']) || !is_dir($ac['srcdir']) || !is_writable($ac['s
     checkerror("Source directory doesn't exist or can't be written to.");
 }
 $ac['srcdir'] = abspath($ac['srcdir']);
+$ac['SRCDIR'] = $ac['srcdir'];
+$ac['WORKDIR'] = $ac['srcdir'];
 checkvalue($ac['srcdir']);
 
 checking('whether to save an invalid .manual.xml');
@@ -444,7 +436,7 @@ checkvalue("yes");
 checking("for partial build");
 checkvalue($ac['PARTIAL']);
 
-checking('whether to enable detailed XML errormsg');
+checking('whether to enable detailed XML error messages');
 checkvalue($ac['DETAILED_ERRORMSG']);
 
 
@@ -455,23 +447,26 @@ if (!is_windows() && ($nsgmls = abspath(find_file($nsgmls_bin_names))) != '')
     $ac['NSGMLS'] = $nsgmls;
 checkvalue($ac['NSGMLS']);
 
-$infiles = array();
-globbetyglob($ac['srcdir'], 'find_dot_in');
+// We shouldn't be globbing for this. autoconf requires you to tell it which files to use, we should do the same
+// Notice how doing it this way results in generating less than half as many files.
+$infiles = array(
+    'Makefile.in',
+    'manual.xml.in',
+    'entities/version.ent.in',
+    'scripts/file-entities.php.in',
+    'scripts/missing-entities.php.in'
+);
 
 foreach ($infiles as $in) {
-    $in = chop($in);
-
-    if (basename($in) == 'configure.in') {
-        continue;
-    }
+    $in = chop("{$ac['srcdir']}/{$in}");
 
     $out = substr($in, 0, -3);
-    echo "generating $out: ";
+    echo "Generating {$out}... ";
     if (generate_output_file($in, $out, $ac)) {
         echo "done\n";
     } else {
         echo "fail\n";
-        exit(117);
+        errors_are_bad(117);
     }
 }
 
@@ -480,30 +475,53 @@ file_put_contents("{$ac['srcdir']}/entities/phpweb.ent", '');
 
 $ini = ($ac['INIPATH'] != '' && $ac['INIPATH'] != 'no') ? " -c \"{$ac['INIPATH']}\"" : '';
 $redir = ($ac['quiet'] == 'yes') ? " > /dev/null" : '';
+
 quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/file-entities.php\"{$redir}");
-echo "file-entities.php is done.\n\n";
-quietechorun("rm \"{$ac['srcdir']}/entities/\"missing*");
+
+// just unlink() the two files we know need to be removed. if you update missing-entities.php, update this
+$missing_stuff = array(
+    "entities/missing-entities.ent",
+    "entities/missing-ids.xml"
+);
+foreach ($missing_stuff as $relpath) {
+    if (file_exists("{$ac['srcdir']}/{$relpath}")) {
+        echo "Removing {$ac['srcdir']}/{$relpath}\n";
+        if (@unlink("{$ac['srcdir']}/{$relpath}") === FALSE) {
+            echo "Failed to remove {$relpath}. Check your permissions.\n";
+            errors_are_bad(178);
+        }
+    }
+}
 quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/missing-entities.php\"{$redir}");
-echo "missing-entities.php is done.\n\n";
+
+echo "Loading and parsing manual.xml... ";
+flush(STDOUT);
 
 libxml_use_internal_errors(true);
 
 $dom = new DOMDocument();
 $LIBXML_OPTS = LIBXML_NOENT | LIBXML_NSCLEAN | LIBXML_COMPACT;
-$didLoad = $dom->load( "{$ac['srcdir']}/manual.xml", $LIBXML_OPTS);
+$didLoad = $dom->load("{$ac['srcdir']}/manual.xml", $LIBXML_OPTS);
 
 // Check if the XML was simply broken, if so then just bail out
 if ($didLoad === false) {
+    echo "failed.\n";
     print_xml_errors();
-    exit(1);
+    errors_are_bad(1);
 }
+
+echo "done.\n";
+echo "Validating manual.xml... ";
+flush(STDOUT);
 
 $dom->xinclude();
 
 if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') { // {{{
     $node = $dom->getElementById($ac['PARTIAL']);
     if (!$node) {
-        exit("Failed to find partial ID in source XML: " . $ac['PARTIAL']);
+        echo "failed.\n";
+        echo "Failed to find partial ID in source XML: {$ac['PARTIAL']}\n";
+        errors_are_bad(1);
     }
     if ($node->tagName !== 'book' && $node->tagName !== 'set') {
         // this node is not normally allowed here, attempt to wrap it
@@ -529,40 +547,47 @@ if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') { // {{{
     $set->appendChild($node);
     $dom->validate(); // we don't care if the validation works or not
 
-    $filename = '.manual.' . $ac['PARTIAL'] . '.xml';
-    $dom->save("{$ac['srcdir']}/{$filename}");
-    echo "Partial manual saved to $filename, to build it run 'phd -d" . realpath($filename). "'\n";
+    $filename = "{$ac['srcdir']}/.manual.{$ac['PARTIAL']}.xml";
+    $dom->save($filename);
+    echo "done.\n";
+    echo "Partial manual saved to {$filename}. To build it, run 'phd -d{$filename}'\n";
     exit(0);
 } // }}} 
 
+$mxml = "{$ac['srcdir']}/.manual.xml";
 if ($dom->validate()) {
-    echo "All good.\n";
-    $dom->save("{$ac['srcdir']}/.manual.xml");
+    echo "done.\n";
+    echo "\nAll good. Saving .manual.xml... ";
+    flush(STDOUT);
+    $dom->save($mxml);
 
-    echo "All you have to do now is run 'phd -d " . realpath(".manual.xml") . "'\n";
+    echo "done.\n";
+    echo "All you have to do now is run 'phd -d{$mxml}'\n";
     exit(0); // Tell the shell that this script finished successfully.
 } else {
-    echo "The document didn't validate, ";
+    echo "failed.\n";
+    echo "\nThe document didn't validate, ";
 
     // Allow the .manual.xml file to be created, even if it is not valid.
     if ($ac['FORCE_DOM_SAVE'] == 'yes') { 
-        echo "writing .manual.xml anyway, ";
-        $dom->save("{$ac['srcdir']}/.manual.xml");
+        echo "writing .manual.xml anyway, and ";
+        $dom->save($mxml);
     }
 
     if ($ac['DETAILED_ERRORMSG'] == 'yes') {
         echo "trying to figure out what went wrong...\n";
-        echo "(if you experience segfaults here, try again with --disable-xml-detailes)\n";
+        echo "(This could take awhile. If you experience segfaults here, try again with --disable-xml-details)\n";
         libxml_clear_errors(); // Clear the errrors, they contain incorrect filename&linenr
 
-        $dom->load( "{$ac['srcdir']}/manual.xml", $LIBXML_OPTS | LIBXML_DTDVALID);
+        $dom->load("{$ac['srcdir']}/manual.xml", $LIBXML_OPTS | LIBXML_DTDVALID);
         print_xml_errors();
     } else {
-        echo "No details requested, here are the errors I got:\n";
+        echo "here are the errors I got:\n";
+        echo "(If this isn't enough information, try again with --enable-xml-details)\n";
         print_xml_errors(false);
     }
 
-    exit(1); // Tell the shell that this script finished with an error.
+    errors_are_bad(1); // Tell the shell that this script finished with an error.
 }
 
 ?>
