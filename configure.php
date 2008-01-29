@@ -484,7 +484,7 @@ quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/file-entities.
 echo "file-entities.php is done.\n\n";
 quietechorun("rm \"{$ac['srcdir']}/entities/\"missing*");
 quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/missing-entities.php\"{$redir}");
-echo "missing-entities.php is done.\n\nn";
+echo "missing-entities.php is done.\n\n";
 
 libxml_use_internal_errors(true);
 
