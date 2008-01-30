@@ -46,7 +46,7 @@ Configuration:
 Package-specific:
   --enable-force-dom-save   Force .manual.xml to be saved in a full build even
                             if it fails validation [{$acd['FORCE_DOM_SAVE']}]
-  --enable-chm              Wnable Windows HTML Help Edition pages [{$acd['CHMENABLED']}]
+  --enable-chm              Enable Windows HTML Help Edition pages [{$acd['CHMENABLED']}]
   --enable-internals        Include internals documentation [{$acd['INTERNALSENABLED']}]
   --enable-xml-details      Enable detailed XML error messages [{$acd['DETAILED_ERRORMSG']}]
   --with-php=PATH           Path to php CLI executable [detect]
