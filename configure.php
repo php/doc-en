@@ -184,7 +184,7 @@ function print_xml_errors($details = true) {
                     $file = file(urldecode($err->file)); // libxml appears to urlencode() its errors strings
                     if (isset($file[$err->line])) {
                         $line = rtrim($file[$err->line - 1]);
-                        $padding = str_repeat("-", $err->column-1) . "^";
+                        $padding = str_repeat("-", $err->column) . "^";
                         printf("\nERROR (%s:%s:%s)\n%s\n%s\n%s\n", $err->file, $err->line, $err->column, $line, $padding, $errmsg);
                     } else {
                         printf("\nERROR (%s:unknown)\n%s\n", $err->file, $errmsg);
