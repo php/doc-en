@@ -15,6 +15,8 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Authors:    Dave Barr <dave@php.net>                                 |
+  |             Hannes Magnusson <bjori@php.net>                         |
+  |             Gwynne Raskind <gwynne@php.net>                          |
   +----------------------------------------------------------------------+
   
   $Id$
