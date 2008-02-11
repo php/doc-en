@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 
- <chapter xml:id="chapter-makefile" xmlns:xlink="http://www.w3.org/1999/xlink">
-  <title>The Makefile</title>
+ <chapter xml:id="chapter-configure" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>The Configure process</title>
 
   <para>
    An important part of making contributions to the PHP documentation
@@ -11,49 +11,45 @@
   </para>
 
   <para>
-   The <filename>Makefile</filename> controls several aspects
-   of how the documentation is validated and created. To generate a
-   <filename>Makefile</filename> from a fresh checkout,
-   <command>cd</command> to the <filename>phpdoc</filename>
-   directory and issue the following commands:
-   <informalexample>
+   Configure (<filename>configure.php</filename>) has several options
+   that are used to help validate XML changes before commit, and also 
+   setup the build environment. A few examples. 
+   <example>
+    <title><filename>configure.php</filename> examples</title>
     <programlisting>
-$ autoconf
+<![CDATA[
+# List the configure usage options
+$ php configure.php --help
 
-$ ./configure
+# Choose a language (like Japanese), the default is English
+# Note: This assumes you checked out ja either as phpdoc-ja or phpdoc-all
+$ php configure.php --with-lang=ja
+
+# If a validation error occurred that requires additional debugging info then
+# this (--enable-xml-details) memory intensive option may help
+$ php configure.php --enable-xml-details
+
+# Force a save even when the XML document is invalid
+$ php configure.php --force-dom-save
+
+# To configure one specific book, with APC as an example. This will create
+# .manual.book.apc.xml instead of .manual.xml and although slightly faster
+# it's not preferred. Consider creating .manual.xml and use PhD to choose ids
+# as later described in this HOWTO
+$ php configure.php --partial=book.apc
+]]>
     </programlisting>
-   </informalexample>
-   This will generate a current <filename>Makefile</filename> for
-   your copy of the <emphasis>phpdoc</emphasis> tree.
+   </example>  
   </para>
   
   <note>
+   <title>The future of <filename>configure.php</filename></title>
    <para>
-    If you are using Windows, these commands
-    only work in the Cygwin bash shell.
+    The <filename>configure.php</filename> script (which replaced autoconf/configure/make) 
+    will be replaced by "PhD Setup" in the future. However, feel free to report
+    bugs and problems as they occur.
    </para>
   </note>
-  
-  <para>
-   Configure has two important options you may use. One is
-   <literal>--with-dsssl</literal>. Using this option, you
-   can specify the path to the DSSSL stylesheets. There are
-   many (more than 15) directories searched for DSSSL style
-   sheets, so you may not worry about this option. You
-   can specify the used manual language with the
-   <literal>--with-lang</literal> option. The default
-   is "en". An example on using this option:
-   <informalexample>
-    <programlisting>
-$ ./configure --with-lang=nl
-    </programlisting>
-   </informalexample>
-   There are some more options. The most important are
-   the <literal>--with-xsl</literal> option to specify
-   the XSL style sheets path, and the
-   <literal>--with-zendapi</literal> to specify the
-   path to the Zend API documentation.
-  </para>
   
  </chapter>
 
@@ -61,95 +57,44 @@ $ ./configure --with-lang=nl
   <title>Validating Changes</title>
 
   <para>
-   Now that you have a Makefile, you can validate the
-   documentation changes you have previously made:
-  </para>
-  <para>
-   <informalexample>
-    <programlisting>
-$ cd phpdoc
-$ make test
-    </programlisting>
-   </informalexample>
+   The use of <filename>configure.php</filename> will let you know if the XML
+   is valid or not. Use it before any commit.
   </para>
 
   <para>
-   Which will generate output similar to this:
+   It is important to test before committing changes because committing errors
+   will cause other contributors tests to fail. This also means the 
+   automatic build process will halt, so the manuals files and downloads
+   will not be updated online.
   </para>
   <para>
-   <screen>
-touch .manual.xml
-CONFIG_FILES=manual.xml CONFIG_HEADERS= ./config.status
-creating manual.xml
-nsgmls -i lang-en -s ./phpdocxml.dcl manual.xml
-   </screen>
-  </para>
-
-  <para>
-   If you made a mistake such as forgetting to close a tag or using
-   an invalid tag name, <command>make test</command> will report the
-   error and give you the line number it found the error at.
-  </para>
-  <para>
-    <screen>
-touch .manual.xml
-CONFIG_FILES=manual.xml CONFIG_HEADERS= ./config.status
-creating manual.xml
-nsgmls -i lang-en -s ./phpdocxml.dcl manual.xml
-nsgmls:en/chpaters/intro.xml:54:13:E: end tag for "para" omitted, but OMITTAG NO was specified
-make: *** [test] Error 1
-   </screen>
-  </para>
-  <para>
-   In the above example output, the parser expected to see an end tag
-   for &lt;para&gt; at line 54 in the file
-   <filename>en/chapters/intro.xml</filename>.
-   Using this information, you can go back to the file and correct
-   the mistake before committing your changes.
-  </para>
-
-  <para>
-   In order to check the validity of your XML you may use 
-   <literal>make test_xml</literal> as this executes a
-   <command>xmllint</command> check on the entire phpdoc tree.  This
-   will find problems <command>make test</command> ignores, problems like a
-   missing ; or &amp; for an entity.  <command>xmllint</command> is much
-   slower than the SGML check and will take roughly 4 times longer to execute
-   (and will consume much more memory).
-  </para>
-  <para>
-   <informalexample>
+   Before a commit is made, the diff should be reviewed to ensure the 
+   patch only contains intentional modifications. For example, whitespace 
+   changes are rarely necessary so should be eliminated before commit. For 
+   example:
+   <example>
+    <title>Creating a unified diff / patch</title>
     <programlisting>
-$ cd phpdoc
-$ make test_xml
+<![CDATA[
+# Creates a unified diff, and saves it as a file named diff.patch
+# Next, open this file in a text editor (like vim) and be certain 
+# it looks correct
+$ cvs diff -u en/reference/foo/bar.xml > diff.patch
+$ vim diff.patch
+]]>
     </programlisting>
-   </informalexample>
+   </example>
   </para>
   <para>
-   Or to simply check the XML validity of one file you may use the
-   <filename>xml-check.php</filename> script found in the phpdoc
-   <filename>scripts/</filename> directory. This is much faster than
-   <command>make test</command> or <command>make test_xml</command> if you
-   have only modified one file.  Use it like so:
-   <informalexample>
-    <programlisting>
-$ scripts/xml-check.php en/reference/mysql/functions/mysql-connect.xml
-    </programlisting>
-   </informalexample>
-  </para>
-  <para>
-   It is important to do a test before committing, because if you
-   commit files with errors, this single file will cause the automatic
-   build process to halt, and the manual files and downloads
-   will not be updated online. This can make phpdoc people angry.
+   If command-line tools are unavailable, consider using a <acronym>GUI</acronym>
+   based <acronym>CVS</acronym> tool to create and check the diffs.
   </para>
 
   <note>
    <title>When adding a new file</title>
    <para>
-    If you're adding a new file be sure to run
-    <command>./configure</command> again before <command>make test</command>
-    so that your new file will also be checked for validity.
+    Be certain to run <command>php configure.php</command> after adding a new file
+    as otherwise the new file will not be validated or built.
   </para>
  </note>
  
@@ -159,8 +104,10 @@ $ scripts/xml-check.php en/reference/mysql/functions/mysql-connect.xml
   <title>Viewing Your Changes</title>
 
   <para>
-   There are several stylesheets available for generating viewable
-   documentation, the most useful will probably be:
+   After being certain the diff looks commit worthy, and the XML validates, it
+   may be worthwhile to see how the change will look after the manual is built.
+   We use <link xlink:href="&url.phd;">PhD</link> to build the manual with several 
+   themes and formats available to create viewable documentation, including:
    <itemizedlist>
     <listitem>
      <para>
@@ -176,122 +123,63 @@ $ scripts/xml-check.php en/reference/mysql/functions/mysql-connect.xml
     </listitem>
     <listitem>
      <para>
-      <literal>phpweb</literal>, the main PHP online manual found at <link
-      xlink:href="&url.php.manual;">&url.php.manual;</link>
-     </para>
-    </listitem>
-    <listitem>
-     <para>
-      <literal>install-win.txt</literal>, the text version of the Windows 
-      install instructions that goes into the PHP source (as 
-      <filename>php-src/win32/install.txt</filename>). It's based off HTML 
-      (via lynx) using <filename>install-win.xml</filename>. Before commit, 
-      be sure Unix style (\n) line endings are used as the Windows packaging 
-      script later converts them to Windows format (\r\n). Both 
-      <filename>install-win.txt</filename> and 
-      <filename>install-win.html</filename> are generated.
-     </para>
-     <para>
-      Be sure the &amp;install.windows.building; entity is removed from
-      <filename>en/install/windows/index.xml</filename> before building
-      this file.
-     </para>
-    </listitem>
-    <listitem>
-     <para>
-      <literal>install-unix.txt</literal>, the text version of the Unix 
-      install instructions that goes into the PHP source (as 
-      <filename>php-src/INSTALL</filename>). It's based off HTML (via lynx) 
-      using <filename>install-unix.xml</filename>. Before commit, be sure 
-      Unix style (\n) line endings are used. Both 
-      <filename>install-unix.txt</filename> and 
-      <filename>install-unix.html</filename> are generated.
-     </para>
-    </listitem>
-    <listitem>
-     <para>
-      <literal>pdf</literal>, a PDF version of the manual, currently not
-      available online
-     </para>
-    </listitem>
-    <listitem>
-     <para>
-      <literal>rtf</literal>, a RTF (Rich Text Format) version of the manual,
-      currently not available online
-     </para>
-    </listitem>
-    <listitem>
-     <para>
-      <literal>howto</literal>, this HOWTO document in a simple HTML format:
-      <link xlink:href="&url.php.howto;">&url.php.howto;</link>
+      <literal>php</literal>, the main PHP online manual found at <link
+      xlink:href="&url.php.manual;">&url.php.manual;</link>. You'll need to
+      setup a <link xlink:href="&url.php.mirroring;">phpweb mirror</link> 
+      to view these locally.
      </para>
     </listitem>
    </itemizedlist>
   </para>
-
   <para>
-   There are also XSL stylesheets available, that are equivalents to the above
-   DSSSL sheets. The list includes: <literal>html_xsl</literal>,
-   <literal>bightml_xsl</literal>, <literal>phpweb_xsl</literal>,
-   <literal>howto_xsl</literal>, <literal>chm_xsl</literal> and
-   <literal>fo</literal> (produces a FO file, that can be later transformed to
-   PDF using a FO processor, like Apache FOP)
-  </para>
-
-  <para>
-   To generate a viewable copy of the documentation,
-   <command>cd</command> to the <filename>phpdoc</filename> directory
-   and issue one of the following commands:
-   <informalexample>
-    <programlisting>
-$ make html
-$ make bightml
-$ make phpweb
-    </programlisting>
-   </informalexample>
-   To make an actual copy of this HOWTO:
-   <informalexample>
-    <programlisting>
-$ make howto
- -or-
-$ make howto_xsl
-    </programlisting>
-   </informalexample>
-   The plain text version of the PHP documentation is made
-   by filtering the <literal>bightml</literal> output through lynx.
+   By default, all of the above themes are built together. Use the
+   <literal>--theme</literal> option to alter this behaviour.
   </para>
 
   <note>
+   <title>More information about PhD</title>
    <para>
-    Generating viewable documentation is CPU intensive and can take a
-    little while to complete. E.g. generating the simple HTML 
-    manual takes about 1 hour on a normal computer.
+    The PHP Manual uses the
+    <link xlink:href="&url.phd;">PhD build system</link> which
+    must be installed separately to build the manual.
    </para>
   </note>
 
   <para>
-   Where the output files are placed depends on the format you
-   built. HTML manuals generate in the <filename>html</filename>
-   subdirectory of <literal>phpdoc</literal>, similarly the
-   <literal>make phpweb</literal> command will place the files
-   in the <filename>php</filename> directory. The place for
-   the HOWTO HTML files is <filename>howto/html</filename>.
+   Example usage for using PhD to build the manual:
+   <example>
+    <title>Example using PhD to build the PHP Manual</title>
+    <programlisting>
+<![CDATA[
+# See all the phd options
+$ phd -h
+
+# Working in the phpdoc is optional, as it may also be passed to phd
+$ cd /path/to/phpdoc/dir
+
+# First, run configure
+$ php configure.php
+
+# Using phd to build the entire manual
+$ phd -d .manual.xml
+
+# Or build just one part, with book.apc as an example id
+# And also we'll just create the bightml file here
+$ phd -d .manual.xml -p book.apc -t bightml
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   The built files are placed in the current working directory
+   within <filename>php/</filename>, <filename>html/</filename>, 
+   and as <filename>bightml.html</filename> respectively. 
   </para>
   
   <para>
    If all goes well, you should have your own copy of the
    documentation, including any changes you've made.
   </para>
-
-  <tip>
-   <para>
-    Instead of generating the whole manual (which takes too much time), you
-    can generate just a single section, by issuing the following command:
-    <command>xsltproc --stringparam rootid "&lt;ID&gt;" xsl/html.xsl
-    manual.xml</command> (replacing <literal>&lt;ID&gt;</literal> by the ID of
-    the file/section you want to build.
-   </para>
-  </tip>
 
  </chapter>
 
@@ -311,21 +199,9 @@ $ make howto_xsl
    those listings.
   </para>
   <para>
-   This generator system only builds a new online manual,
-   and new downloadable files from one language, if
-   it is modified in a one day period. The build process
-   takes hours for only one language, so not all languages
-   can be built in one day. During the generation, a
-   <filename>build.log.gz</filename> is saved with build
-   information. See the <link linkend="translation-practical">section
-   for translators</link> about the <filename>build.log.gz</filename>
-   file. If there were some errors in the build process,
-   you can find the errors logged in this file.
-  </para>
-  <para>
-   The automatic build process updates the online manual,
+   The build process updates the online manual,
    and all downloadable ones, excluding the CHM versions.
-   The CHM versions are also built daily, but on a separate
+   The CHM versions are built on a separate
    Windows machine, as the compiler is only available for
    Microsoft Windows.
   </para>
