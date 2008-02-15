@@ -52,7 +52,6 @@ Package-specific:
   --enable-internals        Include internals documentation [{$acd['INTERNALSENABLED']}]
   --enable-xml-details      Enable detailed XML error messages [{$acd['DETAILED_ERRORMSG']}]
   --with-php=PATH           Path to php CLI executable [detect]
-  --with-phd=PATH           Path to phd [detect]
   --with-inipath=PATH       Path to php.ini file [@srcdir@/scripts]
   --with-lang=LANG          Language to build [{$acd['LANG']}]
   --with-partial=ID         Root ID to build [{$acd['PARTIAL']}]
@@ -210,9 +209,7 @@ $srcdir = ".";
 
 // Settings {{{
 $cygwin_php_bat = "{$srcdir}/../phpdoc-tools/php.bat";
-$cygwin_phd_bat = "{$srcdir}/../phpdoc-tools/phd.bat";
 $php_bin_names = array('php', 'php5', 'cli/php', 'php.exe', 'php5.exe', 'php-cli.exe', 'php-cgi.exe');
-$phd_bin_names = array('phd', 'phd.exe');
 $nsgmls_bin_names = array('nsgmls', 'onsgmls', 'nsgmls.exe', 'onsgmls.exe');
 // }}}
 
@@ -232,7 +229,6 @@ $acd = array( // {{{
     'WORKDIR' => $srcdir,
     'SRCDIR' => $srcdir,
     'PHP' => '',
-    'PHD' => '',
     'INIPATH' => "{$srcdir}/scripts",
     'CHMENABLED' => 'no',
     'CHMONLY_INCL_BEGIN' => '<!--',
@@ -328,10 +324,6 @@ foreach ($_SERVER['argv'] as $opt) { // {{{
             $ac['PHP'] = $v;
             break;
 
-        case 'phd':
-            $ac['PHD'] = $v;
-            break;
-
         case 'inipath':
             $ac['INIPATH'] = $v;
             break;
@@ -392,22 +384,6 @@ if (!file_exists($ac['PHP']) || !is_executable($ac['PHP'])) {
 }
 $ac['PHP'] = abspath($ac['PHP']);
 checkvalue($ac['PHP']);
-
-checking("for PHD executable");
-if ($ac['PHD'] == '' || $ac['PHD'] == 'no') {
-    $ac['PHD'] = find_file($phd_bin_names);
-} else if (file_exists($cygwin_phd_bat)) {
-    $ac['PHD'] = $cygwin_phd_bat;
-}
-
-if ($ac['PHD'] == '') {
-    checkerror("Could not find a PHD executable. Use --with-phd=/path/to/phd.");
-}
-if (!file_exists($ac['PHD']) && !is_readable($ac['PHD'])) { 
-    checkerror("PHD file is invalid. Use --with-phd=/path/to/phd.");
-}
-$ac['PHD'] = abspath($ac['PHD']);
-checkvalue($ac['PHD']);
 
 checking("for PHP INI path");
 if ($ac['INIPATH'] != '' && $ac['INIPATH'] != 'no') {
