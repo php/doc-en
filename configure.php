@@ -205,7 +205,7 @@ function print_xml_errors($details = true) {
 } // }}}
 
 
-$srcdir = ".";
+$srcdir = dirname(__FILE__);
 
 // Settings {{{
 $cygwin_php_bat = "{$srcdir}/../phpdoc-tools/php.bat";
