@@ -71,7 +71,7 @@ if (DIRECTORY_SEPARATOR == '\\') {
 }
 
 // proto regex
-$proto_regex  = "`^\s*/\*\s+\{{3}\s+proto\s+(\S+)\s+?(.+)$(.+)\*/`msU";
+$proto_regex  = "`^\s*/\*\s+\{{3}\s+proto\s+(\S+)\s+?(.+)(?:(?:\r\n|\r|\n)(.*)\*/|\*/)`mU";
 // matches[1] - return value from function prototype
 // matches[2] - rest of prototype starting with function name to sort by
 // matches[3] - description with newlines to be stripped and identation to be added
