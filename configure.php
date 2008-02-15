@@ -509,7 +509,10 @@ libxml_use_internal_errors(true);
 
 $dom = new DOMDocument();
 $LIBXML_OPTS = LIBXML_NOENT | LIBXML_NSCLEAN | LIBXML_COMPACT;
-$didLoad = $dom->load("{$ac['srcdir']}/manual.xml", $LIBXML_OPTS);
+
+// realpath() is important: omitting it causes severe performance degradation
+// and doubled memory usage on Windows.
+$didLoad = $dom->load(realpath("{$ac['srcdir']}/manual.xml"), $LIBXML_OPTS);
 
 // Check if the XML was simply broken, if so then just bail out
 if ($didLoad === false) {
