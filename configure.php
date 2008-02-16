@@ -186,15 +186,15 @@ function print_xml_errors($details = true) {
                     if (isset($file[$err->line])) {
                         $line = rtrim($file[$err->line - 1]);
                         $padding = str_repeat("-", $err->column) . "^";
-                        printf("\nERROR (%s:%s:%s)\n%s\n%s\n%s\n", $err->file, $err->line, $err->column, $line, $padding, $errmsg);
+                        fprintf(STDERR, "\nERROR (%s:%s:%s)\n%s\n%s\n%s\n", $err->file, $err->line, $err->column, $line, $padding, $errmsg);
                     } else {
-                        printf("\nERROR (%s:unknown)\n%s\n", $err->file, $errmsg);
+                        fprintf(STDERR, "\nERROR (%s:unknown)\n%s\n", $err->file, $errmsg);
                     }
                 } else {
-                    echo "{$errmsg}\n";
+                    fprintf(STDERR, "%s\n", $errmsg);
                 }
                 if (strpos($errmsg, "chunk is not well balanced") !== false || strpos($errmsg, "Failure to process entity") !== false) {
-                    echo "\n\nPrevious errors too severe. Stopping here.\n\n";
+                    fprintf(STDERR, "\n\nPrevious errors too severe. Stopping here.\n\n");
                     // Unbalanced chunk, no point in displaying more errors
                     break;
                 }
