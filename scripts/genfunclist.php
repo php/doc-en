@@ -96,7 +96,7 @@ if ($argc != 2 ||
     }
 
     //$FB_exclude = "_class_functions";
-    $ZendFB_regex  = "`^[ \t]*(?:static)?[ \t]*(?:zend_)?function_entry\s*(?!php_hw_api_)\w+(?<!_class_functions)\s*\[\]\s*=\s*\{(.*)(?:\{\s*NULL\s*,\s*NULL\s*,\s*NULL\s*\}|\{0\})`msU";
+    $ZendFB_regex  = "`^[ \t]*(?:(?:static|const))?[ \t]*(?:zend_)?function_entry\s*(?!php_hw_api_)\w+(?<!_class_functions)\s*\[\]\s*=\s*\{(.*)(?:\{\s*NULL\s*,\s*NULL\s*,\s*NULL\s*\}|\{0\})`msU";
 
     // function blocks
     $blocks = array();
