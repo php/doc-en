@@ -456,25 +456,25 @@ $redir = ($ac['quiet'] == 'yes') ? " > /dev/null" : '';
 
 quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/file-entities.php\"{$redir}");
 
-// We don't need missing-entities to be run unless we're not rendering English
-if ($ac['LANG'] != 'en') {
-    // just unlink() the two files we know need to be removed. if you update missing-entities.php, update this
-    $missing_stuff = array(
-        "entities/missing-entities.ent",
-        "entities/missing-ids.xml"
-    );
-    foreach ($missing_stuff as $relpath) {
-        if (file_exists("{$ac['srcdir']}/{$relpath}")) {
-            echo "Removing {$ac['srcdir']}/{$relpath}\n";
-            if (@unlink("{$ac['srcdir']}/{$relpath}") === FALSE) {
-                echo "Failed to remove {$relpath}. Check your permissions.\n";
-                errors_are_bad(178);
-            }
+// just unlink() the two files we know need to be removed. if you update missing-entities.php, update this
+$missing_stuff = array(
+    "entities/missing-entities.ent",
+    "entities/missing-ids.xml"
+);
+foreach ($missing_stuff as $relpath) {
+    if (file_exists("{$ac['srcdir']}/{$relpath}")) {
+        echo "Removing {$ac['srcdir']}/{$relpath}\n";
+        if (@unlink("{$ac['srcdir']}/{$relpath}") === FALSE) {
+            echo "Failed to remove {$relpath}. Check your permissions.\n";
+            errors_are_bad(178);
         }
     }
+}
+// We don't need missing-entities to be run unless we're not rendering English
+if ($ac['LANG'] != 'en') {
     quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/missing-entities.php\"{$redir}");
-} else if (!file_exists("{$ac['srcdir']}/entities/missing-entities.ent")) {
-    // Stick some empty data in there so nothing bitches on our first run in English
+} else {
+    // Stick some empty data in there
     file_put_contents("{$ac['srcdir']}/entities/missing-entities.ent", '<'.'?xml version="1.0" encoding="utf-8"?'.">\n");
     file_put_contents("{$ac['srcdir']}/entities/missing-ids.xml", '<'.'?xml version="1.0" encoding="utf-8"?'.">\n");
 }
