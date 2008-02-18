@@ -204,8 +204,9 @@ function print_xml_errors($details = true) {
     libxml_clear_errors();
 } // }}}
 
-
-$srcdir = dirname(__FILE__);
+$s_CurLoc = getcwd();
+chdir(dirname(__FILE__));
+$srcdir = '.';
 
 // Settings {{{
 $cygwin_php_bat = "{$srcdir}/../phpdoc-tools/php.bat";
@@ -538,6 +539,7 @@ if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') { // {{{
     $dom->save($filename);
     echo "done.\n";
     echo "Partial manual saved to {$filename}. To build it, run 'phd -d{$filename}'\n";
+    chdir($s_CurLoc);
     exit(0);
 } // }}} 
 
@@ -551,6 +553,7 @@ if ($dom->validate()) {
     echo "done.\n";
     echo "All you have to do now is run 'phd -d{$mxml}'\n";
     echo "If the script hangs here, you can abort with ^C. (Run `nice php configure.php` next time!)\n";
+    chdir($s_CurLoc);
     exit(0); // Tell the shell that this script finished successfully.
 } else {
     echo "failed.\n";
@@ -577,5 +580,5 @@ if ($dom->validate()) {
 
     errors_are_bad(1); // Tell the shell that this script finished with an error.
 }
-
+chdir($s_CurLoc);
 ?>
