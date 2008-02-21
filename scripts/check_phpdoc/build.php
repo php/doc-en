@@ -137,6 +137,7 @@ foreach (glob('../../en/reference/*/*/*.xml') as $function) {
             case 'notes':
             case 'changelog':
             case 'errors':
+            case 'unicode':
                 // test order
                 switch ($role) {
                     case 'parameters':
