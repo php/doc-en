@@ -39,7 +39,7 @@ foreach (glob('../../en/reference/*/*/*.xml') as $function) {
     $funcname = basename($function);
 
     // Skip main
-    if ($funcname == 'main.xml') {
+    if ($funcname == 'main.xml' || strpos($funcname, 'entities.') === 0) {
         continue;
     }
 
