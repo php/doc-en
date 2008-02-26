@@ -30,7 +30,7 @@
 <!-- $Revision$ -->
 <!-- AUTO GENERATED, DO NOT MODIFY BY HAND -->
 
-<appendix id="timezones">
+<appendix xml:id="timezones" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <title>List of Supported Timezones</title>
  <para>
   Here you'll find the complete list of timezones supported by PHP, which are
@@ -39,14 +39,14 @@
  <note>
   <simpara>
    The latest version of the timezone database can be installed via PECL's
-   <ulink url="&url.pecl.package.get;timezonedb">timezonedb</ulink>.
+   <link xlink:href="&url.pecl.package.get;timezonedb">timezonedb</link>.
    For Windows users, a pre-compiled DLL can be downloaded from the PECL4Win
-   site: <ulink url="&url.pecl.timezonedb.dll;">php_timezonedb.dll</ulink>.
+   site: <link xlink:href="&url.pecl.timezonedb.dll;">php_timezonedb.dll</link>.
   </simpara>
  </note>
 <?php foreach ($groupedList as $group => $zones) { ?>
 
- <sect1 id="timezones.<?php echo strtolower($group); ?>">
+ <sect1 xml:id="timezones.<?php echo strtolower($group); ?>">
   <title>List of timezones in the group <?php echo $group; ?></title>
   <table>
    <title><?php echo $group; ?></title>
@@ -65,6 +65,9 @@
         }
     }
     if ($c % 5 != 0) {
+        while($c++ % 5 != 0) {
+            echo "      <entry></entry>\n";
+        }
         echo "     </row>\n";
     }
 ?>
