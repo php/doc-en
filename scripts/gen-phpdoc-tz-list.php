@@ -44,28 +44,30 @@
    site: <link xlink:href="&url.pecl.timezonedb.dll;">php_timezonedb.dll</link>.
   </simpara>
  </note>
-<?php foreach ($groupedList as $group => $zones) { ?>
+<?php
+    foreach ($groupedList as $group => $zones) { 
+        $m = count($zones) > 4 ? 5 : count($zones); ?>
 
  <sect1 xml:id="timezones.<?php echo strtolower($group); ?>">
   <title>List of timezones in the group <?php echo $group; ?></title>
   <table>
    <title><?php echo $group; ?></title>
-   <tgroup cols="5">
+   <tgroup cols="<?php echo $m; ?>">
     <tbody>
 <?php
     $c = 0;
     foreach($zones as $zone) {
-        if ($c % 5 == 0) {
+        if ($c % $m == 0) {
             echo "     <row>\n";
         }
         $c++;
         echo "      <entry>{$zone}</entry>\n";
-        if ($c % 5 == 0) {
+        if ($c % $m == 0) {
             echo "     </row>\n";
         }
     }
-    if ($c % 5 != 0) {
-        while($c++ % 5 != 0) {
+    if ($c % $m != 0) {
+        while($c++ % $m != 0) {
             echo "      <entry></entry>\n";
         }
         echo "     </row>\n";
