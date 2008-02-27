@@ -8,7 +8,7 @@
 		'Mexico' => 'Others',
 		'US' => 'Others',
 	);
-	$list = timezone_identifiers_list();
+	$list = timezone_identifiers_list(DateTimeZone::ALL_WITH_BC);
 
 	foreach ($list as $element) {
 		if (preg_match('@^([^/]*)/(.*)@', $element, $m)) {
@@ -75,12 +75,12 @@
    </tgroup>
   </table>
 <?php if ( $group == 'Others' ) { ?>
-  <note>
+  <warning>
    <simpara>
      Please do not use any of the timezones listed here, they only exist
      for backward compatible reasons.
    </simpara>
-  </note>
+  </warning>
 <?php } ?>
  </sect1>
 <?php } ?>
