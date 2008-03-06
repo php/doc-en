@@ -482,7 +482,8 @@ flush(STDOUT);
 libxml_use_internal_errors(true);
 
 $dom = new DOMDocument();
-$LIBXML_OPTS = LIBXML_NOENT | LIBXML_NSCLEAN | LIBXML_COMPACT;
+$compact = defined('LIBXML_COMPACT') ? LIBXML_COMPACT : 0;
+$LIBXML_OPTS = LIBXML_NOENT | LIBXML_NSCLEAN | $compact;
 
 // realpath() is important: omitting it causes severe performance degradation
 // and doubled memory usage on Windows.
