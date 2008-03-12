@@ -1,0 +1,692 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!-- $Revision: 1.1 $ -->
+ <part xml:id="internals2.counter" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>The "counter" Extension - A Continuing Example</title>
+  
+  <partintro xml:id="internals2.counter.preface">
+   <title>Preface</title>
+   <simpara>
+    Throughout this Zend documentation, references are made to an example module
+    in order to illustrate various concepts. The "counter" extension is this
+    example, a fictional yet functional Zend module which strives to use as much
+    of the Zend API as is reasonably possible. This short chapter describes the
+    userland interface to the completed extension.
+   </simpara>
+  
+   <note>
+    <simpara>
+     "counter" serves no practical purpose whatsoever, as the functionality it
+     provides is far more effectively implemented by appropriate userland code.
+    </simpara>
+   </note>
+  </partintro>
+  
+  <chapter xml:id="internals2.counter.setup">
+   &reftitle.setup;
+
+   <section xml:id="internals2.counter.intro">
+    &reftitle.intro;
+  
+    <simpara>
+     The "counter" extension provides any number of counters to PHP code using it
+     which reset at times determined by the caller.
+    </simpara>
+   
+    <simpara>
+     There are three interfaces to "counter": basic, extended, and objective. The
+     basic interface provides a single counter controlled by INI settings and
+     function calls. The extended interface provides an arbitrary number of named
+     counter resources which may optionally persist beyond the lifetime of a
+     single PHP request. The objective interface combines both the basic and
+     extended interfaces into a <classname>Counter</classname> class.
+    </simpara>
+   </section>
+  
+   <section xml:id="internals2.counter.ini">
+    &reftitle.runtime;
+
+    &extension.runtime;
+    <table>
+     <title>Counter configuration options</title>
+     <tgroup cols="4">
+      <thead>
+       <row>
+        <entry>Name</entry>
+        <entry>Default</entry>
+        <entry>Changeable</entry>
+        <entry>Changelog</entry>
+       </row>
+      </thead>
+      <tbody>
+       <row>
+        <entry>counter.reset_time</entry>
+        <entry>COUNTER_RESET_PER_REQUEST</entry>
+        <entry>PHP_INI_ALL</entry>
+        <entry></entry>
+       </row>
+       <row>
+        <entry>counter.save_path</entry>
+        <entry>""</entry>
+        <entry>PHP_INI_ALL</entry>
+        <entry></entry>
+       </row>
+       <row>
+        <entry>counter.initial_value</entry>
+        <entry>"0"</entry>
+        <entry>PHP_INI_ALL</entry>
+        <entry></entry>
+       </row>
+      </tbody>
+     </tgroup>
+    </table>
+    <simpara>&ini.php.constants;</simpara>
+
+    <variablelist>
+     <varlistentry xml:id="internals2.counter.ini.reset-time">
+      <term>
+       <parameter>counter.reset_time</parameter>
+       <type>integer</type>
+      </term>
+      <listitem>
+       <simpara>
+        <varname>counter.reset_time</varname> tells "counter" to reset the
+        counter used by the basic interface. It may be any of the
+        <constant>COUNTER_RESET_*</constant> constants (see below).
+       </simpara>
+      </listitem>
+     </varlistentry>
+     <varlistentry xml:id="internals2.counter.ini.save-path">
+      <term>
+       <parameter>counter.save_path</parameter>
+       <type>string</type>
+      </term>
+      <listitem>
+       <simpara>
+        Tells "counter" where to save data that has to persist between
+        invocations of PHP (i.e. any counter that has COUNTER_RESET_NEVER or
+        COUNTER_FLAG_SAVE). A file will be created at this path, which must be
+        readable and writeable to whatever user PHP is running as.
+       </simpara>
+      </listitem>
+     </varlistentry>
+     <varlistentry xml:id="internals2.counter.ini.initial-value">
+      <term>
+       <parameter>counter.initial_value</parameter>
+       <type>integer</type>
+      </term>
+      <listitem>
+       <simpara>
+        Sets the initial value of the counter used by the basic interface
+        whenever it is reset.
+       </simpara>
+      </listitem>
+     </varlistentry>
+    </variablelist>
+
+   </section>
+
+   <section xml:id="internals2.counter.resources">
+    &reftitle.resources;
+   
+    <simpara>
+     The "counter" extension defines one resource type, a counter.
+    </simpara>
+   </section>
+
+  </chapter>
+  
+  <appendix xml:id="internals2.counter.constants">
+   &reftitle.constants;
+   &extension.constants;
+
+   <variablelist>
+    <varlistentry>
+     <term>
+      <constant>COUNTER_FLAG_PERSIST</constant>
+      (<type>integer</type>)
+     </term>
+     <listitem>
+      <simpara>
+       A counter with this flag will be created as a persistent resource.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term>
+      <constant>COUNTER_FLAG_SAVE</constant>
+      (<type>integer</type>)
+     </term>
+     <listitem>
+      <simpara>
+       A counter with this flag will be saved between invocations of PHP.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term>
+      <constant>COUNTER_FLAG_NO_OVERWRITE</constant>
+      (<type>integer</type>)
+     </term>
+     <listitem>
+      <simpara>
+       This flag causes <function>counter_create</function> to avoid overwriting
+       an existing named counter with a new one.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term>
+      <constant>COUNTER_META_NAME</constant>
+      (<type>string</type>)
+     </term>
+     <listitem>
+      <simpara>
+       Pass this constant to get the name of a counter resource or object.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term>
+      <constant>COUNTER_META_IS_PERISTENT</constant>
+      (<type>string</type>)
+     </term>
+     <listitem>
+      <simpara>
+       Pass this constant to determine whether a counter resource or object is
+       persistent (has the <constant>COUNTER_FLAG_PERSIST</constant> flag).
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term>
+      <constant>COUNTER_RESET_NEVER</constant>
+      (<type>integer</type>)
+     </term>
+     <listitem>
+      <simpara>
+       The counter will never be reset.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term>
+      <constant>COUNTER_RESET_PER_LOAD</constant>
+      (<type>integer</type>)
+     </term>
+     <listitem>
+      <simpara>
+       The counter will be reset on each invocation of PHP.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term>
+      <constant>COUNTER_RESET_PER_REQUEST</constant>
+      (<type>integer</type>)
+     </term>
+     <listitem>
+      <simpara>
+       The counter will be reset on each request.
+      </simpara>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </appendix>
+
+  <chapter xml:id="internals2.counter.examples">
+   &reftitle.examples;
+   
+   <section xml:id="internals2.counter.examples.basic">
+    <title>Basic interface</title>
+    
+    <simpara>
+     The basic interface provides three simple functions, illustrated here:
+    </simpara>
+   
+    <example xml:id="internals2.counter.examples.basic.ex">
+     <title>"counter"'s basic interface</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$starting_counter_value = counter_get();
+counter_bump(1);
+$second_counter_value = counter_get();
+counter_reset();
+$final_counter_value = counter_get();
+printf("%3d %3d %3d", $starting_counter_value, $second_counter_value, $final_counter_value);
+?>
+]]>
+     </programlisting>
+    </example>
+    &example.outputs;
+    <screen>
+<![CDATA[
+  0   1   0]]></screen>
+   
+    <simpara>
+     The basic interface also provides a number of INI settings, documented
+     below.
+    </simpara>
+   </section>
+   
+   <section xml:id="internals2.counter.examples.extended">
+    <title>Extended interface</title>
+    
+    <simpara>
+     The extended interface provides a small suite of functions that allow the
+     user to define an arbitrary number of named counters with unique settings.
+     The basic interface can be used in parallel with the extended interface.
+    </simpara>
+    
+    <example xml:id="internals2.counter.examples.extended.ex">
+     <title>"counter"'s extended interface</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+function print_counter_info($counter)
+{
+    if (is_resource($counter)) {
+        printf("Counter's name is '%s' and is%s persistent. Its current value is %d.\n",
+            counter_get_meta($counter, COUNTER_META_NAME),
+            counter_get_meta($counter, COUNTER_META_IS_PERSISTENT) ? '' : ' not',
+            counter_get_value($counter));
+    } else {
+      print "Not a valid counter!\n";
+    }
+}
+
+if (($counter_one = counter_get_named("one")) === NULL) {
+    $counter_one = counter_create("one", 0, COUNTER_FLAG_PERSIST);
+}
+counter_bump_value($counter_one, 2);
+$counter_two = counter_create("two", 5);
+$counter_three = counter_get_named("three");
+$counter_four = counter_create("four", 2, COUNTER_FLAG_PERSIST | COUNTER_FLAG_SAVE | COUNTER_FLAG_NO_OVERWRITE);
+counter_bump_value($counter_four, 1);
+
+print_counter_info($counter_one);
+print_counter_info($counter_two);
+print_counter_info($counter_three);
+print_counter_info($counter_four);
+?>
+]]>
+     </programlisting>
+     <simpara>
+      When run once, the above example outputs:
+     </simpara>
+     <screen>
+<![CDATA[
+Counter's name is 'one' and is persistent. Its current value is 2.
+Counter's name is 'two' and is not persistent. Its current value is 5.
+Not a valid counter!
+Counter's name is 'four' and is persistent. Its current value is 3.]]></screen>
+     <simpara>
+      If run a second time within the same instance of PHP, it outputs:
+     </simpara>
+     <screen>
+<![CDATA[
+Counter's name is 'one' and is persistent. Its current value is 4.
+Counter's name is 'two' and is not persistent. Its current value is 5.
+Not a valid counter!
+Counter's name is 'four' and is persistent. Its current value is 4.]]></screen>
+     <simpara>
+      If then run a third time <emphasis>in a different instance of
+      PHP</emphasis>, it outputs:
+     </simpara>
+     <screen>
+<![CDATA[
+Counter's name is 'one' and is persistent. Its current value is 2.
+Counter's name is 'two' and is not persistent. Its current value is 5.
+Not a valid counter!
+Counter's name is 'four' and is persistent. Its current value is 5.]]></screen>
+    </example>
+   </section>
+   
+   <section xml:id="internals2.counter.examples.objective">
+    <title>Objective interface</title>
+    
+    <simpara>
+     The objective interface provides an object-oriented way to access the
+     extended interfaces. The following example shows how the above one would be
+     implemented using the objective interface. The output of this example is
+     exactly the same, except that instead of printing "Not a valid counter!",
+     this will instead issue a PHP warning that the variable
+     <literal>$counter_three</literal> is not an object. This example shows that
+     it is possible to subclass the <classname>Counter</classname> class defined
+     by the extension, as well as that the counter's value is maintained using
+     an instance variable rather than method access.
+    </simpara>
+    
+    <example xml:id="internals2.counter.examples.objective.ex">
+     <title>"counter"'s objective interface</title>
+     
+     <programlisting role="php">
+<![CDATA[
+<?php
+class MyCounter extends Counter
+{
+    public function printCounterInfo() {
+        printf("Counter's name is '%s' and is%s persistent. Its current value is %d.\n",
+            $this->getMeta(COUNTER_META_NAME),
+            $this->getMeta(COUNTER_META_IS_PERSISTENT) ? '' : ' not',
+            $this->value);
+    }
+}
+
+if (($counter_one = Counter::getNamed("one")) === NULL) {
+    $counter_one = new Counter("one", 0, COUNTER_FLAG_PERSIST);
+}
+$counter_one->bumpValue(2); // we aren't allowed to "set" the value directly
+$counter_two = new Counter("two", 5);
+$counter_three = Counter::getNamed("three");
+$counter_four = new Counter("four", 2, COUNTER_FLAG_PERSIST | COUNTER_FLAG_SAVE | COUNTER_FLAG_NO_OVERWRITE);
+$counter_four->bumpValue(1);
+
+$counter_one->printCounterInfo();
+$counter_two->printCounterInfo();
+$counter_three->printCounterInfo();
+$counter_four->printCounterInfo();
+?>
+]]>
+     </programlisting>
+    </example>
+   </section>
+
+  </chapter>
+  
+  <reference xml:id="internals2.counter.counter-class">
+   <title>The Counter class</title>
+   <titleabbrev>Counter</titleabbrev>
+   
+   <partintro>
+    <section xml:id="internals2.counter.counter-class.intro">
+     &reftitle.intro;
+     <simpara>
+      Represents a single counter object.
+     </simpara>
+    </section>
+   
+    <section xml:id="internals2.counter.counter-class.synopsis">
+     &reftitle.classsynopsis;
+     
+     <classsynopsis>
+      <ooclass><classname>Counter</classname></ooclass>
+     
+      <classsynopsisinfo>
+       <ooclass><classname>Counter</classname></ooclass>
+      </classsynopsisinfo>
+ 
+      <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('internals2.counter.counter-class')/db:refentry/db:refsect1[@role='description']/descendant::db:constructorsynopsis[1])" />
+      <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('internals2.counter.counter-class')/db:refentry/db:refsect1[@role='description']/descendant::db:methodsynopsis[1])" />
+     </classsynopsis>
+    </section>
+   </partintro>
+   
+   <refentry xml:id="internals2.counter.counter-class.construct">
+    <refnamediv>
+     <refname>Counter::__construct</refname>
+     <refpurpose>
+      Creates an instance of a Counter which maintains a single numeric value.
+     </refpurpose>
+    </refnamediv>
+    <refsect1 role="description">
+     &reftitle.description;
+     <constructorsynopsis>
+      <methodname>Counter::__construct</methodname>
+      <methodparam><type>string</type><parameter>name</parameter></methodparam>
+      <methodparam choice="opt"><type>integer</type><parameter>initial_value</parameter></methodparam>
+      <methodparam choice="opt"><type>integer</type><parameter>flags</parameter></methodparam>
+     </constructorsynopsis>
+     <simpara>
+      Creates an instance of a Counter which maintains a single numeric value.
+     </simpara>
+    </refsect1>
+    <refsect1 role="parameters">
+     &reftitle.parameters;
+     <variablelist>
+      <varlistentry>
+       <term>name</term>
+       <listitem>
+        <simpara>
+         The new counter's name.
+        </simpara>
+       </listitem>
+      </varlistentry>
+      <varlistentry>
+       <term>initial_value</term>
+       <listitem>
+        <simpara>
+         The initial value of the counter. Defaults to zero (0).
+        </simpara>
+       </listitem>
+      </varlistentry>
+      <varlistentry>
+       <term>flags</term>
+       <listitem>
+        <simpara>
+         Flags for the new counter, chosen from the
+         <literal>COUNTER_FLAG_*</literal> constants.
+        </simpara>
+       </listitem>
+      </varlistentry>
+     </variablelist>
+    </refsect1>
+    <refsect1 role="returnvalues">
+     &reftitle.returnvalues;
+     <simpara>
+      Returns a Counter object on success.
+     </simpara>
+    </refsect1>
+    <refsect1 role="errors">
+     &reftitle.errors;
+     <simpara>
+      <function>Counter::__construct</function> throws an Exception if something
+      goes wrong.
+     </simpara>
+    </refsect1>
+   </refentry>
+
+   <refentry xml:id="internals2.counter.counter-class.getValue">
+    <refnamediv>
+     <refname>Counter::getValue</refname>
+     <refpurpose>
+      Get the current value of a counter.
+     </refpurpose>
+    </refnamediv>
+    <refsect1 role="description">
+     &reftitle.description;
+     <methodsynopsis>
+      <type>integer</type><methodname>Counter::getValue</methodname>
+      <void/>
+     </methodsynopsis>
+     <simpara>
+      <function>Counter::getValue</function> returns the current value of a
+      counter.
+     </simpara>
+    </refsect1>
+    <refsect1 role="returnvalues">
+     &reftitle.returnvalues;
+     <simpara>
+      <function>Counter::getValue</function> returns an integer.
+     </simpara>
+    </refsect1>
+    <refsect1 role="seealso">
+     &reftitle.seealso;
+     <simplelist>
+      <member><function>Counter::bumpValue</function></member>
+      <member><function>Counter::resetValue</function></member>
+     </simplelist>
+    </refsect1>
+   </refentry>
+
+   <refentry xml:id="internals2.counter.counter-class.bumpValue">
+    <refnamediv>
+     <refname>Counter::bumpValue</refname>
+     <refpurpose>
+      Change the current value of a counter.
+     </refpurpose>
+    </refnamediv>
+    <refsect1 role="description">
+     &reftitle.description;
+     <methodsynopsis>
+      <type>void</type><methodname>Counter::bumpValue</methodname>
+      <methodparam><type>integer</type><parameter>offset</parameter></methodparam>
+     </methodsynopsis>
+     <simpara>
+      <function>Counter::bumpValue</function> updates the current value of a
+      counter.
+     </simpara>
+    </refsect1>
+    <refsect1 role="parameters">
+     &reftitle.parameters;
+     <variablelist>
+      <varlistentry>
+       <term><parameter>offset</parameter></term>
+       <listitem>
+        <simpara>
+         The amount by which to change the counter's value. Can be negative.
+        </simpara>
+       </listitem>
+      </varlistentry>
+     </variablelist>
+    </refsect1>
+    <refsect1 role="seealso">
+     &reftitle.seealso;
+     <simplelist>
+      <member><function>Counter::getValue</function></member>
+      <member><function>Counter::resetValue</function></member>
+     </simplelist>
+    </refsect1>
+   </refentry>
+
+   <refentry xml:id="internals2.counter.counter-class.resetValue">
+    <refnamediv>
+     <refname>Counter::resetValue</refname>
+     <refpurpose>
+      Reset the current value of a counter.
+     </refpurpose>
+    </refnamediv>
+    <refsect1 role="description">
+     &reftitle.description;
+     <methodsynopsis>
+      <type>void</type><methodname>Counter::resetValue</methodname>
+      <void/>
+     </methodsynopsis>
+     <simpara>
+      <function>Counter::resetValue</function> resets the current value of a
+      counter to its original initial value.
+     </simpara>
+    </refsect1>
+    <refsect1 role="seealso">
+     &reftitle.seealso;
+     <simplelist>
+      <member><function>Counter::getValue</function></member>
+      <member><function>Counter::bumpValue</function></member>
+     </simplelist>
+    </refsect1>
+   </refentry>
+   
+   <refentry xml:id="internals2.counter.counter-class.getMeta">
+    <refnamediv>
+     <refname>Counter::getMeta</refname>
+     <refpurpose>
+      Return a piece of metainformation about a counter.
+     </refpurpose>
+    </refnamediv>
+    <refsect1 role="description">
+     &reftitle.description;
+     <methodsynopsis>
+      <type>mixed</type><methodname>Counter::getMeta</methodname>
+      <methodparam><type>integer</type><parameter>attribute</parameter></methodparam>
+     </methodsynopsis>
+     <simpara>
+      <function>Counter::getMeta</function> returns metainformation about a
+      counter.
+     </simpara>
+    </refsect1>
+    <refsect1 role="parameters">
+     &reftitle.parameters;
+     <variablelist>
+      <varlistentry>
+       <term><parameter>attribute</parameter></term>
+       <listitem>
+        <simpara>
+         The metainformation to retrieve.
+        </simpara>
+       </listitem>
+      </varlistentry>
+     </variablelist>
+    </refsect1>
+    <refsect1 role="returnvalues">
+     &reftitle.returnvalues;
+     <simpara>
+      <function>Counter::getMeta</function> returns values of varying types
+      based on which metainformation was requested.
+     </simpara>
+    </refsect1>
+   </refentry>
+   
+   <refentry xml:id="internals2.counter.counter-class.getNamed">
+    <refnamediv>
+     <refname>Counter::getNamed</refname>
+     <refpurpose>
+      Retrieve an existing named counter.
+     </refpurpose>
+    </refnamediv>
+    <refsect1 role="description">
+     &reftitle.description;
+     <methodsynopsis>
+      <type>Counter</type><methodname>Counter::getNamed</methodname>
+      <methodparam><type>string</type><parameter>name</parameter></methodparam>
+     </methodsynopsis>
+     <simpara>
+      <function>Counter::getNamed</function> returns an existing counter by name
+      if that name exists, or &null; otherwise. This is a static function.
+     </simpara>
+    </refsect1>
+    <refsect1 role="parameters">
+     &reftitle.parameters;
+     <variablelist>
+      <varlistentry>
+       <term><parameter>name</parameter></term>
+       <listitem>
+        <simpara>
+         The counter name to search for.
+        </simpara>
+       </listitem>
+      </varlistentry>
+     </variablelist>
+    </refsect1>
+    <refsect1 role="returnvalues">
+     &reftitle.returnvalues;
+     <simpara>
+      <function>Counter::getNamed</function> returns an existing counter by name
+      if that name exists, or &null; otherwise.
+     </simpara>
+    </refsect1>
+   </refentry>
+
+  </reference>
+  
+ </part>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
