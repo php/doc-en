@@ -337,6 +337,7 @@ function get_dir_status($dir)
 	  || strpos($dir, '/internals/')
 	  || strpos($dir, '/internals2/')
 	  || strpos($file, 'entities.') === 0
+	  || substr($file, -1) == '~' // Emacs backup file
 	  )
         continue;
 
@@ -405,8 +406,11 @@ function get_old_files($dir)
     while ($file = @readdir($handle)) {
 
       // If we found a file with one or two point as a name,
-      // or a CVS directory, skip the file
-      if (preg_match("/^\.{1,2}/", $file) || $file == 'CVS')
+      // a CVS directory, or an editor backup file skip the file
+      if (preg_match("/^\.{1,2}/", $file) 
+		  || $file == 'CVS'
+		  || substr($file, -1) == '~' // Emacs backup file
+		  )
         continue;
 
       // skip this files
