@@ -1,26 +1,83 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.25 $ -->
+<!-- $Revision: 1.26 $ -->
  <sect1 xml:id="language.oop5.overloading" xmlns="http://docbook.org/ns/docbook">
   <title>Overloading</title>
 
   <para>
-   Both method calls and member accesses can be overloaded via the
-   __call, __get and __set methods. These methods will only be
-   triggered when your object or inherited object doesn't contain the
-   <modifier>public</modifier> member or method you're trying to access.
-   All overloading methods must be defined as
-   <link linkend="language.oop5.visibility">public</link>.
+   Overloading in PHP provides means to dynamically
+   <quote>create</quote> members and methods.
+   These dynamic entities are processed via magic methods
+   one can establish in a class for various action types.
   </para>
+
   <para>
-   Since PHP 5.1.0 it is also possible to overload the
-   <function>isset</function> and <function>unset</function> functions via the
-   __isset and __unset methods respectively.
-   Method __isset is called also with <function>empty</function>.
+   The overloading methods are invoked when interacting with
+   members or methods that have not been declared or are not
+   <link linkend="language.oop5.visibility">visible</link> in
+   the current scope. The rest of this section will use the terms
+   <quote>inaccessible members</quote> and <quote>inaccessible
+   methods</quote> to refer to this combination of declaration
+   and visibility.
   </para>
+
   <para>
-   PHP 5.3.0 added the ability to overload
-   <link linkend="language.oop5.static">static</link> methods via __callStatic.
+<!--
+Test scripts indicate otherwise.
+Will communicate with internals to see what's up.
+http://bugs.php.net/bug.php?id=43924
+-->
+   All overloading methods must be defined as <literal>public</literal>.
   </para>
+
+  <note>
+   <para>
+    None of the arguments of these magic methods can be
+    <link linkend="functions.arguments.by-reference">passed by
+    reference</link>.
+   </para>
+  </note>
+
+  <note>
+   <para>
+    PHP's interpretation of <quote>overloading</quote> is
+    different than most object oriented languages. Overloading
+    traditionally provides the ability to have multiple methods
+    with the same name but different quantities and types of
+    arguments.
+   </para>
+  </note>
+
+
+  <sect2 xml:id="language.oop5.overloading.changelog">
+   &reftitle.changelog;
+   <para>
+    <informaltable>
+     <tgroup cols="2">
+      <thead>
+       <row>
+        <entry>&Version;</entry>
+        <entry>&Description;</entry>
+       </row>
+      </thead>
+      <tbody>
+       <row>
+        <entry>5.1.0</entry>
+        <entry>
+         Added <literal>__isset()</literal> and <literal>__unset()</literal>.
+        </entry>
+       </row>
+       <row>
+        <entry>5.3.0</entry>
+        <entry>
+         Added <literal>__callStatic()</literal>.
+        </entry>
+       </row>
+      </tbody>
+     </tgroup>
+    </informaltable>
+   </para>
+  </sect2>
+
 
   <sect2 xml:id="language.oop5.overloading.members">
    <title>Member overloading</title>
@@ -44,119 +101,130 @@
    </methodsynopsis>
 
    <para>
-    Class members can be overloaded to run custom code defined in your class
-    by defining these specially named methods. The <varname>$name</varname>
-    parameter used is the name of the variable that should be set or retrieved.
-    The __set() method's <varname>$value</varname> parameter specifies the
-    value that the object should set the <varname>$name</varname>.
+    <literal>__set()</literal> is run when writing data to
+    inaccessible members.
    </para>
 
-   <note>
-    <para>
-     The <literal>__set()</literal> method cannot take arguments by reference.
-    </para>
-   </note>
+   <para>
+    <literal>__get()</literal> is utilized for reading data from
+    inaccessible members.
+   </para>
+
+   <para>
+    <literal>__isset()</literal> is triggered by calling
+    <function>isset</function> or <function>empty</function>
+    on inaccessible members.
+   </para>
+
+   <para>
+    <literal>__unset()</literal> is invoked when
+    <function>unset</function> is used on inaccessible members.
+   </para>
+
+   <para>
+    The <varname>$name</varname> argument is the name of the
+    member being interacted with. The <literal>__set()</literal>
+    method's <varname>$value</varname> argument specifies the
+    value the <varname>$name</varname>'ed member should be set
+    to.
+   </para>
+
+   <para>
+    Member overloading only works in object context. These magic
+    methods will not be triggered in static context. Therefore
+    these methods can not be declared
+    <link linkend="language.oop5.static">static</link>.
+   </para>
 
    <example>
     <title>overloading with __get, __set, __isset and __unset example</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-class Setter
-{
-    public $n;
-    private $x = array("a" => 1, "b" => 2, "c" => 3);
+class MemberTest {
+    /**  Location for overloaded data.  */
+    private $data = array();
 
-    public function __get($nm)
-    {
-        echo "Getting [$nm]\n";
+    /**  Overloading not used on declared members.  */
+    public $declared = 1;
 
-        if (isset($this->x[$nm])) {
-            $r = $this->x[$nm];
-            print "Returning: $r\n";
-            return $r;
-        } else {
-            echo "Nothing!\n";
+    /**  Overloading not triggered when accessed inside the class.  */
+    private $hidden = 2;
+
+    public function __set($name, $value) {
+        echo "Setting '$name' to '$value'\n";
+        $this->data[$name] = $value;
+    }
+
+    public function __get($name) {
+        echo "Getting '$name'\n";
+        if (array_key_exists($name, $this->data)) {
+            return $this->data[$name];
         }
+
+        $trace = debug_backtrace();
+        trigger_error(
+            'Undefined property: ' . $name .
+            ' in ' . $trace[0]['file'] .
+            ' on line ' . $trace[0]['line'],
+            E_USER_NOTICE);
+        $tmp = null;
+        return $tmp;
     }
 
-    public function __set($nm, $val)
-    {
-        echo "Setting [$nm] to $val\n";
-
-        if (isset($this->x[$nm])) {
-            $this->x[$nm] = $val;
-            echo "OK!\n";
-        } else {
-            echo "Not OK!\n";
-        }
+    public function __isset($name) {
+        echo "Is '$name' set?\n";
+        return isset($this->data[$name]);
     }
 
-    public function __isset($nm)
-    {
-        echo "Checking if $nm is set\n";
-
-        return isset($this->x[$nm]);
+    public function __unset($name) {
+        echo "Unsetting '$name'\n";
+        unset($this->data[$name]);
     }
 
-    public function __unset($nm)
-    {
-        echo "Unsetting $nm\n";
-
-        unset($this->x[$nm]);
+    /**  Not a magic method, just here for example.  */
+    public function getHidden() {
+		echo "'hidden' visible here, __get() not used\n";
+        return $this->hidden;
     }
 }
 
-$foo = new Setter();
-$foo->n = 1;
-$foo->a = 100;
-$foo->a++;
-$foo->z++;
 
-var_dump(isset($foo->a)); //true
-unset($foo->a);
-var_dump(isset($foo->a)); //false
+echo "<pre>\n";
 
-// this doesn't pass through the __isset() method
-// because 'n' is a public property
-var_dump(isset($foo->n));
+$obj = new MemberTest;
 
-var_dump($foo);
+$obj->a = 1;
+echo $obj->a . "\n";
+
+var_dump(isset($obj->a));
+unset($obj->a);
+var_dump(isset($obj->a));
+
+echo $obj->declared . "\n";
+echo $obj->getHidden() . "\n";
+echo $obj->hidden . "\n";
 ?>
 ]]>
     </programlisting>
     &example.outputs;
     <screen role="php">
 <![CDATA[
-Setting [a] to 100
-OK!
-Getting [a]
-Returning: 100
-Setting [a] to 101
-OK!
-Getting [z]
-Nothing!
-Setting [z] to 1
-Not OK!
-
-Checking if a is set
+Setting 'a' to '1'
+Getting 'a'
+1
+Is 'a' set?
 bool(true)
-Unsetting a
-Checking if a is set
+Unsetting 'a'
+Is 'a' set?
 bool(false)
-bool(true)
+1
+'hidden' visible here, __get() not used
+2
+Getting 'hidden'
 
-object(Setter)#1 (2) {
-  ["n"]=>
-  int(1)
-  ["x":"Setter":private]=>
-  array(2) {
-    ["b"]=>
-    int(2)
-    ["c"]=>
-    int(3)
-  }
-}
+
+Notice:  Undefined property: hidden in <file_name> on line 64 in <file_name> on line 28
 ]]>
     </screen>
 
@@ -178,100 +246,54 @@ object(Setter)#1 (2) {
    </methodsynopsis>
 
    <para>
-    The magic methods __call() and __callStatic()
-    allow capturing invocation of non existent methods.
-    These methods can be used to implement user defined method
-    handling that depends on the name of the actual method being called. This
-    is for instance useful for proxy implementations. The arguments that were
-    passed in the function will be defined as an array in the
-    <varname>$arguments</varname> parameter. The value returned from these
-    methods will be returned to the caller of the method.
+    <literal>__call()</literal> is triggered when invoking
+    inaccessible methods in an object context.
    </para>
 
+   <para>
+    <literal>__callStatic()</literal> is triggered when invoking
+    inaccessible methods in a static context.
+   </para>
+
+   <para>
+    The <varname>$name</varname> argument is the name of the
+    method being called. The <varname>$arguments</varname>
+    argument is an enumerated array containing the parameters
+    passed to the <varname>$name</varname>'ed method.
+   </para>
 
    <example>
-    <title>overloading instantiated methods with __call</title>
+    <title>overloading instantiated methods with __call and ___callStatic</title>
     <programlisting role="php">
   <![CDATA[
 <?php
-class Caller
-{
-    private $x = array(10, 20);
+class MethodTest {
+    public $o = 'mmmmkay';
+    public static $s = 'uhhh...';
 
-    public function __call($m, $a)
-    {
-        print "Instantiated method '$m' called:\n";
-        var_dump($a);
-        return $this->x;
+    public function __call($name, $arguments) {
+        echo "Calling object method '$name' ";
+		echo implode(', ', $arguments). "\n";
+    }
+
+    public static function __callStatic($name, $arguments) {
+        echo "Calling static method '$name' ";
+		echo implode(', ', $arguments). "\n";
     }
 }
 
-$foo = new Caller();
-$a = $foo->test('a', 'b');
-var_dump($a);
+$obj = new MethodTest;
+$obj->test('in object context');
+
+MethodTest::test('in static context');
 ?>
 ]]>
     </programlisting>
     &example.outputs;
     <screen role="php">
 <![CDATA[
-
-Instantiated method 'test' called:
-array(2) {
-  [0]=>
-  string(1) "a"
-  [1]=>
-  string(1) "b"
-}
-array(2) {
-  [0]=>
-  int(10)
-  [1]=>
-  int(20)
-}
-]]>
-    </screen>
-   </example>
-
-   <example>
-    <title>overloading instantiated methods with __call</title>
-    <programlisting role="php">
-  <![CDATA[
-<?php
-class Caller
-{
-    private static $x = array(10, 20);
-
-    public static function __callStatic($m, $a)
-    {
-        print "Static method '$m' called:\n";
-        var_dump($a);
-        return self::$x;
-    }
-}
-
-$a = Caller::test('a', 'b');
-var_dump($a);
-?>
-]]>
-    </programlisting>
-    &example.outputs;
-    <screen role="php">
-<![CDATA[
-
-Static method 'test' called:
-array(2) {
-  [0]=>
-  string(1) "a"
-  [1]=>
-  string(1) "b"
-}
-array(2) {
-  [0]=>
-  int(10)
-  [1]=>
-  int(20)
-}
+Calling object method 'test' in object context
+Calling static method 'test' in static context
 ]]>
     </screen>
    </example>
