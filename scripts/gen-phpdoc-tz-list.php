@@ -79,8 +79,8 @@
 <?php if ( $group == 'Others' ) { ?>
   <warning>
    <simpara>
-     Please do not use any of the timezones listed here, they only exist
-     for backward compatible reasons.
+     Please do not use any of the timezones listed here (besides UTC), they
+     only exist for backward compatible reasons.
    </simpara>
   </warning>
 <?php } ?>
