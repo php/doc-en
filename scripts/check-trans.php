@@ -2,7 +2,7 @@
 <?php
 /*
   +----------------------------------------------------------------------+
-  | PHP Version 4                                                        |
+  | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
   | Copyright (c) 1997-2008 The PHP Group                                |
   +----------------------------------------------------------------------+
@@ -21,7 +21,12 @@
 if ($argc != 2) {
 ?>
 
-Checkfor translation error and print statistics
+Check for translation error and print statistics
+
+You can see an example output for french translation here :
+http://php.keliglia.com/index_error.htm
+
+Feel free to ask me some others checks.
 
   Usage:
   <?php echo $argv[0]; ?> <language-code>
@@ -988,6 +993,25 @@ $date = date("r");
 // Get all files status
 get_dir_status($DOCDIR.$LANG."/");
 
+$nb_error_all =
+$nb_error['chapter'] +
+$nb_error['appendix'] +
+$nb_error['qandaentry'] +
+$nb_error['link'] +
+$nb_error['sect1'] +
+$nb_error['book'] +
+$nb_error['preface'] +
+$nb_error['section'] +
+$nb_error['varlistentry'] +
+$nb_error['reference'] +
+$nb_error['refentry'] +
+$nb_error['refsect1'] +
+$nb_error['methodsynopsis'] +
+$nb_error['refpurpose'] +
+$nb_error['seealsoMember'] +
+$nb_error['cdata'] +
+$nb_error['classsynopsis'];
+
 $html = '
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd">
 <html>
@@ -1045,6 +1069,8 @@ function closeTable(id) {
 </table>
 ';
 
+$nb_file = count($final_result);
+
 $html.='
 
 <table class="info">
@@ -1052,86 +1078,87 @@ $html.='
  <th>Error Libel</th>
  <th>Nb error</th>
 </tr>
-<tr>
- <td>Chapter</td>
- <td>'.$nb_error['chapter'].'</td>
+<tr class="old">
+ <td><strong>Chapter</strong><br /><em>Check "chapter" tag &amp; attribut consistency.</em></td>
+ <td>'.(($nb_error['chapter'] == 0)?'-':'<strong>'.$nb_error['chapter'].'</strong>').'</td>
 </tr>
 <tr>
- <td>Appendix</td>
- <td>'.$nb_error['appendix'].'</td>
+ <td><strong>Appendix</strong><br /><em>Check "Appendix" tag &amp; attribut consistency.</em></td>
+ <td>'.(($nb_error['appendix'] == 0)?'-':'<strong>'.$nb_error['appendix'].'</strong>').'</td>
+</tr>
+<tr class="old">
+ <td><strong>qandaentry</strong><br /><em>Check "qandaentry" tag &amp; attribut consistency.</em></td>
+ <td>'.(($nb_error['qandaentry'] == 0)?'-':'<strong>'.$nb_error['qandaentry'].'</strong>').'</td>
 </tr>
 <tr>
- <td>qandaentry</td>
- <td>'.$nb_error['qandaentry'].'</td>
+ <td><strong>link</strong><br /><em>Check "link" tag &amp; attribut consistency.<br/>Error can be just a different order of link in the page.</em></td>
+ <td>'.(($nb_error['link'] == 0)?'-':'<strong>'.$nb_error['link'].'</strong>').'</td>
+</tr>
+<tr class="old">
+ <td><strong>sect1</strong><br /><em>Check "sect1" tag &amp; attribut consistency.</em></td>
+ <td>'.(($nb_error['sect1'] == 0)?'-':'<strong>'.$nb_error['sect1'].'</strong>').'</td>
 </tr>
 <tr>
- <td>link</td>
- <td>'.$nb_error['link'].'</td>
+ <td><strong>book</strong><br /><em>Check "book" tag &amp; attribut consistency.</em></td>
+ <td>'.(($nb_error['book'] == 0)?'-':'<strong>'.$nb_error['book'].'</strong>').'</td>
+</tr>
+<tr class="old">
+ <td><strong>preface</strong><br /><em>Check "preface" tag &amp; attribut consistency.</em></td>
+ <td>'.(($nb_error['preface'] == 0)?'-':'<strong>'.$nb_error['preface']).'</td>
 </tr>
 <tr>
- <td>sect1</td>
- <td>'.$nb_error['sect1'].'</td>
+ <td><strong>section</strong><br /><em>Check "section" tag &amp; attribut consistency.</em></td>
+ <td>'.(($nb_error['section'] == 0)?'-':'<strong>'.$nb_error['section'].'</strong>').'</td>
+</tr>
+<tr class="old">
+ <td><strong>varlistentry</strong><br /><em>Check "varlistentry" tag &amp; attribut consistency.</em></td>
+ <td>'.(($nb_error['varlistentry'] == 0)?'-':'<strong>'.$nb_error['varlistentry'].'</strong>').'</td>
 </tr>
 <tr>
- <td>book</td>
- <td>'.$nb_error['book'].'</td>
+ <td><strong>reference</strong><br /><em>Check "reference" tag &amp; attribut consistency.</em></td>
+ <td>'.(($nb_error['reference'] == 0)?'-':'<strong>'.$nb_error['reference'].'</strong>').'</td>
+</tr>
+<tr class="old">
+ <td><strong>refentry</strong><br /><em>Check "refentry" tag &amp; attribut consistency.</em></td>
+ <td>'.(($nb_error['refentry'] == 0)?'-':'<strong>'.$nb_error['refentry'].'</strong>').'</td>
 </tr>
 <tr>
- <td>preface</td>
- <td>'.$nb_error['preface'].'</td>
+ <td><strong>refsect1</strong><br /><em>Check "refsect1" tag &amp; attribut consistency.</em></td>
+ <td>'.(($nb_error['refsect1'] == 0)?'-':'<strong>'.$nb_error['refsect1'].'</strong>').'</td>
+</tr>
+<tr class="old">
+ <td><strong>methodsynopsis</strong><br /><em>Check "methodsynopsis" tag &amp; attribut consistency.</em></td>
+ <td>'.(($nb_error['methodsynopsis'] == 0)?'-':'<strong>'.$nb_error['methodsynopsis'].'</strong>').'</td>
 </tr>
 <tr>
- <td>section</td>
- <td>'.$nb_error['section'].'</td>
+ <td><strong>refpurpose</strong><br /><em>Check "refpurpose" tag &amp; warn if there is a point at the end.</em></td>
+ <td>'.(($nb_error['refpurpose'] == 0)?'-':'<strong>'.$nb_error['refpurpose'].'</strong>').'</td>
+</tr>
+<tr class="old">
+ <td><strong>seealsoMember</strong><br /><em>Check "SeeAlso" section &amp; warn if there is less member in translation than in EN version.</em></td>
+ <td>'.(($nb_error['seealsoMember'] == 0)?'-':'<strong>'.$nb_error['seealsoMember'].'</strong>').'</td>
 </tr>
 <tr>
- <td>varlistentry</td>
- <td>'.$nb_error['varlistentry'].'</td>
+ <td><strong>cdata</strong><br /><em>Check "cdata" section &amp; warn if there is less cdata section in translation than in EN version.</em></td>
+ <td>'.(($nb_error['cdata'] == 0)?'-':'<strong>'.$nb_error['cdata'].'</strong>').'</td>
 </tr>
-<tr>
- <td>reference</td>
- <td>'.$nb_error['reference'].'</td>
+<tr class="old">
+ <td><strong>classsynopsis</strong><br /><em>Check "classsynopsis" tag &amp; attribut consistency.</em></td>
+ <td>'.(($nb_error['classsynopsis'] == 0)?'-':'<strong>'.$nb_error['classsynopsis'].'</strong>').'</td>
 </tr>
-<tr>
- <td>refentry</td>
- <td>'.$nb_error['refentry'].'</td>
-</tr>
-<tr>
- <td>refsect1</td>
- <td>'.$nb_error['refsect1'].'</td>
-</tr>
-<tr>
- <td>methodsynopsis</td>
- <td>'.$nb_error['methodsynopsis'].'</td>
-</tr>
-<tr>
- <td>refpurpose</td>
- <td>'.$nb_error['refpurpose'].'</td>
-</tr>
-<tr>
- <td>seealsoMember</td>
- <td>'.$nb_error['seealsoMember'].'</td>
-</tr>
-<tr>
- <td>cdata</td>
- <td>'.$nb_error['cdata'].'</td>
-</tr>
-<tr>
- <td>classsynopsis</td>
- <td>'.$nb_error['classsynopsis'].'</td>
+<tr class="crit">
+ <td class="r">Total :<br/>In '.$nb_file.' file(s)</td>
+ <td class="b c">'.$nb_error_all.'</td>
 </tr>
 </table>
 ';
 
-$nb_error = count($final_result);
-//$html.= '<h3>'.$nb_error.' file(s) in error</h3>';
-
-for( $i = 0; $i < $nb_error; $i++ ) {
+for( $i = 0; $i < $nb_file; $i++ ) {
 
 $html.= '
 <table class="info" id="table_'.$i.'">
  <tr>
-  <th colspan="2" class="blue"><div class="close"><a href="#" title="Hide" onclick="javascript:closeTable(\'table_'.$i.'\');">[x]</a></div>'.$final_result[$i]['file'].'</th>
+  <th colspan="2" class="blue"><div class="close"><a href="javascript:void(0)" title="Hide" onclick="javascript:closeTable(\'table_'.$i.'\');">[x]</a></div>'.$final_result[$i]['file'].'</th>
  </tr>
 ';
 
