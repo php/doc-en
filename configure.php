@@ -59,6 +59,14 @@ Package-specific:
 HELPCHUNK;
 } // }}}
 
+function errbox($msg) {
+    $len = strlen($msg)+4;
+    $line = "+" . str_repeat("-", $len) . "+";
+
+    echo $line, "\n";
+    echo "|  ", $msg, "  |", "\n";
+    echo $line, "\n\n";
+}
 function errors_are_bad($status) {
     echo "\nEyh man. No worries. Happ shittens. Try again after fixing the errors above.\n";
     exit($status);
@@ -259,7 +267,7 @@ $ac = $acd;
 $srcdir_dependant_settings = array( 'INIPATH', 'LANGDIR' );
 $overridden_settings = array();
 
-foreach ($_SERVER['argv'] as $opt) { // {{{
+foreach ($_SERVER['argv'] as $k => $opt) { // {{{
     $parts = explode('=', $opt, 2);
     if (strncmp($opt, '--enable-', 9) == 0) {
         $o = substr($parts[0], 9);
@@ -332,6 +340,15 @@ foreach ($_SERVER['argv'] as $opt) { // {{{
             break;
 
         case 'partial':
+            if ($v == "yes") {
+                if (isset($_SERVER['argv'][$k+1])) {
+                    $val = $_SERVER['argv'][$k+1];
+                    errbox("TYPO ALERT: Didn't you mean --{$o}={$val}?");
+                } else {
+                    errbox("TYPO ALERT: --partial without a chunk ID?");
+                }
+            }
+
             $ac['PARTIAL'] = $v;
             break;
 
@@ -577,3 +594,4 @@ if ($dom->validate()) {
     errors_are_bad(1); // Tell the shell that this script finished with an error.
 }
 ?>
+
