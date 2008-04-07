@@ -75,7 +75,7 @@ $nb_error['cdata'] = 0;
 $nb_error['classsynopsis'] = 0;
 
 
-function do_check($en_content, $lang_content, $pass) {
+function do_check($en_content, $lang_content) {
 global $LANG;
 global $nb_error;
 
@@ -224,7 +224,7 @@ preg_match_all("/<link(\s.*?)linkend=\"(.*?)\"(\s.*)?(\/)?>/s", $lang_content, $
 $lang_linkend = $match[2];
 
 for( $i=0; $i < count($en_linkend); $i ++ ) {
- if( $en_linkend[$i] != $lang_linkend[$i]  && $en_linkend[$i] != 'somethingelse' ) {
+ if( isset($lang_linkend[$i]) && $en_linkend[$i] != $lang_linkend[$i]  && $en_linkend[$i] != 'somethingelse' ) {
   $nb_error['link'] ++;
   $result_error[] = array(
    "libel" => "Error in link, attribut : linkend n°$i",
@@ -248,7 +248,7 @@ preg_match_all("/<link(\s.*?)xlink:href=\"(.*?)\">/s", $lang_content, $match);
 $lang_linkhref = $match[2];
 
 for( $i=0; $i < count($en_linkhref); $i ++ ) {
- if( $en_linkhref[$i] != $lang_linkhref[$i] ) {
+ if( isset($lang_linkhref[$i]) && $en_linkhref[$i] != $lang_linkhref[$i] ) {
   $nb_error['link'] ++;
   $result_error[] = array(
    "libel" => "Error in link, attribut : linkend",
@@ -272,7 +272,7 @@ preg_match_all("/<sect1(\s.*?)xml:id=\"(.*?)\"(\s.*?)?>/s", $lang_content, $matc
 $lang_sect1 = $match[2];
 
 for( $i=0; $i < count($en_sect1); $i ++ ) {
- if( $en_sect1[$i] != $lang_sect1[$i] ) {
+ if( isset($lang_sect1[$i]) && $en_sect1[$i] != $lang_sect1[$i] ) {
   $nb_error['sect1'] ++;
   $result_error[] = array(
    "libel" => "Error in sect1, attribut : xml:id",
@@ -511,7 +511,7 @@ preg_match_all("/<refsect1(\s.*?)role=\"(.*?)\"(\s.*?)?>/s", $lang_content, $mat
 $lang_refsect1 = $match[2];
 
 for( $i=0; $i < count($en_refsect1); $i ++ ) {
- if( $en_refsect1[$i] != $lang_refsect1[$i] ) {
+ if( isset($lang_refsect1[$i]) && $en_refsect1[$i] != $lang_refsect1[$i] ) {
   $nb_error['refsect1'] ++;
   $result_error[] = array(
    "libel" => "Error in refsect1, attribut : xml:id",
@@ -697,14 +697,23 @@ if( isset($match2[1][0]) ) {
 
 $en_seeAlsoMember = 0;
 preg_match("/<refsect1 role=\"seealso\">(.*)<\/refsect1>/s", $en_content, $match2);
-preg_match_all("/<member>(.*?)<\/member>/s", $match2[1], $match3);
-$en_seeAlsoMember = count($match3[1]);
+
+if (isset($match2[1])) {
+    preg_match_all("/<member>(.*?)<\/member>/s", $match2[1], $match3);
+    if (isset($match3[1])) {
+        $en_seeAlsoMember = count($match3[1]);
+    }
+}
 
 $lang_seeAlsoMember = 0;
 preg_match("/<refsect1 role=\"seealso\">(.*)<\/refsect1>/s", $lang_content, $match2);
-preg_match_all("/<member>(.*?)<\/member>/s", $match2[1], $match3);
-$lang_seeAlsoMember = count($match3[1]);
 
+if (isset($match2[1])) {
+    preg_match_all("/<member>(.*?)<\/member>/s", $match2[1], $match3);
+    if (isset($match3[1])) {
+        $lang_seeAlsoMember = count($match3[1]);	
+    }
+}
 
  if( $en_seeAlsoMember != $lang_seeAlsoMember ) {
        $nb_error['seealsoMember'] ++;
@@ -839,7 +848,7 @@ function check($lang_file, $en_file) {
 $en_content = file_get_contents($en_file);
 $lang_content = file_get_contents($lang_file);
 
-$result = do_check($en_content, $lang_content, $i);
+$result = do_check($en_content, $lang_content);
 
  if( count($result) > 0 ) {
 
@@ -874,14 +883,14 @@ function get_tags($file, $val = "en-rev") {
     // Return if this was needed (it should be there)
     if ($val == "en-rev") {
         preg_match("/<!-- .Revision: \d+\.(\d+) . -->/", $line, $match);
-        return $match[1];
+        return isset($match[1]) ? $match[1] : false;
     } else {
 
      // Check for the translations "revision tag"
      preg_match("/<!--\s*EN-Revision:\s*\d+\.(\d+)\s*/", $line, $match);
 
      // Return with found revision info (number, maint, status)
-     return $match[1];
+     return isset($match[1]) ? $match[1] : false;
 
     }
 
@@ -954,6 +963,10 @@ global $LANG;
 
         $lang_tag = get_tags($dir.$file, "lang");
         $en_tag = get_tags($en_dir.$file, "en-rev");
+
+        if ($lang_tag === false || $en_tag === false) {
+            continue;
+        }
 
         if( "$lang_tag" == "$en_tag" ) {
           check($dir.$file, $en_dir.$file);
