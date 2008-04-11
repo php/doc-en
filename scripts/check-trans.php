@@ -76,6 +76,8 @@ $nb_error['refpurpose'] = 0;
 $nb_error['seealsoMember'] = 0;
 $nb_error['cdata'] = 0;
 $nb_error['classsynopsis'] = 0;
+$nb_error['table'] = 0;
+$nb_error['para'] = 0;
 
 
 function do_check($en_content, $lang_content) {
@@ -891,6 +893,65 @@ for( $i=0; $i < count($en_classsynopsis); $i++) {
 // END : classsynopsis
 
 
+// table
+
+$en_table = array();
+preg_match_all("/<table(.*?)<\/table>/s", $en_content, $match2);
+$en_table = $match2[1];
+
+$lang_table = array();
+preg_match_all("/<table(.*?)<\/table>/s", $lang_content, $match2);
+$lang_table = $match2[1];
+
+for( $i=0; $i < count($en_table); $i++) {
+
+preg_match_all("/<row>(.*?)<\/row>/s", $en_table[$i], $match3);
+preg_match_all("/<row>(.*?)<\/row>/s", $lang_table[$i], $match4);
+
+$nb_en = count($match3[1]);
+$nb_lang = count($match4[1]);
+
+if( $nb_en != $nb_lang ) {
+       $nb_error['table'] ++;
+       $result_error[] = array(
+        "libel" => "Error in table listing :  $nb_en row(s) in EN, and $nb_lang in $LANG.",
+        "value_en" => "N/A",
+        "value_lang" => "N/A"
+       );
+
+}
+
+}
+
+// END : table
+
+
+
+// para
+
+$en_para = 0;
+preg_match_all("/<para(.*?)<\/para>/s", $en_content, $match2);
+$en_para = count($match2[1]);
+
+
+$lang_para = 0;
+preg_match_all("/<para(.*?)<\/para>/s", $lang_content, $match2);
+$lang_para = count($match2[1]);
+
+
+ if( $en_para != $lang_para ) {
+       $nb_error['para'] ++;
+       $result_error[] = array(
+        "libel" => "Error about para tag :  $en_para tag <para> in EN, and $lang_para in $LANG.",
+        "value_en" => "N/A",
+        "value_lang" => "N/A"
+       );
+
+ }
+
+// END : para
+
+
 return $result_error;
 } // do_check
 
@@ -1070,7 +1131,6 @@ while( list($key, $val) = each($nb_error) ) {
 
 }
 
-
 $html = '
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd">
 <html>
@@ -1205,6 +1265,19 @@ $html.='
  <td><strong>classsynopsis</strong><br /><em>Check "classsynopsis" tag &amp; attribut consistency.</em></td>
  <td>'.(($nb_error['classsynopsis'] == 0)?'-':'<strong>'.$nb_error['classsynopsis'].'</strong>').'</td>
 </tr>
+
+
+
+
+<tr>
+ <td><strong>row in Table</strong><br /><em>Check number of rows in table tag.</em></td>
+ <td>'.(($nb_error['table'] == 0)?'-':'<strong>'.$nb_error['table'].'</strong>').'</td>
+</tr>
+<tr class="old">
+ <td><strong>para</strong><br /><em>Check number of para tag.</em></td>
+ <td>'.(($nb_error['para'] == 0)?'-':'<strong>'.$nb_error['para'].'</strong>').'</td>
+</tr>
+
 <tr class="crit">
  <td class="r">Total :<br/>In '.$nb_file.' file(s)</td>
  <td class="b c">'.$nb_error_all.'</td>
