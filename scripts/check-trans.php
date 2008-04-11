@@ -17,7 +17,7 @@ error_reporting(E_ALL);
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Authors:Yannick Torrès <yannick@php.net>                             |
+  | Authors : Yannick Torrès <yannick@php.net>                             |
   +----------------------------------------------------------------------+
 */
 
@@ -1062,24 +1062,14 @@ $date = date("r");
 // Get all files status
 get_dir_status($DOCDIR.$LANG."/");
 
-$nb_error_all =
-$nb_error['chapter'] +
-$nb_error['appendix'] +
-$nb_error['qandaentry'] +
-$nb_error['link'] +
-$nb_error['sect1'] +
-$nb_error['book'] +
-$nb_error['preface'] +
-$nb_error['section'] +
-$nb_error['varlistentry'] +
-$nb_error['reference'] +
-$nb_error['refentry'] +
-$nb_error['refsect1'] +
-$nb_error['methodsynopsis'] +
-$nb_error['refpurpose'] +
-$nb_error['seealsoMember'] +
-$nb_error['cdata'] +
-$nb_error['classsynopsis'];
+$nb_error_all = 0;
+
+while( list($key, $val) = each($nb_error) ) {
+
+ $nb_error_all += $val;
+
+}
+
 
 $html = '
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd">
