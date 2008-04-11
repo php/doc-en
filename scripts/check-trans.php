@@ -1,5 +1,8 @@
 #!/usr/bin/php -q
 <?php
+
+error_reporting(E_ALL);
+
 /*
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
@@ -533,6 +536,9 @@ for( $i = 0; $i < count($match[1]); $i++) {
 
 preg_match_all("/<type>(.*?)<\/type><methodname>(.*?)<\/methodname>/s", $match[1][$i], $match2);
 
+
+if( isset($match2[2][0]) && isset($match2[1][0]) ) {
+
 $en_methodsynopsis[$i]['methodname']['name'] = $match2[2][0];
 $en_methodsynopsis[$i]['methodname']['type'] = $match2[1][0];
 
@@ -556,6 +562,9 @@ for( $j=0; $j < count($match2[5]); $j++) {
 
 }
 
+
+}
+
 }
 
 $lang_methodsynopsis = array();
@@ -564,6 +573,8 @@ preg_match_all("/<methodsynopsis>(\s.*?)<\/methodsynopsis>/s", $lang_content, $m
 for( $i = 0; $i < count($match[1]); $i++) {
 
 preg_match_all("/<type>(.*?)<\/type><methodname>(.*?)<\/methodname>/s", $match[1][$i], $match2);
+
+if( isset($match2[2][0]) && isset($match2[1][0]) ) {
 
 $lang_methodsynopsis[$i]['methodname']['name'] = $match2[2][0];
 $lang_methodsynopsis[$i]['methodname']['type'] = $match2[1][0];
@@ -590,34 +601,52 @@ for( $j=0; $j < count($match2[5]); $j++) {
 
 }
 
+}
+
 
 // Vérif
 for( $i=0; $i < count($en_methodsynopsis); $i++) {
 
- // methodname
- if( $en_methodsynopsis[$i]['methodname']['name'] != $lang_methodsynopsis[$i]['methodname']['name'] ) {
-  $nb_error['methodsynopsis'] ++;
-  $result_error[] = array(
-   "libel" => "Error in methodsynopsis, methodname :",
-   "value_en" => $en_methodsynopsis[$i]['methodname']['name'],
-   "value_lang" => $lang_methodsynopsis[$i]['methodname']['name']
-  );
+ if( isset($en_methodsynopsis[$i]['methodname']['name']) ) {
+
+  if( !isset($lang_methodsynopsis[$i]['methodname']['name']) ) { $lang_methodsynopsis[$i]['methodname']['name'] = ''; }
+
+  // methodname
+  if( $en_methodsynopsis[$i]['methodname']['name'] != $lang_methodsynopsis[$i]['methodname']['name'] ) {
+   $nb_error['methodsynopsis'] ++;
+   $result_error[] = array(
+    "libel" => "Error in methodsynopsis, methodname :",
+    "value_en" => $en_methodsynopsis[$i]['methodname']['name'],
+    "value_lang" => $lang_methodsynopsis[$i]['methodname']['name']
+   );
+
+  }
 
  }
 
- if( $en_methodsynopsis[$i]['methodname']['type'] != $lang_methodsynopsis[$i]['methodname']['type'] ) {
-  $nb_error['methodsynopsis'] ++;
-  $result_error[] = array(
-   "libel" => "Error in methodsynopsis, methodname, type :",
-   "value_en" => $en_methodsynopsis[$i]['methodname']['type'],
-   "value_lang" => $lang_methodsynopsis[$i]['methodname']['type']
-  );
+ if( isset($en_methodsynopsis[$i]['methodname']['type']) ) {
 
+   if( !isset($lang_methodsynopsis[$i]['methodname']['type']) ) { $lang_methodsynopsis[$i]['methodname']['type'] = ''; }
+
+   if( $en_methodsynopsis[$i]['methodname']['type'] != $lang_methodsynopsis[$i]['methodname']['type'] ) {
+    $nb_error['methodsynopsis'] ++;
+    $result_error[] = array(
+     "libel" => "Error in methodsynopsis, methodname, type :",
+     "value_en" => $en_methodsynopsis[$i]['methodname']['type'],
+     "value_lang" => $lang_methodsynopsis[$i]['methodname']['type']
+    );
+
+   }
  }
 
+ if( isset($en_methodsynopsis[$i]['methodparam']['parameter']) ) {
 
  // methodparam
  for( $j = 0; $j < count($en_methodsynopsis[$i]['methodparam']['parameter']); $j++ ) {
+
+   if( isset($en_methodsynopsis[$i]['methodparam']['parameter'][$j]) ) {
+
+     if( !isset($lang_methodsynopsis[$i]['methodparam']['parameter'][$j]) ) { $lang_methodsynopsis[$i]['methodparam']['parameter'][$j] = ''; }
 
      // parameter name
      if( $en_methodsynopsis[$i]['methodparam']['parameter'][$j] != $lang_methodsynopsis[$i]['methodparam']['parameter'][$j] ) {
@@ -630,6 +659,12 @@ for( $i=0; $i < count($en_methodsynopsis); $i++) {
 
      }
 
+   }
+
+   if( isset($en_methodsynopsis[$i]['methodparam']['type'][$j]) ) {
+
+     if( !isset($lang_methodsynopsis[$i]['methodparam']['type'][$j]) ) { $lang_methodsynopsis[$i]['methodparam']['type'][$j] = ''; }
+
      // parameter type
      if( $en_methodsynopsis[$i]['methodparam']['type'][$j] != $lang_methodsynopsis[$i]['methodparam']['type'][$j] ) {
        $nb_error['methodsynopsis'] ++;
@@ -640,6 +675,12 @@ for( $i=0; $i < count($en_methodsynopsis); $i++) {
        );
 
      }
+
+    }
+
+    if( isset($en_methodsynopsis[$i]['methodparam']['optionnel'][$j]) ) {
+
+     if( !isset($lang_methodsynopsis[$i]['methodparam']['optionnel'][$j]) ) { $lang_methodsynopsis[$i]['methodparam']['optionnel'][$j] = ''; }
 
      // is optionnel ?
      if( $en_methodsynopsis[$i]['methodparam']['optionnel'][$j] != $lang_methodsynopsis[$i]['methodparam']['optionnel'][$j] ) {
@@ -655,6 +696,12 @@ for( $i=0; $i < count($en_methodsynopsis); $i++) {
 
      }
 
+    }
+
+   if( isset($en_methodsynopsis[$i]['methodparam']['role'][$j]) ) {
+
+     if( !isset($lang_methodsynopsis[$i]['methodparam']['role'][$j]) ) { $lang_methodsynopsis[$i]['methodparam']['role'][$j] = ''; }
+
      // is reference ?
      if( $en_methodsynopsis[$i]['methodparam']['role'][$j] != $lang_methodsynopsis[$i]['methodparam']['role'][$j] ) {
 
@@ -668,6 +715,9 @@ for( $i=0; $i < count($en_methodsynopsis); $i++) {
        );
 
      }
+
+   }
+ }
  }
 }
 
@@ -792,6 +842,8 @@ for( $i = 0; $i < count($match[1]); $i++) {
 // Vérif
 for( $i=0; $i < count($en_classsynopsis); $i++) {
 
+ if( !isset($lang_classsynopsis[$i]['ooclass']['classname']) ) { $lang_classsynopsis[$i]['ooclass']['classname'] = ''; }
+
  // fieldsynopsis
  if( $en_classsynopsis[$i]['ooclass']['classname'] != $lang_classsynopsis[$i]['ooclass']['classname'] ) {
     $nb_error['classsynopsis'] ++;
@@ -807,6 +859,8 @@ for( $i=0; $i < count($en_classsynopsis); $i++) {
  // methodparam
  for( $j = 0; $j < count($en_classsynopsis[$i]['fieldsynopsis']['varname']); $j++ ) {
 
+   if( !isset($lang_classsynopsis[$i]['fieldsynopsis']['varname'][$j]) ) { $lang_classsynopsis[$i]['fieldsynopsis']['varname'][$j] = ''; }
+
      // fieldsynopsis name
      if( $en_classsynopsis[$i]['fieldsynopsis']['varname'][$j] != $lang_classsynopsis[$i]['fieldsynopsis']['varname'][$j] ) {
        $nb_error['classsynopsis'] ++;
@@ -817,6 +871,8 @@ for( $i=0; $i < count($en_classsynopsis); $i++) {
        );
 
      }
+
+   if( !isset($lang_classsynopsis[$i]['fieldsynopsis']['type'][$j]) ) { $lang_classsynopsis[$i]['fieldsynopsis']['type'][$j] = ''; }
 
      // fieldsynopsis type
      if( $en_classsynopsis[$i]['fieldsynopsis']['type'][$j] != $lang_classsynopsis[$i]['fieldsynopsis']['type'][$j] ) {
