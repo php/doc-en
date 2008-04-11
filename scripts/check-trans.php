@@ -1265,10 +1265,6 @@ $html.='
  <td><strong>classsynopsis</strong><br /><em>Check "classsynopsis" tag &amp; attribut consistency.</em></td>
  <td>'.(($nb_error['classsynopsis'] == 0)?'-':'<strong>'.$nb_error['classsynopsis'].'</strong>').'</td>
 </tr>
-
-
-
-
 <tr>
  <td><strong>row in Table</strong><br /><em>Check number of rows in table tag.</em></td>
  <td>'.(($nb_error['table'] == 0)?'-':'<strong>'.$nb_error['table'].'</strong>').'</td>
