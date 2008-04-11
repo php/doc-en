@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+<sect1 xml:id="install.unix.lighttpd-14" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Lighttpd 1.4 on Unix systems</title>
+ <para>
+  This section contains notes and hints specific to Lighttpd 1.4 installs
+  of PHP on Unix systems.
+ </para>
+
+ <para>
+  Please use the <link xlink:href="&url.lighttpd.docs;">Lighttpd trac</link>
+  to learn how to install Lighttpd properly before continuing.
+ </para>
+ 
+ <para>
+  Fastcgi is the preferred SAPI to connect PHP and Lighttpd. Fastcgi is
+  automagically enabled in php-cgi in PHP5.3, but for older versions configure
+  php with --enable-fastcgi.  To confirm that PHP has fastcgi enabled,
+  <literal>php -v</literal> should contain <literal>PHP 5.2.5 (cgi-fcgi)</literal>
+  Before PHP 5.2.3, fastcgi was enabled on the php binary (there was no php-cgi).
+ </para>
+ 
+ <sect2 xml:id="install.unix.lighttpd-14.lighttpd-spawn">
+  <title>Letting Lighttpd spawn php processes</title>
+  <para>
+   To configure Lighttpd to connect to php and spawn fastcgi processes, edit
+   lighttpd.conf. Sockets are preferred to connect to fastcgi processes on
+   the local system.
+  </para>
+  <example>
+   <title>
+    Partial lighttpd.conf
+   </title>
+   <screen>
+<![CDATA[
+server.modules += ( "mod_fastcgi" )
+
+fastcgi.server = ( ".php" =>
+  ((
+    "socket" => "/tmp/php.socket",
+    "bin-path" => "/usr/local/bin/php-cgi",
+    "bin-environment" => (
+      "PHP_FCGI_CHILDREN" => "16",
+      "PHP_FCGI_MAX_REQUESTS" => "10000"
+    )
+    "min-procs" => 1,
+    "max-procs" => 1,
+    "idle-timeout" => 20
+  ))
+)
+]]>
+
+   </screen>
+  </example>
+  <para>
+   The bin-path directive allows lighttpd to spawn fastcgi processes dynamically.
+   PHP will spawn children according to the PHP_FCGI_CHILDREN environment
+   variable.  The "bin-environment" directive sets the environment for the
+   spawned processes. PHP will kill a child process after the number of
+   requests specified by PHP_FCGI_MAX_REQUESTS is reached. The directives
+   "min-procs" and "max-procs" should generally be avoided with PHP. PHP
+   manages its own children and opcode caches like APC will only share among
+   children managed by PHP. If "min-procs" is set to something greater than 1,
+   the total number of php responders will be multiplied PHP_FCGI_CHILDREN
+   (2 min-procs * 16 children gives 32 responders).
+  </para>
+ </sect2>
+
+ <sect2 xml:id="install.unix.lighttpd-14.spawn-fcgi">
+  <title>Spawning with spawn-fcgi</title>
+  
+  <para>
+   Lighttpd provides a program called spawn-fcgi to ease the process of
+   spawning fastcgi processes easier.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="install.unix.lighttpd-14.spawn-php">
+  <title>Spawning php-cgi</title>
+  
+  <para>
+   It is possible to spawn processes without spawn-fcgi, though a bit of
+   heavy-lifting is required. Setting the PHP_FCGI_CHILDREN environment var
+   controls how many children PHP will spawn to handle incoming requests.
+   Setting PHP_FCGI_MAX_REQUESTS will determine how long (in requests) each
+   child will live. Here's a simple bash script to help spawn php responders.
+  </para>
+     
+  <example>
+   <title>Spawning FastCGI Responders</title>
+      
+   <screen>
+<![CDATA[
+#!/bin/sh
+
+# Location of the php-cgi binary
+PHP=/usr/local/bin/php-cgi
+
+# PID File location
+PHP_PID=/tmp/php.pid
+
+# Binding to an address
+#FCGI_BIND_ADDRESS=10.0.1.1:10000
+# Binding to a domain socket
+FCGI_BIND_ADDRESS=/tmp/php.sock
+
+PHP_FCGI_CHILDREN=16
+PHP_FCGI_MAX_REQUESTS=10000
+
+env -i PHP_FCGI_CHILDREN=$PHP_FCGI_CHILDREN \
+       PHP_FCGI_MAX_REQUESTS=$PHP_FCGI_MAX_REQUESTS \
+       $PHP -b $FCGI_BIND_ADDRESS &
+
+echo $! > "$PHP_PID"
+
+]]>
+   </screen>
+  </example>
+ </sect2>
+ <sect2 xml:id="install.unix.lighttpd-14.remote-fcgi">
+  <title>Connecting to remote FCGI instances</title>
+      
+  <para>
+   Fastcgi instances can be spawned on multiple remote machines in order to
+   scale applications.
+  </para>
+   
+  <example>
+   <title>
+    Connecting to remote php-fastcgi instances
+   </title>
+   <screen>
+<![CDATA[
+fastcgi.server = ( ".php" =>
+   (( "host" => "10.0.0.2", "port" => 1030 ),
+    ( "host" => "10.0.0.3", "port" => 1030 ))
+)
+]]>
+   </screen>
+ </sect2>
+</sect1>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
