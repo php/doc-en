@@ -520,6 +520,7 @@ flush(STDOUT);
 $dom->xinclude();
 
 if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') { // {{{
+    $dom->validate(); // we don't care if the validation works or not
     $node = $dom->getElementById($ac['PARTIAL']);
     if (!$node) {
         echo "failed.\n";
@@ -548,7 +549,6 @@ if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') { // {{{
     $set->nodeValue = '';
     $set->appendChild($dom->createElement('title', 'PHP Manual (Partial)')); // prevent validate from complaining unnecessarily
     $set->appendChild($node);
-    $dom->validate(); // we don't care if the validation works or not
 
     $filename = "{$ac['srcdir']}/.manual.{$ac['PARTIAL']}.xml";
     $dom->save($filename);
