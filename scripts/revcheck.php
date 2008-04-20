@@ -27,25 +27,18 @@ Check the revision of translated files against
 the actual english xml files, and print statistics
 
   Usage:
-  <?php echo $argv[0]; ?> <language-code> [<maintainer>] [><revcheck.html>]
+  <?php echo $argv[0]; ?> <language-code> [<maintainer>]
 
   <language-code> must be a valid language code used
   in the repository
 
   If you specify <maintainer>, the script only checks
   the files maintained by the person you add here
-
-  If you specify ><revcheck.html>, the output is an html file.
   
   Read more about Revision comments and related
   functionality in the PHP Documentation Howto:
-    http://php.net/manual/howto/translation-revtrack.html
+    http://php.net/dochowto
    
-  Authors: Thomas Schöfbeck <tom@php.net>
-           Gabor Hojtsy <goba@php.net>
-           Mark Kronsbein <mk@php.net> 
-           Jan Fabry <cheezy@php.net>
-
 <?php
   exit;
 }
