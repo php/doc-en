@@ -221,12 +221,12 @@ for( $i=0; $i < count($en_qandaentry); $i ++ ) {
 // linkend
 
 $en_linkend = array();
-preg_match_all("/<link(\s.*?)linkend=\"(.*?)\"(\s.*)?(\/)?>/s", $en_content, $match);
-$en_linkend = $match[2];
+preg_match_all("/<link(\s.*?)linkend=(\"|')(.*?)(\"|')(\s.*)?(\/)?>/s", $en_content, $match);
+$en_linkend = $match[3];
 
 $lang_linkend = array();
-preg_match_all("/<link(\s.*?)linkend=\"(.*?)\"(\s.*)?(\/)?>/s", $lang_content, $match);
-$lang_linkend = $match[2];
+preg_match_all("/<link(\s.*?)linkend=(\"|')(.*?)(\"|')(\s.*)?(\/)?>/s", $lang_content, $match);
+$lang_linkend = $match[3];
 
 for( $i=0; $i < count($en_linkend); $i ++ ) {
  if( isset($lang_linkend[$i]) && $en_linkend[$i] != $lang_linkend[$i]  && $en_linkend[$i] != 'somethingelse' ) {
