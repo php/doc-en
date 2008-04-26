@@ -28,28 +28,19 @@
 ?>
 <?php echo '<?'; ?>xml version="1.0" encoding="iso-8859-1"?>
 <!-- $Revision$ -->
-<!-- AUTO GENERATED, DO NOT MODIFY BY HAND -->
+<!-- AUTO GENERATED, DO NOT TRANSLATE OR MODIFY BY HAND -->
 
 <appendix xml:id="timezones" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
- <title>List of Supported Timezones</title>
- <para>
-  Here you'll find the complete list of timezones supported by PHP, which are
-  meant to be used with e.g. <function>date_default_timezone_set</function>.
- </para>
- <note>
-  <simpara>
-   The latest version of the timezone database can be installed via PECL's
-   <link xlink:href="&url.pecl.package.get;timezonedb">timezonedb</link>.
-   For Windows users, a pre-compiled DLL can be downloaded from the PECL4Win
-   site: <link xlink:href="&url.pecl.timezonedb.dll;">php_timezonedb.dll</link>.
-  </simpara>
- </note>
+ &date.timezone.intro.title;
+ <sect1 xml:id="timezones.intro">
+  &date.timezone.intro;
+ </sect1>
 <?php
     foreach ($groupedList as $group => $zones) { 
         $m = count($zones) > 4 ? 5 : count($zones); ?>
 
  <sect1 xml:id="timezones.<?php echo strtolower($group); ?>">
-  <title>List of timezones in the group <?php echo $group; ?></title>
+  <title><?php echo $group; ?></title>
   <table>
    <title><?php echo $group; ?></title>
    <tgroup cols="<?php echo $m; ?>">
@@ -78,10 +69,7 @@
   </table>
 <?php if ( $group == 'Others' ) { ?>
   <warning>
-   <simpara>
-     Please do not use any of the timezones listed here (besides UTC), they
-     only exist for backward compatible reasons.
-   </simpara>
+   &date.timezone.bc;
   </warning>
 <?php } ?>
  </sect1>
