@@ -644,6 +644,22 @@ for( $i=0; $i < count($en_methodsynopsis); $i++) {
  if( isset($en_methodsynopsis[$i]['methodparam']['parameter']) ) {
 
  // methodparam
+ if( !isset($en_methodsynopsis[$i]['methodparam']['parameter']) ) { $en_methodsynopsis[$i]['methodparam']['parameter'] = array(); }
+
+ if( !isset($lang_methodsynopsis[$i]['methodparam']['parameter']) ) { $lang_methodsynopsis[$i]['methodparam']['parameter'] = array(); }
+
+ if( count($en_methodsynopsis[$i]['methodparam']['parameter']) != count($lang_methodsynopsis[$i]['methodparam']['parameter']) ) {
+
+    $nb_error['methodsynopsis'] ++;
+    $result_error[] = array(
+     "libel" => "Error : There is ".count($en_methodsynopsis[$i]['methodparam']['parameter'])." methodparam(s) in EN, ".count($lang_methodsynopsis[$i]['methodparam']['parameter'])." in $LANG",
+     "value_en" => "N/A",
+     "value_lang" => "N/A"
+    );
+
+ }
+
+
  for( $j = 0; $j < count($en_methodsynopsis[$i]['methodparam']['parameter']); $j++ ) {
 
    if( isset($en_methodsynopsis[$i]['methodparam']['parameter'][$j]) ) {
