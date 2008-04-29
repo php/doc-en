@@ -1202,6 +1202,9 @@ function closeTable(id) {
   </td>
  </tr>
 </table>
+
+<p class="c">Info : Only files who are sync with EN version are checked.</p>
+
 ';
 
 $nb_file = count($final_result);
