@@ -1,30 +1,34 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.3 $ -->
-<refentry xmlns="http://docbook.org/ns/docbook" xml:id="phar.compressallfilesbzip2">
+<!-- $Revision: 1.1 $ -->
+<refentry xmlns="http://docbook.org/ns/docbook" xml:id="phar.decompressfiles">
  <refnamediv>
-  <refname>Phar::compressAllFilesBZIP2</refname>
-  <refpurpose>Compresses all files in the current Phar archive using Bzip2 compression</refpurpose>
+  <refname>Phar::decompressFiles</refname>
+  <refpurpose>Decompresses all files in the current Phar archive</refpurpose>
  </refnamediv>
- 
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <type>bool</type><methodname>Phar::compressAllFilesBZIP2</methodname>
-   <void/>
+   <type>bool</type><methodname>Phar::decompressFiles</methodname>
+   <void />
   </methodsynopsis>
-  &phar.removed.pharcompress;
   &phar.write;
 
   <para>
-   This method compresses all files in the Phar archive using bzip2 compression.
-   The <link linkend="ref.bzip2">bzip2</link> extension must be enabled to take
-   advantage of this feature.  In addition, if any files are already compressed using
-   gzip compression, the <link linkend="ref.zlib">zlib</link> extension must be enabled in order
-   to decompress the files prior to re-compressing with bzip2 compression.
-   As with all functionality that modifies the contents of
-   a phar, the <link linkend="ini.phar.readonly">phar.readonly</link> INI variable
-   must be off in order to succeed.
+   For tar-based phar archives, this method throws a
+   <classname>BadMethodCallException</classname>, as compression of individual
+   files within a tar archive is not supported by the file format.  Use
+   <function>Phar::compress</function> to compress an entire tar-based phar archive.
+  </para>
+  <para>
+   For Zip-based and phar-based phar archives, this method decompresses all files in the
+   Phar archive.
+   The <link linkend="ref.zlib">zlib</link>  or <link linkend="ref.bzip2">bzip2</link>
+   extensions must be enabled to take advantage of this feature if any files
+   are compressed using bzip2/zlib compression.
+   As with all functionality that modifies the contents of a phar, the
+   <link linkend="ini.phar.readonly">phar.readonly</link> INI variable must be off
+   in order to succeed.
   </para>
  </refsect1>
 
@@ -33,9 +37,9 @@
   <para>
    Throws <classname>BadMethodCallException</classname> if
    the <link linkend="ini.phar.readonly">phar.readonly</link>
-   INI variable is on, the <link linkend="ref.bzip2">bzip2</link>
+   INI variable is on, the <link linkend="ref.zlib">zlib</link>
    extension is not available, or if any files are compressed using
-   gzip compression and the <link linkend="ref.zlib">zlib</link> extension
+   bzip2 compression and the <link linkend="ref.bzip2">bzip2</link> extension
    is not enabled.
   </para>
  </refsect1>
@@ -44,25 +48,26 @@
   &reftitle.examples;
   <para>
    <example>
-    <title>A <function>Phar::compressAllFilesBZIP2</function> example</title>
+    <title>A <function>Phar::decompressFiles</function> example</title>
     <programlisting role="php">
 <![CDATA[
 <?php
 $p = new Phar('/path/to/my.phar', 0, 'my.phar');
 $p['myfile.txt'] = 'hi';
 $p['myfile2.txt'] = 'hi';
+$p->compressFiles(Phar::GZ);
 foreach ($p as $file) {
     var_dump($file->getFileName());
     var_dump($file->isCompressed());
-    var_dump($file->isCompressedBZIP2());
-    var_dump($file->isCompressedGZ());
+    var_dump($file->isCompressed(Phar::BZ2));
+    var_dump($file->isCompressed(Phar::GZ));
 }
-$p->compressAllFilesBZIP2();
+$p->decompressFiles();
 foreach ($p as $file) {
     var_dump($file->getFileName());
     var_dump($file->isCompressed());
-    var_dump($file->isCompressedBZIP2());
-    var_dump($file->isCompressedGZ());
+    var_dump($file->isCompressed(Phar::BZ2));
+    var_dump($file->isCompressed(Phar::GZ));
 }
 ?>
 ]]>
@@ -71,20 +76,20 @@ foreach ($p as $file) {
     <screen>
 <![CDATA[
 string(10) "myfile.txt"
+int(4096)
 bool(false)
-bool(false)
-bool(false)
+bool(true)
 string(11) "myfile2.txt"
+int(4096)
 bool(false)
-bool(false)
-bool(false)
+bool(true)
 string(10) "myfile.txt"
-bool(true)
-bool(true)
+bool(false)
+bool(false)
 bool(false)
 string(11) "myfile2.txt"
-bool(true)
-bool(true)
+bool(false)
+bool(false)
 bool(false)
 ]]>
     </screen>
@@ -97,17 +102,15 @@ bool(false)
   <para>
    <simplelist>
     <member><function>PharFileInfo::getCompressedSize</function></member>
-    <member><function>PharFileInfo::isCompressedBZIP2</function></member>
     <member><function>PharFileInfo::isCompressed</function></member>
-    <member><function>PharFileInfo::isCompressedGZ</function></member>
-    <member><function>PharFileInfo::setCompressedBZIP2</function></member>
-    <member><function>PharFileInfo::setUncompressed</function></member>
-    <member><function>PharFileInfo::setCompressedGZ</function></member>
+    <member><function>PharFileInfo::compress</function></member>
+    <member><function>PharFileInfo::decompress</function></member>
     <member><function>Phar::canCompress</function></member>
     <member><function>Phar::isCompressed</function></member>
-    <member><function>Phar::compressAllFilesGZ</function></member>
+    <member><function>Phar::compressFiles</function></member>
     <member><function>Phar::getSupportedCompression</function></member>
-    <member><function>Phar::uncompressAllFiles</function></member>
+    <member><function>Phar::compress</function></member>
+    <member><function>Phar::decompress</function></member>
    </simplelist>
   </para>
  </refsect1>
