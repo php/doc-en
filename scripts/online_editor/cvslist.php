@@ -204,6 +204,13 @@ foreach($phpdocLangs as $lng=>$langInfo) {
 </select>
 </form>
 
+<hr>
+Legend:<br>
+<img src=images/notyet.png> Not yet translated<br>
+<img src=images/up2date.png> File is translated and up to date<br>
+<img src=images/unknown.png> EN-Revision is incorrect or missing<br>
+<img src=images/r6.png> How much is outdated-<br> gauge (hover it for revision).
+
 </div>
 </body>
 </html>

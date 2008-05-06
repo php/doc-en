@@ -24,15 +24,38 @@ if ($requireLogin) {
 }
 
 
-// Languages and paths:
+// Languages and paths: (ToDo Font should be defined for better display)
 
 addLanguage('Arabic', $cvsRootPath.'phpdoc-ar/ar/', 'ar', 'utf-8', 'RTL', 'doc-ar@lists.php.net', 'doc-ar-subscribe@lists.php.net', 'Salah Faya visualmind(@)php.net');
-
+addLanguage('Brazilian-PT', $cvsRootPath.'phpdoc-pt_BR/pt_BR/', 'pt_BR', 'iso-8859-1', 'LTR', 'doc-br@lists.php.net', 'doc-br-subscribe@lists.php.net', '');
+addLanguage('Bulgarian', $cvsRootPath.'phpdoc-bg/bg/', 'bg', 'utf-8', 'LTR', 'doc-bg@lists.php.net', 'doc-bg-subscribe@lists.php.net', '');
+addLanguage('Catalan', $cvsRootPath.'phpdoc-ca/ca/', 'ca', 'iso-8859-1', 'LTR', 'doc-ca@lists.php.net', 'doc-ca-subscribe@lists.php.net', '');
+addLanguage('Chinese-HK', $cvsRootPath.'phpdoc-hk/hk/', 'hk', 'big5', 'LTR', 'doc-hk@lists.php.net', 'doc-hk-subscribe@lists.php.net', '');
 addLanguage('Chinese-Simplified', $cvsRootPath.'phpdoc-zh/zh/', 'zh', 'gb2312', 'LTR', 'doc-zh@lists.php.net', 'doc-zh-subscribe@lists.php.net', '');
 addLanguage('Chinese-Traditional', $cvsRootPath.'phpdoc-tw/tw/', 'tw', 'big5', 'LTR', 'doc-tw@lists.php.net', 'doc-tw-subscribe@lists.php.net', '');
 addLanguage('Czech', $cvsRootPath.'phpdoc-cs/cs/', 'cs', 'iso-8859-2', 'LTR', 'doc-cs@lists.php.net', 'doc-cs-subscribe@lists.php.net', '');
+addLanguage('Danish', $cvsRootPath.'phpdoc-da/da/', 'da', 'iso-8859-1', 'LTR', 'doc-da@lists.php.net', 'doc-da-subscribe@lists.php.net', '');
+addLanguage('Dutch', $cvsRootPath.'phpdoc-nl/nl/', 'nl', 'iso-8859-1', 'LTR', 'doc-nl@lists.php.net', 'doc-nl-subscribe@lists.php.net', '');
+addLanguage('Finnish', $cvsRootPath.'phpdoc-fi/fi/', 'fi', 'iso-8859-1', 'LTR', 'doc-fi@lists.php.net', 'doc-fi-subscribe@lists.php.net', '');
 addLanguage('French', $cvsRootPath.'phpdoc-fr/fr/', 'fr', 'iso-8859-1', 'LTR', 'doc-fr@lists.php.net', 'doc-fr-subscribe@lists.php.net', '');
-addLanguage('Germany', $cvsRootPath.'phpdoc-de/de/', 'de', 'utf-8', 'LTR', 'doc-de@lists.php.net', 'doc-de-subscribe@lists.php.net', '');
+addLanguage('German', $cvsRootPath.'phpdoc-de/de/', 'de', 'iso-8859-1', 'LTR', 'doc-de@lists.php.net', 'doc-de-subscribe@lists.php.net', '');
+addLanguage('Greek', $cvsRootPath.'phpdoc-el/el/', 'el', 'iso-8859-7', 'LTR', 'doc-el@lists.php.net', 'doc-el-subscribe@lists.php.net', '');
+addLanguage('Hebrew', $cvsRootPath.'phpdoc-he/he/', 'he', 'windows-1255', 'RTL', 'doc-he@lists.php.net', 'doc-he-subscribe@lists.php.net', '');
+addLanguage('Hungarian', $cvsRootPath.'phpdoc-hu/hu/', 'hu', 'iso-8859-2', 'LTR', 'doc-hu@lists.php.net', 'doc-hu-subscribe@lists.php.net', '');
+addLanguage('Indonesian', $cvsRootPath.'phpdoc-id/id/', 'id', 'iso-8859-1', 'LTR', 'doc-id@lists.php.net', 'doc-id-subscribe@lists.php.net', '');
+addLanguage('Italian', $cvsRootPath.'phpdoc-it/it/', 'it', 'iso-8859-1', 'LTR', 'doc-it@lists.php.net', 'doc-it-subscribe@lists.php.net', '');
+addLanguage('Japanese', $cvsRootPath.'phpdoc-ja/ja/', 'ja', 'utf-8', 'LTR', 'doc-ja@lists.php.net', 'doc-ja-subscribe@lists.php.net', '');
+addLanguage('Korean', $cvsRootPath.'phpdoc-kr/kr/', 'kr', 'utf-8', 'LTR', 'doc-kr@lists.php.net', 'doc-kr-subscribe@lists.php.net', '');
+addLanguage('Lithuanian', $cvsRootPath.'phpdoc-lt/lt/', 'lt', 'iso-8859-1', 'LTR', 'doc-lt@lists.php.net', 'doc-lt-subscribe@lists.php.net', '');
+addLanguage('Norwegian', $cvsRootPath.'phpdoc-no/no/', 'no', 'utf-8', 'LTR', 'doc-no@lists.php.net', 'doc-no-subscribe@lists.php.net', '');
+addLanguage('Polish', $cvsRootPath.'phpdoc-pl/pl/', 'pl', 'iso-8859-2', 'LTR', 'doc-pl@lists.php.net', 'doc-pl-subscribe@lists.php.net', '');
+addLanguage('Romanian', $cvsRootPath.'phpdoc-ro/ro/', 'ro', 'utf-8', 'LTR', 'doc-ro@lists.php.net', 'doc-ro-subscribe@lists.php.net', '');
+addLanguage('Russian', $cvsRootPath.'phpdoc-ru/ru/', 'ru', 'utf-8', 'LTR', 'doc-ru@lists.php.net', 'doc-ru-subscribe@lists.php.net', '');
+addLanguage('Slovak', $cvsRootPath.'phpdoc-sk/sk/', 'sk', 'iso-8859-2', 'LTR', 'doc-sk@lists.php.net', 'doc-sk-subscribe@lists.php.net', '');
+addLanguage('Slovenian', $cvsRootPath.'phpdoc-sl/sl/', 'sl', 'iso-8859-1', 'LTR', 'doc-sl@lists.php.net', 'doc-sl-subscribe@lists.php.net', '');
+addLanguage('Spanish', $cvsRootPath.'phpdoc-es/es/', 'es', 'iso-8859-1', 'LTR', 'doc-es@lists.php.net', 'doc-es-subscribe@lists.php.net', '');
+addLanguage('Swedish', $cvsRootPath.'phpdoc-sv/sv/', 'sv', 'iso-8859-1', 'LTR', 'doc-sv@lists.php.net', 'doc-sv-subscribe@lists.php.net', '');
+addLanguage('Turkish', $cvsRootPath.'phpdoc-tr/tr/', 'tr', 'utf-8', 'LTR', 'doc-tr@lists.php.net', 'doc-tr-subscribe@lists.php.net', '');
 //..
 
 

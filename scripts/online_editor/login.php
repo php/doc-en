@@ -88,7 +88,7 @@ if (isset($_POST['lang'])) {
 <html>
 <body style="font-family: Tahoma; font-size: 12px;">
 
-<h3> The PHPDOC Online XML Editing Tool :: Login first</h3>
+<h3> The PHPDOC Online XML Editing Tool :: Choose your language</h3>
 <form action=login.php method=post>
 <input type=hidden name=from value="<?php print $_REQUEST['from']; ?>">
 <?php 
@@ -101,7 +101,7 @@ foreach($phpdocLangs as $lang=>$langInfo) {
 	print "<option value='$lang'>$lang</option>";
 }
 ?>
-</select>* <input type=submit value=Login>
+</select>* <input type=submit value="Start editing">
 </form>
 
  Developed by Salah Faya visualmind(@)php.net<br> 
