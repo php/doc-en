@@ -34,11 +34,11 @@ the actual english xml files, and print statistics
 
   If you specify <maintainer>, the script only checks
   the files maintained by the person you add here
-  
+
   Read more about Revision comments and related
   functionality in the PHP Documentation Howto:
     http://php.net/dochowto
-   
+
 <?php
   exit;
 }
@@ -89,76 +89,75 @@ if ($argc == 3) {
 // Main directory of the PHP documentation (depends on the
 // sapi used). We do need the trailing slash!
 if ("cli" === php_sapi_name()) {
-	if (isset($PHPDOCDIR) && is_dir($PHPDOCDIR))
-		$DOCDIR = $PHPDOCDIR."/";
-	else
-		$DOCDIR = "./";
-} else
-	$DOCDIR = "../";
-
+  if (isset($PHPDOCDIR) && is_dir($PHPDOCDIR)) {
+    $DOCDIR = $PHPDOCDIR."/";
+  } else {
+    $DOCDIR = "./";
+  }
+} else {
+  $DOCDIR = "../";
+}
 // =========================================================================
 // Functions to get revision info and credits from a file
 // =========================================================================
 
 // Grabs the revision tag and stores credits from the file given
-function get_tags($file, $val = "en-rev")
-{
-    // Read the first 500 chars. The comment should be at
-    // the begining of the file
-    $fp = @fopen($file, "r") or die ("Unable to read $file.");
-    $line = fread($fp, 500);
-    fclose($fp);
+function get_tags($file, $val = "en-rev") {
 
-    // Check for English CVS revision tag (. is for $ in the preg!),
-    // Return if this was needed (it should be there)
-    if ($val == "en-rev") {
-        preg_match("/<!-- .Revision: \d+\.(\d+) . -->/", $line, $match);
-        return $match[1];
+  // Read the first 500 chars. The comment should be at
+  // the begining of the file
+  $fp = @fopen($file, "r") or die ("Unable to read $file.");
+  $line = fread($fp, 500);
+  fclose($fp);
+
+  // Check for English CVS revision tag (. is for $ in the preg!),
+  // Return if this was needed (it should be there)
+  if ($val == "en-rev") {
+    preg_match("/<!-- .Revision: \d+\.(\d+) . -->/", $line, $match);
+    return $match[1];
+  }
+
+  // Handle credits (only if no maintainer is specified)
+  if ($val == "\\S*") {
+
+    global $files_by_maint;
+
+    // Find credits info, let more credits then one,
+    // using commas as list separator
+    if (preg_match("'<!--\s*CREDITS:\s*(.+)\s*-->'U", $line, $match_credit)) {
+      // Explode with commas a separators
+      $credits = explode(",", $match_credit[1]);
+
+      // Store all elements
+      foreach ($credits as $num => $credit) {
+          $files_by_maint[trim($credit)][REV_CREDIT]++;
+      }
     }
+  }
 
-    // Handle credits (only if no maintainer is specified)
-    if ($val == "\\S*") {
-    
-        global $files_by_maint;
+  // No match before the preg
+  $match = array();
 
-        // Find credits info, let more credits then one,
-        // using commas as list separator
-        if (preg_match("'<!--\s*CREDITS:\s*(.+)\s*-->'U", $line, $match_credit)) {
-          
-            // Explode with commas a separators
-            $credits = explode(",", $match_credit[1]);
-          
-            // Store all elements
-            foreach ($credits as $num => $credit) {
-                $files_by_maint[trim($credit)][REV_CREDIT]++;
-            }
-          
-        }
-    }
+  // Check for the translations "revision tag"
+  preg_match ("/<!--\s*EN-Revision:\s*\d+\.(\d+)\s*Maintainer:\s*("
+              . $val . ")\s*Status:\s*(.+)\s*-->/U",
+              $line,
+              $match
+  );
 
-    // No match before the preg
-    $match = array();
-    
-    // Check for the translations "revision tag"
-    preg_match ("/<!--\s*EN-Revision:\s*\d+\.(\d+)\s*Maintainer:\s*("
-                . $val . ")\s*Status:\s*(.+)\s*-->/U", 
-                $line,
-                $match
-    );
+  // The tag with revision number is not found so search
+  // for n/a revision comment (comment where revision is not known)
+  if (count($match) == 0) {
+      preg_match ("'<!--\s*EN-Revision:\s*(n/a)\s*Maintainer:\s*("
+                  . $val . ")\s*Status:\s*(.+)\s*-->'U",
+                  $line,
+                  $match
+      );
+  }
 
-    // The tag with revision number is not found so search
-    // for n/a revision comment (comment where revision is not known)
-    if (count($match) == 0) {
-        preg_match ("'<!--\s*EN-Revision:\s*(n/a)\s*Maintainer:\s*("
-                    . $val . ")\s*Status:\s*(.+)\s*-->'U",
-                    $line,
-                    $match
-        );
-    }
+  // Return with found revision info (number, maint, status)
+  return $match;
 
-    // Return with found revision info (number, maint, status)
-    return $match;
-    
 } // get_tags() function end
 
 
@@ -167,123 +166,123 @@ function get_tags($file, $val = "en-rev")
 // =========================================================================
 
 // Checks a file, and gather status info
-function get_file_status($file)
-{
-    // The information is contained in these global arrays and vars
-    global $DOCDIR, $LANG, $MAINT, $files_by_mark, $files_by_maint;
-    global $file_sizes_by_mark;
-    global $missing_files, $missing_tags, $using_rev;
+function get_file_status($file) {
 
-    // Transform english file name to translated file name
-    $trans_file = preg_replace("'^".$DOCDIR."en/'", $DOCDIR.$LANG."/", $file);
+  // The information is contained in these global arrays and vars
+  global $DOCDIR, $LANG, $MAINT, $files_by_mark, $files_by_maint;
+  global $file_sizes_by_mark;
+  global $missing_files, $missing_tags, $using_rev;
 
-    // If we cannot find the file, we push it into the missing files list
-    if (!@file_exists($trans_file)) {
-        $files_by_mark[REV_NOTRANS]++;
-        $trans_name = substr($trans_file, strlen($DOCDIR) + strlen($LANG) + 1);
-        $size = intval(filesize($file)/1024);
-        $missing_files[$trans_name] = array( $size );
-        $file_sizes_by_mark[REV_NOTRANS] += $size;
-        // compute en-tags just if they're needed in the WIP-Table
-        if($using_rev) {
-        	$missing_files[$trans_name][] = "1.".get_tags($file);
-        }
-        return FALSE;
+  // Transform english file name to translated file name
+  $trans_file = preg_replace("'^".$DOCDIR."en/'", $DOCDIR.$LANG."/", $file);
+
+  // If we cannot find the file, we push it into the missing files list
+  if (!@file_exists($trans_file)) {
+    $files_by_mark[REV_NOTRANS]++;
+    $trans_name = substr($trans_file, strlen($DOCDIR) + strlen($LANG) + 1);
+    $size = intval(filesize($file)/1024);
+    $missing_files[$trans_name] = array( $size );
+    $file_sizes_by_mark[REV_NOTRANS] += $size;
+    // compute en-tags just if they're needed in the WIP-Table
+    if($using_rev) {
+            $missing_files[$trans_name][] = "1.".get_tags($file);
     }
+    return FALSE;
+  }
 
-    // No specific maintainer, check for a revision tag
-    if (empty($MAINT)) {
-        $trans_tag = get_tags($trans_file, "\\S*");
-    }
-    // If we need to check for a specific translator
-    else {
-        // Get translated files tag, with maintainer
-        $trans_tag = get_tags($trans_file, $MAINT);
+  // No specific maintainer, check for a revision tag
+  if (empty($MAINT)) {
+    $trans_tag = get_tags($trans_file, "\\S*");
+  }
+  // If we need to check for a specific translator
+  else {
+    // Get translated files tag, with maintainer
+    $trans_tag = get_tags($trans_file, $MAINT);
 
-        // If this is a file belonging to another
-        // maintainer, than we would not like to
-        // deal with it anymore
-        if (count($trans_tag) == 0) {
-            $trans_tag = get_tags($trans_file, "\\S*");
-            // We found a tag for another maintainer
-            if (count($trans_tag) > 0) {
-                return FALSE;
-            }
-        }
-    }
-
-    // Compute sizes and diffs
-    $en_size    = intval(filesize($file) / 1024);
-    $trans_size = intval(filesize($trans_file) / 1024);
-    $size_diff  = intval($en_size) - intval($trans_size);
-    
-    // If we found no revision tag, then collect this
-    // file in the missing tags list
+    // If this is a file belonging to another
+    // maintainer, than we would not like to
+    // deal with it anymore
     if (count($trans_tag) == 0) {
-        $files_by_mark[REV_NOTAG]++;
-        $file_sizes_by_mark[REV_NOTAG] += $en_size;
-        $missing_tags[] = array(substr($trans_file, strlen($DOCDIR)), $en_size, $trans_size, $size_diff);
-        return FALSE;
+      $trans_tag = get_tags($trans_file, "\\S*");
+      // We found a tag for another maintainer
+      if (count($trans_tag) > 0) {
+          return FALSE;
+      }
     }
+  }
 
-    // Distribute values in separate vars for further processing
-    list(, $this_rev, $this_maint, $this_status) = $trans_tag;
+  // Compute sizes and diffs
+  $en_size    = intval(filesize($file) / 1024);
+  $trans_size = intval(filesize($trans_file) / 1024);
+  $size_diff  = intval($en_size) - intval($trans_size);
 
-    // Get English file revision
-    $en_rev = get_tags($file);
-    
-    // If we have a numeric revision number (not n/a), compute rev. diff
-    if (is_numeric($this_rev)) {
-        $rev_diff   = intval($en_rev) - intval($this_rev);
-        $trans_rev  = "1." . $this_rev;
-        $en_rev     = "1." . $en_rev;
-    } else {
-        // If we have no numeric revision, make all revision
-        // columns hold the rev from the translated file
-        $rev_diff = $trans_rev = $this_rev;
-        $en_rev   = "1." . $en_rev;
-    }
+  // If we found no revision tag, then collect this
+  // file in the missing tags list
+  if (count($trans_tag) == 0) {
+    $files_by_mark[REV_NOTAG]++;
+    $file_sizes_by_mark[REV_NOTAG] += $en_size;
+    $missing_tags[] = array(substr($trans_file, strlen($DOCDIR)), $en_size, $trans_size, $size_diff);
+    return FALSE;
+  }
 
-    // If the file is up-to-date
-    if ($rev_diff === 0) {
-        // Store file by status and maintainer
-        $files_by_mark[REV_UPTODATE]++;
-        $files_by_maint[$this_maint][REV_UPTODATE]++;
-        $file_sizes_by_mark[REV_UPTODATE] += $en_size;
-        
-        return FALSE;
-    } 
+  // Distribute values in separate vars for further processing
+  list(, $this_rev, $this_maint, $this_status) = $trans_tag;
 
-    // Compute times and diffs
-    $en_date    = intval((time() - filemtime($file)) / 86400);
-    $trans_date = intval((time() - filemtime($trans_file)) / 86400);
-    $date_diff  = $en_date - $trans_date;
+  // Get English file revision
+  $en_rev = get_tags($file);
 
-    // Make decision on file category by revision, date and size
-    if ($rev_diff >= ALERT_REV || $size_diff >= ALERT_SIZE || $date_diff <= ALERT_DATE) {
-        $status_mark = REV_CRITICAL;
-    } elseif ($rev_diff === "n/a") {
-        $status_mark = REV_NOREV;
-    } else {
-        $status_mark = REV_OLD;
-    }
+  // If we have a numeric revision number (not n/a), compute rev. diff
+  if (is_numeric($this_rev)) {
+    $rev_diff   = intval($en_rev) - intval($this_rev);
+    $trans_rev  = "1." . $this_rev;
+    $en_rev     = "1." . $en_rev;
+  } else {
+    // If we have no numeric revision, make all revision
+    // columns hold the rev from the translated file
+    $rev_diff = $trans_rev = $this_rev;
+    $en_rev   = "1." . $en_rev;
+  }
 
-    // Store files by status, and by maintainer too
-    $files_by_mark[$status_mark]++;
-    $files_by_maint[$this_maint][$status_mark]++;
-    $file_sizes_by_mark[$status_mark] += $en_size;
+  // If the file is up-to-date
+  if ($rev_diff === 0) {
+    // Store file by status and maintainer
+    $files_by_mark[REV_UPTODATE]++;
+    $files_by_maint[$this_maint][REV_UPTODATE]++;
+    $file_sizes_by_mark[REV_UPTODATE] += $en_size;
 
-    return array(
-        "full_name"  => $file,
-        "short_name" => basename($trans_file),
-        "revision"   => array($en_rev,  $trans_rev,  $rev_diff),
-        "size"       => array($en_size, $trans_size, $size_diff),
-        "date"       => array($en_date, $trans_date, $date_diff),
-        "maintainer" => $this_maint,
-        "status"     => $this_status,
-        "mark"       => $status_mark
-    );
-    
+    return FALSE;
+  }
+
+  // Compute times and diffs
+  $en_date    = intval((time() - filemtime($file)) / 86400);
+  $trans_date = intval((time() - filemtime($trans_file)) / 86400);
+  $date_diff  = $en_date - $trans_date;
+
+  // Make decision on file category by revision, date and size
+  if ($rev_diff >= ALERT_REV || $size_diff >= ALERT_SIZE || $date_diff <= ALERT_DATE) {
+    $status_mark = REV_CRITICAL;
+  } elseif ($rev_diff === "n/a") {
+    $status_mark = REV_NOREV;
+  } else {
+    $status_mark = REV_OLD;
+  }
+
+  // Store files by status, and by maintainer too
+  $files_by_mark[$status_mark]++;
+  $files_by_maint[$this_maint][$status_mark]++;
+  $file_sizes_by_mark[$status_mark] += $en_size;
+
+  return array(
+      "full_name"  => $file,
+      "short_name" => basename($trans_file),
+      "revision"   => array($en_rev,  $trans_rev,  $rev_diff),
+      "size"       => array($en_size, $trans_size, $size_diff),
+      "date"       => array($en_date, $trans_date, $date_diff),
+      "maintainer" => $this_maint,
+      "status"     => $this_status,
+      "mark"       => $status_mark
+  );
+
 } // get_file_status() function end
 
 // =========================================================================
@@ -292,154 +291,150 @@ function get_file_status($file)
 
 // Check the status of files in a diretory of phpdoc XML files
 // The English directory is passed to this function to check
-function get_dir_status($dir)
-{
-global $DOCDIR;
+function get_dir_status($dir) {
 
-    // Collect files and diretcories in these arrays
-    $directories = array();
-    $files       = array();
-    
-    // Open the directory 
-    $handle = @opendir($dir);
-    
-    // Walk through all names in the directory
-    while ($file = @readdir($handle)) {
+  global $DOCDIR;
 
-      if (
-      (!is_dir($dir.'/' .$file) && !in_array(substr($file, -3), array('xml','ent')) && substr($file, -13) != 'PHPEditBackup' )
-      || strpos($file, 'entities.') === 0
-      || $dir == $DOCDIR.'en/chmonly/' || $dir == $DOCDIR.'en/internals/' || $dir == $DOCDIR.'en/internals2/'
-      || $file == 'contributors.ent' || $file == 'contributors.xml'
-      || ($dir == $DOCDIR.'en/appendices/' && ($file == 'reserved.constants.xml' || $file == 'extensions.xml'))
-      || $file == 'README'
-      || $file == 'DO_NOT_TRANSLATE'
-      || $file == 'rsusi.txt'
-      || $file == 'missing-ids.xml'
-      ) {
-          continue;
+  // Collect files and diretcories in these arrays
+  $directories = array();
+  $files       = array();
+
+  // Open the directory
+  $handle = @opendir($dir);
+
+  // Walk through all names in the directory
+  while ($file = @readdir($handle)) {
+
+    if (
+    (!is_dir($dir.'/' .$file) && !in_array(substr($file, -3), array('xml','ent')) && substr($file, -13) != 'PHPEditBackup' )
+    || strpos($file, 'entities.') === 0
+    || $dir == $DOCDIR.'en/chmonly/' || $dir == $DOCDIR.'en/internals/' || $dir == $DOCDIR.'en/internals2/'
+    || $file == 'contributors.ent' || $file == 'contributors.xml'
+    || ($dir == $DOCDIR.'en/appendices/' && ($file == 'reserved.constants.xml' || $file == 'extensions.xml'))
+    || $file == 'README'
+    || $file == 'DO_NOT_TRANSLATE'
+    || $file == 'rsusi.txt'
+    || $file == 'missing-ids.xml'
+    ) {
+      continue;
+    }
+
+    if ($file != '.' && $file != '..' && $file != 'CVS' && $dir != '/functions') {
+      if (is_dir($dir.'/' .$file)) {
+          $directories[] = $file;
+      } elseif (is_file($dir.'/' .$file)) {
+          $files[] = $file;
       }
-
-      if ($file != '.' && $file != '..' && $file != 'CVS' && $dir != '/functions') {
-
-          if (is_dir($dir.'/' .$file)) {
-              $directories[] = $file;
-          } elseif (is_file($dir.'/' .$file)) {
-              $files[] = $file;
-          }
-      }
-
-    }
-    
-    // Close the directory
-    @closedir($handle);
-      
-    // Sort files and directories
-    sort($directories);
-    sort($files);
-      
-    // Go through files first
-    $dir_status = array();
-    foreach ($files as $file) {
-        // If the file status is OK, append the status info
-        if ($file_status = get_file_status($dir.$file)) {
-            $dir_status[] = $file_status;
-        }
     }
 
-    // Then go through subdirectories, merging all the info
-    // coming from subdirs to one array
-    foreach ($directories as $file) {
-        $dir_status = array_merge(
-            $dir_status, 
-            get_dir_status($dir.$file.'/')
-        );
+  }
+
+  // Close the directory
+  @closedir($handle);
+
+  // Sort files and directories
+  sort($directories);
+  sort($files);
+
+  // Go through files first
+  $dir_status = array();
+  foreach ($files as $file) {
+    // If the file status is OK, append the status info
+    if ($file_status = get_file_status($dir.$file)) {
+        $dir_status[] = $file_status;
     }
-    
-    // Return with collected file info in
-    // this dir and subdirectories [if any]
-    return $dir_status;
+  }
+
+  // Then go through subdirectories, merging all the info
+  // coming from subdirs to one array
+  foreach ($directories as $file) {
+    $dir_status = array_merge(
+        $dir_status,
+        get_dir_status($dir.$file.'/')
+    );
+  }
+
+  // Return with collected file info in
+  // this dir and subdirectories [if any]
+  return $dir_status;
 
 } // get_dir_status() function end
 
 
 // Check for files removed in the EN tree, but still living in the translation
-function get_old_files($dir)
-{
+function get_old_files($dir) {
 
-    global $DOCDIR, $LANG;
+  global $DOCDIR, $LANG;
 
-    // Collect files and diretcories in these arrays
-    $directories = array();
-    $files       = array();
+  // Collect files and diretcories in these arrays
+  $directories = array();
+  $files       = array();
 
-    $special_files = array(
-      // french
-      'LISEZ_MOI.txt',
-      'TRADUCTIONS.txt',
-      'Translators',
-      'translation.xml'
+  $special_files = array(
+    // french
+    'LISEZ_MOI.txt',
+    'TRADUCTIONS.txt',
+    'Translators',
+    'translation.xml'
+    // todo: add all missing languages
+  );
 
-      // todo: add all missing languages
+  // Open the directory
+  $handle = @opendir($dir);
+
+  // Walk through all names in the directory
+  while ($file = @readdir($handle)) {
+
+    // If we found a file with one or two point as a name,
+    // a CVS directory, or an editor backup file skip the file
+    if (preg_match("/^\.{1,2}/", $file)
+        || $file == 'CVS'
+        || substr($file, -1) == '~' // Emacs backup file
+       ) {
+      continue;
+    }
+    // skip this files
+    if (in_array($file, $special_files)) {
+      continue;
+    }
+
+    // Collect files and directories
+    if (is_dir($dir.$file)) {
+      $directories[] = $file;
+    } else {
+      $files[] = $file;
+    }
+  }
+
+  // Close the directory
+  @closedir($handle);
+
+  // Sort files and directories
+  sort($directories);
+  sort($files);
+
+  // Go through files first
+  $old_files_status = array();
+  foreach ($files as $file) {
+
+    $en_dir = preg_replace("'^".$DOCDIR.$LANG."/'", $DOCDIR."en/", $dir);
+
+    if (!@file_exists($en_dir.$file) ) {
+      $old_files_status[$dir.$file] = array(0=>intval(filesize($dir.$file)/1024));
+    }
+
+  }
+
+  // Then go through subdirectories, merging all the info
+  // coming from subdirs to one array
+  foreach ($directories as $file) {
+    $old_files_status = array_merge(
+        $old_files_status,
+        get_old_files($dir.$file.'/')
     );
+  }
 
-    // Open the directory
-    $handle = @opendir($dir);
-
-    // Walk through all names in the directory
-    while ($file = @readdir($handle)) {
-
-      // If we found a file with one or two point as a name,
-      // a CVS directory, or an editor backup file skip the file
-      if (preg_match("/^\.{1,2}/", $file) 
-		  || $file == 'CVS'
-		  || substr($file, -1) == '~' // Emacs backup file
-		  )
-        continue;
-
-      // skip this files
-      if (in_array($file, $special_files)) {
-        continue;
-      }
-
-      // Collect files and directories
-      if (is_dir($dir.$file)) {
-        $directories[] = $file;
-      } else {
-        $files[] = $file;
-      }
-
-    }
-
-    // Close the directory
-    @closedir($handle);
-
-    // Sort files and directories
-    sort($directories);
-    sort($files);
-
-    // Go through files first
-    $old_files_status = array();
-    foreach ($files as $file) {
-
-      $en_dir = preg_replace("'^".$DOCDIR.$LANG."/'", $DOCDIR."en/", $dir);
-
-      if (!@file_exists($en_dir.$file) ) {
-        $old_files_status[$dir.$file] = array(0=>intval(filesize($dir.$file)/1024));
-      }
-
-    }
-
-    // Then go through subdirectories, merging all the info
-    // coming from subdirs to one array
-    foreach ($directories as $file) {
-        $old_files_status = array_merge(
-            $old_files_status, 
-            get_old_files($dir.$file.'/')
-        );
-    }
-
-    return $old_files_status;
+  return $old_files_status;
 
 } // get_old_files() function end
 
@@ -449,116 +444,116 @@ function get_old_files($dir)
 // =========================================================================
 
 // Get a multidimensional array with tag attributes
-function parse_attr_string ($tags_attrs)
-{
-    $tag_attrs_processed = array();
+function parse_attr_string ($tags_attrs) {
 
-    // Go through the tag attributes
-    foreach($tags_attrs as $attrib_list) {
+  $tag_attrs_processed = array();
 
-      // Get attr name and values
-      preg_match_all("!(.+)=\\s*([\"'])\\s*(.+)\\2!U", $attrib_list, $attribs);
+  // Go through the tag attributes
+  foreach($tags_attrs as $attrib_list) {
 
-      // Assign all attributes to one associative array
-      $attrib_array = array();
-      foreach ($attribs[1] as $num => $attrname) {
-        $attrib_array[trim($attrname)] = trim($attribs[3][$num]);
-      }
+    // Get attr name and values
+    preg_match_all("!(.+)=\\s*([\"'])\\s*(.+)\\2!U", $attrib_list, $attribs);
 
-      // Collect in order of tags received
-      $tag_attrs_processed[] = $attrib_array;
-
+    // Assign all attributes to one associative array
+    $attrib_array = array();
+    foreach ($attribs[1] as $num => $attrname) {
+      $attrib_array[trim($attrname)] = trim($attribs[3][$num]);
     }
 
-    // Retrun with collected attributes
-    return $tag_attrs_processed;
+    // Collect in order of tags received
+    $tag_attrs_processed[] = $attrib_array;
+
+  }
+
+  // Retrun with collected attributes
+  return $tag_attrs_processed;
 
 } // parse_attr_string() end
 
 // Parse the translation.xml file for
 // translation related meta information
-function parse_translation($DOCDIR, $LANG, $MAINT)
-{
-    global $files_by_mark;
-    
-    // Path to find translation.xml file, set default values,
-    // in case we can't find the translation file
-    $translation_xml = $DOCDIR.$LANG."/translation.xml";
-    $output_charset  = 'iso-8859-1';
-    $translation     = array(
-        "intro"    => "",
-        "persons"  => array(),
-        "files"    => array(),
-        "allfiles" => array(),
-    );
-    
-    // Check for file availability, return with default
-    // values, if we cannot find the file
-    if (!@file_exists($translation_xml)) {
-        return array($output_charset, $translation);
-    }
-    
-    // Else go on, and load in the file, replacing all
-    // space type chars with one space
-    $txml = join("", file($translation_xml));
-    $txml = preg_replace("/\\s+/", " ", $txml);
+function parse_translation($DOCDIR, $LANG, $MAINT) {
 
-    // Get intro text (different for a persons info and
-    // for a whole group info page)
-    if (empty($MAINT)) {
-        preg_match("!<intro>(.+)</intro>!s", $txml, $match);
-        $translation["intro"] = trim($match[1]);
-    } else {
-        $translation["intro"] = "Personal Statistics for ".$MAINT;
-    }
-    
-    // Get encoding for the output, from the translation.xml
-    // file encoding (should be the same as the used encoding
-    // in HTML)
-    preg_match("!<\?xml(.+)\?>!U", $txml, $match);
-    $xmlinfo = parse_attr_string($match);
-    $output_charset = $xmlinfo[1]["encoding"];
-    
-    // Get persons list preg pattern, only check for a specific
-    // maintainer, if the users asked for it
-    if (empty($MAINT)) {
-        $pattern = "!<person(.+)/\\s?>!U";
-    } else {
-        $pattern = "!<person([^<]+nick=\"".$MAINT."\".+)/\\s?>!U";
-    }
-    
-    // Find all persons matching the pattern
-    preg_match_all($pattern, $txml, $matches);
-    $translation['persons'] = parse_attr_string($matches[1]);
-    
-    // Get list of work in progress files
-    if (empty($MAINT)) {
+  global $files_by_mark;
 
-        // Get all wip files
-        preg_match_all("!<file(.+)/\\s?>!U", $txml, $matches);
-        $translation['files'] = parse_attr_string($matches[1]);
+  // Path to find translation.xml file, set default values,
+  // in case we can't find the translation file
+  $translation_xml = $DOCDIR.$LANG."/translation.xml";
+  $output_charset  = 'iso-8859-1';
+  $translation     = array(
+      "intro"    => "",
+      "persons"  => array(),
+      "files"    => array(),
+      "allfiles" => array(),
+  );
 
-        // Provide info about number of WIP files
-        $files_by_mark[REV_WIP] += count($translation['files']);
-
-    } else {
-        
-        // Only check for a specific maintainer, if we were asked to
-        preg_match_all("!<file([^<]+person=\"".$MAINT."\".+)/\\s?>!U", $txml, $matches);
-        $translation['files'] = parse_attr_string($matches[1]);
-
-        // Other maintainers wip files need to be cleared from
-        // available files list in the future, so store that info too.
-        preg_match_all("!<file(.+)/\\s?>!U", $txml, $matches);
-        $translation['allfiles'] = parse_attr_string($matches[1]);
-        
-        // Provide info about number of WIP files
-        $files_by_mark[REV_WIP] += count($translation['allfiles']);
-
-    }
-    
-    // Return with collected info in two vars
+  // Check for file availability, return with default
+  // values, if we cannot find the file
+  if (!@file_exists($translation_xml)) {
     return array($output_charset, $translation);
+  }
+
+  // Else go on, and load in the file, replacing all
+  // space type chars with one space
+  $txml = join("", file($translation_xml));
+  $txml = preg_replace("/\\s+/", " ", $txml);
+
+  // Get intro text (different for a persons info and
+  // for a whole group info page)
+  if (empty($MAINT)) {
+    preg_match("!<intro>(.+)</intro>!s", $txml, $match);
+    $translation["intro"] = trim($match[1]);
+  } else {
+    $translation["intro"] = "Personal Statistics for ".$MAINT;
+  }
+
+  // Get encoding for the output, from the translation.xml
+  // file encoding (should be the same as the used encoding
+  // in HTML)
+  preg_match("!<\?xml(.+)\?>!U", $txml, $match);
+  $xmlinfo = parse_attr_string($match);
+  $output_charset = $xmlinfo[1]["encoding"];
+
+  // Get persons list preg pattern, only check for a specific
+  // maintainer, if the users asked for it
+  if (empty($MAINT)) {
+    $pattern = "!<person(.+)/\\s?>!U";
+  } else {
+    $pattern = "!<person([^<]+nick=\"".$MAINT."\".+)/\\s?>!U";
+  }
+
+  // Find all persons matching the pattern
+  preg_match_all($pattern, $txml, $matches);
+  $translation['persons'] = parse_attr_string($matches[1]);
+
+  // Get list of work in progress files
+  if (empty($MAINT)) {
+
+    // Get all wip files
+    preg_match_all("!<file(.+)/\\s?>!U", $txml, $matches);
+    $translation['files'] = parse_attr_string($matches[1]);
+
+    // Provide info about number of WIP files
+    $files_by_mark[REV_WIP] += count($translation['files']);
+
+  } else {
+
+    // Only check for a specific maintainer, if we were asked to
+    preg_match_all("!<file([^<]+person=\"".$MAINT."\".+)/\\s?>!U", $txml, $matches);
+    $translation['files'] = parse_attr_string($matches[1]);
+
+    // Other maintainers wip files need to be cleared from
+    // available files list in the future, so store that info too.
+    preg_match_all("!<file(.+)/\\s?>!U", $txml, $matches);
+    $translation['allfiles'] = parse_attr_string($matches[1]);
+
+    // Provide info about number of WIP files
+    $files_by_mark[REV_WIP] += count($translation['allfiles']);
+
+  }
+
+  // Return with collected info in two vars
+  return array($output_charset, $translation);
 
 } // parse_translation() function end()
 
@@ -568,9 +563,9 @@ function parse_translation($DOCDIR, $LANG, $MAINT)
 
 // Check for directory validity
 if (!@is_dir($DOCDIR . $LANG)) {
-    die("The $LANG language code is not valid");
+  die("The $LANG language code is not valid");
 }
-  
+
 // Parse translation.xml file for more information
 list($charset, $translation) = parse_translation($DOCDIR, $LANG, $MAINT);
 
@@ -578,9 +573,9 @@ list($charset, $translation) = parse_translation($DOCDIR, $LANG, $MAINT);
 // if we need to use optional date and revision columns
 $using_date = FALSE; $using_rev = FALSE;
 foreach ($translation["files"] as $num => $fileinfo) {
-    $files_by_maint[$fileinfo["person"]][REV_WIP]++;
-    if (isset($fileinfo["date"]))     { $using_date = TRUE; }
-    if (isset($fileinfo["revision"])) { $using_rev = TRUE; }
+  $files_by_maint[$fileinfo["person"]][REV_WIP]++;
+  if (isset($fileinfo["date"]))     { $using_date = TRUE; }
+  if (isset($fileinfo["revision"])) { $using_rev = TRUE; }
 }
 
 // Get all files status
@@ -593,8 +588,11 @@ $navbar = "<p class=c><a href=\"#intro\">Introduction</a> | " .
           "<a href=\"#translators\">Translators</a> | " .
           "<a href=\"#filesummary\">File summary by type</a> | " .
           "<a href=\"#files\">Files</a> | ";
-if (count($translation["files"]) != 0)
-	$navbar .= "<a href=\"#wip\">Work in progress</a> | ";
+
+if ( count($translation["files"]) != 0 ) {
+  $navbar .= "<a href=\"#wip\">Work in progress</a> | ";
+}
+
 $navbar .= "<a href=\"#misstags\">Missing revision numbers</a> | " .
            "<a href=\"#missfiles\">Untranslated files</a> | " .
            "<a href=\"#oldfiles\">Old files</a></p>\n";
@@ -602,7 +600,7 @@ $navbar .= "<a href=\"#misstags\">Missing revision numbers</a> | " .
 
 // Figure out generation date
 $date = date("r");
-  
+
 // =========================================================================
 // Start of HTML page
 // =========================================================================
@@ -651,9 +649,9 @@ print ($navbar);
 
 // If we have an introduction text, print it out, with an anchor
 if (!empty($translation["intro"])) {
-    print '<a name="intro"></a>';
-    print '<table width="800" align="center"><tr><td class=c>' .
-           $translation['intro'] . '</td></tr></table>';
+  echo '<a name="intro"></a>';
+  echo '<table width="800" align="center"><tr><td class=c>' .
+         $translation['intro'] . '</td></tr></table>';
 }
 
 // =========================================================================
@@ -685,65 +683,65 @@ print <<<END_OF_MULTILINE
 </tr>
 END_OF_MULTILINE;
 
-    // ' Please leave this comment here
+  // ' Please leave this comment here
 
-    // We will collect the maintainers by nick here
-    $maint_by_nick = array();
-    
-    // Print out a line for each maintainer (with respect to
-    // maintainer setting provided in command line)
-    foreach($translation["persons"] as $num => $person) {
-        
-        // Do not print out this person, if a
-        // specific maintainer info is asked for
-        if (!empty($MAINT) && $person["nick"] != $MAINT) {
-            continue;
-        }
-        
-        // Put maintaner number into associative array
-        // [Used in further tables for referencing]
-        $maint_by_nick[$person["nick"]] = $num;
-        
-        // Decide on the CVS text and the color of the line
-        if ($person["cvs"] === "yes") {
-            $cvsu = "x";
-            $col = "old";
-        } else {
-            $cvsu = "&nbsp;";
-            $col = "wip";
-        }
-        
-        // Try to do some antispam actions
-        $person["email"] = str_replace(
-            "@",
-            "<small>:at:</small>",
-            $person["email"]
-        );
-        
-        // Get file info for this person
-        if (isset($files_by_maint[$person["nick"]])) {
-            $pi = $files_by_maint[$person["nick"]];
-        } else {
-            $pi = array();
-        }
-        
-        print("<tr class=$col>" .
-              "<td><a name=\"maint$num\">$person[name]</a></td>" .
-              "<td>$person[email]</td>" .
-              "<td>$person[nick]</td>" .
-              "<td class=c>$cvsu</td>" .
-              "<td class=c>" . $pi[REV_CREDIT]   . "</td>" .
-              "<td class=c>" . $pi[REV_UPTODATE] . "</td>" .
-              "<td class=c>" . $pi[REV_OLD]      . "</td>" .
-              "<td class=c>" . $pi[REV_CRITICAL] . "</td>" .
-              "<td class=c>" . $pi[REV_NOREV]    . "</td>" .
-              "<td class=c>" . $pi[REV_WIP]      . "</td>" .
-              "<th class=blue>" . array_sum($pi) . "</th>" .
-              "</tr>\n");
+  // We will collect the maintainers by nick here
+  $maint_by_nick = array();
+
+  // Print out a line for each maintainer (with respect to
+  // maintainer setting provided in command line)
+  foreach($translation["persons"] as $num => $person) {
+
+    // Do not print out this person, if a
+    // specific maintainer info is asked for
+    if (!empty($MAINT) && $person["nick"] != $MAINT) {
+      continue;
     }
-  
-    print "</table>\n<p>&nbsp;</p>\n";
-} 
+
+    // Put maintaner number into associative array
+    // [Used in further tables for referencing]
+    $maint_by_nick[$person["nick"]] = $num;
+
+    // Decide on the CVS text and the color of the line
+    if ($person["cvs"] === "yes") {
+      $cvsu = "x";
+      $col = "old";
+    } else {
+      $cvsu = "&nbsp;";
+      $col = "wip";
+    }
+
+    // Try to do some antispam actions
+    $person["email"] = str_replace(
+        "@",
+        "<small>:at:</small>",
+        $person["email"]
+    );
+
+    // Get file info for this person
+    if (isset($files_by_maint[$person["nick"]])) {
+      $pi = $files_by_maint[$person["nick"]];
+    } else {
+      $pi = array();
+    }
+
+    echo "<tr class=$col>" .
+          "<td><a name=\"maint$num\">$person[name]</a></td>" .
+          "<td>$person[email]</td>" .
+          "<td>$person[nick]</td>" .
+          "<td class=c>$cvsu</td>" .
+          "<td class=c>" . $pi[REV_CREDIT]   . "</td>" .
+          "<td class=c>" . $pi[REV_UPTODATE] . "</td>" .
+          "<td class=c>" . $pi[REV_OLD]      . "</td>" .
+          "<td class=c>" . $pi[REV_CRITICAL] . "</td>" .
+          "<td class=c>" . $pi[REV_NOREV]    . "</td>" .
+          "<td class=c>" . $pi[REV_WIP]      . "</td>" .
+          "<th class=blue>" . array_sum($pi) . "</th>" .
+          "</tr>\n";
+  }
+
+  echo "</table>\n<p>&nbsp;</p>\n";
+}
 
 // =========================================================================
 // Files summary table goes here
@@ -753,7 +751,7 @@ END_OF_MULTILINE;
 // for only one maintainer (his personal summary is in the table above)
 if (empty($MAINT)) {
 
-	print <<<END_OF_MULTILINE
+print <<<END_OF_MULTILINE
 <a name="filesummary"></a>
 <table width="450" border="0" cellpadding="4" cellspacing="1" align="center">
 <tr class=blue>
@@ -765,37 +763,36 @@ if (empty($MAINT)) {
 </tr>
 END_OF_MULTILINE;
 
-    $files_sum = array_sum($files_by_mark);
-    $file_sizes_sum = array_sum($file_sizes_by_mark);
-    
-    $file_types = array(
-      array (REV_UPTODATE, "Up to date files"),
-      array (REV_OLD,      "Old files"),
-      array (REV_CRITICAL, "Critical files"),
-      array (REV_WIP,      "Work in progress"),
-      array (REV_NOREV,    "Files without revision number"),
-      array (REV_NOTAG,    "Files without revision tag"),
-      array (REV_NOTRANS,  "Files available for translation")
-    );
-    
-    foreach ($file_types as $num => $type) {
-    	print "<tr class=".$CSS[$type[0]].">".
-    		  "<td>".$type[1]."</td>".
-    		  "<td class=c>".intval($files_by_mark[$type[0]])."</td>".
-    		  "<td class=c>".number_format($files_by_mark[$type[0]] * 100 / $files_sum, 2 ).
-    		  "%</td>".
-                  "<td class=c>".intval($file_sizes_by_mark[$type[0]])."</td>".
-                  "<td class=c>".number_format($file_sizes_by_mark[$type[0]] * 100 / $file_sizes_sum, 2).
-                  "%</td></tr>\n";
-    }
+  $files_sum = array_sum($files_by_mark);
+  $file_sizes_sum = array_sum($file_sizes_by_mark);
 
-	print "<tr class=blue><th>Files total</th><th>$files_sum</th><th>100%</th><th>$file_sizes_sum</th><th>100%</th></tr>\n".
-		  "</table>\n<p>&nbsp;</p>\n";
+  $file_types = array(
+    array (REV_UPTODATE, "Up to date files"),
+    array (REV_OLD,      "Old files"),
+    array (REV_CRITICAL, "Critical files"),
+    array (REV_WIP,      "Work in progress"),
+    array (REV_NOREV,    "Files without revision number"),
+    array (REV_NOTAG,    "Files without revision tag"),
+    array (REV_NOTRANS,  "Files available for translation")
+  );
+
+  foreach ($file_types as $num => $type) {
+    echo "<tr class=".$CSS[$type[0]].">".
+              "<td>".$type[1]."</td>".
+              "<td class=c>".intval($files_by_mark[$type[0]])."</td>".
+              "<td class=c>".number_format($files_by_mark[$type[0]] * 100 / $files_sum, 2 ).
+              "%</td>".
+              "<td class=c>".intval($file_sizes_by_mark[$type[0]])."</td>".
+              "<td class=c>".number_format($file_sizes_by_mark[$type[0]] * 100 / $file_sizes_sum, 2).
+              "%</td></tr>\n";
+  }
+
+  echo "<tr class=blue><th>Files total</th><th>$files_sum</th><th>100%</th><th>$file_sizes_sum</th><th>100%</th></tr>\n".
+                "</table>\n<p>&nbsp;</p>\n";
 
 }
 
-print ($navbar."<p>&nbsp;</p>\n");
-
+echo $navbar."<p>&nbsp;</p>\n";
 
 // =========================================================================
 // Files table goes here
@@ -827,75 +824,75 @@ print <<<END_OF_MULTILINE
 </tr>
 END_OF_MULTILINE;
 
-    // This was the previous directory [first]
-    $prev_dir = false;
+  // This was the previous directory [first]
+  $prev_dir = false;
 
-    // Go through all files collected
-    foreach ($files_status as $num => $file) {
+  // Go through all files collected
+  foreach ($files_status as $num => $file) {
 
-        // Make the maintainer a link, if we have that maintainer in the list
-        if (isset($maint_by_nick[$file["maintainer"]])) {
-          $file["maintainer"] = '<a href="#maint' . $maint_by_nick[$file["maintainer"]] .
-                                '">' . $file["maintainer"] . '</a>';
-        }
-
-        // If we have a 'numeric' revision diff and it is not zero,
-        // make a link to the CVS repository's diff script
-        if ($file["revision"][2] != "n/a" && $file["revision"][2] !== 0) {
-            $url = 'http://cvs.php.net/viewcvs.cgi/' .
-                   preg_replace( "'^".$DOCDIR."'", 'phpdoc/', $file['full_name']) .
-                   '?r1=' . $file['revision'][1] . '&amp;r2=' . $file['revision'][0];
-            $url_ws = $url . CVS_OPT_NOWS;
-            $url   .= CVS_OPT;
-
-            $file['short_name'] = '<a href="' . $url . '">'. $file["short_name"] . '</a> '.
-                                  '<a href="' . $url_ws . '">[NoWS]</a>';
-        }
-
-        // Guess the new directory from the full name of the file
-        $new_dir = dirname($file["full_name"]);
-
-        // If this is a new directory, put out old dir lines
-        if ($new_dir !== $prev_dir) {
-            if (isset($lines)) {
-                echo $prev_diplay_dir;
-                echo " ($line_number)</th></tr>";
-                echo $lines;
-            }
-
-            $lines = '';
-            $line_number = 0;
-
-            // Store the new actual directory
-            $prev_dir = $new_dir;
-        }
-        // Drop out the unneeded parts from the dirname...
-        $display_dir = str_replace($DOCDIR."en/", "", dirname($file["full_name"]));
-        $prev_diplay_dir = "<tr class=blue><th colspan=12>$display_dir";
-        
-        // Save the line for the current file (get file name shorter)
-        $lines .= "<tr class={$CSS[$file['mark']]}><td>{$file['short_name']}</td>".
-              "<td> {$file['revision'][0]}</td>" .
-              "<td> {$file['revision'][1]}</td>".
-              "<td class=rb>{$file['revision'][2]} </td>".
-              "<td class=r>{$file['size'][0]} </td>".
-              "<td class=r>{$file['size'][1]} </td>".
-              "<td class=rb>{$file['size'][2]} </td>".
-              "<td class=r>{$file['date'][0]} </td>".
-              "<td class=r>{$file['date'][1]} </td>".
-              "<td class=rb>{$file['date'][2]} </td>".
-              "<td class=c>{$file['maintainer']}</td>".
-              "<td class=c>".trim($file['status'])."</td></tr>\n";
-         $line_number++;
-    
+    // Make the maintainer a link, if we have that maintainer in the list
+    if (isset($maint_by_nick[$file["maintainer"]])) {
+      $file["maintainer"] = '<a href="#maint' . $maint_by_nick[$file["maintainer"]] .
+                            '">' . $file["maintainer"] . '</a>';
     }
-    
-    // echo the last dir and $lines
-    echo "$prev_diplay_dir ($line_number)</th></tr>";
-    echo $lines;
-    
-    print("</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n");
-    
+
+    // If we have a 'numeric' revision diff and it is not zero,
+    // make a link to the CVS repository's diff script
+    if ($file["revision"][2] != "n/a" && $file["revision"][2] !== 0) {
+      $url = 'http://cvs.php.net/viewcvs.cgi/' .
+             preg_replace( "'^".$DOCDIR."'", 'phpdoc/', $file['full_name']) .
+             '?r1=' . $file['revision'][1] . '&amp;r2=' . $file['revision'][0];
+      $url_ws = $url . CVS_OPT_NOWS;
+      $url   .= CVS_OPT;
+
+      $file['short_name'] = '<a href="' . $url . '">'. $file["short_name"] . '</a> '.
+                            '<a href="' . $url_ws . '">[NoWS]</a>';
+    }
+
+    // Guess the new directory from the full name of the file
+    $new_dir = dirname($file["full_name"]);
+
+    // If this is a new directory, put out old dir lines
+    if ($new_dir !== $prev_dir) {
+      if (isset($lines)) {
+        echo $prev_diplay_dir;
+        echo " ($line_number)</th></tr>";
+        echo $lines;
+      }
+
+      $lines = '';
+      $line_number = 0;
+
+      // Store the new actual directory
+      $prev_dir = $new_dir;
+    }
+    // Drop out the unneeded parts from the dirname...
+    $display_dir = str_replace($DOCDIR."en/", "", dirname($file["full_name"]));
+    $prev_diplay_dir = "<tr class=blue><th colspan=12>$display_dir";
+
+    // Save the line for the current file (get file name shorter)
+    $lines .= "<tr class={$CSS[$file['mark']]}><td>{$file['short_name']}</td>".
+          "<td> {$file['revision'][0]}</td>" .
+          "<td> {$file['revision'][1]}</td>".
+          "<td class=rb>{$file['revision'][2]} </td>".
+          "<td class=r>{$file['size'][0]} </td>".
+          "<td class=r>{$file['size'][1]} </td>".
+          "<td class=rb>{$file['size'][2]} </td>".
+          "<td class=r>{$file['date'][0]} </td>".
+          "<td class=r>{$file['date'][1]} </td>".
+          "<td class=rb>{$file['date'][2]} </td>".
+          "<td class=c>{$file['maintainer']}</td>".
+          "<td class=c>".trim($file['status'])."</td></tr>\n";
+     $line_number++;
+
+  }
+
+  // echo the last dir and $lines
+  echo "$prev_diplay_dir ($line_number)</th></tr>";
+  echo $lines;
+
+  echo "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
+
 }
 
 
@@ -906,88 +903,92 @@ END_OF_MULTILINE;
 // If work-in-progress list is available (valid translation.xml file in lang)
 if (count($translation["files"]) != 0) {
 
-    // Print out files table header
-    print "<a name=\"wip\"></a>\n" .
-    "<table width=\"820\" border=\"0\" cellpadding=\"4\" cellspacing=\"1\" align=\"center\">\n" .
-    "<tr class=blue>".
-    "<th>Work in progress files</th>".
-    "<th>Translator</th>".
-    "<th>Type</th>";
-  
-    // Print out date and revision columns if needed
+  // Print out files table header
+  echo "<a name=\"wip\"></a>\n" .
+  "<table width=\"820\" border=\"0\" cellpadding=\"4\" cellspacing=\"1\" align=\"center\">\n" .
+  "<tr class=blue>".
+  "<th>Work in progress files</th>".
+  "<th>Translator</th>".
+  "<th>Type</th>";
+
+  // Print out date and revision columns if needed
+  if ($using_date) {
+    echo '<th>Date</th>';
+  }
+  if ($using_rev) {
+    echo '<th>CO-Revision</th>' .
+            '<th>EN-Revision</th>';
+  }
+  echo "</tr>\n";
+
+  // Go through files, and print out lines for them
+  foreach($translation["files"] as $num => $finfo) {
+
+    // If we have a valid maintainer, link to the summary
+    if (isset($maint_by_nick[$finfo["person"]])) {
+      $finfo["person"] = '<a href="#maint' . $maint_by_nick[$finfo["person"]] .
+                         '">' . $finfo["person"] . '</a>';
+    }
+
+    // Print out the line with the first columns
+    echo  "<tr class=wip><td>$finfo[name]</td>" .
+          "<td>$finfo[person]</td><td>$finfo[type]</td>";
+
+    // If we need the date column, print it out
     if ($using_date) {
-        print '<th>Date</th>';
+      echo "<td>$finfo[date]</td>";
     }
+
+    // If we need the revision column, print it out
     if ($using_rev) {
-        print '<th>CO-Revision</th>' .
-              '<th>EN-Revision</th>';
+      echo "<td>$finfo[revision]</td><td>" .
+            $missing_files[$finfo["name"]][1] .
+            "</td>";
     }
-    print "</tr>\n";
-  
-    // Go through files, and print out lines for them
-    foreach($translation["files"] as $num => $finfo) {
-    
-        // If we have a valid maintainer, link to the summary
-        if (isset($maint_by_nick[$finfo["person"]])) {
-            $finfo["person"] = '<a href="#maint' . $maint_by_nick[$finfo["person"]] .
-                               '">' . $finfo["person"] . '</a>';
-        }
-       
-        // Print out the line with the first columns
-        print "<tr class=wip><td>$finfo[name]</td>" .
-              "<td>$finfo[person]</td><td>$finfo[type]</td>";
 
-        // If we need the date column, print it out
-        if ($using_date) {
-            print "<td>$finfo[date]</td>";
-        }
+    // End the line
+    echo "</tr>\n";
 
-        // If we need the revision column, print it out
-        if ($using_rev) {
-            print "<td>$finfo[revision]</td><td>" .
-                  $missing_files[$finfo["name"]][1] .
-                  "</td>";
-        }
-      
-        // End the line
-        print "</tr>\n";
+    // Collect files in WIP list
+    $wip_files[$finfo["name"]] = TRUE;
+  }
 
-        // Collect files in WIP list
-        $wip_files[$finfo["name"]] = TRUE;
-    } 
-  
-    print "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
-    
-} 
+  echo "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
+
+}
 
 // Files translated, but without a revision comment
 $count = count($missing_tags);
-if ($count > 0) {
-    print "<a name=\"misstags\"></a>" .
-          "<table width=\"400\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n".
-          "<tr class=blue><th rowspan=2>Files without Revision-comment ($count files):</th>".
-          "<th colspan=3>Sizes in kB</th></tr>\n".
-          "<tr class=blue><th>en</th><th>$LANG</th><th>diff</th></tr>\n";
-    foreach($missing_tags as $val) {
-        // Shorten the filename (we have directory headers)
-        $short_file = basename($val[0]);
 
-        // Guess the new directory from the full name of the file
-        $new_dir = dirname($val[0]);
-    
-        // If this is a new directory, put out dir headline
-        if ($new_dir != $prev_dir) {
-        
-            // Print out directory header
-            print "<tr class=blue><th colspan=4>$new_dir</th></tr>\n";
-        
-            // Store the new actual directory
-            $prev_dir = $new_dir;
-        }
-        print "<tr class=wip><td>$short_file</td><td class=r>$val[1]</td>".
-              "<td class=r>$val[2]</td><td class=r>$val[3]</td></tr>\n";
+if ($count > 0) {
+  echo  "<a name=\"misstags\"></a>" .
+        "<table width=\"400\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n".
+        "<tr class=blue><th rowspan=2>Files without Revision-comment ($count files):</th>".
+        "<th colspan=3>Sizes in kB</th></tr>\n".
+        "<tr class=blue><th>en</th><th>$LANG</th><th>diff</th></tr>\n";
+
+  foreach($missing_tags as $val) {
+
+    // Shorten the filename (we have directory headers)
+    $short_file = basename($val[0]);
+
+    // Guess the new directory from the full name of the file
+    $new_dir = dirname($val[0]);
+
+    // If this is a new directory, put out dir headline
+    if ($new_dir != $prev_dir) {
+
+        // Print out directory header
+        echo "<tr class=blue><th colspan=4>$new_dir</th></tr>\n";
+
+        // Store the new actual directory
+        $prev_dir = $new_dir;
     }
-    print "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
+    echo  "<tr class=wip><td>$short_file</td><td class=r>$val[1]</td>".
+          "<td class=r>$val[2]</td><td class=r>$val[3]</td></tr>\n";
+  }
+
+  echo "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
 }
 
 // Merge all work in progress files collected
@@ -998,79 +999,81 @@ $wip_files = array_merge(
 
 // Delete wip entires from available files list
 foreach ($wip_files as $file) {
-    if (isset($missing_files[$file['name']])) {
-        unset($missing_files[$file['name']]);
-    }
+  if (isset($missing_files[$file['name']])) {
+    unset($missing_files[$file['name']]);
+  }
 }
 
 // Files not translated and not "wip"
 $count = count($missing_files);
 if ($count > 0) {
-    print "<a name=\"missfiles\"></a>" .
-          "<table width=\"400\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n" .
-          "<tr class=blue><th><a name=\"avail\" class=\"ref\">" .
-          " Available for translation</a> ($count files):</th><th>kB</th></tr>\n";
-    foreach($missing_files as $file => $info) {
-        // Shorten the filename (we have directory headers)
-        $short_file = basename($file);
 
-        // Guess the new directory from the full name of the file
-        $new_dir = dirname($file);
-    
-        // If this is a new directory, put out dir headline
-        if ($new_dir != $prev_dir) {
-        
-            // Print out directory header if not "."
-            print "<tr class=blue><th colspan=2>$new_dir</th></tr>\n";
-        
-            // Store the new actual directory
-            $prev_dir = $new_dir;
-        }
+  echo  "<a name=\"missfiles\"></a>" .
+        "<table width=\"400\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n" .
+        "<tr class=blue><th><a name=\"avail\" class=\"ref\">" .
+        " Available for translation</a> ($count files):</th><th>kB</th></tr>\n";
 
-        print "<tr class=wip><td><a href=\"http://cvs.php.net/viewcvs.cgi/phpdoc/en/$file?view=markup\">$short_file</a></td>" .
-              "<td class=r>$info[0]</td></tr>\n";
+  foreach($missing_files as $file => $info) {
+    // Shorten the filename (we have directory headers)
+    $short_file = basename($file);
+
+    // Guess the new directory from the full name of the file
+    $new_dir = dirname($file);
+
+    // If this is a new directory, put out dir headline
+    if ($new_dir != $prev_dir) {
+
+        // Print out directory header if not "."
+        echo "<tr class=blue><th colspan=2>$new_dir</th></tr>\n";
+
+        // Store the new actual directory
+        $prev_dir = $new_dir;
     }
-    print "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
+
+    echo "<tr class=wip><td><a href=\"http://cvs.php.net/viewcvs.cgi/phpdoc/en/$file?view=markup\">$short_file</a></td>" .
+          "<td class=r>$info[0]</td></tr>\n";
+  }
+  echo "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
 
 }
 
 // Files not in EN tree
 $count = count($old_files);
+
 if ($count > 0) {
-    print "<a name=\"oldfiles\"></a>" .
-          "<table width=\"400\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n" .
-          "<tr class=blue><th><a name=\"notEn\" class=\"ref\">" .
-          " Not in EN Tree</a> ($count files):</th><th>kB</th></tr>\n";
 
-    foreach($old_files as $file => $info) {
-        // Shorten the filename (we have directory headers)
-        $short_file = basename($file);
+  print "<a name=\"oldfiles\"></a>" .
+        "<table width=\"400\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" align=\"center\">\n" .
+        "<tr class=blue><th><a name=\"notEn\" class=\"ref\">" .
+        " Not in EN Tree</a> ($count files):</th><th>kB</th></tr>\n";
 
-        // Guess the new directory from the full name of the file
-        $new_dir = dirname($file);
-    
-        // If this is a new directory, put out dir headline
-        if ($new_dir != $prev_dir) {
-        
-            // Print out directory header if not "."
-            print "<tr class=blue><th colspan=2>$new_dir</th></tr>\n";
-        
-            // Store the new actual directory
-            $prev_dir = $new_dir;
-        }
+  foreach($old_files as $file => $info) {
 
-        print "<tr class=wip><td>$short_file</td>" .
-              "<td class=r>$info[0]</td></tr>\n";
+    // Shorten the filename (we have directory headers)
+    $short_file = basename($file);
+
+    // Guess the new directory from the full name of the file
+    $new_dir = dirname($file);
+
+    // If this is a new directory, put out dir headline
+    if ($new_dir != $prev_dir) {
+
+        // Print out directory header if not "."
+        echo "<tr class=blue><th colspan=2>$new_dir</th></tr>\n";
+
+        // Store the new actual directory
+        $prev_dir = $new_dir;
     }
-    print "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
 
-
-
+    echo "<tr class=wip><td>$short_file</td>" .
+          "<td class=r>$info[0]</td></tr>\n";
+  }
+  echo "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
 
 }
 
 
 // All OK, end the file
-print "</body>\n</html>\n";
+echo "</body>\n</html>\n";
 
 ?>
