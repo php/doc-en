@@ -1,8 +1,74 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
  <sect1 xml:id="internals2.structure.globals" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
   <title>Extension globals</title>
-  <para/>
+
+  <sect2 xml:id="internals2.structure.globals.intro">
+   <title>Introduction to globals in a PHP extension</title>
+
+   <simpara>
+    In a language such as C, a "global" variable is a variable that can be
+    accessed from any function without any extra declaration. These traditional
+    globals have a few drawbacks:
+   </simpara>
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      Barring any special options passed to the compiler, a global varaible can
+      be accessed and changed by any piece of code anywhere in the program,
+      whether or not that code should be doing so.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      A typical global variable is not thread safe.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      The names of global variables are as global as the variables themselves.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+   <simpara>
+    A PHP extension's globals are more properly called the "extension state",
+    since most modules must remember what they're doing between function calls.
+    The "counter" extension is a perfect example of this need: The basic
+    interface calls for a counter with a persistant value. A programmer new to
+    Zend and PHP might do something like this in <filename>counter.c</filename>
+    to store that value:
+   </simpara>
+   <example xml:id="internals2.structure.globals.intro.wrong-way">
+    <title>The wrong way to store the basic counter interface's value</title>
+    <programlisting role="c">
+<![CDATA[
+/* ... */
+static long basic_counter_value;
+
+/* ... */
+
+PHP_FUNCTION(counter_get)
+{
+    RETURN_LONG(basic_counter_value);
+}
+]]>
+    </programlisting>
+   </example>
+   <simpara>
+    On the surface this appears a viable solution, and indeed in a simple test
+    it would function correctly. However, there are a number of situations in
+    which more than one copy of PHP is running in the same thread, which means
+    more than one instance of the counter module. Suddenly these multiple
+    threads are sharing the same counter value, which is clearly undesireable.
+    Another problem shows itself when considering that another extension might
+    someday happen to have a global with the same name, and due to the rules of
+    C scoping, this has the potential to cause a compile failure, or worse, a
+    runtime error. Something more elaborate is needed, and so exists Zend's
+    support for threadsafe per-module globals.
+   </simpara>
+
+  </sect2>
+
  </sect1>
 
 <!-- Keep this comment at the end of the file
