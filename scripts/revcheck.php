@@ -294,12 +294,8 @@ function get_file_status($file)
 // The English directory is passed to this function to check
 function get_dir_status($dir)
 {
-    // If this is an old "functions" directory
-    // (not under reference) then do not travers
-    if (preg_match("!/en/functions|/chmonly!", $dir)) {
-        return array();
-    }
-    
+global $DOCDIR;
+
     // Collect files and diretcories in these arrays
     $directories = array();
     $files       = array();
@@ -310,33 +306,28 @@ function get_dir_status($dir)
     // Walk through all names in the directory
     while ($file = @readdir($handle)) {
 
-      // If we found a file with one or two point as a name,
-      // or a CVS directory, skip the file
-      if (preg_match("/^\.{1,2}/",$file) || $file == 'CVS')
-        continue;
-
-      // JUST TEMPORARY TILL THE <TRANSLATION>/REFERENCE/FUNCTIONS.XML - ISSUE IS CLARIFIED
-      // If we found a file functions.xml in the
-      // <lang>/reference/ tree, skip the file
       if (
-	   $file == "rsusi.txt"
-	  || $file == "missing-ids.xml"
-          || ($file == "extensions.xml" && strpos($dir, '/appendices/'))
-	  || $file == "README"
-	  || $file == "contributors.xml"
-	  || $file == "contributors.ent"
-	  || $file == "reserved.constants.xml"
-	  || $file == 'DO_NOT_TRANSLATE'
-	  || strpos($dir, '/internals/')
-	  || strpos($dir, '/internals2/')
-	  || strpos($file, 'entities.') === 0
-	  || substr($file, -1) == '~' // Emacs backup file
-	  )
-        continue;
+      (!is_dir($dir.'/' .$file) && !in_array(substr($file, -3), array('xml','ent')) && substr($file, -13) != 'PHPEditBackup' )
+      || strpos($file, 'entities.') === 0
+      || $dir == $DOCDIR.'en/chmonly/' || $dir == $DOCDIR.'en/internals/' || $dir == $DOCDIR.'en/internals2/'
+      || $file == 'contributors.ent' || $file == 'contributors.xml'
+      || ($dir == $DOCDIR.'en/appendices/' && ($file == 'reserved.constants.xml' || $file == 'extensions.xml'))
+      || $file == 'README'
+      || $file == 'DO_NOT_TRANSLATE'
+      || $file == 'rsusi.txt'
+      || $file == 'missing-ids.xml'
+      ) {
+          continue;
+      }
 
-      // Collect files and directories
-      if (is_dir($dir.$file)) { $directories[] = $file; }
-      else { $files[] = $file; }
+      if ($file != '.' && $file != '..' && $file != 'CVS' && $dir != '/functions') {
+
+          if (is_dir($dir.'/' .$file)) {
+              $directories[] = $file;
+          } elseif (is_file($dir.'/' .$file)) {
+              $files[] = $file;
+          }
+      }
 
     }
     
