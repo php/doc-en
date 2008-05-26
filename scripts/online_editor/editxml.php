@@ -294,7 +294,7 @@ if ($updated || $_REQUEST['download']) {
 
 	// EN-Revision for new translated files
 	if (!stristr($newdata, 'EN-Revision:')) {
-		$newdata = str_replace('<!-- $Revision$Revision: 1.1 $ -->'. "\n". '<!-- EN-Revision: ', $newdata);
+		$newdata = str_replace('<!-- $'.'Revision'.': ', '<!-- \$'.'Revision'.": 1 $ -->\n<!-- EN-Revision: ", $newdata);
 	}
 
 	// Send file as is (download)
