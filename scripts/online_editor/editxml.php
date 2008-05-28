@@ -238,16 +238,16 @@ foreach($results as $index=>$text) {
 	if ($newtext!="'>" && $newtext!='">') {
 		if (strstr($newtext, "\n")) {
 			// This marks text that has new line (so we will use multiline textarea)
-			$data = substr_replace($data, "_PMRK[$index]\{$newtext}PMRK_", $index, strlen($text));
+			$data = substr_replace($data, "_PMRK[$index]{".$newtext."}PMRK_", $index, strlen($text));
 		} elseif (strstr($newtext, "'") && !strstr($newtext, '"')) {
 			// This marks text that has single quote (so the input field will use double quote)
-			$data = substr_replace($data, "_ZMRK[$index]\{$newtext}ZMRK_", $index, strlen($text));
+			$data = substr_replace($data, "_ZMRK[$index]{".$newtext."}ZMRK_", $index, strlen($text));
 		} elseif (strstr($newtext, "'") && strstr($newtext, '"')) {
 			// This marks text that has single and double quote (so we will use textarea)
-			$data = substr_replace($data, "_YMRK[$index]\{$newtext}YMRK_", $index, strlen($text));
+			$data = substr_replace($data, "_YMRK[$index]{".$newtext."}YMRK_", $index, strlen($text));
 		} else {
 			// This marks text that can use a normal input
-			$data = substr_replace($data, "_XMRK[$index]\{$newtext}XMRK_", $index, strlen($text));
+			$data = substr_replace($data, "_XMRK[$index]{".$newtext."}XMRK_", $index, strlen($text));
 		}
 	}
 }
