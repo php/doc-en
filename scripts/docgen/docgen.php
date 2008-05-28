@@ -51,7 +51,7 @@ $DOC_EXT = array(
 
 function usage() { /* {{{ */
 	print <<<USAGE
-	Usage: php refldoc.php <options>
+	Usage: php docgen.php <options>
 	Examples:
 		-e date (all extension)
 		-f preg_replace (a function)
