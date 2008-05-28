@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 
 <book xml:id="book.{EXT_NAME_ID}" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <title>{EXT_NAME}</title>
@@ -14,6 +14,7 @@
 
  &reference.{EXT_NAME_ID}.setup;
  &reference.{EXT_NAME_ID}.constants;
+ &reference.{EXT_NAME_ID}.examples;
  &reference.{EXT_NAME_ID}.reference;
 
 </book>
