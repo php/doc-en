@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 
 <refentry xml:id="function.{FUNCTION_NAME_ID}" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
@@ -25,46 +25,9 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
+  <!-- See also &return.success; -->
   <para>
-   &return.success;
-  </para>
- </refsect1>
-
- <refsect1 role="errors">
-  &reftitle.errors;
-  <para>
-   When does this function issue E_* level errors, and/or throw exceptions.
-  </para>
- </refsect1>
-
- <refsect1 role="unicode">
-  &reftitle.unicode;
-  <para>
-   Information specific to unicode, from the PHP 6 changes.
-  </para>
- </refsect1>
-
- <refsect1 role="changelog">
-  &reftitle.changelog;
-  <para>
-   <informaltable>
-    <tgroup cols="2">
-     <thead>
-      <row>
-       <entry>&Version;</entry>
-       <entry>&Description;</entry>
-      </row>
-     </thead>
-     <tbody>
-      <row>
-       <entry>Enter the version of change here</entry>
-       <entry>
-        Describe the change
-       </entry>
-      </row>
-     </tbody>
-    </tgroup>
-   </informaltable>
+   What is returned on success and failure
   </para>
  </refsect1>
 
@@ -94,17 +57,6 @@
     </screen>
    </example>
   </para>
- </refsect1>
-
- <refsect1 role="notes">
-  &reftitle.notes;
-  <caution>
-   <para>
-    Any notes that don't fit anywhere else should go here.
-    90% of the time, notes, warnings or cautions are better placed in the
-    parameters section. Consider that before using this section!
-   </para>
-  </caution>
  </refsect1>
 
  <refsect1 role="seealso">
