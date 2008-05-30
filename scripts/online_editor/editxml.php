@@ -722,10 +722,18 @@ if ($source!='diff') {
 <!-- This frame is used to prevent losing changes if session has expired.. so login can be done inside -->
 <iframe id=hframe name=hframe width=100% height=100 border=0 style="display: none"></iframe>
 
-	* Before working on translating this file, please make sure to send an email to <?php print $phpdocLangs[$lang]['mailing']; ?> indicating that you will translate this file, and wait for confirmation. <br>
-* After translating the file, please download it then: either cvs it -or- send it to <?php print $phpdocLangs[$lang]['mailing']; ?>. <b>Always remember to keep a copy of the file on your local computer</b><br>
-* If you have questions, contact the translation coordinator <?php print $phpdocLangs[$lang]['coordinator']; ?><br>
-
+<ul>
+ <li>After translating the file, please download (and save) it then either: 
+  <ul>
+   <li>Commit to CVS</li>
+   <li>Or send it to the <?php print $phpdocLangs[$lang]['mailing']; ?> mailing list</li>
+  </ul>
+ </li>
+ <li>If you have questions, contact the main discussion list (phpdoc@lists.php.net) or 
+     write <?php print $phpdocLangs[$lang]['mailing']; ?> for translation specific concerns.
+ </li>
+ <li>In the future there will be a patch queue.</li>
+</ul>
 <?php 
 }
 ?>
