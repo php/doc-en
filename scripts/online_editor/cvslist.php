@@ -35,7 +35,7 @@ if (substr($path, -1)!='/') $path .= '/';
 
 
 // Usually, the path are based on english cvs
-$target = "$enDocCVSPath$path$file";
+$target = CVS_ROOT_PATH . 'en/' . $path . $file;
 
 
 //------- Decide what to do

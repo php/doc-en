@@ -7,14 +7,50 @@
 //--- base file (all other files require this to start)
 
 //------- Configuration 
-// Root path of cvs
-$cvsRootPath = '/path/to/cvs/';
-
-// Path to english xml sources from cvs 
-$enDocCVSPath = $cvsRootPath.'phpdoc/en/';
+// Root path to the phpdoc-all directory
+// -- cvs co phpdoc-all
+define ('CVS_ROOT_PATH', '/cvs/phpdoc-all/');
 
 // Require User Login by email (needed for user file saving)
 $requireLogin = false;
+
+// Language information
+// RTL direction is defined in $translations_RTL
+$translations = array(
+	'Arabic' 				=> array('ar',		'utf-8'),
+	'Brazilian-PT'			=> array('pt_BR',	'iso-8859-1'),
+	'Bulgarian'				=> array('bg',		'utf-8'),
+	'Catalan'				=> array('ca',		'iso-8859-1'),
+	'Chinese-HK'			=> array('hk',		'big5'),
+	'Chinese-Simplified'	=> array('zh',		'gb2312'),
+	'Chinese-Traditional'	=> array('tw',		'big5'),
+	'Czech'					=> array('cs',		'iso-8859-2'),
+	'Danish'				=> array('da',		'iso-8859-1'),
+	'Dutch'					=> array('nl',		'iso-8859-1'),
+	'Finnish'				=> array('fi',		'iso-8859-1'),
+	'French'				=> array('fr',		'iso-8859-1'),
+	'German'				=> array('de',		'iso-8859-1'),
+	'Greek'					=> array('el',		'iso-8859-7'),
+	'Hebrew'				=> array('he',		'windows-1255'),
+	'Hungarian'				=> array('hu',		'iso-8859-2'),
+	'Indonesian'			=> array('id',		'iso-8859-1'),
+	'Italian'				=> array('it',		'iso-8859-1'),
+	'Japanese'				=> array('ja',		'utf-8'),
+	'Korean'				=> array('kr',		'utf-8'),
+	'Lithuanian'			=> array('lt',		'iso-8859-1'),
+	'Norwegian'				=> array('no',		'utf-8'),
+	'Polish'				=> array('pl',		'iso-8859-2'),
+	'Romanian'				=> array('ro',		'utf-8'),
+	'Russian'				=> array('ru',		'utf-8'),
+	'Serbian'				=> array('fa',		'utf-8'),
+	'Slovak'				=> array('sk',		'iso-8859-2'),
+	'Slovenian'				=> array('sl',		'iso-8859-1'),
+	'Spanish'				=> array('es',		'iso-8859-1'),
+	'Swedish'				=> array('sv',		'iso-8859-1'),
+	'Turkish'				=> array('tr',		'utf-8'),
+);
+
+$translations_RTL = array('ar', 'he');
 
 if ($requireLogin) {	
 	// Users folder where their cached files are saved - must be writable
@@ -23,41 +59,10 @@ if ($requireLogin) {
 	$filesChMod = 0777;	
 }
 
-
+foreach ($translations as $language => $lang_info) {
+	addLanguage($language, $lang_info[0], $lang_info[1]);
+} 
 // Languages and paths: (ToDo Font should be defined for better display)
-
-addLanguage('Arabic', $cvsRootPath.'phpdoc-ar/ar/', 'ar', 'utf-8', 'RTL', 'doc-ar@lists.php.net', 'doc-ar-subscribe@lists.php.net', 'Salah Faya visualmind(@)php.net');
-addLanguage('Brazilian-PT', $cvsRootPath.'phpdoc-pt_BR/pt_BR/', 'pt_BR', 'iso-8859-1', 'LTR', 'doc-br@lists.php.net', 'doc-br-subscribe@lists.php.net', '');
-addLanguage('Bulgarian', $cvsRootPath.'phpdoc-bg/bg/', 'bg', 'utf-8', 'LTR', 'doc-bg@lists.php.net', 'doc-bg-subscribe@lists.php.net', '');
-addLanguage('Catalan', $cvsRootPath.'phpdoc-ca/ca/', 'ca', 'iso-8859-1', 'LTR', 'doc-ca@lists.php.net', 'doc-ca-subscribe@lists.php.net', '');
-addLanguage('Chinese-HK', $cvsRootPath.'phpdoc-hk/hk/', 'hk', 'big5', 'LTR', 'doc-hk@lists.php.net', 'doc-hk-subscribe@lists.php.net', '');
-addLanguage('Chinese-Simplified', $cvsRootPath.'phpdoc-zh/zh/', 'zh', 'gb2312', 'LTR', 'doc-zh@lists.php.net', 'doc-zh-subscribe@lists.php.net', '');
-addLanguage('Chinese-Traditional', $cvsRootPath.'phpdoc-tw/tw/', 'tw', 'big5', 'LTR', 'doc-tw@lists.php.net', 'doc-tw-subscribe@lists.php.net', '');
-addLanguage('Czech', $cvsRootPath.'phpdoc-cs/cs/', 'cs', 'iso-8859-2', 'LTR', 'doc-cs@lists.php.net', 'doc-cs-subscribe@lists.php.net', '');
-addLanguage('Danish', $cvsRootPath.'phpdoc-da/da/', 'da', 'iso-8859-1', 'LTR', 'doc-da@lists.php.net', 'doc-da-subscribe@lists.php.net', '');
-addLanguage('Dutch', $cvsRootPath.'phpdoc-nl/nl/', 'nl', 'iso-8859-1', 'LTR', 'doc-nl@lists.php.net', 'doc-nl-subscribe@lists.php.net', '');
-addLanguage('Finnish', $cvsRootPath.'phpdoc-fi/fi/', 'fi', 'iso-8859-1', 'LTR', 'doc-fi@lists.php.net', 'doc-fi-subscribe@lists.php.net', '');
-addLanguage('French', $cvsRootPath.'phpdoc-fr/fr/', 'fr', 'iso-8859-1', 'LTR', 'doc-fr@lists.php.net', 'doc-fr-subscribe@lists.php.net', '');
-addLanguage('German', $cvsRootPath.'phpdoc-de/de/', 'de', 'iso-8859-1', 'LTR', 'doc-de@lists.php.net', 'doc-de-subscribe@lists.php.net', '');
-addLanguage('Greek', $cvsRootPath.'phpdoc-el/el/', 'el', 'iso-8859-7', 'LTR', 'doc-el@lists.php.net', 'doc-el-subscribe@lists.php.net', '');
-addLanguage('Hebrew', $cvsRootPath.'phpdoc-he/he/', 'he', 'windows-1255', 'RTL', 'doc-he@lists.php.net', 'doc-he-subscribe@lists.php.net', '');
-addLanguage('Hungarian', $cvsRootPath.'phpdoc-hu/hu/', 'hu', 'iso-8859-2', 'LTR', 'doc-hu@lists.php.net', 'doc-hu-subscribe@lists.php.net', '');
-addLanguage('Indonesian', $cvsRootPath.'phpdoc-id/id/', 'id', 'iso-8859-1', 'LTR', 'doc-id@lists.php.net', 'doc-id-subscribe@lists.php.net', '');
-addLanguage('Italian', $cvsRootPath.'phpdoc-it/it/', 'it', 'iso-8859-1', 'LTR', 'doc-it@lists.php.net', 'doc-it-subscribe@lists.php.net', '');
-addLanguage('Japanese', $cvsRootPath.'phpdoc-ja/ja/', 'ja', 'utf-8', 'LTR', 'doc-ja@lists.php.net', 'doc-ja-subscribe@lists.php.net', '');
-addLanguage('Korean', $cvsRootPath.'phpdoc-kr/kr/', 'kr', 'utf-8', 'LTR', 'doc-kr@lists.php.net', 'doc-kr-subscribe@lists.php.net', '');
-addLanguage('Lithuanian', $cvsRootPath.'phpdoc-lt/lt/', 'lt', 'iso-8859-1', 'LTR', 'doc-lt@lists.php.net', 'doc-lt-subscribe@lists.php.net', '');
-addLanguage('Norwegian', $cvsRootPath.'phpdoc-no/no/', 'no', 'utf-8', 'LTR', 'doc-no@lists.php.net', 'doc-no-subscribe@lists.php.net', '');
-addLanguage('Polish', $cvsRootPath.'phpdoc-pl/pl/', 'pl', 'iso-8859-2', 'LTR', 'doc-pl@lists.php.net', 'doc-pl-subscribe@lists.php.net', '');
-addLanguage('Romanian', $cvsRootPath.'phpdoc-ro/ro/', 'ro', 'utf-8', 'LTR', 'doc-ro@lists.php.net', 'doc-ro-subscribe@lists.php.net', '');
-addLanguage('Russian', $cvsRootPath.'phpdoc-ru/ru/', 'ru', 'utf-8', 'LTR', 'doc-ru@lists.php.net', 'doc-ru-subscribe@lists.php.net', '');
-addLanguage('Slovak', $cvsRootPath.'phpdoc-sk/sk/', 'sk', 'iso-8859-2', 'LTR', 'doc-sk@lists.php.net', 'doc-sk-subscribe@lists.php.net', '');
-addLanguage('Slovenian', $cvsRootPath.'phpdoc-sl/sl/', 'sl', 'iso-8859-1', 'LTR', 'doc-sl@lists.php.net', 'doc-sl-subscribe@lists.php.net', '');
-addLanguage('Spanish', $cvsRootPath.'phpdoc-es/es/', 'es', 'iso-8859-1', 'LTR', 'doc-es@lists.php.net', 'doc-es-subscribe@lists.php.net', '');
-addLanguage('Swedish', $cvsRootPath.'phpdoc-sv/sv/', 'sv', 'iso-8859-1', 'LTR', 'doc-sv@lists.php.net', 'doc-sv-subscribe@lists.php.net', '');
-addLanguage('Turkish', $cvsRootPath.'phpdoc-tr/tr/', 'tr', 'utf-8', 'LTR', 'doc-tr@lists.php.net', 'doc-tr-subscribe@lists.php.net', '');
-//..
-
 
 // Hide files (ignore)
 $ignoreListingFolders = array('.', '..', 'CVS');
@@ -65,15 +70,18 @@ $ignoreListingFiles = array('contributors.xml', 'contributors.ent', 'livedocs.en
 
 //------- Base functions 
 
-function addLanguage($lang, $cvspath, $id, $charset='utf-8', $direction='LTR', $mailing='', $mailsubscribe='', $coodinator='', $font='Fixedsys') {
-	global $phpdocLangs;
-	$phpdocLangs[$lang]['DocCVSPath'] = $cvspath;
+function addLanguage($lang, $id, $charset='utf-8', $font='Fixedsys') {
+	global $phpdocLangs, $translations_RTL;
+	
+	$lists = get_mailing_list_info($id);
+
+	$phpdocLangs[$lang]['DocCVSPath'] = CVS_ROOT_PATH . $id;
 	$phpdocLangs[$lang]['charset'] = $charset;
-	$phpdocLangs[$lang]['direction'] = $direction;
+	$phpdocLangs[$lang]['direction'] = (in_array($id, $translations_RTL)) ? 'RTL' : 'LTR';
 	$phpdocLangs[$lang]['id'] = $id;
-	$phpdocLangs[$lang]['mailing'] = $mailing;
-	$phpdocLangs[$lang]['mailingSubscribe'] = $mailsubscribe;
-	$phpdocLangs[$lang]['coordinator'] = $coordinator;
+	$phpdocLangs[$lang]['coordinator'] = $lists['main'];
+	$phpdocLangs[$lang]['mailing'] = $lists['main'];
+	$phpdocLangs[$lang]['mailingSubscribe'] = $lists['subscribe'];
 	$phpdocLangs[$lang]['font'] = $font;
 }
 
@@ -127,12 +135,12 @@ function getRevision($file, $en=false) {
 }
 
 function getTranslationStatus($file) {
-	global $user, $phpdocLangs, $enDocCVSPath;
+	global $user, $phpdocLangs;
 
 	$lang = $user['phpdocLang'];
 	$translationPath = $phpdocLangs[$lang]['DocCVSPath'];	
 	$trFile = $translationPath.$file;
-	$enFile = $enDocCVSPath.$file;
+	$enFile = CVS_ROOT_PATH . 'en/' . $file;
 
 	$status['lastEnRevision'] = getRevision($enFile);
 	if (file_exists($trFile)) {
@@ -164,4 +172,11 @@ function getTranslationStatus($file) {
 	return $status;
 }
 
-?>
+function get_mailing_list_info ($id) {
+	$list_id = strtolower(str_replace('_', '-', $id));
+	return array(
+		'main'		=> "doc-{$list_id}@lists.php.net",
+		'subscribe' => "doc-{$list_id}-subscribe@lists.php.net",
+		'archives'  => "http://news.php.net/php.doc.{$list_id}",
+	);
+} 

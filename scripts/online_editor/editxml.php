@@ -171,7 +171,7 @@ switch($source) {
 		$file = $translationPath.$file;
 	break;
 	case 'epath': // English source
-		$file = $enDocCVSPath.$file;
+		$file = CVS_ROOT_PATH . 'en/' . $file;
 	break;
 	case 'diff': // cvs diff
 		if ($status['distance']>0) {
