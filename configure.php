@@ -117,11 +117,10 @@ function abspath($path) // {{{
 
 function quietechorun($e) // {{{
 {
-    // enclose in "" on Windows
+    // enclose in "" on Windows for PHP < 5.2.7
     if (is_windows() && phpversion() < '5.2.7') {
         $e = '"'.$e.'"';
     }
-    echo PHP_EOL, PHP_EOL, $e, PHP_EOL, PHP_EOL;
 
     passthru($e);
 } // }}}
