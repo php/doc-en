@@ -369,14 +369,12 @@ for( $i=0; $i < count($en_preface); $i ++ ) {
 // section
 
 $en_section = array();
-preg_match_all("/<section(\s.*?)xml:id=\"(.*?)\"(\s.*?)xmlns=\"(.*?)\"(\s.*?)?>/s", $en_content, $match);
-$en_section["xmlid"] = $match[2];
-$en_section["xmlns"] = $match[4];
+preg_match_all("/<section(\s.*?)xml:id=(\"|')(.*?)(\"|')(\s.*?)?>/s", $en_content, $match);
+$en_section["xmlid"] = $match[3];
 
 $lang_section = array();
-preg_match_all("/<section(\s.*?)xml:id=\"(.*?)\"(\s.*?)xmlns=\"(.*?)\"(\s.*?)?>/s", $lang_content, $match);
-$lang_section["xmlid"] = $match[2];
-$lang_section["xmlns"] = $match[4];
+preg_match_all("/<section(\s.*?)xml:id=(\"|')(.*?)(\"|')(\s.*?)?>/s", $lang_content, $match);
+$lang_section["xmlid"] = $match[3];
 
 for( $i=0; $i < count($en_section["xmlid"]); $i ++ ) {
  if( $en_section["xmlid"][$i] != $lang_section["xmlid"][$i] ) {
@@ -385,18 +383,6 @@ for( $i=0; $i < count($en_section["xmlid"]); $i ++ ) {
    "libel" => "Error in section, attribut : xmlid",
    "value_en" => $en_section["xmlid"][$i],
    "value_lang" => $lang_section["xmlid"][$i]
-  );
-
- }
-}
-
-for( $i=0; $i < count($en_section["xmlns"]); $i ++ ) {
- if( $en_section["xmlns"][$i] != $lang_section["xmlns"][$i] ) {
-  $nb_error['section'] ++;
-  $result_error[] = array(
-   "libel" => "Error in section, attribut : xmlns",
-   "value_en" => $en_section["xmlns"][$i],
-   "value_lang" => $lang_section["xmlns"][$i]
   );
 
  }
