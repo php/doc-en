@@ -932,13 +932,13 @@ if( $nb_en != $nb_lang ) {
 // para
 
 $en_para = 0;
-preg_match_all("/<para(.*?)<\/para>/s", $en_content, $match2);
-$en_para = count($match2[1]);
+preg_match_all("/<para(( )(.*?))?>/s", $en_content, $match2);
+$en_para = count($match2[0]);
 
 
 $lang_para = 0;
-preg_match_all("/<para(.*?)<\/para>/s", $lang_content, $match2);
-$lang_para = count($match2[1]);
+preg_match_all("/<para(( )(.*?))?>/s", $lang_content, $match2);
+$lang_para = count($match2[0]);
 
 
  if( $en_para != $lang_para ) {
