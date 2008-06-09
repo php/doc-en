@@ -117,8 +117,8 @@ function abspath($path) // {{{
 
 function quietechorun($e) // {{{
 {
-    // enclose in "" on Windows for PHP < 5.2.7
-    if (is_windows() && phpversion() < '5.2.7') {
+    // enclose in "" on Windows for PHP < 5.3
+    if (is_windows() && phpversion() < '5.3') {
         $e = '"'.$e.'"';
     }
 
