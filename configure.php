@@ -51,6 +51,7 @@ Package-specific:
   --enable-chm              Enable Windows HTML Help Edition pages [{$acd['CHMENABLED']}]
   --enable-internals        Include internals documentation [{$acd['INTERNALSENABLED']}]
   --enable-xml-details      Enable detailed XML error messages [{$acd['DETAILED_ERRORMSG']}]
+  --disable-segfault-error  LIBXML may segfault with broken XML, use this if it does [{$acd['SEGFAULT_ERROR']}]
   --with-php=PATH           Path to php CLI executable [detect]
   --with-inipath=PATH       Path to php.ini file [@srcdir@/scripts]
   --with-lang=LANG          Language to build [{$acd['LANG']}]
@@ -251,6 +252,7 @@ $acd = array( // {{{
     'FORCE_DOM_SAVE' => 'no',
     'PARTIAL' => 'no',
     'DETAILED_ERRORMSG' => 'no',
+    'SEGFAULT_ERROR' => 'yes',
 
     // Junk to make the old scripts (file-entities.php and missing-entities.php) cooperative
     'PHP_SOURCE' => 'no',
@@ -355,6 +357,10 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
 
         case 'xml-details':
             $ac['DETAILED_ERRORMSG'] = $v;
+            break;
+
+        case 'segfault-error':
+            $ac['SEGFAULT_ERROR'] = $v;
             break;
         
         default:
@@ -497,7 +503,9 @@ if ($ac['LANG'] != 'en') {
 echo "Loading and parsing manual.xml... ";
 flush(STDOUT);
 
-libxml_use_internal_errors(true);
+if ($ac['SEGFAULT_ERROR'] === 'yes') {
+    libxml_use_internal_errors(true);
+}
 
 $dom = new DOMDocument();
 $compact = defined('LIBXML_COMPACT') ? LIBXML_COMPACT : 0;
