@@ -85,7 +85,7 @@ if (isset($options['f'])) {
     $tmpFile = realpath(dirname($options['f'])).DIRECTORY_SEPARATOR.basename($options['f']);
 }
 
-if (!isset($options['n']) && is_string($tmpFile) && !is_writable($tmpFile)) {
+if (!isset($options['n']) && is_string($tmpFile) && !@touch($tmpFile)) {
     print "Cannot write working copy to {$tmpFile}. Please check path and permissions.\n";
     exit();
 }
