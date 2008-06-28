@@ -78,6 +78,7 @@ $nb_error['cdata'] = 0;
 $nb_error['classsynopsis'] = 0;
 $nb_error['table'] = 0;
 $nb_error['para'] = 0;
+$nb_error['literal'] = 0;
 
 
 function do_check($en_content, $lang_content) {
@@ -944,7 +945,7 @@ $lang_para = count($match2[0]);
  if( $en_para != $lang_para ) {
        $nb_error['para'] ++;
        $result_error[] = array(
-        "libel" => "Error about para tag :  $en_para tag <para> in EN, and $lang_para in $LANG.",
+        "libel" => "Error in para tag :  $en_para tag <para> in EN, and $lang_para in $LANG.",
         "value_en" => "N/A",
         "value_lang" => "N/A"
        );
@@ -953,6 +954,29 @@ $lang_para = count($match2[0]);
 
 // END : para
 
+// literal
+
+$en_literal = 0;
+preg_match_all("/<literal>/s", $en_content, $match2);
+$en_literal = count($match2[0]);
+
+
+$lang_literal = 0;
+preg_match_all("/<literal>/s", $lang_content, $match2);
+$lang_literal = count($match2[0]);
+
+
+ if( $en_literal != $lang_literal ) {
+       $nb_error['literal'] ++;
+       $result_error[] = array(
+        "libel" => "Error in literal tag :  $en_literal tag <literal> in EN, and $lang_literal in $LANG.",
+        "value_en" => "N/A",
+        "value_lang" => "N/A"
+       );
+
+ }
+
+// END : literal
 
 return $result_error;
 } // do_check
@@ -1277,6 +1301,10 @@ $html.='
 <tr class="old">
  <td><strong>para</strong><br /><em>Check number of para tag.</em></td>
  <td>'.(($nb_error['para'] == 0)?'-':'<strong>'.$nb_error['para'].'</strong>').'</td>
+</tr>
+<tr>
+ <td><strong>literal</strong><br /><em>Check number of literal tag.</em></td>
+ <td>'.(($nb_error['literal'] == 0)?'-':'<strong>'.$nb_error['literal'].'</strong>').'</td>
 </tr>
 
 <tr class="crit">
