@@ -51,6 +51,7 @@ Package-specific:
   --enable-chm              Enable Windows HTML Help Edition pages [{$acd['CHMENABLED']}]
   --enable-internals        Include internals documentation [{$acd['INTERNALSENABLED']}]
   --enable-xml-details      Enable detailed XML error messages [{$acd['DETAILED_ERRORMSG']}]
+  --enable-howto            Configure the phpdoc howto, not the phpdoc docs [{$acd['HOWTO']}]
   --disable-segfault-error  LIBXML may segfault with broken XML, use this if it does [{$acd['SEGFAULT_ERROR']}]
   --with-php=PATH           Path to php CLI executable [detect]
   --with-inipath=PATH       Path to php.ini file [@srcdir@/scripts]
@@ -253,6 +254,7 @@ $acd = array( // {{{
     'PARTIAL' => 'no',
     'DETAILED_ERRORMSG' => 'no',
     'SEGFAULT_ERROR' => 'yes',
+    'HOWTO' => 'no',
 
     // Junk to make the old scripts (file-entities.php and missing-entities.php) cooperative
     'PHP_SOURCE' => 'no',
@@ -362,6 +364,10 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
         case 'segfault-error':
             $ac['SEGFAULT_ERROR'] = $v;
             break;
+
+        case 'howto':
+            $ac['HOWTO']  =$v;
+            break;
         
         default:
             echo "WARNING: Unknown option '{$o}'!\n";
@@ -470,6 +476,42 @@ foreach ($infiles as $in) {
     }
 }
 
+if ($ac['SEGFAULT_ERROR'] === 'yes') {
+    libxml_use_internal_errors(true);
+}
+
+$compact = defined('LIBXML_COMPACT') ? LIBXML_COMPACT : 0;
+$LIBXML_OPTS = LIBXML_NOENT | LIBXML_NSCLEAN | $compact;
+
+if ($ac['HOWTO'] === 'yes') {
+    $filein = $ac['srcdir'] . '/howto/howto.xml';
+    $fileout = $ac['srcdir'] . '/howto/.howto.xml';
+
+    $dom = new DOMDocument('1.0', 'UTF-8');
+    $retval = $dom->load(realpath($filein), $LIBXML_OPTS);
+
+    if (!$retval) {
+        print_xml_errors();
+        errors_are_bad(1);
+    }
+
+    $dom->xinclude($LIBXML_OPTS);
+    echo "Validating $filein... ";
+    if ($dom->validate()) {
+        echo "done.\n";
+        echo "\nAll good. Saving $fileout... ";
+        flush(STDOUT);
+        $dom->save($fileout);
+
+        echo "done.\n";
+        echo "All you have to do now is run 'phd -d {$fileout} -t howto'\n";
+        exit(0);
+    }
+    echo "FAIL\n";
+    echo "I'm to lazy to figure out why. Just look at your last changes\n";
+    exit(1);
+}
+
 globbetyglob("{$ac['srcdir']}/scripts", 'make_scripts_executable');
 file_put_contents("{$ac['srcdir']}/entities/phpweb.ent", '');
 
@@ -503,13 +545,7 @@ if ($ac['LANG'] != 'en') {
 echo "Loading and parsing manual.xml... ";
 flush(STDOUT);
 
-if ($ac['SEGFAULT_ERROR'] === 'yes') {
-    libxml_use_internal_errors(true);
-}
-
 $dom = new DOMDocument();
-$compact = defined('LIBXML_COMPACT') ? LIBXML_COMPACT : 0;
-$LIBXML_OPTS = LIBXML_NOENT | LIBXML_NSCLEAN | $compact;
 
 // realpath() is important: omitting it causes severe performance degradation
 // and doubled memory usage on Windows.
