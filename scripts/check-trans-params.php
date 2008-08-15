@@ -15,7 +15,7 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Authors:    Philip Olson <philip@php.net> (idea)                     |
-  |             Jakub Vrána <vrana@php.net>                              |
+  |             Jakub Vrana <vrana@php.net>                              |
   +----------------------------------------------------------------------+
 */
 

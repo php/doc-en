@@ -14,7 +14,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Authors:    Jakub Vrána <vrana@php.net>                              |
+  | Authors:    Jakub Vrana <vrana@php.net>                              |
   +----------------------------------------------------------------------+
 */
 
