@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
 
 <refentry xml:id="function.{FUNCTION_NAME_ID}" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
@@ -10,7 +10,7 @@
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <type>void</type><methodname>{FUNCTION_NAME}</methodname>
+   <type>ReturnType</type><methodname>{FUNCTION_NAME}</methodname>
    {PARAMETERS}
   </methodsynopsis>
   <para>
