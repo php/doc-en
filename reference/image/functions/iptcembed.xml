@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.7 $ -->
+<!-- $Revision: 1.8 $ -->
 <refentry xml:id='function.iptcembed' xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>iptcembed</refname>
@@ -52,6 +52,71 @@
    If success and spool flag is lower than 2 then the JPEG will not be 
    returned as a string, &false; on errors.
   </para>
+ </refsect1>
+ <refsect role="examples">
+  &reftitle.examples;
+  <example>
+   <title>Embedding IPTC data into a JPEG</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// iptc_make_tag() function by Thies C. Arntzen
+function iptc_make_tag($rec, $data, $value)
+{
+    $length = strlen($value);
+    $retval = chr(0x1C) . chr($rec) . chr($data);
+
+    if($length < 0x8000)
+    {
+        $retval .= chr($length >> 8) .  chr($length & 0xFF);
+    }
+    else
+    {
+        $retval .= chr(0x80) . 
+                   chr(0x04) . 
+                   chr(($length >> 24) & 0xFF) . 
+                   chr(($length >> 16) & 0xFF) . 
+                   chr(($length >> 8) & 0xFF) . 
+                   chr($length & 0xFF);
+    }
+
+    return $retval . $value;
+}
+
+// Path to jpeg file
+$path = './phplogo.jpg';
+
+// We need to check if theres any IPTC data in the jpeg image. If there is then 
+// bail out because we cannot embed any image that already has some IPTC data!
+$image = getimagesize($path, $info);
+
+if(isset($info['APP13']))
+{
+    die('Error: IPTC data found in source image, cannot continue');
+}
+
+// Set the IPTC tags
+$iptc = array(
+    '2#120' => 'Test image',
+    '2#116' => 'Copyright 2008, The PHP Group'
+);
+
+// Convert the IPTC tags into binary code
+$data = '';
+
+foreach($iptc as $tag => $string)
+{
+    $tag = substr($tag, 2);
+    $data .= iptc_make_tag(2, substr($tag, 2), $string);
+}
+
+// Embed the IPTC data
+$content = iptcembed($data, $path);
+?>
+]]>
+   </programlisting>
+  </example>
  </refsect1>
  <refsect1 role="notes">
   &reftitle.notes;
