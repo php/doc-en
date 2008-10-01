@@ -50,12 +50,19 @@ $DOC_EXT = array(
 );
 
 function usage() { /* {{{ */
+	$v = PHP_VERSION;
 	print <<<USAGE
-	Usage: php docgen.php <options>
-	Examples:
-		-e date (all extension)
-		-f preg_replace (a function)
-		-c simplexmlelement -m xpath -m asxml (a class method)
+	Usage: 
+		php docgen.php <options>
+
+	Example options:
+		-e dom                                (an entire extension)
+		-f preg_replace                       (a single function)
+		-c simplexmlelement -m xpath -m asxml (a couple class methods)
+
+	Notes:
+		Long options are supported with PHP 5.3.0+, and you use $v
+		Be sure the desired extension to document is available (compiled) into PHP
 
 	Options:
 		-c,--class 	-- class name
@@ -713,7 +720,7 @@ $arropts = array(
 	'method:' 		=> 'm:'  /* method */
 );
 
-$options = getopt(implode($arropts), array_keys($arropts));
+$options = @getopt(implode($arropts), array_keys($arropts));
 
 if (!$options) {
 	usage();
