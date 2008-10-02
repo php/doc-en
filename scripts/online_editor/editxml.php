@@ -72,7 +72,7 @@ if (!empty($_REQUEST['hidexml']) && $_REQUEST['hidexml']!='false') {
 }
 
 // Turn on/off Line By Line
-if (!empty($_REQUEST['par']) && $_REQUEST['par']!='false') {
+if (!empty($_REQUEST['linebyline']) && $_REQUEST['linebyline']!='false') {
 	$_SESSION['para'] = false;
 } else {
 	$_SESSION['para'] = true;
