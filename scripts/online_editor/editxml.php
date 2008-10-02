@@ -60,21 +60,21 @@ $requestedFilename = $file;
 // Turn on/off XML as Text
 if (!empty($_REQUEST['textedit']) && $_REQUEST['textedit']!='false') {
 	$_SESSION['textedit'] = true;
-} elseif ($_REQUEST['textedit']=='false') {
+} else {
 	$_SESSION['textedit'] = false;
 }
 
 // Turn on/off Hiding XML tags when editing
 if (!empty($_REQUEST['hidexml']) && $_REQUEST['hidexml']!='false') {
 	$_SESSION['hidexml'] = true;
-} elseif ($_REQUEST['hidexml']=='false') {
+} else {
 	$_SESSION['hidexml'] = false;
 }
 
 // Turn on/off Line By Line
 if (!empty($_REQUEST['par']) && $_REQUEST['par']!='false') {
 	$_SESSION['para'] = false;
-} elseif ($_REQUEST['par']=='false') {
+} else {
 	$_SESSION['para'] = true;
 }
 
@@ -266,7 +266,7 @@ foreach($results as $index=>$text) {
 	}
 }
 
-if ($_SESSION['para'] && $updated) {
+if (!empty($_SESSION['para']) && !empty($updated)) {
 	// Remove \r (some browsers)
 	$newdata = str_replace("\r\n", "\r", $newdata);
 	$newdata = str_replace("\n", "\r", $newdata);
@@ -298,7 +298,7 @@ $newdata = str_replace($cdataMarks, $cdataStore, $newdata);
 
 
 //------- Save or Send file when requested
-if ($updated || $_REQUEST['download']) {
+if (!empty($updated) || !empty($_REQUEST['download'])) {
 
 	// Charset for new translated files
 	if ($phpdocLangs[$lang]['charset']!='iso-8859-1') {
@@ -340,7 +340,7 @@ if ($updated || $_REQUEST['download']) {
 if (empty($_SESSION['textedit'])) {
 
 	// Mark XML Tags to be hidden (when hidexml is true)
-	$hideXMLTag = $_SESSION['hidexml'];
+	$hideXMLTag = empty($_SESSION['hidexml']) ? '' : $_SESSION['hidexml'];
 	$startXMLTag = '';
 	$endXMLTag   = '';
 
