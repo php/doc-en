@@ -66,12 +66,11 @@ $translations = array(
 
 $translations_RTL = array('ar', 'he');
 
-if ($requireLogin) {	
-	// Users folder where their cached files are saved - must be writable
-	$usersCachePath = '/path/to/editor/users/';
-	// Files Permissions Mod
-	$filesChMod = 0777;	
-}
+// Users folder where their cached files are saved - must be writable
+// Only needed if $requireLogin is true
+$usersCachePath = '/path/to/editor/users/';
+// Files Permissions Mod
+$filesChMod = 0777;	
 
 foreach ($translations as $language => $lang_info) {
 	addLanguage($language, $lang_info[0], $lang_info[1]);
