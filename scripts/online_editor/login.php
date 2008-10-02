@@ -27,7 +27,6 @@ session_start();
 
 // Logout  &and=logout
 if (isset($_GET['and'])) {
-		session_unregister('user');
 		unset($_SESSION['user']);
 }
 
@@ -35,6 +34,7 @@ if (isset($_GET['and'])) {
 //------- Login request
 if (isset($_POST['lang'])) {
 
+	$email = '';
 	if (isset($_POST['email'])) {
 		$email = $_POST['email'];
 	}
@@ -72,11 +72,10 @@ if (isset($_POST['lang'])) {
 	if (is_dir($usersCachePath.$email) || !$requireLogin) {
 
 		// Session setup
-		session_register('user');
 		$_SESSION['user'] = array('email'=>$email, 'cache'=>$usersCachePath.$email.'/', 'phpdocLang'=>$lang);
 
 		// If expired session, redo last request
-		if ($_SESSION['redo']) {
+		if (!empty($_SESSION['redo'])) {
 			$link = $_SESSION['redo'];
 			$_SESSION['redo'] = false;
 			header("location: $link");
