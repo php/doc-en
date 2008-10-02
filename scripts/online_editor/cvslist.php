@@ -97,6 +97,7 @@ function printPathAsLinks($path) {
 	global $lang;
 
 	$px = explode('/', $path);
+	$pp = '';
 	foreach($px as $i=>$p) {
 		$pp .= $p.'/';
 		if (!$p && !$i) $p = $lang;  

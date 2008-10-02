@@ -34,7 +34,7 @@ if (isset($_REQUEST['split'])) {
 	$_SESSION['split'] = $_REQUEST['split'];
 }
 
-if ($_SESSION['split'] && !isset($_REQUEST['noframes'])) {
+if (!empty($_SESSION['split']) && !isset($_REQUEST['noframes'])) {
 	$source = $_REQUEST['source'];
 	$file = $_REQUEST['file'];	
 
@@ -58,21 +58,21 @@ $requestedFilename = $file;
 
 
 // Turn on/off XML as Text
-if ($_REQUEST['textedit'] && $_REQUEST['textedit']!='false') {
+if (!empty($_REQUEST['textedit']) && $_REQUEST['textedit']!='false') {
 	$_SESSION['textedit'] = true;
 } elseif ($_REQUEST['textedit']=='false') {
 	$_SESSION['textedit'] = false;
 }
 
 // Turn on/off Hiding XML tags when editing
-if ($_REQUEST['hidexml'] && $_REQUEST['hidexml']!='false') {
+if (!empty($_REQUEST['hidexml']) && $_REQUEST['hidexml']!='false') {
 	$_SESSION['hidexml'] = true;
 } elseif ($_REQUEST['hidexml']=='false') {
 	$_SESSION['hidexml'] = false;
 }
 
 // Turn on/off Line By Line
-if ($_REQUEST['par'] && $_REQUEST['par']!='false') {
+if (!empty($_REQUEST['par']) && $_REQUEST['par']!='false') {
 	$_SESSION['para'] = false;
 } elseif ($_REQUEST['par']=='false') {
 	$_SESSION['para'] = true;
@@ -101,7 +101,7 @@ function myParse($text) {
 		} else {
 			if ($c=="\n") {
 				// Advance the counter so each line is stored separately 
-				if (!$_SESSION['para']) { 
+				if (empty($_SESSION['para'])) { 
 					$rc++;
 				} else {					
 					if (!isset($results[$rc])) {
@@ -134,7 +134,7 @@ function myParse($text) {
 		// Skip empty, &xx; and literals 
 		if (!$res || ($res[0]=='&' && substr($res,-1)==';') || isLiteral($res) ) continue;
 		
-		if ($_SESSION['para']) {
+		if (!empty($_SESSION['para'])) {
 			// trim \n and adjust position
 			while(substr($resline['text'], 0, 1)=="\n" || substr($resline['text'], 0, 1)=="\r") {
 				$resline['index']++;
@@ -207,7 +207,7 @@ if ($source!='diff'):
 $data = implode('', file($file));
 
 
-if (!$_SESSION['textedit']) {
+if (empty($_SESSION['textedit'])) {
 
 // Protect CDATA tags by hiding them before parsing
 preg_match_all("#<\!\[CDATA\[(.+)\]\]>#Us", $data, $matches);
@@ -337,10 +337,13 @@ if ($updated || $_REQUEST['download']) {
 }
 
 
-if (!$_SESSION['textedit']) {
+if (empty($_SESSION['textedit'])) {
 
 	// Mark XML Tags to be hidden (when hidexml is true)
 	$hideXMLTag = $_SESSION['hidexml'];
+	$startXMLTag = '';
+	$endXMLTag   = '';
+
 	if ($hideXMLTag) {
 		$startXMLTag = '_TMRK(';
 		$endXMLTag = ')TMRK_';
@@ -649,15 +652,15 @@ if ($source=='epath') print "English version";
 
 <?php
 
-if ($requireLogin) {
+if (!empty($requireLogin)) {
 		print "Logged as: <b>$user[email]</b> <a href='login.php?and=logout' target=_top>logout</a><br>";
 }
 
-	$url = "editxml.php?file=$requestedFilename&source=$source";
-	if ($_SESSION['hidexml']) $hideXML = 'checked'; else $hideXML = '';
-	if ($_SESSION['split']) $splitFrames = 'checked'; else $splitFrames = '';
-	if ($_SESSION['textedit']) $textEdit = 'checked'; else $textEdit = '';
-	if ($_SESSION['para']) $lineByLine = ''; else $lineByLine = 'checked';
+$url        = "editxml.php?file=$requestedFilename&source=$source";
+$hideXML    = empty($_SESSION['hidexml']) ? '' : 'checked';
+$splitFrames= empty($_SESSION['split'])   ? '' : 'checked';
+$textEdit   = empty($_SESSION['textedit'])? '' : 'checked';
+$lineByLine = empty($_SESSION['para'])    ? '' : 'checked';
 ?>
 	<input type=checkbox name=hidexml value=1 <?php print $hideXML; ?> onClick="if (uconfirm()) document.location='<?php print $url; ?>&noframes=1&hidexml='+this.checked;" <?php if ($source=='diff') print 'disabled'; ?>  /> Hide XML Tags
 
@@ -699,7 +702,7 @@ if ($phpdocLangs[$lang]['direction']=='RTL' && ($source=='upath' || $source=='ap
 }
 
 
-if (!$_SESSION['textedit'] || $source=='diff') {
+if (empty($_SESSION['textedit']) || $source=='diff') {
 
 ?>
 
