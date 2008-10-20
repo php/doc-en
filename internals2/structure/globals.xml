@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
-<!-- $Revision: 1.4 $ -->
+<!-- $Revision: 1.5 $ -->
  <sect1 xml:id="internals2.structure.globals" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
   <title>Extension globals</title>
 
@@ -174,6 +174,44 @@ ZEND_DECLARE_MODULE_GLOBALS(counter)
      more information.
     </simpara>
    </warning>
+
+   <simpara>
+    So with all of that in mind, here is our new version of the
+    <function>counter_get</function>:
+   </simpara>
+  
+   <example xml:id="internals2.structure.globals.intro.right-way">
+    <title>The right way to store the basic counter interface's value</title>
+    <programlisting role="c">
+<![CDATA[
+/* php_counter.h */
+ZEND_BEGIN_MODULE_GLOBALS(counter)
+    long        basic_counter_value;
+ZEND_END_MODULE_GLOBALS(counter)
+
+#ifdef ZTS
+#define COUNTER_G(v) TSRMG(counter_globals_id, zend_counter_globals *, v)
+#else
+#define COUNTER_G(v) (counter_globals.v)
+#endif
+
+/* counter.c */
+ZEND_DECLARE_MODULE_GLOBALS(counter)
+
+/* ... */
+
+PHP_FUNCTION(counter_get)
+{
+    RETURN_LONG(COUNTER_G(basic_counter_value));
+}
+]]>
+    </programlisting>
+   </example>
+
+   <simpara>
+    This is a correct implementation. It is not, however, a complete one. The
+    section <xref linkend="internals2.structure.lifecycle"/> explains why.
+   </simpara>
   
   </sect2>
 
