@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 1.1 $ -->
+
+<refentry xml:id="function.inotify-init" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <refnamediv>
+  <refname>inotify_init</refname>
+  <refpurpose>Initialize an inotify instance</refpurpose>
+ </refnamediv>
+ 
+ <refsect1 role="description"><!-- {{{ -->
+  &reftitle.description;
+  <methodsynopsis>
+   <type>resource</type><methodname>inotify_init</methodname>
+   <void />
+  </methodsynopsis>
+  <para>
+   Initialize an inotify instance for use with
+   <function>inotify_add_watch</function>
+  </para>
+ </refsect1><!-- }}} -->
+ 
+ <refsect1 role="returnvalues"><!-- {{{ -->
+  &reftitle.returnvalues;
+  <para>
+   A stream resource or &false; on error.
+  </para>
+ </refsect1><!-- }}} -->
+ 
+ <refsect1 role="examples"><!-- {{{ -->
+  &reftitle.examples;
+  <para>
+   <example xml:id="inotify-init.example.basic"><!-- {{{ -->
+    <programlisting role="php">
+<![CDATA[
+<?php
+// Open an inotify instance
+$fd = inotify_init();
+
+// Watch __FILE__ for metadata changes (e.g. mtime)
+$watch_descriptor = inotify_add_watch($fd, __FILE__, IN_ATTRIB);
+
+// generate an event
+touch(__FILE__);
+
+// Read events
+$events = inotify_read($fd);
+print_r($events);
+
+// The following methods allows to use inotify functions without blocking on inotify_read():
+
+// - Using stream_select() on $fd:
+$read = array($fd);
+$write = null;
+$except = null;
+stream_select($read,$write,$except,0);
+
+// - Using stream_set_blocking() on $fd
+stream_set_blocking($fd, 0);
+inotify_read($fd); // Does no block, and return false if no events are pending
+
+// - Using inotify_queue_len() to check if event queue is not empty
+$queue_len = inotify_queue_len($fd); // If > 0, inotify_read() will not block
+
+// Stop watching __FILE__ for metadata changes
+inotify_rm_watch($fd, $watch_descriptor);
+
+// Close the inotify instance
+// This may have closed all watches if this was not already done
+fclose($fd);
+
+?>
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+array(
+  array(
+    'wd' => 1,     // Equals $watch_descriptor
+    'mask' => 4,   // IN_ATTRIB bit is set
+    'cookie' => 0, // unique id to connect related events (e.g. 
+                   // IN_MOVE_FROM and IN_MOVE_TO events)
+    'name' => '',  // the name of a file (e.g. if we monitored changes
+                   // in a directory)
+  ),
+);
+]]>
+    </screen>
+   </example><!-- }}} -->
+  </para>
+ </refsect1><!-- }}} -->
+ 
+ <refsect1 role="seealso"><!-- {{{ -->
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><function>inotify_add_watch</function></member>
+    <member><function>inotify_rm_watch</function></member>
+    <member><function>inotify_queue_len</function></member>
+    <member><function>inotify_read</function></member>
+    <member><function>fclose</function></member>
+   </simplelist>
+  </para>
+ </refsect1><!-- }}} -->
+
+</refentry>
+ 
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+
