@@ -53,7 +53,17 @@ $number_refs = array(
 
 $valid_types = "int|float|string|bool|resource|array|object|mixed|number";
 $invalid_types = "integer|long|double|boolean|class"; // objects are written as appropriate class name so there is no complete list of valid types
-$retval_mapping = array("TRUE" => "bool", "BOOL" => "bool", "LONG" => "int", "DOUBLE" => "float", "STRING" => "string", "STRINGL" => "string", "TEXT" => "string", "TEXTL" => "string", "UNICODE" => "unicode", "UNICODEL" => "unicode", "ASCII_STRING" => "unicode", "ASCII_STRINGL" => "unicode", "ARRAY" => "array", "OBJECT" => "object", "RESOURCE" => "resource", "ZVAL" => "mixed"); // FALSE and NULL omitted because they are used for errors
+$retval_mapping = array(
+	"TRUE" => "bool", "BOOL" => "bool",
+	"LONG" => "int",
+	"DOUBLE" => "float",
+	"STRING" => "string", "STRINGL" => "string", "TEXT" => "string", "TEXTL" => "string",
+	"UNICODE" => "unicode", "UNICODEL" => "unicode", "ASCII_STRING" => "unicode", "ASCII_STRINGL" => "unicode", "U_STRING" => "unicode", "U_STRINGL" => "unicode", "UTF8_STRING" => "unicode", "UTF8_STRINGL" => "unicode",
+	"ARRAY" => "array",
+	"OBJECT" => "object",
+	"RESOURCE" => "resource",
+	"ZVAL" => "mixed"
+); // FALSE and NULL omitted because they are used for errors
 $retval_types = implode('|', array_keys($retval_mapping));
 $operators = "!=|<=?|>=?|==";
 $max_args = 12; // maximum number of regular function arguments
