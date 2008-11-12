@@ -1081,6 +1081,8 @@ global $LANG;
           || $file == "contributors.ent"
           || $file == "reserved.constants.xml"
           || $file == 'DO_NOT_TRANSLATE'
+          || $file == 'license.xml'
+          || $file == 'versions.xml'
           || strpos($dir, '/internals/')
           || strpos($dir, '/internals2/')
           || strpos($file, 'entities.') === 0

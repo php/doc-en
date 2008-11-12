@@ -315,6 +315,8 @@ function get_dir_status($dir) {
     || $file == 'DO_NOT_TRANSLATE'
     || $file == 'rsusi.txt'
     || $file == 'missing-ids.xml'
+    || $file == 'license.xml'
+    || $file == 'versions.xml'
     ) {
       continue;
     }
