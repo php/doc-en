@@ -46,7 +46,8 @@ $DOC_EXT = array(
 	'configure.xml'  => 'configure.tpl',
 	'examples.xml'	 => 'examples.tpl',
 	'reference.xml'  => 'reference.tpl',
-	'ini.xml'		 => 'ini.tpl'
+	'ini.xml'		 => 'ini.tpl',
+	'version.xml'	 => 'version.tpl'
 );
 
 function usage() { /* {{{ */
@@ -533,6 +534,26 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 			} else {
 				$content = preg_replace('/\{CONSTANTS\}/', '&no.constants;', $content, 1);
 			}
+		break;
+		
+		case 'version.xml':
+			$markup = "<!-- Functions -->\n";
+			/* Function list */
+			if ($functions = $obj->getFunctions()) {
+				foreach ($functions as $function) {
+					$markup .= " <function name='". strtolower($function->getName()) ."' from='PHP 5 &gt;= 5.2.0'/>\n";
+				}
+			}
+			$markup .= " <!-- Methods -->\n";
+			/* Method list */
+			if ($classes = $obj->getClasses()) {
+				foreach ($classes as $class) {
+					foreach ($class->getMethods() as $method) {
+						$markup .= " <function name='". strtolower($class->name .'::'. $method->getName()) ."' from='PHP 5 &gt;= 5.2.0'/>\n";
+					}
+				}
+			}
+			$content = preg_replace('/\{VERSIONS\}/', rtrim($markup), $content);
 		break;
 	}
 
