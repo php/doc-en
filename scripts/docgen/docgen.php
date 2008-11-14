@@ -47,7 +47,7 @@ $DOC_EXT = array(
 	'examples.xml'	 => 'examples.tpl',
 	'reference.xml'  => 'reference.tpl',
 	'ini.xml'		 => 'ini.tpl',
-	'version.xml'	 => 'version.tpl'
+	'versions.xml'	 => 'versions.tpl'
 );
 
 function usage() { /* {{{ */
@@ -536,7 +536,7 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 			}
 		break;
 		
-		case 'version.xml':
+		case 'versions.xml':
 			$markup = "<!-- Functions -->\n";
 			/* Function list */
 			if ($functions = $obj->getFunctions()) {
