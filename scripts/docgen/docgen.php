@@ -323,7 +323,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 	if ($interfaces = $class->getInterfaces()) {
 		$ident = get_ident_size('IMPLEMENTS', $content);
 
-		$markup = "\r";
+		$markup = "\n";
 		foreach ($interfaces as $interface) {
 			$markup .= str_repeat(' ', $ident) ."<oointerface>\n";
 			$markup .= str_repeat(' ', $ident + 1) .'<interfacename>'. $interface->getName() ."</interfacename>\n";
@@ -358,7 +358,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 	if ($constants) {
 		$ident = get_ident_size('CONSTANTS', $content);
 
-		$markup  = "\r<!-- {{{ ". $class->getName() ." constants -->\n";
+		$markup  = "\n<!-- {{{ ". $class->getName() ." constants -->\n";
 		$markup .= str_repeat(' ', $ident) .'<section xml:id="'. $id .".constants\">\n";
 		$markup .= str_repeat(' ', $ident + 1) ."&reftitle.constants;\n";
    		$markup .= str_repeat(' ', $ident + 1) .'<section xml:id="'. $id .".constants.types\">\n";
@@ -413,7 +413,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 	if ($properties) {
 		$ident = get_ident_size('PROPERTIES', $content);
 
-		$markup  = "\r<!-- {{{ ". $class->getName() ." properties -->\n";
+		$markup  = "\n<!-- {{{ ". $class->getName() ." properties -->\n";
 		$markup .= str_repeat(' ', $ident) ."<section xml:id=\"". $id .".props\">\n";
 		$markup .= str_repeat(' ', $ident + 1) ."&reftitle.properties;\n";
 		$markup .= str_repeat(' ', $ident + 1) ."<variablelist>\n";
