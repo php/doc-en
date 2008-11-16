@@ -110,7 +110,10 @@ function format_id($name) { /* {{{ */
 /* }}} */
 
 function format_filename($name) { /* {{{ */
-	return preg_replace('/^_+/', '', strtolower($name));
+        $name = strtolower(trim($name));
+        $name = ltrim($name, '_');
+        $name = str_replace('_', '-', $name);
+        return $name;
 }
 /* }}} */
 
@@ -573,7 +576,7 @@ function write_doc(Reflector $obj, $type) { /* {{{ */
 	switch ($type) {
 		case DOC_EXTENSION:
 			foreach ($DOC_EXT as $xml_file => $tpl_file) {
-				$filename = $OPTION['output'] .'/'. $xml_file;
+				$filename = $OPTION['output'] .'/'. format_filename($xml_file);
 				$INFO['actual_file'] = $filename;
 
 				$content = file_get_contents(dirname(__FILE__) .'/'. $tpl_file);
@@ -606,7 +609,7 @@ function write_doc(Reflector $obj, $type) { /* {{{ */
 		/* Classes */
 		case DOC_CLASS:
 			$path = $OPTION['output'];
-			$filename = $path .'/'. strtolower($obj->getName()) .'.xml';
+			$filename = $path .'/'. format_filename($obj->getName()) .'.xml';
 
 			$INFO['actual_file'] = $filename;
 			$content = file_get_contents(dirname(__FILE__) .'/'. $TEMPLATE[$type]);
@@ -618,7 +621,7 @@ function write_doc(Reflector $obj, $type) { /* {{{ */
 
 		case DOC_FUNCTION:
 			$path = $OPTION['output'] .'/functions';
-			$filename = $path .'/'. $obj->getName() .'.xml';
+			$filename = $path .'/'. format_filename($obj->getName()) .'.xml';
 			$INFO['actual_file'] = $filename;
 
 			create_dir($path);
