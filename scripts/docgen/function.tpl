@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.4 $ -->
+<!-- $Revision: 1.5 $ -->
 
 <refentry xml:id="function.{FUNCTION_NAME_ID}" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
@@ -31,14 +31,21 @@
   </para>
  </refsect1>
 
+ <refsect1 role="errors">
+  &reftitle.errors;
+  <para>
+   When does this function issue E_* level errors, and/or throw exceptions.
+  </para>
+ </refsect1>
+
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
    <example>
     <title><function>{FUNCTION_NAME}</function> example</title>
     <para>
-      Any text that describes the purpose of the example, or what
-      goes on in the example should be here.
+     Any text that describes the purpose of the example, or what
+     goes on in the example should be here.
     </para>
     <programlisting role="php">
 <![CDATA[
