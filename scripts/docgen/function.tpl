@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.3 $ -->
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 1.4 $ -->
 
 <refentry xml:id="function.{FUNCTION_NAME_ID}" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
