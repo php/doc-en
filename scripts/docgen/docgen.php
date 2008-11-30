@@ -170,6 +170,7 @@ function create_dir($path) { /* {{{ */
 
 function create_markup_to_params(array $params, $ident) { /* {{{ */
 	$count = 1;
+	$markup = "";
 	foreach ($params as $param) {
 		/* Parameter type */
 		if (preg_match('/(\w+) \$/', (string) $param, $match)) {
