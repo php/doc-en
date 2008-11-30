@@ -841,7 +841,7 @@ END_OF_MULTILINE;
     // If we have a 'numeric' revision diff and it is not zero,
     // make a link to the CVS repository's diff script
     if ($file["revision"][2] != "n/a" && $file["revision"][2] !== 0) {
-      $url = 'http://cvs.php.net/viewcvs.cgi/' .
+      $url = 'http://cvs.php.net/viewvc.cgi/' .
              preg_replace( "'^".$DOCDIR."'", 'phpdoc/', $file['full_name']) .
              '?r1=' . $file['revision'][1] . '&amp;r2=' . $file['revision'][0];
       $url_ws = $url . CVS_OPT_NOWS;
@@ -1032,7 +1032,7 @@ if ($count > 0) {
         $prev_dir = $new_dir;
     }
 
-    echo "<tr class=wip><td><a href=\"http://cvs.php.net/viewcvs.cgi/phpdoc/en/$file?view=markup\">$short_file</a></td>" .
+    echo "<tr class=wip><td><a href=\"http://cvs.php.net/viewvc.cgi/phpdoc/en/$file?view=markup\">$short_file</a></td>" .
           "<td class=r>$info[0]</td></tr>\n";
   }
   echo "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
