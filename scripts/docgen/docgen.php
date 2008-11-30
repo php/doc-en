@@ -128,7 +128,7 @@ function get_ident_size($placeholder, $content) { /* {{{ */
 }
 /* }}} */
 
-function save_file($filename, &$content) { /* {{{ */
+function save_file($filename, $content) { /* {{{ */
 	global $OPTION;
 
 	file_put_contents($filename, $content);
