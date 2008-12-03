@@ -788,7 +788,11 @@ foreach ($options as $opt => $value) {
 		case 'o':
 		case 'output':
 			if (!file_exists($value) || !is_writable($value)) {
-				die("Error: The directory output must exists and writable\n");
+				if (mkdir($value)) {
+					echo "- Created output directory: $value\n";
+				} else {
+					die("Error: The output directory ($value) must be writable\n");
+				}
 			}
 			$OPTION['output'] = $value;
 			break;
