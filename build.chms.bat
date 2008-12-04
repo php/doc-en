@@ -9,7 +9,7 @@ cd c:\phpdoc\
 ECHO CVS Updating...
 "C:\Program Files (x86)\CVSNT\cvs" up > logs\cvs.log 2<&1
 
-FOR %%A IN (en ja fr) DO (
+FOR %%A IN (en bg de es fr ja kr pl pt_BR ro ru tr) DO (
 	ECHO Configuring %%A...
 	"%PHP%" configure.php --with-php=%PHP% --with-lang=%%A > logs\configure.%%A.log 2<&1
 
