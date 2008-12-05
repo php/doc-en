@@ -53,6 +53,7 @@ Package-specific:
   --enable-xml-details      Enable detailed XML error messages [{$acd['DETAILED_ERRORMSG']}]
   --enable-howto            Configure the phpdoc howto, not the phpdoc docs [{$acd['HOWTO']}]
   --disable-segfault-error  LIBXML may segfault with broken XML, use this if it does [{$acd['SEGFAULT_ERROR']}]
+  --disable-version-files   Do not merge the extension specific version.xml files
   --with-php=PATH           Path to php CLI executable [detect]
   --with-inipath=PATH       Path to php.ini file [@srcdir@/scripts]
   --with-lang=LANG          Language to build [{$acd['LANG']}]
@@ -254,6 +255,7 @@ $acd = array( // {{{
     'PARTIAL' => 'no',
     'DETAILED_ERRORMSG' => 'no',
     'SEGFAULT_ERROR' => 'yes',
+    'VERSION_FILES'  => 'yes',
     'HOWTO' => 'no',
 
     // Junk to make the old scripts (file-entities.php and missing-entities.php) cooperative
@@ -363,6 +365,10 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
 
         case 'segfault-error':
             $ac['SEGFAULT_ERROR'] = $v;
+            break;
+
+        case 'version-files':
+            $ac['VERSION_FILES'] = $v;
             break;
 
         case 'howto':
@@ -482,6 +488,44 @@ if ($ac['SEGFAULT_ERROR'] === 'yes') {
 
 $compact = defined('LIBXML_COMPACT') ? LIBXML_COMPACT : 0;
 $LIBXML_OPTS = LIBXML_NOENT | LIBXML_NSCLEAN | $compact;
+
+if ($ac['VERSION_FILES'] === 'yes') {
+    $versionfile = $ac['srcdir'] . '/phpbook/phpbook-xsl/version.xml';
+    $dom = new DOMDocument;
+    $dom->preserveWhitespace = false;
+    $dom->formatOutput       = true;
+
+    $tmp = new DOMDocument;
+    $tmp->preserveWhitespace = false;
+
+    if (!$dom->load($versionfile)) {
+        print_xml_errors();
+        errors_are_bad(1);
+    }
+    $versions = $dom->documentElement;
+
+
+    echo "Iterating over extension specific version files... ";
+    foreach(glob("en/reference/*/versions.xml") as $file) {
+        if($tmp->load($file)) {
+            foreach($tmp->getElementsByTagName("function") as $function) {
+                $function = $dom->importNode($function, true);
+                $versions->appendChild($function);
+            }
+        } else {
+            print_xml_errors();
+            errors_are_bad(1);
+        }
+    }
+    echo "OK\n";
+    echo "Saving it... ";
+
+    if ($dom->save($versionfile)) {
+        echo "OK\n";
+    } else {
+        echo "FAIL!\n";
+    }
+}
 
 if ($ac['HOWTO'] === 'yes') {
     $filein = $ac['srcdir'] . '/howto/howto.xml';
