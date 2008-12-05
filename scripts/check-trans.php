@@ -114,7 +114,8 @@ for( $i=0; $i < count($en_chapter["xmlid"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in chapter, attribut : xmlid",
    "value_en" => $en_chapter["xmlid"][$i],
-   "value_lang" => $lang_chapter["xmlid"][$i]
+   "value_lang" => $lang_chapter["xmlid"][$i],
+   "type" => "chapter",
   );
 
  }
@@ -126,7 +127,8 @@ for( $i=0; $i < count($en_chapter["xmlns"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in chapter, attribut : xmlns",
    "value_en" => $en_chapter["xmlns"][$i],
-   "value_lang" => $lang_chapter["xmlns"][$i]
+   "value_lang" => $lang_chapter["xmlns"][$i],
+   "type" => "chapter",
   );
  }
 }
@@ -137,7 +139,8 @@ for( $i=0; $i < count($en_chapter["xmlnsxlink"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in chapter, attribut : xmlns:xlink",
    "value_en" => $en_chapter["xmlnsxlink"][$i],
-   "value_lang" => $lang_chapter["xmlnsxlink"][$i]
+   "value_lang" => $lang_chapter["xmlnsxlink"][$i],
+   "type" => "chapter",
   );
  }
 }
@@ -164,7 +167,8 @@ for( $i=0; $i < count($en_appendix["xmlid"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in appendix, attribut : xmlid",
    "value_en" => $en_appendix["xmlid"][$i],
-   "value_lang" => $lang_appendix["xmlid"][$i]
+   "value_lang" => $lang_appendix["xmlid"][$i],
+   "type" => "appendix",
   );
 
  }
@@ -176,7 +180,8 @@ for( $i=0; $i < count($en_appendix["xmlns"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in appendix, attribut : xmlns",
    "value_en" => $en_appendix["xmlns"][$i],
-   "value_lang" => $lang_appendix["xmlns"][$i]
+   "value_lang" => $lang_appendix["xmlns"][$i],
+   "type" => "appendix",
   );
 
  }
@@ -188,7 +193,8 @@ for( $i=0; $i < count($en_appendix["xmlnsxlink"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in appendix, attribut : xmlns:xlink",
    "value_en" => $en_appendix["xmlnsxlink"][$i],
-   "value_lang" => $lang_appendix["xmlnsxlink"][$i]
+   "value_lang" => $lang_appendix["xmlnsxlink"][$i],
+   "type" => "appendix",
   );
 
  }
@@ -211,7 +217,8 @@ for( $i=0; $i < count($en_qandaentry); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in qandaentry, attribut : xml:id",
    "value_en" => $en_qandaentry[$i],
-   "value_lang" => $lang_qandaentry[$i]
+   "value_lang" => $lang_qandaentry[$i],
+   "type" => "qandaentry",
   );
 
  }
@@ -235,7 +242,8 @@ for( $i=0; $i < count($en_linkend); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in link, attribut : linkend n°$i",
    "value_en" => $en_linkend[$i],
-   "value_lang" => $lang_linkend[$i]
+   "value_lang" => $lang_linkend[$i],
+   "type" => "link",
   );
 
  }
@@ -259,7 +267,8 @@ for( $i=0; $i < count($en_linkhref); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in link, attribut : linkend",
    "value_en" => $en_linkhref[$i],
-   "value_lang" => $lang_linkhref[$i]
+   "value_lang" => $lang_linkhref[$i],
+   "type" => "link",
   );
 
  }
@@ -283,7 +292,8 @@ for( $i=0; $i < count($en_sect1); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in sect1, attribut : xml:id",
    "value_en" => $en_sect1[$i],
-   "value_lang" => $lang_sect1[$i]
+   "value_lang" => $lang_sect1[$i],
+   "type" => "sect1",
   );
 
  }
@@ -312,7 +322,8 @@ for( $i=0; $i < count($en_book["xmlid"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in book, attribut : xmlid",
    "value_en" => $en_book["xmlid"][$i],
-   "value_lang" => $lang_book["xmlid"][$i]
+   "value_lang" => $lang_book["xmlid"][$i],
+   "type" => "book",
   );
 
  }
@@ -324,7 +335,8 @@ for( $i=0; $i < count($en_book["xmlns"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in book, attribut : xmlns",
    "value_en" => $en_book["xmlns"][$i],
-   "value_lang" => $lang_book["xmlns"][$i]
+   "value_lang" => $lang_book["xmlns"][$i],
+   "type" => "book",
   );
 
  }
@@ -336,7 +348,8 @@ for( $i=0; $i < count($en_book["xmlnsxlink"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in book, attribut : xmlns:xlink",
    "value_en" => $en_book["xmlnsxlink"][$i],
-   "value_lang" => $lang_book["xmlnsxlink"][$i]
+   "value_lang" => $lang_book["xmlnsxlink"][$i],
+   "type" => "book",
   );
  }
 }
@@ -360,7 +373,8 @@ for( $i=0; $i < count($en_preface); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in preface, attribut : xml:id",
    "value_en" => $en_preface[$i],
-   "value_lang" => $lang_preface[$i]
+   "value_lang" => $lang_preface[$i],
+   "type" => "preface",
   );
 
  }
@@ -383,7 +397,8 @@ for( $i=0; $i < count($en_section["xmlid"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in section, attribut : xmlid",
    "value_en" => $en_section["xmlid"][$i],
-   "value_lang" => $lang_section["xmlid"][$i]
+   "value_lang" => $lang_section["xmlid"][$i],
+   "type" => "section",
   );
 
  }
@@ -410,7 +425,8 @@ for( $i=0; $i < count($en_varlistentry); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in varlistentry, attribut : xml:id",
    "value_en" => $en_varlistentry[$i],
-   "value_lang" => $lang_varlistentry[$i]
+   "value_lang" => $lang_varlistentry[$i],
+   "type" => "varlistentry",
   );
  }
 }
@@ -434,7 +450,8 @@ for( $i=0; $i < count($en_reference["xmlid"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in reference, attribut : xmlid",
    "value_en" => $en_reference["xmlid"][$i],
-   "value_lang" => $lang_reference["xmlid"][$i]
+   "value_lang" => $lang_reference["xmlid"][$i],
+   "type" => "reference",
   );
 
  }
@@ -446,7 +463,8 @@ for( $i=0; $i < count($en_reference["xmlns"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in reference, attribut : xmlns",
    "value_en" => $en_reference["xmlns"][$i],
-   "value_lang" => $lang_reference["xmlns"][$i]
+   "value_lang" => $lang_reference["xmlns"][$i],
+   "type" => "reference",
   );
  }
 }
@@ -471,7 +489,8 @@ for( $i=0; $i < count($en_refentry["xmlid"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in refentry, attribut : xmlid",
    "value_en" => $en_refentry["xmlid"][$i],
-   "value_lang" => $lang_refentry["xmlid"][$i]
+   "value_lang" => $lang_refentry["xmlid"][$i],
+   "type" => "refentry",
   );
  }
 }
@@ -482,7 +501,8 @@ for( $i=0; $i < count($en_refentry["xmlns"]); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in refentry, attribut : xmlns",
    "value_en" => $en_refentry["xmlns"][$i],
-   "value_lang" => $lang_refentry["xmlns"][$i]
+   "value_lang" => $lang_refentry["xmlns"][$i],
+   "type" => "refentry",
   );
 
  }
@@ -508,7 +528,8 @@ for( $i=0; $i < count($en_refsect1); $i ++ ) {
   $result_error[] = array(
    "libel" => "Error in refsect1, attribut : xml:id",
    "value_en" => $en_refsect1[$i],
-   "value_lang" => $lang_refsect1[$i]
+   "value_lang" => $lang_refsect1[$i],
+   "type" => "refsect1",
   );
  }
 }
@@ -606,7 +627,8 @@ for( $i=0; $i < count($en_methodsynopsis); $i++) {
    $result_error[] = array(
     "libel" => "Error in methodsynopsis, methodname :",
     "value_en" => $en_methodsynopsis[$i]['methodname']['name'],
-    "value_lang" => $lang_methodsynopsis[$i]['methodname']['name']
+    "value_lang" => $lang_methodsynopsis[$i]['methodname']['name'],
+    "type" => "methodsynopsis_methodname",
    );
 
   }
@@ -622,7 +644,8 @@ for( $i=0; $i < count($en_methodsynopsis); $i++) {
     $result_error[] = array(
      "libel" => "Error in methodsynopsis, methodname, type :",
      "value_en" => $en_methodsynopsis[$i]['methodname']['type'],
-     "value_lang" => $lang_methodsynopsis[$i]['methodname']['type']
+     "value_lang" => $lang_methodsynopsis[$i]['methodname']['type'],
+     "type" => "methodsynopsis_type",
     );
 
    }
@@ -641,7 +664,8 @@ for( $i=0; $i < count($en_methodsynopsis); $i++) {
     $result_error[] = array(
      "libel" => "Error : There is ".count($en_methodsynopsis[$i]['methodparam']['parameter'])." methodparam(s) in EN, ".count($lang_methodsynopsis[$i]['methodparam']['parameter'])." in $LANG",
      "value_en" => "N/A",
-     "value_lang" => "N/A"
+     "value_lang" => "N/A",
+     "type" => "methodsynopsis_methodparam",
     );
 
  }
@@ -659,7 +683,8 @@ for( $i=0; $i < count($en_methodsynopsis); $i++) {
        $result_error[] = array(
         "libel" => "Error in methodsynopsis, methodparam, parameter :",
         "value_en" => $en_methodsynopsis[$i]['methodparam']['parameter'][$j],
-        "value_lang" => $lang_methodsynopsis[$i]['methodparam']['parameter'][$j]
+        "value_lang" => $lang_methodsynopsis[$i]['methodparam']['parameter'][$j],
+        "type" => "methodsynopsis_parameter_name",
        );
 
      }
@@ -676,7 +701,8 @@ for( $i=0; $i < count($en_methodsynopsis); $i++) {
        $result_error[] = array(
         "libel" => "Error in methodsynopsis, methodparam, type :",
         "value_en" => $en_methodsynopsis[$i]['methodparam']['type'][$j],
-        "value_lang" => $lang_methodsynopsis[$i]['methodparam']['type'][$j]
+        "value_lang" => $lang_methodsynopsis[$i]['methodparam']['type'][$j],
+        "type" => "methodsynopsis_parameter_type",
        );
 
      }
@@ -696,7 +722,8 @@ for( $i=0; $i < count($en_methodsynopsis); $i++) {
        $result_error[] = array(
         "libel" => "Error in methodsynopsis, methodparam, is optionnel ?",
         "value_en" => $tmp1,
-        "value_lang" => $tmp2
+        "value_lang" => $tmp2,
+        "type" => "methodsynopsis_optional",
        );
 
      }
@@ -716,7 +743,8 @@ for( $i=0; $i < count($en_methodsynopsis); $i++) {
        $result_error[] = array(
         "libel" => "Error in methodsynopsis, methodparam, parameter, attribut : role ?",
         "value_en" => $tmp1,
-        "value_lang" => $tmp2
+        "value_lang" => $tmp2,
+        "type" => "methodsynopsis_reference",
        );
 
      }
@@ -739,7 +767,8 @@ if( isset($match2[1][0]) ) {
        $result_error[] = array(
         "libel" => "WARNING in refpurpose : there is a point at the end of refpurpose.",
         "value_en" => "N/A",
-        "value_lang" => "N/A"
+        "value_lang" => "N/A",
+        "type" => "refpurpose_space_period",
        );
   }
 
@@ -775,7 +804,8 @@ if (isset($match2[1])) {
        $result_error[] = array(
         "libel" => "Error in seeAlso section :  $en_seeAlsoMember member in EN, and $lang_seeAlsoMember member in $LANG.",
         "value_en" => "N/A",
-        "value_lang" => "N/A"
+        "value_lang" => "N/A",
+        "type" => "seealsoMember",
        );
 
  }
@@ -800,7 +830,8 @@ $lang_cdataSection = count($match2[1]);
        $result_error[] = array(
         "libel" => "Error about CDATA section :  $en_cdataSection section in EN, and $lang_cdataSection section in $LANG.",
         "value_en" => "N/A",
-        "value_lang" => "N/A"
+        "value_lang" => "N/A",
+        "type" => "cdata",
        );
 
  }
@@ -872,7 +903,8 @@ for( $i=0; $i < count($en_classsynopsis); $i++) {
        $result_error[] = array(
         "libel" => "Error in fieldsynopsis, varname :",
         "value_en" => $en_classsynopsis[$i]['fieldsynopsis']['varname'][$j],
-        "value_lang" => $lang_classsynopsis[$i]['fieldsynopsis']['varname'][$j]
+        "value_lang" => $lang_classsynopsis[$i]['fieldsynopsis']['varname'][$j],
+        "type" => "methodparam_fieldsynopsis_name",
        );
 
      }
@@ -885,7 +917,8 @@ for( $i=0; $i < count($en_classsynopsis); $i++) {
        $result_error[] = array(
         "libel" => "Error in fieldsynopsis, type :",
         "value_en" => $en_classsynopsis[$i]['fieldsynopsis']['type'][$j],
-        "value_lang" => $lang_classsynopsis[$i]['fieldsynopsis']['type'][$j]
+        "value_lang" => $lang_classsynopsis[$i]['fieldsynopsis']['type'][$j],
+       "type" => "methodparam_fieldsynopsis_type",
        );
 
      }
@@ -919,7 +952,8 @@ if( $nb_en != $nb_lang ) {
        $result_error[] = array(
         "libel" => "Error in table listing :  $nb_en row(s) in EN, and $nb_lang in $LANG.",
         "value_en" => "N/A",
-        "value_lang" => "N/A"
+        "value_lang" => "N/A",
+        "type" => "table",
        );
 
 }
@@ -947,7 +981,8 @@ $lang_para = count($match2[0]);
        $result_error[] = array(
         "libel" => "Error in para tag :  $en_para tag <para> in EN, and $lang_para in $LANG.",
         "value_en" => "N/A",
-        "value_lang" => "N/A"
+        "value_lang" => "N/A",
+        "type" => "para",
        );
 
  }
@@ -971,7 +1006,8 @@ $lang_literal = count($match2[0]);
        $result_error[] = array(
         "libel" => "Error in literal tag :  $en_literal tag <literal> in EN, and $lang_literal in $LANG.",
         "value_en" => "N/A",
-        "value_lang" => "N/A"
+        "value_lang" => "N/A",
+        "type" => "literal",
        );
 
  }
@@ -1178,6 +1214,7 @@ th     { font-weight:bold; }
 .old   { background-color:#eee8aa; }
 .crit  { background-color:#ff6347; }
 .wip   { background-color:#dcdcdc; }
+.type  { background-color:#ffffff; }
 .r     { text-align:right }
 .rb    { text-align:right; font-weight:bold; }
 .b     { font-weight:bold; }
@@ -1338,6 +1375,10 @@ $html.= '
     <tr class="old">
      <td class="r">Value in '.strtoupper($LANG).' : </td>
      <td>'.$final_result[$i]['error'][$j]['value_lang'].'</td>
+    </tr>
+    <tr class="type">
+     <td class="r">Type : </td>
+     <td>'.$final_result[$i]['error'][$j]['type'].'</td>
     </tr>
    ';
 
