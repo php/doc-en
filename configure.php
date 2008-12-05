@@ -520,7 +520,7 @@ if ($ac['VERSION_FILES'] === 'yes') {
     echo "OK\n";
     echo "Saving it... ";
 
-    if ($dom->save($versionfile)) {
+    if ($dom->save($ac['srcdir'] . '/version.xml')) {
         echo "OK\n";
     } else {
         echo "FAIL!\n";
