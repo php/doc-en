@@ -482,7 +482,7 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 					$markup .= str_repeat(' ', $ident + 2) ."<entry>". $config ."</entry>\n";
 					$markup .= str_repeat(' ', $ident + 2) ."<entry>". $value ."</entry>\n";
 					$markup .= str_repeat(' ', $ident + 2) ."<entry>its PHP_INI_* value</entry>\n";
-					$markup .= str_repeat(' ', $ident + 2) ."<entry>leave empty. this will be fiiled by an automatic script</entry>\n";
+					$markup .= str_repeat(' ', $ident + 2) ."<entry><!-- leave empty, this will be filled by an automatic script --></entry>\n";
 					$markup .= str_repeat(' ', $ident + 1) ."</row>\n";
 
 					$markup2 .= ($markup2 ? str_repeat(' ', $ident) : '') ."<varlistentry xml:id=\"ini.". format_config($config) ."\">\n";
