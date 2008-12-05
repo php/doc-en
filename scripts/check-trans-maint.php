@@ -65,7 +65,7 @@ $shortoptions = array(
 $options = getopt(implode(array_keys($shortoptions)));
 
 // check options
-if (isset($options['h'])) {
+if (isset($options['h']) || empty($options)) {
     fPrintHelp($shortoptions);
     exit();
 }
@@ -117,6 +117,15 @@ exit();
  * @todo   implement dynamic help output
  */
 function fPrintHelp($shortoptions) {
+	echo "\nHELP for script: " . __FILE__ . "\n";
+	foreach ($shortoptions as $arg => $info) {
+		echo $arg;
+		echo "\n\t description: " . $info['help'];
+		if (isset($info['default'])) {
+			echo "\n\t default:     " . $info['default'];
+		}
+		echo "\n";
+	}
     exit();
 }
 
