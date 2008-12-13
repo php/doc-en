@@ -41,7 +41,7 @@ if (!isset($_SERVER["argv"][1]) || !is_dir("$basedir/$lang/reference")) {
 	exit(1);
 }
 
-require './include/lib-translations.inc.php';
+require 'include/lib-translations.inc.php';
 
 $cwd = getcwd();
 $errors = array();
