@@ -32,6 +32,9 @@ $phpdoc = '../';
 /* english! */
 $lang = 'en';
 
+/* Where to store information to fix later */
+$file_fixlater = '/tmp/fix-me-later.txt';
+
 /* (immediate) tags to check for spelling mistakes */
 $check_tags = array(    'para',
                         'simpara',
@@ -99,18 +102,23 @@ function check_data($xml, $data)
                  * line number shown here might not match the actual line
                  * number in the file, but it's usually pretty close
                  */
-                echo "$current_file:" . xml_get_current_line_number($xml) . ": $word   (in element $element)\n";
+                $note = "$current_file:" . xml_get_current_line_number($xml) . ": $word   (in element $element)\n";
+                echo $note;
                 do {
-                    $response = read_line("Add this word to personal wordlist? (yes/no/save): ");
+                    $response = read_line("Add this word to personal wordlist? (yes/no/save/later): ");
                     if ($response[0] == 's') {
                         pspell_save_wordlist($dict);
                         echo "Wordlist saved.\n";
                     }
-                } while ($response[0] != 'y' && $response[0] != 'n');
+                } while ($response[0] != 'y' && $response[0] != 'n' && $response[0] != 'l');
 
                 if ($response[0] == 'y') {
                     pspell_add_to_personal($dict, $word);
                     echo "Added '$word' to personal wordlist.\n";
+                }
+                if ($response[0] == 'l') {
+                    file_put_contents('/tmp/fix-me-later.txt', $note, FILE_APPEND); 
+                    echo "You will deal with '$word' later.\n";
                 }
             }
         }
