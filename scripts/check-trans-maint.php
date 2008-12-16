@@ -34,6 +34,7 @@ define('OPT_PATH', 'p:');
 define('OPT_LANG', 'l:');
 define('OPT_TMPF', 'f:');
 define('OPT_DMMY', 'd:');
+define('OPT_MARK', 'm:');
 
 $shortoptions = array(
     OPT_PATH  => array(
@@ -59,6 +60,10 @@ $shortoptions = array(
     ),
     OPT_VERB  => array(
         'help'    => 'Increase verbosity',
+    ),
+    OPT_MARK  => array(
+        'default' => 0,
+        'help'    => 'Output HTML Markup',
     ),
 );
 
@@ -99,11 +104,19 @@ if (isset($options['d'])) {
     $dummy = $options['d'];
 }
 
+if ($options['m']) {
+    echo "<pre>\n";
+}
+
 // get maintainers from language translation table
 $xmlMt = fGetValidMaintainers($path);
 
 // traverse through the translation directory and check all files
 fCheckTransDir($path);
+
+if ($options['m']) {
+    echo "\n</pre>";
+}
 
 exit();
 
