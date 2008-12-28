@@ -32,9 +32,7 @@
 
 <appendix xml:id="timezones" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  &date.timezone.intro.title;
- <sect1 xml:id="timezones.intro">
-  &date.timezone.intro;
- </sect1>
+ &date.timezone.intro;
 <?php
     foreach ($groupedList as $group => $zones) { 
         $m = count($zones) > 4 ? 5 : count($zones); ?>
