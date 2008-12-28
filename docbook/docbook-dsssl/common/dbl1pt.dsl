@@ -214,7 +214,7 @@
   (string-with-space (gentext-element-name giname)))
 
 ;; gentext-intra-label-sep returns the seperator to be inserted
-;; between multiple occurances of a label (or parts of a label)
+;; between multiple occurrences of a label (or parts of a label)
 ;; for the specified element.  Most of these are for enumerated
 ;; labels like "Figure 2-4", but this function is used elsewhere
 ;; (e.g. REFNAME) with a little abuse.

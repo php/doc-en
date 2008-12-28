@@ -160,7 +160,7 @@ function check_file ($filename, &$defined_entities, $entity_regexp)
     // No entities found
     if (count($entities_found[1]) == 0) { return; }
     
-    // New occurances found, so increase the number
+    // New occurrences found, so increase the number
     foreach ($entities_found[1] as $entity_name) {
         if (isset($defined_entities[$entity_name])) { $defined_entities[$entity_name][] = $filename; }
     }

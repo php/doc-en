@@ -515,8 +515,8 @@
   ;; REFENTRY match-split
   ;; PURP Splits string at target and returns the resulting list of tokens
   ;; DESC
-  ;; Splits string at every occurance of target and returns the result
-  ;; as a list.  Note that 'match-split' returns the occurances of 'target'
+  ;; Splits string at every occurrence of target and returns the result
+  ;; as a list.  Note that 'match-split' returns the occurrences of 'target'
   ;; in the list of tokens.
   ;; ARGS
   ;; ARG 'string'
@@ -807,9 +807,9 @@
 
 (define (string-replace string target repl)
   ;; REFENTRY string-replace
-  ;; PURP Replace all occurances of a target substring in a string
+  ;; PURP Replace all occurrences of a target substring in a string
   ;; DESC
-  ;; Replaces all occurances of 'target' in 'string' with 'repl'.
+  ;; Replaces all occurrences of 'target' in 'string' with 'repl'.
   ;; /DESC
   ;; /REFENTRY
   (let loop ((str string) (pos 0))
@@ -824,7 +824,7 @@
   ;; REFENTRY string-replace-list
   ;; PURP Replace a list of target substrings in a string
   ;; DESC
-  ;; Replaces, in 'string', all occurances of each target in
+  ;; Replaces, in 'string', all occurrences of each target in
   ;; 'replace-list' with its replacement.
   ;; /DESC
   ;; /REFENTRY
@@ -1297,10 +1297,10 @@
 
 (define (find-first-char string skipchars findchars #!optional (pos 0))
   ;; REFENTRY find-first-char
-  ;; PURP Find the first occurance of a character in a string
+  ;; PURP Find the first occurrence of a character in a string
   ;; DESC
   ;; Finds first character in 'string' that is in 'findchars', skipping all
-  ;; occurances of characters in 'skipchars'.  Search begins at 'pos'.  If
+  ;; occurrences of characters in 'skipchars'.  Search begins at 'pos'.  If
   ;; no such characters are found, returns -1.
   ;;
   ;; If skipchars is empty, skip anything not in findchars
@@ -1776,9 +1776,9 @@
 
 (define (string-index source target)
   ;; REFENTRY string-index
-  ;; PURP Finds first occurance of 'target' in 'source'
+  ;; PURP Finds first occurrence of 'target' in 'source'
   ;; DESC
-  ;; Returns the position of the first occurance of 'target' in 'source',
+  ;; Returns the position of the first occurrence of 'target' in 'source',
   ;; or -1 if it does not occur.
   ;; /DESC
   ;; /REFENTRY

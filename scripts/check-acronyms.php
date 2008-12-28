@@ -145,7 +145,7 @@ if ($mode == M_GLOBAL || $mode == M_VERBOSE) {
     $total_UNNd    = count($usedNnotdefined); 
     $total_uNd     = $total_used-$total_UNNd;
     
-    echo "Found $total_occs occurences of $total_used acronyms in $start_path\n";
+    echo "Found $total_occs occurrences of $total_used acronyms in $start_path\n";
     echo " $total_defined acronyms are defined in acronyms.ent\n";
     echo " $total_uNd (".round(100*$total_uNd/$total_used)."%) acronyms used are defined\n";
 
@@ -172,14 +172,14 @@ foreach($acronyms_infos as $acronym => $infos) {
     // display differs with the mode used
     if ($mode == M_GLOBAL) {
         $occ = count($infos['locations']);
-        printf(" %-20s %-60s [%2d occurences]\n", $acronym,  "($infos[description])", $occ);
+        printf(" %-20s %-60s [%2d occurrences]\n", $acronym,  "($infos[description])", $occ);
     } else if ($mode === M_SPECIFIC || $mode === M_VERBOSE) {
         
         if ($mode === M_VERBOSE && count($infos['locations']) || in_array($acronym, $requested_acronyms)) {
 
             echo " $acronym ($infos[description]):\n";
             $occ = count($infos['locations']);
-            echo "  - ".$occ." occurence".($occ > 1 ? 's':'')."\n";
+            echo "  - ".$occ." occurrence".($occ > 1 ? 's':'')."\n";
 
             foreach($infos['locations'] as $location) {
                 printf("    %-30s [line %d]\n", $location[1], $location[0]);

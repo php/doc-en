@@ -98,5 +98,5 @@ echo 'List complete. ' . count($funcs) . " functions.\n";
 
 echo "Checking the manual for <function> tags that contain invalid functions...\n";
 globbetyglob("$phpdoc/$lang", 'parse_file');
-echo "Found $total occurences.\n";
+echo "Found $total occurrences.\n";
 ?>

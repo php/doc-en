@@ -125,7 +125,7 @@ function check_file ($filename, &$used_tags)
     // No entities found
     if (count($tags_found[1]) == 0) { return; }
     
-    // New occurences found, so increase the number
+    // New occurrences found, so increase the number
     foreach ($tags_found[1] as $tag_name) {
         if (isset($used_tags[$tag_name])) {
             $used_tags[$tag_name]++;

@@ -291,7 +291,7 @@ foreach ((isset($extension) ? array($extension) : array_merge(array($zend_dir), 
 			// types and optional
 			if (!in_array($function_name, $difficult_params)
 			&& strpos($function_body, 'zend_parse_parameters_ex') === false // indicate difficulty
-			&& preg_match('~.*zend_parse(_method)?_parameters\\([^,]*,\\s*"([^"]*)"~s', $function_body, $matches2) // .* to catch last occurence
+			&& preg_match('~.*zend_parse(_method)?_parameters\\([^,]*,\\s*"([^"]*)"~s', $function_body, $matches2) // .* to catch last occurrence
 			) {
 				$source_types[$function_name] = array(($matches2[1] ? substr($matches2[2], 1) : $matches2[2]), $filename, $lineno);
 			} elseif (!in_array($function_name, $difficult_arg_count)) {
