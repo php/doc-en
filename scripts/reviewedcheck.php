@@ -18,7 +18,7 @@
   +----------------------------------------------------------------------+
 */
 
-if ( $argv[1] == '--help' || $argc < 2 ) {
+if ( isset($argv[1]) && $argv[1] == '--help' || $argc < 2 ) {
 ?>
 
 Check the actual status of reviewed files against
@@ -133,8 +133,12 @@ global $nb_reviewed_yes;
 
 
 // Sort the result
-if( is_array($result['reviewed_no']) ) { ksort($result['reviewed_no']); }
-if( is_array($result['no_tag']) ) { ksort($result['no_tag']); }
+if (isset($result['reviewed_no']) ) {
+    ksort($result['reviewed_no']); 
+}
+if (isset($result['no_tag'])) {
+    ksort($result['no_tag']);
+}
 
 // Rpint résult
 
@@ -267,32 +271,22 @@ echo '
 ';
 
 // List file with Reviewed's tag to no
-while( list($key, $val) = each($result['reviewed_no']) ) {
+if (isset($result['reviewed_no']) && count($result['reviewed_no']) > 0) {
 
-echo '
-<tr class="blue"><th colspan="2">'.$key.'</th></tr>
-';
+    while( list($key, $val) = each($result['reviewed_no']) ) {
 
-asort($val);
+        echo '<tr class="blue"><th colspan="2">'.$key.'</th></tr>';
 
- while( list($k, $v) = each($val) ) {
+        asort($val);
 
-$url = 'http://cvs.php.net/viewvc.cgi/' . preg_replace( "'^".$path_doc."'", 'phpdoc-'.$LANG.'/', $key.$v).'?view=markup';
+        while( list($k, $v) = each($val) ) {
 
-echo '
-<tr class="old">
- <td><a href="'.$url.'">'.$v.'</a></td>
- <td class="c">'.intval(filesize($key.$v)/1024).'</td>
-</tr>
-';
+            $url = 'http://cvs.php.net/viewvc.cgi/' . preg_replace( "'^".$path_doc."'", 'phpdoc-'.$LANG.'/', $key.$v).'?view=markup';
 
- } // end of for
+            echo '<tr class="old"><td><a href="'.$url.'">'.$v.'</a></td><td class="c">'.intval(filesize($key.$v)/1024).'</td></tr>';
 
+        }
+    }
 
-} // end of while
-
-echo '
-</table>
-</html>';
-
-?>
+    echo '</table></html>';
+}
