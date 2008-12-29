@@ -234,7 +234,7 @@ asort($val);
 
  while( list($k, $v) = each($val) ) {
 
-$url = 'http://cvs.php.net/viewcvs.cgi/' . preg_replace( "'^".$path_doc."'", 'phpdoc-'.$LANG.'/', $key.$v).'?view=markup';
+$url = 'http://cvs.php.net/viewvc.cgi/' . preg_replace( "'^".$path_doc."'", 'phpdoc-'.$LANG.'/', $key.$v).'?view=markup';
 
 echo '
 <tr class="old">
@@ -277,7 +277,7 @@ asort($val);
 
  while( list($k, $v) = each($val) ) {
 
-$url = 'http://cvs.php.net/viewcvs.cgi/' . preg_replace( "'^".$path_doc."'", 'phpdoc-'.$LANG.'/', $key.$v).'?view=markup';
+$url = 'http://cvs.php.net/viewvc.cgi/' . preg_replace( "'^".$path_doc."'", 'phpdoc-'.$LANG.'/', $key.$v).'?view=markup';
 
 echo '
 <tr class="old">
