@@ -20,7 +20,7 @@
 */
 
 if (!(extension_loaded('reflection') & extension_loaded('pcre'))) {
-	die("To run this script is necessary the Reflection and PCRE extensions\n");
+	die("ERROR: Docgen requires the Reflection and PCRE extensions.\n");
 }
 
 /* Constants */
@@ -665,7 +665,7 @@ function gen_docs($name, $type) {	/* {{{ */
 				if ($extname = get_extension_name((string) $function)) {
 					$INFO['actual_extension'] = $extname;
 				} else {
-					add_warning("The function {$name} has not information in Reflection about their extension");
+					add_warning("The function {$name} lacks Reflection information");
 				}
 			}
 
@@ -681,7 +681,7 @@ function gen_docs($name, $type) {	/* {{{ */
 				if ($extname = get_extension_name((string) $class)) {
 					$INFO['actual_extension'] = $extname;
 				} else {
-					add_warning("The class {$name} has not information in Reflection about their extension");
+					add_warning("The method {$name} lacks Reflection information");
 				}
 			}
 
@@ -704,7 +704,7 @@ function gen_docs($name, $type) {	/* {{{ */
 				if ($extname = get_extension_name((string) $class)) {
 					$INFO['actual_extension'] = $extname;
 				} else {
-					add_warning("The class {$name} has not information in Reflection about their extension");
+					add_warning("The class {$name} lacks Reflection information");
 				}
 			}
 			write_doc($class, DOC_CLASS);
