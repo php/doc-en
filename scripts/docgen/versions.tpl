@@ -1,7 +1,13 @@
 <?xml version='1.0' encoding='utf-8'?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 <!--
   Do NOT translate this file
+-->
+<!--
+Example entries:
+ <function name='classname::methodname' from='PECL extname &gt;= 1.1'/>
+ <function name='functionname' from='PHP &gt;= 5.3.0'/>
+ <function name='functionname' from='PHP 5'/>
 -->
 <versions>
  {VERSIONS}
