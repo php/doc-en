@@ -462,7 +462,6 @@ checkvalue($ac['NSGMLS']);
 // We shouldn't be globbing for this. autoconf requires you to tell it which files to use, we should do the same
 // Notice how doing it this way results in generating less than half as many files.
 $infiles = array(
-    'Makefile.in',
     'manual.xml.in',
     'entities/version.ent.in',
     'scripts/file-entities.php.in',
