@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
 
 <section xml:id="{EXT_NAME_ID}.configuration" xmlns="http://docbook.org/ns/docbook">
  &reftitle.runtime;
@@ -13,7 +13,7 @@
       <entry>&Name;</entry>
       <entry>&Default;</entry>
       <entry>&Changeable;</entry>
-      <entry>Changelog</entry>
+      <entry>&Changelog;</entry>
      </row>
     </thead>
     {INI_ENTRIES}
