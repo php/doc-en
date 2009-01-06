@@ -242,7 +242,7 @@ function create_markup_to_parameter_section(Reflector $obj, $content) { /* {{{ *
     			$count++;
 			}
 			$markup .= str_repeat(' ', $ident + 1) ."</variablelist>\n";
-			$markup .= str_repeat(' ', $ident) ."</para>\n";
+			$markup .= str_repeat(' ', $ident) ."</para>";
 
 			$content = preg_replace('/\{PARAMETERS_DESCRIPTION\}/', $markup, $content, 1);
 		}
@@ -370,7 +370,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
     	$markup .= str_repeat(' ', $ident + 2) ."<variablelist>\n\n";
 
 		foreach ($constants as $constant => $value) {
-     		$markup .= str_repeat(' ', $ident + 3) .'<varlistentry xml:id="'. $id .".constants.none\">\n";
+     		$markup .= str_repeat(' ', $ident + 3) .'<varlistentry xml:id="'. $id .".constants.". format_id($constant) ."\">\n";
      		$markup .= str_repeat(' ', $ident + 4) .'<term><constant>'. $class->getName() .'::'. $constant ."</constant></term>\n";
       		$markup .= str_repeat(' ', $ident + 4) ."<listitem>\n";
        		$markup .= str_repeat(' ', $ident + 5) ."<para>Description here...</para>\n";
@@ -379,6 +379,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 		}
 
 		$markup .= str_repeat(' ', $ident + 2) ."</variablelist>\n";
+  		$markup .= str_repeat(' ', $ident + 1) ."</section>\n";
   		$markup .= str_repeat(' ', $ident) ."</section>\n";
   		$markup .= "<!-- }}} -->\n";
 
