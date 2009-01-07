@@ -68,9 +68,11 @@ function usage() { /* {{{ */
 	Options:
 		-c,--class 	-- class name
 		-e,--extension	-- extension name
+		-f,--function	-- function name
 		-h,--help	-- show this help
 		-m,--method	-- method name (require -c)
 		-o,--output	-- output dir
+		-q,--quiet	-- quiet mode
 		-v,--version	-- show the version
 		-V,--verbose 	-- disable show progress
 
