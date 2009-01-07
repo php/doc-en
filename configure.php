@@ -245,7 +245,6 @@ $acd = array( // {{{
     'CHMONLY_INCL_END' => '-->',
     'LANG' => 'en',
     'LANGDIR' => "{$srcdir}/en",
-    'PHP_BUILD_DATE' => date('Y-m-d'),
     'ENCODING' => 'utf-8',
     'FORCE_DOM_SAVE' => 'no',
     'PARTIAL' => 'no',
@@ -543,7 +542,6 @@ if ($ac['HOWTO'] === 'yes') {
 }
 
 globbetyglob("{$ac['srcdir']}/scripts", 'make_scripts_executable');
-file_put_contents("{$ac['srcdir']}/entities/phpweb.ent", '');
 
 $ini = ($ac['INIPATH'] != '' && $ac['INIPATH'] != 'no') ? " -c \"{$ac['INIPATH']}\"" : '';
 $redir = ($ac['quiet'] == 'yes') ? " > /dev/null" : '';
