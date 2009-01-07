@@ -255,7 +255,6 @@ $acd = array( // {{{
 
     // Junk to make the old scripts (file-entities.php and missing-entities.php) cooperative
     'CYGWIN' => '0',
-    'WINJADE' => '0',
     'NSGMLS' => 'no',
     'SP_OPTIONS' => 'SP_ENCODING=XML SP_CHARSET_FIXED=YES',
 ); // }}}
