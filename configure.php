@@ -254,10 +254,6 @@ $acd = array( // {{{
     'HOWTO' => 'no',
 
     // Junk to make the old scripts (file-entities.php and missing-entities.php) cooperative
-    'PHP_SOURCE' => 'no',
-    'PEAR_SOURCE' => 'no',
-    'PECL_SOURCE' => 'no',
-    'EXT_SOURCE' => 'no',
     'CYGWIN' => '0',
     'WINJADE' => '0',
     'NSGMLS' => 'no',

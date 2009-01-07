@@ -54,15 +54,6 @@ $out_dir = ($not_windows || eregi('CYGWIN',php_uname()))? '@WORKDIR@' : abs_path
 // The language encoding to use
 $encoding = '@ENCODING@';
 
-// PHP, PECL and additional extension source directories if given
-$php_source  = ('@PHP_SOURCE@'  === 'no' ? false : abs_path('@PHP_SOURCE@'));
-$pecl_source = ('@PECL_SOURCE@' === 'no' ? false : abs_path('@PECL_SOURCE@'));
-$ext_sources = array();
-foreach (explode(':', '@EXT_SOURCE@') as $path) {
-    if(!empty($path)) {
-        $ext_sources[]= abs_path($path);
-    }
-}
 
 // ......:ENTITY CREATION:......................................................
 
@@ -86,65 +77,6 @@ ksort($builtin_extensions);
 
 create_part_file("entities/builtin-extensions.xml", $builtin_extensions, 'funcref', '&FunctionReference;', '<para>See also <xref linkend="extensions"/>.</para>');
 $entities[] = entstr("builtin.extensions", "$out_dir/entities/builtin-extensions.xml");
-
-// additional documentation embedded in PECL extensions
-$pecl_extensions = array();
-
-if($pecl_source) {
-    $dh = opendir($pecl_source);
-
-    $pecl_dirs = array();
-    while($dir = readdir()) { 
-        if($dir[0] === ".") continue; // ignore system dir entries and hidden files
-        $pecl_dirs[] = $dir;
-    }
-    
-    foreach ($pecl_dirs as $dir) {
-        $docdir = "$pecl_source/$dir/manual";
-
-        if (@is_dir($docdir)) {
-
-            $dirent = str_replace("_","-",$dir);          
-            if(@is_dir("$docdir/en")) {
-                file_entities("$docdir/en", "$docdir/@LANGDIR@", "$docdir/en", $entities, "reference.$dirent");
-            } else if (@is_dir("$docdir/$dir")) {
-                file_entities("$docdir/$dir", "$docdir/$dir", "$docdir/$dir", $entities, "reference.$dirent");          
-            } else if (@is_dir("$docdir/$dirent")) {
-                file_entities("$docdir/$dirent", "$docdir/$dirent", "$docdir/$dirent", $entities, "reference.$dirent");
-            } else {
-                continue;
-            }
-            $pecl_extensions[] = "&reference.$dirent.reference;";
-	    sort($pecl_extensions);
-        }
-    }
-    closedir($dh);
-}
-
-create_part_file("entities/pecl-extensions.xml", $pecl_extensions, 'pecl-funcref', "&PECLReference;");
-$entities[] = entstr("pecl.extensions", "$out_dir/entities/pecl-extensions.xml");
-
-// additional documentation embedded in external extension sources
-$addon_extensions = array();
-foreach ($ext_sources as $ext_dir) {
-    $docdir = "$ext_dir/manual";
-    $dir = basename($ext_dir);
-    $dirent = str_replace("_","-",$dir);
-    if(@is_dir("$docdir/en/reference/$dir")) {
-        file_entities("$docdir/en/reference/$dir", "$docdir/@LANGDIR@/reference/$dir", "$docdir/en/reference/$dir", $entities, "reference.$dirent");
-    } else if (@is_dir("$docdir/$dir")) {
-        file_entities("$docdir/$dir", "$docdir/$dir", "$docdir/$dir", $entities, "reference.$dirent");          
-    } else if (@is_dir("$docdir/$dirent")) {
-        file_entities("$docdir/$dirent", "$docdir/$dirent", "$docdir/$dirent", $entities, "reference.$dirent");         
-    } else {
-        continue;
-    }
-    $addon_extensions[] = "&reference.$dirent.reference;";
-    $sort($addon_extensions);
-}
-
-create_part_file("entities/addon-extensions.xml", $addon_extensions, 'addon-funcref', '&AddOnReference;');
-$entities[] = entstr("addon.extensions", "$out_dir/entities/addon-extensions.xml");
 
 
 // Open file for appending and write out all entitities
