@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
 
 <chapter xml:id="{EXT_NAME_ID}.setup" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  &reftitle.setup;
@@ -13,11 +13,19 @@
  </section>
 
  <!-- {{{ Installation -->
- &reference.{EXT_NAME_ID}.configure;
+ <section xml:id="extname.installation">
+  &reftitle.install;
+  &no.install;
+ </section>
+ <!-- or &reference.{EXT_NAME_ID}.configure; -->
  <!-- }}} -->
 
  <!-- {{{ Configuration -->
- &reference.{EXT_NAME_ID}.ini;
+ <section xml:id="extname.configuration">
+  &reftitle.runtime;
+  &no.config;
+ </section>
+ <!-- or &reference.{EXT_NAME_ID}.ini; -->
  <!-- }}} -->
 
  <section xml:id="{EXT_NAME_ID}.resources">
