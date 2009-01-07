@@ -49,7 +49,6 @@ Package-specific:
   --enable-force-dom-save   Force .manual.xml to be saved in a full build even
                             if it fails validation [{$acd['FORCE_DOM_SAVE']}]
   --enable-chm              Enable Windows HTML Help Edition pages [{$acd['CHMENABLED']}]
-  --enable-internals        Include internals documentation [{$acd['INTERNALSENABLED']}]
   --enable-xml-details      Enable detailed XML error messages [{$acd['DETAILED_ERRORMSG']}]
   --enable-howto            Configure the phpdoc howto, not the phpdoc docs [{$acd['HOWTO']}]
   --disable-segfault-error  LIBXML may segfault with broken XML, use this if it does [{$acd['SEGFAULT_ERROR']}]
@@ -244,9 +243,6 @@ $acd = array( // {{{
     'CHMENABLED' => 'no',
     'CHMONLY_INCL_BEGIN' => '<!--',
     'CHMONLY_INCL_END' => '-->',
-    'INTERNALSENABLED' => 'yes',
-    'INTERNALS_EXCL_BEGIN' => '',
-    'INTERNALS_EXCL_END' => '',
     'LANG' => 'en',
     'LANGDIR' => "{$srcdir}/en",
     'PHP_BUILD_DATE' => date('Y-m-d'),
@@ -330,10 +326,6 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
             $ac['CHMENABLED'] = $v;
             break;
 
-        case 'internals':
-            $ac['INTERNALSENABLED'] = $v;
-            break;
-
         case 'php':
             $ac['PHP'] = $v;
             break;
@@ -396,11 +388,6 @@ checking('whether to include CHM');
 $ac['CHMONLY_INCL_BEGIN'] = ($ac['CHMENABLED'] == 'yes' ? '' : '<!--');
 $ac['CHMONLY_INCL_END'] = ($ac['CHMENABLED'] == 'yes' ? '' : '-->');
 checkvalue($ac['CHMENABLED']);
-
-checking("whether to include internals documentation");
-$ac['INTERNALS_EXCL_BEGIN'] = ($ac['INTERNALSENABLED'] == 'yes' ? '' : '<!--');
-$ac['INTERNALS_EXCL_END'] = ($ac['INTERNALSENABLED'] == 'yes' ? '' : '-->');
-checkvalue($ac['INTERNALSENABLED']);
 
 checking("for PHP executable");
 if ($ac['PHP'] == '' || $ac['PHP'] == 'no') {
