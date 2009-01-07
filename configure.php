@@ -54,7 +54,6 @@ Package-specific:
   --disable-segfault-error  LIBXML may segfault with broken XML, use this if it does [{$acd['SEGFAULT_ERROR']}]
   --disable-version-files   Do not merge the extension specific version.xml files
   --with-php=PATH           Path to php CLI executable [detect]
-  --with-inipath=PATH       Path to php.ini file [@srcdir@/scripts]
   --with-lang=LANG          Language to build [{$acd['LANG']}]
   --with-partial=ID         Root ID to build [{$acd['PARTIAL']}]
 
@@ -239,7 +238,6 @@ $acd = array( // {{{
     'WORKDIR' => $srcdir,
     'SRCDIR' => $srcdir,
     'PHP' => '',
-    'INIPATH' => "{$srcdir}/scripts",
     'CHMENABLED' => 'no',
     'CHMONLY_INCL_BEGIN' => '<!--',
     'CHMONLY_INCL_END' => '-->',
@@ -254,14 +252,13 @@ $acd = array( // {{{
     'HOWTO' => 'no',
 
     // Junk to make the old scripts (file-entities.php and missing-entities.php) cooperative
-    'CYGWIN' => '0',
     'NSGMLS' => 'no',
     'SP_OPTIONS' => 'SP_ENCODING=XML SP_CHARSET_FIXED=YES',
 ); // }}}
 
 $ac = $acd;
 
-$srcdir_dependant_settings = array( 'INIPATH', 'LANGDIR' );
+$srcdir_dependant_settings = array( 'LANGDIR' );
 $overridden_settings = array();
 
 foreach ($_SERVER['argv'] as $k => $opt) { // {{{
@@ -322,10 +319,6 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
 
         case 'php':
             $ac['PHP'] = $v;
-            break;
-
-        case 'inipath':
-            $ac['INIPATH'] = $v;
             break;
 
         case 'lang':
@@ -399,15 +392,6 @@ if (!file_exists($ac['PHP']) || !is_executable($ac['PHP'])) {
 }
 $ac['PHP'] = abspath($ac['PHP']);
 checkvalue($ac['PHP']);
-
-checking("for PHP INI path");
-if ($ac['INIPATH'] != '' && $ac['INIPATH'] != 'no') {
-    if (!file_exists($ac['INIPATH']) || !is_readable($ac['INIPATH'])) {
-        checkerror("INI path doesn't exist or isn't readable.");
-    }
-    $ac['INIPATH'] = abspath($ac['INIPATH']);
-}
-checkvalue($ac['INIPATH']);
 
 checking("for language to build");
 if ($ac['LANG'] == '' || $ac['LANG'] == 'no') {
@@ -538,10 +522,9 @@ if ($ac['HOWTO'] === 'yes') {
 
 globbetyglob("{$ac['srcdir']}/scripts", 'make_scripts_executable');
 
-$ini = ($ac['INIPATH'] != '' && $ac['INIPATH'] != 'no') ? " -c \"{$ac['INIPATH']}\"" : '';
 $redir = ($ac['quiet'] == 'yes') ? " > /dev/null" : '';
 
-quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/file-entities.php\"{$redir}");
+quietechorun("\"{$ac['PHP']}\" -q \"{$ac['srcdir']}/scripts/file-entities.php\"{$redir}");
 
 // just unlink() the two files we know need to be removed. if you update missing-entities.php, update this
 $missing_stuff = array(
@@ -559,7 +542,7 @@ foreach ($missing_stuff as $relpath) {
 }
 // We don't need missing-entities to be run unless we're not rendering English
 if ($ac['LANG'] != 'en') {
-    quietechorun("\"{$ac['PHP']}\"{$ini} -q \"{$ac['srcdir']}/scripts/missing-entities.php\"{$redir}");
+    quietechorun("\"{$ac['PHP']}\" -q \"{$ac['srcdir']}/scripts/missing-entities.php\"{$redir}");
 } else {
     // Stick some empty data in there
     file_put_contents("{$ac['srcdir']}/entities/missing-entities.ent", '<'.'?xml version="1.0" encoding="utf-8"?'.">\n");
