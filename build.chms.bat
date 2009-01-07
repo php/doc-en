@@ -4,10 +4,13 @@ SET PHD=C:\pear\phd.bat
 SET HH=C:\Program Files (x86)\HTML Help Workshop\hhc.exe
 SET CP=C:\Program Files (x86)\PuTTY\pscp.exe
 SET PRIVATES=C:\Documents and Settings\bjori\My Documents\my.privates.ppk
+SET PEAR=C:\pear\pear.bat
 cd c:\phpdoc\
 
 ECHO CVS Updating...
 "C:\Program Files (x86)\CVSNT\cvs" up > logs\cvs.log 2<&1
+ECHO Upgrading PEAR
+"%PEAR%" upgrade doc.php.net/phd-beta > logs\pear.log 2<&1
 
 FOR %%A IN (en bg de es fr ja kr pl pt_BR ro ru tr) DO (
 	ECHO Configuring %%A...
