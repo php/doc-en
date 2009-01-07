@@ -219,7 +219,6 @@ $srcdir = dirname(__FILE__);
 // Settings {{{
 $cygwin_php_bat = "{$srcdir}/../phpdoc-tools/php.bat";
 $php_bin_names = array('php', 'php5', 'cli/php', 'php.exe', 'php5.exe', 'php-cli.exe', 'php-cgi.exe');
-$nsgmls_bin_names = array('nsgmls', 'onsgmls', 'nsgmls.exe', 'onsgmls.exe');
 // }}}
 
 // Reject old PHP installations {{{
@@ -250,10 +249,6 @@ $acd = array( // {{{
     'SEGFAULT_ERROR' => 'yes',
     'VERSION_FILES'  => 'yes',
     'HOWTO' => 'no',
-
-    // Junk to make the old scripts (file-entities.php and missing-entities.php) cooperative
-    'NSGMLS' => 'no',
-    'SP_OPTIONS' => 'SP_ENCODING=XML SP_CHARSET_FIXED=YES',
 ); // }}}
 
 $ac = $acd;
@@ -417,20 +412,12 @@ checking('whether to enable detailed XML error messages');
 checkvalue($ac['DETAILED_ERRORMSG']);
 
 
-// Do NOT add a commandline setting for this. We only support $ac[ 'NSGMLS' ] to
-//  keep missing-entities.php.in working.
-checking("for nsgmls");
-if (!is_windows() && ($nsgmls = abspath(find_file($nsgmls_bin_names))) != '')
-    $ac['NSGMLS'] = $nsgmls;
-checkvalue($ac['NSGMLS']);
-
 // We shouldn't be globbing for this. autoconf requires you to tell it which files to use, we should do the same
 // Notice how doing it this way results in generating less than half as many files.
 $infiles = array(
     'manual.xml.in',
     'entities/version.ent.in',
     'scripts/file-entities.php.in',
-    'scripts/missing-entities.php.in'
 );
 
 foreach ($infiles as $in) {
@@ -526,28 +513,6 @@ $redir = ($ac['quiet'] == 'yes') ? " > /dev/null" : '';
 
 quietechorun("\"{$ac['PHP']}\" -q \"{$ac['srcdir']}/scripts/file-entities.php\"{$redir}");
 
-// just unlink() the two files we know need to be removed. if you update missing-entities.php, update this
-$missing_stuff = array(
-    "entities/missing-entities.ent",
-    "entities/missing-ids.xml"
-);
-foreach ($missing_stuff as $relpath) {
-    if (file_exists("{$ac['srcdir']}/{$relpath}")) {
-        echo "Removing {$ac['srcdir']}/{$relpath}\n";
-        if (@unlink("{$ac['srcdir']}/{$relpath}") === FALSE) {
-            echo "Failed to remove {$relpath}. Check your permissions.\n";
-            errors_are_bad(178);
-        }
-    }
-}
-// We don't need missing-entities to be run unless we're not rendering English
-if ($ac['LANG'] != 'en') {
-    quietechorun("\"{$ac['PHP']}\" -q \"{$ac['srcdir']}/scripts/missing-entities.php\"{$redir}");
-} else {
-    // Stick some empty data in there
-    file_put_contents("{$ac['srcdir']}/entities/missing-entities.ent", '<'.'?xml version="1.0" encoding="utf-8"?'.">\n");
-    file_put_contents("{$ac['srcdir']}/entities/missing-ids.xml", '<'.'?xml version="1.0" encoding="utf-8"?'.">\n");
-}
 echo "Loading and parsing manual.xml... ";
 flush(STDOUT);
 
