@@ -279,7 +279,7 @@ function write_functions_xml()
         $tmp .= "   </variablelist>\n";
         fwrite($fp, $tmp);
     }
-    fwrite ($fp, "  </para>\n\n </refsect1>\n");
+    fwrite ($fp, "  </para>\n </refsect1>\n\n");
     fwrite($fp, 
         " <refsect1 role=\"returnvalues\">\n" .
         "  &reftitle.returnvalues;\n" .
