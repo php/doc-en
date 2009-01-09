@@ -509,7 +509,6 @@ if ($ac['HOWTO'] === 'yes') {
 }
 
 globbetyglob("{$ac['srcdir']}/scripts", 'make_scripts_executable');
-file_put_contents("{$ac['srcdir']}/entities/phpweb.ent", '');
 
 $redir = ($ac['quiet'] == 'yes') ? " > /dev/null" : '';
 
