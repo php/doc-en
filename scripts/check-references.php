@@ -28,7 +28,7 @@ if (isset($_SERVER["argv"][1])) {
 }
 
 if (!isset($_SERVER["argv"][1]) || !is_dir($phpdoc_dir)) {
-	echo "Purpose: Check parameters (types, optional, reference, count) and return types.\n";
+	echo "Purpose: Check parameters (types, optional, initial, reference, count) and return types.\n";
 	echo "Usage: check-references.php language [path_to_extension]\n";
 	echo "Notes:\n";
 	echo "- Compares documentation with PHP sources (Zend, extensions, PECL, SAPI).\n";
@@ -170,6 +170,7 @@ $difficult_arg_count = array(
 // read referenced parameters from sources
 $source_refs = array(); // array("function_name" => number_ref, ...)
 $source_types = array(); // array("function_name" => array("type_spec", filename, lineno), ...)
+$source_inits = array(); // array("function_name" => array(init, ...), ...)
 $return_types = array(); // array("function_name" => array("doc_type", filename, lineno), ...)
 $source_arg_counts = array(); // array("function_name" => array(disallowed_count => true, ...), ...)
 foreach ((isset($extension) ? array($extension) : array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), glob("$pecl_dir/*", GLOB_ONLYDIR), glob("$phpsrc_dir/sapi/*", GLOB_ONLYDIR))) as $dirname) {
@@ -291,9 +292,15 @@ foreach ((isset($extension) ? array($extension) : array_merge(array($zend_dir), 
 			// types and optional
 			if (!in_array($function_name, $difficult_params)
 			&& strpos($function_body, 'zend_parse_parameters_ex') === false // indicate difficulty
-			&& preg_match('~.*zend_parse(_method)?_parameters\\([^,]*,\\s*"([^"]*)"~s', $function_body, $matches2) // .* to catch last occurrence
+			&& preg_match('~.*zend_parse(_method)?_parameters\\([^,]*,\\s*"([^"]*)"([^)]*)~s', $function_body, $matches2) // .* to catch last occurrence
 			) {
 				$source_types[$function_name] = array(($matches2[1] ? substr($matches2[2], 1) : $matches2[2]), $filename, $lineno);
+				preg_match_all('~, &([^,]+)~', $matches2[3], $matches3);
+				foreach ($matches3[1] as $val) {
+					if (preg_match('(\\b' . preg_quote($val) . '\\b(?:\\s*=\\s*([^,;]+))?)', $function_body, $match)) {
+						$source_inits[$function_name][] = $match[1];
+					}
+				}
 			} elseif (!in_array($function_name, $difficult_arg_count)) {
 			
 				// arguments count
@@ -399,14 +406,14 @@ foreach (array_merge(glob("$reference_path/*/*.xml"), glob("$reference_path/*/*/
 		if (!in_array($function_name, $wrong_refs) 
 		&& (is_int($source_ref[0]) ? $byref[0] != $source_ref[0] || count($byref) != count($matches[1]) - $source_ref[0] + 1 : $byref != $source_ref[0])
 		) {
-			echo (isset($source_ref[0]) ? "Parameter(s) " . (is_int($source_ref[0]) ? "$source_ref[0] and rest" : implode(", ", $source_ref[0])) : "Nothing") . " should be passed by reference in $filename on line $lineno" . (isset($source_ref[1]) ? "\n: source in $source_ref[1] on line $source_ref[2]" : "") . ".\n";
+			echo ($source_ref[0] ? "Parameter(s) " . (is_int($source_ref[0]) ? "$source_ref[0] and rest" : implode(", ", $source_ref[0])) : "Nothing") . " should be passed by reference in $filename on line $lineno" . (isset($source_ref[1]) ? "\n: source in $source_ref[1] on line $source_ref[2]" : "") . ".\n";
 		}
 		if (isset($source_refs[$function_name])) {
 			$counts["refs"]++;
 		}
 		
 		// parameter types and optional
-		preg_match_all('~<methodparam(\\s+choice=[\'"]opt[\'"])?>\\s*<type>([^<]+)</type>\\s*<parameter(?: role="reference")?>([^<]+)~i', $methodsynopsis, $matches); // (PREG_OFFSET_CAPTURE can be used to get precise line numbers)
+		preg_match_all('~<methodparam(\\s+choice=[\'"]opt[\'"])?>\\s*<type>([^<]+)</type>\\s*<parameter(?: role="reference")?>([^<]+)</parameter>(?:<initializer>([^<]+)</initializer>)?~i', $methodsynopsis, $matches); // (PREG_OFFSET_CAPTURE can be used to get precise line numbers)
 		foreach ($matches[2] as $i => $val) {
 			if (preg_match("~^(void|$invalid_types)\$~", $val)) {
 				echo "Parameter #" . ($i+1) . " has wrong type '$val' in $filename on line " . ($lineno + $i + 1) . ".\n";
@@ -418,6 +425,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml"), glob("$reference_path/*/*/
 			$optional_source = false;
 			$optional_doc = false;
 			$i = 0;
+			$strings = 0;
 			$error = "";
 			foreach (params_source_to_doc($source_type[0]) as $param) {
 				if ($param == "optional") {
@@ -433,6 +441,16 @@ foreach (array_merge(glob("$reference_path/*/*.xml"), glob("$reference_path/*/*/
 					if ($optional_doc != $optional_source) {
 						$error .= "Parameter #" . ($i+1) . " should" . ($optional_source ? "" : " not") . " be optional in $filename on line " . ($lineno + $i + 1) . ".\n";
 					}
+					$init_source = $source_inits[$function_name][$i + $strings];
+					if ($param == "bool") {
+						$init_source = ($init_source ? "true" : "false");
+					}
+					if ($matches[4][$i] != $init_source && (is_int($source_refs[$function_name][0]) ? $source_refs[$function_name][0] > $i+1 : !in_array($i+1, $source_refs[$function_name][0]))) {
+						$error .= "Parameter #" . ($i+1) . " has wrong initial value (" . $matches[4][$i] . " instead of $init_source) in $filename on line " . ($lineno + $i + 1) . ".\n";
+					}
+				}
+				if ($param == "string" || $param == "unicode") {
+					$strings++;
 				}
 				$i++;
 			}
