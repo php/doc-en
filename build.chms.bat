@@ -10,7 +10,7 @@ cd c:\phpdoc\
 ECHO CVS Updating...
 "C:\Program Files (x86)\CVSNT\cvs" up > logs\cvs.log 2<&1
 ECHO Upgrading PEAR
-"%PEAR%" upgrade doc.php.net/phd-beta > logs\pear.log 2<&1
+CALL "%PEAR%" upgrade doc.php.net/phd-beta > logs\pear.log 2<&1
 
 FOR %%A IN (en bg de es fr ja kr pl pt_BR ro ru tr) DO (
 	ECHO Configuring %%A...
