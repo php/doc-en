@@ -8,7 +8,7 @@ SET PEAR=C:\pear\pear.bat
 cd c:\phpdoc\
 
 ECHO CVS Updating...
-"C:\Program Files (x86)\CVSNT\cvs" up > logs\cvs.log 2<&1
+"C:\Program Files (x86)\CVSNT\cvs" up -P -d > logs\cvs.log 2<&1
 ECHO Upgrading PEAR
 CALL "%PEAR%" upgrade doc.php.net/phd-beta > logs\pear.log 2<&1
 
