@@ -295,7 +295,7 @@ foreach ((isset($extension) ? array($extension) : array_merge(array($zend_dir), 
 			&& preg_match('~.*zend_parse(_method)?_parameters\\([^,]*,\\s*"([^"]*)"([^)]*)~s', $function_body, $matches2) // .* to catch last occurrence
 			) {
 				$source_types[$function_name] = array(($matches2[1] ? substr($matches2[2], 1) : $matches2[2]), $filename, $lineno);
-				preg_match_all('~, &([^,]+)~', $matches2[3], $matches3);
+				preg_match_all('~,\\s*&([^,]+)~', $matches2[3], $matches3);
 				foreach ($matches3[1] as $val) {
 					if (preg_match('(\\b' . preg_quote($val) . '\\b(?:\\s*=\\s*([^,;]+))?)', $function_body, $match)) {
 						$source_inits[$function_name][] = $match[1];
@@ -356,7 +356,7 @@ foreach ((isset($extension) ? array($extension) : array_merge(array($zend_dir), 
 		preg_match_all('~INIT(?:_OVERLOADED)?_CLASS_ENTRY\\(.*"([^"]+)"\\s*,\\s*([^)]+)~', $file, $matches, PREG_SET_ORDER);
 		foreach ($matches as $val) {
 			if (preg_match('~' . preg_quote($val[2], '~') . '\\[\\](.*)\\}~sU', $file, $matches2)) {
-				preg_match_all('~PHP_FALIAS\\((\\w+)\\s*,\\s*(\\w+)~', $matches2[1], $matches2, PREG_SET_ORDER);
+				preg_match_all('~PHP_(?:FALIAS|ME_MAPPING)\\((\\w+)\\s*,\\s*(\\w+)~', $matches2[1], $matches2, PREG_SET_ORDER);
 				foreach ($matches2 as $val2) {
 					$function_name = strtolower($val2[2]);
 					$method_name = strtolower("$val[1]::$val2[1]");
@@ -442,10 +442,10 @@ foreach (array_merge(glob("$reference_path/*/*.xml"), glob("$reference_path/*/*/
 						$error .= "Parameter #" . ($i+1) . " should" . ($optional_source ? "" : " not") . " be optional in $filename on line " . ($lineno + $i + 1) . ".\n";
 					}
 					$init_source = $source_inits[$function_name][$i + $strings];
-					if ($param == "bool") {
+					if ($param == "bool" && strlen($init_source)) {
 						$init_source = ($init_source ? "true" : "false");
 					}
-					if ($matches[4][$i] != $init_source && (is_int($source_refs[$function_name][0]) ? $source_refs[$function_name][0] > $i+1 : !in_array($i+1, $source_refs[$function_name][0]))) {
+					if ($matches[4][$i] != $init_source && (is_int($source_refs[$function_name][0]) ? $source_refs[$function_name][0] > $i+1 : !in_array($i+1, (array) $source_refs[$function_name][0]))) {
 						$error .= "Parameter #" . ($i+1) . " has wrong initial value (" . $matches[4][$i] . " instead of $init_source) in $filename on line " . ($lineno + $i + 1) . ".\n";
 					}
 				}
