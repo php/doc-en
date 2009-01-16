@@ -23,7 +23,7 @@ if (isset($_SERVER["argv"][1])) {
 	$scripts_dir = dirname(__FILE__);
 	$phpsrc_dir = realpath("$scripts_dir/../../php-src");
 	$pecl_dir = realpath("$scripts_dir/../../pecl");
-	$zend_dir = realpath("$scripts_dir/../../ZendEngine2");
+	$zend_dir = realpath("$phpsrc_dir/ZendEngine2");
 	$phpdoc_dir = realpath("$scripts_dir/../$lang");
 }
 
@@ -38,6 +38,20 @@ if (!isset($_SERVER["argv"][1]) || !is_dir($phpdoc_dir)) {
 }
 
 $extension = $_SERVER["argv"][2];
+
+$extension_mapping = array(
+	"bcmath" => "bc",
+	"bz2" => "bzip2",
+	"com_dotnet" => "com",
+	"date" => "datetime",
+	"ereg" => "regex",
+	"gd" => "image",
+	"interbase" => "ibase",
+	"odbc" => "uodbc",
+	"sybase_ct" => "sybase",
+	"standard" => "{array,classobj,dir,errorfunc,exec,filesystem,funchand,i18n,info,mail,math,misc,network,outcontrol,stream,strings,unicode,url,var}",
+	"ZendEngine2" => "{array,classobj,errorfunc,funchand,info,misc,strings,var}",
+);
 
 // various names for parameters passed by reference
 // array() means list of parameters, number is position from which all parameters are passed by reference
@@ -78,6 +92,7 @@ function params_source_to_doc($type_spec)
 		"b" => "bool",
 		"r" => "resource",
 		"a" => "array",
+		"A" => "array",
 		"o" => "object",
 		"O" => "object",
 		"z" => "mixed",
@@ -86,6 +101,7 @@ function params_source_to_doc($type_spec)
 		"u" => "unicode",
 		"C" => "class",
 		"h" => "array",
+		"H" => "array",
 		"U" => "unicode",
 		"S" => "string",
 		"f" => "callback",
@@ -180,7 +196,7 @@ foreach ((isset($extension) ? array($extension) : array_merge(array($zend_dir), 
 	$files = array();
 	$aliases = array(); // php_function => sources_function
 	$macros = array(); // MACRO => array(body, array(params))
-	$largedir = ($dirname == $zend_dir || $dirname == "$phpsrc_dir/ext/standard");
+	$largedir = in_array(realpath($dirname), array($zend_dir, realpath("$phpsrc_dir/ext/standard")));
 	$local_refs = array();
 	foreach (array_merge((array) glob("$dirname/*.h"), (array) glob("$dirname/*.c*")) as $filename) {
 		$file = file_get_contents($filename);
@@ -374,8 +390,9 @@ echo "Sources were read.\n";
 
 // compare with documentation
 $counts = array("refs" => 0, "types" => 0, "arg_counts" => 0, "return" => 0);
-$reference_path = "$phpdoc_dir/reference/" . (isset($extension) ? basename($extension) : "*");
-foreach (array_merge(glob("$reference_path/*/*.xml"), glob("$reference_path/*/*/*.xml")) as $filename) {
+$extension_dir = (isset($extension) ? basename($extension) : "*");
+$reference_path = "$phpdoc_dir/reference/" . (isset($extension_mapping[$extension_dir]) ? $extension_mapping[$extension_dir] : $extension_dir);
+foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$reference_path/*/*/*.xml", GLOB_BRACE)) as $filename) {
 	if (preg_match('~^(.*(?:(\\w+)</classname></ooclass>\\s*)?<methodsynopsis>(.*))<methodname>([^<]+)<(.*)</methodsynopsis>~sU', file_get_contents($filename), $matches)) {
 		$lineno = substr_count($matches[1], "\n") + 1;
 		$return_type = $matches[3];
