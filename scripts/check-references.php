@@ -445,7 +445,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml"), glob("$reference_path/*/*/
 					if ($param == "bool" && strlen($init_source)) {
 						$init_source = ($init_source ? "true" : "false");
 					}
-					if (($optional_source || $optional_doc) && $matches[4][$i] != $init_source && (is_int($source_refs[$function_name][0]) ? $source_refs[$function_name][0] > $i+1 : !in_array($i+1, (array) $source_refs[$function_name][0]))) {
+					if (($optional_source || $optional_doc) && $matches[4][$i] != $init_source && $init_source != "NULL" && (is_int($source_refs[$function_name][0]) ? $source_refs[$function_name][0] > $i+1 : !in_array($i+1, (array) $source_refs[$function_name][0]))) {
 						$error .= "Parameter #" . ($i+1) . " has wrong initial value (" . $matches[4][$i] . " instead of $init_source) in $filename on line " . ($lineno + $i + 1) . ".\n";
 					}
 				}
