@@ -14,7 +14,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Authors:    Thomas Schöfbeck <tom@php.net>                           |
+  | Authors:    Thomas Schï¿½fbeck <tom@php.net>                           |
   |             Gabor Hojtsy <goba@php.net>                              |
   |             Mark Kronsbein <mk@php.net>                              |
   |             Jan Fabry <cheezy@php.net>
@@ -244,7 +244,7 @@ function get_file_status($file) {
   }
 
   // If the file is up-to-date
-  if ($rev_diff === 0) {
+  if ($rev_diff === 0 && trim($this_status) === "ready") {
     // Store file by status and maintainer
     $files_by_mark[REV_UPTODATE]++;
     $files_by_maint[$this_maint][REV_UPTODATE]++;
@@ -263,6 +263,8 @@ function get_file_status($file) {
     $status_mark = REV_CRITICAL;
   } elseif ($rev_diff === "n/a") {
     $status_mark = REV_NOREV;
+  } elseif ($rev_diff === 0) {
+    $status_mark = REV_WIP;
   } else {
     $status_mark = REV_OLD;
   }
