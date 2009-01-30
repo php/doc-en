@@ -749,6 +749,7 @@ $arropts = array(
 );
 
 $options = @getopt(implode($arropts), array_keys($arropts));
+var_dump($options);
 
 if (!$options) {
 	usage();
