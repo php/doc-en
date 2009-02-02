@@ -132,7 +132,19 @@ function abs_path($path) {
  * @return boolean Success signal
  */
 function file_entities($work_dir, $trans_dir, $orig_dir, &$entities, $prefix=false) {
-
+    static $arBroken = null;
+    if ($arBroken === null) {
+        $brokenFilePath = $trans_dir . '/broken-files.txt';
+        if ('@USE_BROKEN_TRANSLATION_FILENAME@' == 'yes' && file_exists($brokenFilePath)) {
+            $arBroken = array_map('trim', file($brokenFilePath));
+            for ($n = 0; $n < count($arBroken); $n++) {
+                $arBroken[$n] = $trans_dir . '/' . $arBroken[$n];
+            }
+            $arBroken = array_flip($arBroken);
+        } else {
+            $arBroken = array();
+        }
+    }
     // Compute translated version's path
     $trans_path = str_replace($orig_dir, $trans_dir, $work_dir);
     
@@ -190,8 +202,9 @@ function file_entities($work_dir, $trans_dir, $orig_dir, &$entities, $prefix=fal
             }
             
             // If we have a translated file, use it, otherwise fall back to English
-            if (file_exists("$trans_path/$file")) {
-                $path = "$trans_path/$file";
+            $transfile = "$trans_path/$file";
+            if (!isset($arBroken[$transfile]) && file_exists($transfile)) {
+                $path = $transfile;
             } else {
                 $path = "$work_dir/$file";
             }

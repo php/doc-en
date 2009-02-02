@@ -56,6 +56,7 @@ Package-specific:
   --with-php=PATH           Path to php CLI executable [detect]
   --with-lang=LANG          Language to build [{$acd['LANG']}]
   --with-partial=ID         Root ID to build [{$acd['PARTIAL']}]
+  --disable-broken-file-listing  Do not ignore translated files in broken-files.txt
 
 HELPCHUNK;
 } // }}}
@@ -250,6 +251,7 @@ $acd = array( // {{{
     'SEGFAULT_ERROR' => 'yes',
     'VERSION_FILES'  => 'yes',
     'HOWTO' => 'no',
+    'USE_BROKEN_TRANSLATION_FILENAME' => 'yes',
 ); // }}}
 
 $ac = $acd;
@@ -350,6 +352,9 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
             $ac['HOWTO']  =$v;
             break;
         
+        case 'broken-file-listing':
+            $ac['USE_BROKEN_TRANSLATION_FILENAME'] = $v;
+
         default:
             echo "WARNING: Unknown option '{$o}'!\n";
             break;
