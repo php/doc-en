@@ -407,7 +407,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 
 			$markup .= str_repeat(' ', $ident) ."<fieldsynopsis>\n";
 			$markup .= str_repeat(' ', $ident + 1) .'<modifier>'. $match[1] ."</modifier>\n";
-			$markup .= str_repeat(' ', $ident + 1) .'<varname linkend="'. $id .'.props.'. $property->getName() .'">'. $property->getName() ."</varname>\n";
+			$markup .= str_repeat(' ', $ident + 1) .'<varname linkend="'. $id .'.props.'. format_id($property->getName()) .'">'. $property->getName() ."</varname>\n";
 			$markup .= str_repeat(' ', $ident) ."</fieldsynopsis>\n";
 		}
 
@@ -426,7 +426,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 		$markup .= str_repeat(' ', $ident + 1) ."<variablelist>\n";
 
 		foreach ($properties as $property) {
-			$markup .= str_repeat(' ', $ident + 2) .'<varlistentry xml:id="'. $id .'.props.'. $property->getName() ."\">\n";
+			$markup .= str_repeat(' ', $ident + 2) .'<varlistentry xml:id="'. $id .'.props.'. format_id($property->getName()) ."\">\n";
 			$markup .= str_repeat(' ', $ident + 3) .'<term><varname>'. $property->getName() ."</varname></term>\n";
      		$markup .= str_repeat(' ', $ident + 3) ."<listitem>\n";
       		$markup .= str_repeat(' ', $ident + 4) ."<para>Prop description</para>\n";
