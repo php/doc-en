@@ -1,22 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 
 <refentry xml:id="memcached.set" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Memcached::set</refname>
-  <refpurpose>The set purpose</refpurpose>
+  <refpurpose>Store data for a key</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>void</type><methodname>Memcached::set</methodname>
+   <modifier>public</modifier> <type>bool</type><methodname>Memcached::set</methodname>
    <methodparam><type>string</type><parameter>key</parameter></methodparam>
-   <methodparam><type>string</type><parameter>value</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>expiration</parameter></methodparam>
+   <methodparam><type>mixed</type><parameter>value</parameter></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>expiration</parameter></methodparam>
   </methodsynopsis>
   <para>
-   The method description goes here.
+   <function>Memcached::set</function> stores the <parameter>value</parameter>
+   on a memcache server under the specified <parameter>key</parameter>. The
+   <parameter>expiration</parameter> parameter is a Unix timestamp that can be
+   used to control when the value is considered expired. It can be set to
+   <literal>0</literal> which means that the value will persist until the
+   server deletes it to make space for new items.
+   <para>The value can be any valid PHP type except for resources, because
+   those cannot be represented in a serialized form. If the
+   <constant>OPT_COMPRESSION</constant> option is turned on, the serialized
+   value will also be compressed before storage.</para>
   </para>
  </refsect1>
 
@@ -28,7 +37,7 @@
      <term><parameter>key</parameter></term>
      <listitem>
       <para>
-       Description...
+       The key under which to store the value.
       </para>
      </listitem>
     </varlistentry>
@@ -36,7 +45,7 @@
      <term><parameter>value</parameter></term>
      <listitem>
       <para>
-       Description...
+       The value to store.
       </para>
      </listitem>
     </varlistentry>
@@ -44,7 +53,7 @@
      <term><parameter>expiration</parameter></term>
      <listitem>
       <para>
-       Description...
+       The expiration time of the value, as a Unix timestamp.
       </para>
      </listitem>
     </varlistentry>
@@ -55,7 +64,8 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Description...
+   &return.success;
+   Use <methodname>Memcached::getResultCode</methodname> if necessary.
   </para>
  </refsect1>
 
@@ -67,14 +77,36 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-/* ... */
+$m = new Memcached();
+$m->addServer('localhost', 11211);
+
+$m->set('int', 99);
+$m->set('string', 'a simple string');
+$m->set('array', array(11, 12));
+/* expire 'object' key in 5 minutes */
+$m->set('object', new stdclass, time() + 300);
+
+
+var_dump($m->get('int'));
+var_dump($m->get('string'));
+var_dump($m->get('array'));
+var_dump($m->get('object'));
 ?>
 ]]>
     </programlisting>
     &example.outputs.similar;
     <screen>
 <![CDATA[
-...
+int(99)
+string(15) "a simple string"
+array(2) {
+  [0]=>
+  int(11)
+  [1]=>
+  int(12)
+}
+object(stdClass)#1 (0) {
+}
 ]]>
     </screen>
    </example>
@@ -85,7 +117,7 @@
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><methodname>Classname::Method</methodname></member>
+    <member><methodname>Memcached::setByKey</methodname></member>
    </simplelist>
   </para>
  </refsect1>
