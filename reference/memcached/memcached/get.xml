@@ -1,22 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 
 <refentry xml:id="memcached.get" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Memcached::get</refname>
-  <refpurpose>The get purpose</refpurpose>
+  <refpurpose>Retrieve an item</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>void</type><methodname>Memcached::get</methodname>
+   <modifier>public</modifier> <type>mixed</type><methodname>Memcached::get</methodname>
    <methodparam><type>string</type><parameter>key</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>cache_cb</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter role="reference">cas_token</parameter></methodparam>
+   <methodparam choice="opt"><type>callback</type><parameter>cache_cb</parameter></methodparam>
+   <methodparam choice="opt"><type>double</type><parameter role="reference">cas_token</parameter></methodparam>
   </methodsynopsis>
   <para>
-   The method description goes here.
+   <function>Memcached::get</function> returns the item that was previously
+   stored under the <parameter>key</parameter>. If the item is found and
+   <parameter>cas_token</parameter> variable is provided, it will contain the
+   CAS token value for the item. See
+   <methodname>Memcached::cas</methodname> for how to use CAS tokens. <link
+    linkend="memcached.callbacks">Read-through caching callback</link> may be
+   specified via <parameter>cache_cb</parameter>.
+  </para>
+  <para>
   </para>
  </refsect1>
 
@@ -28,7 +36,7 @@
      <term><parameter>key</parameter></term>
      <listitem>
       <para>
-       Description...
+       The key of the item to retrieve.
       </para>
      </listitem>
     </varlistentry>
@@ -36,7 +44,7 @@
      <term><parameter>cache_cb</parameter></term>
      <listitem>
       <para>
-       Description...
+       Read-through caching callback or &null;
       </para>
      </listitem>
     </varlistentry>
@@ -44,7 +52,7 @@
      <term><parameter>cas_token</parameter></term>
      <listitem>
       <para>
-       Description...
+       The variable to store the CAS token in.
       </para>
      </listitem>
     </varlistentry>
@@ -55,7 +63,9 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Description...
+   Returns the value stored in the cache or &false; on failure.
+   The <methodname>Memcached::getResultCode</methodname> will return
+   <constant>Memcached::RES_NOTFOUND</constant> if the key does not exist.
   </para>
  </refsect1>
 
@@ -63,20 +73,45 @@
   &reftitle.examples;
   <para>
    <example>
-    <title><function>Memcached::get</function> example</title>
+    <title><function>Memcached::get</function> example #1</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-/* ... */
+$m = new Memcached();
+$m->addServer('localhost', 11211);
+
+$m->set('foo', 100);
+var_dump($m->get('foo'));
 ?>
 ]]>
     </programlisting>
-    &example.outputs.similar;
+    &example.outputs;
     <screen>
 <![CDATA[
-...
+int(100)
 ]]>
     </screen>
+   </example>
+   <example>
+    <title><function>Memcached::get</function> example #2</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$m = new Memcached();
+$m->addServer('localhost', 11211);
+
+if (!($ip = $m->get('ip_block'))) {
+    if ($m->getResultCode() == Memcached::RES_NOTFOUND) {
+        $ip = array();
+        $m->set('ip_block', $ip);
+    } else {
+        /* log error */
+        ...
+    }
+}
+?>
+]]>
+    </programlisting>
    </example>
   </para>
  </refsect1>
@@ -85,7 +120,9 @@
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><methodname>Classname::Method</methodname></member>
+    <member><methodname>Memcached::getByKey</methodname></member>
+    <member><methodname>Memcached::getMulti</methodname></member>
+    <member><methodname>Memcached::getDelayed</methodname></member>
    </simplelist>
   </para>
  </refsect1>
