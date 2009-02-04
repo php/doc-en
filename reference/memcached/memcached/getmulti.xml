@@ -1,21 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 
 <refentry xml:id="memcached.getmulti" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Memcached::getMulti</refname>
-  <refpurpose>The getMulti purpose</refpurpose>
+  <refpurpose>Retrieve multiple items</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>void</type><methodname>Memcached::getMulti</methodname>
+   <modifier>public</modifier> <type>mixed</type><methodname>Memcached::getMulti</methodname>
    <methodparam><type>array</type><parameter>keys</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter role="reference">cas_tokens</parameter></methodparam>
+   <methodparam choice="opt"><type>array</type><parameter role="reference">cas_tokens</parameter></methodparam>
   </methodsynopsis>
   <para>
-   The method description goes here.
+   <function>Memcached::getMulti</function> is similar to
+   <methodname>Memcached::get</methodname>, but instead of a single key
+   item, it retrievess multiple items the keys of which are specified in the
+   <parameter>keys</parameter> array. If <parameter>cas_tokens</parameter>
+   variable is provided, it is filled with the CAS token values for the found
+   items.
+   <note>
+    Unlike <methodname>Memcached::get</methodname> it is not possible to
+    specify a read-through cache callback for
+    <function>Memcached::getMulti</function>, because the memcache protocol
+    does provide information on which keys were not found in the multi-key
+    request.
+   </note>
   </para>
  </refsect1>
 
@@ -27,7 +39,7 @@
      <term><parameter>keys</parameter></term>
      <listitem>
       <para>
-       Description...
+       Array of keys to retrieve.
       </para>
      </listitem>
     </varlistentry>
@@ -35,7 +47,7 @@
      <term><parameter>cas_tokens</parameter></term>
      <listitem>
       <para>
-       Description...
+       The variable to store the CAS tokens for the found items.
       </para>
      </listitem>
     </varlistentry>
@@ -46,7 +58,8 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Description...
+   Returns the array of found items or &false; on failure.
+   Use <methodname>Memcached::getResultCode</methodname> if necessary.
   </para>
  </refsect1>
 
@@ -58,14 +71,35 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-/* ... */
+$m = new Memcached();
+$m->addServer('localhost', 11211);
+
+$items = array(
+    'key1' => 'value1',
+    'key2' => 'value2',
+    'key3' => 'value3'
+);
+$m->setMulti($items);
+$result = $m->getMulti(array('key1', 'key3', 'badkey'), $cas);
+var_dump($result, $cas);
 ?>
 ]]>
     </programlisting>
     &example.outputs.similar;
     <screen>
 <![CDATA[
-...
+array(2) {
+  ["key1"]=>
+  string(6) "value1"
+  ["key3"]=>
+  string(6) "value3"
+}
+array(2) {
+  ["key1"]=>
+  float(2360)
+  ["key3"]=>
+  float(2362)
+}
 ]]>
     </screen>
    </example>
@@ -76,7 +110,9 @@
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><methodname>Classname::Method</methodname></member>
+    <member><methodname>Memcached::getMultiByKey</methodname></member>
+    <member><methodname>Memcached::get</methodname></member>
+    <member><methodname>Memcached::getDelayed</methodname></member>
    </simplelist>
   </para>
  </refsect1>
