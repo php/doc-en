@@ -1,22 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 
 <refentry xml:id="memcached.addserver" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Memcached::addServer</refname>
-  <refpurpose>The addServer purpose</refpurpose>
+  <refpurpose>Add a server to the server pool</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>void</type><methodname>Memcached::addServer</methodname>
+   <modifier>public</modifier> <type>bool</type><methodname>Memcached::addServer</methodname>
    <methodparam><type>string</type><parameter>host</parameter></methodparam>
-   <methodparam><type>string</type><parameter>port</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>weight</parameter></methodparam>
+   <methodparam><type>int</type><parameter>port</parameter></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>weight</parameter></methodparam>
   </methodsynopsis>
   <para>
-   The method description goes here.
+   <function>Memcached::addServer</function> adds the specified server to the
+   server pool. No connection is established to the server at this time, but
+   if you are using consistent key distribution option (via
+   <constant>Memcached::DISTRIBUTION_CONSISTENT</constant> or
+   <constant>Memcached::OPT_LIBKETAMA_COMPATIBLE</constant>), some of the
+   internal data structures will have to be updated. Thus, if you need to add
+   multiple servers, it is better to use
+   <methodname>Memcached::addServers</methodname> as the update then happens
+   only once.
+  </para>
+  <para>
+   The same server may appear multiple times in the server pool, because no
+   duplication checks are made. This is not advisable; instead, use the
+   <parameter>weight</parameter> option to increase the selection weighting of
+   this server.
   </para>
  </refsect1>
 
@@ -28,7 +42,9 @@
      <term><parameter>host</parameter></term>
      <listitem>
       <para>
-       Description...
+       The hostname of the memcache server. If the hostname is invalid, data-related
+       operations will set 
+       <constant>Memcached::RES_HOST_LOOKUP_FAILURE</constant> result code.
       </para>
      </listitem>
     </varlistentry>
@@ -36,7 +52,8 @@
      <term><parameter>port</parameter></term>
      <listitem>
       <para>
-       Description...
+       The port on which memcache is running. Usually, this is
+       <literal>11211</literal>.
       </para>
      </listitem>
     </varlistentry>
@@ -44,7 +61,11 @@
      <term><parameter>weight</parameter></term>
      <listitem>
       <para>
-       Description...
+       The weight of the server relative to the total weight of all the
+       servers in the pool. This controls the probability of the server being
+       selected for operations. This is used only with consistent distribution
+       option and usually corresponds to the amount of memory available to
+       memcache on that server.
       </para>
      </listitem>
     </varlistentry>
@@ -55,7 +76,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Description...
+   &return.success;
   </para>
  </refsect1>
 
@@ -67,16 +88,15 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-/* ... */
+$m = new Memcached();
+
+/* Add 2 servers, so that the second one
+   is twice as likely to be selected. */
+$m->addServer('mem1.domain.com', 11211, 33);
+$m->addServer('mem2.domain.com', 11211, 67);
 ?>
 ]]>
     </programlisting>
-    &example.outputs.similar;
-    <screen>
-<![CDATA[
-...
-]]>
-    </screen>
    </example>
   </para>
  </refsect1>
@@ -85,7 +105,7 @@
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><methodname>Classname::Method</methodname></member>
+    <member><methodname>Memcached::addServers</methodname></member>
    </simplelist>
   </para>
  </refsect1>
