@@ -1,22 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 
 <refentry xml:id="memcached.getdelayed" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Memcached::getDelayed</refname>
-  <refpurpose>The getDelayed purpose</refpurpose>
+  <refpurpose>Request multiple items</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>void</type><methodname>Memcached::getDelayed</methodname>
+   <modifier>public</modifier> <type>bool</type><methodname>Memcached::getDelayed</methodname>
    <methodparam><type>array</type><parameter>keys</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>with_cas</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>value_cb</parameter></methodparam>
+   <methodparam choice="opt"><type>bool</type><parameter>with_cas</parameter></methodparam>
+   <methodparam choice="opt"><type>callback</type><parameter>value_cb</parameter></methodparam>
   </methodsynopsis>
   <para>
-   The method description goes here.
+   <function>Memcached::getDelayed</function> issues a request to memcache for
+   multiple items the keys of which are specified in the
+   <parameter>keys</parameter> array. The method does not wait for response
+   and returns right away. When you are ready to collect the items, call
+   either <methodname>Memcached::fetch</methodname> or
+   <methodname>Memcached::fetchAll</methodname>. If <parameter>with_cas</parameter>
+   is true, the CAS token values will also be requested.
+  </para>
+  <para>
+   Instead of fetching the results explicitly, you can specify a <link
+    linkend="memcached.callbacks">result callback</link> via
+   <parameter>value_cb</parameter> parameter.
   </para>
  </refsect1>
 
@@ -28,7 +39,7 @@
      <term><parameter>keys</parameter></term>
      <listitem>
       <para>
-       Description...
+       Array of keys to request.
       </para>
      </listitem>
     </varlistentry>
@@ -36,7 +47,7 @@
      <term><parameter>with_cas</parameter></term>
      <listitem>
       <para>
-       Description...
+       Whether to request CAS token values also.
       </para>
      </listitem>
     </varlistentry>
@@ -44,7 +55,7 @@
      <term><parameter>value_cb</parameter></term>
      <listitem>
       <para>
-       Description...
+       The result callback or &null;.
       </para>
      </listitem>
     </varlistentry>
@@ -55,7 +66,8 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Description...
+   &return.success;
+   Use <methodname>Memcached::getResultCode</methodname> if necessary.
   </para>
  </refsect1>
 
@@ -67,14 +79,46 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-/* ... */
+$m = new Memcached();
+$m->addServer('localhost', 11211);
+
+$m->set('int', 99);
+$m->set('string', 'a simple string');
+$m->set('array', array(11, 12));
+
+$m->getDelayed(array('int', 'array'), true);
+var_dump($m->fetchAll());
 ?>
 ]]>
     </programlisting>
-    &example.outputs.similar;
+    &example.outputs;
     <screen>
 <![CDATA[
-...
+array(2) {
+  [0]=>
+  array(3) {
+    ["key"]=>
+    string(3) "int"
+    ["value"]=>
+    int(99)
+    ["cas"]=>
+    float(2363)
+  }
+  [1]=>
+  array(3) {
+    ["key"]=>
+    string(5) "array"
+    ["value"]=>
+    array(2) {
+      [0]=>
+      int(11)
+      [1]=>
+      int(12)
+    }
+    ["cas"]=>
+    float(2365)
+  }
+}
 ]]>
     </screen>
    </example>
@@ -85,7 +129,9 @@
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><methodname>Classname::Method</methodname></member>
+    <member><methodname>Memcached::getDelayedByKey</methodname></member>
+    <member><methodname>Memcached::fetch</methodname></member>
+    <member><methodname>Memcached::fetchAll</methodname></member>
    </simplelist>
   </para>
  </refsect1>
