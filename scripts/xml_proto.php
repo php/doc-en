@@ -40,6 +40,9 @@
          function xml reference files will be generated in
 */
 
+echo "\nUpdate:\nDo not use this deprecated script, but instead use /phpdoc/scripts/docgen/\n";
+exit;
+
 $funclist=array();
 $num_funcs=0;
 
