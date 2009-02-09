@@ -50,6 +50,12 @@ class FileData {
      */
     protected $data;
 
+    /**
+     * @var string
+     * @internal includes concatenated search tags
+     */
+    protected static $tags;
+
 
 
     /**
@@ -70,6 +76,17 @@ class FileData {
      * @return void
      */
     public function __construct($file, $isTrans) {
+        self::$tags = implode('|',
+            array(
+                'EN-Revision',
+                'Revision',
+                'Maintainer',
+                'Status',
+                'Credits',
+                'Rev-Revision',
+                'Reviewer',
+            )
+        );
         $this->isTranslation = (bool) $isTrans;
         $this->data = array();
 
@@ -135,7 +152,7 @@ class FileData {
     protected function setMetaData($rawData) {
         $matches = null;
         if (0 < preg_match_all(
-                '/(EN-Revision|Revision|Maintainer|Status|Credits|Rev-Revision|Reviewer): (.*)\s+/iU',
+                '/('.self::$tags.'): (.*)\s+/iU',
                 $rawData, $matches, PREG_PATTERN_ORDER)) {
             for($i=0, $j=count($matches[0]); $i < $j; ++$i) {
                 $key = strtolower($matches[1][$i]);
