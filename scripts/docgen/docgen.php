@@ -544,16 +544,17 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 		break;
 		
 		case 'versions.xml':
-			$markup = "<!-- Functions -->\n";
+			$markup = "";		
 			/* Function list */
 			if ($functions = $obj->getFunctions()) {
+				$markup .= "<!-- Functions -->\n";
 				foreach ($functions as $function) {
 					$markup .= " <function name='". strtolower($function->getName()) ."' from='PHP 5 &gt;= 5.2.0'/>\n";
 				}
 			}
-			$markup .= " <!-- Methods -->\n";
 			/* Method list */
 			if ($classes = $obj->getClasses()) {
+				$markup .= " <!-- Methods -->\n";
 				foreach ($classes as $class) {
 					foreach ($class->getMethods() as $method) {
 						$markup .= " <function name='". strtolower($class->name .'::'. $method->getName()) ."' from='PHP 5 &gt;= 5.2.0'/>\n";
