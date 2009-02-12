@@ -549,7 +549,7 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 			if ($functions = $obj->getFunctions()) {
 				$markup .= "<!-- Functions -->\n";
 				foreach ($functions as $function) {
-					$markup .= " <function name='". strtolower($function->getName()) ."' from='PHP 5 &gt;= 5.2.0'/>\n";
+					$markup .= " <function name='". strtolower($function->getName()) ."' from='Unknown'/>\n";
 				}
 			}
 			/* Method list */
