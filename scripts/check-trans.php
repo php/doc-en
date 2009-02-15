@@ -847,7 +847,7 @@ for( $i = 0; $i < count($match[1]); $i++) {
 
   preg_match_all("/<ooclass><classname>(.*?)<\/classname><\/ooclass>/s", $match[1][$i], $match2);
 
-  $en_classsynopsis[$i]['ooclass']['classname'] = $match2[1][0];
+  ( isset($match2[1][0]) ) ? $en_classsynopsis[$i]['ooclass']['classname'] = $match2[1][0] : $en_classsynopsis[$i]['ooclass']['classname'] = '';
 
   preg_match_all("/<fieldsynopsis><type>(.*?)<\/type><varname>(.*?)<\/varname><\/fieldsynopsis>/s", $match[1][$i], $match2);
 
@@ -864,7 +864,7 @@ for( $i = 0; $i < count($match[1]); $i++) {
 
   preg_match_all("/<ooclass><classname>(.*?)<\/classname><\/ooclass>/s", $match[1][$i], $match2);
 
-  $lang_classsynopsis[$i]['ooclass']['classname'] = $match2[1][0];
+  ( isset($match2[1][0]) ) ? $lang_classsynopsis[$i]['ooclass']['classname'] = $match2[1][0] : $lang_classsynopsis[$i]['ooclass']['classname'] = '';
 
   preg_match_all("/<fieldsynopsis><type>(.*?)<\/type><varname>(.*?)<\/varname><\/fieldsynopsis>/s", $match[1][$i], $match2);
 
