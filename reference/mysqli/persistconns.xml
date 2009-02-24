@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 1.1 $ -->
+<chapter xml:id="mysqli.persistconns" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+
+ <title>The mysqli Extension and Persistent Connections</title>
+
+ <para>
+  Persistent connection support is now present in PHP 5.3 for the
+  <literal>mysqli</literal> extension. Support was already present in PDO
+  MYSQL and ext/mysql. The idea behind persistent connections is that a
+  connection between a client process and a database can be reused by a
+  client process, rather than being created and destroyed multiple
+  times. This reduces the overhead of creating fresh connections every
+  time one is required, as unused connections are cached and ready to be
+  reused.
+ </para>
+
+ <para>
+  The problem with persistent connections is that they can be left in
+  unpredictable states by clients. For example, a table lock might be
+  activated before a client terminates unexpectedly. A new client
+  process reusing this persistent connection will get the connection
+  <quote>as is</quote>. Any cleanup would need to be done by the new
+  client process before it could make good use of the persistent
+  connection, increasing the burden on the programmer.
+ </para>
+
+ <para>
+  The persistent connection of the <literal>mysqli</literal> extension
+  however provides built-in cleanup handling code. The cleanup carried
+  out by <literal>mysqli</literal> includes:
+ </para>
+
+ <itemizedlist>
+
+  <listitem>
+   <para>
+    Rollback active transactions
+   </para>
+  </listitem>
+
+  <listitem>
+   <para>
+    Close and drop temporary tables
+   </para>
+  </listitem>
+
+  <listitem>
+   <para>
+    Unlock tables
+   </para>
+  </listitem>
+
+  <listitem>
+   <para>
+    Reset session variables
+   </para>
+  </listitem>
+
+  <listitem>
+   <para>
+    Close prepared statements (always happens with PHP)
+   </para>
+  </listitem>
+
+  <listitem>
+   <para>
+    Close handler
+   </para>
+  </listitem>
+
+  <listitem>
+   <para>
+    Release locks acquired with <function>GET_LOCK</function>
+   </para>
+  </listitem>
+
+ </itemizedlist>
+
+ <para>
+  This ensures that persistent connections are in a clean state on
+  return from the connection pool, before the client process uses them.
+ </para>
+
+ <para>
+  The <literal>mysqli</literal> extension does this cleanup by
+  automatically calling the C-API function
+  <literal>mysql_change_user()</literal>.
+ </para>
+
+ <para>
+  The automatic cleanup feature has advantages and disadvantages though.
+  The advantage is that the programmer no longer needs to worry about
+  adding cleanup code, as it is called automatically. However, the
+  disadvantage is that the code could <emphasis>potentially</emphasis>
+  be a little slower, as the code to perform the cleanup needs to run
+  each time a connection is returned from the connection pool.
+ </para>
+
+ <para>
+  If you want to switch off the automatic cleanup code, you can compile
+  PHP with <literal>MYSQLI_NO_CHANGE_USER_ON_PCONNECT</literal> defined.
+ </para>
+
+</chapter>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
