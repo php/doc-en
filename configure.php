@@ -463,7 +463,7 @@ if ($ac['VERSION_FILES'] === 'yes') {
 
 
     echo "Iterating over extension specific version files... ";
-    foreach(glob("en/reference/*/versions.xml") as $file) {
+    foreach(glob("en/*/*/versions.xml") as $file) {
         if($tmp->load($file)) {
             foreach($tmp->getElementsByTagName("function") as $function) {
                 $function = $dom->importNode($function, true);
