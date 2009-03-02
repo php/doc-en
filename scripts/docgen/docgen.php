@@ -47,7 +47,8 @@ $DOC_EXT = array(
 	'examples.xml'	 => 'examples.tpl',
 	'reference.xml'  => 'reference.tpl',
 	'ini.xml'		 => 'ini.tpl',
-	'versions.xml'	 => 'versions.tpl'
+	'versions.xml'	 => 'versions.tpl',
+	'.cvsignore'	 => 'cvsignore.tpl',
 );
 
 function usage() { /* {{{ */
