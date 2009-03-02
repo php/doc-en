@@ -1,15 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 
 <section xml:id="{EXT_NAME_ID}.installation" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  &reftitle.install;
- <!-- There are various PECL related entities in language-snippets.ent -->
- <para>
-  To enable {EXT_NAME} support, configure PHP with ...
- </para>
- <para>
-  Windows users ...
- </para>
+
+ {EXT_INSTALL_MAIN}
+ {EXT_INSTALL_WIN}
 </section>
 
 

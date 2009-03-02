@@ -72,6 +72,7 @@ function usage() { /* {{{ */
 		-h,--help	-- show this help
 		-m,--method	-- method name (require -c)
 		-o,--output	-- output dir
+		-p,--pecl	-- is a PECL extension
 		-q,--quiet	-- quiet mode
 		-v,--version	-- show the version
 		-V,--verbose 	-- disable show progress
@@ -471,7 +472,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 /* }}} */
 
 function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /* {{{ */
-	global $INFO;
+	global $INFO, $OPTION;
 
 	switch ($xml_file) {
 		case 'ini.xml':
@@ -543,13 +544,53 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 			}
 		break;
 		
+		case 'configure.xml':
+
+			$ident  = get_ident_size('EXT_INSTALL_MAIN', $content);
+			$ident2 = get_ident_size('EXT_INSTALL_WIN',  $content);
+		
+			$markup  = '';
+			$markup2 = '';
+			if ($OPTION['pecl'] === true) {
+
+				$markup .= "<para>\n";
+				$markup .= str_repeat(' ', $ident + 1) ."&pecl.info;\n";
+				$markup .= str_repeat(' ', $ident + 1) ."<link xlink:href=\"&url.pecl.package;{EXT_NAME_ID}\">&url.pecl.package;{EXT_NAME_ID}</link>\n";
+				$markup .= str_repeat(' ', $ident) . "</para>\n";
+
+				$markup2 .= "<para>\n";
+				$markup2 .= str_repeat(' ', $ident2 + 1) ."The latest PECL/{EXT_NAME_ID} Win32 DLL is available here:\n";
+				$markup2 .= str_repeat(' ', $ident2 + 1) ."<link xlink:href=\"&url.pecl.win.ext;php_{EXT_NAME_ID}.dll\">php_{EXT_NAME_ID}.dll</link>\n";
+				$markup2 .= str_repeat(' ', $ident2) ."</para>\n";
+			} else {
+
+				$markup .= "<para>\n";
+				$markup .= str_repeat(' ', $ident + 1) ."Use <option role=\"configure\">--with-{EXT_NAME_ID}[=DIR]</option> when compiling PHP.\n";
+				$markup .= str_repeat(' ', $ident) ."</para>\n";
+
+				$markup2 .= "<para>\n";
+				$markup2 .= str_repeat(' ', $ident2 + 1) ."Windows users should include <filename>php_{EXT_NAME_ID}.dll</filename> into &php.ini;\n";
+				$markup2 .= str_repeat(' ', $ident2) ."</para>\n";
+			}
+
+			$content = str_replace('{EXT_INSTALL_MAIN}', $markup, $content);
+			$content = str_replace('{EXT_INSTALL_WIN}', $markup2, $content);
+
+		break;
+
 		case 'versions.xml':
+
+			$version_default = 'PHP 5 &gt;= Unknown';
+			if ($OPTION['pecl'] === true) {
+				$version_default = 'PECL {EXT_NAME_ID} &gt;= Unknown';
+			}
+
 			$markup = "";		
 			/* Function list */
 			if ($functions = $obj->getFunctions()) {
 				$markup .= "<!-- Functions -->\n";
 				foreach ($functions as $function) {
-					$markup .= " <function name='". strtolower($function->getName()) ."' from='Unknown'/>\n";
+					$markup .= " <function name='". strtolower($function->getName()) ."' from='$version_default'/>\n";
 				}
 			}
 			/* Method list */
@@ -557,7 +598,7 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 				$markup .= " <!-- Methods -->\n";
 				foreach ($classes as $class) {
 					foreach ($class->getMethods() as $method) {
-						$markup .= " <function name='". strtolower($class->name .'::'. $method->getName()) ."' from='PHP 5 &gt;= 5.2.0'/>\n";
+						$markup .= " <function name='". strtolower($class->name .'::'. $method->getName()) ."' from='$version_default'/>\n";
 					}
 				}
 			}
@@ -736,12 +777,14 @@ $OPTION['function']  = NULL;
 $OPTION['output']	 = getcwd();
 $OPTION['verbose']   = true;
 $OPTION['quiet']	 = false;
+$OPTION['pecl']		 = false;
 
 $arropts = array(
 	'verbose' 		=> 'v',  /* version */
 	'version' 		=> 'V',  /* verbose */
 	'quiet'   		=> 'q',  /* quiet */
 	'help'	  		=> 'h',  /* help */
+	'pecl'			=> 'p',  /* pecl */
 	'output:' 		=> 'o:', /* output dir */
 	'class:'  		=> 'c:', /* classname */
 	'extension:' 	=> 'e:', /* extension */
@@ -799,6 +842,10 @@ foreach ($options as $opt => $value) {
 				}
 			}
 			$OPTION['output'] = $value;
+			break;
+		case 'p':
+		case 'pecl':
+			$OPTION['pecl'] = true;
 			break;
 		case 'q':
 		case 'quiet':
