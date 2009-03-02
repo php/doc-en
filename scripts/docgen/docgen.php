@@ -781,8 +781,8 @@ $OPTION['quiet']	 = false;
 $OPTION['pecl']		 = false;
 
 $arropts = array(
-	'verbose' 		=> 'v',  /* version */
-	'version' 		=> 'V',  /* verbose */
+	'verbose' 		=> 'v',  /* verbose */
+	'version' 		=> 'V',  /* version */
 	'quiet'   		=> 'q',  /* quiet */
 	'help'	  		=> 'h',  /* help */
 	'pecl'			=> 'p',  /* pecl */
