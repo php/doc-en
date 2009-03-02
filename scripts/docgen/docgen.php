@@ -19,7 +19,7 @@
   $Id$
 */
 
-if (!(extension_loaded('reflection') & extension_loaded('pcre'))) {
+if (!(extension_loaded('reflection') && extension_loaded('pcre'))) {
 	die("ERROR: Docgen requires the Reflection and PCRE extensions.\n");
 }
 
