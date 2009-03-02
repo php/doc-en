@@ -447,7 +447,6 @@ $compact = defined('LIBXML_COMPACT') ? LIBXML_COMPACT : 0;
 $LIBXML_OPTS = LIBXML_NOENT | LIBXML_NSCLEAN | $compact;
 
 if ($ac['VERSION_FILES'] === 'yes') {
-    $versionfile = $ac['srcdir'] . '/phpbook/phpbook-xsl/version.xml';
     $dom = new DOMDocument;
     $dom->preserveWhitespace = false;
     $dom->formatOutput       = true;
@@ -455,11 +454,7 @@ if ($ac['VERSION_FILES'] === 'yes') {
     $tmp = new DOMDocument;
     $tmp->preserveWhitespace = false;
 
-    if (!$dom->load($versionfile)) {
-        print_xml_errors();
-        errors_are_bad(1);
-    }
-    $versions = $dom->documentElement;
+    $versions = $dom->appendChild($dom->createElement("versions"));
 
 
     echo "Iterating over extension specific version files... ";
