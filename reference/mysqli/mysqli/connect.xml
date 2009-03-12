@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.5 $ -->
+<!-- $Revision: 1.6 $ -->
 <refentry xml:id="mysqli.connect" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>mysqli::__construct</refname>
@@ -149,17 +149,28 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$mysqli = new mysqli("localhost", "my_user", "my_password", "world");
+$mysqli = new mysqli('localhost', 'my_user', 'my_password', 'my_db');
 
-/* check connection */
+/*
+ * This is the "official" OO way to do it,
+ * BUT $connect_error was broken until PHP 5.2.9 and 5.3.0RC1.
+ */
 if ($mysqli->connect_error) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
+    die('Connect Error (' . $mysqli->connect_errno . ') '
+            . $mysqli->connect_error);
 }
 
-printf("Host information: %s\n", $mysqli->host_info);
+/*
+ * Use this instead of $connect_error if you need to ensure
+ * compatibility with PHP versions prior to 5.2.9 and 5.3.0RC1.
+ */
+if (mysqli_connect_error()) {
+    die('Connect Error (' . mysqli_connect_errno() . ') '
+            . mysqli_connect_error());
+}
 
-/* close connection */
+echo 'Success... ' . $mysqli->host_info . "\n";
+
 $mysqli->close();
 ?>
 ]]>
@@ -170,17 +181,15 @@ $mysqli->close();
    <programlisting role="php">
 <![CDATA[
 <?php
-$link = mysqli_connect("localhost", "my_user", "my_password", "world");
+$link = mysqli_connect('localhost', 'my_user', 'my_password', 'my_db');
 
-/* check connection */
 if (!$link) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
+    die('Connect Error (' . mysqli_connect_errno() . ') '
+            . mysqli_connect_error());
 }
 
-printf("Host information: %s\n", mysqli_get_host_info($link));
+echo 'Success... ' . mysqli_get_host_info($link) . "\n";
 
-/* close connection */
 mysqli_close($link);
 ?>
 ]]>
@@ -199,7 +208,8 @@ Host information: Localhost via UNIX socket
   <note>
    <para>
     OO syntax only: If a connection fails an object is still returned. To check 
-    if the connection failed then use the <link 
+    if the connection failed then use either the 
+    <function>mysqli_connect_error</function> function or the <link 
     linkend="mysqli.connect-error">mysqli->connect_error</link> property like in 
     the examples above.
    </para>
