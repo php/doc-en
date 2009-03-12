@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.10 $ -->
+<!-- $Revision: 1.11 $ -->
 <refentry xml:id="function.ingres-fetch-array" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>ingres_fetch_array</refname>
@@ -10,8 +10,8 @@
   &reftitle.description;
   <methodsynopsis>
    <type>array</type><methodname>ingres_fetch_array</methodname>
+   <methodparam><type>resource</type><parameter>result</parameter></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>result_type</parameter></methodparam>
-   <methodparam choice="opt"><type>resource</type><parameter>link</parameter></methodparam>
   </methodsynopsis>
   <para>
    This function is an extended version of
@@ -22,18 +22,18 @@
   </para>
   <para>
    If two or more columns of the result have the same field names,
-   the last column will take precedence. To access the other
-   column(s) of the same name, you must use the numeric index of the
-   column or make an alias for the column.
+   the last column will take precedence. To access the another
+   column or columns of the same name, you must use the numeric index of the
+   column or make an alias for the column. For example:
    <informalexample>
     <programlisting role="php">
 <![CDATA[
 <?php
 
-ingres_query("select t1.f1 as foo t2.f1 as bar from t1, t2");
-$result = ingres_fetch_array();
-$foo = $result["foo"];
-$bar = $result["bar"];
+$result = ingres_query($link, "select ap_place as city, ap_ccode as country from airport where ap_iatacode = 'VLL'"); 
+$result = ingres_fetch_array($result);
+$foo = $result["city"];
+$bar = $result["country"];
 
 ?>
 ]]>
@@ -41,11 +41,28 @@ $bar = $result["bar"];
    </informalexample>
   </para>
   <para>
-   Speed-wise, the function is identical to
+   With regard to speed, the function is identical to
    <function>ingres_fetch_object</function>, and almost as quick as
    <function>ingres_fetch_row</function> (the difference is
    insignificant).
   </para>
+  <para>
+   By default, arrays created by <function>ingres_fetch_array</function> start
+   from position 1 and not 0 as with other DBMS extensions. The starting position
+   can be adjusted to 0 using the configuration parameter <link
+   linkend="ini.ingres.array-index-start">ingres.array_index_start</link>.
+  </para>
+  <note>
+   <title>Related Configurations</title>
+   <para>
+    See also the <link
+    linkend="ini.ingres.array-index-start">ingres.array_index_start</link>, <link
+    linkend="ini.ingres.fetch-buffer-size">ingres.fetch_buffer_size</link>
+    and <link linkend="ini.ingres.utf8">ingres.utf8</link>
+    directives in <link linkend="ingres.configuration">Runtime
+    Configuration</link>.
+   </para>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -53,21 +70,20 @@ $bar = $result["bar"];
   <para>
    <variablelist>
     <varlistentry>
-     <term><parameter>result_type</parameter></term>
+     <term><parameter>result</parameter></term>
      <listitem>
       <para>
-       <parameter>result_type</parameter> can be INGRES_NUM for
-       enumerated array, INGRES_ASSOC for associative array, or
-       INGRES_BOTH (default).
+       The query result identifier
       </para>
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>link</parameter></term>
+     <term><parameter>result_type</parameter></term>
      <listitem>
       <para>
-       The connection link identifier. If not specified, the last opened link
-       is used.
+       The result type. This <parameter>result_type</parameter> can be INGRES_NUM for
+       enumerated array, INGRES_ASSOC for associative array, or
+       INGRES_BOTH (default).
       </para>
      </listitem>
     </varlistentry>
@@ -79,7 +95,7 @@ $bar = $result["bar"];
   &reftitle.returnvalues;
   <para>
    Returns an array that corresponds to the fetched row,
-   or &false; if there are no more rows.
+   or &false; if there are no more rows
   </para>
  </refsect1>
 
@@ -87,14 +103,14 @@ $bar = $result["bar"];
   &reftitle.examples;
   <para>
    <example>
-    <title><function>ingres_fetch_array</function> example</title>
+    <title>Fetch a row of result into an array</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-ingres_connect($database, $user, $password);
+$link = ingres_connect($database, $user, $password);
 
-ingres_query("select * from table");
-while ($row = ingres_fetch_array()) {
+$result = ingres_query($link,"select * from table");
+while ($row = ingres_fetch_array($result)) {
     echo $row["user_id"];  // using associative array
     echo $row["fullname"];
     echo $row[1];          // using enumerated array
