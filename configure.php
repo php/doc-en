@@ -189,10 +189,10 @@ function print_xml_errors($details = true) {
     $errors = libxml_get_errors();
     if ($errors && count($errors) > 0) {
         foreach($errors as $err) {
-            // Skip all XInclude errors
+            // Skip all XInclude errors and buffer increases
             if (!strpos($err->message, 'xi:include') && !strpos($err->message, 'element include')) {
                 $errmsg = wordwrap(" " . trim($err->message), 80, "\n ");
-                if ($details) {
+                if ($details && $err->file) {
                     $file = file(urldecode($err->file)); // libxml appears to urlencode() its errors strings
                     if (isset($file[$err->line])) {
                         $line = rtrim($file[$err->line - 1]);
