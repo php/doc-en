@@ -611,12 +611,6 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 }
 /* }}} */
 
-function get_extension_name($string) { /* {{{ */
-	preg_match('/<[^:]+:([^>]+)/', $string, $match);
-	return isset($match[1]) ? format_id($match[1]) : false;
-}
-/* }}} */
-
 function write_doc(Reflector $obj, $type) { /* {{{ */
 	global $OPTION, $INFO, $TEMPLATE, $DOC_EXT;
 
@@ -708,7 +702,7 @@ function gen_docs($name, $type) {	/* {{{ */
 			$function = new ReflectionFunction($name);
 
 			if (!$INFO['actual_extension']) {
-				if ($extname = get_extension_name((string) $function)) {
+				if ($extname = $function->getExtensionName()) {
 					$INFO['actual_extension'] = $extname;
 				} else {
 					add_warning("The function {$name} lacks Reflection information");
@@ -724,7 +718,7 @@ function gen_docs($name, $type) {	/* {{{ */
 			$class = new ReflectionClass($OPTION['class']);
 
 			if (!$INFO['actual_extension']) {
-				if ($extname = get_extension_name((string) $class)) {
+				if ($extname = $class->getExtensionName()) {
 					$INFO['actual_extension'] = $extname;
 				} else {
 					add_warning("The method {$name} lacks Reflection information");
@@ -747,7 +741,7 @@ function gen_docs($name, $type) {	/* {{{ */
 			$class = new ReflectionClass($name);
 
 			if (!$INFO['actual_extension']) {
-				if ($extname = get_extension_name((string) $class)) {
+				if ($extname = $class->getExtensionName()) {
 					$INFO['actual_extension'] = $extname;
 				} else {
 					add_warning("The class {$name} lacks Reflection information");
