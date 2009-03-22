@@ -703,7 +703,7 @@ function gen_docs($name, $type) {	/* {{{ */
 
 			if (!$INFO['actual_extension']) {
 				if ($extname = $function->getExtensionName()) {
-					$INFO['actual_extension'] = $extname;
+					$INFO['actual_extension'] = format_id($extname);
 				} else {
 					add_warning("The function {$name} lacks Reflection information");
 				}
@@ -719,7 +719,7 @@ function gen_docs($name, $type) {	/* {{{ */
 
 			if (!$INFO['actual_extension']) {
 				if ($extname = $class->getExtensionName()) {
-					$INFO['actual_extension'] = $extname;
+					$INFO['actual_extension'] = format_id($extname);
 				} else {
 					add_warning("The method {$name} lacks Reflection information");
 				}
@@ -742,7 +742,7 @@ function gen_docs($name, $type) {	/* {{{ */
 
 			if (!$INFO['actual_extension']) {
 				if ($extname = $class->getExtensionName()) {
-					$INFO['actual_extension'] = $extname;
+					$INFO['actual_extension'] = format_id($extname);
 				} else {
 					add_warning("The class {$name} lacks Reflection information");
 				}
