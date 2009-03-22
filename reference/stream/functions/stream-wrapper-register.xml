@@ -1,459 +1,483 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.16 $ -->
+<!-- $Revision: 1.17 $ -->
 <refentry xml:id="function.stream-wrapper-register" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>stream_wrapper_register</refname>
   <refpurpose>Register a URL wrapper implemented as a PHP class</refpurpose>
  </refnamediv>
- <refsect1>
-  <title>Description</title>
+ <refsect1 role="description">
+  &reftitle.description;
   <methodsynopsis>
    <type>bool</type><methodname>stream_wrapper_register</methodname>
    <methodparam><type>string</type><parameter>protocol</parameter></methodparam>
    <methodparam><type>string</type><parameter>classname</parameter></methodparam>
   </methodsynopsis>
   <para>
-   <function>stream_wrapper_register</function> allows you to implement
-   your own protocol handlers and streams for use with all the other
-   filesystem functions (such as <function>fopen</function>,
+   Allows you to implement your own protocol handlers and streams for use
+   with all the other filesystem functions (such as <function>fopen</function>,
    <function>fread</function> etc.).
   </para>
+ </refsect1><!-- }}} -->
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
   <para>
-   To implement a wrapper, you need to define a class with a number of
-   member functions, as defined below. When someone fopens your stream,
-   PHP will create an instance of <parameter>classname</parameter> and
-   then call methods on that instance.  You must implement the methods
-   exactly as described below - doing otherwise will lead to undefined
-   behaviour.
+   <variablelist>
+    <varlistentry>
+     <term><parameter>protocol</parameter></term>
+     <listitem>
+      <para>
+       The wrapper name to be registered.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>classname</parameter></term>
+     <listitem>
+      <para>
+       To implement a wrapper, you need to define a class with a number of
+       member functions, as defined below. When someone fopens your stream,
+       PHP will create an instance of <parameter>classname</parameter> and
+       then call methods on that instance.  You must implement the methods
+       exactly as described below - doing otherwise will lead to undefined
+       behaviour.
+      </para>
+      <para>
+       The instance of <parameter>classname</parameter> will be populated
+       with a <parameter>context</parameter> property referencing a
+       <literal>Context Resource</literal> which may be accessed with
+       <function>stream_context_get_options</function>.
+       If no context was passed to the stream creation function,
+       <parameter>context</parameter> will be set to &null;.
+      </para>
+      <methodsynopsis>
+       <type>bool</type><methodname>stream_open</methodname>
+       <methodparam><type>string</type><parameter>path</parameter></methodparam>
+       <methodparam><type>string</type><parameter>mode</parameter></methodparam>
+       <methodparam><type>int</type><parameter>options</parameter></methodparam>
+       <methodparam><type>string</type><parameter>opened_path</parameter></methodparam>
+      </methodsynopsis>
+      <para>
+       This method is called immediately after your stream object is
+       created.  <parameter>path</parameter> specifies the URL that was
+       passed to <function>fopen</function> and that this object is
+       expected to retrieve.  You can use <function>parse_url</function>
+       to break it apart.
+      </para>
+      <para>
+       <parameter>mode</parameter> is the mode used to open the file,
+       as detailed for <function>fopen</function>.  You are responsible
+       for checking that <parameter>mode</parameter> is valid for the
+       <parameter>path</parameter> requested.
+      </para>
+      <para>
+       <parameter>options</parameter> holds additional flags set
+       by the streams API. It can hold one or more of the following
+       values OR'd together.
+       <informaltable>
+        <tgroup cols="2">
+         <thead>
+          <row>
+           <entry>Flag</entry>
+           <entry>Description</entry>
+          </row>
+         </thead>
+         <tbody>
+          <row>
+           <entry>STREAM_USE_PATH</entry>
+           <entry>If <parameter>path</parameter> is relative, search
+            for the resource using the include_path.
+           </entry>
+          </row>
+          <row>
+           <entry>STREAM_REPORT_ERRORS</entry>
+           <entry>If this flag is set, you are responsible for raising
+            errors using <function>trigger_error</function> during
+            opening of the stream.  If this flag is not set, you
+            should not raise any errors.
+           </entry>
+          </row>
+         </tbody>
+        </tgroup>
+       </informaltable>
+      </para>
+      <para>
+       If the <parameter>path</parameter> is opened successfully,
+       and STREAM_USE_PATH is set in <parameter>options</parameter>,
+       you should set <parameter>opened_path</parameter> to the full
+       path of the file/resource that was actually opened.
+      </para>
+      <para>
+       If the requested resource was opened successfully, you should
+       return &true;, otherwise you should return &false;
+      </para>
+    
+      <methodsynopsis>
+       <type>void</type><methodname>stream_close</methodname>
+       <void/>
+      </methodsynopsis>
+      <para>
+       This method is called when the stream is closed, using
+       <function>fclose</function>.  You must release any resources
+       that were locked or allocated by the stream.
+      </para>
+    
+      <methodsynopsis>
+       <type>string</type><methodname>stream_read</methodname>
+       <methodparam><type>int</type><parameter>count</parameter></methodparam>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>fread</function>
+       and <function>fgets</function> calls on the stream.  You
+       must return up-to <parameter>count</parameter> bytes of data
+       from the current read/write position as a string.
+       If there are less than <parameter>count</parameter>
+       bytes available, return as many as are available.  If no
+       more data is available, return either &false; or an
+       empty string.
+       You must also update the read/write position of the stream
+       by the number of bytes that were successfully read.
+      </para>
+    
+      <methodsynopsis>
+       <type>int</type><methodname>stream_write</methodname>
+       <methodparam><type>string</type><parameter>data</parameter></methodparam>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>fwrite</function>
+       calls on the stream.  You should store <parameter>data</parameter>
+       into the underlying storage used by your stream.  If there is not
+       enough room, try to store as many bytes as possible.
+       You should return the number of bytes that were successfully
+       stored in the stream, or 0 if none could be stored.
+       You must also update the read/write position of the stream
+       by the number of bytes that were successfully written.
+      </para>
+    
+      <methodsynopsis>
+       <type>bool</type><methodname>stream_eof</methodname>
+       <void/>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>feof</function>
+       calls on the stream.  You should return &true; if the read/write
+       position is at the end of the stream and if no more data is available
+       to be read, or &false; otherwise.
+      </para>
+    
+      <methodsynopsis>
+       <type>int</type><methodname>stream_tell</methodname>
+       <void/>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>ftell</function>
+       calls on the stream.  You should return the current read/write
+       position of the stream.
+      </para>
+    
+      <methodsynopsis>
+       <type>bool</type><methodname>stream_seek</methodname>
+       <methodparam><type>int</type><parameter>offset</parameter></methodparam>
+       <methodparam><type>int</type><parameter>whence</parameter></methodparam>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>fseek</function>
+       calls on the stream.  You should update the read/write position
+       of the stream according to <parameter>offset</parameter> and
+       <parameter>whence</parameter>.  See <function>fseek</function>
+       for more information about these parameters.
+       Return &true; if the position was updated, &false; otherwise.
+      </para>
+    
+      <methodsynopsis>
+       <type>bool</type><methodname>stream_flush</methodname>
+       <void/>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>fflush</function>
+       calls on the stream.  If you have cached data in your stream
+       but not yet stored it into the underlying storage, you should
+       do so now.
+       Return &true; if the cached data was successfully stored (or
+       if there was no data to store), or &false; if the data could
+       not be stored.
+      </para>
+    
+      <methodsynopsis>
+       <type>array</type><methodname>stream_stat</methodname>
+       <void/>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>fstat</function>
+       calls on the stream and should return an array containing the same
+       values as appropriate for the stream.
+      </para>
+     
+      <methodsynopsis>
+       <type>resource</type><methodname>stream_cast</methodname>
+       <methodparam><type>int</type><parameter>cast_as</parameter></methodparam>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>stream_select</function>
+       calls on the stream and should return the underlying stream resource used
+       by the wrapper, or &false;. The
+       <parameter>cast_as</parameter> parameter can be
+       <constant>STREAM_CAST_FOR_SELECT</constant> when
+       <function>stream_select</function> is calling
+       <function>stream_cast</function> or
+       <constant>STREAM_CAST_AS_STREAM</constant> when
+       <function>stream_cast</function> is called for other uses.
+      </para>
+    
+      <methodsynopsis>
+       <type>bool</type><methodname>stream_set_option</methodname>
+       <methodparam><type>int</type><parameter>option</parameter></methodparam>
+       <methodparam><type>int</type><parameter>arg1</parameter></methodparam>
+       <methodparam><type>int</type><parameter>arg2</parameter></methodparam>
+      </methodsynopsis>
+      <para>
+       This method is called to set options on the stream. Possible values
+       for <parameter>option</parameter> are:
+       <simplelist>
+        <member><constant>STREAM_OPTION_BLOCKING</constant>: The method is called
+         in response to <function>stream_set_blocking</function>.
+         <parameter>arg1</parameter> is the requested blocking mode.</member>
+        <member><constant>STREAM_OPTION_READ_TIMEOUT</constant>: The method is
+         called in response to <function>stream_set_timeout</function>.
+         <parameter>arg1</parameter> is the timeout in seconds, and
+         <parameter>arg2</parameter> is the timeout in microseconds.</member>
+        <member><constant>STREAM_OPTION_WRITE_BUFFER</constant>: The method is
+         called in response to <function>stream_set_write_buffer</function>.
+         <parameter>arg1</parameter> is the buffer mode
+         (<constant>STREAM_BUFFER_NONE</constant> or
+         <constant>STREAM_BUFFER_FULL</constant>) and <parameter>arg2</parameter>
+         is the requested buffer size.</member>
+       </simplelist>
+      </para>
+      <para>
+       <function>stream_set_option</function> should return &false; on failure or
+       if the <parameter>option</parameter> is not implemented, &true; otherwise.
+      </para>
+      <methodsynopsis>
+       <type>bool</type><methodname>unlink</methodname>
+       <methodparam><type>string</type><parameter>path</parameter></methodparam>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>unlink</function>
+       calls on URL paths associated with the wrapper and should attempt
+       to delete the item specified by <parameter>path</parameter>.
+       It should return &true; on success or &false; on failure.
+       In order for the appropriate error message to be returned,
+       do not define this method if your wrapper does not support unlinking.
+      </para>    
+      <methodsynopsis>
+       <type>bool</type><methodname>rename</methodname>
+       <methodparam><type>string</type><parameter>path_from</parameter></methodparam>
+       <methodparam><type>string</type><parameter>path_to</parameter></methodparam>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>rename</function>
+       calls on URL paths associated with the wrapper and should attempt
+       to rename the item specified by <parameter>path_from</parameter>
+       to the specification given by <parameter>path_to</parameter>.
+       It should return &true; on success or &false; on failure.
+       In order for the appropriate error message to be returned,
+       do not define this method if your wrapper does not support renaming.
+      </para>
+
+      <methodsynopsis>
+       <type>bool</type><methodname>mkdir</methodname>
+       <methodparam><type>string</type><parameter>path</parameter></methodparam>
+       <methodparam><type>int</type><parameter>mode</parameter></methodparam>
+       <methodparam><type>int</type><parameter>options</parameter></methodparam>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>mkdir</function>
+       calls on URL paths associated with the wrapper and should attempt
+       to create the directory specified by <parameter>path</parameter>.
+       It should return &true; on success or &false; on failure.
+       In order for the appropriate error message to be returned,
+       do not define this method if your wrapper does not support
+       creating directories.  Posible values for <parameter>options</parameter>
+       include <constant>STREAM_REPORT_ERRORS</constant> and
+       <constant>STREAM_MKDIR_RECURSIVE</constant>.
+      </para>
+    
+      <methodsynopsis>
+       <type>bool</type><methodname>rmdir</methodname>
+       <methodparam><type>string</type><parameter>path</parameter></methodparam>
+       <methodparam><type>int</type><parameter>options</parameter></methodparam>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>rmdir</function>
+       calls on URL paths associated with the wrapper and should attempt
+       to remove the directory specified by <parameter>path</parameter>.
+       It should return &true; on success or &false; on failure.
+       In order for the appropriate error message to be returned,
+       do not define this method if your wrapper does not support
+       removing directories.  Possible values for <parameter>options</parameter>
+       include <constant>STREAM_REPORT_ERRORS</constant>.
+      </para>
+    
+      <methodsynopsis>
+       <type>bool</type><methodname>dir_opendir</methodname>
+       <methodparam><type>string</type><parameter>path</parameter></methodparam>
+       <methodparam><type>int</type><parameter>options</parameter></methodparam>
+      </methodsynopsis>
+      <para>
+       This method is called immediately when your stream object is created for
+       examining directory contents with <function>opendir</function>.
+       <parameter>path</parameter> specifies the URL that was
+       passed to <function>opendir</function> and that this object is
+       expected to explore.  You can use <function>parse_url</function>
+       to break it apart.
+      </para>
+    
+      <methodsynopsis>
+       <type>array</type><methodname>url_stat</methodname>
+       <methodparam><type>string</type><parameter>path</parameter></methodparam>
+       <methodparam><type>int</type><parameter>flags</parameter></methodparam>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>stat</function>
+       calls on the URL paths associated with the wrapper and should
+       return as many elements in common with the system function as
+       possible.  Unknown or unavailable values should be set to a
+       rational value (usually <constant>0</constant>).
+      </para>
+      <para>
+       <parameter>flags</parameter> holds additional flags set
+       by the streams API. It can hold one or more of the following
+       values OR'd together.
+       <informaltable>
+        <tgroup cols="2">
+         <thead>
+          <row>
+           <entry>Flag</entry>
+           <entry>Description</entry>
+          </row>
+         </thead>
+         <tbody>
+          <row>
+           <entry>STREAM_URL_STAT_LINK</entry>
+           <entry>
+            For resources with the ability to link to other resource
+            (such as an HTTP Location: forward, or a filesystem
+            symlink).  This flag specified that only information
+            about the link itself should be returned, not the
+            resource pointed to by the link.  This flag is set in
+            response to calls to <function>lstat</function>,
+            <function>is_link</function>, or <function>filetype</function>.
+           </entry>
+          </row>
+          <row>
+           <entry>STREAM_URL_STAT_QUIET</entry>
+           <entry>If this flag is set, your wrapper should not raise any
+            errors.  If this flag is not set, you are responsible for
+            reporting errors using the <function>trigger_error</function>
+            function during stating of the path.
+           </entry>
+          </row>
+         </tbody>
+        </tgroup>
+       </informaltable>
+      </para>
+    
+      <methodsynopsis>
+       <type>string</type><methodname>dir_readdir</methodname>
+       <void/>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>readdir</function>
+       and should return a string representing the next filename in the
+       location opened by <function>dir_opendir</function>.
+      </para>
+    
+      <methodsynopsis>
+       <type>bool</type><methodname>dir_rewinddir</methodname>
+       <void/>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>rewinddir</function>
+       and should reset the output generated by <function>dir_readdir</function>.
+       i.e.: The next call to <function>dir_readdir</function> should return
+       the first entry in the location returned by <function>dir_opendir</function>.
+      </para>
+    
+      <methodsynopsis>
+       <type>bool</type><methodname>dir_closedir</methodname>
+       <void/>
+      </methodsynopsis>
+      <para>
+       This method is called in response to <function>closedir</function>.
+       You should release any resources which were locked or allocated during
+       the opening and use of the directory stream.
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
   </para>
-  <note>
-   <simpara>
-    As of PHP 5.0.0 the instance of
-    <parameter>classname</parameter> will be populated with a
-    <parameter>context</parameter> property referencing a
-    <literal>Context Resource</literal> which may be accessed
-    with <function>stream_context_get_options</function>.
-    If no context was passed to the stream creation function,
-    <parameter>context</parameter> will be set to &null;.
-   </simpara>
-  </note>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   &return.success;
+  </para>
   <para>
    <function>stream_wrapper_register</function> will return &false; if the
    <parameter>protocol</parameter> already has a handler.
   </para>
+ </refsect1>
 
-  <methodsynopsis>
-   <type>bool</type><methodname>stream_open</methodname>
-   <methodparam><type>string</type><parameter>path</parameter></methodparam>
-   <methodparam><type>string</type><parameter>mode</parameter></methodparam>
-   <methodparam><type>int</type><parameter>options</parameter></methodparam>
-   <methodparam><type>string</type><parameter>opened_path</parameter></methodparam>
-  </methodsynopsis>
+ <refsect1 role="changelog">
+  &reftitle.changelog;
   <para>
-   This method is called immediately after your stream object is
-   created.  <parameter>path</parameter> specifies the URL that was
-   passed to <function>fopen</function> and that this object is
-   expected to retrieve.  You can use <function>parse_url</function>
-   to break it apart.
-  </para>
-  <para>
-   <parameter>mode</parameter> is the mode used to open the file,
-   as detailed for <function>fopen</function>.  You are responsible
-   for checking that <parameter>mode</parameter> is valid for the
-   <parameter>path</parameter> requested.
-  </para>
-  <para>
-   <parameter>options</parameter> holds additional flags set
-   by the streams API. It can hold one or more of the following
-   values OR'd together.
    <informaltable>
     <tgroup cols="2">
      <thead>
       <row>
-       <entry>Flag</entry>
-       <entry>Description</entry>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
       </row>
      </thead>
      <tbody>
       <row>
-       <entry>STREAM_USE_PATH</entry>
-       <entry>If <parameter>path</parameter> is relative, search
-        for the resource using the include_path.
-       </entry>
-      </row>
-      <row>
-       <entry>STREAM_REPORT_ERRORS</entry>
-       <entry>If this flag is set, you are responsible for raising
-        errors using <function>trigger_error</function> during
-        opening of the stream.  If this flag is not set, you
-        should not raise any errors.
-       </entry>
-      </row>
-     </tbody>
-    </tgroup>
-   </informaltable>
-  </para>
-  <para>
-   If the <parameter>path</parameter> is opened successfully,
-   and STREAM_USE_PATH is set in <parameter>options</parameter>,
-   you should set <parameter>opened_path</parameter> to the full
-   path of the file/resource that was actually opened.
-  </para>
-  <para>
-   If the requested resource was opened successfully, you should
-   return &true;, otherwise you should return &false;
-  </para>
-
-  <methodsynopsis>
-   <type>void</type><methodname>stream_close</methodname>
-   <void/>
-  </methodsynopsis>
-  <para>
-   This method is called when the stream is closed, using
-   <function>fclose</function>.  You must release any resources
-   that were locked or allocated by the stream.
-  </para>
-
-  <methodsynopsis>
-   <type>string</type><methodname>stream_read</methodname>
-   <methodparam><type>int</type><parameter>count</parameter></methodparam>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>fread</function>
-   and <function>fgets</function> calls on the stream.  You
-   must return up-to <parameter>count</parameter> bytes of data
-   from the current read/write position as a string.
-   If there are less than <parameter>count</parameter>
-   bytes available, return as many as are available.  If no
-   more data is available, return either &false; or an
-   empty string.
-   You must also update the read/write position of the stream
-   by the number of bytes that were successfully read.
-  </para>
-
-  <methodsynopsis>
-   <type>int</type><methodname>stream_write</methodname>
-   <methodparam><type>string</type><parameter>data</parameter></methodparam>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>fwrite</function>
-   calls on the stream.  You should store <parameter>data</parameter>
-   into the underlying storage used by your stream.  If there is not
-   enough room, try to store as many bytes as possible.
-   You should return the number of bytes that were successfully
-   stored in the stream, or 0 if none could be stored.
-   You must also update the read/write position of the stream
-   by the number of bytes that were successfully written.
-  </para>
-
-  <methodsynopsis>
-   <type>bool</type><methodname>stream_eof</methodname>
-   <void/>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>feof</function>
-   calls on the stream.  You should return &true; if the read/write
-   position is at the end of the stream and if no more data is available
-   to be read, or &false; otherwise.
-  </para>
-
-  <methodsynopsis>
-   <type>int</type><methodname>stream_tell</methodname>
-   <void/>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>ftell</function>
-   calls on the stream.  You should return the current read/write
-   position of the stream.
-  </para>
-
-  <methodsynopsis>
-   <type>bool</type><methodname>stream_seek</methodname>
-   <methodparam><type>int</type><parameter>offset</parameter></methodparam>
-   <methodparam><type>int</type><parameter>whence</parameter></methodparam>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>fseek</function>
-   calls on the stream.  You should update the read/write position
-   of the stream according to <parameter>offset</parameter> and
-   <parameter>whence</parameter>.  See <function>fseek</function>
-   for more information about these parameters.
-   Return &true; if the position was updated, &false; otherwise.
-  </para>
-
-  <methodsynopsis>
-   <type>bool</type><methodname>stream_flush</methodname>
-   <void/>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>fflush</function>
-   calls on the stream.  If you have cached data in your stream
-   but not yet stored it into the underlying storage, you should
-   do so now.
-   Return &true; if the cached data was successfully stored (or
-   if there was no data to store), or &false; if the data could
-   not be stored.
-  </para>
-
-  <methodsynopsis>
-   <type>array</type><methodname>stream_stat</methodname>
-   <void/>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>fstat</function>
-   calls on the stream and should return an array containing the same
-   values as appropriate for the stream.
-  </para>
- 
-  <methodsynopsis>
-   <type>resource</type><methodname>stream_cast</methodname>
-   <methodparam><type>int</type><parameter>cast_as</parameter></methodparam>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>stream_select</function>
-   calls on the stream and should return the underlying stream resource used
-   by the wrapper, or &false;. The
-   <parameter>cast_as</parameter> parameter can be
-   <constant>STREAM_CAST_FOR_SELECT</constant> when
-   <function>stream_select</function> is calling
-   <function>stream_cast</function> or
-   <constant>STREAM_CAST_AS_STREAM</constant> when
-   <function>stream_cast</function> is called for other uses.
-  </para>
-  <note>
-   <simpara>
-    Userspace wrapper stream_cast method is not supported prior to
-    PHP 5.3.0.
-   </simpara>
-  </note>
-
-  <methodsynopsis>
-   <type>bool</type><methodname>stream_set_option</methodname>
-   <methodparam><type>int</type><parameter>option</parameter></methodparam>
-   <methodparam><type>int</type><parameter>arg1</parameter></methodparam>
-   <methodparam><type>int</type><parameter>arg2</parameter></methodparam>
-  </methodsynopsis>
-  <para>
-   This method is called to set options on the stream. Possible values
-   for <parameter>option</parameter> are:
-   <simplelist>
-    <member><constant>STREAM_OPTION_BLOCKING</constant>: The method is called
-     in response to <function>stream_set_blocking</function>.
-     <parameter>arg1</parameter> is the requested blocking mode.</member>
-    <member><constant>STREAM_OPTION_READ_TIMEOUT</constant>: The method is
-     called in response to <function>stream_set_timeout</function>.
-     <parameter>arg1</parameter> is the timeout in seconds, and
-     <parameter>arg2</parameter> is the timeout in microseconds.</member>
-    <member><constant>STREAM_OPTION_WRITE_BUFFER</constant>: The method is
-     called in response to <function>stream_set_write_buffer</function>.
-     <parameter>arg1</parameter> is the buffer mode
-     (<constant>STREAM_BUFFER_NONE</constant> or
-     <constant>STREAM_BUFFER_FULL</constant>) and <parameter>arg2</parameter>
-     is the requested buffer size.</member>
-   </simplelist>
-  </para>
-  <para>
-   <function>stream_set_option</function> should return &false; on failure or
-   if the <parameter>option</parameter> is not implemented, &true; otherwise.
-  </para>
-  <note>
-   <simpara>
-    Userspace wrapper stream_set_option method is not supported prior to
-    PHP 5.3.0.
-   </simpara>
-  </note>
-
-  <methodsynopsis>
-   <type>bool</type><methodname>unlink</methodname>
-   <methodparam><type>string</type><parameter>path</parameter></methodparam>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>unlink</function>
-   calls on URL paths associated with the wrapper and should attempt
-   to delete the item specified by <parameter>path</parameter>.
-   It should return &true; on success or &false; on failure.
-   In order for the appropriate error message to be returned,
-   do not define this method if your wrapper does not support unlinking.
-  </para>
-  <note>
-   <simpara>
-    Userspace wrapper unlink method is not supported prior to
-    PHP 5.0.0.
-   </simpara>
-  </note>
-
-  <methodsynopsis>
-   <type>bool</type><methodname>rename</methodname>
-   <methodparam><type>string</type><parameter>path_from</parameter></methodparam>
-   <methodparam><type>string</type><parameter>path_to</parameter></methodparam>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>rename</function>
-   calls on URL paths associated with the wrapper and should attempt
-   to rename the item specified by <parameter>path_from</parameter>
-   to the specification given by <parameter>path_to</parameter>.
-   It should return &true; on success or &false; on failure.
-   In order for the appropriate error message to be returned,
-   do not define this method if your wrapper does not support renaming.
-  </para>
-  <note>
-   <simpara>
-    Userspace wrapper rename method is not supported prior to
-    PHP 5.0.0.
-   </simpara>
-  </note>
-
-  <methodsynopsis>
-   <type>bool</type><methodname>mkdir</methodname>
-   <methodparam><type>string</type><parameter>path</parameter></methodparam>
-   <methodparam><type>int</type><parameter>mode</parameter></methodparam>
-   <methodparam><type>int</type><parameter>options</parameter></methodparam>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>mkdir</function>
-   calls on URL paths associated with the wrapper and should attempt
-   to create the directory specified by <parameter>path</parameter>.
-   It should return &true; on success or &false; on failure.
-   In order for the appropriate error message to be returned,
-   do not define this method if your wrapper does not support
-   creating directories.  Posible values for <parameter>options</parameter>
-   include <constant>STREAM_REPORT_ERRORS</constant> and
-   <constant>STREAM_MKDIR_RECURSIVE</constant>.
-  </para>
-  <note>
-   <simpara>
-    Userspace wrapper mkdir method is not supported prior to
-    PHP 5.0.0.
-   </simpara>
-  </note>
-
-  <methodsynopsis>
-   <type>bool</type><methodname>rmdir</methodname>
-   <methodparam><type>string</type><parameter>path</parameter></methodparam>
-   <methodparam><type>int</type><parameter>options</parameter></methodparam>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>rmdir</function>
-   calls on URL paths associated with the wrapper and should attempt
-   to remove the directory specified by <parameter>path</parameter>.
-   It should return &true; on success or &false; on failure.
-   In order for the appropriate error message to be returned,
-   do not define this method if your wrapper does not support
-   removing directories.  Possible values for <parameter>options</parameter>
-   include <constant>STREAM_REPORT_ERRORS</constant>.
-  </para>
-  <note>
-   <simpara>
-    Userspace wrapper rmdir method is not supported prior to
-    PHP 5.0.0.
-   </simpara>
-  </note>
-
-  <methodsynopsis>
-   <type>bool</type><methodname>dir_opendir</methodname>
-   <methodparam><type>string</type><parameter>path</parameter></methodparam>
-   <methodparam><type>int</type><parameter>options</parameter></methodparam>
-  </methodsynopsis>
-  <para>
-   This method is called immediately when your stream object is created for
-   examining directory contents with <function>opendir</function>.
-   <parameter>path</parameter> specifies the URL that was
-   passed to <function>opendir</function> and that this object is
-   expected to explore.  You can use <function>parse_url</function>
-   to break it apart.
-  </para>
-
-  <methodsynopsis>
-   <type>array</type><methodname>url_stat</methodname>
-   <methodparam><type>string</type><parameter>path</parameter></methodparam>
-   <methodparam><type>int</type><parameter>flags</parameter></methodparam>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>stat</function>
-   calls on the URL paths associated with the wrapper and should
-   return as many elements in common with the system function as
-   possible.  Unknown or unavailable values should be set to a
-   rational value (usually <constant>0</constant>).
-  </para>
-  <para>
-   <parameter>flags</parameter> holds additional flags set
-   by the streams API. It can hold one or more of the following
-   values OR'd together.
-   <informaltable>
-    <tgroup cols="2">
-     <thead>
-      <row>
-       <entry>Flag</entry>
-       <entry>Description</entry>
-      </row>
-     </thead>
-     <tbody>
-      <row>
-       <entry>STREAM_URL_STAT_LINK</entry>
+       <entry>5.3.0</entry>
        <entry>
-        For resources with the ability to link to other resource
-        (such as an HTTP Location: forward, or a filesystem
-        symlink).  This flag specified that only information
-        about the link itself should be returned, not the
-        resource pointed to by the link.  This flag is set in
-        response to calls to <function>lstat</function>,
-        <function>is_link</function>, or <function>filetype</function>.
+        Added the following userspace wrappers: stream_set_option, stream_cast.
        </entry>
       </row>
       <row>
-       <entry>STREAM_URL_STAT_QUIET</entry>
-       <entry>If this flag is set, your wrapper should not raise any
-        errors.  If this flag is not set, you are responsible for
-        reporting errors using the <function>trigger_error</function>
-        function during stating of the path.
+       <entry>5.0.0</entry>
+       <entry>
+        Added the following userspace wrappers: rmdir, mkdir, rename, unlink.
+       </entry>
+      </row>
+      <row>
+       <entry>5.0.0</entry>
+       <entry>
+        Added the <literal>context</literal> property.
        </entry>
       </row>
      </tbody>
     </tgroup>
    </informaltable>
   </para>
+ </refsect1>
 
-  <methodsynopsis>
-   <type>string</type><methodname>dir_readdir</methodname>
-   <void/>
-  </methodsynopsis>
+ <refsect1 role="examples"><!-- {{{ -->
+  &reftitle.examples;
   <para>
-   This method is called in response to <function>readdir</function>
-   and should return a string representing the next filename in the
-   location opened by <function>dir_opendir</function>.
-  </para>
-
-  <methodsynopsis>
-   <type>bool</type><methodname>dir_rewinddir</methodname>
-   <void/>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>rewinddir</function>
-   and should reset the output generated by <function>dir_readdir</function>.
-   i.e.: The next call to <function>dir_readdir</function> should return
-   the first entry in the location returned by <function>dir_opendir</function>.
-  </para>
-
-  <methodsynopsis>
-   <type>bool</type><methodname>dir_closedir</methodname>
-   <void/>
-  </methodsynopsis>
-  <para>
-   This method is called in response to <function>closedir</function>.
-   You should release any resources which were locked or allocated during
-   the opening and use of the directory stream.
-  </para>
-
-
-  <para>
-   The example below implements a var:// protocol handler that
-   allows read/write access to a named global variable using
-   standard filesystem stream functions such as <function>fread</function>.
-   The var:// protocol implemented below, given the URL
-   "var://foo" will read/write data to/from $GLOBALS["foo"].
-
    <example>
     <title>A Stream for reading/writing global variables</title>
+    <para>
+     The example below implements a var:// protocol handler that allows
+     read/write access to a named global variable using standard filesystem
+     stream functions such as <function>fread</function>. The var:// protocol
+     implemented below, given the URL "var://foo" will read/write data
+     to/from $GLOBALS["foo"].
+    </para>
     <programlisting role="php">
 <![CDATA[
 <?php
@@ -557,7 +581,7 @@ var_dump($myvar);
    </example>
   </para>
 
- </refsect1>
+ </refsect1><!-- }}} -->
 
  <refsect1 role="changelog"><!-- {{{ -->
   &reftitle.changelog;
