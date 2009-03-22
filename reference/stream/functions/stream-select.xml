@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.16 $ -->
+<!-- $Revision: 1.17 $ -->
 <refentry xml:id="function.stream-select" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>stream_select</refname>
   <refpurpose>Runs the equivalent of the select() system call on the given
    arrays of streams with a timeout specified by tv_sec and tv_usec </refpurpose>
  </refnamediv>
- <refsect1>
-  <title>Description</title>
+ <refsect1 role="description">
+  &reftitle.description;
   <methodsynopsis>
    <type>int</type><methodname>stream_select</methodname>
    <methodparam><type>array</type><parameter role="reference">read</parameter></methodparam>
@@ -16,89 +16,138 @@
    <methodparam><type>int</type><parameter>tv_sec</parameter></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>tv_usec</parameter><initializer>0</initializer></methodparam>
   </methodsynopsis>
-  <simpara>
+  <para>
    The <function>stream_select</function> function accepts arrays of streams and
    waits for them to change status. Its operation is equivalent to that of
    the <function>socket_select</function> function except in that it acts on streams.
-  </simpara>
-  <simpara>
-   The streams listed in the <parameter>read</parameter> array will be watched to
-   see if characters become available for reading (more precisely, to see if
-   a read will not block - in particular, a stream resource is also ready on
-   end-of-file, in which case an <function>fread</function> will return
-   a zero length string).
-  </simpara>
-  <simpara>
-   The streams listed in the <parameter>write</parameter> array will be
-   watched to see if a write will not block.
-  </simpara>
-  <simpara>
-   The streams listed in the <parameter>except</parameter> array will be
-   watched for high priority exceptional ("out-of-band") data arriving.
-  </simpara>
-  <note>
-   <para>
-    When <function>stream_select</function> returns, the arrays
-    <parameter>read</parameter>, <parameter>write</parameter> and
-    <parameter>except</parameter> are modified to indicate which stream
-    resource(s) actually changed status.
-   </para>
-  </note>
-  <simpara>
-   The <parameter>tv_sec</parameter> and <parameter>tv_usec</parameter>
-   together form the <emphasis>timeout</emphasis> parameter,
-   <parameter>tv_sec</parameter> specifies the number of seconds while
-   <parameter>tv_usec</parameter> the number of microseconds.
-   The <emphasis>timeout</emphasis> is an upper bound on the amount of time
-   that <function>stream_select</function> will wait before it returns.
-   If <parameter>tv_sec</parameter> and <parameter>tv_usec</parameter> are
-   both set to <literal>0</literal>, <function>stream_select</function> will
-   not wait for data - instead it will return immediately, indicating the
-   current status of the streams.
-   If <parameter>tv_sec</parameter> is &null; <function>stream_select</function>
-   can block indefinitely, returning only when an event on one of the
-   watched streams occurs (or if a signal interrupts the system call).
-  </simpara>
-  <simpara>
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>read</parameter></term>
+     <listitem>
+      <para>
+       The streams listed in the <parameter>read</parameter> array will be watched to
+       see if characters become available for reading (more precisely, to see if
+       a read will not block - in particular, a stream resource is also ready on
+       end-of-file, in which case an <function>fread</function> will return
+       a zero length string).
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>write</parameter></term>
+     <listitem>
+      <para>
+       The streams listed in the <parameter>write</parameter> array will be
+       watched to see if a write will not block.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>except</parameter></term>
+     <listitem>
+      <para>
+       The streams listed in the <parameter>except</parameter> array will be
+       watched for high priority exceptional ("out-of-band") data arriving.
+      </para>
+      <note>
+       <para>
+        When <function>stream_select</function> returns, the arrays
+        <parameter>read</parameter>, <parameter>write</parameter> and
+        <parameter>except</parameter> are modified to indicate which stream
+        resource(s) actually changed status.
+       </para>
+      </note>
+      <simpara>
+       You do not need to pass every array to
+       <function>stream_select</function>. You can leave it out and use an
+       empty array or &null; instead. Also do not forget that those arrays are
+       passed <emphasis>by reference</emphasis> and will be modified after
+       <function>stream_select</function> returns.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>tv_sec</parameter></term>
+     <listitem>
+      <para>
+       The <parameter>tv_sec</parameter> and <parameter>tv_usec</parameter>
+       together form the <emphasis>timeout</emphasis> parameter,
+       <parameter>tv_sec</parameter> specifies the number of seconds while
+       <parameter>tv_usec</parameter> the number of microseconds.
+       The <emphasis>timeout</emphasis> is an upper bound on the amount of time
+       that <function>stream_select</function> will wait before it returns.
+       If <parameter>tv_sec</parameter> and <parameter>tv_usec</parameter> are
+       both set to <literal>0</literal>, <function>stream_select</function> will
+       not wait for data - instead it will return immediately, indicating the
+       current status of the streams.
+      </para>
+      <para>
+       If <parameter>tv_sec</parameter> is &null; <function>stream_select</function>
+       can block indefinitely, returning only when an event on one of the
+       watched streams occurs (or if a signal interrupts the system call).
+      </para>
+      <warning>
+       <para>
+        Using a timeout value of <literal>0</literal> allows you to
+        instantaneously poll the status of the streams, however, it is NOT a
+        good idea to use a <literal>0</literal> timeout value in a loop as it
+        will cause your script to consume too much CPU time.
+       </para>
+       <para>
+        It is much better to specify a timeout value of a few seconds, although
+        if you need to be checking and running other code concurrently, using a
+        timeout value of at least <literal>200000</literal> microseconds will
+        help reduce the CPU usage of your script.
+       </para>
+       <para>
+        Remember that the timeout value is the maximum time that will elapse;
+        <function>stream_select</function> will return as soon as the
+        requested streams are ready for use.
+       </para>
+      </warning>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>tv_usec</parameter></term>
+     <listitem>
+      <para>
+       See <parameter>tv_sec</parameter> description.
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
    On success <function>stream_select</function> returns the number of
    stream resources contained in the modified arrays, which may be zero if
    the timeout expires before anything interesting happens. On error &false;
    is returned and a warning raised (this can happen if the system call is
    interrupted by an incoming signal).
-  </simpara>
+  </para>
+ </refsect1>
 
-  <warning>
-   <para>
-    Using a timeout value of <literal>0</literal> allows you to
-    instantaneously poll the status of the streams, however, it is NOT a
-    good idea to use a <literal>0</literal> timeout value in a loop as it
-    will cause your script to consume too much CPU time.
-   </para>
-   <para>
-    It is much better to specify a timeout value of a few seconds, although
-    if you need to be checking and running other code concurrently, using a
-    timeout value of at least <literal>200000</literal> microseconds will
-    help reduce the CPU usage of your script.
-   </para>
-   <para>
-    Remember that the timeout value is the
-    maximum time that will elapse; <function>stream_select</function> will
-    return as soon as the requested streams are ready for use.
-   </para>
-  </warning>
-  <simpara>
-   You do not need to pass every array to
-   <function>stream_select</function>. You can leave it out and use an
-   empty array or &null; instead. Also do not forget that those arrays are
-   passed <emphasis>by reference</emphasis> and will be modified after
-   <function>stream_select</function> returns.
-  </simpara>
+ <refsect1 role="examples">
+  &reftitle.examples;
   <para>
-   This example checks to see if data has arrived for reading on either
-   <parameter>$stream1</parameter> or <parameter>$stream2</parameter>.
-   Since the timeout value is <literal>0</literal> it will return
-   immediately:
-   <programlisting role="php">
+   <example>
+    <title><function>stream_select</function> Example</title>
+    <para>
+     This example checks to see if data has arrived for reading on either
+     <parameter>$stream1</parameter> or <parameter>$stream2</parameter>.
+     Since the timeout value is <literal>0</literal> it will return
+     immediately:
+    </para>
+    <programlisting role="php">
 <![CDATA[
 <?php
 /* Prepare the read array */
@@ -112,8 +161,13 @@ if (false === ($num_changed_streams = stream_select($read, $write, $except, 0)))
 }
 ?>
 ]]>
-   </programlisting>
+    </programlisting>
+   </example>
   </para>
+ </refsect1>
+
+ <refsect1 role="notes">
+  &reftitle.notes;
   <note>
    <para>
     Due to a limitation in the current Zend Engine it is not possible to pass a
@@ -168,10 +222,13 @@ if (false === stream_select($r, $w, $e, 0)) {
     and return &false; under Windows.
    </para>
   </note>
-  <para>
-   See also
-   <function>stream_set_blocking</function>.
-  </para>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <simplelist>
+   <member><function>stream_set_blocking</function></member>
+  </simplelist>
  </refsect1>
 </refentry>
 
