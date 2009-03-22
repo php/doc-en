@@ -215,6 +215,13 @@ foreach (glob('../../en/reference/*/*/*.xml') as $function) {
         $status[$extension][$funcname]['noerrors'] = 1;
     }
     unset($errors);
+    
+    // ChangeLog
+    if (!isset($changelog) && preg_match('!PHP \d!', $xmlstr)) {
+        $status[$extension][$funcname]['nochangelog'] = 1;
+    }
+    unset($changelog);
+
 }
 
 $idx = sqlite_open("check_phpdoc.sqlite");
@@ -230,7 +237,8 @@ noseealso integer,
 noreturnvalues integer,
 noparameters integer,
 noexamples integer,
-noerrors integer
+noerrors integer,
+nochangelog integer
 );');
 
 

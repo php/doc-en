@@ -51,12 +51,14 @@ $errors = array(
 'label' => 'No examples',
 'description' => 'These functions lacks examples.',
 ),
-
+'nochangelog' => array(
+'label' => 'No changelog section',
+'description' => 'These functions lacks changelog refsect1 while metionning "PHP \d" in the XML source.',
+),
 'noerrors' => array(
 'label' => 'No errors section',
 'description' => 'These functions lacks errors information.',
 ),
-
 'noseealso' => array(
 'label' => 'No see also',
 'description' => 'These functions lacks link to other functions/sections. You may consider adding some cross links to point readers to valuable resources.',
