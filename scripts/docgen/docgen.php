@@ -71,6 +71,8 @@ function usage() { /* {{{ */
 		-e,--extension	-- extension name
 		-f,--function	-- function name
 		-h,--help	-- show this help
+		-i,--include	-- includes a PHP file (shortcut for:
+			           php -dauto_prepend_file=streams.php docgen.php)
 		-m,--method	-- method name (require -c)
 		-o,--output	-- output dir
 		-p,--pecl	-- is a PECL extension
@@ -778,6 +780,7 @@ $arropts = array(
 	'verbose' 		=> 'v',  /* verbose */
 	'version' 		=> 'V',  /* version */
 	'quiet'   		=> 'q',  /* quiet */
+	'include:'		=> 'i:',  /* include */
 	'help'	  		=> 'h',  /* help */
 	'pecl'			=> 'p',  /* pecl */
 	'output:' 		=> 'o:', /* output dir */
@@ -846,6 +849,16 @@ foreach ($options as $opt => $value) {
 		case 'quiet':
 			$OPTION['quiet'] = true;
 			break;
+    case 'i':
+    case 'include':
+      foreach((array)$value as $filename) {
+        if (stream_is_local($filename) && file_exists($filename)) {
+          include $filename;
+        } else {
+          echo "- Cannot include '$filename': ", stream_is_local($filename) ? "doesn't exist" : "isn't local file", "\n";
+        }
+      }
+      break;
 	}
 }
 
