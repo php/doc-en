@@ -216,6 +216,9 @@ function global_check($content) { /* {{{ */
 
 	/* {EXT_NAME} */
 	$content = preg_replace('/\{EXT_NAME\}/', ucwords($INFO['actual_extension']), $content);
+	
+	/* {EMPTY_REVISION_KEYWORD} */
+	$content = str_replace('{EMPTY_REVISION_KEYWORD}', '<!-- $Revision$ -->', $content);
 
 	return $content;
 }

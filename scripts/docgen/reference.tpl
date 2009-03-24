@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.2 $ -->
+{EMPTY_REVISION_KEYWORD}
 
 <reference xml:id="ref.{EXT_NAME_ID}" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <title>{EXT_NAME} &Functions;</title>
