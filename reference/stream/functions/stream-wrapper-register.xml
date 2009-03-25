@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.20 $ -->
+<!-- $Revision: 1.21 $ -->
 <refentry xml:id="function.stream-wrapper-register" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>stream_wrapper_register</refname>
@@ -35,98 +35,7 @@
      <term><parameter>classname</parameter></term>
      <listitem>
       <para>
-       To implement a wrapper, you need to define a class with a number of
-       member functions, as defined below. When someone fopens your stream,
-       PHP will create an instance of <parameter>classname</parameter> and
-       then call methods on that instance.  You must implement the methods
-       exactly as described below - doing otherwise will lead to undefined
-       behaviour.
-      </para>
-    
-      <methodsynopsis>
-       <type>string</type><methodname>stream_read</methodname>
-       <methodparam><type>int</type><parameter>count</parameter></methodparam>
-      </methodsynopsis>
-      <para>
-       This method is called in response to <function>fread</function>
-       and <function>fgets</function> calls on the stream.  You
-       must return up-to <parameter>count</parameter> bytes of data
-       from the current read/write position as a string.
-       If there are less than <parameter>count</parameter>
-       bytes available, return as many as are available.  If no
-       more data is available, return either &false; or an
-       empty string.
-       You must also update the read/write position of the stream
-       by the number of bytes that were successfully read.
-      </para>
-    
-      <methodsynopsis>
-       <type>int</type><methodname>stream_write</methodname>
-       <methodparam><type>string</type><parameter>data</parameter></methodparam>
-      </methodsynopsis>
-      <para>
-       This method is called in response to <function>fwrite</function>
-       calls on the stream.  You should store <parameter>data</parameter>
-       into the underlying storage used by your stream.  If there is not
-       enough room, try to store as many bytes as possible.
-       You should return the number of bytes that were successfully
-       stored in the stream, or 0 if none could be stored.
-       You must also update the read/write position of the stream
-       by the number of bytes that were successfully written.
-      </para>
-    
-      <methodsynopsis>
-       <type>int</type><methodname>stream_tell</methodname>
-       <void/>
-      </methodsynopsis>
-      <para>
-       This method is called in response to <function>ftell</function>
-       calls on the stream.  You should return the current read/write
-       position of the stream.
-      </para>
-    
-      <methodsynopsis>
-       <type>bool</type><methodname>stream_seek</methodname>
-       <methodparam><type>int</type><parameter>offset</parameter></methodparam>
-       <methodparam><type>int</type><parameter>whence</parameter></methodparam>
-      </methodsynopsis>
-      <para>
-       This method is called in response to <function>fseek</function>
-       calls on the stream.  You should update the read/write position
-       of the stream according to <parameter>offset</parameter> and
-       <parameter>whence</parameter>.  See <function>fseek</function>
-       for more information about these parameters.
-       Return &true; if the position was updated, &false; otherwise.
-      </para>
-    
-      <methodsynopsis>
-       <type>bool</type><methodname>stream_set_option</methodname>
-       <methodparam><type>int</type><parameter>option</parameter></methodparam>
-       <methodparam><type>int</type><parameter>arg1</parameter></methodparam>
-       <methodparam><type>int</type><parameter>arg2</parameter></methodparam>
-      </methodsynopsis>
-      <para>
-       This method is called to set options on the stream. Possible values
-       for <parameter>option</parameter> are:
-       <simplelist>
-        <member><constant>STREAM_OPTION_BLOCKING</constant>: The method is called
-         in response to <function>stream_set_blocking</function>.
-         <parameter>arg1</parameter> is the requested blocking mode.</member>
-        <member><constant>STREAM_OPTION_READ_TIMEOUT</constant>: The method is
-         called in response to <function>stream_set_timeout</function>.
-         <parameter>arg1</parameter> is the timeout in seconds, and
-         <parameter>arg2</parameter> is the timeout in microseconds.</member>
-        <member><constant>STREAM_OPTION_WRITE_BUFFER</constant>: The method is
-         called in response to <function>stream_set_write_buffer</function>.
-         <parameter>arg1</parameter> is the buffer mode
-         (<constant>STREAM_BUFFER_NONE</constant> or
-         <constant>STREAM_BUFFER_FULL</constant>) and <parameter>arg2</parameter>
-         is the requested buffer size.</member>
-       </simplelist>
-      </para>
-      <para>
-       <function>stream_set_option</function> should return &false; on failure or
-       if the <parameter>option</parameter> is not implemented, &true; otherwise.
+       The classname which implements the <parameter>protocol</parameter>.
       </para>
      </listitem>
     </varlistentry>
@@ -145,136 +54,19 @@
   </para>
  </refsect1>
 
- <refsect1 role="changelog"><!-- {{{ -->
-  &reftitle.changelog;
-  <para>
-   <informaltable>
-    <tgroup cols="2">
-     <thead>
-      <row>
-       <entry>&Version;</entry>
-       <entry>&Description;</entry>
-      </row>
-     </thead>
-     <tbody>
-      <row>
-       <entry>5.3.0</entry>
-       <entry>
-        Added the following userspace wrappers: stream_set_option, stream_cast.
-       </entry>
-      </row>
-      <row>
-       <entry>5.0.0</entry>
-       <entry>
-        Added the following userspace wrappers: rmdir, mkdir, rename, unlink.
-       </entry>
-      </row>
-      <row>
-       <entry>5.0.0</entry>
-       <entry>
-        Added the <literal>context</literal> property.
-       </entry>
-      </row>
-     </tbody>
-    </tgroup>
-   </informaltable>
-  </para>
- </refsect1><!-- }}} -->
-
  <refsect1 role="examples"><!-- {{{ -->
   &reftitle.examples;
   <para>
    <example>
-    <title>A Stream for reading/writing global variables</title>
-    <para>
-     The example below implements a var:// protocol handler that allows
-     read/write access to a named global variable using standard filesystem
-     stream functions such as <function>fread</function>. The var:// protocol
-     implemented below, given the URL "var://foo" will read/write data
-     to/from $GLOBALS["foo"].
-    </para>
+    <title>How to register a stream wrapper</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-
-class VariableStream {
-    var $position;
-    var $varname;
-
-    function stream_open($path, $mode, $options, &$opened_path)
-    {
-        $url = parse_url($path);
-        $this->varname = $url["host"];
-        $this->position = 0;
-
-        return true;
-    }
-
-    function stream_read($count)
-    {
-        $ret = substr($GLOBALS[$this->varname], $this->position, $count);
-        $this->position += strlen($ret);
-        return $ret;
-    }
-
-    function stream_write($data)
-    {
-        $left = substr($GLOBALS[$this->varname], 0, $this->position);
-        $right = substr($GLOBALS[$this->varname], $this->position + strlen($data));
-        $GLOBALS[$this->varname] = $left . $data . $right;
-        $this->position += strlen($data);
-        return strlen($data);
-    }
-
-    function stream_tell()
-    {
-        return $this->position;
-    }
-
-    function stream_eof()
-    {
-        return $this->position >= strlen($GLOBALS[$this->varname]);
-    }
-
-    function stream_seek($offset, $whence)
-    {
-        switch ($whence) {
-            case SEEK_SET:
-                if ($offset < strlen($GLOBALS[$this->varname]) && $offset >= 0) {
-                     $this->position = $offset;
-                     return true;
-                } else {
-                     return false;
-                }
-                break;
-
-            case SEEK_CUR:
-                if ($offset >= 0) {
-                     $this->position += $offset;
-                     return true;
-                } else {
-                     return false;
-                }
-                break;
-
-            case SEEK_END:
-                if (strlen($GLOBALS[$this->varname]) + $offset >= 0) {
-                     $this->position = strlen($GLOBALS[$this->varname]) + $offset;
-                     return true;
-                } else {
-                     return false;
-                }
-                break;
-
-            default:
-                return false;
-        }
-    }
+$existed = in_array("var", stream_get_wrappers());
+if ($existed) {
+    stream_wrapper_unregister("var");
 }
-
-stream_wrapper_register("var", "VariableStream")
-    or die("Failed to register protocol");
-
+stream_wrapper_register("var", "VariableStream");
 $myvar = "";
 
 $fp = fopen("var://myvar", "r+");
@@ -290,13 +82,42 @@ while (!feof($fp)) {
 fclose($fp);
 var_dump($myvar);
 
+if ($existed) {
+    stream_wrapper_restore("var");
+}
+
 ?>
 ]]>
     </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+line1
+line2
+line3
+string(18) "line1
+line2
+line3
+"
+]]>
+    </screen>
    </example>
   </para>
-
  </refsect1><!-- }}} -->
+
+ <refsect1 role="seealso"><!-- {{{ -->
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member>The <xref linkend="class.streamwrapper" /> prototype class</member>
+    <member><xref linkend="stream.streamwrapper.example-1" /></member>
+    <member><function>stream_wrapper_unregister</function></member>
+    <member><function>stream_wrapper_restore</function></member>
+    <member><function>stream_get_wrappers</function></member>
+   </simplelist>
+  </para>
+ </refsect1><!-- }}} -->
+
 
 </refentry>
 
