@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.2 $ -->
+<!-- $Revision: 1.3 $ -->
 <chapter xml:id="stream.examples">
  &reftitle.examples;
  <para>
@@ -92,6 +92,134 @@ fclose($fp);
    </programlisting>
   </example>
  </para>
+
+ <section xml:id='stream.streamwrapper.example-1'>
+  <title>Example class registered as stream wrapper</title>
+  <para>
+   The example below implements a var:// protocol handler that allows
+   read/write access to a named global variable using standard filesystem
+   stream functions such as <function>fread</function>. The var:// protocol
+   implemented below, given the URL "var://foo" will read/write data
+   to/from $GLOBALS["foo"].
+  </para>
+  <para>
+   <example>
+    <title>A Stream for reading/writing global variables</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+class VariableStream {
+    var $position;
+    var $varname;
+
+    function stream_open($path, $mode, $options, &$opened_path)
+    {
+        $url = parse_url($path);
+        $this->varname = $url["host"];
+        $this->position = 0;
+
+        return true;
+    }
+
+    function stream_read($count)
+    {
+        $ret = substr($GLOBALS[$this->varname], $this->position, $count);
+        $this->position += strlen($ret);
+        return $ret;
+    }
+
+    function stream_write($data)
+    {
+        $left = substr($GLOBALS[$this->varname], 0, $this->position);
+        $right = substr($GLOBALS[$this->varname], $this->position + strlen($data));
+        $GLOBALS[$this->varname] = $left . $data . $right;
+        $this->position += strlen($data);
+        return strlen($data);
+    }
+
+    function stream_tell()
+    {
+        return $this->position;
+    }
+
+    function stream_eof()
+    {
+        return $this->position >= strlen($GLOBALS[$this->varname]);
+    }
+
+    function stream_seek($offset, $whence)
+    {
+        switch ($whence) {
+            case SEEK_SET:
+                if ($offset < strlen($GLOBALS[$this->varname]) && $offset >= 0) {
+                     $this->position = $offset;
+                     return true;
+                } else {
+                     return false;
+                }
+                break;
+
+            case SEEK_CUR:
+                if ($offset >= 0) {
+                     $this->position += $offset;
+                     return true;
+                } else {
+                     return false;
+                }
+                break;
+
+            case SEEK_END:
+                if (strlen($GLOBALS[$this->varname]) + $offset >= 0) {
+                     $this->position = strlen($GLOBALS[$this->varname]) + $offset;
+                     return true;
+                } else {
+                     return false;
+                }
+                break;
+
+            default:
+                return false;
+        }
+    }
+}
+
+stream_wrapper_register("var", "VariableStream")
+    or die("Failed to register protocol");
+
+$myvar = "";
+
+$fp = fopen("var://myvar", "r+");
+
+fwrite($fp, "line1\n");
+fwrite($fp, "line2\n");
+fwrite($fp, "line3\n");
+
+rewind($fp);
+while (!feof($fp)) {
+    echo fgets($fp);
+}
+fclose($fp);
+var_dump($myvar);
+
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+line1
+line2
+line3
+string(18) "line1
+line2
+line3
+"
+]]>
+    </screen>
+   </example>
+  </para>
+ </section>
 </chapter>
 
 <!-- Keep this comment at the end of the file
