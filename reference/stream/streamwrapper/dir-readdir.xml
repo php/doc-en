@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 
 <refentry xml:id="streamwrapper.dir-readdir" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
@@ -31,29 +31,120 @@
   </para>
  </refsect1>
 
-<!--
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
    <example>
-    <title><function>streamWrapper::dir_readdir</function> example</title>
+    <title>Listing files from tar archives</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-/* ... */
+class streamWrapper {
+    protected $fp;
+
+    public function dir_opendir($path, $options) {
+        $url = parse_url($path);
+
+        $path = $url["host"] . $url["path"];
+
+        if (!is_readable($path)) {
+            trigger_error("$path isn't readable for me", E_USER_NOTICE);
+            return false;
+        }
+        if (!is_file($path)) {
+            trigger_error("$path isn't a file", E_USER_NOTICE);
+            return false;
+        }
+
+        $this->fp = fopen($path, "rb");
+        return true;
+    }
+
+    public function dir_readdir() {
+        // Extract the header for this entry
+        $header      = fread($this->fp, 512);
+        $data = unpack("a100filename/a8mode/a8uid/a8gid/a12size/a12mtime/a8checksum/a1filetype/a100link/a100linkedfile", $header);
+
+        // Trim the filename and filesize
+        $filename    = trim($data["filename"]);
+
+        // No filename? We are the end of the archive
+        if (!$filename) {
+            return false;
+        }
+
+        $octal_bytes = trim($data["size"]);
+        // Filesize is defined in octects
+        $bytes       = octdec($octal_bytes);
+
+        // tar rounds up filesizes up to multiple of 512 bytes (zero filled)
+        $rest        = $bytes % 512;
+        if ($rest > 0) {
+            $bytes      += 512 - $rest;
+        }
+
+        // Seek over the file
+        fseek($this->fp, $bytes, SEEK_CUR);
+
+        return $filename;
+    }
+
+    public function dir_closedir() {
+        return fclose($this->fp);
+    }
+
+    public function dir_rewinddir() {
+        return fseek($this->fp, 0, SEEK_SET);
+    }
+}
+
+stream_wrapper_register("tar", "streamWrapper");
+$handle = opendir("tar://example.tar");
+while (false !== ($file = readdir($handle))) {
+    var_dump($file);
+}
+
+echo "Rewinding..\n";
+rewind($handle);
+var_dump(readdir($handle));
+
+closedir($handle);
 ?>
 ]]>
     </programlisting>
     &example.outputs.similar;
     <screen>
 <![CDATA[
-...
+string(13) "construct.xml"
+string(16) "dir-closedir.xml"
+string(15) "dir-opendir.xml"
+string(15) "dir-readdir.xml"
+string(17) "dir-rewinddir.xml"
+string(9) "mkdir.xml"
+string(10) "rename.xml"
+string(9) "rmdir.xml"
+string(15) "stream-cast.xml"
+string(16) "stream-close.xml"
+string(14) "stream-eof.xml"
+string(16) "stream-flush.xml"
+string(15) "stream-lock.xml"
+string(15) "stream-open.xml"
+string(15) "stream-read.xml"
+string(15) "stream-seek.xml"
+string(21) "stream-set-option.xml"
+string(15) "stream-stat.xml"
+string(15) "stream-tell.xml"
+string(16) "stream-write.xml"
+string(10) "unlink.xml"
+string(12) "url-stat.xml"
+Rewinding..
+string(13) "construct.xml"
+
 ]]>
     </screen>
    </example>
   </para>
  </refsect1>
--->
 
  <refsect1 role="seealso">
   &reftitle.seealso;
