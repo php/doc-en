@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.1 $ -->
+<!-- $Revision: 1.2 $ -->
 
 <sect1 xml:id="control-structures.declare" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <title><literal>declare</literal></title>
@@ -69,19 +69,17 @@ declare(ticks=1);
 
  <sect2 xml:id="control-structures.declare.ticks">
   <title>Ticks</title>
-  <caution>
-   <simpara>
-    As of PHP 5.3.0 ticks are deprecated and will be removed
-    in PHP 6.0.0.
-   </simpara>
-  </caution>
   <para>A tick is an event that occurs for every
-  <varname>N</varname> low-level statements executed
+  <varname>N</varname> low-level tickable statements executed
   by the parser within the <literal>declare</literal> block.
   The value for <varname>N</varname> is specified
   using <code>ticks=<varname>N</varname></code>
   within the <literal>declare</literal> blocks's
   <literal>directive</literal> section.
+ </para>
+ <para>
+  Not all statements are tickable. Typically, condition
+  expressions and argument expressions are not tickable.
  </para>
  <para>
   The event(s) that occur on each tick are specified using the
@@ -91,56 +89,59 @@ declare(ticks=1);
  </para>
  <para>
   <example>
-   <title>Profile a section of PHP code</title>
+   <title>Tick usage example</title>
    <programlisting role="php">
 <![CDATA[
 <?php
-// A function that records the time when it is called
-function profile($dump = FALSE)
+
+declare(ticks=1);
+
+// A function called on each tick event
+function tick_handler()
 {
-    static $profile;
-
-    // Return the times stored in profile, then erase it
-    if ($dump) {
-        $temp = $profile;
-        unset($profile);
-        return $temp;
-    }
-
-    $profile[] = microtime();
+ 	echo "tick_handler() called\n";
 }
 
-// Set up a tick handler
-register_tick_function("profile");
+register_tick_function('tick_handler');
 
-// Initialize the function before the declare block
-profile();
+$a = 1;
 
-// Run a block of code, throw a tick every 2nd statement
-declare(ticks=2) {
-    for ($x = 1; $x < 50; ++$x) {
-        echo similar_text(md5($x), md5($x*$x)), "<br />;";
-    }
+if ($a > 0) {
+  	$a += 2;
+  	print($a);
 }
 
-// Display the data stored in the profiler
-print_r(profile(TRUE));
 ?>
 ]]>
    </programlisting>
   </example>
-  The example profiles the PHP code within the 'declare'
-  block, recording the time at which every second low-level
-  statement in the block was executed. This information can
-  then be used to find the slow areas within particular
-  segments of code. This process can be performed using other
-  methods: using ticks is more convenient and easier to
-  implement.
+  The above example is the equivalent of the following:
+  <example>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+function tick_handler()
+{
+  echo "tick_handler() called\n";
+}
+
+$a = 1;
+tick_handler();
+
+if ($a > 0) {
+  	$a += 2;
+  	tick_handler();
+  	print($a);
+  	tick_handler();
+}
+tick_handler();
+
+?>
+]]>
+   </programlisting>
+  </example>
  </para>
- <simpara>
-  Ticks are well suited for debugging, implementing simple
-  multitasking, background I/O and many other tasks.
- </simpara>
  <simpara>
   See also <function>register_tick_function</function> and
   <function>unregister_tick_function</function>.
