@@ -37,7 +37,7 @@
   &reftitle.examples;
   <para>
    <example>
-    <title><function>{FULL_METHOD_NAME}</function> example</title>
+    <title><methodname>{FULL_METHOD_NAME}</methodname> example</title>
     <programlisting role="php">
 <![CDATA[
 <?php
