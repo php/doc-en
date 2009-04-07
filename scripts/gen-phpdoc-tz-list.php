@@ -26,7 +26,7 @@
     unset($groupedList['Others']);
     $groupedList['Others'] = $others;
 ?>
-<?php echo '<?'; ?>xml version="1.0" encoding="iso-8859-1"?>
+<?php echo '<?'; ?>xml version="1.0" encoding="UTF-8"?>
 <!-- $Revision$ -->
 <!-- AUTO GENERATED, DO NOT TRANSLATE OR MODIFY BY HAND -->
 
