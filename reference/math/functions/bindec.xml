@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.13 $ -->
+<!-- $Revision: 1.14 $ -->
 <refentry xml:id="function.bindec" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>bindec</refname>
@@ -18,6 +18,13 @@
   <para>
    <function>bindec</function> converts a binary number to an
    <type>integer</type> or, if needed for size reasons, <type>float</type>.
+  </para>
+  <para>
+   <function>bindec</function> interprets all
+   <parameter>binary_string</parameter> values as unsigned
+   integers. This is because <function>bindec</function> sees
+   the most significant bit as another order of magnitude
+   rather than as the sign bit.
   </para>
  </refsect1>
  <refsect1 role="parameters">
@@ -87,6 +94,117 @@ echo bindec('111');
 51
 51
 7
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>bindec</function> interprets input as unsigned integers</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/*
+ * The lesson from this example is in the output
+ * rather than the PHP code itself.
+ */
+
+$magnitude_lower = pow(2, (PHP_INT_SIZE * 8) - 2);
+p($magnitude_lower - 1);
+p($magnitude_lower, 'see the rollover?');
+
+p(PHP_INT_MAX, 'PHP_INT_MAX');
+p(~PHP_INT_MAX, 'interpreted to be one more than PHP_INT_MAX');
+p(-1, 'interpreted to be the largest unsigned integer');
+
+function p($input, $note = '') {
+    $format = '%0' . (PHP_INT_SIZE * 8) . 'b';
+
+    echo "input:        $input\n";
+    $bin = sprintf($format, $input);
+    echo "binary:       $bin\n";
+
+    $dec = bindec($bin);
+    echo 'bindec():     ' . $dec . "\n";
+
+    if (PHP_INT_SIZE == 8) {
+        echo 'dec as float: ' . sprintf('%f', $dec) . "\n";
+        echo "64 bit note:  float lacks precision in this range\n";
+    }
+
+    if ($note) {
+        echo "NOTE:         $note\n";
+    }
+
+    echo "\n";
+}
+?>
+]]>
+    </programlisting>
+    &example.outputs.32bit;
+    <screen>
+<![CDATA[
+input:        1073741823
+binary:       00111111111111111111111111111111
+bindec():     1073741823
+
+input:        1073741824
+binary:       01000000000000000000000000000000
+bindec():     1073741824
+NOTE:         see the rollover?
+
+input:        2147483647
+binary:       01111111111111111111111111111111
+bindec():     2147483647
+NOTE:         PHP_INT_MAX
+
+input:        -2147483648
+binary:       10000000000000000000000000000000
+bindec():     2147483648
+NOTE:         interpreted to be one more than PHP_INT_MAX
+
+input:        -1
+binary:       11111111111111111111111111111111
+bindec():     4294967295
+NOTE:         interpreted to be the largest unsigned integer
+]]>
+    </screen>
+    &example.outputs.64bit;
+    <screen>
+<![CDATA[
+input:        4611686018427387903
+binary:       0011111111111111111111111111111111111111111111111111111111111111
+bindec():     4611686018427387903
+dec as float: 4611686018427387904.000000
+64 bit note:  float lacks precision in this range
+
+input:        4611686018427387904
+binary:       0100000000000000000000000000000000000000000000000000000000000000
+bindec():     4611686018427387904
+dec as float: 4611686018427387904.000000
+64 bit note:  float lacks precision in this range
+NOTE:         see the rollover?
+
+input:        9223372036854775807
+binary:       0111111111111111111111111111111111111111111111111111111111111111
+bindec():     9223372036854775807
+dec as float: 9223372036854775808.000000
+64 bit note:  float lacks precision in this range
+NOTE:         PHP_INT_MAX
+
+input:        -9223372036854775808
+binary:       1000000000000000000000000000000000000000000000000000000000000000
+bindec():     9.2233720368548E+18
+dec as float: 9223372036854775808.000000
+64 bit note:  float lacks precision in this range
+NOTE:         interpreted to be one more than PHP_INT_MAX
+
+input:        -1
+binary:       1111111111111111111111111111111111111111111111111111111111111111
+bindec():     1.844674407371E+19
+dec as float: 18446744073709551616.000000
+64 bit note:  float lacks precision in this range
+NOTE:         interpreted to be the largest unsigned integer
 ]]>
     </screen>
    </example>
