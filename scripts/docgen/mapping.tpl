@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 1.1 $ -->
+{EMPTY_REVISION_KEYWORD}
+
 <refentry xml:id="{CLASS_NAME_ID}.{METHOD_NAME_ID}" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>{FULL_METHOD_NAME}</refname>
