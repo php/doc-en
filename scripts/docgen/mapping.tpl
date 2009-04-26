@@ -1,24 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-{EMPTY_REVISION_KEYWORD}
-
-<refentry xml:id="function.{FUNCTION_NAME_ID}" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- $Revision: 1.1 $ -->
+<refentry xml:id="{CLASS_NAME_ID}.{METHOD_NAME_ID}" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
+  <refname>{FULL_METHOD_NAME}</refname>
   <refname>{FUNCTION_NAME}</refname>
-  <refpurpose>Description</refpurpose>
+  <refpurpose>The {METHOD_NAME} purpose</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
+  <para>Object oriented style (method):</para>
+   <methodsynopsis>
+   {MODIFIERS}{RETURN_TYPE}<methodname>{FULL_METHOD_NAME}</methodname>
+   {METHOD_PARAMETERS}
+   </methodsynopsis>
+  <para>Procedural style:</para>
   <methodsynopsis>
    <type>ReturnType</type><methodname>{FUNCTION_NAME}</methodname>
    {FUNCTION_PARAMETERS}
   </methodsynopsis>
   <para>
-   The function description goes here.
+   Description here.
   </para>
-
+  
   &warn.undocumented.func;
-
+ 
  </refsect1>
 
  <refsect1 role="parameters">
@@ -28,16 +34,8 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <!-- See also &return.success; -->
   <para>
-   What is returned on success and failure
-  </para>
- </refsect1>
-
- <refsect1 role="errors">
-  &reftitle.errors;
-  <para>
-   When does this function issue E_* level errors, and/or throw exceptions.
+   Description...
   </para>
  </refsect1>
 
@@ -45,22 +43,34 @@
   &reftitle.examples;
   <para>
    <example>
-    <title><function>{FUNCTION_NAME}</function> example</title>
-    <para>
-     Any text that describes the purpose of the example, or what
-     goes on in the example should be here.
-    </para>
+    <title>Object oriented style</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-
 /* ... */
-
 ?>
 ]]>
-    </programlisting>
-    &example.outputs.similar;
-    <screen>
+     </programlisting>
+     &example.outputs.similar;
+     <screen>
+<![CDATA[
+...
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Procedural style</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* ... */
+?>
+]]>
+     </programlisting>
+     &example.outputs.similar;
+     <screen>
 <![CDATA[
 ...
 ]]>
@@ -73,7 +83,7 @@
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>related function name here</function></member>
+    <member><methodname>Classname::Method</methodname></member>
    </simplelist>
   </para>
  </refsect1>

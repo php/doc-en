@@ -85,6 +85,44 @@ USAGE;
 }
 /* }}} */
 
+function find_function($ext, ReflectionMethod $method = NULL, ReflectionFunction $func = NULL) { /* {{{ */
+	$ext_name = strtolower($ext);
+	$ext = new ReflectionExtension($ext);
+	
+	if ($method) {	
+		preg_match_all('/[A-Z][a-z]+|[a-z]+/', $method->name, $parts);
+	
+		$possibleNames = array(
+			$ext_name .'_'. strtolower(implode('_', $parts[0])),
+			$ext_name .'_'. strtolower(implode('_', array_reverse($parts[0])))
+		);
+		
+		foreach ($ext->getFunctions() as $function) {
+			if (in_array($function->name, $possibleNames)) {
+				return $function;
+			}
+		}
+	} else {
+		$func_name = preg_replace('/^'. $ext_name .'_/', '', $func->name);
+		preg_match_all('/[a-z]+/', $func_name, $parts);
+
+		$possibleNames = array(
+			strtolower(implode($parts[0])),
+			strtolower(implode(array_reverse($parts[0])))
+		);
+		
+		foreach ($ext->getClasses() as $class) {
+			foreach ($class->getMethods() as $method) {
+				if (in_array(strtolower($method->name), $possibleNames)) {
+					return $method;
+				}		
+			}
+		}		
+	}
+	return false;
+}
+/* }}} */
+
 function add_warning($err_msg) { /* {{{ */
 	global $WARNING, $INFO;
 
@@ -225,12 +263,13 @@ function global_check($content) { /* {{{ */
 /* }}} */
 
 function create_markup_to_parameter_section(Reflector $obj, $content) { /* {{{ */
+	$param_name = ($obj instanceof ReflectionMethod ? 'METHOD' : 'FUNCTION'). '_PARAMETERS';
 	/* {PARAMETERS} */
 	if ($obj->getNumberOfParameters()) {
-		$ident = get_ident_size('PARAMETERS', $content);
+		$ident = get_ident_size($param_name, $content);
 
 		$parameters = $obj->getParameters();
-		$content = preg_replace('/\{PARAMETERS\}/', create_markup_to_params($parameters, $ident), $content);
+		$content = preg_replace('/\{'. $param_name .'\}/', create_markup_to_params($parameters, $ident), $content);
 
 		/* {PARAMETERS_DESCRIPTION} */
 		if ($ident = get_ident_size('PARAMETERS_DESCRIPTION', $content)) {
@@ -256,7 +295,7 @@ function create_markup_to_parameter_section(Reflector $obj, $content) { /* {{{ *
 			$content = preg_replace('/\{PARAMETERS_DESCRIPTION\}/', $markup, $content, 1);
 		}
 	} else {
-		$content = preg_replace('/\{PARAMETERS\}/', '<void />', $content, 1);
+		$content = preg_replace('/\{'. $param_name .'\}/', '<void />', $content, 1);
 		$content = preg_replace('/\{PARAMETERS_DESCRIPTION\}/', '&no.function.parameters;', $content, 1);
 	}
 
@@ -271,7 +310,7 @@ function gen_function_markup(ReflectionFunction $function, $content) { /* {{{ */
 	/* {FUNCTION_NAME} */
 	$content = preg_replace('/\{FUNCTION_NAME\}/', $function->getName(), $content);
 
-	/* {PARAMETERS}, {PARAMETERS_DESCRIPTION} */
+	/* {FUNCTION_PARAMETERS}, {PARAMETERS_DESCRIPTION} */
 	$content = create_markup_to_parameter_section($function, $content);
 
 	return $content;
@@ -279,7 +318,7 @@ function gen_function_markup(ReflectionFunction $function, $content) { /* {{{ */
 /* }}} */
 
 function gen_method_markup(ReflectionMethod $method, $content) { /* {{{ */
-	/* {PARAMETER}, {PARAMETERS_DESCRIPTION} */
+	/* {METHOD_PARAMETERS}, {PARAMETERS_DESCRIPTION} */
 	$content = create_markup_to_parameter_section($method, $content);
 
 	/* {CLASS_NAME_ID} */
@@ -305,6 +344,67 @@ function gen_method_markup(ReflectionMethod $method, $content) { /* {{{ */
 	}
 
 	return $content;
+}
+/* }}} */
+
+function gen_mapping_markup(ReflectionMethod $method, ReflectionFunction $function, $content) { /* {{{ */
+	if ($method->getNumberOfParameters() || $function->getNumberOfParameters()) {
+		/* {PARAMETERS_DESCRIPTION} */
+		if ($ident = get_ident_size('PARAMETERS_DESCRIPTION', $content)) {
+			$count = 1;
+			
+			$func_params = array();
+			$method_params = array();
+			foreach ($function->getParameters() as $param) {
+				$func_params[] = $param->getName();
+			}
+			foreach ($method->getParameters() as $param) {
+				$method_params[] = $param->getName();
+			}
+
+			$markup  = "<para>\n";
+			$markup .= str_repeat(' ', $ident + 1) ."<variablelist>\n";
+			foreach ($func_params as $param) {				
+				$markup .= str_repeat(' ', $ident + 2) ."<varlistentry>\n";
+				$markup .= str_repeat(' ', $ident + 3) .'<term><parameter>'. ($param ? $param : 'param'. $count) ."</parameter></term>\n";
+				$markup .= str_repeat(' ', $ident + 3) ."<listitem>\n";
+      			$markup .= str_repeat(' ', $ident + 4) ."<para>\n";
+       			$markup .= str_repeat(' ', $ident + 5) ."Description...\n";
+       			$markup .= str_repeat(' ', $ident + 4) ."</para>\n";
+     			$markup .= str_repeat(' ', $ident + 3) ."</listitem>\n";
+    			$markup .= str_repeat(' ', $ident + 2) ."</varlistentry>\n";
+    			$count++;
+			}
+			$diff_params = array_diff($method_params, $func_params);
+			
+			foreach ($method_params as $param) {
+				if (!($param && in_array($param, $diff_params))) {
+					continue;
+				}
+				$markup .= str_repeat(' ', $ident + 2) ."<varlistentry>\n";
+				$markup .= str_repeat(' ', $ident + 3) .'<term><parameter>'. ($param ? $param : 'param'. $count) ."</parameter></term>\n";
+				$markup .= str_repeat(' ', $ident + 3) ."<listitem>\n";
+				$markup .= str_repeat(' ', $ident + 4) ."<para>\n";
+				$markup .= str_repeat(' ', $ident + 5) ."Description...\n";
+				$markup .= str_repeat(' ', $ident + 4) ."</para>\n";
+				$markup .= str_repeat(' ', $ident + 3) ."</listitem>\n";
+				$markup .= str_repeat(' ', $ident + 2) ."</varlistentry>\n";
+				$count++;
+			}			
+			$markup .= str_repeat(' ', $ident + 1) ."</variablelist>\n";
+			$markup .= str_repeat(' ', $ident) ."</para>";
+
+			$content = preg_replace('/\{PARAMETERS_DESCRIPTION\}/', $markup, $content, 1);
+		}
+	} else {
+		$content = preg_replace('/\{PARAMETERS\}/', '<void />', $content, 1);
+		$content = preg_replace('/\{PARAMETERS_DESCRIPTION\}/', '&no.function.parameters;', $content, 1);
+	}
+	
+	$content = gen_method_markup($method, $content);
+	$content = gen_function_markup($function, $content);
+	
+	return $content;	
 }
 /* }}} */
 
@@ -640,9 +740,16 @@ function write_doc(Reflector $obj, $type) { /* {{{ */
 			create_dir($path);
 
 			$INFO['actual_file'] = $filename;
-			$content = file_get_contents(dirname(__FILE__) .'/'. $TEMPLATE[$type]);
-			$content = gen_method_markup($obj, $content);
-
+			$INFO['mappeds'][] = $filename;
+		
+			/* Mappeds */
+			if ($function = find_function($INFO['actual_extension'], $obj, NULL)) {
+				$content = file_get_contents(dirname(__FILE__) .'/mapping.tpl');
+				$content = gen_mapping_markup($obj, $function, $content);
+			} else {				
+				$content = file_get_contents(dirname(__FILE__) .'/'. $TEMPLATE[$type]);
+				$content = gen_method_markup($obj, $content);
+			}
 			save_file($filename, global_check($content));
 		break;
 
@@ -666,15 +773,29 @@ function write_doc(Reflector $obj, $type) { /* {{{ */
 		break;
 
 		case DOC_FUNCTION:
-			$path = $OPTION['output'] .'/functions';
-			$filename = $path .'/'. format_filename($obj->getName()) .'.xml';
-			$INFO['actual_file'] = $filename;
-
-			create_dir($path);
-
-			$content = file_get_contents(dirname(__FILE__) .'/'. $TEMPLATE[$type]);
-			$content = gen_function_markup($obj, $content);
-
+			if ($method = find_function($INFO['actual_extension'], NULL, $obj)) {
+				$path = $OPTION['output'] .'/'. strtolower($method->class);
+				$filename = $path .'/'. format_filename($method->name) .'.xml';
+				
+				if (in_array($filename, $INFO['mappeds'])) {
+					return;
+				}
+				
+				create_dir($path);				
+				$INFO['actual_file'] = $filename;				
+				
+				$content = file_get_contents(dirname(__FILE__) .'/mapping.tpl');
+				$content = gen_mapping_markup($method, $obj, $content);
+			} else {
+				$path = $OPTION['output'] .'/functions';
+				$filename = $path .'/'. format_filename($obj->getName()) .'.xml';
+				
+				create_dir($path);
+				$INFO['actual_file'] = $filename;
+			
+				$content = file_get_contents(dirname(__FILE__) .'/'. $TEMPLATE[$type]);
+				$content = gen_function_markup($obj, $content);
+			}
 			save_file($filename, global_check($content));
 		break;
 	}
@@ -768,7 +889,7 @@ function gen_docs($name, $type) {	/* {{{ */
 /* }}} */
 
 $OPTION  = array();
-$INFO 	 = array('actual_extension' => false);
+$INFO 	 = array('actual_extension' => false, 'mappeds' => array());
 $WARNING = array();
 $OPTION['extension'] = NULL;
 $OPTION['method']	 = NULL;

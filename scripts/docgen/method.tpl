@@ -11,7 +11,7 @@
   &reftitle.description;
   <methodsynopsis>
    {MODIFIERS}{RETURN_TYPE}<methodname>{FULL_METHOD_NAME}</methodname>
-   {PARAMETERS}
+   {METHOD_PARAMETERS}
   </methodsynopsis>
   <para>
    The method description goes here.
