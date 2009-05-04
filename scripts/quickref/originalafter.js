@@ -6,8 +6,6 @@
 fh_showmatches=29;
 
 var _d=document;
-var isnotopera=true;
-
 fh_matches=new Array();
 fh_inmenu=fh_menupos=0;
 fh_matchesjoined="";
@@ -20,10 +18,9 @@ fh_EDropDownChange();
 
 // Layer setup -----------------------------------------------------------------
 
-if (_d.all && (isnotopera=(navigator.userAgent.toLowerCase().indexOf("opera")==-1))) {
+if (_d.all && !window.opera) {
     width="width:165px";
 } else {
-    isnotopera=true;
     width="min-width:155px";
 }
 var funchelper = _d.createElement('div');
@@ -248,7 +245,7 @@ function fh_EKeyDown(ev)
                 f_p.value=matches[0];
                 return false;
             }
-            if (isnotopera) {
+            if (!window.opera) {
                 len=0;
                 first=matches[0];
                 last=matches[matches.length-1]; matches.length--;
