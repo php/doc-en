@@ -34,6 +34,17 @@
  &date.timezone.intro.title;
  &date.timezone.intro;
 <?php
+    if (function_exists('timezone_version_get')) {
+?>
+
+ <note>
+  <simpara>
+   This list is based upon Version <?php echo timezone_version_get(); ?> of the timezonedb.
+  </simpara>
+ </note>
+<?php
+    }
+
     foreach ($groupedList as $group => $zones) { 
         $m = count($zones) > 4 ? 5 : count($zones); ?>
 
