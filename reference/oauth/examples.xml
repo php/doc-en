@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 1.1 $ -->
+
+<chapter xml:id="oauth.examples" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ &reftitle.examples;
+
+ <section xml:id='oauth.examples.fireeagle'>
+  <title>FireEagle</title>
+  <para>
+   <example>
+    <title></title>
+    <programlisting role="php" xml:id="oauth.examples.fireeagle.location">
+<![CDATA[
+$req_url = 'https://fireeagle.yahooapis.com/oauth/request_token';
+$authurl = 'https://fireeagle.yahoo.net/oauth/authorize';
+$acc_url = 'https://fireeagle.yahooapis.com/oauth/access_token';
+$api_url = 'https://fireeagle.yahooapis.com/api/0.1';
+$conskey = 'your_consumer_key';
+$conssec = 'your_consumer_secret';
+
+session_start();
+
+// In state=1 the next request should include an oauth_token.
+// If it doesn't go back to 0
+if(!isset($_GET['oauth_token']) && $_SESSION['state']==1) $_SESSION['state'] = 0;
+try {
+  $oauth = new OAuth($conskey,$conssec,OAUTH_SIG_METHOD_HMACSHA1,OAUTH_AUTH_TYPE_URI);
+  $oauth->enableDebug();
+  if(!isset($_GET['oauth_token']) && !$_SESSION['state']) {
+    $request_token_info = $oauth->getRequestToken($req_url);
+    $_SESSION['secret'] = $request_token_info['oauth_token_secret'];
+    $_SESSION['state'] = 1;
+    header('Location: '.$auth_url.'?oauth_token='.$request_token_info['oauth_token']);
+    exit;
+  } else if($_SESSION['state']==1) {
+    $oauth->setToken($_GET['oauth_token'],$_SESSION['secret']);
+    $access_token_info = $oauth->getAccessToken($acc_url);
+    $_SESSION['state'] = 2;
+    $_SESSION['token'] = $access_token_info['oauth_token'];
+    $_SESSION['secret'] = $access_token_info['oauth_token_secret'];
+  } 
+  $oauth->setToken($_SESSION['token'],$_SESSION['secret']);
+  $oauth->fetch("$api_url/user.json");
+  $json = json_decode($oauth->getLastResponse());
+  print_r($json);
+} catch(OAuthException $E) {
+  print_r($E);
+}
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </section>
+
+</chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+
