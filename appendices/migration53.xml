@@ -1,0 +1,1960 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- $Revision: 1.1 $ -->
+<appendix xml:id="migration53" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Migrating from PHP 5.2.x to PHP 5.3.x</title>
+ <para>
+  &manual.migration.seealso;
+  <link linkend="migration5">5.0.x</link>, 
+  <link linkend="migration51">5.1.x</link> and 
+  <link linkend="migration52">5.2.x</link>.
+ </para>
+
+ <section xml:id="migration53.changes">
+  <title>What has changed in PHP 5.3.x</title>
+  <para>
+   Most improvements in PHP 5.3.x have no impact on existing code.  There are
+   a <link linkend="migration53.incompatible">few incompatibilities</link>
+   and <link linkend="migration53.new-features">new features</link> that should 
+   be considered, and code should be tested before switching PHP
+   versions in production environments.
+  </para>
+  <para>
+   If the system is being upgraded from PHP 5.1.x, the manual section titled
+   <link linkend="migration52">Upgrade Notes for PHP 5.2.x</link>
+   should also be read.
+  </para>
+  <para>
+   If the system is being upgraded from PHP 5.0.x, the manual section titled
+   <link linkend="migration51">Upgrade Notes for PHP 5.1.x</link>
+   should also be read.
+  </para>
+  <para>
+   Similarly, if the system is being upgraded from PHP 4, the manual section
+   titled <link linkend="migration5">Migrating from PHP 4 to PHP 5</link>
+   should be read as well.
+  </para>
+ </section>
+
+ <section xml:id="migration53.incompatible">
+  <title>Backward Incompatible Changes</title>
+  <para>
+   Although most existing PHP 5 code should work without changes, you should
+   pay attention to the following backward incompatible changes:
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     The internal parameter parsing API have been applied across all 
+     the extensions that PHP 5.3.x comes with. This parameter parsing API 
+     will make the function return &null; if incompatible parameters are 
+     passed to the function. There are some exceptions to this, like the 
+     <function>get_class</function> will still return &false; incase of an 
+     error.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>clearstatcache</function> no longer clears the realpath 
+     cache by default.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>call_user_func</function> and family now propagates <literal>$this</literal> 
+     even if the callee is the parent class.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     The array functions: <function>natsort</function>, <function>natcasesort</function>, 
+     <function>usort</function>, <function>uasort</function>, <function>uksort</function>,
+     <function>array_flip</function> and <function>array_unique</function>, no longer accept 
+     objects passed as arguments. If you need to access their properties using an object, 
+     you will need to cast the objects to arrays first.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     The behaviour of functions with by-reference parameters called by value has
+     changed. Where previously the function would accept the by-value argument, a
+     warning is now emitted and all by-ref parameters are set to &null;.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     The new mysqlnd library necessitates using MySQL's newer 41 byte password format.
+     Continued use of the old 16 byte passwords will cause <function>mysql_connect</function> 
+     to produce the following error message: <literal>"mysqlnd cannot connect to MySQL 4.1+ 
+     using old authentication"</literal>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     The trailing / has been removed from <classname>SplFileInfo</classname> and other related 
+     directory classes.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     The <link linkend="language.oop5.magic.tostring">__toString</link> magic method can 
+     no longer accept arguments.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     The magic methods 
+     <link linkend="language.oop5.overloading.members">__get</link>, 
+     <link linkend="language.oop5.overloading.members">__set</link>, 
+     <link linkend="language.oop5.overloading.members">__isset</link>, 
+     <link linkend="language.oop5.overloading.members">__unset</link>, 
+     <link linkend="language.oop5.overloading.methods">__call</link>, 
+     should always be public and can no longer be static. Method signatures are enforced.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </section>
+
+ <section xml:id="migration53.new-features">
+  <title>New features</title>
+  <para>
+   PHP 5.3.0 contains a wide set of new features, below lists 
+   new features available to the language and syntax.
+  </para>
+  <para>
+   The following keywords are now reserved and may not be used 
+   in function, class etc. names.
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <link linkend="control-structures.goto">goto</link>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="language.namespaces">namespace</link>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+  <para>
+   Support for <link linkend="language.namespaces">namespaces</link> has been 
+   added.
+  </para>
+  <para>
+   Support for <link linkend="language.oop5.late-static-bindings">Late Static Bindings</link> 
+   has been added.
+  </para>
+  <para>
+   Support for a jump label (limited goto) has been added. Its only possible to jump 
+   in the same context and out of loops, but not into loops, or other scopes/contexts.
+  </para>
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+// Basic usage
+goto end;
+
+echo 'This will never be printed!';
+
+end:
+	echo 'This is the end';
+
+// This wont work, as we cannot jump into another scope
+goto baz;
+
+function foobar()
+{
+	baz:
+	{
+		// ...
+	}
+}
+
+// Loops
+foreach(range('a', 'c') as $character)
+{
+	if($character == 'b')
+	{
+		goto done;
+	}
+}
+
+done:
+	echo 'Character "b" reached, stopping';
+
+// This wont work, as we cannot jump into loops
+goto impossible;
+
+foreach(range('a', 'c') as $character)
+{
+	impossible:
+	{
+		// ...
+	}
+}
+?>
+]]>
+   </programlisting>
+  </informalexample>
+  <para>
+   PHP now contains support for native <link linkend="functions.anonymous">closures</link> 
+   (Lambda, Anonymous functions). These are implemented using a new reserved class, 
+   <classname>Closure</classname>. Closures can be used in any function that takes a 
+   <link linkend="language.types.callback">callback</link> as parameter.
+  </para>
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+// Simple closure
+$greet = function($who)
+{
+	echo 'Hello ' . $who . PHP_EOL;
+}
+
+$greet('Kalle');
+$greet('Rasmus');
+
+// Using as a callback
+$names = Array('KALLE', 'RASMUS', 'PIERRE');
+
+$callback = function($element)
+{
+	return lcfirst($element);
+}
+
+// Prints:
+//  kALLE
+//  rASMUS
+//  pIERRE
+var_dump(array_map($names, $callback));
+
+// The above could also have been done by declaring the 
+// closure directly in the parameter
+var_dump(array_map($names, function($element)
+{
+	return lcfirst($element);
+}));
+?>
+]]>
+   </programlisting>
+  </informalexample>
+  <para>
+   Theres two new magic methods, 
+   <link linkend="language.oop5.overloading.methods">__callStatic</link> and 
+   <link linkend="language.oop5.magic.invoke">__invoke</link>. The magic 
+   <literal>__invoke</literal> method makes it possible for a class instance 
+   to be callable, thrus making it possible to pass it to a parameter of the 
+   <link linkend="language.types.callback">callback</link> type.
+  </para>
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class Callable
+{
+	function __invoke()
+	{
+		echo 'Invoked!' . PHP_EOL;
+	}
+}
+
+$callable = new Callable;
+
+// Works like a closure
+$callable();
+
+// And as callbacks
+call_user_func($callable);
+?>
+]]>
+   </programlisting>
+  </informalexample>
+  <para>
+   <link linkend="language.types.string.syntax.nowdoc">NOWDOC</link> syntax is now 
+   supported, and works like HEREDOC but with single quotes:
+  </para>
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+echo <<<'GREET'
+Hello World
+GREET;
+?>
+]]>
+   </programlisting>
+  </informalexample>
+  <para>
+   Static HEREDOCs can be used to initialize static variables, class members 
+   or class constants:
+  </para>
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+function foo()
+{
+	static $bar = <<<LABEL
+No variables here...
+LABEL;
+}
+
+class bar
+{
+	const $bar = <<<FOOBAR
+Constant example
+FOOBAR;
+	public $baz = <<<FOOBAR
+Property example
+FOOBAR;
+}
+?>
+]]>
+   </programlisting>
+  </informalexample>
+  <para>
+   Its now possible to declare constants using the <literal>const</literal> 
+   keyword:
+  </para>
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+const MY_CONSTANT = 'Hello';
+define('MY_OTHER_CONSTANT', 'World');
+
+echo MY_CONSTANT . ' ' . MY_OTHER_CONSTANT;
+?>
+]]>
+   </programlisting>
+  </informalexample>
+  <para>
+   The <link linkend="language.operators.comparison.ternary">ternary</link> operator 
+   now have a shorthand syntax:
+  </para>
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+var_dump(0 ?: 'Hello!');
+]]>
+   </programlisting>
+  </informalexample>
+ </section>
+
+ <section xml:id="migration53.windows">
+  <title>Changes made to Windows support</title>
+  <para>
+   The minimum Windows version is now Windows 2000. (Windows 98, ME and NT4 are
+   no longer supported).
+  </para>
+  <para>
+   PHP Windows binaries target i586 or later. i386 and i486 are not supported.
+  </para>
+  <para>
+   Windows support has been added for the following functions:
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>checkdnsrr</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>dns_get_record</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>fnmatch</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>getmxrr</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>getopt</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>imagecolorclosesthwb</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>inet_ntop</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>inet_pton</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>link</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>linkinfo</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>mcrypt_create_iv</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>readlink</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>socket_create_pair</function>
+     - This function was previously available on Windows, but 
+     was due to a bug disabled as of PHP 4.3.0.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>stream_socket_pair</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>symlink</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>time_nanosleep</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>time_sleep_until</function>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+  <para>
+   Improved portability of <function>stat</function>, <function>touch</function>, 
+   <function>filemtime</function>, <function>filesize</function> and related
+   functions (100% portable for the available data).
+  </para>
+  <para>
+   Its now possible to use hardlinks on Windows using the <function>link</function> 
+   function, and symbolic links via the <function>symlink</function> function. Hardlinks 
+   are available as of Windows 2000 and symbolic links as of Windows Vista.
+  </para>
+  <para>
+   The Windows version of PHP will expose a set of constants prefixed 
+   <literal>PHP_WINDOWS_*</literal>, a list of them and their function can be found 
+   <link linkend="info.constants">here</link>.
+  </para>
+  <para>
+   The <link linkend="ref.pdo-oci">PDO_OCI</link> <literal>php_pdo_oci8.dll</literal> library 
+   (for use with Oracle version 8 client libraries) is no longer being built. Instead, 
+   use <literal>php_pdo_oci.dll</literal> (note no '8') with Oracle 10 or 11 client 
+   libraries. Connection to other database versions is supported.
+  </para>
+  <para>
+   For the <link linkend="book.oci8">OCI8</link> extension, a new library 
+   <literal>php_oci8_11g.dll</literal> is available in addition to <literal>php_oci8.dll</literal>.
+   Only one can be enabled at any time. Use <literal>php_oci8.dll</literal> with Oracle 10.2 
+   client libraries. Use php_oci8_11g.dll with Oracle 11 client libraries. Connection
+   to other database versions is supported.
+  </para>
+  <para>
+   Theres now compiler support for Visual C++ 9 (VC9), using Visual Studio 2008.
+  </para>
+  <para>
+   Theres now experimental support for x64 versions of PHP on Windows.
+  </para>
+  <warning>
+   <simpara>
+    Support for the ISAPI module have been dropped, use the improved 
+    and much better FastCGI sapi module instead.
+   </simpara>
+  </warning>
+  <note>
+   <simpara>
+    A new dedicated site for PHP on Windows, including downloads, release candidates 
+    and snapshots in various flavors (Thread-safe/not-thread-safe, VC6/VC9, x86/x64). 
+    The URL for this site is <link xlink:href="&url.php.windows;">&url.php.windows;</link>.
+   </simpara>
+  </note>
+ </section>
+
+ <section xml:id="migration53.sapi">
+  <title>Changes in SAPI modules</title>
+  <para>
+   FastCGI is now always enabled and can not be disabled. See <literal>sapi/cgi/CHANGES</literal>
+   for more details.
+  </para>
+  <para>
+   A new CGI SAPI option, <literal>-T</literal>, can be used to measure execution time of a script
+   repeated several times.
+  </para>
+  <para>
+   CGI/FastCGI now has support for .htaccess style user-defined &php.ini; files.
+  </para>
+ </section>
+
+ <section xml:id="migration53.deprecated">
+  <title>Deprecated features in PHP 5.3.x</title>
+  <para>
+   PHP 5.3.0 introduces two new error levels; <constant>E_DEPRECATED</constant> 
+   and <constant>E_USER_DEPRECATED</constant>. The <constant>E_DEPRECATED</constant> 
+   error level is used to indicated that a feature have been deprecated, the 
+   <constant>E_USER_DEPRECATED</constant> level should be used to indicate deprecated 
+   features in userland defined code, just like the <constant>E_USER_WARNING</constant> 
+   level for example.
+  </para>
+  <para>
+   The following is a list of deprecated INI directives, if one or more of these 
+   are activated, they will issue an deprecation notice upon startup.
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <link linkend="ini.define-syslog-variables">define_syslog_variables</link>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="ini.register-globals">register_globals</link>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="ini.register-long-arrays">register_long_arrays</link>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="ini.safe-mode">safe_mode</link>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="ini.magic-quotes-gpc">magic_quotes_gpc</link>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="ini.magic-quotes-runtime">magic_quotes_runtime</link>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="ini.magic-quotes-sybase">magic_quotes_sybase</link>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+  <para>
+   Deprecated functions:
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>define_syslog_variables</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>ereg</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>ereg_replace</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>eregi</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>eregi_replace</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>split</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>spliti</function>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>sql_regcase</function>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </section>
+
+ <section xml:id="migration53.undeprecated">
+  <title>Undeprecated features in PHP 5.3.x</title>
+  <para>
+   The <function>is_a</function> have been undeprecated by 
+   popular request, meaning it will no longer issue an 
+   <constant>E_STRICT</constant> error.
+  </para>
+ </section>
+
+ <section xml:id="migration53.parameters">
+  <title>New Parameters</title>
+  <para>
+   Some functions were given new, optional, parameters in PHP 5.3.x:
+  </para>
+  <para>PHP Core:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>clearstatcache</function>
+     - Added <parameter>clear_realpath_cache</parameter> 
+     and <parameter>filename</parameter>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>copy</function>
+     - Added <parameter>context</parameter>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>fgetcsv</function>
+     - Added <parameter>escape</parameter>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>ini_get_all</function>
+     - Added <parameter>details</parameter>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>nl2br</function>
+     - Added <parameter>is_xhtml</parameter>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>parse_ini_file</function>
+     - Added <parameter>scanner_mode</parameter>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>round</function>
+     - Added <parameter>mode</parameter>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>stream_context_create</function>
+     - Added <parameter>params</parameter>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>strstr</function> and <function>stristr</function> 
+     - Added <parameter>before_needle</parameter>.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.json">json</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>json_encode</function>
+     - Added <parameter>options</parameter>.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para>
+   New parameters to methods in PHP 5.3.0.
+  </para>
+  <para>PHP Core:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <link linkend="language.exceptions">Exception:__construct</link>
+     - Added <parameter>previous</parameter>.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </section>
+
+ <section xml:id="migration53.functions">
+  <title>New Functions</title>
+  <para>
+   PHP 5.3.x introduced some new functions:
+  </para>
+
+  <para>PHP Core:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>array_replace</function>
+     - Replaces elements from passed arrays into one 
+     array.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>array_replace_recursive</function>
+     - Recursively replaces elements from passed arrays 
+     into one array.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>class_alias</function>
+     - Creates an alias for a user defined class.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>forward_static_call</function>
+     - Call a user function which is the first parameter.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>forward_static_call_array</function>
+     - Call a user function which is the first parameter 
+     with the arguments contained in an array.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>gc_collect_cycles</function>
+     - Forces collection of any existing garbage cycles.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>gc_disable</function>
+     - Deactivates the circular reference collector.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>gc_enable</function>
+     - Activated the circular reference collector.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>gc_enabled</function>
+     - Returns the status of the circular reference 
+     collector.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>get_called_class</function>
+     - Gets the name of the class the static method is 
+     called in.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>gethostname</function>
+     - Gets the standard host name for the local machine.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>header_remove</function>
+     - Removes an HTTP header previously set using the 
+     <function>header</function> function.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>lcfirst</function>
+     - Make a string's first character lowercase.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>parse_ini_string</function>
+     - Parse a configuration string.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>quoted_printable_encode</function>
+     - Convert an 8 bit string to a quoted-printable 
+     string.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>str_getcsv</function>
+     - Parse a CSV string into an array.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>stream_context_set_default</function>
+     - Set the default stream context.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>stream_supports_lock</function>
+     - Tells whether the stream supports locking.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.datetime">Date/Time</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>date_add</function>
+     - Adds an amount of days, months, years, hours, minutes and 
+     seconds to a DateTime object.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>date_create_from_format</function>
+     - Returns new DateTime object formatted according to the 
+     specified format.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>date_diff</function>
+     - Returns the difference between two DateTime objects.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>date_get_last_errors</function>
+     - Returns the warnings and errors from the last 
+     date/time operation.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>date_parse_from_format</function>
+     - Get info about given date.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>date_sub</function>
+     - Subtracts an amount of days, months, years, hours, minutes 
+     and seconds from a DateTime object.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>timezone_version_get</function>
+     - Gets the version of the timezonedb.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.gmp">GMP</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>gmp_testbit</function>
+     - Tests if a bit is set.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.hash">Hash</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>hash_copy</function>
+     - Copy hashing context.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.json">JSON</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>json_last_error</function>
+     - Returns the last json error that occurred.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.mysqli">MySQL Improved</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>mysqli_fetch_all</function>
+     - Fetches all result rows as an associative array, a numeric 
+     array, or both.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>mysqli_get_connection_stats</function>
+     - Returns statistics about the client connection.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>mysqli_poll</function>
+     - Poll connections.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>mysqli_reap_async_query</function>
+     - Get result from async query.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.openssl">OpenSSL</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>openssl_random_pseudo_bytes</function>
+     - Returns a string of the length specified filled with 
+     random pseudo bytes.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.pcntl">PCNTL</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>pcntl_signal_dispatch</function>
+     - Calls signal handlers for pending signals.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>pcntl_sigprocmask</function>
+     - Sets and retrieves blocked signals.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>pcntl_sigtimedwait</function>
+     - Waits for signals, with a timeout.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>pcntl_sigwaitinfo</function>
+     - Waits for signals.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.pcre">PCRE</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>preg_filter</function>
+     - Perform a regular expression search and replace.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.sem">Semaphore</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>msg_queue_exists</function>
+     - Check whether a message queue exists.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </section>
+
+ <section xml:id="migration53.new-stream-wrappers">
+  <title>New stream wrappers</title>
+  <para>
+   The following stream wrappers were introduced in 5.3.0:
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <link linkend="wrappers.glob">glob://</link>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="wrappers.phar">phar://</link>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </section>
+
+ <section xml:id="migration53.class-constants">
+  <title>New Class Constants</title>
+  <para>
+   New class constants that were introduced in 5.3.0:
+  </para>
+
+  <para><link linkend="ref.pdo-firebird">PDO_FIREBIRD</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <constant>PDO::FB_ATTR_DATE_FORMAT</constant>
+     - Sets the format for dates.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>PDO::FB_ATTR_TIME_FORMAT</constant>
+     - Sets the format for time.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>PDO::FB_ATTR_TIMESTAMP_FORMAT</constant>
+     - Sets the format for timestamps.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </section>
+
+ <section xml:id="migration53.methods">
+  <title>New Methods</title>
+  <para>
+   New methods that were introduced in 5.3.0:
+  </para>
+
+  <para><link linkend="book.datetime">Date/Time</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>DateTime::add</function>
+     - Adds an amount of days, months, years, hours, minutes and 
+     seconds to a DateTime object.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>DateTime::createFromFormat</function>
+     - Returns new DateTime object formatted according to the 
+     specified format.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>DateTime::diff</function>
+     - Returns the difference between two DateTime objects.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>DateTime::getLastErrors</function>
+     - Returns the warnings and errors from the last 
+     date/time operation.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>DateTime::sub</function>
+     - Subtracts an amount of days, months, years, hours, minutes 
+     and seconds from a DateTime object.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="ref.pdo-firebird">PDO_FIREBIRD</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>PDO::setAttribute</function>
+     - Set an attribute.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="language.oop5.reflection">Reflection</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <link linkend="language.oop5.reflection.reflectionclass">ReflectionClass::getNamespaceName()</link>
+     - Returns the name of namespace where this class is defined.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="language.oop5.reflection.reflectionclass">ReflectionClass::getShortName()</link>
+     - Returns the short name of the class (without namespace part).
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="language.oop5.reflection.reflectionclass">ReflectionClass::inNamespace()</link>
+     - Returns whether this class is defined in a namespace.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="language.oop5.reflection.reflectionfunction">ReflectionFunction::getNamespaceName()</link>
+     - Returns the name of namespace where this function is defined.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="language.oop5.reflection.reflectionfunction">ReflectionFunction::getShortName()</link>
+     - Returns the short name of the function (without namespace part).
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="language.oop5.reflection.reflectionfunction">ReflectionFunction::inNamespace()</link>
+     - Returns whether this function is defined in a namespace.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="language.oop5.reflection.reflectionproperty">ReflectionProperty::setAccessible()</link>
+     - Sets whether non-public properties can be requested.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.xsl">XSL</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <function>XSLTProcessor::setProfiling</function>
+     - Sets the profiling output file.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </section>
+
+ <section xml:id="migration53.removed-extensions">
+  <title>Removed Extensions</title>
+  <para>
+   These extensions have been moved to PECL and are no longer
+   part of the PHP distribution. The PECL package version of
+   these extensions will be created according to user demand.
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <link linkend="book.dbase">dbase</link>
+     - No longer maintained
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="book.fbsql">fbsql</link>
+     - No longer maintained
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="book.fdf">fdf</link> 
+     - Maintained
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="book.ming">ming</link> 
+     - Maintained
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="book.msql">msql</link>
+     - No longer maintained
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="book.ncurses">ncurses</link> 
+     - Maintained
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="book.sybase">sybase</link>
+     - Discontinued, use <link linkend="book.sybase">sybase_ct</link> 
+     instead, which still is in the PHP Core.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </section>
+
+ <section xml:id="migration53.new-extensions">
+  <title>New Extensions</title>
+  <para>
+   The following are new extensions added (by default) as of PHP 5.3.0:
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <link linkend="book.fileinfo">Fileinfo</link>
+     - Improved and more solid replacement for the 
+     <link linkend="book.mime-magic">Mimetype</link> extension.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="book.intl">INTL</link>
+     - Internationalization extension. INTL is a wrapper around the 
+     <link xlink:href="&url.icu.home;">ICU</link> library.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="book.phar">Phar</link>
+     - Implementation of PHP-Archive files.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="book.sqlite3">SQLite3</link>
+     - Support for SQLite version 3 databases.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </section>
+
+ <section xml:id="migration53.extensions-other">
+  <title>Other changes to extensions</title>
+  <para>
+   The following are new extensions can no longer be disabled 
+   during compilation configure:
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <link linkend="book.pcre">PCRE</link>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="language.oop5.reflection">Reflection</link>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="book.spl">SPL</link>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+  <para>
+   Changes in behaviour/new features to extensions:
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <link linkend="book.hash">Hash</link>
+     - The SHA-224 hash algorithm is now supported.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="book.oci8">OCI8</link>
+     - Calling <function>oci_close</function> on a persistent 
+     connection, or on a variable that references a persistent 
+     connection going out of scope, will now roll back any uncommitted 
+     transaction. You should explicitly commit or rollback as needed. Setting 
+     <link linkend="ini.oci8.old-oci-close-semantics">oci8.old_oci_close_semantics=On</link> 
+     in &php.ini; gives the old behaviour.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="book.openssl">OpenSSL</link>
+     - There is now support for OpenSSL digest and cipher functions. It is also 
+     now possible to access the internal values of DSA, RSA and DH keys.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <link linkend="book.session">Session</link>
+     - Sessions will no longer store session-files in <literal>"/tmp"</literal>
+     where <link linkend="ini.open-basedir">open_basedir</link> restrictions apply, 
+     unless <literal>"/tmp"</literal> is explicitly added to the list of allowed paths.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+  <para>
+   mysqlnd is a new core library shipped with PHP. It is a PHP-specific
+   replacement for libmysql.
+  </para>
+ </section>
+
+ <section xml:id="migration53.classes">
+  <title>New Classes</title>
+  <para>
+   The following classes were introduced in PHP 5.3.0:
+  </para>
+
+  <para><link linkend="book.datetime">Date/Time</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <classname>DateInterval</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>DatePeriod</classname>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.phar">Phar</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <classname>Phar</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>PharData</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>PharException</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>PharFileInfo</classname>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.spl">SPL</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <classname>FilesystemIterator</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>GlobIterator</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>MultipleIterator</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>RecursiveTreeIterator</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>SplDoublyLinkedList</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>SplFixedArray</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>SplHeap</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>SplMaxHeap</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>SplMinHeap</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>SplPriorityQueue</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>SplQueue</classname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <classname>SplStack</classname>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </section>
+
+ <section xml:id="migration53.global-constants">
+  <title>New Global Constants</title>
+
+  <para>PHP Core:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <constant>__DIR__</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>__NAMESPACE__</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>E_DEPRECATED</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>E_USER_DEPRECATED</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>INI_SCANNER_NORMAL</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>INI_SCANNER_RAW</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>PHP_WINDOWS_NT_DOMAIN_CONTROLLER</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>PHP_WINDOWS_NT_SERVER</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>PHP_WINDOWS_NT_WORKSTATION</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>PHP_WINDOWS_VERSION_BUILD</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>PHP_WINDOWS_VERSION_MAJOR</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>PHP_WINDOWS_VERSION_MINOR</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>PHP_WINDOWS_VERSION_PLATFORM</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>PHP_WINDOWS_VERSION_PRODUCTTYPE</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>PHP_WINDOWS_VERSION_SP_MAJOR</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>PHP_WINDOWS_VERSION_SP_MINOR</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>PHP_WINDOWS_VERSION_SUITEMASK</constant>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.image">GD</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <constant>IMG_FILTER_PIXELATE</constant>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.json">JSON</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <constant>JSON_ERROR_CTRL_CHAR</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>JSON_ERROR_DEPTH</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>JSON_ERROR_NONE</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>JSON_ERROR_STATE_MISMATCH</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>JSON_ERROR_SYNTAX</constant>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.ldap">LDAP</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <constant>LDAP_OPT_NETWORK_TIMEOUT</constant>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.pcre">PCRE</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <constant>PREG_BAD_UTF8_OFFSET_ERROR</constant>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para><link linkend="book.pcntl">PCNTL</link>:</para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <constant>BUS_ADRALN</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>BUS_ADRERR</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>BUS_OBJERR</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>CLD_CONTIUNED</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>CLD_DUMPED</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>CLD_EXITED</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>CLD_KILLED</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>CLD_STOPPED</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>CLD_TRAPPED</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>FPE_FLTDIV</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>FPE_FLTINV</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>FPE_FLTOVF</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>FPE_FLTRES</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>FPE_FLTSUB</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>FPE_FLTUND</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>FPE_INTDIV</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>FPE_INTOVF</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>ILL_BADSTK</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>ILL_COPROC</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>ILL_ILLADR</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>ILL_ILLOPC</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>ILL_ILLOPN</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>ILL_ILLTRP</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>ILL_PRVOPC</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>ILL_PRVREG</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>POLL_ERR</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>POLL_HUP</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>POLL_IN</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>POLL_MSG</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>POLL_OUT</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>POLL_PRI</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SEGV_ACCERR</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SEGV_MAPERR</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SI_ASYNCIO</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SI_KERNEL</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SI_MESGQ</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SI_NOINFO</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SI_QUEUE</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SI_SIGIO</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SI_TIMER</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SI_TKILL</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SI_USER</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SIG_BLOCK</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SIG_SETMASK</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>SIG_UNBLOCK</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>TRAP_BRKPT</constant>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>TRAP_TRACE</constant>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </section>
+
+ <section xml:id="migration53.ini">
+  <title>Changes to INI file handling</title>
+  <para>
+   PHP 5.3.0 have significantly improved performance, parsing and 
+   new features syntax features.
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     The standard &php.ini; files have been re-organized, and renamed. 
+     <literal>php.ini-development</literal> have settings thats recommded 
+     for use in a development envoirment. <literal>php.ini-production</literal> 
+     is configured to production envoirments.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     There is now support for special sections: 
+     <literal>[PATH=/opt/httpd/www.example.com/]</literal> and 
+     <literal>[HOST=www.example.com]</literal>. Directives set in these 
+     sections cannot be overridden by user-defined INI files or at 
+     runtime. More information about these sections can be found 
+     <link linkend="ini.sections">here</link>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <literal>zend_extension_debug</literal> and <literal>zend_extension_ts</literal> 
+     have been removed. Instead use the <literal>zend_extension</literal> 
+     directive to load all Zend Extensions.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     zend.ze1_compatibility_mode has been removed. If this ini directive is set 
+     to on, then an <constant>E_ERROR</constant> is emitted at startup.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     It is now possible to use the full path to load modules using the 
+     "<link linkend="ini.extension">extension</link>" directive.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     "ini-variables" can now be used almost anywhere in a php.ini file.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Runtime tightening of open_basedir restrictions is now possible.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     It is now possible to use alphanumeric or variable indices in ini option
+     arrays.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>get_cfg_var</function> is now able to return "array" INI options.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+  <para>
+   The following new ini directives have been added:
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <literal>user_ini.filename</literal> and <literal>user_ini.cache_ttl</literal> 
+     for the new user initialization mechanism.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Added <literal>mbstring.http_output_conv_mimetype</literal>. 
+     This directive specifies the regex pattern of content types for which 
+     <function>mb_output_handler</function> is activated.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </section>
+
+ <section xml:id="migration53.other">
+  <title>Other changes</title>
+  <para>
+   <function>SplFileInfo::getpathinfo</function> now returns information about 
+   the path name.
+  </para>
+  <para>
+   <classname>SplObjectStorage</classname> now has <classname>ArrayAccess</classname> 
+   support. It is also now possible to store associative information with objects in 
+   <classname>SplObjectStorage</classname>.
+  </para>
+  <para>
+   In the GD extension, there is now pixelation support available through
+   the <function>imagefilter</function> function.
+  </para>
+  <para>
+   There is now native support for the following math functions: <function>asinh</function>, 
+   <function>acosh</function>, <function>atanh</function>, <function>log1p</function> and 
+   <function>expm1</function>.
+  </para>
+  <para>
+   <function>var_dump</function> output now includes private object members.
+  </para>
+  <para>
+   <function>session_start</function> now returns FALSE when the session startup fails.
+  </para>
+  <para>
+   <link linkend="wrappers">Stream wrappers</link> can now be used by 
+   <link linkend="ini.include-path">include_path</link>.
+  </para>
+  <para>
+   The <link linkend="ref.dir">directory functions</link> <function>opendir</function>, 
+   <function>scandir</function> and <function>dir</function> now use the default
+   context if no context is passed as an argument to them.
+  </para>
+  <para>
+   <function>crypt</function> now has Blowfish and extended DES support, and 
+   <function>crypt</function> features are now 100% portable. PHP has its own 
+   internal crypt implementation which drops into place when support for 
+   <literal>crypt</literal> or <literal>crypt_r</literal> is not found.
+  </para>
+ </section>
+</appendix>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
