@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- $Revision: 1.72 $ -->
+<!-- $Revision: 1.73 $ -->
  <chapter xml:id="language.functions" xmlns="http://docbook.org/ns/docbook">
   <title>Functions</title>
 
@@ -606,16 +606,17 @@ $foo->$funcname();  // This calls $foo->Variable()
   
   <sect1 xml:id="functions.anonymous">
    <title>Anonymous functions</title>
-   <para>
-    Anonymous functions allow creation of functions without specifying their
-    name. They are most useful in <link
-    linkend="language.types.callback">callback</link> parameters but the usage
-    is not limited to that.
-   </para>
-   <para>
-    <example>
-     <title>Anonymous function example</title>
-     <programlisting role="php">
+
+   <simpara>
+    Anonymous functions, also known as <literal>closures</literal>, allow the
+    creation of functions which have no specified name. They are most useful as
+    the value of <link linkend="language.types.callback">callback</link>
+    parameters, but they have many other uses.
+   </simpara>
+
+   <example>
+    <title>Anonymous function example</title>
+    <programlisting role="php">
 <![CDATA[
 <?php
 echo preg_replace_callback('~-([a-z])~', function ($match) {
@@ -624,104 +625,125 @@ echo preg_replace_callback('~-([a-z])~', function ($match) {
 // outputs helloWorld
 ?>
 ]]>
-     </programlisting>
-    </example>
-   </para>
-   <para>
-    Closures can also be declared to values of variables, which PHP magiclly 
-    turns into an object instance of the <classname>Closure</classname> 
-    class. When assigning a closure to a variable, its done by a basic 
-    assignment to a function declaring with an ending semicolon like any 
-    other statement.
-   </para>
-   <para>
-    <example>
-     <title>Anonymous function variable assignment example</title>
-     <programlisting role="php">
+    </programlisting>
+   </example>
+
+   <simpara>
+    Closures can also be used as the values of variables; PHP automatically 
+    converts such expressions into instances of the
+    <classname>Closure</classname> internal class. Assigning a closure to a
+    variable uses the same syntax as any other assignment, including the
+    trailing semicolon:
+   </simpara>
+
+   <example>
+    <title>Anonymous function variable assignment example</title>
+    <programlisting role="php">
 <![CDATA[
 <?php
 $greet = function($name)
 {
-	printf("Hello %s\r\n", $name);
+    printf("Hello %s\r\n", $name);
 };
 
 $greet('World');
 $greet('PHP');
 ?>
 ]]>
-     </programlisting>
-    </example>
-   </para>
-   <para>
-    Closures may also inherit variables from the parent scope, to do so it 
-    must be declared in the function header, unlike regular functions that 
-    uses the <literal>global</literal> keyword.
-   </para>
-   <para>
-    <example>
-     <title>Closures and scoping</title>
-     <programlisting role="php">
+    </programlisting>
+   </example>
+   
+   <simpara>
+    Closures may also inherit variables from the parent scope. Any such
+    variables must be declared in the function header. Inheriting variables from
+    the parent scope is <emphasis>not</emphasis> the same as using global
+    variables. Global variables exist in the global scope, which is the same no
+    matter what function is executing. The parent scope of a closure is the
+    function in which the closure was declared (not necessarily the function it
+    was called from). See the following example:
+   </simpara>
+
+   <example>
+    <title>Closures and scoping</title>
+    <programlisting role="php">
 <![CDATA[
 <?php
-// Declare a basic shopping card that allows us to 
-// add products to it, with a member that allows us 
-// to get the quantity of a product we have added using 
-// a callback function
-class Card
+// A basic shopping cart which contains a list of added products
+// and the quantity of each product. Includes a method which
+// calculates the total price of the items in the cart using a
+// closure as a callback.
+class Cart
 {
-	public static $products = Array();
+    const PRICE_BUTTER  = 1.00;
+    const PRICE_MILK    = 3.00;
+    const PRICE_EGGS    = 6.95;
 
-
-	public static function add($product, $quantity)
-	{
-		self::$products[$product] = $quantity;
-	}
-
-	public static function getQuantity($product)
-	{
-		$quantity = false;
-
-		array_map(function($value, $key) use($product, &$quantity)
-		{
-			if($key == $product)
-			{
-				$quantity = $value;
-			}
-
-		}, array_values(self::$products), array_keys(self::$products));
-
-		return($quantity);
-	}
+    protected   $products = array();
+    
+    public function add($product, $quantity)
+    {
+        $this->products[$product] = $quantity;
+    }
+    
+    public function getQuantity($product)
+    {
+        return isset($this->products[$product]) ? $this->products[$product] :
+               FALSE;
+    }
+    
+    public function getTotal($tax)
+    {
+        $total = 0.00;
+        
+        $callback =
+            function ($quantity, $product) use ($tax, &$total)
+            {
+                $pricePerItem = constant(__CLASS__ . "::PRICE_" .
+                    strtoupper($product));
+                $total += ($pricePerItem * $quantity) * ($tax + 1.0);
+            };
+        
+        array_walk($this->products, $callback);
+        return round($total, 2);;
+    }
 }
 
-// Add some items to our card
-Card::add('Butter', 1);
-Card::add('Milk', 3);
-Card::add('Eggs', 6);
+$my_cart = new Cart;
 
-// Now get the total 'Eggs' we added
-printf('The card contains %d eggs', Card::getQuantity('Eggs'));
+// Add some items to the cart
+$my_cart->add('butter', 1);
+$my_cart->add('milk', 3);
+$my_cart->add('eggs', 6);
+
+// Print the total with a 5% sales tax.
+print $my_cart->getTotal(0.05) . "\n";
+// The result is 54.29
 ?>
 ]]>
-     </programlisting>
-    </example>
-   </para>
-   <para>
-    Anonymous functions are internally implemented by the
-    <link linkend="reserved.classes.closure"><literal>Closure</literal>
-    class</link>.
-   </para>
+    </programlisting>
+   </example>
+   
+   <simpara>
+    Anonymous functions are currently implemented using the
+    <link linkend="reserved.classes.closure">
+    <classname>Closure</classname></link> class. This is an implementation
+    detail and should not be relied upon.
+   </simpara>
+   
    <note>
-    <para>
+    <simpara>
      Anonymous functions are available since PHP 5.3.0.
-    </para>
+    </simpara>
    </note>
+
    <note>
-    <para>
-     Its possible to use the <function>func_get_args</function> and 
-     family functions within a closure.
-    </para>
+    <simpara>
+     It is possible to use <function>func_num_args</function>,
+     <function>func_get_arg</function>, and <function>func_get_args</function>
+     from within a closure.
+    </simpara>
    </note>
+
   </sect1>
 
  </chapter>
