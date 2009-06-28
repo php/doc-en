@@ -54,31 +54,32 @@ $DOC_EXT = array(
 function usage() { /* {{{ */
 	$v = PHP_VERSION;
 	print <<<USAGE
-	Usage: 
-		php docgen.php <options>
+Usage: 
+	php docgen.php <options>
 
-	Example options:
-		-e dom                                (an entire extension)
-		-f preg_replace                       (a single function)
-		-c simplexmlelement -m xpath -m asxml (a couple class methods)
+Example options:
+	-e dom                                (an entire extension)
+	-f preg_replace                       (a single function)
+	-c simplexmlelement -m xpath -m asxml (a couple class methods)
 
-	Notes:
-		Long options are supported with PHP 5.3.0+, and you use $v
-		Be sure the desired extension to document is available (compiled) into PHP
+Notes:
+	Long options are supported with PHP 5.3.0+, and you use $v
+	Be sure the desired extension to document is loaded into PHP
 
-	Options:
-		-c,--class 	-- class name
-		-e,--extension	-- extension name
-		-f,--function	-- function name
-		-h,--help	-- show this help
-		-i,--include	-- includes a PHP file (shortcut for:
-			           php -dauto_prepend_file=streams.php docgen.php)
-		-m,--method	-- method name (require -c)
-		-o,--output	-- output dir
-		-p,--pecl	-- is a PECL extension
-		-q,--quiet	-- quiet mode
-		-v,--version	-- show the version
-		-V,--verbose 	-- disable show progress
+Options:
+	-c,--class 	-- class name
+	-e,--extension	-- extension name
+	-f,--function	-- function name
+	-h,--help	-- show this help
+	-i,--include	-- includes a PHP file 
+	(shortcut for: php -dauto_prepend_file=streams.php docgen.php)
+
+	-m,--method	-- method name (require -c)
+	-o,--output	-- output dir
+	-p,--pecl	-- is a PECL extension
+	-q,--quiet	-- quiet mode
+	-v,--version	-- show the version
+	-V,--verbose 	-- disable show progress
 
 
 USAGE;
