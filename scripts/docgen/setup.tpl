@@ -13,7 +13,7 @@
  </section>
 
  <!-- {{{ Installation -->
- <section xml:id="extname.installation">
+ <section xml:id="{EXT_NAME_ID}.installation">
   &reftitle.install;
   &no.install;
  </section>
@@ -21,7 +21,7 @@
  <!-- }}} -->
 
  <!-- {{{ Configuration -->
- <section xml:id="extname.configuration">
+ <section xml:id="{EXT_NAME_ID}.configuration">
   &reftitle.runtime;
   &no.config;
  </section>
