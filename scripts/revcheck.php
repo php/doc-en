@@ -74,9 +74,9 @@ $CSS = array(
   REV_WIP      => "wip",
 );
 
-// Option for the link to cvs.php.net:
-define('CVS_OPT', '&amp;view=patch');
-define('CVS_OPT_NOWS', '');
+// Option for the link to svn.php.net:
+define('SVN_OPT', '&amp;view=patch');
+define('SVN_OPT_NOWS', '');
 
 // Initializing variables from parameters
 $LANG = $argv[1];
@@ -110,10 +110,10 @@ function get_tags($file, $val = "en-rev") {
   $line = fread($fp, 500);
   fclose($fp);
 
-  // Check for English CVS revision tag (. is for $ in the preg!),
+  // Check for English SVN revision tag (. is for $ in the preg!),
   // Return if this was needed (it should be there)
   if ($val == "en-rev") {
-    preg_match("/<!-- .Revision: \d+\.(\d+) . -->/", $line, $match);
+    preg_match("/<!-- .Revision: (\d+) . -->/", $line, $match);
     return $match[1];
   }
 
@@ -139,7 +139,7 @@ function get_tags($file, $val = "en-rev") {
   $match = array();
 
   // Check for the translations "revision tag"
-  preg_match ("/<!--\s*EN-Revision:\s*\d+\.(\d+)\s*Maintainer:\s*("
+  preg_match ("/<!--\s*EN-Revision:\s*(\d+)\s*Maintainer:\s*("
               . $val . ")\s*Status:\s*(.+)\s*-->/U",
               $line,
               $match
@@ -185,7 +185,7 @@ function get_file_status($file) {
     $file_sizes_by_mark[REV_NOTRANS] += $size;
     // compute en-tags just if they're needed in the WIP-Table
     if($using_rev) {
-            $missing_files[$trans_name][] = "1.".get_tags($file);
+            $missing_files[$trans_name][] = get_tags($file);
     }
     return FALSE;
   }
@@ -234,13 +234,13 @@ function get_file_status($file) {
   // If we have a numeric revision number (not n/a), compute rev. diff
   if (is_numeric($this_rev)) {
     $rev_diff   = intval($en_rev) - intval($this_rev);
-    $trans_rev  = "1." . $this_rev;
-    $en_rev     = "1." . $en_rev;
+    $trans_rev  = $this_rev;
+    $en_rev     = $en_rev;
   } else {
     // If we have no numeric revision, make all revision
     // columns hold the rev from the translated file
     $rev_diff = $trans_rev = $this_rev;
-    $en_rev   = "1." . $en_rev;
+    $en_rev   = $en_rev;
   }
 
   // If the file is up-to-date
@@ -323,7 +323,7 @@ function get_dir_status($dir) {
       continue;
     }
 
-    if ($file != '.' && $file != '..' && $file != 'CVS' && $dir != '/functions') {
+    if ($file != '.' && $file != '..' && $file != '.svn' && $dir != '/functions') {
       if (is_dir($dir.'/' .$file)) {
           $directories[] = $file;
       } elseif (is_file($dir.'/' .$file)) {
@@ -390,9 +390,9 @@ function get_old_files($dir) {
   while ($file = @readdir($handle)) {
 
     // If we found a file with one or two point as a name,
-    // a CVS directory, or an editor backup file skip the file
+    // a SVN directory, or an editor backup file skip the file
     if (preg_match("/^\.{1,2}/", $file)
-        || $file == 'CVS'
+        || $file == '.svn'
         || substr($file, -1) == '~' // Emacs backup file
        ) {
       continue;
@@ -706,12 +706,12 @@ END_OF_MULTILINE;
     // [Used in further tables for referencing]
     $maint_by_nick[$person["nick"]] = $num;
 
-    // Decide on the CVS text and the color of the line
-    if ($person["cvs"] === "yes") {
-      $cvsu = "x";
+    // Decide on the SVN text and the color of the line
+    if ($person["svn"] === "yes") {
+      $svnu = "x";
       $col = "old";
     } else {
-      $cvsu = "&nbsp;";
+      $svnu = "&nbsp;";
       $col = "wip";
     }
 
@@ -733,7 +733,7 @@ END_OF_MULTILINE;
           "<td><a name=\"maint$num\">$person[name]</a></td>" .
           "<td>$person[email]</td>" .
           "<td>$person[nick]</td>" .
-          "<td class=c>$cvsu</td>" .
+          "<td class=c>$svnu</td>" .
           "<td class=c>" . $pi[REV_CREDIT]   . "</td>" .
           "<td class=c>" . $pi[REV_UPTODATE] . "</td>" .
           "<td class=c>" . $pi[REV_OLD]      . "</td>" .
@@ -809,7 +809,7 @@ print <<<END_OF_MULTILINE
 <table width="820" border="0" cellpadding="4" cellspacing="1" align="center">
 <tr class=blue>
 <th rowspan=2>Translated file</th>
-<th colspan=3>Revision</th>
+<th colspan=2>Revision</th>
 <th colspan=3>Size in kB</th>
 <th colspan=3>Age in days</th>
 <th rowspan=2>Maintainer</th>
@@ -818,7 +818,6 @@ print <<<END_OF_MULTILINE
 <tr class=blue>
 <th>en</th>
 <th>$LANG</th>
-<th>diff</th>
 <th>en</th>
 <th>$LANG</th>
 <th>diff</th>
@@ -841,13 +840,13 @@ END_OF_MULTILINE;
     }
 
     // If we have a 'numeric' revision diff and it is not zero,
-    // make a link to the CVS repository's diff script
+    // make a link to the SVN repository's diff script
     if ($file["revision"][2] != "n/a" && $file["revision"][2] !== 0) {
-      $url = 'http://cvs.php.net/viewvc.cgi/' .
-             preg_replace( "'^".$DOCDIR."'", 'phpdoc/', $file['full_name']) .
+      $url = 'http://svn.php.net/viewvc/' .
+             preg_replace( "'^".$DOCDIR."en/'", 'phpdoc/en/trunk/', $file['full_name']) .
              '?r1=' . $file['revision'][1] . '&amp;r2=' . $file['revision'][0];
-      $url_ws = $url . CVS_OPT_NOWS;
-      $url   .= CVS_OPT;
+      $url_ws = $url . SVN_OPT_NOWS;
+      $url   .= SVN_OPT;
 
       $file['short_name'] = '<a href="' . $url . '">'. $file["short_name"] . '</a> '.
                             '<a href="' . $url_ws . '">[NoWS]</a>';
@@ -878,7 +877,6 @@ END_OF_MULTILINE;
     $lines .= "<tr class={$CSS[$file['mark']]}><td>{$file['short_name']}</td>".
           "<td> {$file['revision'][0]}</td>" .
           "<td> {$file['revision'][1]}</td>".
-          "<td class=rb>{$file['revision'][2]} </td>".
           "<td class=r>{$file['size'][0]} </td>".
           "<td class=r>{$file['size'][1]} </td>".
           "<td class=rb>{$file['size'][2]} </td>".
@@ -1034,7 +1032,7 @@ if ($count > 0) {
         $prev_dir = $new_dir;
     }
 
-    echo "<tr class=wip><td><a href=\"http://cvs.php.net/viewvc.cgi/phpdoc/en/$file?view=markup\">$short_file</a></td>" .
+    echo "<tr class=wip><td><a href=\"http://svn.php.net/viewvc/phpdoc/en/trunk/$file?view=markup\">$short_file</a></td>" .
           "<td class=r>$info[0]</td></tr>\n";
   }
   echo "</table>\n<p>&nbsp;</p>\n$navbar<p>&nbsp;</p>\n";
