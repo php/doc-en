@@ -16,7 +16,7 @@
 # | Authors:    Gabor Hoitsy <goba@php.net>                              |
 # +----------------------------------------------------------------------+
 #
-# $Id: genfuncsummary.sh,v 1.12 2008-12-31 06:40:11 philip Exp $
+# $Id$
 
 if test -f funcsummary.awk; then
   awkscript=funcsummary.awk
