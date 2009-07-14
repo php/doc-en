@@ -92,7 +92,7 @@ if ("cli" === php_sapi_name()) {
   if (isset($PHPDOCDIR) && is_dir($PHPDOCDIR)) {
     $DOCDIR = $PHPDOCDIR."/";
   } else {
-    $DOCDIR = "./";
+    $DOCDIR = "../";
   }
 } else {
   $DOCDIR = "../";
