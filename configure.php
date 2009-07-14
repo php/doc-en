@@ -44,6 +44,8 @@ Configuration:
   -V, --version             Display version information and exit
   -q, --quiet, --silent     Do not print `checking...' messages
       --srcdir=DIR          Find the sources in DIR [configure dir or `.']
+      --basedir             Doc-base directory [{$acd['BASEDIR']}]
+      --rootdir             Root directory of SVN Doc checkouts [{$acd['ROOTDIR']})
 
 Package-specific:
   --enable-force-dom-save   Force .manual.xml to be saved in a full build even
@@ -215,7 +217,10 @@ function print_xml_errors($details = true) {
     libxml_clear_errors();
 } // }}}
 
-$srcdir = dirname(__FILE__);
+$srcdir  = dirname(__FILE__);
+$workdir = $srcdir;
+$basedir = $srcdir;
+$rootdir = dirname($basedir);
 
 // Settings {{{
 $cygwin_php_bat = "{$srcdir}/../phpdoc-tools/php.bat";
@@ -234,15 +239,20 @@ echo "\n";
 
 $acd = array( // {{{
     'srcdir' => $srcdir,
+    'basedir' => $basedir,
+    'rootdir' => $rootdir,
+    'workdir' => $workdir,
     'quiet' => 'no',
     'WORKDIR' => $srcdir,
     'SRCDIR' => $srcdir,
+    'BASEDIR' => $basedir,
+    'ROOTDIR' => $rootdir,
     'PHP' => '',
     'CHMENABLED' => 'no',
     'CHMONLY_INCL_BEGIN' => '<!--',
     'CHMONLY_INCL_END' => '-->',
     'LANG' => 'en',
-    'LANGDIR' => "{$srcdir}/en",
+    'LANGDIR' => "{$rootdir}/en",
     'PHP_BUILD_DATE' => date('Y-m-d'),
     'ENCODING' => 'utf-8',
     'FORCE_DOM_SAVE' => 'no',
@@ -351,6 +361,14 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
         case 'howto':
             $ac['HOWTO']  =$v;
             break;
+
+        case 'rootdir':
+            $ac['rootdir'] = $v;
+            break;
+
+        case 'basedir':
+            $ac['basedir'] = $v;
+            break;
         
         case 'broken-file-listing':
             $ac['USE_BROKEN_TRANSLATION_FILENAME'] = $v;
@@ -367,6 +385,8 @@ if (!file_exists($ac['srcdir']) || !is_dir($ac['srcdir']) || !is_writable($ac['s
 }
 $ac['SRCDIR'] = $ac['srcdir'];
 $ac['WORKDIR'] = $ac['srcdir'];
+$ac['ROOTDIR'] = $ac['rootdir'];
+$ac['BASEDIR'] = $ac['basedir'];
 checkvalue($ac['srcdir']);
 
 checking('whether to save an invalid .manual.xml');
@@ -403,7 +423,7 @@ if ($ac['LANG'] == '' || $ac['LANG'] == 'no') {
 checkvalue($ac['LANG']);
 
 checking("whether the language is supported");
-$LANGDIR = "{$ac['srcdir']}/{$ac['LANG']}";
+$LANGDIR = "{$ac['rootdir']}/{$ac['LANG']}";
 if (!file_exists($LANGDIR) || !is_readable($LANGDIR)) {
     checkerror("No language directory found.");
 }
@@ -427,7 +447,7 @@ $infiles = array(
 );
 
 foreach ($infiles as $in) {
-    $in = chop("{$ac['srcdir']}/{$in}");
+    $in = chop("{$ac['basedir']}/{$in}");
 
     $out = substr($in, 0, -3);
     echo "Generating {$out}... ";
@@ -508,11 +528,11 @@ if ($ac['HOWTO'] === 'yes') {
     exit(1);
 }
 
-globbetyglob("{$ac['srcdir']}/scripts", 'make_scripts_executable');
+globbetyglob("{$ac['basedir']}/scripts", 'make_scripts_executable');
 
 $redir = ($ac['quiet'] == 'yes') ? " > /dev/null" : '';
 
-quietechorun("\"{$ac['PHP']}\" -q \"{$ac['srcdir']}/scripts/file-entities.php\"{$redir}");
+quietechorun("\"{$ac['PHP']}\" -q \"{$ac['basedir']}/scripts/file-entities.php\"{$redir}");
 
 echo "Loading and parsing manual.xml... ";
 flush(STDOUT);
