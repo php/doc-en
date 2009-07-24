@@ -221,6 +221,9 @@ $srcdir  = dirname(__FILE__);
 $workdir = $srcdir;
 $basedir = $srcdir;
 $rootdir = dirname($basedir);
+if (basename($rootdir) == 'doc-base') {
+    $rootdir = dirname($rootdir);
+}
 
 // Settings {{{
 $cygwin_php_bat = "{$srcdir}/../phpdoc-tools/php.bat";
@@ -424,11 +427,20 @@ checkvalue($ac['LANG']);
 
 checking("whether the language is supported");
 $LANGDIR = "{$ac['rootdir']}/{$ac['LANG']}";
+if (file_exists("{$LANGDIR}/trunk")) {
+    $LANGDIR .= '/trunk';
+}
 if (!file_exists($LANGDIR) || !is_readable($LANGDIR)) {
     checkerror("No language directory found.");
 }
 
 $ac['LANGDIR'] = basename($LANGDIR);
+if ($ac['LANGDIR'] == 'trunk') {
+    $ac['LANGDIR'] = '../' . basename(dirname($LANGDIR)) . '/trunk';
+    $ac['EN_DIR'] = '../en/trunk';
+} else {
+    $ac['EN_DIR'] = 'en';
+}
 checkvalue("yes");
 
 checking("for partial build");
@@ -478,7 +490,12 @@ if ($ac['VERSION_FILES'] === 'yes') {
 
 
     echo "Iterating over extension specific version files... ";
-    foreach(glob("{$ac['rootdir']}/en/*/*/versions.xml") as $file) {
+    if (file_exists($ac['rootdir'] . '/en/trunk')) {
+        $globdir = $ac['rootdir'] . '/en/trunk';
+    } else {
+        $globdir = $ac['rootdir'] . '/en';
+    }
+    foreach(glob("$globdir/*/*/versions.xml") as $file) {
         if($tmp->load($file)) {
             foreach($tmp->getElementsByTagName("function") as $function) {
                 $function = $dom->importNode($function, true);
