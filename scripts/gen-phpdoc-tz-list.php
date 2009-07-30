@@ -39,7 +39,7 @@
 
  <note>
   <simpara>
-   This list is based upon Version <?php echo timezone_version_get(); ?> of the timezonedb.
+   &date.timezone.dbversion; <?php echo timezone_version_get(); ?>.
   </simpara>
  </note>
 <?php
