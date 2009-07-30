@@ -104,6 +104,7 @@ function check_data($xml, $data)
                  */
                 $note = "$current_file:" . xml_get_current_line_number($xml) . ": $word   (in element $element)\n";
                 echo $note;
+                echo "================\nContext:\n$data\n================\n";
                 do {
                     $response = read_line("Add this word to personal wordlist? (yes/no/save/later): ");
                     if ($response[0] == 's') {
