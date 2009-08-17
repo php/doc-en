@@ -1,24 +1,28 @@
 @ECHO OFF
+REM This file assumes phpdoc/modules/doc-all checkout
+
 SET PHP=c:\php53\php.exe
 SET PHD=C:\pear\phd.bat
 SET HH=C:\Program Files (x86)\HTML Help Workshop\hhc.exe
 SET CP=C:\Program Files (x86)\PuTTY\pscp.exe
 SET PRIVATES=C:\Documents and Settings\bjori\My Documents\my.privates.ppk
 SET PEAR=C:\pear\pear.bat
-cd c:\phpdoc\
+SET SVN=C:\Program Files\SlikSvn\bin\svn.exe
 
-ECHO CVS Updating...
-"C:\Program Files (x86)\CVSNT\cvs" up -P -d > logs\cvs.log 2<&1
-ECHO Upgrading PEAR
+cd c:\doc-all\
+
+ECHO SVN Updating...
+%SVN% up > logs\cvs.log 2<&1
+ECHO Upgrading PhD
 CALL "%PEAR%" upgrade doc.php.net/phd-beta > logs\pear.log 2<&1
 
 FOR %%A IN (en bg de es fr ja kr pl pt_BR ro ru tr) DO (
 	ECHO Configuring %%A...
-	"%PHP%" configure.php --with-php=%PHP% --with-lang=%%A --enable-chm > logs\configure.%%A.log 2<&1
+	"%PHP%" doc-base/configure.php --with-php=%PHP% --with-lang=%%A --enable-chm > logs\configure.%%A.log 2<&1
 
-	IF EXIST .manual.xml (
+	IF EXIST doc-base/.manual.xml (
 		ECHO Running PhD...
-		CALL "%PHD%" -d .manual.xml -f xhtml -t chmsource -o tmp --lang %%A > logs\phd.%%A.log 2<&1
+		CALL "%PHD%" -d doc-base/.manual.xml -f xhtml -t chmsource -o tmp --lang %%A > logs\phd.%%A.log 2<&1
 
 		ECHO Generating the chm...
 		"%HH%" tmp/chm/php_manual_%%A.hhp > logs\hhc.%%A.log 2<&1
@@ -31,12 +35,12 @@ FOR %%A IN (en bg de es fr ja kr pl pt_BR ro ru tr) DO (
 	)
 
 	ECHO Cleaning temp files...
-	del /F /Q C:\phpdoc\tmp
-	del /Q C:\phpdoc\.manual.xml
-	rmdir /s /q C:\phpdoc\tmp\chm\res
-	rmdir /s /q C:\phpdoc\tmp\chm\
-	rmdir /s /q C:\phpdoc\tmp\html
-	rmdir /s /q C:\phpdoc\tmp
+	del /F /Q C:\doc-all\tmp
+	del /Q C:\doc-all\doc-base\.manual.xml
+	rmdir /s /q C:\doc-all\tmp\chm\res
+	rmdir /s /q C:\doc-all\tmp\chm\
+	rmdir /s /q C:\doc-all\tmp\html
+	rmdir /s /q C:\doc-all\tmp
 )
 
 echo Done!
