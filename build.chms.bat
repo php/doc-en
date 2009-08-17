@@ -27,7 +27,7 @@ FOR %%A IN (en bg de es fr ja kr pl pt_BR ro ru tr) DO (
 		ECHO Generating the chm...
 		"%HH%" tmp/chm/php_manual_%%A.hhp > logs\hhc.%%A.log 2<&1
 
-		"%CP%" -batch -q -i "%PRIVATES%"  -l bjori tmp\chm\php_manual_%%A.chm rsync.php.net:/home/bjori/manual-chms-new/
+		"%CP%" -batch -q -i "%PRIVATES%"  -l bjori c:\doc-all\tmp\chm\php_manual_%%A.chm rsync.php.net:/home/bjori/manual-chms-new/
 
 		move tmp\chm\php_manual_%%A.chm chmfiles/
 	) ELSE (
