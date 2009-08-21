@@ -20,11 +20,11 @@
 
 if (isset($_SERVER["argv"][1])) {
 	$lang = $_SERVER["argv"][1];
-	$scripts_dir = dirname(__FILE__);
-	$phpsrc_dir = realpath("$scripts_dir/../../php-src");
-	$pecl_dir = realpath("$scripts_dir/../../pecl");
-	$zend_dir = realpath("$phpsrc_dir/ZendEngine2");
-	$phpdoc_dir = realpath("$scripts_dir/../$lang");
+	$doc_dir = dirname(__FILE__) . "/../..";
+	$phpsrc_dir = realpath("$doc_dir/../php-src");
+	$pecl_dir = realpath("$doc_dir/../pecl");
+	$zend_dir = realpath("$phpsrc_dir/Zend");
+	$phpdoc_dir = realpath("$doc_dir/$lang");
 }
 
 if (!isset($_SERVER["argv"][1]) || !is_dir($phpdoc_dir)) {
