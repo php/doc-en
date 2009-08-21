@@ -423,7 +423,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$referen
 		if (!in_array($function_name, $wrong_refs) 
 		&& (is_int($source_ref[0]) ? $byref[0] != $source_ref[0] || count($byref) != count($matches[1]) - $source_ref[0] + 1 : $byref != $source_ref[0])
 		) {
-			echo ($source_ref[0] ? "Parameter(s) " . (is_int($source_ref[0]) ? "$source_ref[0] and rest" : implode(", ", $source_ref[0])) : "Nothing") . " should be passed by reference in $filename on line $lineno" . (isset($source_ref[1]) ? "\n: source in $source_ref[1] on line $source_ref[2]" : "") . ".\n";
+			echo ($source_ref[0] ? "Parameter(s) " . (is_int($source_ref[0]) ? "$source_ref[0] and rest" : implode(", ", $source_ref[0])) : "Nothing") . " should be passed by reference in $filename on line $lineno" . (isset($source_ref[1]) ? "\n$source_ref[1]:$source_ref[2]: source" : "") . ".\n";
 		}
 		if (isset($source_refs[$function_name])) {
 			$counts["refs"]++;
@@ -475,7 +475,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$referen
 				$error = "Wrong number of parameters (" . count($matches[2]) . " instead of $i) in $filename on line $lineno.\n"; // other errors ignored
 			}
 			if ($error) {
-				echo "$error: source in $source_type[1] on line $source_type[2].\n";
+				echo "$error$source_type[1]:$source_type[2]: source\n";
 			}
 		
 		// arguments count
@@ -498,7 +498,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$referen
 			}
 			if ($source_arg_count[0] != $disallowed) {
 				echo "Wrong arguments count in $filename on line $lineno.\n";
-				echo ": source in $source_arg_count[1] on line $source_arg_count[2].\n";
+				echo "$source_arg_count[1]:$source_arg_count[2]: source\n";
 			}
 		}
 	}
