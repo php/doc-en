@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: $ -->
+
+<section xml:id="tokyo-tyrant.installation" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ &reftitle.install;
+
+ <para>
+  &pecl.info;
+  <link xlink:href="&url.pecl.package;tokyo_tyrant">&url.pecl.package;tokyo_tyrant</link>
+ </para>
+
+ <section xml:id="tokyo-tyrant.configure-options">
+  <title>Configure options</title>
+  <simplelist>
+   <member><literal>--with-tokyo-tyrant[=DIR]</literal> DIR is the prefix to the Tokyo Tyrant installation</member>
+   <member><literal>--with-tokyo-cabinet-dir[=DIR]</literal> DIR is the prefix to the Tokyo Cabinet installation</member>
+   <member><literal>--disable-tokyo-tyrant-session</literal> Disable Tokyo Tyrant session handler support</member>
+  </simplelist>
+ </section>
+
+ <section xml:id="tokyo-tyrant.enabling-the-extension">
+  <title>Enabling the extension</title>
+  <para>
+   The extension can be enabled by adding <literal>extension=tokyo_tyrant.so</literal> to the INI-configuration
+  </para>
+ </section>
+
+ <section xml:id="tokyo-tyrant.session-running">
+  <title>Running Tokyo Tyrant for the session handler</title>
+  <para>
+   <literal>ttserver -port 2000 -ext /path/to/expire.lua -extpc expire 30.0 '/tmp/sessions.tct#idx=ts:dec'</literal>
+  </para>
+  <note>
+   <simpara>
+    expire.lua is included in the tokyo_tyrant extension source distribution
+   </simpara>
+  </note>
+ </section>
+
+ <section xml:id="tokyo-tyrant.configuring-session-handler">
+  <title>Configuring session handler</title>
+  <para>
+    <simplelist>
+     <member>tokyo_tyrant.session_salt="randomlongstring"</member>
+     <member>session.save_handler=tokyo_tyrant</member>
+     <member>session.save_path="tcp://hostname1:2000,tcp://hostname2:2000"</member>
+    </simplelist>
+  </para>
+  <note>
+   <simpara>
+    It is important to make sure that <link linkend="ini.tokyo-tyrant.session-salt">tokyo_tyrant.session_salt</link> matches on all servers.
+   </simpara>
+  </note>
+ </section>
+
+ <section xml:id="tokyo-tyrant.how-session-handler-works">
+  <title>How it works?</title>
+  <para>
+    The session handler creates a session id like the following:
+    8b0e27a823fa4a6cf7246945b82c1d51-a5eadbbed1f2075952900628456bfd6830541629-0-5460
+  </para>
+
+  <para>
+   The parts from left to right:
+  </para>
+   
+    <simplelist>
+     <member><literal>Session id</literal> - Generated session id</member>
+     <member><literal>Checksum</literal> - Checksum of session salt, session id, node id and primary key</member>
+     <member><literal>Node id</literal> - The id of the node where the session maps to</member>
+     <member><literal>Primary key</literal> - The primary key of the row where the session is stored</member>
+    </simplelist>
+
+   <para>
+    The checksum contains SHA1 sum of the node id, primary key, session id and the salt which is known only on the server side. This allows quick mapping of session id to node and primary key since there is no need to do an additional search. During session id regeneration only the parts 1 and 2 change but the mapping to the node and primary key stays constant.
+  </para>
+  <para>
+   In case some of the nodes fail <link linkend="ini.tokyo-tyrant.allow-failover">tokyo_tyrant.allow_failover</link>, <link linkend="ini.tokyo-tyrant.fail-threshold">tokyo_tyrant.fail_threshold</link> and <link linkend="ini.tokyo-tyrant.health-check-divisor">tokyo_tyrant.health_check_divisor</link> INI-settings control the behavior during failover. If failover is allowed the session handler will map the session to a healthy node and creates a new empty session.
+  </para>
+ </section>
+
+</section>
+
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
