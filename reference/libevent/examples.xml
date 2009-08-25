@@ -5,11 +5,42 @@
  &reftitle.examples;
  <para>
   <example>
-   <title>libevent extension overview example</title>
+   <title>polling <constant>STDIN</constant> using basic API</title>
    <programlisting role="php">
 <![CDATA[
 <?php
 
+function callback_func($fd, $events, $arg)
+{
+    static $max_requests;
+
+    $max_requests++;
+
+    if ($max_requests == 10) { /* exit loop after 10 writes */
+        event_base_loopexit($arg[1]);
+    }
+
+    /* read while we can */
+    while (false !=== ($data = fread($fd, 4096))) {
+        echo $data;
+    }
+}
+
+/* create base and event */
+$base = event_base_new();
+$event = event_new();
+
+$fd = STDIN;
+
+/* set event flags */
+event_set($event, $fd, EV_READ | EV_PERSIST, "callback_func", array($event, $base));
+/* set event base */
+event_base_set($event, $base);
+
+/* enable event */
+event_add($event);
+/* start event loop */
+event_base_loop($base);
 
 ?>
 ]]>
@@ -17,6 +48,45 @@
   </example>
  </para>
  <para>
+  <example>
+   <title>polling <constant>STDIN</constant> using buffered event API</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+function callback_func($buf, $arg)
+{
+    static $max_requests;
+
+    $max_requests++;
+
+    if ($max_requests == 10) {
+        event_base_loopexit($arg);
+    }
+
+    /* read while we can */
+    while (false !=== ($data = event_buffer_read($buf, 10))) {
+        echo $data;
+    }
+}
+
+function error_func($buf, $what, $arg)
+{
+    /* handle an error */
+}
+
+$base = event_base_new();
+$b = event_buffer_new(STDIN, "callback_func", NULL, "error_func", $base);
+
+event_buffer_base_set($b, $base);
+event_buffer_enable($b, EV_READ);
+
+event_base_loop($base);
+
+?>
+]]>
+   </programlisting>
+  </example>
  </para>
 </chapter>
 
