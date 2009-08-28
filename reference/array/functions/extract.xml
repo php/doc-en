@@ -37,7 +37,7 @@
        <parameter>prefix</parameter> parameters.
       </para>
       <para>
-       You must use an associative array, a numerically indexed array
+       You must use an associative array; a numerically indexed array
        will not produce results unless you use <constant>EXTR_PREFIX_ALL</constant> or
        <constant>EXTR_PREFIX_INVALID</constant>.
       </para>
@@ -232,7 +232,7 @@ blue, large, sphere, medium
 ]]>
     </screen>
     <para>
-     The <varname>$size</varname> wasn't overwritten, because we specified
+     The <varname>$size</varname> wasn't overwritten because we specified
      <constant>EXTR_PREFIX_SAME</constant>, which resulted in
      <varname>$wddx_size</varname> being created.  If <constant>EXTR_SKIP</constant> was
      specified, then <varname>$wddx_size</varname> wouldn't even have been created.
@@ -249,9 +249,11 @@ blue, large, sphere, medium
   &reftitle.notes;
   <warning>
    <para>
-    Do not use <function>extract</function> on untrusted data, like user-input
-    (<varname>$_GET</varname>, ...). If you do, for example, if you want to run old code that
-    relies on <link linkend="security.globals">register_globals</link>
+    Do not use <function>extract</function> on untrusted data, like
+    user input
+    (i.e. <varname>$_GET</varname>, <varname>$_FILES</varname>, etc.).
+    If you do, for example if you want to run old code that relies
+    on <link linkend="security.globals">register_globals</link>
     temporarily, make sure you use one of the non-overwriting
     <parameter>extract_type</parameter> values such as
     <constant>EXTR_SKIP</constant> and be aware that you should extract
@@ -260,6 +262,89 @@ blue, large, sphere, medium
     <link linkend="ini">&php.ini;</link>.
    </para>
   </warning>
+  <note>
+   <para>
+    If you
+    have <link linkend="security.globals">register_globals</link>
+    turned on and you use <function>extract</function>
+    on <varname>$_FILES</varname> and
+    specify <constant>EXTR_SKIP</constant>, you may be surprised at
+    the results.
+   </para>
+   <warning>
+    <para>
+     This is not recommended practice and is only documented here for
+     completeness. The use
+     of <link linkend="security.globals">register_globals</link> is
+     deprecated and calling <function>extract</function> on untrusted
+     data such as <varname>$_FILES</varname> is, as noted above, a
+     potential security risk. If you encounter this issue, it means
+     that you are using at least two poor coding practices.
+    </para>
+   </warning>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+/* Suppose that $testfile is the name of a file upload input
+   and that register_globals is turned on. */
+
+var_dump($testfile);
+extract($_FILES, EXTR_SKIP);
+var_dump($testfile);
+var_dump($testfile['tmp_name']);
+
+?>
+]]>
+   </programlisting>
+   <simpara>
+    You might expect to see something like the following:
+   </simpara>
+   <screen>
+<![CDATA[
+string(14) "/tmp/phpgCCPX8"
+array(5) {
+  ["name"]=>
+  string(10) "somefile.txt"
+  ["type"]=>
+  string(24) "application/octet-stream"
+  ["tmp_name"]=>
+  string(14) "/tmp/phpgCCPX8"
+  ["error"]=>
+  int(0)
+  ["size"]=>
+  int(4208)
+}
+string(14) "/tmp/phpgCCPX8"
+]]>
+   </screen>
+   <simpara>
+    However, you would instead see something like this:
+   </simpara>
+   <screen>
+<![CDATA[
+string(14) "/tmp/phpgCCPX8"
+string(14) "/tmp/phpgCCPX8"
+string(1) "/"
+]]>
+   </screen>
+   <para>
+    This is due to the fact that
+    since <link linkend="security.globals">register_globals</link> is
+    turned on, <varname>$testfile</varname> already exists in the
+    global scope when <function>extract</function> is called. And
+    since <constant>EXTR_SKIP</constant> is
+    specified, <varname>$testfile</varname> is not overwritten with
+    the contents of the <constant>$_FILES</constant> array
+    so <varname>$testfile</varname> remains a string.
+    Because <link linkend="language.types.string.substr">strings may
+    be accessed using array syntax</link> and a the non-numeric string
+    <literal>tmp_name</literal> is interpreted
+    as <literal>0</literal>, PHP
+    sees <varname>$testfile['tmp_name']</varname>
+    as <varname>$testfile[0]</varname>.
+   </para>
+  </note>
  </refsect1>
  <refsect1 role="seealso">
   &reftitle.seealso;
