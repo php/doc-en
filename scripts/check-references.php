@@ -405,7 +405,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$referen
 			$modifier = (preg_match('~::__construct$~', $function_name) ? "i" : "");
 			if (!preg_match("~<type>(" . $return_types[$function_name][0] . ")</type>~$modifier", $return_type) && ($return_types[$function_name][0] != "object" || preg_match("~<type>($valid_types|$invalid_types)</type>~", $return_type))) {
 				echo "Wrong return type in $filename on line $lineno.\n";
-				echo ": (" . $return_types[$function_name][0] . ") in " . $return_types[$function_name][1] . " on line " . $return_types[$function_name][2] . ".\n";
+				echo $return_types[$function_name][1] . ":" . $return_types[$function_name][2] . ": " . $return_types[$function_name][0] . "\n";
 			}
 		} elseif (preg_match("~<type>(callback|$invalid_types)</type>~", $return_type)) {
 			echo "Wrong return type in $filename on line $lineno.\n";
