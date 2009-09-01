@@ -125,21 +125,27 @@ string(4) "foo!"
 class Exception
 {
     protected $message = 'Unknown exception';   // exception message
+    private   $string;                          // __toString cache
     protected $code = 0;                        // user defined exception code
     protected $file;                            // source filename of exception
     protected $line;                            // source line of exception
+    private   $trace;                           // backtrace
+    private   $previous;                        // previous exception if nested exception
 
-    function __construct($message = null, $code = 0);
+    public function __construct($message = null, $code = 0, Exception $previous = null);
 
-    final function getMessage();                // message of exception 
-    final function getCode();                   // code of exception
-    final function getFile();                   // source filename
-    final function getLine();                   // source line
-    final function getTrace();                  // an array of the backtrace()
-    final function getTraceAsString();          // formatted string of trace
+    final private function __clone();           // Inhibits cloning of exceptions.
+
+    final public  function getMessage();        // message of exception
+    final public  function getCode();           // code of exception
+    final public  function getFile();           // source filename
+    final public  function getLine();           // source line
+    final public  function getTrace();          // an array of the backtrace()
+    final public  function getPrevious();       // previous exception
+    final public  function getTraceAsString();  // formatted string of trace
 
     /* Overrideable */
-    function __toString();                       // formatted string for display
+    public function __toString();               // formatted string for display
 }
 ?>
 ]]>
@@ -154,6 +160,13 @@ class Exception
     linkend="language.oop5.magic">__toString()</link> method can be overridden
     to provide a custom output when the object is presented as a string.
    </para>
+   <note>
+    <para>
+     Exceptions cannot be cloned. Attempting to <link
+     linkend="language.oop5.cloning">clone</link> an Exception will result in a
+     <literal>E_FATAL</literal> error.
+    </para>
+   </note>
    <example>
     <title>Extending the Exception class</title>
     <programlisting role="php">
@@ -165,11 +178,11 @@ class Exception
 class MyException extends Exception
 {
     // Redefine the exception so message isn't optional
-    public function __construct($message, $code = 0) {
+    public function __construct($message, $code = 0, Exception $previous = null) {
         // some code
     
         // make sure everything is assigned properly
-        parent::__construct($message, $code);
+        parent::__construct($message, $code, $previous);
     }
 
     // custom string representation of object
@@ -227,7 +240,7 @@ try {
 }
 
 // Continue execution
-var_dump($o);
+var_dump($o); // Null
 echo "\n\n";
 
 
@@ -242,7 +255,7 @@ try {
 }
 
 // Continue execution
-var_dump($o);
+var_dump($o); // Null
 echo "\n\n";
 
 
@@ -254,7 +267,7 @@ try {
 }
 
 // Continue execution
-var_dump($o);
+var_dump($o); // Null
 echo "\n\n";
 
 
@@ -266,7 +279,7 @@ try {
 }
 
 // Continue execution
-var_dump($o);
+var_dump($o); // TestException
 echo "\n\n";
 ?>
 ]]>
