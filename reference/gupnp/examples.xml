@@ -4,25 +4,64 @@
 <chapter xml:id="gupnp.examples" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  &reftitle.examples;
  <para>
-  Description here...
+  This example shows how to obtain information about all devices and services. 
+  It starts infinite loop and while any of available devices or services 
+  is found proper callback function will be invoked.
  </para>
  <example>
-  <title>Gupnp Example</title>
+  <title>Search for all UPnP devices and services.</title>
   <programlisting role="php">
 <![CDATA[
 <?php
 
-/* ... */
+/* Callback for available device */
+function device_proxy_available_cb($proxy, $arg)
+{
+	$info = gupnp_device_info_get($proxy);
+
+	$type = $info['device_type'];
+	$location = $info['location'];
+
+	printf("Device available:\n");
+	printf("\ttype:     %s\n", $type);
+	printf("\tlocation: %s\n", $location);
+}
+
+/* Callback for available service */
+function service_proxy_available_cb($proxy, $arg)
+{
+	$info = gupnp_service_info_get($proxy);
+
+	$type = $info['service_type'];
+	$location = $info['location'];
+
+	printf("Service available:\n");
+	printf("\ttype:     %s\n", $type);
+	printf("\tlocation: %s\n", $location);
+}
+
+/* Create the UPnP context */
+$context = gupnp_context_new();
+if (!$context) {
+	printf("Error creating the GUPnP context\n");
+	exit(-1);
+}
+
+/* We're interested in everything */
+$cp = gupnp_control_point_new($context, "ssdp:all");
+
+/* Set callbacks */
+gupnp_control_point_callback_set($cp, 
+	GUPNP_SIGNAL_DEVICE_PROXY_AVAILABLE, 'device_proxy_available_cb');
+gupnp_control_point_callback_set($cp, 
+	GUPNP_SIGNAL_SERVICE_PROXY_AVAILABLE, 'service_proxy_available_cb');
+
+/* Start for browsing (infinite loop, hit Ctrl-C to interrupt) */
+gupnp_control_point_browse_start($cp);
 
 ?>
 ]]>
   </programlisting>
-  &example.outputs.similar;
-  <screen>
-<![CDATA[
-...
-]]>
-  </screen>
  </example>
 </chapter>
 
