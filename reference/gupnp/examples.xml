@@ -3,14 +3,17 @@
 
 <chapter xml:id="gupnp.examples" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  &reftitle.examples;
- <para>
-  This example shows how to obtain information about all devices and services. 
-  It starts infinite loop (use CLI) and while any of available devices or services 
-  is found proper callback function will be invoked.
- </para>
- <example>
-  <title>Search for all UPnP devices and services.</title>
-  <programlisting role="php">
+ <section xml:id='gupnp.browsing'>
+  <title>Browsing devices and services</title>
+  <para>
+   This example shows how to obtain information about all devices and services. 
+   It starts infinite loop (use CLI) and while any of available devices or services 
+   is found proper callback function will be invoked.
+  </para>
+  <para>
+   <example>
+    <title>Search for all UPnP devices and services.</title>
+    <programlisting role="php">
 <![CDATA[
 <?php
 
@@ -61,8 +64,198 @@ gupnp_control_point_browse_start($cp);
 
 ?>
 ]]>
-  </programlisting>
- </example>
+    </programlisting>
+   </example>
+  </para>
+ </section>  <!-- xml:id=gupnp.browsing -->
+ 
+ <section xml:id='gupnp.binary-light'>
+  <title>Implementing the BinaryLight device</title>
+  <para>
+   This is an example of UPnP device/service, implementing the BinaryLight 
+   device and SwitchPower services to emulate a light switch.
+  </para>
+  <para>
+   The user interface was purposely simplified in order to show basic 
+   concepts and methods.
+  </para>
+  <para>
+   <example>
+    <title>Implementing light server</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+/* SetTarget */
+function set_target_cb($service, $action, $arg)
+{
+	/* Get the new target value */
+	$target = gupnp_service_action_get($action, 'NewTargetValue', GUPNP_TYPE_BOOLEAN);
+
+	/* If the new target doesn't match the current status, change the status and
+	   emit a notification that the status has changed. */
+	if ($target != $GLOBALS['status']) {
+		$GLOBALS['status'] = $target;
+		gupnp_service_notify($service, 'Status', GUPNP_TYPE_BOOLEAN, $GLOBALS['status']);
+		printf("The light is now %s.\n", $GLOBALS['status'] ? "on" : "off");
+	}
+
+	/* Return success to the client */
+	gupnp_service_action_return($action);
+}
+
+/* GetTarget */
+function get_target_cb($service, $action, $arg)
+{
+	gupnp_service_action_set($action, 'RetTargetValue', GUPNP_TYPE_BOOLEAN, $GLOBALS['status']);
+	gupnp_service_action_return($action);
+}
+
+/* GetStatus */
+function get_status_cb($service, $action, $arg)
+{
+	gupnp_service_action_set($action, 'ResultStatus', GUPNP_TYPE_BOOLEAN, $GLOBALS['status']);
+	gupnp_service_action_return($action);
+}
+
+/* By default the light is off */
+$GLOBALS['status'] = false;
+printf("The light is now %s.\n", $GLOBALS['status'] ? "on" : "off");
+
+/* Create the UPnP context */
+$context = gupnp_context_new();
+if (!$context) {
+	printf("Error creating the GUPnP context\n");
+	exit(-1);
+}
+
+/* Host the directory that contains device and service description files */
+gupnp_context_host_path($context, "./web", "");
+
+/* Create root device */
+$location = "/BinaryLight.xml";
+$dev = gupnp_root_device_new($context, $location);
+gupnp_root_device_set_available($dev, true);
+
+/* Get the switch service from the root device */
+$service_type = "urn:schemas-upnp-org:service:SwitchPower:1";
+$service = gupnp_device_info_get_service($dev, $service_type);
+if (!$service) {
+	die("Cannot get SwitchPower1 service\n");
+}
+
+/* Set callback for action GetStatus */
+gupnp_device_action_callback_set($service, GUPNP_SIGNAL_ACTION_INVOKED, "GetStatus", 
+	"get_status_cb", "action data, GetStatus");
+
+/* Set callback for action GetTarget */
+gupnp_device_action_callback_set($service, GUPNP_SIGNAL_ACTION_INVOKED, "GetTarget", 
+	"get_target_cb", "action data, GetTarget");
+
+/* Set callback for action SetTarget */
+gupnp_device_action_callback_set($service, GUPNP_SIGNAL_ACTION_INVOKED, "SetTarget", 
+	"set_target_cb", "action data, SetTarget");
+
+/* Run the main loop */
+gupnp_root_device_start($dev);
+
+?>
+]]>
+    </programlisting>
+   </example>
+   <example>
+    <title>Implementing light client</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+function service_proxy_available_cb($proxy, $arg)
+{
+	$mode = $arg['mode'];
+
+	printf("Set subscribed\n");
+	gupnp_service_proxy_set_subscribed($proxy, true);
+
+	/* Add notify if status will be changed */
+	if (!gupnp_service_proxy_add_notify($proxy, "Status", 
+			GUPNP_TYPE_BOOLEAN, "status_changed_cb", NULL)) {
+		printf("Failed to add notify\n");
+	}
+	
+	if ($mode == 'TOGGLE') {
+		/* We're toggling, so first fetch the current status */
+		$target = gupnp_service_proxy_action_get($proxy, 'GetStatus', 'ResultStatus', GUPNP_TYPE_BOOLEAN);
+
+		/* And then toggle it */
+		$target = ! $target;
+	} else {
+		/* Mode is a boolean, so the target is the mode thanks to our well chosen
+	   	enumeration values. */
+		$target = ($mode == 'ON') ? true : false;
+	}
+
+	/* Set the target */
+	if (!gupnp_service_proxy_action_set($proxy, 'SetTarget', 'NewTargetValue', $target, GUPNP_TYPE_BOOLEAN)) {
+		printf("Cannot set switch\n");
+	} else {
+		printf("Set switch to %s.\n", $target ? "on" : "off");
+	}
+	
+	/* Stop browsing */
+	gupnp_control_point_browse_stop($arg['cp']);
+}
+
+function status_changed_cb($variable, $value, $arg)
+{
+	printf("Status has been changed\n");
+	printf("\tvariable name: %s\n", $variable);
+	printf("\tvalue: %s\n", (int)$value);
+	printf("\n");
+}
+
+/* Check and parse command line arguments */
+if (count($argv) != 2) {
+	printf("Usage: light-client.php [on|off|toggle]\n");
+	exit(-1);
+}
+
+if ($argv[1] == "on") {
+	$mode = 'ON';
+} elseif ($argv[1] == "off") {
+	$mode = 'OFF';
+} elseif ($argv[1] == "toggle") {
+	$mode = 'TOGGLE';
+} else {
+	usage ();
+	exit(-1);
+}
+
+/* Create the UPnP context */
+$context = gupnp_context_new();
+if (!$context) {
+	printf("Error creating the GUPnP context\n");
+	exit(-1);
+}
+
+/* Create the control point, searching for SwitchPower services */
+$cp = gupnp_control_point_new ($context,
+		"urn:schemas-upnp-org:service:SwitchPower:1");
+
+/* Connect to the service-found callback */
+$cb = "service_proxy_available_cb";
+$arg = array('mode' => $mode, 'cp' => $cp);
+gupnp_control_point_callback_set($cp, GUPNP_SIGNAL_SERVICE_PROXY_AVAILABLE, $cb, $arg);
+
+/* Start for browsing */
+gupnp_control_point_browse_start($cp);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </section>  <!-- xml:id=gupnp.browsing -->
+ 
 </chapter>
 
 <!-- Keep this comment at the end of the file
