@@ -50,7 +50,9 @@
      <listitem>
       <para>
        The data received will be fetched to the variable specified with
-       <parameter>buf</parameter>.
+       <parameter>buf</parameter>. If an error occurs, if the
+       connection is reset, or if no data is
+       available, <parameter>buf</parameter> will be set to &null;.
       </para>
      </listitem>
     </varlistentry>
@@ -157,8 +159,7 @@ $address = gethostbyname('www.example.com');
 /* Create a TCP/IP socket. */
 $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 if ($socket === false) {
-    echo "socket_create() failed: reason: "
-. socket_strerror(socket_last_error()) . "\n";
+    echo "socket_create() failed: reason: " . socket_strerror(socket_last_error()) . "\n";
 } else {
     echo "OK.\n";
 }
@@ -166,8 +167,7 @@ if ($socket === false) {
 echo "Attempting to connect to '$address' on port '$service_port'...";
 $result = socket_connect($socket, $address, $service_port);
 if ($result === false) {
-    echo "socket_connect() failed.\nReason: ($result) "
-. socket_strerror(socket_last_error($socket)) . "\n";
+    echo "socket_connect() failed.\nReason: ($result) " . socket_strerror(socket_last_error($socket)) . "\n";
 } else {
     echo "OK.\n";
 }
@@ -182,12 +182,15 @@ socket_write($socket, $in, strlen($in));
 echo "OK.\n";
 
 echo "Reading response:\n\n";
-$buf = '';
-socket_recv($socket, $buf, 2048, MSG_WAITALL);
-echo "Closing socket...";
+$buf = 'This is my buffer.';
+if (false !== ($bytes = socket_recv($socket, $buf, 2048, MSG_WAITALL))) {
+    echo "Read $bytes bytes from socket_recv(). Closing socket...";
+} else {
+    echo "socket_recv() failed; reason: " . socket_strerror(socket_last_error($socket)) . "\n";
+}
 socket_close($socket);
 
-echo $buf;
+echo $buf . "\n";
 echo "OK.\n\n";
 ?>
 ]]>
