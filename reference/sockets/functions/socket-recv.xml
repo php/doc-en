@@ -16,10 +16,210 @@
    <methodparam><type>int</type><parameter>flags</parameter></methodparam>
   </methodsynopsis>
   <para>
-   &warn.undocumented.func;
+   The <function>socket_recv</function> function receives
+   <parameter>len</parameter> bytes of data in <parameter>buf</parameter> from
+   <parameter>socket</parameter>. <function>socket_recv</function> can
+   be used to gather data from connected sockets. Additionally, one or
+   more flags can be specified to modify the behaviour of the
+   function.
+  </para>
+  <para>
+   <parameter>buf</parameter> is passed by reference, so it must be
+   specified as a variable in the argument list. Data read from
+   <parameter>socket</parameter> by <function>socket_recv</function>
+   will be returned in <parameter>buf</parameter>.
   </para>
  </refsect1>
 
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>socket</parameter></term>
+     <listitem>
+      <para>
+       The <parameter>socket</parameter> must be a socket resource previously
+       created by socket_create().
+      </para>
+     </listitem>
+    </varlistentry>
+
+    <varlistentry>
+     <term><parameter>buf</parameter></term>
+     <listitem>
+      <para>
+       The data received will be fetched to the variable specified with
+       <parameter>buf</parameter>.
+      </para>
+     </listitem>
+    </varlistentry>
+
+    <varlistentry>
+     <term><parameter>len</parameter></term>
+     <listitem>
+      <para>
+       Up to <parameter>len</parameter> bytes will be fetched from remote host.
+      </para>
+     </listitem>
+    </varlistentry>
+
+    <varlistentry>
+     <term><parameter>flags</parameter></term>
+     <listitem>
+      <para>
+       The value of <parameter>flags</parameter> can be any combination of 
+       the following flags, joined with the binary OR (<literal>|</literal>)
+       operator.
+      </para>
+      
+      <table>
+       <title>Possible values for <parameter>flags</parameter></title>
+       <tgroup cols="2">
+        <thead>
+         <row>
+          <entry>Flag</entry>
+          <entry>Description</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry><constant>MSG_OOB</constant></entry>
+          <entry>
+           Process out-of-band data.
+          </entry>
+         </row>
+         <row>
+          <entry><constant>MSG_PEEK</constant></entry>
+          <entry>
+           Receive data from the beginning of the receive queue without
+           removing it from the queue.
+          </entry>
+         </row>
+         <row>
+          <entry><constant>MSG_WAITALL</constant></entry>
+          <entry>
+           Block until at least <parameter>len</parameter> are received.
+           However, if a signal is caught or the remote host disconnects, the
+           function may return less data.
+          </entry>
+         </row>
+         <row>
+          <entry><constant>MSG_DONTWAIT</constant></entry>
+          <entry>
+           With this flag set, the function returns even if it would normally
+           have blocked.
+          </entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </table>
+     </listitem>
+    </varlistentry>    
+   </variablelist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   <function>socket_recv</function> returns the number of bytes received,
+   or &false; if there was an error. The actual error code can be retrieved by 
+   calling <function>socket_last_error</function>. This error code may be
+   passed to <function>socket_strerror</function> to get a textual explanation
+   of the error.
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>socket_recv</function> example</title>
+    <para>
+     This example is a simple rewrite of the first example from
+     <xref linkend="sockets.examples" /> to
+     use <function>socket_recv</function>.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+error_reporting(E_ALL);
+
+echo "<h2>TCP/IP Connection</h2>\n";
+
+/* Get the port for the WWW service. */
+$service_port = getservbyname('www', 'tcp');
+
+/* Get the IP address for the target host. */
+$address = gethostbyname('www.example.com');
+
+/* Create a TCP/IP socket. */
+$socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+if ($socket === false) {
+    echo "socket_create() failed: reason: "
+. socket_strerror(socket_last_error()) . "\n";
+} else {
+    echo "OK.\n";
+}
+
+echo "Attempting to connect to '$address' on port '$service_port'...";
+$result = socket_connect($socket, $address, $service_port);
+if ($result === false) {
+    echo "socket_connect() failed.\nReason: ($result) "
+. socket_strerror(socket_last_error($socket)) . "\n";
+} else {
+    echo "OK.\n";
+}
+
+$in = "HEAD / HTTP/1.1\r\n";
+$in .= "Host: www.example.com\r\n";
+$in .= "Connection: Close\r\n\r\n";
+$out = '';
+
+echo "Sending HTTP HEAD request...";
+socket_write($socket, $in, strlen($in));
+echo "OK.\n";
+
+echo "Reading response:\n\n";
+$buf = '';
+socket_recv($socket, $buf, 2048, MSG_WAITALL);
+echo "Closing socket...";
+socket_close($socket);
+
+echo $buf;
+echo "OK.\n\n";
+?>
+]]>
+    </programlisting>
+    <para>
+     The above example will produce something like:
+    </para>
+    <screen>
+<![CDATA[
+<h2>TCP/IP Connection</h2>
+OK.
+Attempting to connect to '208.77.188.166' on port '80'...OK.
+Sending HTTP HEAD request...OK.
+Reading response:
+
+Closing socket...HTTP/1.1 200 OK
+Date: Mon, 14 Sep 2009 08:56:36 GMT
+Server: Apache/2.2.3 (Red Hat)
+Last-Modified: Tue, 15 Nov 2005 13:24:10 GMT
+ETag: "b80f4-1b6-80bfd280"
+Accept-Ranges: bytes
+Content-Length: 438
+Connection: close
+Content-Type: text/html; charset=UTF-8
+
+OK.
+]]>
+    </screen>
+   </example>
+  </para>
+ </refsect1>
+                     
 </refentry>
 
 <!-- Keep this comment at the end of the file
