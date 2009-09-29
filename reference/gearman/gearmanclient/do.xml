@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: $ -->
+
+<refentry xml:id="gearmanclient.do" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <refnamediv>
+  <refname>GearmanClient::do</refname>
+  <refpurpose>Run a single task and return a result</refpurpose>
+ </refnamediv>
+
+ <refsect1 role="description">
+  &reftitle.description;
+  <methodsynopsis>
+   <modifier>public</modifier> <type>string</type><methodname>GearmanClient::do</methodname>
+   <methodparam><type>string</type><parameter>function_name</parameter></methodparam>
+   <methodparam><type>string</type><parameter>workload</parameter></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>unique</parameter></methodparam>
+  </methodsynopsis>
+  <para>
+   Runs a single task and returns a string representation of the result.  It is up to
+   the <classname>GearmanClient</classname> and <classname>GearmanWorker</classname> to
+   agree on the format of the result.
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>function_name</parameter></term>
+     <listitem>
+      <para>
+       &gearman.parameter.functionname;
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>workload</parameter></term>
+     <listitem>
+      <para>
+       &gearman.parameter.workload;
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>unique</parameter></term>
+     <listitem>
+      <para>
+       &gearman.parameter.unique;
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   A string representing the results of running a task.
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title>Simple job submission with immediate return</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+?>
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+# Client code
+
+echo "Starting\n";
+
+# Create our client object.
+$gmclient= new GearmanClient();
+
+# Add default server (localhost).
+$gmclient->addServer();
+
+echo "Sending job\n";
+
+$result = $gmclient->do("reverse", "Hello!");
+
+echo "Success: $result\n";
+
+?>
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+echo "Starting\n";
+
+# Create our worker object.
+$gmworker= new GearmanWorker();
+
+# Add default server (localhost).
+$gmworker->addServer();
+
+# Register function "reverse" with the server. Change the worker function to
+# "reverse_fn_fast" for a faster worker with no output.
+$gmworker->addFunction("reverse", "reverse_fn");
+
+print "Waiting for job...\n";
+while($gmworker->work())
+{
+  if ($gmworker->returnCode() != GEARMAN_SUCCESS)
+  {
+    echo "return_code: " . $gmworker->returnCode() . "\n";
+    break;
+  }
+}
+
+function reverse_fn($job)
+{
+  return strrev($job->workload());
+}
+
+?>
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+Starting
+Sending job
+Success: !olleH
+]]>
+    </screen>
+   </example>
+   <example>
+    <title>Submitting a job and retrieving incremental status</title>
+    <para>
+     A job is submitted and the script loops to retrieve status information.
+     The worker has an artificial delay which results in a long running job
+     and sends status and data as processing occurs.
+     Each subsequent call to <methodname>GearmanClient::do</methodname>
+     produces status information on the running job.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+# Client code
+
+# Create our client object.
+$gmclient= new GearmanClient();
+
+# Add default server (localhost).
+$gmclient->addServer();
+
+echo "Sending job\n";
+
+# Send reverse job
+do
+{
+  $result = $gmclient->do("reverse", "Hello!");
+  # Check for various return packets and errors.
+
+  switch($gmclient->returnCode())
+  {
+    case GEARMAN_WORK_DATA:
+      echo "Data: $result\n";
+      break;
+    case GEARMAN_WORK_STATUS:
+      list($numerator, $denominator)= $gmclient->doStatus();
+      echo "Status: $numerator/$denominator complete\n";
+      break;
+    case GEARMAN_WORK_FAIL:
+      echo "Failed\n";
+      exit;
+    case GEARMAN_SUCCESS:
+      break;
+    default:
+      echo "RET: " . $gmclient->returnCode() . "\n";
+      echo "Error: " . $gmclient->error() . "\n";
+      echo "Errno: " . $gmclient->getErrno() . "\n";
+      exit;
+  }
+}
+while($gmclient->returnCode() != GEARMAN_SUCCESS);
+
+echo "Success: $result\n";
+
+?>
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+# Worker code
+
+echo "Starting\n";
+
+# Create our worker object.
+$gmworker= new GearmanWorker();
+
+# Add default server (localhost).
+$gmworker->addServer();
+
+# Register function "reverse" with the server.
+$gmworker->addFunction("reverse", "reverse_fn");
+
+print "Waiting for job...\n";
+while($gmworker->work())
+{
+  if ($gmworker->returnCode() != GEARMAN_SUCCESS)
+  {
+    echo "return_code: " . $gmworker->returnCode() . "\n";
+    break;
+  }
+}
+
+function reverse_fn($job)
+{
+  echo "Received job: " . $job->handle() . "\n";
+
+  $workload = $job->workload();
+  $workload_size = $job->workloadSize();
+
+  echo "Workload: $workload ($workload_size)\n";
+
+  # This status loop is not needed, just showing how it works
+  for ($x= 0; $x < $workload_size; $x++)
+  {
+    echo "Sending status: " + $x + 1 . "/$workload_size complete\n";
+    $job->status($x+1, $workload_size);
+    $job->data(substr($workload, $x, 1));
+    sleep(1);
+  }
+
+  $result= strrev($workload);
+  echo "Result: $result\n";
+
+  # Return what we want to send back to the client.
+  return $result;
+}
+
+?>
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <para>
+     Worker output:
+    </para>
+    <screen>
+<![CDATA[
+Starting
+Waiting for job...
+Received job: H:foo.local:106
+Workload: Hello! (6)
+1/6 complete
+2/6 complete
+3/6 complete
+4/6 complete
+5/6 complete
+6/6 complete
+Result: !olleH
+]]>
+    </screen>
+    <para>
+     Client output:
+    </para>
+    <screen>
+<![CDATA[
+Starting
+Sending job
+Status: 1/6 complete
+Data: H
+Status: 2/6 complete
+Data: e
+Status: 3/6 complete
+Data: l
+Status: 4/6 complete
+Data: l
+Status: 5/6 complete
+Data: o
+Status: 6/6 complete
+Data: !
+Success: !olleH
+]]>
+    </screen>
+   </example>
+  </para>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><methodname>GearmanClient::doHigh</methodname></member>
+    <member><methodname>GearmanClient::doLow</methodname></member>
+    <member><methodname>GearmanClient::doBackground</methodname></member>
+    <member><methodname>GearmanClient::doHighBackground</methodname></member>
+    <member><methodname>GearmanClient::doLowBackground</methodname></member>
+   </simplelist>
+  </para>
+ </refsect1>
+
+</refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"../../../../manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
