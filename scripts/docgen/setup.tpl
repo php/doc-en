@@ -6,33 +6,25 @@
 
  <section xml:id="{EXT_NAME_ID}.requirements">
   &reftitle.required;
-  <!-- Use &no.requirement; if there no requirement -->
   <para>
-   Requirements...
+
   </para>
  </section>
 
- <!-- {{{ Installation -->
  <section xml:id="{EXT_NAME_ID}.installation">
   &reftitle.install;
   &no.install;
  </section>
- <!-- or &reference.{EXT_NAME_ID}.configure; -->
- <!-- }}} -->
 
- <!-- {{{ Configuration -->
  <section xml:id="{EXT_NAME_ID}.configuration">
   &reftitle.runtime;
   &no.config;
  </section>
- <!-- or &reference.{EXT_NAME_ID}.ini; -->
- <!-- }}} -->
 
  <section xml:id="{EXT_NAME_ID}.resources">
   &reftitle.resources;
-  <!-- Use &no.resource; if there no resources -->
   <para>
-   Mention the resource here.
+
   </para>
  </section>
 

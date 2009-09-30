@@ -12,7 +12,7 @@
   <section xml:id="{CLASS_NAME_ID}.intro">
    &reftitle.intro;
    <para>
-    Description of the class.
+
    </para>
   </section>
 <!-- }}} -->

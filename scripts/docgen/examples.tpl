@@ -3,9 +3,6 @@
 
 <chapter xml:id="{EXT_NAME_ID}.examples" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  &reftitle.examples;
- <para>
-  Description here...
- </para>
  <example>
   <title>{EXT_NAME} Example</title>
   <programlisting role="php">

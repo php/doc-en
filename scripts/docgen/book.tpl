@@ -8,7 +8,7 @@
  <preface xml:id="intro.{EXT_NAME_ID}">
   &reftitle.intro;
   <para>
-   Description here.
+
   </para>
  </preface>
 

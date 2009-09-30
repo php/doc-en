@@ -14,7 +14,7 @@
    {METHOD_PARAMETERS}
   </methodsynopsis>
   <para>
-   The method description goes here.
+
   </para>
 
   &warn.undocumented.func;
@@ -29,41 +29,11 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Description...
+
   </para>
  </refsect1>
-
- <refsect1 role="examples">
-  &reftitle.examples;
-  <para>
-   <example>
-    <title><methodname>{FULL_METHOD_NAME}</methodname> example</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-/* ... */
-?>
-]]>
-    </programlisting>
-    &example.outputs.similar;
-    <screen>
-<![CDATA[
-...
-]]>
-    </screen>
-   </example>
-  </para>
- </refsect1>
-
- <refsect1 role="seealso">
-  &reftitle.seealso;
-  <para>
-   <simplelist>
-    <member><methodname>Classname::Method</methodname></member>
-   </simplelist>
-  </para>
- </refsect1>
-
+{DEFAULT_EXAMPLE}
+{DEFAULT_SEEALSO}
 </refentry>
 
 <!-- Keep this comment at the end of the file

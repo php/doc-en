@@ -44,7 +44,6 @@ $DOC_EXT = array(
 	'setup.xml' 	 => 'setup.tpl',
 	'constants.xml'  => 'constants.tpl',
 	'configure.xml'  => 'configure.tpl',
-	'examples.xml'	 => 'examples.tpl',
 	'reference.xml'  => 'reference.tpl',
 	'ini.xml'		 => 'ini.tpl',
 	'versions.xml'	 => 'versions.tpl',
@@ -77,6 +76,8 @@ Options:
 	-m,--method	-- method name (require -c)
 	-o,--output	-- output dir
 	-p,--pecl	-- is a PECL extension
+	-s,--seealso	-- add empty see also sections
+	-x,--example	-- add empty example sections
 	-q,--quiet	-- quiet mode
 	-v,--version	-- show the version
 	-V,--verbose 	-- disable show progress
@@ -244,7 +245,7 @@ function create_markup_to_params(array $params, $ident) { /* {{{ */
 /* }}} */
 
 function global_check($content) { /* {{{ */
-	global $INFO;
+	global $INFO, $OPTION;
 
 	if (!$INFO['actual_extension']) {
 		$INFO['actual_extension'] = 'EXTENSION_NAME_HERE';
@@ -747,10 +748,13 @@ function write_doc(Reflector $obj, $type) { /* {{{ */
 			if ($function = find_function($INFO['actual_extension'], $obj, NULL)) {
 				$content = file_get_contents(dirname(__FILE__) .'/mapping.tpl');
 				$content = gen_mapping_markup($obj, $function, $content);
+				$content = str_replace('{DEFAULT_EXAMPLE}', get_default_role('example_mapping', "{$obj->class}::{$obj->name}", $OPTION['example']), $content);
 			} else {				
 				$content = file_get_contents(dirname(__FILE__) .'/'. $TEMPLATE[$type]);
 				$content = gen_method_markup($obj, $content);
+				$content = str_replace('{DEFAULT_EXAMPLE}', get_default_role('example', "{$obj->class}::{$obj->name}", $OPTION['example']), $content);
 			}
+			$content = str_replace('{DEFAULT_SEEALSO}', get_default_role('seealso', "{$obj->class}::{$obj->name}", $OPTION['seealso']), $content);
 			save_file($filename, global_check($content));
 		break;
 
@@ -787,6 +791,7 @@ function write_doc(Reflector $obj, $type) { /* {{{ */
 				
 				$content = file_get_contents(dirname(__FILE__) .'/mapping.tpl');
 				$content = gen_mapping_markup($method, $obj, $content);
+				$content = str_replace('{DEFAULT_EXAMPLE}', get_default_role('example_mapping', $obj->getName(), $OPTION['example']), $content);
 			} else {
 				$path = $OPTION['output'] .'/functions';
 				$filename = $path .'/'. format_filename($obj->getName()) .'.xml';
@@ -796,7 +801,9 @@ function write_doc(Reflector $obj, $type) { /* {{{ */
 			
 				$content = file_get_contents(dirname(__FILE__) .'/'. $TEMPLATE[$type]);
 				$content = gen_function_markup($obj, $content);
+				$content = str_replace('{DEFAULT_EXAMPLE}', get_default_role('example', $obj->getName(), $OPTION['example']), $content);
 			}
+			$content = str_replace('{DEFAULT_SEEALSO}', get_default_role('seealso', $obj->getName(), $OPTION['seealso']), $content);
 			save_file($filename, global_check($content));
 		break;
 	}
@@ -889,6 +896,105 @@ function gen_docs($name, $type) {	/* {{{ */
 }
 /* }}} */
 
+function get_default_role ($role, $funcname, $default) {
+	
+	$out = '';
+	
+	if (!$default) {
+		return $out;
+	}
+	
+	if ($role === 'seealso') {
+		
+		$out = <<<ROLE
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member></member>
+   </simplelist>
+  </para>
+ </refsect1>
+ROLE;
+	}
+	
+	if ($role === 'example') {
+		
+		$out = <<<ROLE
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>$funcname</function> example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+/* ... */
+
+?>
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+...
+]]>
+    </screen>
+   </example>
+  </para>
+ </refsect1>
+ROLE;
+	}
+	
+	if ($role === 'example_mapping') {
+		
+		$out = <<<ROLE
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title>Object oriented style</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* ... */
+?>
+]]>
+     </programlisting>
+     &example.outputs.similar;
+     <screen>
+<![CDATA[
+...
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Procedural style</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* ... */
+?>
+]]>
+     </programlisting>
+     &example.outputs.similar;
+     <screen>
+<![CDATA[
+...
+]]>
+    </screen>
+   </example>
+  </para>
+ </refsect1>
+ROLE;
+	}
+	
+	return "\n$out\n";
+}
+
 $OPTION  = array();
 $INFO 	 = array('actual_extension' => false, 'mappeds' => array());
 $WARNING = array();
@@ -900,6 +1006,8 @@ $OPTION['output']	 = getcwd();
 $OPTION['verbose']   = true;
 $OPTION['quiet']	 = false;
 $OPTION['pecl']		 = false;
+$OPTION['seealso']	 = false;
+$OPTION['example']	 = false;
 
 $arropts = array(
 	'verbose' 		=> 'v',  /* verbose */
@@ -908,6 +1016,8 @@ $arropts = array(
 	'include:'		=> 'i:',  /* include */
 	'help'	  		=> 'h',  /* help */
 	'pecl'			=> 'p',  /* pecl */
+	'example'		=> 'x',  /* example */
+	'seealso'		=> 's',  /* seealso */
 	'output:' 		=> 'o:', /* output dir */
 	'class:'  		=> 'c:', /* classname */
 	'extension:' 	=> 'e:', /* extension */
@@ -974,6 +1084,14 @@ foreach ($options as $opt => $value) {
 		case 'quiet':
 			$OPTION['quiet'] = true;
 			break;
+		case 's':
+		case 'seealso':		
+			$OPTION['seealso'] = true;
+			break;
+		case 'x':
+		case 'example':
+			$OPTION['example'] = true;
+			break;
     case 'i':
     case 'include':
       foreach((array)$value as $filename) {
@@ -985,6 +1103,10 @@ foreach ($options as $opt => $value) {
       }
       break;
 	}
+}
+
+if (!empty($OPTION['example'])) {
+	$DOC_EXT['examples.xml'] = 'examples.tpl';
 }
 
 if (!empty($OPTION['extension'])) {

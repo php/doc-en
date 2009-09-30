@@ -14,7 +14,7 @@
    {FUNCTION_PARAMETERS}
   </methodsynopsis>
   <para>
-   The function description goes here.
+
   </para>
 
   &warn.undocumented.func;
@@ -28,56 +28,12 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <!-- See also &return.success; -->
   <para>
-   What is returned on success and failure
+
   </para>
  </refsect1>
-
- <refsect1 role="errors">
-  &reftitle.errors;
-  <para>
-   When does this function issue E_* level errors, and/or throw exceptions.
-  </para>
- </refsect1>
-
- <refsect1 role="examples">
-  &reftitle.examples;
-  <para>
-   <example>
-    <title><function>{FUNCTION_NAME}</function> example</title>
-    <para>
-     Any text that describes the purpose of the example, or what
-     goes on in the example should be here.
-    </para>
-    <programlisting role="php">
-<![CDATA[
-<?php
-
-/* ... */
-
-?>
-]]>
-    </programlisting>
-    &example.outputs.similar;
-    <screen>
-<![CDATA[
-...
-]]>
-    </screen>
-   </example>
-  </para>
- </refsect1>
-
- <refsect1 role="seealso">
-  &reftitle.seealso;
-  <para>
-   <simplelist>
-    <member><function>related function name here</function></member>
-   </simplelist>
-  </para>
- </refsect1>
-
+{DEFAULT_EXAMPLE}
+{DEFAULT_SEEALSO}
 </refentry>
 
 <!-- Keep this comment at the end of the file
