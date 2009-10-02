@@ -206,9 +206,9 @@ function print_xml_errors($details = true) {
                 } else {
                     fprintf(STDERR, "%s\n", $errmsg);
                 }
-                if (strpos($errmsg, "chunk is not well balanced") !== false || strpos($errmsg, "Failure to process entity") !== false) {
+                // Error too severe, stopping
+                if ($err->level === LIBXML_ERR_FATAL) {
                     fprintf(STDERR, "\n\nPrevious errors too severe. Stopping here.\n\n");
-                    // Unbalanced chunk, no point in displaying more errors
                     break;
                 }
             }
