@@ -283,7 +283,7 @@ function create_markup_to_parameter_section(Reflector $obj, $content) { /* {{{ *
 				$markup .= str_repeat(' ', $ident + 3) .'<term><parameter>'. ($param->getName() ? $param->getName() : 'param'. $count) ."</parameter></term>\n";
 				$markup .= str_repeat(' ', $ident + 3) ."<listitem>\n";
       			$markup .= str_repeat(' ', $ident + 4) ."<para>\n";
-       			$markup .= str_repeat(' ', $ident + 5) ."Description...\n";
+       			$markup .= str_repeat(' ', $ident + 5) ."\n";
        			$markup .= str_repeat(' ', $ident + 4) ."</para>\n";
      			$markup .= str_repeat(' ', $ident + 3) ."</listitem>\n";
     			$markup .= str_repeat(' ', $ident + 2) ."</varlistentry>\n";
@@ -370,7 +370,7 @@ function gen_mapping_markup(ReflectionMethod $method, ReflectionFunction $functi
 				$markup .= str_repeat(' ', $ident + 3) .'<term><parameter>'. ($param ? $param : 'param'. $count) ."</parameter></term>\n";
 				$markup .= str_repeat(' ', $ident + 3) ."<listitem>\n";
       			$markup .= str_repeat(' ', $ident + 4) ."<para>\n";
-       			$markup .= str_repeat(' ', $ident + 5) ."Description...\n";
+       			$markup .= str_repeat(' ', $ident + 5) ."\n";
        			$markup .= str_repeat(' ', $ident + 4) ."</para>\n";
      			$markup .= str_repeat(' ', $ident + 3) ."</listitem>\n";
     			$markup .= str_repeat(' ', $ident + 2) ."</varlistentry>\n";
@@ -386,7 +386,7 @@ function gen_mapping_markup(ReflectionMethod $method, ReflectionFunction $functi
 				$markup .= str_repeat(' ', $ident + 3) .'<term><parameter>'. ($param ? $param : 'param'. $count) ."</parameter></term>\n";
 				$markup .= str_repeat(' ', $ident + 3) ."<listitem>\n";
 				$markup .= str_repeat(' ', $ident + 4) ."<para>\n";
-				$markup .= str_repeat(' ', $ident + 5) ."Description...\n";
+				$markup .= str_repeat(' ', $ident + 5) ."\n";
 				$markup .= str_repeat(' ', $ident + 4) ."</para>\n";
 				$markup .= str_repeat(' ', $ident + 3) ."</listitem>\n";
 				$markup .= str_repeat(' ', $ident + 2) ."</varlistentry>\n";
@@ -483,7 +483,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
      		$markup .= str_repeat(' ', $ident + 3) .'<varlistentry xml:id="'. $id .".constants.". format_id($constant) ."\">\n";
      		$markup .= str_repeat(' ', $ident + 4) .'<term><constant>'. $class->getName() .'::'. $constant ."</constant></term>\n";
       		$markup .= str_repeat(' ', $ident + 4) ."<listitem>\n";
-       		$markup .= str_repeat(' ', $ident + 5) ."<para>Description here...</para>\n";
+       		$markup .= str_repeat(' ', $ident + 5) ."<para></para>\n";
       		$markup .= str_repeat(' ', $ident + 4) ."</listitem>\n";
      		$markup .= str_repeat(' ', $ident + 3) ."</varlistentry>\n\n";
 		}
@@ -537,7 +537,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 			$markup .= str_repeat(' ', $ident + 2) .'<varlistentry xml:id="'. $id .'.props.'. format_id($property->getName()) ."\">\n";
 			$markup .= str_repeat(' ', $ident + 3) .'<term><varname>'. $property->getName() ."</varname></term>\n";
      		$markup .= str_repeat(' ', $ident + 3) ."<listitem>\n";
-      		$markup .= str_repeat(' ', $ident + 4) ."<para>Prop description</para>\n";
+      		$markup .= str_repeat(' ', $ident + 4) ."<para></para>\n";
      		$markup .= str_repeat(' ', $ident + 3) ."</listitem>\n";
     		$markup .= str_repeat(' ', $ident + 2) ."</varlistentry>\n";
 		}
@@ -603,7 +603,7 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 					$markup2 .= str_repeat(' ', $ident + 1) ."</term>\n";
 					$markup2 .= str_repeat(' ', $ident + 1) ."<listitem>\n";
 					$markup2 .= str_repeat(' ', $ident + 2) ."<para>\n";
-					$markup2 .= str_repeat(' ', $ident + 3) ."Description here...\n";
+					$markup2 .= str_repeat(' ', $ident + 3) ."\n";
 					$markup2 .= str_repeat(' ', $ident + 2) ."</para>\n";
     				$markup2 .= str_repeat(' ', $ident + 1) ."</listitem>\n";
    					$markup2 .= str_repeat(' ', $ident) ."</varlistentry>\n";
