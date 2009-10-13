@@ -14,6 +14,7 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Authors:    Felipe Pena <felipe@php.net>                             |
+  |             Philip Olson <philip@php.net>                            |
   +----------------------------------------------------------------------+
  
   $Id$
@@ -75,11 +76,14 @@ Options:
 	-m,--method	-- method name (require -c)
 	-o,--output	-- output dir
 	-p,--pecl	-- is a PECL extension
+	-d,--phpdoc	-- path to files in phpdoc directory
+	-a,--copy	-- copy created files to phpdoc directory
 	-s,--seealso	-- add empty see also sections
 	-x,--example	-- add empty example sections
 	-q,--quiet	-- quiet mode
 	-v,--version	-- show the version
 	-V,--verbose 	-- disable show progress
+	-t,--test	-- Test/debug mode (affects a few activities)
 
 
 USAGE;
@@ -1001,10 +1005,13 @@ $OPTION['extension'] = NULL;
 $OPTION['method']	 = NULL;
 $OPTION['class']	 = NULL;
 $OPTION['function']  = NULL;
-$OPTION['output']	 = getcwd();
+$OPTION['output']	 = getcwd() . '/output';
 $OPTION['verbose']   = true;
 $OPTION['quiet']	 = false;
 $OPTION['pecl']		 = false;
+$OPTION['copy']		 = false;
+$OPTION['test']		 = false;
+$OPTION['phpdoc']	 = NULL;
 $OPTION['seealso']	 = false;
 $OPTION['example']	 = false;
 
@@ -1015,6 +1022,9 @@ $arropts = array(
 	'include:'		=> 'i:',  /* include */
 	'help'	  		=> 'h',  /* help */
 	'pecl'			=> 'p',  /* pecl */
+	'phpdoc:'		=> 'd:', /* phpdoc dir*/
+	'copy'			=> 'a',  /* copy */
+	'test'			=> 't',  /* test */
 	'example'		=> 'x',  /* example */
 	'seealso'		=> 's',  /* seealso */
 	'output:' 		=> 'o:', /* output dir */
@@ -1066,18 +1076,23 @@ foreach ($options as $opt => $value) {
 			break;
 		case 'o':
 		case 'output':
-			if (!file_exists($value) || !is_writable($value)) {
-				if (mkdir($value)) {
-					echo "- Created output directory: $value\n";
-				} else {
-					die("Error: The output directory ($value) must be writable\n");
-				}
-			}
 			$OPTION['output'] = $value;
 			break;
 		case 'p':
 		case 'pecl':
 			$OPTION['pecl'] = true;
+			break;
+		case 'd':
+		case 'phpdoc':
+			$OPTION['phpdoc'] = realpath($value);
+			break;
+		case 'a':
+		case 'copy':
+			$OPTION['copy'] = true;
+			break;
+		case 't':
+		case 'test':
+			$OPTION['test'] = true;
 			break;
 		case 'q':
 		case 'quiet':
@@ -1108,6 +1123,14 @@ if (!empty($OPTION['example'])) {
 	$DOC_EXT['examples.xml'] = 'examples.tpl';
 }
 
+if (!file_exists($OPTION['output']) || !is_writable($OPTION['output'])) {
+	if (mkdir($OPTION['output'])) {
+		echo "- Created output directory: $OPTION[output]\n";
+	} else {
+		die("Error: The output directory ($OPTION[output]) must be writable\n");
+	}
+}
+
 if (!empty($OPTION['extension'])) {
 	if (is_array($OPTION['extension'])) {
 		foreach ($OPTION['extension'] as $extension) {
@@ -1133,6 +1156,62 @@ if (empty($OPTION['method']) && !empty($OPTION['class'])) {
 		}
 	} else {
 		gen_docs($OPTION['class'], DOC_CLASS);
+	}
+}
+
+// Copy new skeletons to the appropriate directory
+// Example: --output out --class domdocument --copy --phpdoc ../../../en/reference/dom/
+// That will copy over new domdocument files, while not overwriting any
+if (!empty($OPTION['copy']) && !empty($OPTION['phpdoc'])) {
+	
+	if (!is_dir($OPTION['phpdoc'])) {
+		echo "ERROR: The provided phpdoc path is not a directory: $OPTION[phpdoc]\n";
+		exit;
+	}
+
+	if (!empty($OPTION['test'])) {
+		echo "INFO: Test mode, so will not copy over files.\n";
+	}
+	
+	$count_gen  = 0;
+	$count_copy = 0;
+	foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($OPTION['output'])) as $file) {
+
+		$filepathname = $file->getPathName();
+		$filename     = $file->getBaseName();
+		$count_gen++;
+
+		if (!$file->isFile() || pathinfo($filename, PATHINFO_EXTENSION) !== 'xml') {
+			continue;
+		}
+	
+		// fileid is equal in docgen output and phpdoc
+		$fileid = str_replace($OPTION['output'], '', $filepathname);
+	
+		// Do not overwrite
+		if (file_exists($OPTION['phpdoc'] . $fileid)) {
+			echo "INFO: will not overwrite: $OPTION[phpdoc]$fileid\n";
+			continue;
+		}
+		
+		if (empty($OPTION['test'])) {
+			// Hack to create the directory
+			$dir = str_replace($filename, '', $OPTION['phpdoc'] . $fileid);
+			if (!is_dir($dir)) {
+				echo "INFO: Created directory $dir\n";
+				mkdir($dir);
+			}
+			// Do the copy
+			copy($OPTION['output'] . $fileid, $OPTION['phpdoc'] . $fileid);
+		} else {
+			echo "DEBUG: $OPTION[output]$fileid TO $OPTION[phpdoc]$fileid\n";
+		}
+		$count_copy++;
+	}
+	
+	echo "INFO: Copied over $count_copy files, after generating $count_gen files.\n";
+	if ($count_copy > 0) {
+		echo "INFO: Be sure to add version information to $OPTION[phpdoc]/version.xml, because I am unsure how to do that (yet).\n";
 	}
 }
 
