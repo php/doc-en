@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 1 $ -->
+
+<sect1 xml:id="install.windows.iis7" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Microsoft IIS 7.0 and later</title>
+ <para>
+  This section contains instructions for manually setting up Internet Information 
+  Services (IIS) 7.0 and later to work with PHP on Microsoft Windows Vista SP1, 
+  Windows 7, Windows Server 2008 and Windows Server 2008 R2. For instructions 
+  on setting up IIS 5.1 and IIS 6.0 on Windows XP and Windows Server 2003 refer to 
+  <link linkend="install.windows.iis6">Microsoft IIS 5.1 and IIS 6.0</link>.
+ </para>
+ <sect2 xml:id="install.windows.iis7.fastcgi.enable">
+  <title>Enabling FastCGI support in IIS</title>
+  <para>
+   FastCGI module is disabled in default installation of IIS. The steps to enable it differ 
+   based on the version of Windows being used.
+  </para>
+  <para>
+   To enable FastCGI support on Windows Vista SP1 and Windows 7:
+   <procedure>
+    <step>
+     <para>
+      In the Windows Start Menu choose &quot;Run:&quot;, type &quot;optionalfeatures.exe&quot; 
+      and click &quot;Ok&quot;;
+     </para>
+    </step>
+    <step>
+     <para>
+      In the &quot;Windows Features&quot; dialog expand &quot;Internet Information 
+      Services&quot;, &quot;World Wide Web Services&quot;, &quot;Application Development 
+      Features&quot; and then enable the &quot;CGI&quot; checkbox;
+     </para>
+    </step>
+    <step>
+     <para>
+      Click OK and wait until the installation is complete.
+     </para>
+    </step>
+   </procedure>
+   <example>
+    <title>Enabling FastCGI support on Windows Vista SP1 and Windows 7</title>
+     <mediaobject>
+      <imageobject>
+       <imagedata fileref="en/install/windows/figures/iis7vistacgi.png" />
+      </imageobject>
+     </mediaobject>
+   </example>
+  </para>
+  <para>
+   To enable FastCGI support on Windows Server 2008 and Windows Server 2008 R2:
+   <procedure>
+    <step>
+     <para>
+      In the Windows Start Menu choose &quot;Run:&quot;, type &quot;CompMgmtLauncher&quot; 
+      and click &quot;Ok&quot;;
+     </para>
+    </step>
+    <step>
+     <para>
+      If the &quot;Web Server (IIS)&quot; role is not present under the &quot;Roles&quot; 
+      node, then add it by clicking &quot;Add Roles&quot;;
+     </para>
+    </step>
+    <step>
+     <para>
+      If the &quot;Web Server (IIS)&quot; role is present, then click &quot;Add Role Services&quot; 
+      and then enable the &quot;CGI&quot; checkbox under &quot;Application Development&quot; group;
+     </para>
+    </step>
+    <step>
+     <para>
+      Click &quot;Next&quot; and then &quot;Install&quot; and wait for the installation to complete.
+     </para>
+    </step>
+   </procedure>
+   <example>
+    <title>Enabling FastCGI support on Windows Server 2008 and Windows Server 2008 R2</title>
+    <mediaobject>
+     <imageobject>
+      <imagedata fileref="en/install/windows/figures/iis7w2k8cgi.png" />
+     </imageobject>
+    </mediaobject>
+   </example>
+  </para>
+ </sect2>
+ <sect2 xml:id="install.windows.iis7.fastcgi.conf">
+	<title>Configuring IIS to process PHP requests</title>
+  <para>
+   Download and install PHP in accordance to the instructions described in 
+    <link linkend="install.windows.manual">manual installation steps</link>
+    <note>
+     <para>
+      Non-thread-safe build of PHP is recommended when using IIS. The non-thread-safe 
+      builds are available at <link xlink:href="&url.php.win.downloads;">PHP for Windows: 
+      Binaries and Sources Releases.</link>
+     </para>
+    </note>
+  </para>
+  <para>
+   Configure the CGI and FastCGI specific settings in <filename>php.ini</filename> file as shown below:
+   <example>
+    <title>CGI and FastCGI settings in <filename>php.ini</filename></title>
+    <programlisting role="ini">
+<![CDATA[
+fastcgi.impersonate = 1
+fastcgi.logging = 0
+cgi.fix_pathinfo=1
+cgi.force_redirect = 0
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Configure IIS handler mapping for PHP by using either IIS Manager user interface or a command line tool.
+  </para>
+  <sect3 xml:id="install.windows.iis7.fastcgi.conf.ui">
+   <title>Using IIS Manager user interface to create a handler mapping for PHP</title>
+    <para>
+     Follow these steps to create an IIS handler mapping for PHP in IIS Manager user interface:
+     <procedure>
+      <step>
+       <para>In the Windows Start Menu choose &quot;Run:&quot;, type &quot;inetmgr&quot; and click &quot;Ok&quot;;</para>
+      </step>
+      <step>
+       <para>In the IIS Manager user interface select the server node in the &quot;Connections&quot; tree view;</para>
+      </step>
+      <step>
+       <para>In the &quot;Features View&quot; page open the &quot;Handler Mappings&quot; feature;</para>
+      </step>
+      <step>
+       <para>In the &quot;Actions&quot; pane click &quot;Add Module Mapping...&quot;;</para>
+      </step>
+      <step>
+       <para>
+        In the &quot;Add Module Mapping&quot; dialog enter the following:
+        <itemizedlist spacing="compact">
+         <listitem>
+          <simpara>Request path: *.php</simpara>
+         </listitem>
+         <listitem>
+          <simpara>Module: FastCgiModule</simpara>
+         </listitem>
+         <listitem>
+          <simpara>Executable: C:\[Path to PHP installation]\php-cgi.exe</simpara>
+         </listitem>
+         <listitem>
+          <simpara>Name: PHP_via_FastCGI</simpara>
+         </listitem>
+        </itemizedlist>
+       </para>
+      </step>
+      <step>
+       <para>
+        Click &quot;Request Restrictions&quot; button and then configure the mapping to invoke handler 
+        only if request is mapped to a file or a folder;
+        </para>
+      </step>
+      <step>
+       <para>Click OK on all the dialogs to save the configuration.</para>
+      </step>
+     </procedure>
+     <example>
+      <title>Opening the Handler Mappings configuration in IIS Manager</title>
+      <mediaobject>
+       <imageobject>
+        <imagedata fileref="en/install/windows/figures/iis7handlericon.png" />
+       </imageobject>
+      </mediaobject>
+     </example>
+     <example>
+      <title>Configuring the handler mapping for PHP requests</title>
+      <mediaobject>
+       <imageobject>
+        <imagedata fileref="en/install/windows/figures/iis7handlermap.png" />
+       </imageobject>
+      </mediaobject>
+     </example>     
+    </para>
+  </sect3>
+  <sect3 xml:id="install.windows.iis7.fastcgi.conf.cmd">
+   <title>Using command line tool to create a handler mapping for PHP</title>
+   <para>
+    Use the command shown below to create an IIS FastCGI process pool which will use <filename>php-cgi.exe</filename> 
+    executable for processing PHP requests. Replace the value of the <varname>fullPath</varname> parameter with the 
+    absolute file path to the <filename>php-cgi.exe</filename> file.
+    <example>
+     <title>Creating IIS FastCGI process pool</title>
+     <programlisting>
+<![CDATA[
+%windir%\system32\inetsrv\appcmd set config /section:system.webServer/fastCGI /+[fullPath='c:\PHP\php-cgi.exe']
+]]>
+     </programlisting>
+    </example>
+   </para>
+   <para>
+    Configure IIS to handle PHP specific requests by running the command shown below. Replace the value of the 
+    <varname>scriptProcessor</varname> parameter with the absolute file path to the <filename>php-cgi.exe</filename> file.
+    <example>
+     <title>Creating handler mapping for PHP requests</title>
+     <programlisting>
+<![CDATA[
+%windir%\system32\inetsrv\appcmd set config /section:system.webServer/handlers /+[name='PHP_via_FastCGI',
+path='*.php',verb='*',modules='FastCgiModule',scriptProcessor='c:\PHP\php-cgi.exe',resourceType='Either']
+]]>
+     </programlisting>
+    </example>   
+    This command creates an IIS handler mapping for *.php file extension, which will result in all URLs that 
+    end with .php being handled by FastCGI module.
+    <note>
+     <para>
+      At this point the required installation and configuration steps are completed. The remaining 
+      instructions below are optional but highly recommended for achieving optimal functionality 
+      and performance of PHP on IIS.
+     </para>
+    </note>
+   </para>
+  </sect3>
+ </sect2>
+ <sect2 xml:id="install.windows.iis7.impersonation">
+  <title>Impersonation and file system access</title>
+  <para>
+   It is recommended to enable FastCGI impersonation in PHP when using IIS. This 
+   is controlled by the <varname>fastcgi.impersonate</varname> directive in <filename>php.ini</filename> 
+   file. When impersonation is enabled, PHP will perform all the file system operations on behalf of 
+   the user account that has been determined by IIS authentication. This ensures that even if the 
+   same PHP process is shared across different IIS web sites, the PHP scripts in those web sites 
+   will not be able to access each other&#39;s files as long as different user accounts are used 
+   for IIS authentication on each web site.
+  </para>
+  <para>
+   For example IIS 7, in its default configuration, has anonymous authentication enabled with 
+   built-in user account IUSR used as a default identity. This means that in order for IIS to 
+   execute PHP scripts, it is necessary to grant IUSR account read permission on those scripts. 
+   If PHP applications need to perform write operations on certain files or write files into some 
+   folders then IUSR account should have write permission to those.
+  </para>
+  <para>
+   To determine what user account is used as an anonymous identity in IIS 7 use the following command. 
+   Replace the &quot;Default Web Site&quot; with the name of IIS web site that you use. In the output 
+   XML configuration element look for the userName attribute.
+   <example>
+    <title>Determining the account used as IIS anonymous identity</title>
+    <programlisting>
+<![CDATA[
+appcmd.exe list config "Default Web Site" /section:anonymousAuthentication
+<system.webServer>
+  <security>
+    <authentication>
+      <anonymousAuthentication enabled="true" userName="IUSR" />
+    </authentication>
+   </security>
+</system.webServer>
+]]>
+    </programlisting>
+   </example>
+   <note>
+    <para>
+     If <varname>userName</varname> attribute is not present in the <varname>anonymousAuthentication</varname> element, 
+     or is set to an empty string, then it means that the application pool identity is used as an 
+     anonymous identity for that web site.
+    </para>
+   </note>
+  </para>
+  <para>
+   To modify the permissions settings on files and folders, use the Windows Explorer 
+   user interface or <varname>icacls</varname> command.
+   <example>
+    <title>Configuring file access permissions</title>
+    <programlisting>
+<![CDATA[
+icacls C:\inetpub\wwwroot\upload /grant IUSR:(OI)(CI)(M)
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </sect2>
+ <sect2 xml:id="install.windows.iis7.defaultdoc">
+  <title>Set <filename>index.php</filename> as a default document in IIS</title>
+  <para>
+   The IIS default documents are used for HTTP requests that do not specify a 
+   document name. With PHP applications, <filename>index.php</filename> usually 
+   acts as a default document. To add <filename>index.php</filename> to the list 
+   of IIS default documents, use this command:
+   <example>
+    <title>Set <filename>index.php</filename> as a default document in IIS</title>
+    <programlisting>
+<![CDATA[
+%windir%\system32\inetsrv\appcmd.exe set config  -section:system.webServer/defaultDocument 
+/+"files.[value='index.php']" /commit:apphost
+]]>
+    </programlisting>
+   </example>   
+  </para>
+ </sect2>
+ <sect2 xml:id="install.windows.iis7.recycling">
+  <title>FastCGI and PHP Recycling configuration</title>
+  <para>
+   Configure IIS FastCGI settings for recycling of PHP processes by using the commands shown below. 
+   The FastCGI setting <varname>instanceMaxRequests</varname> controls how many requests will be 
+   processed by a single <filename>php-cgi.exe</filename> process before IIS shuts it down. 
+   The PHP environment variable <varname>PHP_FCGI_MAX_REQUESTS</varname> controls how many 
+   requests a single <filename>php-cgi.exe</filename> process will handle before it recycles 
+   itself. Make sure that the value specified for FastCGI <varname>InstanceMaxRequests</varname> 
+   setting is less than or equal to the value specified for <varname>PHP_FCGI_MAX_REQUESTS</varname>.
+   <example>
+    <title>Configuring FastCGI and PHP recycling</title>
+    <programlisting>
+<![CDATA[
+%windir%\system32\inetsrv\appcmd set config -section:system.webServer/fastCgi 
+/[fullPath='c:\php\php-cgi.exe'].instanceMaxRequests:10000
+
+%windir%\system32\inetsrv\appcmd.exe set config -section:system.webServer/fastCgi 
+/+"[fullPath='C:\{php_folder}\php-cgi.exe'].environmentVariables.[name='PHP_FCGI_MAX_REQUESTS',value='10000']"
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </sect2>
+ <sect2 xml:id="install.windows.iis7.timeouts">
+  <title>Configuring FastCGI timeout settings</title>
+  <para>
+   Increase the timeout settings for FastCGI if it is expected to have long running PHP scripts.
+   The two settings that control timeouts are <varname>activityTimeout</varname> and 
+   <varname>requestTimeout</varname>. Use the commands below to change the timeout settings. 
+   Make sure to replace the value in the <varname>fullPath</varname> parameter to 
+   contain the absolute path to the <filename>php-cgi.exe</filename> file.
+   <example>
+    <title>Configuring FastCGI and PHP recycling</title>
+    <programlisting>
+<![CDATA[
+%windir%\system32\inetsrv\appcmd.exe set config -section:system.webServer/fastCgi 
+/[fullPath='C:\php\php-cgi.exe',arguments=''].activityTimeout:"90"  /commit:apphost
+
+%windir%\system32\inetsrv\appcmd.exe set config -section:system.webServer/fastCgi 
+/[fullPath='C:\php\php-cgi.exe',arguments=''].requestTimeout:"90"  /commit:apphost
+]]>
+    </programlisting>
+   </example>   
+  </para>
+ </sect2>
+ <sect2 xml:id="install.windows.iis7.phpinilocation">
+  <title>Changing the Location of <filename>php.ini</filename> file</title>
+  <para>
+   PHP searches for <filename>php.ini</filename> file in 
+   <link linkend="configuration.file">several locations</link> and it is 
+   possible to change the default locations of <filename>php.ini</filename> 
+   file by using <varname>PHPRC</varname> environment variable. To instruct PHP 
+   to load the configuration file from a custom location run the command shown below. 
+   The absolute path to the directory with <filename>php.ini</filename> file should be 
+   specified as a value of <varname>PHPRC</varname> environment variable.
+   <example>
+    <title>Changing the location of <filename>php.ini</filename> file</title>
+    <programlisting>
+<![CDATA[
+appcmd.exe set config  -section:system.webServer/fastCgi 
+/+"[fullPath='C:\php\php.exe',arguments=''].environmentVariables.[name='PHPRC',value='C:\Some\Directory\']" 
+/commit:apphost
+]]>         
+    </programlisting>
+   </example>   
+  </para>
+ </sect2>
+</sect1>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

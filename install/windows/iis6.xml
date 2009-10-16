@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 1 $ -->
+
+<sect1 xml:id="install.windows.iis6" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Microsoft IIS 5.1 and IIS 6.0</title>
+ <para>
+  This section contains instructions for manually setting up Internet Information 
+  Services (IIS) 5.1 and IIS 6.0 to work with PHP on Microsoft Windows XP and Windows 
+  Server 2003. For instructions on setting up IIS 7.0 and later versions on Windows 
+  Vista, Windows Server 2008, Windows 7 and Windows Server 2008 R2 refer to 
+  <link linkend="install.windows.iis7">Microsoft IIS 7.0 and later</link>.
+ </para>
+ <sect2 xml:id="install.windows.iis6.fastcgi">
+  <title>Configuring IIS to process PHP requests</title>
+  <para>
+   Download and install PHP in accordance to the instructions described in 
+    <link linkend="install.windows.manual">manual installation steps</link>
+    <note>
+     <para>
+      Non-thread-safe build of PHP is recommended when using IIS. The non-thread-safe 
+      builds are available at <link xlink:href="&url.php.win.downloads;">PHP for Windows: 
+      Binaries and Sources Releases.</link>
+     </para>
+    </note>
+  </para>
+  <para>
+   Configure the CGI and FastCGI specific settings in <filename>php.ini</filename> file as shown below:
+   <example>
+    <title>CGI and FastCGI settings in <filename>php.ini</filename></title>
+    <programlisting role="ini">
+<![CDATA[
+fastcgi.impersonate = 1
+fastcgi.logging = 0
+cgi.fix_pathinfo=1
+cgi.force_redirect = 0
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Download and install the <link xlink:href="&url.iis.fastcgi.downloads;">Microsoft FastCGI Extension for IIS 5.1 and 6.0</link>. 
+   The extension is available for 32-bit and 64-bit platforms - select the right download package for your platform.
+  </para>
+  <para>Configure the FastCGI extension to handle PHP specific requests by running the command shown below. 
+   Replace the value of the &quot;-path&quot; parameter with the absolute file path to the 
+   <filename>php-cgi.exe</filename> file.
+   <example>
+    <title>Configuring FastCGI extension to handle PHP requests</title>
+    <programlisting>
+<![CDATA[
+cscript %windir%\system32\inetsrv\fcgiconfig.js -add -section:"PHP" -extension:php -path:"C:\PHP\php-cgi.exe"
+]]>
+    </programlisting>
+   </example>
+   This command will create an IIS script mapping for *.php file extension, which will result in all URLs 
+   that end with .php being handled by FastCGI extension. Also, it will configure FastCGI extension to 
+   use the executable <filename>php-cgi.exe</filename> to process the PHP requests.
+   <note>
+     <para>
+      At this point the required installation and configuration steps are completed. The remaining 
+      instructions below are optional but highly recommended for achieving optimal functionality 
+      and performance of PHP on IIS.
+     </para>
+   </note>
+  </para>
+ </sect2>
+ <sect2 xml:id="install.windows.iis6.impersonation">
+  <title>Impersonation and file system access</title>
+  <para>
+   It is recommended to enable FastCGI impersonation in PHP when using IIS. This 
+   is controlled by the <varname>fastcgi.impersonate</varname> directive in <filename>php.ini</filename> file. When 
+   impersonation is enabled, PHP will perform all the file system operations on 
+   behalf of the user account that has been determined by IIS authentication. This 
+   ensures that even if the same PHP process is shared across different IIS web 
+   sites, the PHP scripts in those web sites will not be able to access each 
+   others&#39; files as long as different user accounts are used for IIS authentication 
+   on each web site.
+  </para>
+  <para>
+   For example IIS 5.1 and IIS 6.0, in its default configuration, has anonymous authentication enabled 
+   with built-in user account IUSR_&lt;MACHINE_NAME&gt; used as a default identity. This means that in 
+   order for IIS to execute PHP scripts, it is necessary to grant IUSR_&lt;MACHINE_NAME&gt; account 
+   read permission on those scripts. If PHP applications need to perform write operations on certain 
+   files or write files into some folders then IUSR_&lt;MACHINE_NAME&gt; account should have write permission to those.
+  </para>
+  <para>
+   To determine which user account is used by IIS anonymous authentication, follow these steps:
+   <procedure>
+    <step>
+     <para>In the Windows Start Menu choose &quot;Run:&quot;, type &quot;inetmgr&quot; and click &quot;Ok&quot;;</para>
+    </step>
+    <step>
+     <para>Expand the list of web sites under the &quot;Web Sites&quot; node in the tree view, right-click on a web 
+      site that is being used and select &quot;Properties&quot;;
+     </para>    
+    </step>
+    <step>
+     <para>Click the &quot;Directory Security&quot; tab;</para>    
+    </step>
+    <step>
+     <para>Take note of a &quot;User name:&quot; field in the &quot;Authentication Methods&quot; dialog</para>
+    </step>
+   </procedure>
+   <example>
+    <title>Determining the user account used by IIS anonymous authentication</title>
+     <mediaobject>
+      <imageobject>
+       <imagedata fileref="en/install/windows/figures/iis6anonauth.png" />
+      </imageobject>
+     </mediaobject>
+   </example>
+  </para>
+  <para>
+   To modify the permissions settings on files and folders, use the Windows Explorer user interface 
+   or <varname>icacls</varname> command.
+   <example>
+    <title>Configuring file access permissions</title>
+    <programlisting>
+<![CDATA[
+icacls C:\inetpub\wwwroot\upload /grant IUSR:(OI)(CI)(M)
+]]>     
+    </programlisting>
+   </example>
+  </para>
+ </sect2>
+ <sect2 xml:id="install.windows.iis6.defaultdoc">
+  <title>Set <filename>index.php</filename> as a default document in IIS</title>
+  <para>
+   The IIS default documents are used for HTTP requests that do not specify a document name. With PHP applications, 
+   <filename>index.php</filename> usually acts as a default document. To add <filename>index.php</filename> to the list of 
+   IIS default documents, follow these steps:
+   <procedure>
+    <step>
+     <para>In the Windows Start Menu choose &quot;Run:&quot;, type &quot;inetmgr&quot; and click &quot;Ok&quot;;</para>
+    </step>
+    <step>
+     <para>Right-click on the &quot;Web Sites&quot; node in the tree view and select &quot;Properties&quot;;</para>
+    </step>
+    <step>
+     <para>Click the &quot;Documents&quot; tab;</para>
+    </step>
+    <step>
+     <para>Click the &quot;Add...&quot; button and enter &quot;index.php&quot; for the &quot;Default content page:&quot;.</para>
+    </step>
+   </procedure>
+   <example>
+    <title>Setting index.php as a default document in IIS 6.0</title>
+    <mediaobject>
+     <imageobject>
+      <imagedata fileref="en/install/windows/figures/iis6defaultdoc.png" />
+     </imageobject>
+    </mediaobject>
+   </example>
+  </para>
+ </sect2>
+ <sect2 xml:id="install.windows.iis6.recycling">
+  <title>FastCGI and PHP Recycling configuration</title>
+  <para>
+   Configure IIS FastCGI extension settings for recycling of PHP processes by using the commands shown below. 
+   The FastCGI setting <varname>instanceMaxRequests</varname> controls how many requests will be processed by a single 
+   <filename>php-cgi.exe</filename> process before FastCGI extension shuts it down. The PHP environment variable 
+   <varname>PHP_FCGI_MAX_REQUESTS</varname> controls how many requests a single <filename>php-cgi.exe</filename> process 
+   will handle before it recycles itself. Make sure that the value specified for FastCGI <varname>InstanceMaxRequests</varname>
+   setting is less than or equal to the value specified for <varname>PHP_FCGI_MAX_REQUESTS</varname>.
+   <example>
+    <title>Configuring FastCGI and PHP recycling</title>
+    <programlisting>
+<![CDATA[
+cscript %windir%\system32\inetsrv\fcgiconfig.js -set -section:"PHP" -InstanceMaxRequests:10000
+cscript %windir%\system32\inetsrv\fcgiconfig.js -set -section:"PHP" -EnvironmentVars:PHP_FCGI_MAX_REQUESTS:10000
+]]>     
+    </programlisting>
+   </example>
+  </para>
+ </sect2>
+ <sect2 xml:id="install.windows.iis6.timeouts">
+  <title>Configuring FastCGI timeout settings</title>
+  <para>
+   Increase the timeout settings for FastCGI extension if there are applications that have long running PHP scripts. 
+   The two settings that control timeouts are <varname>ActivityTimeout</varname> and <varname>RequestTimeout</varname>. 
+   Refer to <link xlink:href="&url.iis.fastcgi.settings;">Configuring FastCGI Extension for IIS 6.0</link> for more 
+   information about those settings.
+   <example>
+    <title>Configuring FastCGI timeout settings</title>
+    <programlisting>
+<![CDATA[
+cscript %windir%\system32\inetsrv\fcgiconfig.js -set -section:"PHP" -ActivityTimeout:90
+cscript %windir%\system32\inetsrv\fcgiconfig.js -set -section:"PHP" -RequestTimeout:90
+]]>     
+    </programlisting>
+   </example>
+   </para>
+ </sect2>
+ <sect2 xml:id="install.windows.iis6.phpinilocation">
+  <title>Changing the Location of <filename>php.ini</filename> file</title>
+  <para>
+   PHP searches for <filename>php.ini</filename> file in 
+   <link linkend="configuration.file">several locations</link> and it is 
+   possible to change the default locations of <filename>php.ini</filename> 
+   file by using <varname>PHPRC</varname> environment variable. To instruct PHP 
+   to load the configuration file from a custom location run the command shown below. 
+   The absolute path to the directory with <filename>php.ini</filename> file should be 
+   specified as a value of <varname>PHPRC</varname> environment variable.
+   <example>
+    <title>Changing the location of <filename>php.ini</filename> file</title>
+    <programlisting>
+<![CDATA[
+cscript %windir%\system32\inetsrv\fcgiconfig.js -set -section:"PHP" -EnvironmentVars:PHPRC:"C:\Some\Directory\"
+]]>         
+    </programlisting>
+   </example>
+  </para>
+ </sect2>
+</sect1>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
