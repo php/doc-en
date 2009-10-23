@@ -529,20 +529,31 @@ if ($ac['HOWTO'] === 'yes') {
     }
 
     $dom->xinclude($LIBXML_OPTS);
-    echo "Validating $filein... ";
+    echo "Validating $filein...\n";
     if ($dom->validate()) {
-        echo "done.\n";
-        echo "\nAll good. Saving $fileout... ";
+        echo "INFO: The HOWTO validated, so is ready for commit.\n";
+        echo "INFO: Saving $fileout...\n";
         flush(STDOUT);
         $dom->save($fileout);
 
-        echo "done.\n";
-        echo "All you have to do now is run 'phd -d {$fileout} -t howto'\n";
+        echo "INFO: All you have to do now is run 'phd -d {$fileout} -t howto'\n";
         exit(0);
     }
-    echo "FAIL\n";
-    echo "I'm to lazy to figure out why. Just look at your last changes\n";
-    exit(1);
+    
+    echo "INFO: I am trying to figure out what went wrong...\n";
+    echo "INFO: Here are the errors I found:\n";
+    if ($ac['DETAILED_ERRORMSG'] == 'yes') {
+        libxml_clear_errors();
+
+        echo "INFO: Running in detailed error mode\n";
+        $dom->load(realpath($filein), $LIBXML_OPTS | LIBXML_DTDVALID);
+        print_xml_errors();
+        errors_are_bad(1);
+    } else {
+        echo "INFO: If this isn't enough information, try again with --enable-xml-details)\n";
+        print_xml_errors(false);
+        errors_are_bad(1);
+    }
 }
 
 globbetyglob("{$ac['basedir']}/scripts", 'make_scripts_executable');
