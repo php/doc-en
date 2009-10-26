@@ -3,7 +3,189 @@
  <sect1 xml:id="internals2.memory.management" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
   <title>Basic memory management</title>
 
-  <simpara>
-  </simpara>
+  <para>
+   When programming in the C programming language the developer has to manually
+   care about memory management. As PHP is usually used as a web server
+   module memory management is from special relevance in order to prevent memory
+   leaks. Additionally you should be aware that PHP might be used in threaded
+   environments which means that global variables might lead to race
+   conditions. For information about dealing with thread-global data please
+   refer to the documentation on the <xref linkend="internals2.memory.TSRM"/>,
+   which serves as thread-isolation facility.
+  </para>
+
+  <para>
+   Additionally to these requirements the Zend Engine is faced with a quite
+   special usage pattern where, within a relatively short time, many memory
+   blocks of the size of a zval structure or  other small memory blocks are
+   requested and freed again. Memory management in PHP has also to respect
+   the <link linkend="ini.memory-limit">memory_limit</link>.
+  </para>
+
+  <para>
+   For fulfilling the above requirements the Zend Engine provides a special
+   memory manager for handling request-bound data. Request-bound data is data
+   that is needed only for serving a single request and which will be freed at
+   the request's end at latest. Extension authors will mostly only have contact 
+   with the routines listed in the table below. Although they are implemented 
+   as macros for providing some convenience features this documentation will 
+   treat them like functions.
+  </para>
+
+  <table xml:id="internals2.memory.management.apis">
+   <title>Main memory APIs</title>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Prototype</entry>
+      <entry>Description</entry>
+     </row>
+    </thead>
+    <tbody>
+     
+     <row>
+      <entry><code>void *emalloc(size_t size)</code></entry>
+      <entry>Allocate <code>size</code> bytes of memory.</entry>
+     </row>
+
+     <row>
+      <entry><code>void *ecalloc(size_t nmemb, size_t size)</code></entry>
+      <entry>
+       Allocate a buffer for <code>nmemb</code> elements of
+       <code>size</code> bytes and makes sure it is initialized with zeros.
+      </entry>
+     </row>
+
+     <row>
+      <entry><code>void *erealloc(void *ptr, size_t size)</code></entry>
+      <entry>
+       Resize the buffer <code>ptr</code>, which was allocated using
+       <code>emalloc</code> to hold <code>size</code> bytes of memory.
+      </entry>
+     </row>
+
+     <row>
+      <entry><code>void efree(void *ptr)</code></entry>
+      <entry>
+       Free the buffer pointed by <code>ptr</code>. The buffer had to be 
+       allocated by <code>emalloc</code>.
+      </entry>
+     </row>
+
+     <row>
+      <entry>
+       <code>void *safe_emalloc(size_t nmemb, size_t size, size_t offset)</code>
+      </entry>
+      <entry>
+       Allocate a buffer for holding <code>nmemb</code> blocks of each
+       <code>size</code> bytes and an additional <code>offset</code> bytes.
+       This is similar to <code>emalloc(nmemb * size + offset)</code> but adds
+       a special protection against overflows.
+      </entry>
+     </row>
+
+     <row>
+      <entry><code>char *estrdup(const char *s)</code></entry>
+      <entry>
+       Allocate a buffer that can hold the NULL-terminated string
+       <code>s</code> and copy the <code>s</code> into that buffer.
+      </entry>
+     </row>
+
+     <row>
+      <entry>
+       <code>char *estrndup(const char *s, unsigned int length)</code>
+      </entry>
+      <entry>
+       Similar to <code>estrdup</code> while the length of the
+       NULL-terminated string is already known.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </table>
+
+  <note>
+   <simpara>
+    Unlike their C stdandad library's counterparts the Zend Engine's memory
+    management functions won't return NULL in case of an problem while 
+    allocating the requested memory but bail out and terminate the current 
+    request.
+   </simpara>
+  </note>
+
+  <para>
+   As said above it is an essential part of the memory management to avoid
+   having memory leaks and therefore free all memory you've allocated. As a
+   safety net the Zend Engine will free all memory, which had been allocated
+   using above mentioned APIs at the end of a request. If PHP was built using
+   the <code>--enable-debug</code> configuration option this will lead to a
+   warning.
+  </para>
+
+  <example xml:id="internals2.memory.management.example.leak">
+   <title>PHP's leak warnings</title>
+   <programlisting role="c">
+<![CDATA[
+ZEND_FUNCTION(leak)
+{
+    long leakbytes = 3;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &leakbytes) == FAILURE) {
+        return;
+    }
+
+    emalloc(leakbytes);
+}
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+[Thu Oct 22 02:14:57 2009]  Script:  '-'
+/home/hohannes/src/PHP_5_3/Zend/zend_builtin_functions.c(1377) :  Freeing 0x088888D4 (3 bytes), script=-
+=== Total 1 memory leaks detected ===
+]]>
+   </screen>
+  </example>
+
+  <note>
+   <simpara>
+    When dealing with PHP variables you have to make sure the variable is
+    allocated using emalloc and take care of the reference count. Details can
+    be found in <xref linkend="internals2.variables"/>.
+   </simpara>
+  </note>
+
+  <note>
+   <simpara>
+    This leak detection can only find leaks caused by blocks allocated by 
+    emalloc. You're advised to use a memory checker like valgrind or libumem
+    for deeper analysis. To simplify the analysis PHP's memory manager can be 
+    disabled by setting the environment variable USE_ZEND_ALLOC=0 before 
+    starting PHP.
+   </simpara>
+  </note>
 
  </sect1>
+ 
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
