@@ -3,9 +3,61 @@
 
 <chapter xml:id="solr.examples" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  &reftitle.examples;
- <para>
-  Examples of how to use the Apache Solr extension in PHP
- </para>
+ 
+    <para>
+        Examples of how to use the Apache Solr extension in PHP
+    </para>
+    <example>
+        <title>Contents of the BootStrap file</title>
+        <programlisting role="php">
+<![CDATA[
+
+<?php
+
+/* Domain name of the Solr server */
+define('SOLR_SERVER_HOSTNAME', 'solr.example.com');
+
+/* Whether or not to run in secure mode */
+define('SOLR_SECURE', true);
+
+/* HTTP Port to connection */
+define('SOLR_SERVER_PORT', ((SOLR_SECURE) ? 8443 : 8983));
+
+/* HTTP Basic Authentication Username */
+define('SOLR_SERVER_USERNAME', 'admin');
+
+/* HTTP Basic Authentication password */
+define('SOLR_SERVER_PASSWORD', 'changeit');
+
+/* HTTP connection timeout */
+/* This is maximum time in seconds allowed for the http data transfer operation. Default value is 30 seconds */
+define('SOLR_SERVER_TIMEOUT', 10);
+
+/* File name to a PEM-formatted private key + private certificate (concatenated in that order) */
+define('SOLR_SSL_CERT', 'certs/combo.pem');
+
+/* File name to a PEM-formatted private certificate only */
+define('SOLR_SSL_CERT_ONLY', 'certs/solr.crt');
+
+/* File name to a PEM-formatted private key */
+define('SOLR_SSL_KEY', 'certs/solr.key');
+
+/* Password for PEM-formatted private key file */
+define('SOLR_SSL_KEYPASSWORD', 'StrongAndSecurePassword');
+
+/* Name of file holding one or more CA certificates to verify peer with*/
+define('SOLR_SSL_CAINFO', 'certs/cacert.crt');
+
+/* Name of directory holding multiple CA certificates to verify peer with */
+define('SOLR_SSL_CAPATH', 'certs/');
+
+?>
+
+]]>
+        </programlisting>
+
+    </example>
+
  <example>
   <title>Adding a document to the index</title>
   <programlisting role="php">
@@ -704,6 +756,78 @@ SolrObject Object
     </screen>
 </example>
 
+<example>
+        <title>Connecting to SSL-Enabled Server</title>
+        <programlisting role="php">
+<![CDATA[
+<?php
+
+include "bootstrap.php";
+
+$options = array
+(
+    'hostname' => SOLR_SERVER_HOSTNAME,
+    'login'    => SOLR_SERVER_USERNAME,
+    'password' => SOLR_SERVER_PASSWORD,
+    'port'     => SOLR_SERVER_PORT,
+    'timeout'  => SOLR_SERVER_TIMEOUT,
+    'secure'   => SOLR_SECURE,
+    'ssl_cert' => SOLR_SSL_CERT_ONLY,
+    'ssl_key'  => SOLR_SSL_KEY,
+    'ssl_keypassword' => SOLR_SSL_KEYPASSWORD,
+    'ssl_cainfo' => SOLR_SSL_CAINFO,
+);
+
+$client = new SolrClient($options);
+
+$query = new SolrQuery('*:*');
+
+$query->setFacet(true);
+
+$query->addFacetField('cat')->addFacetField('name')->setFacetMinCount(2)->setFacetMinCount(4, 'name');
+
+$updateResponse = $client->query($query);
+
+$response_array = $updateResponse->getResponse();
+
+$facet_data = $response_array->facet_counts->facet_fields;
+
+print_r($facet_data);
+
+?>
+]]>
+        </programlisting>
+        &example.outputs.similar;
+        <screen>
+            <![CDATA[
+SolrObject Object
+(
+    [cat] => SolrObject Object
+        (
+            [electronics] => 14
+            [memory] => 3
+            [Lucene] => 2
+            [Software] => 2
+            [card] => 2
+            [connector] => 2
+            [drive] => 2
+            [graphics] => 2
+            [hard] => 2
+            [monitor] => 2
+            [search] => 2
+            [software] => 2
+        )
+
+    [name] => SolrObject Object
+        (
+            [gb] => 6
+        )
+
+)
+]]>
+        </screen>
+    </example>
+    
 </chapter>
 
 <!-- Keep this comment at the end of the file
