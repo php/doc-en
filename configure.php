@@ -238,12 +238,6 @@ if (phpversion() < 5) {
     echo "PHP version: " . phpversion() . "\n";
 } // }}}
 
-// Reject (Temporarily) new LibXML installations, likely due to libxml bugfix #502960 {{{
-if (version_compare(LIBXML_DOTTED_VERSION, '2.7.4', '>=')) {
-	echo "PHP compiled with LibXML 2.7.3 or below is required. Version detected: " . LIBXML_DOTTED_VERSION . "\n";
-	exit(100);
-} // }}}
-
 echo "\n";
 
 $acd = array( // {{{
