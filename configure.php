@@ -590,10 +590,6 @@ flush(STDOUT);
 
 $dom->xinclude();
 
-$txml = $dom->saveXML();
-
-$dom->loadXML($txml, $LIBXML_OPTS|LIBXML_NSCLEAN);
-
 if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') { // {{{
     $dom->validate(); // we don't care if the validation works or not
     $node = $dom->getElementById($ac['PARTIAL']);
