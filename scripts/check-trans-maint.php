@@ -173,7 +173,7 @@ function fGetValidMaintainers($path) {
  */
 function fCheckTransDir($path) {
     $dir = dir($path);
-    $aIgnore = array('.', '..', 'CVS', '.cvsignore');
+    $aIgnore = array('.', '..', 'CVS', '.cvsignore', '.svn');
     while (false !== ($entry = $dir->read())) {
         if (in_array($entry, $aIgnore)) {
             continue;

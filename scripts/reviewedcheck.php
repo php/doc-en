@@ -86,7 +86,7 @@ continue;
            check_tag($dir, $file);
 
 
-         } elseif( is_dir($dir.$file) && $file != '.' && $file != '..' && $file != 'CVS' ) {
+         } elseif( is_dir($dir.$file) && $file != '.' && $file != '..' && $file != 'CVS' && $file != '.svn') {
            check_doc($dir.$file.'/');
          }
        }
