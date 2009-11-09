@@ -482,7 +482,7 @@ if ($ac['SEGFAULT_ERROR'] === 'yes') {
 }
 
 $compact = defined('LIBXML_COMPACT') ? LIBXML_COMPACT : 0;
-$LIBXML_OPTS = LIBXML_NOENT | LIBXML_NSCLEAN | $compact;
+$LIBXML_OPTS = LIBXML_NOENT | $compact;
 
 if ($ac['VERSION_FILES'] === 'yes') {
     $dom = new DOMDocument;
@@ -589,6 +589,10 @@ echo "Validating manual.xml... ";
 flush(STDOUT);
 
 $dom->xinclude();
+
+$txml = $dom->saveXML();
+
+$dom->loadXML($txml, $LIBXML_OPTS|LIBXML_NSCLEAN);
 
 if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') { // {{{
     $dom->validate(); // we don't care if the validation works or not
