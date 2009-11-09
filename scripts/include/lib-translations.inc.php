@@ -54,8 +54,8 @@ function is_translation_current ($filename_en, $filename_lang) {
 	
 	$match_en = $match_lang = array();
 
-	preg_match ("/<!-- .Revision: \d+\.(\d+) . -->/",    $en,   $match_en);
-	preg_match ("/<!--\s*EN-Revision:\s*\d+\.(\d+)\s*/", $lang, $match_lang);
+	preg_match ("/<!-- .Revision: (\d+) . -->/",    $en,   $match_en);
+	preg_match ("/<!--\s*EN-Revision:\s*(\d+)\s*/", $lang, $match_lang);
 	
 	if (empty($match_en[1]) || empty($match_lang[1])) {
 		trigger_error("Cannot extract Revision info for (LANG: $filename_lang) (EN: $filename_lang)", E_USER_WARNING);
