@@ -21,7 +21,7 @@
 
 if (isset($_SERVER["argv"][1])) {
 	$lang = $_SERVER["argv"][1];
-	$basedir = dirname(__FILE__) . "/..";
+	$basedir = dirname(__FILE__) ."/../../";
 }
 
 $output_html = false;
