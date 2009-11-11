@@ -14,7 +14,21 @@
    <methodparam choice="opt"><type>int</type><parameter>mode</parameter><initializer>OCI_COMMIT_ON_SUCCESS</initializer></methodparam>
   </methodsynopsis>
   <para>
-   Executes a previously parsed <parameter>statement</parameter>.
+   Executes a <parameter>statement</parameter> previously returned
+   from <function>oci_parse</function>.
+  </para>
+  <para>
+   After execution, statements like <literal>INSERT</literal> will
+   have data committed to the database by default.  For statements
+   like <literal>SELECT</literal>, execution performs the logic of the
+   query. Query results can subsequently be fetched in PHP with
+   functions like <function>oci_fetch_array</function>.
+  </para>
+  <para>
+   Each parsed statement may be executed multiple times, saving the
+   cost of re-parsing.  This is commonly used
+   for <literal>INSERT</literal> statements when data is bound
+   with <function>oci_bind_by_name</function>.
   </para>
  </refsect1>
 
@@ -34,16 +48,27 @@
      <term><parameter>mode</parameter></term>
      <listitem>
       <para>
-       Allows you to specify whether <function>oci_execute</function>
-       should immediately commit database changes.  The default value
-       is <constant>OCI_COMMIT_ON_SUCCESS</constant>.
-      </para>
-      <para>
-       If you don't want statements to be committed automatically,
-       specify <constant>OCI_NO_AUTO_COMMIT</constant> as
-       your <parameter>mode</parameter>.  Prior to PHP 5.3.2 and for
-       PECL oci8 &lt; 1.4 use <constant>OCI_DEFAULT</constant> which
-       is an alias for <constant>OCI_NO_AUTO_COMMIT</constant>.
+        An optional second parameter can be one of the following constants:
+        <simplelist>
+         <member>
+          <constant>OCI_COMMIT_ON_SUCCESS</constant> - Automatically
+          commit changes when the statement has succeeded. This is the
+          default.
+         </member>
+         <member>
+           <constant>OCI_NO_AUTO_COMMIT</constant> - Do not
+           automatically commit changes.  Prior to PHP 5.3.2 and for
+           PECL oci8 &lt; 1.4 use <constant>OCI_DEFAULT</constant>
+           which is an alias for <constant>OCI_NO_AUTO_COMMIT</constant>.
+         </member>
+         <member>
+           <constant>OCI_DESCRIBE_ONLY</constant> - Make query meta
+           data available to functions
+           like <function>oci_field_name</function> but do not create
+           a result set. Any subsequent fetch call such
+           as <function>oci_fetch_array</function> will fail.
+         </member>
+        </simplelist>
       </para>
       <para>
        When using <constant>OCI_NO_AUTO_COMMIT</constant> mode, you're
@@ -51,6 +76,10 @@
        back when the connection is closed, or when the script ends.
        Explicitly call <function>oci_commit</function> to commit a
        transaction, or <function>oci_rollback</function> to abort it.
+      </para>
+      <para>
+       Using transactions is recommended for relational data
+       consistency and for performance reasons.
       </para>
      </listitem>
     </varlistentry>
@@ -65,8 +94,103 @@
   </para>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>oci_execute</function> without specifying a mode example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$connection = oci_connect("hr", "welcome", "localhost/XE");
+
+$statement = oci_parse($connection, "INSERT INTO mytab (col1) VALUES (123)");
+
+oci_execute($statement); // The row is committed and immediately visible to other users
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_execute</function> with <constant>OCI_NO_AUTO_COMMIT</constant> example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$connection = oci_connect("hr", "welcome", "localhost/XE");
+
+$statement = oci_parse($connection, "INSERT INTO mytab (col1) VALUES (:bv)");
+oci_bind_by_name($statement, ":bv", $i, 10);
+for ($i = 1; $i <= 5; ++$i) {
+    oci_execute($statement, OCI_NO_AUTO_COMMIT);  // use OCI_DEFAULT for PHP <= 5.3.1
+}
+oci_commit($connection);  // commits all new values: 1, 2, 3, 4, 5
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_execute</function> with different commit modes example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$connection = oci_connect("hr", "welcome", "localhost/XE");
+
+$statement = oci_parse($connection, "INSERT INTO mytab (col1) VALUES (123)");
+oci_execute($statement, OCI_NO_AUTO_COMMIT);  // data not committed
+
+$statement = oci_parse($connection, "INSERT INTO mytab (col1) VALUES (456)");
+oci_execute($statement);  // commits both 123 and 456 values
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_execute</function> with
+     <constant>OCI_DESCRIBE_ONLY</constant> example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$connection = oci_connect("hr", "welcome", "localhost/XE");
+
+$statement = oci_parse($connection, "SELECT * FROM mytab");
+oci_execute($s, OCI_DESCRIBE_ONLY);
+for ($i = 1; $i <= oci_num_fields($statement); ++$i) {
+    echo oci_field_name($statement, $i) . "<br>\n";
+}
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </refsect1>
+
  <refsect1 role="notes">
   &reftitle.notes;
+  <note>
+   <para>
+    Any call to <function>oci_execute</function> that uses
+    OCI_COMMIT_ON_SUCCESS mode explicitly or by default will commit
+    any previous uncommitted transaction.
+   </para>
+   <para>
+    Any Oracle DDL statement such as CREATE or DROP will automatically
+    commit any uncommitted transaction.
+   </para>
+  </note>
   <note>
    <para>
     In PHP versions before 5.0.0 you must
