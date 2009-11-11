@@ -2,81 +2,89 @@
 <!-- $Revision$ -->
 <chapter xml:id="oci8.examples" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  &reftitle.examples;
- <section xml:id="oci8.examples-basic">
   <para>
+    Basic queries in oci8 use a prepare-execute-fetch sequence of steps.
    <example>
     <title>Basic query</title>
      <programlisting role="php">
 <![CDATA[
 <?php
 
-  $conn = oci_connect('hr', 'hr', 'orcl');
-  if (!$conn) {
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
     $e = oci_error();
-    print htmlentities($e['message']);
-    exit;
-  }
+    trigger_error(htmlentities($e['message']), E_USER_ERROR);
+}
 
-  $query = 'SELECT * FROM DEPARTMENTS';
-
-  $stid = oci_parse($conn, $query);
-  if (!$stid) {
+// Prepare the statement
+$stid = oci_parse($conn, 'SELECT * FROM departments');
+if (!$stid) {
     $e = oci_error($conn);
-    print htmlentities($e['message']);
-    exit;
-  }
+    trigger_error(htmlentities($e['message']), E_USER_ERROR);
+}
 
-  $r = oci_execute($stid, OCI_DEFAULT);
-  if (!$r) {
+// Perform the logic of the query
+$r = oci_execute($stid, OCI_DEFAULT);
+if (!$r) {
     $e = oci_error($stid);
-    echo htmlentities($e['message']);
-    exit;
-  }
+    trigger_error(htmlentities($e['message']), E_USER_ERROR);
+}
 
-  print '<table border="1">';
-  while ($row = oci_fetch_array($stid, OCI_RETURN_NULLS)) {
-    print '<tr>';
-       foreach ($row as $item) {
-         print '<td>'.($item?htmlentities($item):'&nbsp;').'</td>';
-       }
-       print '</tr>';
-  }
-  print '</table>';
+// Fetch the results of the query
+print "<table border='1'>\n";
+while ($row = oci_fetch_array($stid, OCI_ASSOC+OCI_RETURN_NULLS)) {
+    print "<tr>\n";
+    foreach ($row as $item) {
+        print "  <td>".($item != null ? htmlentities($item) : "&nbsp;")."</td>\n";
+    }
+    print "</tr>\n";
+}
+print "</table>\n";
 
-  oci_close($conn);
+oci_free_statement($stid);
+oci_close($conn);
+
 ?>
 ]]>
      </programlisting>
    </example>
   </para>
+
+
   <para>
+    Bind variables improve performance by allowing reuse of execution
+    contexts and caches.  Bind variables improve security by
+    preventing some kinds of SQL Injection problems.
    <example>
-    <title>Insert with bind variables</title>
+    <title>Inserting with bind variables</title>
      <programlisting role="php">
 <![CDATA[
 <?php
 
-  // Before running, create the table:
-  //   CREATE TABLE MYTABLE (mid NUMBER, myd VARCHAR2(20));
+// Before running, create the table:
+//   CREATE TABLE MYTABLE (mid NUMBER, myd VARCHAR2(20));
 
-  $conn = oci_connect('scott', 'tiger', 'orcl');
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message']), E_USER_ERROR);
+}
 
-  $query = 'INSERT INTO MYTABLE VALUES(:myid, :mydata)';
+$stid = oci_parse($conn, 'INSERT INTO MYTABLE (mid, myd) VALUES(:myid, :mydata)');
 
-  $stid = oci_parse($conn, $query);
+$id = 60;
+$data = 'Some data';
 
-  $id = 60;
-  $data = 'Some data';
+oci_bind_by_name($stid, ':myid', $id);
+oci_bind_by_name($stid, ':mydata', $data);
 
-  oci_bind_by_name($stid, ':myid', $id);
-  oci_bind_by_name($stid, ':mydata', $data);
+$r = oci_execute($stid);  // executes and commits
 
-  $r = oci_execute($stid);
-
-  if ($r)
+if ($r)
     print "One row inserted";
 
-  oci_close($conn);
+oci_free_statement($stid);
+oci_close($conn);
 
 ?>
 ]]>
@@ -86,6 +94,7 @@
 
 
   <para>
+    For large data use binary long object (BLOB) or character long object (CLOB) types.
   <example>
    <title>Inserting data into a CLOB column</title>
     <programlisting role="php">
@@ -95,7 +104,11 @@
 // Before running, create the table:
 //     CREATE TABLE MYTABLE (mykey NUMBER, myclob CLOB);
 
-$conn = oci_connect('scott', 'tiger', 'orcl');
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message']), E_USER_ERROR);
+}
 
 $mykey = 12343;  // arbitrary key for this example;
 
@@ -132,33 +145,95 @@ print '</table>';
    </programlisting>
   </example>
   </para>
+
+
   <para>
-   You can easily access stored procedures in the same way as you
-   would from the command line.
+   You can easily access stored PL/SQL functions and procedures.
   <example>
-   <title>Using Stored Procedures</title>
+   <title>Using a stored function </title>
     <programlisting role="php">
 <![CDATA[
 <?php
-// by webmaster at remoterealty dot com
-$sth = oci_parse($dbh, "begin sp_newaddress( :address_id, '$firstname',
- '$lastname', '$company', '$address1', '$address2', '$city', '$state',
- '$postalcode', '$country', :error_code );end;");
 
-// This calls stored procedure sp_newaddress, with :address_id being an
-// in/out variable and :error_code being an out variable.
-// Then you do the binding:
+/*
+  Before running the PHP program, create a stored function in
+  SQL*Plus or SQL Developer:
 
-   oci_bind_by_name($sth, ":address_id", $addr_id, 10);
-   oci_bind_by_name($sth, ":error_code", $errorcode, 10);
-   oci_execute($sth);
+  CREATE OR REPLACE FUNCTION myfunc(p IN NUMBER) RETURN NUMBER AS
+  BEGIN
+      RETURN p * 3;
+  END;
+
+*/
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message']), E_USER_ERROR);
+}
+
+$p = 8;
+
+$stid = oci_parse($conn, 'begin :r := myfunc(:p); end;');
+oci_bind_by_name($stid, ':p', $p);
+oci_bind_by_name($stid, ':r', $r, 40);
+
+oci_execute($stid);
+
+print "$r\n";   // prints 24
+
+oci_free_statement($stid);
+oci_close($conn);
 
 ?>
 ]]>
     </programlisting>
    </example>
   </para>
- </section>
+
+
+  <para>
+  <example>
+   <title>Using a stored procedure</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+/*
+  Before running the PHP program, create a stored procedure in
+  SQL*Plus or SQL Developer:
+
+  CREATE OR REPLACE PROCEDURE myproc(p1 IN NUMBER, p2 OUT NUMBER) AS
+  BEGIN
+      p2 := p1 * 2;
+  END;
+
+*/
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message']), E_USER_ERROR);
+}
+
+$p1 = 8;
+
+$stid = oci_parse($conn, 'begin myproc(:p1, :p2); end;');
+oci_bind_by_name($stid, ':p1', $p1);
+oci_bind_by_name($stid, ':p2', $p2, 40);
+
+oci_execute($stid);
+
+print "$p2\n";   // prints 16
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
 </chapter>
 
 <!-- Keep this comment at the end of the file
