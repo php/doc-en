@@ -17,11 +17,14 @@
    <methodparam choice="opt"><type>boolean</type><parameter>paired</parameter><initializer>&false;</initializer></methodparam>
   </methodsynopsis>
   <para>
-   If you elect not to connect immediately, you will need to call 
-   <function>connect</function>, <function>persistConnect</function>, 
-   <function>pairConnect</function>, or 
-   <function>pairPersistConnect</function> before doing any 
-   database operations.
+   If no parameters are passed, the constructor connects to "localhost:27017"
+   and returns.
+  </para>
+  <para>
+   If you elect not to connect immediately, (<parameter>connect</parameter> is
+   &false;) you will need to call <function>connect</function>, 
+   <function>persistConnect</function>, <function>pairConnect</function>, or 
+   <function>pairPersistConnect</function> before doing any database operations.
   </para>
 
   <informalexample>
@@ -64,7 +67,8 @@ $mongo->selectDB("foo")->command(array("distinct" => "bar", "key" => "age"));
      </term>
      <listitem>
       <para>
-       If the driver should connect to the database before returning.
+       If the constructor should connect to the database now.  If this is
+       &false;, the constructor will return without connecting to the database.
       </para>
      </listitem>
     </varlistentry>
@@ -104,6 +108,84 @@ $mongo->selectDB("foo")->command(array("distinct" => "bar", "key" => "age"));
   <para>
    Throws MongoConnectionException if it tries and fails to connect to the database.
   </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title><function>Mongo::__construct</function> paired connection example</title>
+   <para>
+    This example shows how to connect the driver to a replica pair of Mongo 
+    servers.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// pass a comma-separated list of server names to the constructor
+$m = new Mongo("www.example1.com,www.example2.com", false);
+$m->pairConnect();
+
+// if the database servers are not running on the default port (27017),
+// you'll need to specify the port
+$m2 = new Mongo("www.example1.com:12345,www.example.com:54321", false);
+$m2->pairConnect();
+
+// you can also do a paired connection in one line of code
+$m3 = new Mongo("www.example1.com,www.example.com", true, false, true);
+
+?>
+]]>
+   </programlisting>
+  </example>
+  <example>
+   <title><function>Mongo::__construct</function> persistent connection example</title>
+   <para>
+    A persistent connection will last for more than one request (usually... 
+    milage may vary depending on server).  It can save significant time to 
+    reuse connections, as creating a connection is a time-intensive process.
+   </para>
+   <para>
+    A persistent connection is identified by the server string and optional
+    "username" and "password" strings.  These strings are arbitrary and should
+    not be sensitive (i.e., a real password).  They are merely indended as 
+    unique identifiers for a connection.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// creates a persistent connection
+$m1 = new Mongo("localhost", true, true);
+
+// uses the same connection as $m1
+$m2 = new Mongo("localhost", false);
+$m2->persistConnect();
+
+// creates a new connection
+$m3 = new Mongo("127.0.0.1", false);
+$m3->persistConnect();
+
+// creates a new connection
+$m4 = new Mongo("127.0.0.1:27017", false);
+$m4->persistConnect();
+
+// creates a new connection
+$m5 = new Mongo("localhost", false);
+$m5->persistConnect("foo");
+
+// uses the $m5 connection
+$m6 = new Mongo("localhost", false);
+$m6->persistConnect("foo");
+
+// creates a new connection
+$m7 = new Mongo("localhost", false);
+$m7->persistConnect("foo", "bar");
+
+?>
+]]>
+   </programlisting>
+  </example>
  </refsect1>
 
 </refentry>
