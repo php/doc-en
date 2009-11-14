@@ -10,10 +10,14 @@
   &reftitle.description;
   <methodsynopsis>
    <type>array</type><methodname>oci_error</methodname>
-   <methodparam choice="opt"><type>resource</type><parameter>source</parameter></methodparam>
+   <methodparam choice="opt"><type>resource</type><parameter>resource</parameter></methodparam>
   </methodsynopsis>
   <para>
    Returns the last error found.
+  </para>
+  <para>
+   The function should be called immediately after an error occurs.
+   Errors are cleared by a successful statement.
   </para>
  </refsect1>
 
@@ -22,13 +26,14 @@
   <para>
    <variablelist>
     <varlistentry>
-     <term><parameter>source</parameter></term>
+     <term><parameter>resource</parameter></term>
      <listitem>
       <para>
-       For most errors, the parameter is the most appropriate resource
-       handle. For connection errors with <function>oci_connect</function>,
+       For most errors, <parameter>resource</parameter> is the
+       resource handle that was passed to the failing function call.
+       For connection errors with <function>oci_connect</function>,
        <function>oci_new_connect</function> or 
-       <function>oci_pconnect</function> do not pass a parameter.
+       <function>oci_pconnect</function> do not pass <parameter>resource</parameter>.
       </para>
      </listitem>
     </varlistentry>
@@ -39,11 +44,56 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   If no error is found, <function>oci_error</function>
-   returns &false;. <function>oci_error</function> returns the error as an
-   associative array. In this array, <literal>code</literal>
-   consists the oracle error code and <literal>message</literal>
-   the oracle error string.
+   If no error is found, <function>oci_error</function> returns
+   &false;. Otherwise, <function>oci_error</function> returns the
+   error information as an associative array.
+  </para>
+  <para>
+   <table>
+   <title><function>oci_error</function> Array Description</title>
+
+    <tgroup cols="3">
+     <thead>
+      <row>
+       <entry>Array key</entry>
+       <entry>Type</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry><literal>code</literal></entry>
+       <entry><type>integer</type></entry>
+       <entry>
+         The Oracle error number.
+       </entry>
+      </row>
+      <row>
+       <entry><literal>message</literal></entry>
+       <entry><type>string</type></entry>
+       <entry>
+         The Oracle error text.
+       </entry>
+      </row>
+      <row>
+       <entry><literal>offset</literal></entry>
+       <entry><type>integer</type></entry>
+       <entry>
+         The byte position of an error in the SQL statement.  If there
+         was no statement, this is <literal>0</literal>
+       </entry>
+      </row>
+      <row>
+       <entry><literal>sqltext</literal></entry>
+       <entry><type>string</type></entry>
+       <entry>
+         The SQL statement text.  If there was no statement, this is
+         an emptry string.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </table>
   </para>
  </refsect1>
 
@@ -60,11 +110,10 @@
      </thead>
      <tbody>
       <row>
-       <entry>4.3</entry>
+       <entry>PHP 4.3</entry>
        <entry>
-        <literal>offset</literal> and <literal>sqltext</literal> will
-        also be included in the return array to indicate the location
-        of the error and the original SQL text which caused it.
+        The <literal>offset</literal> and <literal>sqltext</literal>
+        entries were added.
        </entry>
       </row>
      </tbody>
@@ -80,10 +129,10 @@
     <title>Displaying the Oracle error message after a connection error</title>
     <programlisting role="php">
 <![CDATA[
-$conn = @oci_connect("scott", "tiger", "mydb");
+$conn = oci_connect("hr", "welcome", "localhost/XE");
 if (!$conn) {
-  $e = oci_error();   // For oci_connect errors pass no handle
-  echo htmlentities($e['message']);
+    $e = oci_error();   // For oci_connect errors do not pass a handle
+    echo htmlentities($e['message']);
 }
 ]]>
     </programlisting>
@@ -94,10 +143,10 @@ if (!$conn) {
     <title>Displaying the Oracle error message after a parsing error</title>
     <programlisting role="php">
 <![CDATA[
-$stmt = @oci_parse($conn, "select ' from dual");  // note mismatched quote
-if (!$stmt) {
-  $e = oci_error($conn);  // For oci_parse errors pass the connection handle
-  echo htmlentities($e['message']);
+$stid = oci_parse($conn, "select ' from dual");  // note mismatched quote
+if (!$stid) {
+    $e = oci_error($conn);  // For oci_parse errors pass the connection handle
+    echo htmlentities($e['message']);
 }
 ]]>
     </programlisting>
@@ -105,18 +154,19 @@ if (!$stmt) {
   </para>
   <para>
    <example>
-    <title>Displaying the Oracle error message and problematic statement
-     after an execution error</title>
+    <title>Displaying the Oracle error message, the problematic statement,
+     and the position of the problem of an execution error</title>
     <programlisting role="php">
 <![CDATA[
-$r = oci_execute($stmt);
+
+$r = oci_execute($stid);
 if (!$r) {
-  $e = oci_error($stmt); // For oci_execute errors pass the statementhandle
-  echo htmlentities($e['message']);
-  echo "<pre>";
-  echo htmlentities($e['sqltext']);
-  printf("\n%".($e['offset']+1)."s", "^");
-  echo "</pre>";
+    $e = oci_error($stid);  // For oci_execute errors pass the statement handle
+    print htmlentities($e['message']);
+    print "\n<pre>\n";
+    print htmlentities($e['sqltext']);
+    printf("\n%".($e['offset']+1)."s", "^");
+    print  "\n</pre>\n";
 }
 ]]>
     </programlisting>
@@ -128,10 +178,8 @@ if (!$r) {
   &reftitle.notes;
   <note>
    <para>
-    In PHP versions before 5.0.0 you must use <function>ocierror</function> instead.
-    This name still can be used, it was left as alias of
-    <function>oci_error</function> for downwards compatability.
-    This, however, is deprecated and not recommended.
+    In PHP versions before 5.0.0 you must
+    use <function>ocierror</function> instead. &oci.name.compat.note;
    </para>
   </note>
  </refsect1>
