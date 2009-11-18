@@ -3,8 +3,7 @@
 <refentry xml:id="function.oci-fetch-array" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>oci_fetch_array</refname>
-  <refpurpose>Returns the next row from the result data as an associative or
-   numeric array, or both
+  <refpurpose>Returns the next row from a query as an associative or numeric array
   </refpurpose>
  </refnamediv>
  
@@ -16,14 +15,12 @@
    <methodparam choice="opt"><type>int</type><parameter>mode</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Returns an array, which corresponds to the next result row.
+   Returns an array containing the next result-set row of a query.
+   Each array entry corresponds to a column of the row.  This function
+   is typically called in a loop until it returns &false;, indicating
+   no more rows exist.
   </para>
   &oci.datatypes;
-  <para>
-   It should be mentioned here, that <function>oci_fetch_array</function>
-   is <emphasis>insignificantly</emphasis> slower, than
-   <function>oci_fetch_row</function>, but much more handy.
-  </para>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -33,9 +30,7 @@
     <varlistentry>
      <term><parameter>statement</parameter></term>
      <listitem>
-      <para>
-       A valid OCI statement identifier.
-      </para>
+       &oci.arg.statement.id;
      </listitem>
     </varlistentry>
     <varlistentry>
@@ -44,71 +39,114 @@
       <para>
        An optional second parameter can be any combination of the following
        constants:
-       <simplelist>
-        <member>
-         <constant>OCI_BOTH</constant> - return an array with both associative
-         and numeric indices (the same as <constant>OCI_ASSOC</constant>
-         + <constant>OCI_NUM</constant>). This is the default behavior.
-        </member>
-        <member>
-         <constant>OCI_ASSOC</constant> - return an associative array
-         (as <function>oci_fetch_assoc</function> works).
-        </member>
-        <member>
-         <constant>OCI_NUM</constant> - return a numeric array,
-         (as <function>oci_fetch_row</function> works).
-        </member>
-        <member>
-         <constant>OCI_RETURN_NULLS</constant> - create empty elements
-         for the &null; fields.
-        </member>
-        <member>
-         <constant>OCI_RETURN_LOBS</constant> - return the value of a LOB
-         of the descriptor.
-        </member>
-       </simplelist>
-       Default <parameter>mode</parameter> is <constant>OCI_BOTH</constant>.
+       <table>
+        <title><function>oci_fetch_array</function> Modes</title>
+        <tgroup cols="2">
+         <thead>
+          <row>
+           <entry>Constant</entry>
+           <entry>Description</entry>
+          </row>
+         </thead>
+         <tbody>
+          <row>
+           <entry><constant>OCI_BOTH</constant></entry>
+           <entry>Returns an array with both associative and numeric
+            indices. This is the same
+            as <constant>OCI_ASSOC</constant>
+            + <constant>OCI_NUM</constant> and is the default
+            behavior.</entry>
+          </row>
+          <row>
+           <entry><constant>OCI_ASSOC</constant></entry>
+           <entry>Returns an associative array.</entry>
+          </row>
+          <row>
+           <entry><constant>OCI_NUM</constant></entry>
+           <entry>Returns a numeric array.</entry>
+          </row>
+          <row>
+           <entry><constant>OCI_RETURN_NULLS</constant></entry>
+           <entry>Creates elements for &null; fields.  The element
+             values will be a PHP <literal>NULL</literal>.
+           </entry>
+          </row>
+          <row>
+           <entry><constant>OCI_RETURN_LOBS</constant></entry>
+           <entry>Returns the contents of LOBs instead of the LOB
+             descriptors.</entry>
+          </row>
+         </tbody>
+        </tgroup>
+       </table>
+      </para>
+      <para>
+       The default <parameter>mode</parameter> is <constant>OCI_BOTH</constant>.
+      </para>
+      <para>
+       Use the addition operator &quot;+&quot; to specify more than
+       one mode at a time.
       </para>
      </listitem>
     </varlistentry>
    </variablelist>
+
   </para>
  </refsect1>
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns an array with both associative and numeric indices, or &false; if
-   there are no more rows in the <parameter>statement</parameter>.
+   Returns an array with associative and/or numeric indices. If there
+   are no more rows in the <parameter>statement</parameter> then
+   &false; is returned.
   </para>
-  &database.fetch-null;
-  <note>
-   <simpara>
-    Oracle returns all field names in uppercase and associative indices in
-    the result array will be uppercased too.
-   </simpara>
-  </note>
+  <para>
+    By default, <literal>LOB</literal> columns are returned as LOB descriptors.
+  </para>
+  <para>
+   <literal>DATE</literal> columns are returned as strings formatted
+   to the current date format.  The default format can be changed with
+   Oracle environment variables such as <literal>NLS_LANG</literal> or
+   by a previously executed <literal>ALTER SESSION SET
+   NLS_DATE_FORMAT</literal> command.
+  </para>
+  <para>
+   Oracle's default, non-case sensitive column names will have
+   uppercase associative indices in the result array.  Case-sensitive
+   column names will have array indices using the exact column case.
+   Use <function>var_dump</function> on the result array to verify the
+   appropriate case to use for each query.
+  </para>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
    <example>
-    <title><function>oci_fetch_array</function> with <constant>OCI_BOTH</constant> example</title>
+    <title><function>oci_fetch_array</function> with <constant>OCI_BOTH</constant></title>
     <programlisting role="php">
 <![CDATA[
 <?php
-$connection = oci_connect("apelsin", "kanistra");
 
-$query = "SELECT id, name FROM fruits";
-
-$statement = oci_parse ($connection, $query);
-oci_execute ($statement);
-
-while ($row = oci_fetch_array ($statement, OCI_BOTH)) {
-    echo $row[0]." and ".$row['ID']." is the same<br>";
-    echo $row[1]." and ".$row['NAME']." is the same<br>";
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
 }
+
+$stid = oci_parse($conn, 'SELECT department_id, department_name FROM departments');
+oci_execute($stid);
+
+while (($row = oci_fetch_array($stid, OCI_BOTH))) {
+    // Use the uppercase column names for the associative array indices
+    echo $row[0] . " and " . $row['DEPARTMENT_ID']   . " are the same<br>\n";
+    echo $row[1] . " and " . $row['DEPARTMENT_NAME'] . " are the same<br>\n";
+}
+
+oci_free_statement($stid);
+oci_close($conn);
+
 ?>
 ]]>
     </programlisting>
@@ -116,23 +154,39 @@ while ($row = oci_fetch_array ($statement, OCI_BOTH)) {
   </para>
   <para>
    <example>
-    <title><function>oci_fetch_array</function> with
-     <constant>OCI_NUM</constant> example</title>
+    <title><function>oci_fetch_array</function> with <constant>OCI_NUM</constant></title>
     <programlisting role="php">
 <![CDATA[
 <?php
-$connection = oci_connect("user", "password");
 
-$query = "SELECT id, name, lob_field FROM fruits";
+/*
+  Before running, create the table:
+      CREATE TABLE mytab (id NUMBER, description CLOB);
+      INSERT INTO mytab (id, description) values (1, 'A very long string');
+      COMMIT;
+*/
 
-$statement = oci_parse ($connection, $query);
-oci_execute ($statement);
-
-while ($row = oci_fetch_array ($statement, OCI_NUM)) {
-    echo $row[0]."<br>";
-    echo $row[1]."<br>";
-    echo $row[2]->read(100)."<br>";  //this will output first 100 bytes from LOB
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
 }
+
+$stid = oci_parse($conn, 'SELECT id, description FROM mytab');
+oci_execute($stid);
+
+while (($row = oci_fetch_array($stid, OCI_NUM))) {
+    echo $row[0] . "<br>\n";
+    echo $row[1]->read(11) . "<br>\n"; // this will output first 11 bytes from DESCRIPTION
+}
+
+// Output is:
+//    1
+//    A very long
+
+oci_free_statement($stid);
+oci_close($conn);
+
 ?>
 ]]>
     </programlisting>
@@ -140,23 +194,39 @@ while ($row = oci_fetch_array ($statement, OCI_NUM)) {
   </para>
   <para>
    <example>
-    <title><function>oci_fetch_array</function> with
-     <constant>OCI_ASSOC</constant> example</title>
+    <title><function>oci_fetch_array</function> with <constant>OCI_ASSOC</constant></title>
     <programlisting role="php">
 <![CDATA[
 <?php
-$connection = oci_connect("user", "password");
 
-$query = "SELECT id, name, lob_field FROM fruits";
+/*
+  Before running, create the table:
+      CREATE TABLE mytab (id NUMBER, description CLOB);
+      INSERT INTO mytab (id, description) values (1, 'A very long string');
+      COMMIT;
+*/
 
-$statement = oci_parse ($connection, $query);
-oci_execute ($statement);
-
-while ($row = oci_fetch_array ($statement, OCI_ASSOC)) {
-    echo $row['ID']."<br>";
-    echo $row['NAME']."<br>";
-    echo $row['LOB_FIELD']."<br>";  //this will output "Object id #1"
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
 }
+
+$stid = oci_parse($conn, 'SELECT id, description FROM mytab');
+oci_execute($stid);
+
+while (($row = oci_fetch_array($stid, OCI_ASSOC))) {
+    echo $row['ID'] . "<br>\n";
+    echo $row['DESCRIPTION']->read(11) . "<br>\n"; // this will output first 11 bytes from DESCRIPTION
+}
+
+// Output is:
+//    1
+//    A very long
+
+oci_free_statement($stid);
+oci_close($conn);
+
 ?>
 ]]>
     </programlisting>
@@ -164,38 +234,300 @@ while ($row = oci_fetch_array ($statement, OCI_ASSOC)) {
   </para>
   <para>
    <example>
-    <title><function>oci_fetch_array</function> with
-     <constant>OCI_RETURN_LOBS</constant> example</title>
+    <title><function>oci_fetch_array</function> with <constant>OCI_RETURN_NULLS</constant></title>
     <programlisting role="php">
 <![CDATA[
 <?php
-$connection = oci_connect("user", "password");
 
-$query = "SELECT id, name, lob_field FROM fruits";
-
-$statement = oci_parse ($connection, $query);
-oci_execute ($statement);
-
-while ($row = oci_fetch_array ($statement, (OCI_NUM+OCI_RETURN_LOBS))) {
-    echo $row[0]."<br>";
-    echo $row[1]."<br>";
-    echo $row['LOB_FIELD']."<br>";  //this will output LOB's content
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
 }
+
+$stid = oci_parse($conn, 'SELECT 1, null FROM dual');
+oci_execute($stid);
+while (($row = oci_fetch_array ($stid, OCI_ASSOC))) { // Ignore NULLs
+    var_dump($row);
+}
+
+/*
+The above code prints:
+  array(1) {
+    [1]=>
+    string(1) "1"
+  }
+*/
+
+$stid = oci_parse($conn, 'SELECT 1, null FROM dual');
+oci_execute($stid);
+while (($row = oci_fetch_array ($stid, OCI_ASSOC+OCI_RETURN_NULLS))) { // Fetch NULLs
+    var_dump($row);
+}
+
+/*
+The above code prints:
+  array(2) {
+    [1]=>
+    string(1) "1"
+    ["NULL"]=>
+    NULL
+  }
+*/
+
 ?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_fetch_array</function> with <constant>OCI_RETURN_LOBS</constant></title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+/*
+  Before running, create the table:
+      CREATE TABLE mytab (id NUMBER, description CLOB);
+      INSERT INTO mytab (id, description) values (1, 'A very long string');
+      COMMIT;
+*/
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$stid = oci_parse($conn, 'SELECT id, description FROM mytab');
+oci_execute($stid);
+
+while (($row = oci_fetch_array($stid, OCI_ASSOC+OCI_RETURN_LOBS))) {
+    echo $row['ID'] . "<br>\n";
+    echo $row['DESCRIPTION'] . "<br>\n"; // this contains all of DESCRIPTION
+}
+
+// Output is:
+//    1
+//    A very long string
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_fetch_array</function> with case sensitive column names</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+/*
+   Before running, create the table:
+      CREATE TABLE mytab ("Name" VARCHAR2(20), city VARCHAR2(20));
+      INSERT INTO mytab ("Name", city) values ('Chris', 'Melbourne');
+      COMMIT;
+*/
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$stid = oci_parse($conn, 'select * from mytab');
+oci_execute($stid);
+$row = oci_fetch_array($stid, OCI_ASSOC+OCI_RETURN_NULLS);
+
+// Because 'Name' was created as a case-sensitive column, that same
+// case is used for the array index.  However uppercase 'CITY' must
+// be used for the case-insensitive column index
+print $row['Name'] . "<br>\n";   //  prints Chris
+print $row['CITY'] . "<br>\n";   //  prints Melbourne
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_fetch_array</function> with columns having duplicate names</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+/*
+  Before running, create the tables:
+      CREATE TABLE mycity (id NUMBER, name VARCHAR2(20));
+      INSERT INTO mycity (id, name) values (1, 'Melbourne');
+      CREATE TABLE mycountry (id NUMBER, name VARCHAR2(20));
+      INSERT INTO mycountry (id, name) values (1, 'Australia');
+      COMMIT;
+*/
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$sql = 'SELECT mycity.name, mycountry.name
+        FROM mycity, mycountry
+        WHERE mycity.id = mycountry.id';
+$stid = oci_parse($conn, $sql);
+oci_execute($stid);
+$row = oci_fetch_array($stid, OCI_ASSOC);
+var_dump($row);
+
+// Output only contains one "NAME" entry:
+//    array(1) {
+//      ["NAME"]=>
+//      string(9) "Australia"
+//    }
+
+// To query a repeated column name, use a SQL column alias like "AS ctmn":
+$sql = 'SELECT mycity.name AS ctnm, mycountry.name 
+        FROM mycity, mycountry 
+        WHERE mycity.id = mycountry.id';
+$stid = oci_parse($conn, $sql);
+oci_execute($stid);
+$row = oci_fetch_array($stid, OCI_ASSOC);
+var_dump($row);
+
+// Output now contains both columns selected:
+//    array(2) {
+//      ["CTNM"]=>
+//      string(9) "Melbourne"
+//      ["NAME"]=>
+//      string(9) "Australia"
+//    }
+
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_fetch_array</function> with <literal>DATE</literal> columns</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+// Set the date format for this connection.
+// For performance reasons, consider changing the format
+// in a trigger or with environment variables instead
+$stid = oci_parse($conn, "ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD'");
+oci_execute($stid);
+
+$stid = oci_parse($conn, 'SELECT hire_date FROM employees WHERE employee_id = 188');
+oci_execute($stid);
+$row = oci_fetch_array($stid, OCI_ASSOC);
+echo $row['HIRE_DATE'] . "<br>\n";  // prints 1997-06-14
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_fetch_array</function> with <literal>REF CURSOR</literal></title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/*
+  Create the PL/SQL stored procedure as:
+
+  CREATE OR REPLACE PROCEDURE myproc(p1 OUT SYS_REFCURSOR) AS
+  BEGIN
+    OPEN p1 FOR SELECT * FROM all_objects WHERE ROWNUM < 5000;
+  END;
+*/
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$stid = oci_parse($conn, 'BEGIN myproc(:rc); END;');
+$refcur = oci_new_cursor($conn);
+oci_bind_by_name($stid, ':rc', $refcur, -1, OCI_B_CURSOR);
+oci_execute($stid);
+
+// Execute the returned REF CURSOR and fetch from it like a statement identifier
+oci_execute($refcur);  
+echo "<table border='1'>\n";
+while ($row = oci_fetch_array($refcur, OCI_ASSOC+OCI_RETURN_NULLS)) {
+    echo "<tr>\n";
+    foreach ($row as $item) {
+        echo "    <td>".($item !== null ? htmlentities($item, ENT_QUOTES) : "&nbsp;")."</td>\n";
+    }
+    echo "</tr>\n";
+}
+echo "</table>\n";
+
+oci_free_statement($refcur);
+oci_free_statement($stid);
+oci_close($conn);
+
+?> 
 ]]>
     </programlisting>
    </example>
   </para>
  </refsect1>
 
+ <refsect1 role="notes">
+  &reftitle.notes;
+  <note>
+   <para>
+    Associative array indices need to be in uppercase for standard
+    Oracle columns that were created with case insensitive names.
+   </para>
+  </note>
+  <note>
+   <para>
+    The function <function>oci_fetch_array</function>
+    is <emphasis>insignificantly</emphasis> slower than
+    <function>oci_fetch_assoc</function>
+    or <function>oci_fetch_row</function>, but is more flexible.
+   </para>
+  </note>
+ </refsect1>
+
  <refsect1 role="seealso">
   &reftitle.seealso;
   <para>
    <simplelist>
+    <member><function>oci_fetch</function></member>
+    <member><function>oci_fetch_all</function></member>
     <member><function>oci_fetch_assoc</function></member>
     <member><function>oci_fetch_object</function></member>
     <member><function>oci_fetch_row</function></member>
-    <member><function>oci_fetch_all</function></member>
    </simplelist>
   </para>
  </refsect1>
