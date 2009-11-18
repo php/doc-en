@@ -14,7 +14,7 @@
    <methodparam><type>string</type><parameter>sql_text</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Prepares the <parameter>sql_text</parameter>using
+   Prepares <parameter>sql_text</parameter> using
    <parameter>connection</parameter> and returns the statement identifier,
    which can be used with <function>oci_bind_by_name</function>, 
    <function>oci_execute</function> and other functions.
@@ -45,6 +45,12 @@
       <para>
        The SQL or PL/SQL statement.
       </para>
+      <para>
+       SQL statements <emphasis>should not</emphasis> end with a
+       semi-colon (&quot;;&quot;).  PL/SQL
+       statements <emphasis>should</emphasis> end with a semi-colon
+       (&quot;;&quot;).
+      </para>
      </listitem>
     </varlistentry>
    </variablelist>
@@ -62,13 +68,14 @@
   &reftitle.examples;
   <para>
    <example>
-    <title><function>oci_parse</function> example</title>
+    <title><function>oci_parse</function> example for SQL statements</title>
     <programlisting role="php">
 <![CDATA[
 <?php
 
 $conn = oci_connect('hr', 'welcome', 'localhost/XE');
 
+// Parse the statement. Note there is no final semi-colon in the SQL statement
 $stid = oci_parse($conn, 'SELECT * FROM employees');
 oci_execute($stid);
 
@@ -81,6 +88,49 @@ while ($row = oci_fetch_array($stid, OCI_ASSOC+OCI_RETURN_NULLS)) {
     echo "</tr>\n";
 }
 echo "</table>\n";
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_parse</function> example for PL/SQL statements</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+/*
+  Before running the PHP program, create a stored procedure in
+  SQL*Plus or SQL Developer:
+
+  CREATE OR REPLACE PROCEDURE myproc(p1 IN NUMBER, p2 OUT NUMBER) AS
+  BEGIN
+      p2 := p1 * 2;
+  END;
+
+*/
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$p1 = 8;
+
+// When parsing PL/SQL programs, there should be a final semi-colon in the string
+$stid = oci_parse($conn, 'begin myproc(:p1, :p2); end;');
+oci_bind_by_name($stid, ':p1', $p1);
+oci_bind_by_name($stid, ':p2', $p2, 40);
+
+oci_execute($stid);
+
+print "$p2\n";   // prints 16
+
+oci_free_statement($stid);
+oci_close($conn);
 
 ?>
 ]]>
@@ -101,8 +151,8 @@ echo "</table>\n";
   </note>
   <note>
    <para>
-    In PHP versions before 5.0.0 you must
-    use <function>ociparse</function> instead.  &oci.name.compat.note;
+    In PHP versions before 5.0.0 use <function>ociparse</function>
+    instead.  &oci.name.compat.note;
    </para>
   </note>
  </refsect1>
