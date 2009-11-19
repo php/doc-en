@@ -13,7 +13,7 @@
    <modifier>public</modifier> <type>boolean</type><methodname>MongoCollection::update</methodname>
    <methodparam><type>array</type><parameter>criteria</parameter></methodparam>
    <methodparam><type>array</type><parameter>newobj</parameter></methodparam>
-   <methodparam choice="opt"><type>boolean</type><parameter>upsert</parameter><initializer>&false;</initializer></methodparam>
+   <methodparam choice="opt"><type>array</type><parameter>options</parameter><initializer>&null;</initializer></methodparam>
   </methodsynopsis>
  </refsect1>
 
@@ -43,11 +43,32 @@
     </varlistentry>   
     <varlistentry>
      <term>
-      <parameter>upsert</parameter>
+      <parameter>options</parameter>
      </term>
      <listitem>
       <para>
-       If <literal>$newobj</literal> should be inserted if the criteria is not found.
+       This parameter is an associative array of the form 
+       <literal>array("optionname" => &lt;boolean&gt;, ...)</literal>. Currently 
+       supported options are: 
+       <itemizedlist>
+	<listitem>
+	 <para>
+	  <literal>"upsert"</literal>
+	 </para>
+	 <para>
+	  If no document matches $criteria, a new document will be created from 
+	  $criteria and $newobj (see upsert example below).
+	 </para>
+	</listitem>
+	<listitem>
+	 <para>
+	  <literal>"multiple"</literal>
+	 </para>
+	 <para>
+          All documents matching $criteria will be updated.
+	 </para>
+	</listitem>
+       </itemizedlist>
       </para>
      </listitem>
     </varlistentry>   
@@ -96,6 +117,60 @@ array(4) {
 }
 ]]>
    </screen>
+  </example>
+  <example>
+   <title><function>MongoCollection::update</function> upsert example</title>
+   <para>
+    Upserts can simplify code, as a single line can create the object if it does
+    not exist yet and update it if it does.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$c->drop();
+$c->update(array("uri" => "/summer_pics"), array("page hits" => array('$inc' => 1)), array("upsert" => true));
+var_dump($c->findOne());
+
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+array(3) {
+  ["_id"]=>
+  object(MongoId)#9 (0) {
+  }
+  ["uri"]=>
+  string(12) "/summer_pics"
+  ["page hits"]=>
+  int(1)
+}
+]]>
+   </screen>
+  </example>
+  <example>
+   <title><function>MongoCollection::update</function> multiple example</title>
+   <para>
+    By default, <function>MongoCollection::update</function> will only update
+    the first document matching $criteria that it finds.  Using the "multiple"
+    option can override this behavior, if needed.
+   </para>
+   <para>
+    This example adds a "gift" field to every person whose birthday is in the
+    next day.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$today = array('$gt' => new MongoDate(), '$lt' => new MongoDate(strtotime("+1 day")));
+$people->update("birthday" => $today), array('$set' => array('gift' => $surprise), array("multiple" => true));
+
+?>
+]]>
+   </programlisting>
   </example>
  </refsect1>
 </refentry>
