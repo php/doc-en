@@ -3,7 +3,7 @@
 <refentry xml:id="function.oci-define-by-name" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>oci_define_by_name</refname>
-  <refpurpose>Uses a PHP variable for the define-step during a SELECT</refpurpose>
+  <refpurpose>Associates a PHP variable with a column for query fetches</refpurpose>
  </refnamediv>
  
  <refsect1 role="description">
@@ -16,7 +16,11 @@
    <methodparam choice="opt"><type>int</type><parameter>type</parameter><initializer>SQLT_CHR</initializer></methodparam>
   </methodsynopsis>
   <para>
-   Defines PHP variables for fetches of SQL-Columns.
+   Associates a PHP variable with a column for query fetches using <function>oci_fetch</function>.
+  </para>
+  <para>
+    The <function>oci_define_by_name</function> call must occur before
+    executing <function>oci_execute</function>.
   </para>
  </refsect1>
 
@@ -27,22 +31,19 @@
     <varlistentry>
      <term><parameter>statement</parameter></term>
      <listitem>
-      <para>
-       A valid OCI statement identifier.
-      </para>
+       &oci.arg.statement.id;
      </listitem>
     </varlistentry>
     <varlistentry>
      <term><parameter>column_name</parameter></term>
      <listitem>
       <para>
-       The column name. Must be uppercased.
+       The column name used in the query.
       </para>
       <para>
-       Take into consideration that Oracle uses ALL-UPPERCASE column names, 
-       whereby in your select you can also use lowercase.
-       If you define a variable that doesn't exists in your select statement,
-       no error will be issued.
+       Use uppercase for Oracle's default, non-case sensitive column
+       names.  Use the exact column name case for case-sensitive
+       column names.
       </para>
      </listitem>
     </varlistentry>
@@ -50,7 +51,7 @@
      <term><parameter>variable</parameter></term>
      <listitem>
       <para>
-       The PHP variable.
+       The PHP variable that will contain the returned column value.
       </para>
      </listitem>
     </varlistentry>
@@ -58,11 +59,14 @@
      <term><parameter>type</parameter></term>
      <listitem>
       <para>
+        The data type to be returned.  Generally not needed.  Note that
+        Oracle-style data conversions are not performed.  For example,
+        <literal>SQLT_INT</literal> will be ignored and the returned
+        data type will still be <literal>SQLT_CHR</literal>.
       </para>
       <para>
-       If you need to define an abstract datatype (LOB/ROWID/BFILE) you must
-       allocate it first using <function>oci_new_descriptor</function>. See 
-       also the <function>oci_bind_by_name</function> function.
+       You can optionally use <function>oci_new_descriptor</function>
+       to allocate LOB/ROWID/BFILE descriptors.
       </para>
      </listitem>
     </varlistentry>
@@ -85,26 +89,173 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-/* oci_define_by_name example - thies at thieso dot net (980219) */
 
-$conn = oci_connect("scott", "tiger");
-
-$stmt = oci_parse($conn, "SELECT empno, ename FROM emp");
-
-/* the define MUST be done BEFORE oci_execute! */
-
-oci_define_by_name($stmt, "EMPNO", $empno);
-oci_define_by_name($stmt, "ENAME", $ename);
-
-oci_execute($stmt);
-
-while (oci_fetch($stmt)) {
-    echo "empno:" . $empno . "\n";
-    echo "ename:" . $ename . "\n";
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
 }
 
-oci_free_statement($stmt);
+$sql = 'SELECT location_id, city FROM locations WHERE location_id < 1200';
+$stid = oci_parse($conn, $sql);
+
+// The defines MUST be done before executing
+oci_define_by_name($stid, 'LOCATION_ID', $locid);
+oci_define_by_name($stid, 'CITY', $city);
+
+oci_execute($stid);
+
+// Each fetch populates the previously defined variables with the next row's data
+while (oci_fetch($stid)) {
+    echo "Location id $locid is $city<br>\n";
+}
+
+// Displays:
+//   Location id 1000 is Roma
+//   Location id 1100 is Venice
+
+oci_free_statement($stid);
 oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_define_by_name</function> with case sensitive column names</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+/*
+  Before running, create the table with a case sensitive column name:
+    CREATE TABLE mytab (id NUMBER, "MyDescription" VARCHAR2(30));
+    INSERT INTO mytab (id, "MyDescription") values (1, 'Iced Coffee');
+    COMMIT;
+*/
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$stid = oci_parse($conn, 'SELECT * FROM mytab');
+
+// Use uppercase for non case-sensitive column names
+oci_define_by_name($stid, 'ID', $id);
+
+// Use the exact case for case-sensitive column names
+oci_define_by_name($stid, 'MyDescription', $mydesc);
+
+oci_execute($stid);
+
+while (oci_fetch($stid)) {
+    echo "id $id is $mydesc<br>\n";
+}
+
+// Displays:
+//   id 1 is Iced Coffee
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_define_by_name</function> with LOB columns</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+/*
+  Before running, create the table:
+    CREATE TABLE mytab (id NUMBER, fruit CLOB);
+    INSERT INTO mytab (id, fruit) values (1, 'apple');
+    INSERT INTO mytab (id, fruit) values (2, 'orange');
+    COMMIT;
+*/
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$stid = oci_parse($conn, 'SELECT * FROM mytab');
+
+// The defines MUST be done before executing
+oci_define_by_name($stid, 'ID', $id);
+oci_define_by_name($stid, 'FRUIT', $fruit);  // $fruit will become a LOB descriptor
+
+oci_execute($stid);
+
+while (oci_fetch($stid)) {
+    echo $id . " is " . $fruit->load(100) . "<br>\n";
+}
+
+// Displays:
+//   1 is apple
+//   2 is orange
+
+$fruit->free();
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_define_by_name</function> with an explicit type</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+/*
+  Before running, create the table:
+    CREATE TABLE mytab (id NUMBER, fruit CLOB);
+    INSERT INTO mytab (id, fruit) values (1, 'apple');
+    INSERT INTO mytab (id, fruit) values (2, 'orange');
+    COMMIT;
+*/
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$stid = oci_parse($conn, 'SELECT * FROM mytab');
+
+// The defines MUST be done before executing
+oci_define_by_name($stid, 'ID', $id);
+
+$fruit = oci_new_descriptor($conn, OCI_D_LOB);
+oci_define_by_name($stid, 'FRUIT', $fruit, OCI_D_CLOB);
+
+oci_execute($stid);
+
+while (oci_fetch($stid)) {
+    echo $id . " is " . $fruit->load(100) . "<br>\n";
+}
+
+// Displays:
+//   1 is apple
+//   2 is orange
+
+$fruit->free();
+oci_free_statement($stid);
+oci_close($conn);
+
 ?>
 ]]>
     </programlisting>
@@ -116,12 +267,21 @@ oci_close($conn);
   &reftitle.notes;
   <note>
    <para>
-    In PHP versions before 5.0.0 you must use <function>ocidefinebyname</function> instead.
-    This name still can be used, it was left as alias of
-    <function>oci_define_by_name</function> for downwards compatability.
-    This, however, is deprecated and not recommended.
+    In PHP versions before 5.0.0
+    use <function>ocidefinebyname</function> instead.
+    &oci.name.compat.note;
    </para>
   </note>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><function>oci_fetch</function></member>
+    <member><function>oci_new_descriptor</function></member>
+   </simplelist>
+  </para>
  </refsect1>
 
 </refentry>
