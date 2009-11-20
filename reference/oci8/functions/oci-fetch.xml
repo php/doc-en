@@ -3,7 +3,7 @@
 <refentry xml:id="function.oci-fetch" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>oci_fetch</refname>
-  <refpurpose>Fetches the next row into result-buffer</refpurpose>
+  <refpurpose>Fetches the next row from a query into internal buffers</refpurpose>
  </refnamediv>
  
  <refsect1 role="description">
@@ -13,10 +13,15 @@
    <methodparam><type>resource</type><parameter>statement</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Fetches the next row (for SELECT statements) into the internal
-   result-buffer.
+   Fetches the next row from a query into internal buffers accessible
+   either with <function>oci_result</function>, or by using variables
+   previously defined with <function>oci_define_by_name</function>.
   </para>
-  &oci.datatypes;
+  <para>
+    See <function>oci_fetch_array</function> for general information
+    about fetching data.
+  </para>
+
  </refsect1>
 
  <refsect1 role="parameters">
@@ -26,9 +31,7 @@
     <varlistentry>
      <term><parameter>statement</parameter></term>
      <listitem>
-      <para>
-       A valid OCI statement identifier.
-      </para>
+       &oci.arg.statement.id;
      </listitem>
     </varlistentry>
    </variablelist>
@@ -43,16 +46,106 @@
   </para>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>oci_fetch</function> with defined variables</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$sql = 'SELECT location_id, city FROM locations WHERE location_id < 1200';
+$stid = oci_parse($conn, $sql);
+
+// The defines MUST be done before executing
+oci_define_by_name($stid, 'LOCATION_ID', $locid);
+oci_define_by_name($stid, 'CITY', $city);
+
+oci_execute($stid);
+
+// Each fetch populates the previously defined variables with the next row's data
+while (oci_fetch($stid)) {
+    echo "Location id $locid is $city<br>\n";
+}
+
+// Displays:
+//   Location id 1000 is Roma
+//   Location id 1100 is Venice
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_fetch</function> with <function>oci_result</function></title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$sql = 'SELECT location_id, city FROM locations WHERE location_id < 1200';
+$stid = oci_parse($conn, $sql);
+oci_execute($stid);
+
+while (oci_fetch($stid)) {
+    echo oci_result($stid, 'LOCATION_ID') . " is ";
+    echo oci_result($stid, 'CITY') . "<br>\n";
+}
+
+// Displays:
+//   1000 is Roma
+//   1100 is Venice
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </refsect1>
+
  <refsect1 role="notes">
   &reftitle.notes;
   <note>
    <para>
-    In PHP versions before 5.0.0 you must use <function>ocifetch</function> instead.
-    This name still can be used, it was left as alias of
-    <function>oci_fetch</function> for downwards compatability.
-    This, however, is deprecated and not recommended.
+    In PHP versions before 5.0.0 use <function>ocifetch</function>
+    instead.  &oci.name.compat.note;
    </para>
   </note>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><function>oci_define_by_name</function></member>
+    <member><function>oci_fetch_all</function></member>
+    <member><function>oci_fetch_array</function></member>
+    <member><function>oci_fetch_assoc</function></member>
+    <member><function>oci_fetch_object</function></member>
+    <member><function>oci_fetch_row</function></member>
+    <member><function>oci_result</function></member>
+   </simplelist>
+  </para>
  </refsect1>
 
 </refentry>
