@@ -3,12 +3,361 @@
  <chapter xml:id="internals2.funcs" xmlns="http://docbook.org/ns/docbook">
   <title>Writing functions</title>
   <para>
-  PHP is also known as a Glue language, and extending it, can be easily done
-with those extensions generators. When you use ext_skel and a prototype file
-to generate the C function stubs, you will notice that all of the exported
-functions created have a simple prototype such as the following:
-PHP_FUNCTION(func_name)
+   One core element of an extension are functions which are exported to the
+   PHP userland. Even when you're planning to write object-oriented extensions
+   you are advised to read this chapter as most of the information is valid
+   for methods, too.
   </para>
+
+  <para>
+   When adding a function to an extension, for instance after using the
+   <link linkend="internals2.buildsys.skeleton">ext_skel</link> script to
+   create the raw infrastructure, you can create a function by implementing it
+   as a C function and then providing an entry for the extension's function
+   table. The function entry can contain a pointer to an argument information
+   structure. Providing this information ins not strictly necessary, unless
+   you plan to accept parameters by reference or want to return a reference, but
+   provides information that can be accessed via PHP's <link
+   linkend="book.reflection">Reflection API</link>. As you will see below the 
+   parameters aren't passed as direct function parameters to the implementation
+   but passed on a stack, which is checked by the function's implementation
+   which can't directly serve as source for this information.
+  </para>
+
+  <example xml:id="internals2.funcs.index.minimalext">
+   <title>Minimal PHP extension with one function</title>
+   <programlisting role="c">
+<![CDATA[
+/* {{{ proto void hello_world()
+       Do nothing */
+PHP_FUNCTION(hello_world)
+{
+}
+/* }}} */
+
+/* {{{ arginfo_hello_world */
+ZEND_BEGIN_ARG_INFO(arginfo_hello_world, 0)
+ZEND_END_ARG_INFO()
+/* }}} */
+
+/* {{{ demo_functions */
+function_entry demo_functions[] = {
+    PHP_FE(hello_world, arginfo_hello_world)
+    {NULL, NULL, NULL}
+}
+/* }}} */
+
+/* {{{ demo_module_enry */
+zend_module_entry demo_module_entry = {
+#if ZEND_MODULE_API_NO >= 20010901
+    STANDARD_MODULE_HEADER,
+#endif
+    "demo",
+    demo_functions,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+#if ZEND_MODULE_API_NO >= 20010901
+    "1.0.0",
+#en
+    STANDARD_MODULE_PROPERTIES
+}
+/* }}} */
+]]>
+   </programlisting>
+  </example>
+
+  <para>
+   In his example you can see the above discussed elements and the module
+   structure, if you don't remember his strucure go back to
+   <xref linkend="internals2.structure.modstruct"/>.
+  </para>
+
+  <para>
+   The first part of this extension is the actual implementation. As a
+   convention each exported function is preceded by a two line comment
+   describing the function's userland prototype and a short one line comment.
+  </para>
+
+  <para>
+   For providing source code compatibility between different versions of PHP
+   the functions declaration is wrapped into the <code>PHP_FUNCTION</code>
+   macro. The compiler's preprocessor will, when using PHP 5.3 transform this
+   into a function like this:
+  </para>
+
+  <screen>
+<![CDATA[
+void zif_hello_world(int ht, zval *return_value, zval **return_value_ptr,
+                     zval *this_ptr, int return_value_used TSRMLS_DC)
+{
+}
+]]>
+  </screen>
+
+  <para>
+   For preventing a naming conflict between a function exported to userland
+   and another C function with the same name the C symbol of the exported
+   function is prefixed with the prefix <code>zif_</code>. You can also see
+   that this prototype doesn't reference the argument stack. Accessing
+   parameters passed from PHP is described below. The following table lists
+   the C level parameters which are also defined in the
+   <code>INTERNAL_FUNCTION_PARAMETERS</code> macro. Mind that these parameters 
+   might change between PHP versions and you should use the provide macros.
+  </para>
+
+  <table xml:id="internals2.funcs.index.internal_func_params">
+   <title>INTERNAL_FUNCTION_PARAMETERS</title>
+   <tgroup cols="3">
+    <thead>
+     <row>
+      <entry>Name and type</entry>
+      <entry>Description</entry>
+      <entry>Access macros</entry>
+     </row>
+    </thead>
+    <tbody>
+                                                    
+     <row>
+      <entry><code>int ht</code></entry>
+      <entry>Number of actual parameters passed by user</entry>
+      <entry><code>ZEND_NUM_ARGS()</code></entry>
+     </row>
+
+     <row>
+      <entry><code>zval *return_value</code></entry>
+      <entry>
+       Pointer to a PHP variable that can be filled with the return value
+       passed to the user. The default type is <code>IS_NULL</code>.
+      </entry>
+      <entry><code>RETVAL_*</code>, <code>RETURN_*</code></entry>
+     </row>
+
+     <row>
+      <entry><code>zval **return_value_ptr</code></entry>
+      <entry>When returning data by reference to PHP set this to a pointer to
+       your variable. It is not suggested to returning by reference.</entry>
+      <entry/>
+     </row>
+
+     <row>
+      <entry><code>zval *this_ptr</code></entry>
+      <entry>
+       In case this is a method call this points to the PHP variable
+       holding the <code>$this</code> object.
+      </entry>
+      <entry><code>getThis()</code></entry>
+     </row>
+
+     <row>
+      <entry><code>int return_value_used</code></entry>
+      <entry>
+       Flag indicating whether the returned value will be used by the
+       caller.
+      </entry>
+      <entry/>
+     </row>
+
+    </tbody>
+   </tgroup>
+  </table>
+
+  <para>
+   As said the function shown above will simply return NULL to the user and do
+   nothing else. The function can be called, from the PHP userland, with an
+   arbitrary number of parameters. A more useful function consists of four
+   parts in general:
+  </para>
+
+  <orderedlist>
+   <listitem>
+    <para>
+     Declaration of local variables. In C we have to declare locale vars, so
+     we do this at the functions top.
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     Parameter parsing. PHP passes parameters on a special stack, we have to
+     read them from there, verify the types, cast them if needed and bail out
+     in case something goes wrong.
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     Actual logic. Do whatever is needed.
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     Set the return value, cleanup, return.
+    </para>
+   </listitem>
+  </orderedlist>
+
+  <para>
+   In some cases the exact order of these steps may change. Especially the
+   last two steps are often mixed up, but it's a good idea to stay in that
+   order.
+  </para>
+
+  <example xml:id="internals2.funcs.index.simplefunc">
+   <title>A  simple function</title>
+   <programlisting role="c">
+<![CDATA[
+/* {{{ proto void hello_world(string name)
+   Greets a user */
+PHP_FUNCTION(hello_world)
+{
+    char *name;
+    int name_len;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &name, &name_len) == FAILURE) {
+        return;
+    }
+
+    php_printf("Hello %s!", name);
+
+    RETURN_TRUE;
+}
+/* }}} */
+]]]>
+   </programlisting>
+  </example>
+
+  <para>
+   The function above shows these parts. Let's start the analysis with the
+   last lines: <code>php_printf</code> is - as one can guess easily - PHP's
+   version of standard C's <code>printf</code>. Unlike <code>printf</code> it
+   doesn't print to the process's <code>STDOUT</code> channel but to the
+   current output stream, which might be buffered by the user. It should be
+   noted that <code>php_printf</code>, unlike most parts of PHP's API is not
+   binary safe, so if <code>name</code> contains a NULL-byte the rest would be
+   ignored. For a binary safe output <code>PHPWRITE</code> should be used.
+  </para>
+
+  <note>
+   <simpara>
+    In general it is considered to directly print data to the output stream,
+    it is suggested to return data as string to the user instead so the user
+    can decide what to do. Exceptions to this rule might be functions dealing
+    with binary data like images while your API should provide a way to access
+    the data even there.
+   </simpara>
+  </note>
+
+  <para>
+   The <code>RETURN_TRUE</code> macro in the last line does three things: It
+   sets the type of the variable we got as <code>return_value</code> pointer to
+   <code>IS_BOOLEAN</code> and the value to a <code>true</code> value. Then it
+   returns from the C function. So when using this macro you're housekeeping
+   for memory and other resources has to be completed as further code of
+   this function won't be executed.
+  </para>
+
+  <para>
+   The <code>zend_parse_parameters()</code> function is responsible for reading
+   the parameters passed by the user from the argument stack and putting it
+   with proper casting in local C variables. If the user doesn't pass the wrong
+   number of parameters or types that can't be casted the function will emit a
+   verbose error and return <code>FAILURE</code>. In that case we simply return
+   from the function - by not changing the <code>return_value</code> the 
+   default return value of <code>NULL</code> will be returned to the user.
+  </para>
+
+  <note>
+   <simpara>
+    Please mind that <code>FAILURE</code> is represented by a <code>-1</code> 
+    and <code>SUCCESS</code> by <code>0</code>. To make the could clear you 
+    should always use the named constants for comparing the value.
+   </simpara>
+  </note>
+
+  <para>
+   The first parameter to <code>zend_parse_parameters()</code> is the number of
+   parameters that have actually been passed to the function by the user. The
+   number is passed as <code>ht</code> parameter to our function but, as
+   discussed above, this should be considered as an implementation detail and
+   <code>ZEND_NUM_ARGS()</code> should be used.
+  </para>
+
+  <para>
+   For compatibility with PHP's thread-isolation, the thread-safe resource
+   manager, we also have to pass the thread context using
+   <code>TSRMLS_CC</code>. Unlike in other functions this can't be the last
+   parameter as <code>zend_parse_parameters</code> expects a variable number of
+   parameters - depending on the number of user-parameters to read.
+  </para>
+
+  <para>
+   Following the thread context the expected parameters are declared. Each
+   parameter is represented by a character in the string describing the type.
+   In our case we expect one parameter as a string so our type specification
+   is simply <code>"s"</code>.
+  </para>
+
+  <para>
+   Lastly one has to pass one or more pointers to C variables which should be
+   filled with the variable's value or provide more details. In the case of a
+   string we get the actual string, which will always be NULL-terminated, as a
+   <code>char*</code> and its length, excluding the NULL-byte, as
+   <code>int</code>.
+  </para>
+
+  <para>
+   A documentation of all type specifiers and the corresponding additional C
+   types can be found in the file <code>README.PARAMETER_PARSING_API</code>
+   which is part of the source distribution. The most important types can be 
+   found in the table below.
+  </para>
+
+  <table xml:id="internals2.funcs.index.zend_pars_params_types">
+   <title>zend_parse_parameters() type specifiers</title>
+   <tgroup cols="3">
+    <thead>
+     <row>
+      <entry>Modifier</entry>
+      <entry>Additional parameter types</entry>
+      <entry>Description</entry>
+     </row>
+    </thead>
+    <tbody>
+
+     <row>
+      <entry><code>b</code></entry>
+      <entry><code>zend_bool</code></entry>
+      <entry>Boolean value</entry>
+     </row>
+
+     <row>
+      <entry><code>l</code></entry>
+      <entry><code>long</code></entry>
+      <entry>A integer (long) value</entry>
+     </row>
+
+     <row>
+      <entry><code>d</code></entry>
+      <entry><code>double</code></entry>
+      <entry>A float (double) value</entry>
+     </row>
+
+     <row>
+      <entry><code>s</code></entry>
+      <entry><code>char*, int</code></entry>
+      <entry>A binary safe string</entry>
+     </row>
+
+     <row>
+      <entry><code>h</code></entry>
+      <entry><code>HashTable*</code></entry>
+      <entry>An array's hash table</entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </table>
+
  </chapter>
 
 <!-- Keep this comment at the end of the file
