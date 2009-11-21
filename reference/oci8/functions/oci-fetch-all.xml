@@ -3,7 +3,7 @@
 <refentry xml:id="function.oci-fetch-all" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>oci_fetch_all</refname>
-  <refpurpose>Fetches all rows of result data into an array</refpurpose>
+  <refpurpose>Fetches multiple rows from a query into a two-dimensional array</refpurpose>
  </refnamediv>
  
  <refsect1 role="description">
@@ -14,13 +14,16 @@
    <methodparam><type>array</type><parameter role="reference">output</parameter></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>skip</parameter><initializer>0</initializer></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>maxrows</parameter><initializer>-1</initializer></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>flags</parameter><initializer>0</initializer></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>flags</parameter><initializer><constant>OCI_FETCHSTATEMENT_BY_COLUMN</constant> + <constant>OCI_ASSOC</constant></initializer></methodparam>
   </methodsynopsis>
   <para>
-   Fetches all the rows from a result into a user-defined array.
-   Call this function only once for each statement.
+   Fetches multiple rows from a query into a two-dimensional array.
+   By default, all rows are returned.
   </para>
-  &oci.datatypes;
+  <para>
+   This function can be called only once for each query executed
+   with <function>oci_execute</function>.
+  </para>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -30,23 +33,28 @@
     <varlistentry>
      <term><parameter>statement</parameter></term>
      <listitem>
-      <para>
-       A valid OCI statement identifier.
-      </para>
+       &oci.arg.statement.id;
      </listitem>
     </varlistentry>
     <varlistentry>
      <term><parameter>output</parameter></term>
      <listitem>
-      &database.fetch-null;
+      <para>
+       The variable to contain the returned rows.
+      </para>
+      <para>
+        See <function>oci_fetch_array</function> for information on
+        how data and types are fetched.
+      </para>
      </listitem>
     </varlistentry>
     <varlistentry>
      <term><parameter>skip</parameter></term>
      <listitem>
       <para>
-       The number of initial rows to ignore when fetching the result (default
-       value of 0, to start at the first line).
+       The number of initial rows to discard when fetching the
+       result. The default value is 0, so the first row onwards is
+       returned.
       </para>
      </listitem>
     </varlistentry>
@@ -54,8 +62,8 @@
      <term><parameter>maxrows</parameter></term>
      <listitem>
       <para>
-       The number of rows to read, starting at the <parameter>skip</parameter>th
-       row (default to -1, meaning all the rows).
+       The number of rows to return.  The default is -1 meaning return
+       all the rows from <parameter>skip</parameter> + 1 onwards.
       </para>
      </listitem>
     </varlistentry>
@@ -63,22 +71,73 @@
      <term><parameter>flags</parameter></term>
      <listitem>
       <para>
-       Parameter <parameter>flags</parameter> can be any combination of
-       the following:
-       <simplelist>
-        <member>
-         <constant>OCI_FETCHSTATEMENT_BY_ROW</constant>
-        </member>
-        <member>
-         <constant>OCI_FETCHSTATEMENT_BY_COLUMN</constant> (default value)
-        </member>
-        <member>
-         <constant>OCI_NUM</constant>
-        </member>
-        <member>
-         <constant>OCI_ASSOC</constant>
-        </member>
-       </simplelist>
+       Parameter <parameter>flags</parameter> indicates the array
+       structure and whether associative arrays should be used.
+       <table>
+        <title><function>oci_fetch_all</function> Array Structure Modes</title>
+        <tgroup cols="2">
+         <thead>
+          <row>
+           <entry>Constant</entry>
+           <entry>Description</entry>
+          </row>
+         </thead>
+         <tbody>
+          <row>
+           <entry><constant>OCI_FETCHSTATEMENT_BY_ROW</constant></entry>
+           <entry>The outer array will contain one sub-array per query
+           row.</entry>
+          </row>
+          <row>
+           <entry><constant>OCI_FETCHSTATEMENT_BY_COLUMN</constant></entry>
+           <entry>The outer array will contain one sub-array per query
+           column. This is the default.</entry>
+          </row>
+         </tbody>
+        </tgroup>
+       </table>
+      </para>
+      <para>
+        Arrays can be indexed by column heading or numerically.
+       <table>
+        <title><function>oci_fetch_all</function> Array Index Modes</title>
+        <tgroup cols="2">
+         <thead>
+          <row>
+           <entry>Constant</entry>
+           <entry>Description</entry>
+          </row>
+         </thead>
+         <tbody>
+          <row>
+           <entry><constant>OCI_NUM</constant></entry>
+           <entry>Numeric indexes are used for each column's array.</entry>
+          </row>
+          <row>
+           <entry><constant>OCI_ASSOC</constant></entry>
+           <entry>Associative indexes are used for each column's
+           array. This is the default.</entry>
+          </row>
+         </tbody>
+        </tgroup>
+       </table>
+      </para>
+      <para>
+       Use the addition operator &quot;+&quot; to choose a combination
+       of array structure and index modes.
+      </para>
+      <para>
+       Oracle's default, non-case sensitive column names will have
+       uppercase array keys.  Case-sensitive column names will have
+       array keys using the exact column case.
+       Use <function>var_dump</function>
+       on <parameter>output</parameter>to verify the appropriate case
+       to use for each query.
+      </para>
+      <para>
+        Queries that have more than one column with the same name
+        should use column aliases.  Otherwise only one of the columns
+        will appear in an associative array.
       </para>
      </listitem>
     </varlistentry>
@@ -89,7 +148,8 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns the number of rows fetched &return.falseforfailure;. 
+   Returns the number of rows in <parameter>output</parameter>, which
+   may be 0 or more, &return.falseforfailure;.
   </para>
  </refsect1>
 
@@ -101,38 +161,150 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-/* oci_fetch_all example mbritton at verinet dot com (990624) */
 
-$conn = oci_connect("scott", "tiger");
-
-$stmt = oci_parse($conn, "select * from emp");
-
-oci_execute($stmt);
-
-$nrows = oci_fetch_all($stmt, $results);
-if ($nrows > 0) {
-   echo "<table border=\"1\">\n";
-   echo "<tr>\n";
-   foreach ($results as $key => $val) {
-      echo "<th>$key</th>\n";
-   }
-   echo "</tr>\n";
-
-   for ($i = 0; $i < $nrows; $i++) {
-      echo "<tr>\n";
-      foreach ($results as $data) {
-         echo "<td>$data[$i]</td>\n";
-      }
-      echo "</tr>\n";
-   }
-   echo "</table>\n";
-} else {
-   echo "No data found<br />\n";
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
 }
-echo "$nrows Records Selected<br />\n";
 
-oci_free_statement($stmt);
+$stid = oci_parse($conn, 'SELECT POSTAL_CODE, CITY FROM locations WHERE ROWNUM < 3');
+oci_execute($stid);
+
+$nrows = oci_fetch_all($stid, $res);
+
+echo "$nrows rows fetched<br>\n";
+var_dump($res);
+
+// var_dump output is:
+//    2 rows fetched
+//    array(2) {
+//      ["POSTAL_CODE"]=>
+//      array(2) {
+//        [0]=>
+//        string(6) "00989x"
+//        [1]=>
+//        string(6) "10934x"
+//      }
+//      ["CITY"]=>
+//      array(2) {
+//        [0]=>
+//        string(4) "Roma"
+//        [1]=>
+//        string(6) "Venice"
+//      }
+//    }
+
+// Pretty-print the results
+echo "<table border='1'>\n";
+foreach ($res as $col) {
+    echo "<tr>\n";
+	foreach ($col as $item) {
+        echo "    <td>".($item !== null ? htmlentities($item, ENT_QUOTES) : "&nbsp;")."</td>\n";
+	}	
+    echo "</tr>\n";
+}
+echo "</table>\n";
+
+oci_free_statement($stid);
 oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_fetch_all</function> example with <constant>OCI_FETCHSTATEMENT_BY_ROW</constant></title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$stid = oci_parse($conn, 'SELECT POSTAL_CODE, CITY FROM locations WHERE ROWNUM < 3');
+oci_execute($stid);
+
+$nrows = oci_fetch_all($stid, $res, null, null, OCI_FETCHSTATEMENT_BY_ROW);
+
+echo "$nrows rows fetched<br>\n";
+var_dump($res);
+
+// Output is:
+//    2 rows fetched
+//    array(2) {
+//      [0]=>
+//      array(2) {
+//        ["POSTAL_CODE"]=>
+//        string(6) "00989x"
+//        ["CITY"]=>
+//        string(4) "Roma"
+//      }
+//      [1]=>
+//      array(2) {
+//        ["POSTAL_CODE"]=>
+//        string(6) "10934x"
+//        ["CITY"]=>
+//        string(6) "Venice"
+//      }
+//    }
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_fetch_all</function> with <constant>OCI_NUM</constant></title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$stid = oci_parse($conn, 'SELECT POSTAL_CODE, CITY FROM locations WHERE ROWNUM < 3');
+oci_execute($stid);
+
+$nrows = oci_fetch_all($stid, $res, null, null, OCI_FETCHSTATEMENT_BY_ROW + OCI_NUM);
+
+echo "$nrows rows fetched<br>\n";
+var_dump($res);
+
+// Output is:
+//    2 rows fetched
+//    array(2) {
+//      [0]=>
+//      array(2) {
+//        [0]=>
+//        string(6) "00989x"
+//        [1]=>
+//        string(4) "Roma"
+//      }
+//      [1]=>
+//      array(2) {
+//        [0]=>
+//        string(6) "10934x"
+//        [1]=>
+//        string(6) "Venice"
+//      }
+//    }
+
+oci_free_statement($stid);
+oci_close($conn);
+
 ?>
 ]]>
     </programlisting>
@@ -144,12 +316,45 @@ oci_close($conn);
   &reftitle.notes;
   <note>
    <para>
-    In PHP versions before 5.0.0 you must use <function>ocifetchstatement</function> instead.
-    This name still can be used, it was left as alias of
-    <function>oci_fetch_all</function> for downwards compatability.
-    This, however, is deprecated and not recommended.
+     Using <parameter>skip</parameter> is very inefficient.  All the
+     rows to be skipped are included in the result set that is
+     returned from the database to PHP.  They are then discarded.  It
+     is more efficient to use SQL to restrict the offset and range of
+     rows in the query.  See <function>oci_fetch_array</function> for
+     an example.
    </para>
   </note>
+  <note>
+   <para>
+    Queries that return a large number of rows can be more memory
+    efficient if a single-row fetching function
+    like <function>oci_fetch_array</function> is used.
+   </para>
+  </note>
+  <note>
+   &oci.use.setprefetch;
+  </note>
+  <note>
+   <para>
+    In PHP versions before 5.0.0 you must
+    use <function>ocifetchstatement</function>
+    instead. &oci.name.compat.note;
+   </para>
+  </note>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><function>oci_fetch</function></member>
+    <member><function>oci_fetch_array</function></member>
+    <member><function>oci_fetch_assoc</function></member>
+    <member><function>oci_fetch_object</function></member>
+    <member><function>oci_fetch_row</function></member>
+    <member><function>oci_set_prefetch</function></member>
+   </simplelist>
+  </para>
  </refsect1>
 
 </refentry>

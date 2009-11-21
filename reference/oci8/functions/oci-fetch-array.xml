@@ -394,7 +394,7 @@ var_dump($row);
 //      string(9) "Australia"
 //    }
 
-// To query a repeated column name, use a SQL column alias like "AS ctmn":
+// To query a repeated column name, use a SQL column alias like "AS ctnm":
 $sql = 'SELECT mycity.name AS ctnm, mycountry.name 
         FROM mycity, mycountry 
         WHERE mycity.id = mycountry.id';
@@ -499,6 +499,58 @@ oci_close($conn);
     </programlisting>
    </example>
   </para>
+  <para>
+   <example>
+    <title><function>oci_fetch_array</function> with a <literal>LIMIT</literal>-like query</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+// This is the query you want to execute
+$sql = 'SELECT city, postal_code FROM locations ORDER BY city';
+
+// This nested query selects a subset of rows from $sql.
+// In production environments, be careful to avoid SQL Injection
+// issues with concatenated SQL statements
+$limit_sql = 
+   'select *
+    from ( select a.*, rownum as rnum
+        from (' . $sql . ') a
+        where rownum < :FIRST_ROW + :NUM_ROWS )
+    where rnum >= :FIRST_ROW';
+
+$first = 1;  // start with the first row
+$num   = 5;  // return 5 rows
+$stid = oci_parse($conn, $limit_sql);
+oci_bind_by_name($stid, ':FIRST_ROW', $first);
+oci_bind_by_name($stid, ':NUM_ROWS', $num);
+oci_execute($stid);
+
+while (($row = oci_fetch_array($stid, OCI_ASSOC))) {
+    echo $row['CITY'] . " " . $row['POSTAL_CODE'] . "<br>\n";
+}
+
+// Output is:
+//    Beijing 190518x
+//    Bern 3095x
+//    Bombay 490231x
+//    Geneva 1730x
+//    Hiroshima 6823x
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
  </refsect1>
 
  <refsect1 role="notes">
@@ -508,6 +560,9 @@ oci_close($conn);
     Associative array indices need to be in uppercase for standard
     Oracle columns that were created with case insensitive names.
    </para>
+  </note>
+  <note>
+   &oci.use.setprefetch;
   </note>
   <note>
    <para>
@@ -528,6 +583,7 @@ oci_close($conn);
     <member><function>oci_fetch_assoc</function></member>
     <member><function>oci_fetch_object</function></member>
     <member><function>oci_fetch_row</function></member>
+    <member><function>oci_set_prefetch</function></member>
    </simplelist>
   </para>
  </refsect1>
