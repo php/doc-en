@@ -14,8 +14,8 @@
   &reftitle.description;
   <methodsynopsis>
    <modifier>public</modifier> <type>boolean</type><methodname>MongoCollection::ensureIndex</methodname>
-   <methodparam><type>string|array</type><parameter>keys</parameter></methodparam>
-   <methodparam><type>boolean</type><parameter>unique</parameter></methodparam>
+   <methodparam><type>array</type><parameter>keys</parameter></methodparam>
+   <methodparam><type>array</type><parameter>options</parameter></methodparam>
   </methodsynopsis>
   <para>
    A unique index cannot be created on a field if multiple existing documents do not contain the field.  The field is effectively &null; for these documents and thus already non-unique.
@@ -38,11 +38,32 @@
     </varlistentry>   
     <varlistentry>
      <term>
-      <parameter>unique</parameter>
+      <parameter>options</parameter>
      </term>
      <listitem>
       <para>
-       If the index should be unique.
+       This parameter is an associative array of the form 
+       <literal>array("optionname" => &lt;boolean&gt;, ...)</literal>. Currently 
+       supported options are: 
+       <itemizedlist>
+	<listitem>
+	 <para>
+	  <literal>"unique"</literal>
+	 </para>
+	 <para>
+          Create a unique index.
+	 </para>
+	</listitem>
+	<listitem>
+	 <para>
+	  <literal>"dropDups"</literal>
+	 </para>
+	 <para>
+          If a unique index is being created and duplicate values exist, drop
+          all but one duplicate value.
+	 </para>
+	</listitem>
+       </itemizedlist>
       </para>
      </listitem>
     </varlistentry>   
@@ -57,6 +78,32 @@
   </para>
  </refsect1>
 
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>1.0.2</entry>
+       <entry>
+        Changed "options" parameter from boolean to array.  Pre-1.0.2, the
+        second parameter was an optional boolean value specifying a unique 
+        index.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
+  </para>
+ </refsect1>
+
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
@@ -68,19 +115,43 @@
 $c = new MongoCollection($db, 'foo');
 
 // create an index on 'x' ascending
-$c->ensureIndex('x');
-
-// create an index on 'y' ascending
-$c->ensureIndex(array('y' => 1));
-
-// create an index on 'w' descending
-$c->ensureIndex(array('w' => -1));
+$c->ensureIndex(array('x' => 1));
 
 // create an index on 'z' ascending and 'zz' descending
 $c->ensureIndex(array('z' => 1, 'zz' => -1));
 
 // create a unique index on 'x'
-$c->ensureIndex(array('x' => 1), true);
+$c->ensureIndex(array('x' => 1), array("unique" => true));
+
+?>
+]]>
+   </programlisting>
+  </example>
+  <example>
+   <title>Drop duplicates example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$collection->insert(array("username" => "joeschmoe"));
+$collection->insert(array("username" => "joeschmoe"));
+
+/*
+ * index creation fails, you can't create a unique index on a key with 
+ * non-unique values
+ */
+$collection->ensureIndex(array("username" => 1), array("unique" => 1));
+
+/*
+ * index creation succeeds: one of the documents is removed from the collection
+ */
+$collection->ensureIndex(array("username" => 1), array("unique" => 1, "dropDups" => 1));
+
+/* 
+ * now we have a unique index, more inserts with the same username (such as the
+ * one below) will fail
+ */
+$collection->insert(array("username" => "joeschmoe"));
 
 ?>
 ]]>
