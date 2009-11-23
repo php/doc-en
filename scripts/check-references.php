@@ -34,7 +34,7 @@ if (!isset($_SERVER["argv"][1]) || !is_dir($phpdoc_dir)) {
 	echo "- Compares documentation with PHP sources (Zend, extensions, PECL, SAPI).\n";
 	echo "- Functions not found in sources are checked as without references.\n";
 	echo "- Types and optional params are checked only in some functions.\n";
-	exit();
+	exit(1);
 }
 
 $extension = $_SERVER["argv"][2];
@@ -402,8 +402,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$referen
 		// return type
 		if (isset($return_types[$function_name])) {
 			$counts["return"]++;
-			$modifier = (preg_match('~::__construct$~', $function_name) ? "i" : "");
-			if (!preg_match("~<type>(" . $return_types[$function_name][0] . ")</type>~$modifier", $return_type) && ($return_types[$function_name][0] != "object" || preg_match("~<type>($valid_types|$invalid_types)</type>~", $return_type))) {
+			if (!preg_match('~::__construct$~', $function_name) && !preg_match("~<type>(" . $return_types[$function_name][0] . ")</type>~", $return_type) && ($return_types[$function_name][0] != "object" || preg_match("~<type>($valid_types|$invalid_types)</type>~", $return_type))) {
 				echo "Wrong return type in $filename on line $lineno.\n";
 				echo $return_types[$function_name][1] . ":" . $return_types[$function_name][2] . ": " . $return_types[$function_name][0] . "\n";
 			}
