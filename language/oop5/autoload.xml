@@ -17,9 +17,13 @@
   </para>
   <note>
    <para>
-    Exceptions thrown in __autoload function cannot be caught in the
-    <link linkend="language.exceptions">catch</link> block and results in
-    a fatal error.
+    Prior to 5.3.0, exceptions thrown in the __autoload function could not be
+    caught in the <link linkend="language.exceptions">catch</link> block and
+    would result in a fatal error. From 5.3.0+ exceptions thrown in the
+    __autoload function can be caught in the <link linkend="language.exceptions">
+    catch</link> block, with 1 proviso. If throwing a custom exception, then
+    the custom exception class must be available. The __autoload function may
+    be used recursively to autoload the custom exception class.
    </para>
   </note>
   <note>
@@ -81,6 +85,66 @@ Fatal error: Interface 'ITest' not found in ...
 ?>
 ]]>
     </programlisting>
+   </example>
+   <example>
+    <title>Autoloading with exception handling for 5.3.0+</title>
+    <para>
+     This example throws an exception and demonstrates the try/catch block.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function __autoload($name) {
+    echo "Want to load $name.\n";
+    throw new Exception("Unable to load $name.");
+}
+
+try {
+    $obj = new NonLoadableClass();
+} catch (Exception $e) {
+    echo $e->getMessage(), "\n";
+}
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Want to load NonLoadableClass.
+Unable to load NonLoadableClass.
+]]>
+    </screen>
+   </example>
+   <example>
+    <title>Autoloading with exception handling for 5.3.0+ - Missing custom exception</title>
+    <para>
+     This example throws an exception for a non-loadable, custom exception.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function __autoload($name) {
+    echo "Want to load $name.\n";
+    throw new MissingException("Unable to load $name.");
+}
+
+try {
+    $obj = new NonLoadableClass();
+} catch (Exception $e) {
+    echo $e->getMessage(), "\n";
+}
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Want to load NonLoadableClass.
+Want to load MissingException.
+
+Fatal error: Class 'MissingException' not found in testMissingException.php on line 4
+]]>
+    </screen>
    </example>
   </para>
 
