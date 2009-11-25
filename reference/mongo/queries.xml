@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+<chapter xml:id="mongo.queries" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Querying MongoDB</title>
+
+ <section>
+  <title>Querying by _id</title>
+  <para>
+   Every object inserted is automatically assigned a unique _id field, which is
+   often a useful field to use in queries.
+  </para>
+  <para>
+   Suppose that we wish to find the document we just inserted.  Inserting adds
+   and _id field to the document, so we can query by that:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$person = array("name" => "joe");
+
+$people->insert($person);
+
+// now $joe has an _id field
+$joe = $people->findOne(array("_id" => $person['_id']));
+
+?>
+]]>
+   </programlisting>
+  </para>
+  <para>
+   Unless the user has specified otherwise, the _id field is a 
+   <classname>MongoId</classname>.  The most common mistake is attepting to use 
+   a string to match a <classname>MongoId</classname>.  Keep in mind that these 
+   are two different datatypes, and will not match each other in the same way 
+   that the string "array()" is not the same as an empty array.  For example:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$person = array("name" => "joe");
+
+$people->insert($person);
+
+// convert the _id to a string
+$pid = $person['_id'] . "";
+
+// FAILS - $pid is a string, not a MongoId
+$joe = $people->findOne(array("_id" => $pid));
+
+?>
+]]>
+   </programlisting>
+  </para>
+ </section>
+
+ <section>
+  <title>Arrays</title>
+
+  <para>
+   Suppose that we wish to find all documents with an array element of a given 
+   value. For example, documents with a "gold" award, such as:
+
+   <programlisting>
+<![CDATA[
+{ "_id" : ObjectId("4b06c282edb87a281e09dad9"), "awards" : ["gold", "silver", "bronze"]}
+]]>
+   </programlisting>
+
+   This can be done with a simple query, ignoring the fact that "awards" is an 
+   array:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+  $cursor = $collection->find(array("awards" => "gold"));
+
+?>
+]]>
+   </programlisting>
+  </para>
+
+  <para>
+   Suppose we are querying for a more complex object, if each element of the
+   array were an object itself, such as:
+
+   <programlisting>
+<![CDATA[
+{ 
+     "_id" : ObjectId("4b06c282edb87a281e09dad9"), 
+     "awards" : 
+     [
+        {
+            "first place" : "gold"
+        },
+        {
+            "second place" : "silver" 
+        },
+        {
+            "third place" :  "bronze"
+        }
+     ]
+}
+]]>
+   </programlisting>
+
+   Still ignoring that this is an array, we can use dot notation to query the
+   subobject:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+  $cursor = $collection->find(array("awards.first place" => "gold"));
+
+?>
+]]>
+   </programlisting>
+
+   Notice that it doesn't matter that there is a space in the the field name
+   (although it may be best not to use spaces, just to make things more 
+   readable).
+  </para>
+ </section>
+
+</chapter>
