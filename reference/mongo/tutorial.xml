@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+<chapter xml:id="mongo.tutorial" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Tutorial</title>
+ <section>
+  <title>Making a Connection</title>
+  <para>
+   To connect to the database server, use one of the following:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$connection = new Mongo(); // connects to localhost:27017
+$connection = new Mongo( "example.com" ); // connect to a remote host (default port)
+$connection = new Mongo( "example.com:65432" ); // connect to a remote host at a given port
+
+?>
+]]>
+   </programlisting>
+
+   Now $connection can be used to get a database.
+  </para>
+ </section>
+
+ <section>
+  <title>Getting a Database</title>
+  <para>
+   To select a database, use:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$db = $connection->selectDB( "dbname" );
+
+?>
+]]>
+   </programlisting>
+   The database does not need to be created in advance, you can create new
+   databases by selecting them. Be careful of typos! You can inadvertently 
+   create a new database, which can cause confusing errors:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$db = $connection->selectDB( "mybiglongdbname" );
+// do some stuff
+$db = $connection->selectDB( "mybiglongdbnme" );
+// now connected to a different database!
+
+]]>
+   </programlisting>
+  </para>
+ </section>
+
+ <section>
+  <title>Getting A Collection</title>
+  <para>
+   To get a specific collection, use 
+   <function>MongoDB::selectCollection</function>. Similarly to 
+   <function>MongoDB::selectDB</function>, this creates the collection if it 
+   does not already exist.
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$collection = $db->selectCollection( "foobar" );
+
+?>
+]]>
+   </programlisting>
+  </para>
+ </section>
+
+ <section>
+  <title>Inserting a Document</title>
+  <para>
+   Associative arrays are the basic object that can be saved to a collection in 
+   the database. A somewhat random "document" might be:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$doc = array( "name" => "MongoDB",
+   "type" => "database",
+   "count" => 1,
+   "info" => (object)array( "x" => 203,
+       "y" => 102),
+   "versions" => array("0.9.7", "0.9.8", "0.9.9")
+);
+
+?>
+]]>
+   </programlisting>
+
+   Note that you can have nested arrays and objects.  Objects and documents are
+   almost synonymous in MongoDB: you could call $doc a document or an object, 
+   but the "info" field is always an object, never a document.  This convention
+   is used for all of the documentation.
+  </para>
+  <para>
+   To insert this document, use <function>MongoCollection::insert</function>:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$m = new Mongo();
+$collection = $m->selectDB( "foo" )->selectCollection( "bar" );
+$collection->insert( $doc );
+
+?>
+]]>
+   </programlisting>
+  </para>
+ </section>
+
+ <section>
+  <title>
+   Finding Documents using <function>MongoCollection::findOne</function>
+  </title>
+  <para>
+   To show that the document we inserted in the previous step is there, we can 
+   do a simple findOne() operation to get the first document in the collection. 
+   This method returns a single document (rather than the 
+   <classname>MongoCursor</classname> that 
+   <function>MongoCollection::find</function> returns), and it's useful for 
+   things where there only is one document matching the query or you are only 
+   interested in one result.
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$obj = $collection->findOne();
+var_dump( $obj );
+
+?>
+]]>
+   </programlisting>
+
+   and you should see
+
+   <programlisting>
+<![CDATA[
+array(5) {
+  ["_id"]=>
+  object(MongoId)#6 (0) {
+  }
+  ["name"]
+  string(7) "MongoDB"
+  ["type"]=>
+  string(8) "database"
+  ["count"]=>
+  int(1)
+  ["info"]=>
+  array (2) {
+    ["x"]=>
+    int(203)
+    ["y"]=>
+    int(102)
+  }
+  ["versions"]
+  array(3) {
+    [0]=>
+    string(5) "0.9.7"
+    [1]=>
+    string(5) "0.9.8"
+    [2]=>
+    string(5) "0.9.9"
+  }
+}
+]]>
+   </programlisting>
+  </para>
+  <para>
+   Note the _id field has been added automatically to your document. MongoDB 
+   reserves element names that start with _ and $ for internal use.
+  </para>
+ </section>
+
+ <section>
+  <title>Adding Multiple Documents</title>
+  <para>
+   In order to do more interesting things with queries, let's add multiple 
+   simple documents to the collection. These documents will just be
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+array( "i" => value );
+
+?>
+]]>
+   </programlisting>
+
+   and we can do this fairly efficiently in a loop
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+for($i=0; $i<100; $i++) {
+    $collection->insert( array( "i" => $i ) );
+}
+
+?>
+]]>
+   </programlisting>
+  </para>
+
+  <para>
+   Notice that we can insert arrays with different key sets into the same 
+   collection. This aspect is what we mean when we say that MongoDB is 
+   "schema-free".
+  </para>
+ </section>
+
+ <section>
+  <title>Counting Documents in A Collection</title>
+  <para>
+   Now that we've inserted 101 documents (the 100 we did in the loop, plus the 
+   first one), we can check to see if we have them all using the count() method.
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+echo $collection->count();
+
+?>
+]]>
+   </programlisting>
+   and it should print 101.
+  </para>
+  <para>
+   <function>MongoCollection::count</function> can take query and field 
+   arguments, as well. You can also do a count on a 
+   <classname>MongoCursor</classname> (see below), which will take into account 
+   any filters you have placed on your query.
+  </para>
+ </section>
+
+ <section>
+  <title>Using a Cursor to Get All the Documents</title>
+  <para>
+   In order to get all the documents in the collection, we will use
+   <function>MongoCollection::find</function>. The find() method returns a 
+   <classname>MongoCursor</classname> object which allows us to iterate over the
+   set of documents that matched our query. So to query all of the documents and 
+   print them out:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$cursor = $collection->find();
+foreach ($cursor as $id => $value) {
+    echo "$id: ";
+    var_dump( $value );
+}
+
+?>
+]]>
+   </programlisting>
+
+   and that should print all 101 documents in the collection.  $id is the _id 
+   field of a document, and $value is the document itself.
+  </para>
+ </section>
+
+ <section>
+  <title>Setting Criteria for a Query</title>
+  <para>
+   We can create a query to pass to the find() method to get a subset of the 
+   documents in our collection. For example, if we wanted to find the document 
+   for which the value of the "i" field is 71, we would do the following:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$query = array( "i" => 71 );
+$cursor = $collection->find( $query );
+
+while( $cursor->hasNext() ) {
+    var_dump( $cursor->getNext() );
+}
+
+?>
+]]>
+   </programlisting>
+
+   and it should just print just one document
+
+   <programlisting>
+<![CDATA[
+array(2) {
+  ["_id"]=>
+  object(MongoId)#6 (0) {
+  }
+  ["i"]=>
+  int(71)
+  ["_ns"]=>
+  "testCollection"
+}
+]]>
+   </programlisting>
+  </para>
+ </section>
+
+ <section>
+  <title>Getting A Set of Documents With a Query</title>
+  <para>
+   We can use the query to get a set of documents from our collection. For 
+   example, if we wanted to get all documents where "i" &gt; 50, we could write:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$query = array( "i" => array( '$gt' => 50 ) ); //note the single quotes around '$gt'
+$cursor = $coll->find( $query );
+
+while( $cursor->hasNext() ) {
+    var_dump( $cursor->getNext() );
+}
+
+?>
+]]>
+   </programlisting>
+
+   which should print the documents where i &gt; 50. We could also get a range, say 
+   20 &lt; i &lt;= 30:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$query = array( "i" => array( "\$gt" => 20, "\$lte" => 30 ) );
+$cursor = $coll->find( $query );
+
+while( $cursor->hasNext() ) {
+    var_dump( $cursor->getNext() );
+}
+
+?>
+]]>
+   </programlisting>
+
+   As it is easy to forget to escape the "$", you can also choose your own 
+   special character to use instead of '$'.  Choose a character that will not 
+   occur in your key names, e.g. ":", and add the following line to php.ini:
+
+   <programlisting>
+<![CDATA[
+mongo.cmd = ":"
+]]>
+   </programlisting>
+
+   Then the example above would look like:
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$query = array( "i" => array( ":gt" => 20, ":lte" => 30 ) );
+
+?>
+]]>
+   </programlisting>
+
+   You can also change it in your code using ini_set("mongo.cmd", ":").  Of 
+   course, you can also just use single quotes around the $.
+  </para>
+ </section>
+
+ <section>
+  <title>Creating An Index</title>
+  <para>
+   MongoDB supports indexes, and they are very easy to add on a collection. To 
+   create an index, you just specify the field that should be indexed, and 
+   specify if you want the index to be ascending (1) or descending (-1). The 
+   following creates an ascending index on the "i" field :
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$coll->ensureIndex( array( "i" => 1 ) );  // create index on "i"
+$coll->ensureIndex( array( "i" => -1, "j" => 1 ) );  // index on "i" descending, "j" ascending
+
+?>
+]]>
+   </programlisting>
+  </para>
+ </section>
+</chapter>
