@@ -1,24 +1,141 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!-- $Revision$ -->
-<section xml:id="oci8.installation" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
- &reftitle.install;
+<section xml:id="oci8.configure" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <para>
-  You have to compile PHP with the option
-  <option role="configure">--with-oci8[=DIR]</option>, where DIR defaults to
-  your environment variable ORACLE_HOME.
+  To enable the OCI8 extension, configure PHP with the option
+  <option role="configure">--with-oci8[=DIR]</option>,
+  where <literal>DIR</literal> defaults to the environment
+  variable <literal>ORACLE_HOME</literal>.
  </para>
  <para>
-  If you're using <link xlink:href="&url.oracle.instant.client;">Oracle Instant
-   Client</link>, you need to build PHP with the option 
-  <option role="configure">--with-oci8=instantclient,/path/to/oic/lib</option>. Note
-  that Oracle Instant Client support first appeared in versions 4.3.11 and
-  5.0.4.
+  If <link xlink:href="&url.oracle.instant.client;">Oracle Instant
+  Client</link> is used, then build PHP with the option
+  <option role="configure">--with-oci8=instantclient,/path/to/oci/lib</option>. For
+  example, <option role="configure">--with-oci8=instantclient,/usr/lib/oracle/11.1/client/lib</option>.
+  If Instant Client is installed from ZIP files, make sure to create
+  the symbolic link, for example <literal>ln -s libclntsh.so.11.1
+  libclntsh.so</literal>.
+ </para>
+ <para>
+  The <literal>shared</literal> option can also be used, for
+  example <option role="configure">--with-oci8=shared,instantclient,/path/to/oci/lib</option>.
+  This indicates to build OCI8 as a shared library that can be
+  dynamically loaded into PHP.  For the library to be loaded,
+  &php.ini; must include <literal>extension=oci8.so</literal> and also
+  the <literal>extension_dir</literal> value must be set to the
+  directory where <filename>oci8.so</filename> is located.
+ </para>
+ <para>
+   On Windows, uncomment the &php.ini;
+   line <literal>extension=php_oci8.dll</literal> when using Oracle
+   10gR2 client libraries.  Uncomment
+   <literal>extension=php_oci8_11g.dll</literal> when using Oracle 11g
+   client libraries. These two DLLs contain equivalent functionality
+   and only one may be enabled at a time.  Make
+   sure <literal>extension_dir</literal> is set to the directory
+   containing the PHP extension DLLs.
  </para>
  <note>
   <para>
-   Note that in OCI8 versions before 1.1 you have to use
-   <option role="configure">--with-oci8-instant-client</option> to configure
-   PHP with Oracle Instant Client.
+   Note that Oracle Instant Client support first appeared in PHP
+   4.3.11 and 5.0.4 and used the option
+   <option role="configure">--with-oci8-instant-client</option> to
+   configure PHP.
+  </para>
+ </note>
+ <para>
+  Before using this extension, make sure that the Oracle environment
+  variables are properly set for the web daemon user. These variables
+  should be set up
+  <emphasis>before</emphasis> the web-server is started. The
+  variables that might be needed include:
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <literal>ORACLE_HOME</literal>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <literal>ORACLE_SID</literal>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <literal>LD_LIBRARY_PATH</literal>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <literal>NLS_LANG</literal>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <literal>LD_PRELOAD</literal>
+    </simpara>
+   </listitem>
+  </itemizedlist>
+   For less frequently used Oracle environment variables such as
+   <literal>TNS_ADMIN</literal>, <literal>TWO_TASK</literal>, <literal>ORA_TZFILE</literal>,
+   and the various Oracle globalization settings
+   like <literal>ORA_NLS33</literal>, <literal>ORA_NLS10</literal>
+   and the <literal>NLS_*</literal> variables refer to Oracle
+   documentation.
+ </para>
+ <para>
+  Instant Client does not need <literal>ORACLE_SID</literal>
+  or <literal>ORACLE_HOME</literal> environment variables set.
+  Setting <literal>ORACLE_HOME</literal> with Instant Client can
+  cause installation problems.
+ </para>
+ <para>
+  If PHP is linked with libraries from
+  an <literal>ORACLE_HOME</literal> install, make sure the web server
+  user (nobody, www) has access to the libraries and initialization
+  files in the <literal>oracle</literal> home directory.
+ </para>
+ <note>
+  <title>If the web server doesn't start or crashes at
+  startup</title>
+  <para>
+   Check that Apache is linked with the pthread library:
+  </para>
+  <para>
+   <informalexample>
+    <screen>
+<![CDATA[
+# ldd /www/apache/bin/httpd
+  libpthread.so.0 => /lib/libpthread.so.0 (0x4001c000)
+  libm.so.6 => /lib/libm.so.6 (0x4002f000)
+  libcrypt.so.1 => /lib/libcrypt.so.1 (0x4004c000)
+  libdl.so.2 => /lib/libdl.so.2 (0x4007a000)
+  libc.so.6 => /lib/libc.so.6 (0x4007e000)
+  /lib/ld-linux.so.2 => /lib/ld-linux.so.2 (0x40000000)
+]]>
+    </screen>
+   </informalexample>
+  </para>
+  <para>
+   If the libpthread is not listed, then reinstall Apache:
+  </para>
+  <para>
+   <informalexample>
+    <screen>
+<![CDATA[
+# cd /usr/src/apache_1.3.xx
+# make clean
+# LIBS=-lpthread ./config.status
+# make
+# make install
+]]>
+    </screen>
+   </informalexample>
+  </para>
+  <para>
+   Please note that on some systems like UnixWare, it is libthread
+   instead of libpthread. PHP and Apache have to be configured with
+   EXTRA_LIBS=-lthread.
   </para>
  </note>
 </section>
