@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!-- $Revision$ -->
 <section xml:id="oci8.configure" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<title>Configuring PHP with OCI8</title>
  <para>
   To enable the OCI8 extension, configure PHP with the option
   <option role="configure">--with-oci8[=DIR]</option>,
@@ -13,8 +14,14 @@
   <option role="configure">--with-oci8=instantclient,/path/to/oci/lib</option>. For
   example, <option role="configure">--with-oci8=instantclient,/usr/lib/oracle/11.1/client/lib</option>.
   If Instant Client is installed from ZIP files, make sure to create
-  the symbolic link, for example <literal>ln -s libclntsh.so.11.1
+  the library symbolic link, for example <literal>ln -s libclntsh.so.11.1
   libclntsh.so</literal>.
+ </para>
+ <para>
+  Note that Oracle Instant Client support first appeared in PHP
+  4.3.11 and 5.0.4 and originally used the option
+  <option role="configure">--with-oci8-instant-client</option> to
+  configure PHP.
  </para>
  <para>
   The <literal>shared</literal> option can also be used, for
@@ -26,74 +33,165 @@
   directory where <filename>oci8.so</filename> is located.
  </para>
  <para>
-   On Windows, uncomment the &php.ini;
-   line <literal>extension=php_oci8.dll</literal> when using Oracle
-   10gR2 client libraries.  Uncomment
+  If PHP is linked with libraries from
+  an <literal>ORACLE_HOME</literal> install, make sure the web server
+  user (<literal>nobody</literal>, <literal>www</literal>) has access
+  to the libraries and initialization files in
+  the <literal>ORACLE_HOME</literal> directory.  With Oracle 10gR2,
+  you may need to run
+  Oracle's <filename>$ORACLE_HOME/install/changePerm.sh</filename>
+  utility to give file access.
+ </para>
+ <para>
+  PHP should be run with the same, or more recent, major version of
+  Oracle libraries as it was built with.  For example, if you build
+  OCI8 with Oracle 11.2 libraries, then PHP should also be deployed
+  and run with Oracle 11.2 libraries.
+ </para>
+ <para>
+  On Windows, uncomment the &php.ini;
+  line <literal>extension=php_oci8.dll</literal> when using Oracle
+  10gR2 client libraries.  Uncomment
    <literal>extension=php_oci8_11g.dll</literal> when using Oracle 11g
    client libraries. These two DLLs contain equivalent functionality
    and only one may be enabled at a time.  Make
    sure <literal>extension_dir</literal> is set to the directory
-   containing the PHP extension DLLs.
+   containing the PHP extension DLLs.  
+ </para>
+</section>
+<section>
+ <title>Setting the Oracle Environment</title>
+ <para>
+  Before using this extension, make sure that the Oracle environment
+  variables are properly set for the web daemon user.  If your web
+  server is automatically started at boot time then make sure that the
+  boot-time environment is also configured correctly.
  </para>
  <note>
   <para>
-   Note that Oracle Instant Client support first appeared in PHP
-   4.3.11 and 5.0.4 and used the option
-   <option role="configure">--with-oci8-instant-client</option> to
-   configure PHP.
+   These variables should be set up
+   <emphasis>before</emphasis> the web server is started.  Do not set
+   Oracle environment variables using <function>putenv</function> in a
+   PHP script because Oracle libraries may be loaded and initialized
+   before your script runs. Variables set
+   with <function>putenv</function> may then cause conflicts, crashes,
+   or unpredictable behavior.  Some functions may work but others
+   might give subtle errors.
   </para>
  </note>
  <para>
-  Before using this extension, make sure that the Oracle environment
-  variables are properly set for the web daemon user. These variables
-  should be set up
-  <emphasis>before</emphasis> the web-server is started. The
-  variables that might be needed include:
-  <itemizedlist>
-   <listitem>
-    <simpara>
-     <literal>ORACLE_HOME</literal>
-    </simpara>
-   </listitem>
-   <listitem>
-    <simpara>
-     <literal>ORACLE_SID</literal>
-    </simpara>
-   </listitem>
-   <listitem>
-    <simpara>
-     <literal>LD_LIBRARY_PATH</literal>
-    </simpara>
-   </listitem>
-   <listitem>
-    <simpara>
-     <literal>NLS_LANG</literal>
-    </simpara>
-   </listitem>
-   <listitem>
-    <simpara>
-     <literal>LD_PRELOAD</literal>
-    </simpara>
-   </listitem>
-  </itemizedlist>
-   For less frequently used Oracle environment variables such as
-   <literal>TNS_ADMIN</literal>, <literal>TWO_TASK</literal>, <literal>ORA_TZFILE</literal>,
-   and the various Oracle globalization settings
-   like <literal>ORA_NLS33</literal>, <literal>ORA_NLS10</literal>
-   and the <literal>NLS_*</literal> variables refer to Oracle
-   documentation.
+  On Red Hat Linux and variants, export variables at the end of
+  <filename>/etc/sysconfig/httpd</filename>.  Other systems with
+  Apache 2 may use an <filename>envvars</filename> script in the
+  Apache <filename>bin</filename> directory.  A third option, the
+  Apache <literal>SetEnv</literal> directive
+  in <filename>httpd.conf</filename>, may work in some systems but is
+  known to be insufficient in others.
  </para>
  <para>
-  Instant Client does not need <literal>ORACLE_SID</literal>
-  or <literal>ORACLE_HOME</literal> environment variables set.
-  Setting <literal>ORACLE_HOME</literal> with Instant Client can
-  cause installation problems.
+  To check that environment variables are set correctly,
+  use <function>phpinfo</function> and check
+  the <emphasis>Environment</emphasis> (not the <emphasis>Apache
+  Environment</emphasis>) section contains the expected variables.
  </para>
  <para>
-  If PHP is linked with libraries from
-  an <literal>ORACLE_HOME</literal> install, make sure the web server
-  user (nobody, www) has access to the libraries and initialization
-  files in the <literal>oracle</literal> home directory.
+  The variables that might be needed are included in the following
+  table.  Refer to the Oracle documentation for more information on
+  all the variables.
+  <table>
+   <title>Common Oracle Environment Variables</title>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Name</entry>
+      <entry>Purpose</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>ORACLE_HOME</entry>
+      <entry>Contains the directory of the full Oracle Database
+      software.  Do not set this when using Oracle Instant Client as
+      it is unnecessary and may cause installation problems.</entry>
+     </row>
+     <row>
+      <entry>ORACLE_SID</entry>
+      <entry>Contains the name of the database on the local machine to
+      be connected to. There is no need to set this if you using
+      Oracle Instant Client, or always pass the connection parameter
+      to <function>oci_connect</function>.</entry>
+     </row>
+     <row>
+      <entry>LD_LIBRARY_PATH</entry>
+      <entry>Set this (or its platform equivalent, such
+      as <literal>DYLD_LIBRARY_PATH</literal>, <literal>LIBPATH</literal>,
+      or <literal>SHLIB_PATH</literal>) to the location of the Oracle
+      libraries, for example <filename>$ORACLE_HOME/lib</filename>
+      or <filename>/usr/lib/oracle/11.1/client/lib</filename>. This
+      variable is not needed if the libraries are located by a
+      different search mechanism, such as
+      with <filename>ldconfig</filename> or
+      with <literal>LD_PRELOAD</literal>.</entry>
+     </row>
+     <row>
+      <entry>NLS_LANG</entry>
+      <entry>This is the primary variable for setting the character
+      set and globalization information used by the Oracle
+      libraries.</entry>
+     </row>
+     <row>
+      <entry>ORA_SDTZ</entry>
+      <entry>Sets the Oracle session timezone.</entry>
+     </row>
+     <row>
+      <entry>TNS_ADMIN</entry>
+      <entry>Contains the directory where the Oracle Net Services
+      configuration files such as <filename>tnsnames.ora</filename>
+      and <filename>sqlnet.ora</filename> are kept.  Not needed if
+      the <function>oci_connect</function> connection string uses the
+      Easy Connect naming syntax such
+      as <literal>localhost/XE</literal>.  Not needed if the network
+      configuration files are in one of the default locations such
+      as <filename>$ORACLE_HOME/network/admin</filename>
+      or <filename>/etc</filename>.</entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </table>
+   Less frequently used Oracle environment variables include
+   <literal>TWO_TASK</literal>, <literal>ORA_TZFILE</literal>, and the
+   various Oracle globalization settings
+   like <literal>NLS*</literal> and the <literal>ORA_NLS_*</literal>
+   variables.  
+ </para>
+</section>
+<section>
+ <title>Troubleshooting</title>
+ <para>
+  The most common problem with installing OCI8 is not having the
+  Oracle environment correctly set.  This typically appears as a
+  problem using <function>oci_connect</function>
+  or <function>oci_pconnect</function>.  The error may be a PHP error
+  such as <emphasis>Call to undefined function
+  oci_connect()</emphasis>, an Oracle error such as ORA-12705, or even
+  an Apache crash.  Check the Apache log files for startup errors and
+  see the sections above to resolve this problem.
+ </para>
+ <para>
+  While network errors like ORA-12154 or ORA-12514 indicate an Oracle
+  network naming or configuration issue, the root cause may be because
+  the PHP environment is incorrectly set up and Oracle libraries are
+  unable to locate the <filename>tnsnames.ora</filename> configuration
+  file.
+ </para>
+ <para>
+  On Windows, having multiple versions of Oracle on the one machine can
+  cause library clashes.
+ </para>
+ <para>
+  A utility to examine what libraries are being looked for and loaded
+  can help resolve missing or clashing library issues, particularly on
+  Windows.
  </para>
  <note>
   <title>If the web server doesn't start or crashes at
