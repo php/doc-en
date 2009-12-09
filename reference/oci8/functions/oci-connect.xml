@@ -17,7 +17,25 @@
    <methodparam choice="opt"><type>int</type><parameter>session_mode</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Returns a connection identifier needed for most other OCI calls. 
+   Returns a connection identifier needed for most other OCI8 operations. 
+  </para>
+  <para>
+   See <link linkend="oci8.connection">Connection Handling</link> for
+   general information on connection management and connection
+   pooling.
+  </para>
+  <para>
+   From PHP 5.1.2 (PECL OCI8 1.1) <function>oci_close</function> can
+   be used to close the connection.
+  </para>
+  <para>
+   The second and subsequent calls to <function>oci_connect</function>
+   with the same parameters will return the connection handle returned
+   from the first call. This means that transactions in one handle are
+   also in the other handles, because they use the
+   <emphasis>same</emphasis> underlying database connection. If two
+   handles need to be transactionally isolated from each other, use
+   <function>oci_new_connect</function> instead.
   </para>
  </refsect1>
 
@@ -74,95 +92,209 @@
   &reftitle.examples;
   <para>
    <example>
-    <title><function>oci_connect</function> example</title>
+    <title>Basic <function>oci_connect</function> using Easy Connect syntax</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-echo "<pre>";
-$db = "";
 
-$c1 = oci_connect("scott", "tiger", $db);
-$c2 = oci_connect("scott", "tiger", $db);
+// Connects to the XE service (i.e. database) on the "localhost" machine
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$stid = oci_parse($conn, 'SELECT * FROM employees');
+oci_execute($stid);
+
+echo "<table border='1'>\n";
+while ($row = oci_fetch_array($stid, OCI_ASSOC+OCI_RETURN_NULLS)) {
+    echo "<tr>\n";
+    foreach ($row as $item) {
+        echo "    <td>" . ($item !== null ? htmlentities($item, ENT_QUOTES) : "&nbsp;") . "</td>\n";
+    }
+    echo "</tr>\n";
+}
+echo "</table>\n";
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Basic <function>oci_connect</function> using a Network Connect name</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+// Connects to the MYDB database described in tnsnames.ora file,
+// One example tnsnames.ora entry for MYDB could be:
+//   MYDB =
+//     (DESCRIPTION =
+//       (ADDRESS = (PROTOCOL = TCP)(HOST = mymachine.oracle.com)(PORT = 1521))
+//       (CONNECT_DATA =
+//         (SERVER = DEDICATED)
+//         (SERVICE_NAME = XE)
+//       )
+//     )
+
+$conn = oci_connect('hr', 'welcome', 'MYDB');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$stid = oci_parse($conn, 'SELECT * FROM employees');
+oci_execute($stid);
+
+echo "<table border='1'>\n";
+while ($row = oci_fetch_array($stid, OCI_ASSOC+OCI_RETURN_NULLS)) {
+    echo "<tr>\n";
+    foreach ($row as $item) {
+        echo "    <td>" . ($item !== null ? htmlentities($item, ENT_QUOTES) : "&nbsp;") . "</td>\n";
+    }
+    echo "</tr>\n";
+}
+echo "</table>\n";
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_connect</function> with an explicit character set</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE', 'AL32UTF8');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$stid = oci_parse($conn, 'SELECT * FROM employees');
+oci_execute($stid);
+
+echo "<table border='1'>\n";
+while ($row = oci_fetch_array($stid, OCI_ASSOC+OCI_RETURN_NULLS)) {
+    echo "<tr>\n";
+    foreach ($row as $item) {
+        echo "    <td>" . ($item !== null ? htmlentities($item, ENT_QUOTES) : "&nbsp;") . "</td>\n";
+    }
+    echo "</tr>\n";
+}
+echo "</table>\n";
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Using multiple calls to <function>oci_connect</function></title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$c1 = oci_connect("hr", "welcome", 'localhost/XE');
+$c2 = oci_connect("hr", "welcome", 'localhost/XE');
+
+// Both $c1 and $c2 show the same PHP resource id meaning they use the
+// same underlying database connection
+echo "c1 is $c1<br>\n";
+echo "c2 is $c2<br>\n";
 
 function create_table($conn)
 {
-  $stmt = oci_parse($conn, "create table scott.hallo (test varchar2(64))");
-  oci_execute($stmt);
-  echo $conn . " created table\n\n";
+    $stmt = oci_parse($conn, "create table hallo (test varchar2(64))");
+    oci_execute($stmt);
+    echo "Created table<br>\n";
 }
 
 function drop_table($conn)
 {
-  $stmt = oci_parse($conn, "drop table scott.hallo");
-  oci_execute($stmt);
-  echo $conn . " dropped table\n\n";
+    $stmt = oci_parse($conn, "drop table hallo");
+    oci_execute($stmt);
+    echo "Dropped table<br>\n";
 }
 
-function insert_data($conn)
+function insert_data($connname, $conn)
 {
-  $stmt = oci_parse($conn, "insert into scott.hallo
-            values('$conn' || ' ' || to_char(sysdate,'DD-MON-YY HH24:MI:SS'))");
-  oci_execute($stmt, OCI_DEFAULT);
-  echo $conn . " inserted hallo\n\n";
+    $stmt = oci_parse($conn, "insert into hallo
+              values(to_char(sysdate,'DD-MON-YY HH24:MI:SS'))");
+    oci_execute($stmt, OCI_DEFAULT);
+    echo "$connname inserted row without committing<br>\n";
 }
 
-function delete_data($conn)
+function rollback($connname, $conn)
 {
-  $stmt = oci_parse($conn, "delete from scott.hallo");
-  oci_execute($stmt, OCI_DEFAULT);
-  echo $conn . " deleted hallo\n\n";
+    oci_rollback($conn);
+    echo "$connname rollback<br>\n";
 }
 
-function commit($conn)
+function select_data($connname, $conn)
 {
-  oci_commit($conn);
-  echo $conn . " committed\n\n";
-}
-
-function rollback($conn)
-{
-  oci_rollback($conn);
-  echo $conn . " rollback\n\n";
-}
-
-function select_data($conn)
-{
-  $stmt = oci_parse($conn, "select * from scott.hallo");
-  oci_execute($stmt, OCI_DEFAULT);
-  echo $conn."----selecting\n\n";
-  while (oci_fetch($stmt)) {
-    echo $conn . " [" . oci_result($stmt, "TEST") . "]\n\n";
-  }
-  echo $conn . "----done\n\n";
+    $stmt = oci_parse($conn, "select * from hallo");
+    oci_execute($stmt, OCI_DEFAULT);
+    echo "$connname ----selecting<br>\n";
+    while (oci_fetch($stmt)) {
+        echo "    " . oci_result($stmt, "TEST") . "<br>\n";
+    }
+    echo "$connname ----done<br>\n";
 }
 
 create_table($c1);
-insert_data($c1);   // Insert a row using c1
-insert_data($c2);   // Insert a row using c2
 
-select_data($c1);   // Results of both inserts are returned
-select_data($c2);
+insert_data('c1', $c1);   // Insert a row using c1
+sleep(2);                 // sleep to show a different timestamp for the 2nd row
+insert_data('c2', $c2);   // Insert a row using c2
 
-rollback($c1);      // Rollback using c1
+select_data('c1', $c1);   // Results of both inserts are returned
+select_data('c2', $c2);   // Results of both inserts are returned
 
-select_data($c1);   // Both inserts have been rolled back
-select_data($c2);
+rollback('c1', $c1);      // Rollback using c1
 
-insert_data($c2);   // Insert a row using c2
-commit($c2);        // Commit using c2
-
-select_data($c1);   // Result of c2 insert is returned
-
-delete_data($c1);   // Delete all rows in table using c1
-select_data($c1);   // No rows returned
-select_data($c2);   // No rows returned
-commit($c1);        // Commit using c1
-
-select_data($c1);   // No rows returned
-select_data($c2);   // No rows returned
+select_data('c1', $c1);   // Both inserts have been rolled back
+select_data('c2', $c2);
 
 drop_table($c1);
-echo "</pre>";
+
+// Closing one of the connections makes the PHP variable unusable, but
+// the other could be used
+oci_close($c1);
+echo "c1 is $c1<br>\n";
+echo "c2 is $c2<br>\n";
+
+
+// Output is:
+//    c1 is Resource id #5
+//    c2 is Resource id #5
+//    Created table
+//    c1 inserted row without committing
+//    c2 inserted row without committing
+//    c1 ----selecting
+//        09-DEC-09 12:14:43
+//        09-DEC-09 12:14:45
+//    c1 ----done
+//    c2 ----selecting
+//        09-DEC-09 12:14:43
+//        09-DEC-09 12:14:45
+//    c2 ----done
+//    c1 rollback
+//    c1 ----selecting
+//    c1 ----done
+//    c2 ----selecting
+//    c2 ----done
+//    Dropped table
+//    c1 is 
+//    c2 is Resource id #5
+
 ?>
 ]]>
     </programlisting>
@@ -173,21 +305,17 @@ echo "</pre>";
  <refsect1 role="notes">
   &reftitle.notes;
   <note>
-   <simpara>
-    The second and subsequent calls to <function>oci_connect</function>
-    with the same parameters will return the connection handle returned
-    from the first call. This means that queries issued against one
-    handle are also applied to the other handles, because they are the
-    <emphasis>same</emphasis> handle. This behaviour is demonstrated in
-    Example 1 below. If you require two handles to be transactionally
-    isolated from each other, you should use
-    <function>oci_new_connect</function> instead.
-   </simpara>
+   <para>
+    An incorrectly installed or configured OCI8 extension will often
+    manifest itself as a connection problem or error.
+    See <link linkend="oci8.setup">Installing/Configuring</link> for
+    troubleshooting information.
+   </para>
   </note>
   <note>
    <para>
-    In PHP versions before 5.0.0 you must
-    use <function>ocilogon</function> instead. &oci.name.compat.note;
+    In PHP versions before 5.0.0 use <function>ocilogon</function>
+    instead. &oci.name.compat.note;
    </para>
   </note>
  </refsect1>
