@@ -16,14 +16,69 @@
    </para>
 
    <para>
-    <classname>MongoGridFS</classname> extends 
-    <classname>MongoCollection</classname>, so any of the methods
-    in <classname>MongoCollection</classname> can be used to
-    manipulate metadata.  For example:
+    GridFS is a storage specification all supported drivers implement. 
+    Basically, it defines two collections: <literal>files</literal>, for file 
+    metadata, and <literal>chunks</literal>, for file content.  If the file is 
+    large, it will automatically be split into smaller chunks and each chunk 
+    will be saved as a document in the chunks collection.
    </para>
 
-   <informalexample>
-    <programlisting role="php">
+   <para>
+    Each document in the files collection contains the filename, upload date, 
+    and md5 hash.  It also contains a unique <literal>_id</literal> field, which
+    can be used to query the chunks collection for the file's content.  Each 
+    document in the chunks collection contains a chunk of binary data, a 
+    <literal>files_id</literal> field that matches its file's 
+    <literal>_id</literal>, and the position of this chunk in the overall file.
+   </para>
+
+   <para>
+    For example, the files document is something like:
+    <programlisting>
+<![CDATA[
+array("_id" => 123456789, "filename" => "foo.txt", "chunkSize" => 3, "length" => 12)
+]]>
+    </programlisting>
+    and the chunks documents look like:
+    <programlisting>
+<![CDATA[
+array("files_id" => 123456789, "n" => 0, "data" => new MongoBinData("abc"));
+array("files_id" => 123456789, "n" => 1, "data" => new MongoBinData("def"));
+array("files_id" => 123456789, "n" => 2, "data" => new MongoBinData("ghi"));
+array("files_id" => 123456789, "n" => 3, "data" => new MongoBinData("jkl"));
+]]>
+    </programlisting>
+    Of course, the default chunk size is thousands of bytes, but that makes an unweildy example.
+   </para>
+  </section>
+
+  <section>
+   <title>The <classname>MongoGridFS</classname> Family</title>
+
+   <para>
+    <classname>MongoGridFS</classname> represents the files and chunks 
+    collections. <classname>MongoGridFS</classname> extends MongoCollection, 
+    and an instance of <classname>MongoGridFS</classname> has access to all of 
+    <classname>MongoCollection</classname> methods, which act on the files
+    collection:
+    <informalexample>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+$grid = $db->getGridFS();
+$grid->update(array("filename" => "foo"), $newObj)); // update on the files collection
+
+?>
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+
+   <para>
+    Another example of manipulating metadata:
+    <informalexample>
+     <programlisting role="php">
 <![CDATA[
 <?php
 
@@ -40,8 +95,85 @@ $grid->update(array("_id" => $id), array('$inc' => array("downloads" => 1)));
 
 ?>
 ]]>
-    </programlisting>
-   </informalexample>
+     </programlisting>
+    </informalexample>
+   </para>
+
+   <para>
+    You can also access the chunks collection from an instance of 
+    <classname>MongoGridFS</classname>:
+    <informalexample>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+  $chunks = $grid->chunks; // $chunks is a normal MongoCollection
+$chunks->insert(array("x" => 4));
+
+?>
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+   <para>
+    There are some methods for <classname>MongoGridFS</classname> with the same
+    name as <classname>MongoCollection</classname> methods, that behave 
+    slightly differently. For example, <function>MongoGridFS::remove</function>
+    will remove any objects that match the criteria from the files collection 
+    and their content from the chunks collection.
+   </para>
+
+   <para>
+    To store something new in GridFS, there are a couple options.  If you have
+    a filename, you can say:
+    <informalexample>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+$grid->storeFile($filename, array("whatever" => "metadata", "you" => "want"));
+
+?>
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+
+   <para>
+    If you have a string of bytes that isn't a file, you can also store that
+    using <function>MongoGridFS::storeBytes</function>:
+    <informalexample>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+$grid->storeBytes($bytes, array("whatever" => "metadata", "you" => "want");
+
+?>
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+
+   <para>
+    Querying a <classname>MongoGridFS</classname> collection returns a 
+    <classname>MongoGridFSCursor</classname>, which behaves like a normal 
+    <classname>MongoCursor</classname> except that it returns 
+    <classname>MongoGridFSFiles</classname> instead of associative arrays.
+   </para>
+
+   <para>
+    <classname>MongoGridFSFiles</classname> can be written back to disc using 
+    <function>MongoGridFSFile::write</function> or retrieved in memory using 
+    <function>MongoGridFSFile::getBytes</function>. There is currently no 
+    method that automatically streams chunks, but it would be fairly easy to 
+    write by querying the <literal>$grid->chunks</literal> collection.
+   </para>
+
+   <para>
+    <classname>MongoGridFSFile</classname> objects contain a field file which
+    contains any file metadata.
+   </para>
   </section>
 <!-- }}} -->
 
