@@ -58,19 +58,19 @@
     $c = 0;
     foreach($zones as $zone) {
         if ($c % $m == 0) {
-            echo "     <row>\n";
+            echo "     <row>", PHP_EOL;
         }
         $c++;
-        echo "      <entry>{$zone}</entry>\n";
+        echo "      <entry>{$zone}</entry>", PHP_EOL;
         if ($c % $m == 0) {
-            echo "     </row>\n";
+            echo "     </row>", PHP_EOL;
         }
     }
     if ($c % $m != 0) {
         while($c++ % $m != 0) {
-            echo "      <entry></entry>\n";
+            echo "      <entry></entry>", PHP_EOL;
         }
-        echo "     </row>\n";
+        echo "     </row>", PHP_EOL;
     }
 ?>
     </tbody>
