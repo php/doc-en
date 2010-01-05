@@ -265,6 +265,7 @@ $acd = array( // {{{
     'VERSION_FILES'  => 'yes',
     'HOWTO' => 'no',
     'USE_BROKEN_TRANSLATION_FILENAME' => 'yes',
+    'COPYRIGHT_YEAR' => date('Y'),
 ); // }}}
 
 $ac = $acd;
