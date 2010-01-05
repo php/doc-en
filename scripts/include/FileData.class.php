@@ -9,7 +9,7 @@
  *
  * @author    Carola Sammy Kummert <sammywg@php.net>
  * @license   http://www.php.net/license/3_0.txt PHP License 3.0
- * @copyright (c) 1997-2009 The PHP Group
+ * @copyright (c) 1997-2010 The PHP Group
  *
  * @package   TranTools
  *

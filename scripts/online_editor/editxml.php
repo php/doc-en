@@ -3,7 +3,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 4                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2009 The PHP Group                                |
+  | Copyright (c) 1997-2010 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.0 of the PHP license,       |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -16,6 +16,7 @@
   | Authors : Salah Faya <visualmind@php.net>                            |
   +----------------------------------------------------------------------+
 
+  $Id$
 */
 //-- The PHPDOC Online XML Editing Tool 
 //--- Purpose: this is the actual xml editor script
