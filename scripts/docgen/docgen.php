@@ -3,7 +3,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2009 The PHP Group                                |
+  | Copyright (c) 1997-2010 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.0 of the PHP license,       |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -261,7 +261,7 @@ function global_check($content) { /* {{{ */
 	$content = preg_replace('/\{EXT_NAME\}/', ucwords($INFO['actual_extension']), $content);
 	
 	/* {EMPTY_REVISION_KEYWORD} */
-	$content = str_replace('{EMPTY_REVISION_KEYWORD}', '<!-- '. chr(36) .'Revision: $ -->', $content);
+	$content = str_replace('{EMPTY_REVISION_KEYWORD}', '<!-- '. chr(36) .'Revision$ -->', $content);
 
 	return $content;
 }
