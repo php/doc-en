@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
+<?xml version="1.0" encoding="ISO-8859-1"?>
 <!-- $Revision$ -->
 <sect1 xml:id="install.windows.building" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <title>Building from source</title>
@@ -7,24 +7,423 @@
   Microsoft's tools. To compile PHP with cygwin, please refer to <xref
   linkend="install.unix"/>.
  </para>
-
-<!-- FIXME
- This section is considered outdated, so it's been removed.
- Please update these docs and describe the preferred method.
- The last 'real documentation' is in revision 1.18.
- Could not comment out due to double dashes not being allowed.
---> 
-
  <para>
-  This chapter is outdated therefore it's temporarily been removed
-  from the manual. For now, consider the following:
+  This documentation will give you a basic understanding of how to compile 
+  PHP on Windows. This guide takes advanges of the many improvements made 
+  to the build system available in PHP 5.3.0 and greater.
  </para>
- <para>
-  <simplelist>
-   <member>Follow this guide: <link xlink:href="&url.php.windows.build;">here</link></member>
-   <member>See also: <link xlink:href="&url.php.windows.wiki;">the Windows wiki</link></member>
-  </simplelist>
- </para>
+
+ <sect2 xml:id="install.windows.building.getting-started">
+  <title>Getting started</title>
+  <para>
+   Before we can compile PHP we will need a compiler and 
+   some of the many libraries that PHP depends on. The only 
+   supported compilers on Windows is <literal>MSVC</literal> 
+   (Microsoft Visual C++). Versions 6 and greater is supported, 
+   however for better performance Visual C++ 2008 or greater 
+   is recommeded. This documentation will use Visual C++ 2008 
+   and PHP 5.3.x as a base.
+  </para>
+  <para>
+   Visual C++ exists in two editions, a commercial edition 
+   (Visual Studio) and in an "Express" edition, which is freely 
+   available from Microsoft.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="install.windows.building.install-vs">
+  <title>Installing using Visual Studio</title>
+  <para>
+   When installing Visual Studio, you will be prompted to choose 
+   which components you wish to use, in here you must check the 
+   "Visual C++" component. If you plan on compiling x64 versions 
+   of PHP, you must select the x64 compilers component below 
+   "Visual C++".
+  </para>
+  <para>
+   If you already installed Visual Studio, then plugin your DVD 
+   and select "Add/Remove components", and follow the procedure 
+   above for installing the compiler.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="install.windows.building.install-express">
+  <title>Installing using Visual C++ Express</title>
+  <para>
+   Visual C++ Express is available for free from Microsoft at: 
+   <link xlink:href="&url.vc2k8ee;">&url.vc2k8ee;</link>.
+  </para>
+  <para>
+   Before installing, the installation wizard will ask you to install 
+   additional components such as SQL Server, Silverlight and so on, none 
+   of these are required for compiling PHP.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="install.windows.building.install-sdk">
+  <title>Installing the Windows Platform SDK</title>
+  <para>
+   Before PHP can be compiled, we need the Windows Platform SDK. By default 
+   Visual C++ comes with the Windows Platform SDK version 6.0A, this can however 
+   not be used due to incompatibility with previous versions of the SDK. So the 
+   Windows Platform SDK 2008, which is version 6.1 is required. The SDK is freely 
+   available from Microsoft at: <link xlink:href="&url.win32.platform-sdk-2k8;">&url.win32.platform-sdk-2k8;</link>.
+  </para>
+  <para>
+   When downloading the SDK, choose the web install, as you will only need selected 
+   components. When the download is done and the setup is prompting you to select 
+   which components you require, then select the C++ compilers (remember to tick the 
+   x64 compilers, if you want to compile the 64bit version of PHP). You don't need any 
+   other tools such as CrystalReports, Mobile Development tools or anything, just the 
+   C++ libraries, headers and compilers.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="install.windows.building.setup-dir-struct">
+  <title>Directory structure</title>
+  <para>
+   Now we need to set a directory structure for where the PHP sources will be 
+   located, aswell as the default required libraries for compiling PHP. Below 
+   structure is simple and easy usable, its however not required to have it 
+   exactly like this, but its easy to overlook.
+  </para>
+  <para>
+   <example>
+    <title>Source and toolchain directory structure</title>
+    <programlisting role="txt">
+<![CDATA[
+C:.
++---php
+|   +---src                       <- Here will the PHP sources be located
+|   +---win32build                <- Toolchain and libraries for x86 (32 bit) versions
+|   |   +---bin                   <- Toolchain
+|   |   +---include               <- Header files
+|   |   +---lib                   <- Library files
+|   +---win64build                <- Toolchain and libraries for x64 (64 bit) versions (optional)
+|       +---bin                   <- Toolchain
+|       +---include               <- Header files
+|       +---lib                   <- Library files
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </sect2>
+
+ <sect2 xml:id="install.windows.building.setup-source">
+  <title>Getting the PHP source</title>
+  <para>
+   There are serveral ways to get the PHP sources, either from the 
+   source tarballs or directly from the PHP SVN repository. This documentation 
+   will simply assume either option is choosen and the sources either have 
+   been exracted/checked out to the <literal>"C:\php\src\"</literal> directory 
+   from the above directory structure.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="install.windows.building.setup-toolchain">
+  <title>Getting the PHP toolchain</title>
+  <para>
+   To compile PHP, we need a toolchain of different programs for compiling 
+   and linking default extensions. These are all available in a single zip 
+   file from the PHP on Windows repository: 
+   <link xlink:href="&url.win32.binary-tools;">&url.win32.binary-tools;</link>.
+  </para>
+  <para>
+   Extract this zip file so it complies with the directory structure for the 
+   <literal>"C:\php\win32build\"</literal> directory. If you are planning to 
+   compile 64bit versions of PHP, you need to do the same with the 
+   <literal>"C:\php\win64build\"</literal> directory. This is alright as the 
+   tools are platform independent.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="install.windows.building.setup-libs">
+  <title>Getting the libraries required for PHP</title>
+  <para>
+   PHP is a glue language, and depends on many libraries in 
+   order to function. By default PHP requires a set of libraries 
+   for compiling the core (Engine, CLI SAPI and the standard library).
+  </para>
+  <para>
+   These are available from PHP.net, organized in compiler versions and 
+   machine architectures. A standard PHP build requires the following 
+   mandatory libraries:
+  </para>
+  <para>
+   <itemizedlist>
+    <listitem>
+     <simpara>ICU</simpara>
+    </listitem>
+    <listitem>
+     <simpara>iconv (libiconv)</simpara>
+    </listitem>
+    <listitem>
+     <simpara>libxml2</simpara>
+    </listitem>
+    <listitem>
+     <simpara>zlib</simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <para>
+   If you plan to compile a <literal>standard</literal> versions of PHP. Meaning compiling 
+   all default enabled extension by running <literal>configure</literal> without any 
+   arguments, You will also need the following additional libraries for GD:
+  </para>
+  <para>
+   <itemizedlist>
+    <listitem>
+     <simpara>FreeType</simpara>
+    </listitem>
+    <listitem>
+     <simpara>libpng</simpara>
+    </listitem>
+    <listitem>
+     <simpara>libjpeg</simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <para>
+   All these libraries are packed and published to the following URL:
+   <link xlink:href="&url.win32.build-libs;">&url.win32.build-libs;</link>.
+  </para>
+  <para>
+   On the above location, libraries are organized by which compiler that were used to compile 
+   them and on which platform architecture. Below explains the different shot name variants 
+   for each compiler.
+  </para>
+  <para>
+   <itemizedlist>
+    <listitem>
+     <simpara><literal>VC6</literal> - Visual C++ 6.0</simpara>
+    </listitem>
+    <listitem>
+     <simpara><literal>VC8</literal> - Visual C++ 2005</simpara>
+    </listitem>
+    <listitem>
+     <simpara><literal>VC9</literal> - Visual C++ 2008</simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <para>
+   When you have downloaded the mandatory libraries, and/or any additional libraries you 
+   may require, then exact them respectedly to the directory structure set in 
+   <literal>"C:\php\winXXbuild\"</literal>, so headers are located in the <literal>include</literal> 
+   directory and library files in the <literal>libs</literal> directory.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="install.windows.building.setup-env">
+  <title>Setting up the environment</title>
+  <para>
+   Before we can compile PHP, we must alter the <varname>PATH</varname> 
+   environment variable so the <literal>configure</literal> script can 
+   pickup the toolchain in the <literal>"C:\php\winXXbuild\bin\"</literal> 
+   directories. To do this, open the Start menu and right click on "Computer" 
+   and select "Properties". Select the "Advanced" tab, and hit the button saying 
+   "Environment variables". In the global variables section, find the 
+   <varname>PATH</varname> variable and select "Edit". Append the following to its 
+   current value: <literal>;C:\php\win32build\bin</literal> and for 64bit support: 
+   <literal>;C:\php\win32build\bin;C:\php\win64build\bin</literal>.
+  </para>
+  <para>
+   Now you must create the following directory structure on the drive that you are 
+   using to compile on:
+  </para>
+  <para>
+   <example>
+    <title>bison.simple directory structure</title>
+    <programlisting role="txt">
+<![CDATA[
+C:.
++---usr
+¦   +---local
+¦       +---share
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Now copy the <literal>"C:\php\win32build\bin\bison.simple"</literal> file 
+   into the <literal>"C:\usr\local\share"</literal> directory.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="install.windows.building.compiling">
+  <title>Compiling</title>
+  <para>
+   Now PHP is ready to be compiled, open the Start menu, choose "Programs" 
+   and find "Microsoft Visual Studio" (or "Microsoft Visual C++"), select the 
+   tools folder and open "Visual Studio 2008 Command Prompt". This will open a 
+   console window saying "Setting up environment for XXX", where XXX may be either 
+   x86 or x64. If you wish to compile the 64bit version of PHP, you must execute the 
+   following:
+  </para>
+  <para>
+   <example>
+    <title>Setting up the x64 build environment</title>
+    <programlisting role="txt">
+<![CDATA[
+cd bin
+vcvarsx86_amd64
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Now <literal>cd</literal> to the <literal>"C:\php\src\"</literal> directory and execute 
+   the <literal>buildconf</literal> script like so:
+  </para>
+  <para>
+   <example>
+    <title>Running buildconf</title>
+    <programlisting role="txt">
+<![CDATA[
+C:\php\src\> buildconf
+Now run 'configure --help'
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   This means that the <literal>configure</literal> script was generated with success. Now we 
+   need to run the generated <literal>configure</literal> script to generate the Makefiles for 
+   the compiler. Simply run <literal>configure</literal> like so:
+  </para>
+  <para>
+   <example>
+    <title>Running configure</title>
+    <programlisting role="txt">
+<![CDATA[
+configure
+...
+...
+...
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   As <literal>buildconf</literal> advertised, then <literal>configure --help</literal> can be used 
+   to see available commands for <literal>configure</literal>. If you have multiple cores available 
+   then enable multi processing, which optimizes and makes the compilation faster. Multi processing 
+   can be enabled using the <literal>--enable-one-shot</literal> option for <literal>configure</literal> 
+   like so:
+  </para>
+  <para>
+   <example>
+    <title>Enabling multi processing in configure</title>
+    <programlisting role="txt">
+<![CDATA[
+configure --enable-one-shot
+...
+...
+...
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   If you wish to do a minimal build, then you need to disable all default enabled extensions using the 
+   <literal>--disable-all</literal> option. When disabling all extensions and SAPIs, you must select atleast 
+   one before you can compile a PHP binary. Below example will disable all extensions, enable the CLI SAPI and 
+   enable multi processing:
+  </para>
+  <para>
+   If you need to export debugging symbols and doing a debug build, you also need to enable the following two 
+   options: <literal>--enable-debug</literal> and <literal>--enable-debug-pack</literal>.
+  </para>
+  <para>
+   <example>
+    <title>Configuring a minimal build of PHP with multi processing</title>
+    <programlisting role="txt">
+<![CDATA[
+configure --disable-all --enable-cli --enable-one-shot
+...
+...
+...
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   If you need to compile an NTS (<literal>NOT Thread Safe</literal>) build of PHP, you need to pass the 
+   <literal>--disable-zts</literal> option to <literal>configure</literal>. By default PHP is compiled with 
+   Thread Safety.
+  </para>
+  <para>
+   Now we are ready actually perform the compile, this is done by executing <literal>nmake</literal>, like so:
+  </para>
+  <para>
+   <example>
+    <title>Executing nmake</title>
+    <programlisting role="txt">
+<![CDATA[
+C:\php\src\> nmake
+...
+...
+...
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </sect2>
+
+ <sect2 xml:id="install.windows.building.testing">
+  <title>Testing the build</title>
+  <para>
+   When the build process is complete, the PHP binary, along with all the compiled 
+   extensions will be located in a sub directory to the sources directory. Depending 
+   on the build type, it will be located in one of the following directories:
+  </para>
+  <para>
+   <itemizedlist>
+    <listitem>
+     <simpara><literal>Debug</literal> - Debug, NOT Thread Safe</simpara>
+    </listitem>
+    <listitem>
+     <simpara><literal>Debug_TS</literal> - Debug, Thread Safe</simpara>
+    </listitem>
+    <listitem>
+     <simpara><literal>Release</literal> - Release, NOT Thread Safe</simpara>
+    </listitem>
+    <listitem>
+     <simpara><literal>Release_TS</literal> - Release, Thread Safe</simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <para>
+   If you are compiling the 64bit version of PHP, these directories will be located 
+   inside another directory called <literal>x64</literal> from the root of the sources.
+  </para>
+  <para>
+   To test the compiled binary, then <literal>cd</literal> to its directory and execute 
+   the following:
+  </para>
+  <para>
+   <example>
+    <title>Testing the compiled PHP binary</title>
+    <programlisting role="txt">
+<![CDATA[
+C:\php\src\Release_TS\> php -v
+PHP 5.3.X (cli) (built: XXX XX XXXX XX:XX:XX)
+Copyright (c) 1997-2010 The PHP Group
+Zend Engine v2.3.0, Copyright (c) 1998-2010 Zend Technologies
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </sect2>
+
 </sect1>
 
 <!-- Keep this comment at the end of the file
