@@ -559,7 +559,7 @@ if ($ac['HOWTO'] === 'yes') {
 
 globbetyglob("{$ac['basedir']}/scripts", 'make_scripts_executable');
 
-$redir = ($ac['quiet'] == 'yes') ? " > /dev/null" : '';
+$redir = ($ac['quiet'] == 'yes') ? ' > ' . (is_windows() ? 'nul' : '/dev/null') : '';
 
 quietechorun("\"{$ac['PHP']}\" -q \"{$ac['basedir']}/scripts/file-entities.php\"{$redir}");
 
