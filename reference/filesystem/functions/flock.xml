@@ -28,7 +28,7 @@
    (which means all accessing programs have to use the same way of locking
    or it will not work). By default, this function will block until the
    requested lock is acquired; this may be controlled (on non-Windows
-   platforms) with the LOCK_NB option documented below.
+   platforms) with the <constant>LOCK_NB</constant> option documented below.
   </para>
  </refsect1>
 
@@ -68,9 +68,9 @@
        </itemizedlist>
       </para>
       <para>
-       It is also possible to add <constant>LOCK_NB</constant> if you don't
-       want <function>flock</function> to block while locking.
-       (not supported on Windows)
+       It is also possible to add <constant>LOCK_NB</constant> as a bitmask to one 
+       of the above operations if you don't want <function>flock</function> to 
+       block while locking. (not supported on Windows)
       </para>
      </listitem>
     </varlistentry>
@@ -79,7 +79,7 @@
      <listitem>
       <para>
        The optional third argument is set to &true; if the lock would block
-       (EWOULDBLOCK errno condition).
+       (EWOULDBLOCK errno condition). (not supported on Windows)
       </para>
      </listitem>
     </varlistentry>
@@ -147,13 +147,36 @@ fclose($fp);
     </programlisting>
    </example>
   </para>
+  <para>
+   <example>
+    <title><function>flock</function> using the <constant>LOCK_NB</constant> option</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$fp = fopen('/tmp/lock.txt', 'r+');
+
+/* Activate the LOCK_NB option on an LOCK_EX operation */
+if(!flock($fp, LOCK_EX | LOCK_NB)) {
+	echo 'Unable to obtain lock';
+	exit(-1);
+}
+
+/* ... */
+
+fclose($fp);
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
  </refsect1>
 
  <refsect1 role="notes">
   &reftitle.notes;
   <note>
    <para>
-    <function>flock</function> locks mandatory under Windows.
+    <function>flock</function> locks mandatory under Windows aswell as some 
+    POSIX based operating systems.
    </para>
   </note>
   <note>
@@ -164,6 +187,13 @@ fclose($fp);
     <function>fopen</function>).
    </para>
   </note>
+  <note>
+   <para>
+    POSIX.1 compatible systems will release the scripts <function>flock</function>'s 
+    on a file, if the scripts uses <function>fclose</function> on any file handle 
+    on that file.
+   </para>
+  </note>
   <warning>
    <para>
     Assigning other value to <parameter>handle</parameter> argument in the
@@ -171,11 +201,6 @@ fclose($fp);
    </para>
   </warning>
   <warning>
-   <para>
-    <function>flock</function> will not work on NFS and many other networked
-    file systems. Check your operating system documentation for more
-    details.
-   </para>
    <para>
     On some operating systems <function>flock</function> is implemented at
     the process level. When using a multithreaded server API like ISAPI you
