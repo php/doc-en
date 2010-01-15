@@ -41,13 +41,14 @@ $TEMPLATE = array(
 
 /* Default files for extensions */
 $DOC_EXT = array(
-	'book.xml' 		 => 'book.tpl',
-	'setup.xml' 	 => 'setup.tpl',
-	'constants.xml'  => 'constants.tpl',
-	'configure.xml'  => 'configure.tpl',
-	'reference.xml'  => 'reference.tpl',
-	'ini.xml'		 => 'ini.tpl',
-	'versions.xml'	 => 'versions.tpl',
+	'book.xml' 	         => 'book.tpl',
+	'book.developer.xml' => 'book.developer.tpl',
+	'setup.xml'          => 'setup.tpl',
+	'constants.xml'      => 'constants.tpl',
+	'configure.xml'      => 'configure.tpl',
+	'reference.xml'      => 'reference.tpl',
+	'ini.xml'            => 'ini.tpl',
+	'versions.xml'       => 'versions.tpl',
 );
 
 function usage() { /* {{{ */
@@ -715,6 +716,13 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 			}
 			$content = preg_replace('/\{VERSIONS\}/', rtrim($markup), $content);
 		break;
+		
+		case 'book.developer.xml':
+			if ($OPTION['docbase'] && $OPTION['phpdoc']) {
+				$content = preg_replace('/\{PATH_TO_DOCBASE\}/', $OPTION['docbase'], $content);
+				$content = preg_replace('/\{PATH_TO_DOC\}/', $OPTION['phpdoc'], $content);
+			}
+		break;
 	}
 
 	return $content;
@@ -1012,6 +1020,7 @@ $OPTION['pecl']		 = false;
 $OPTION['copy']		 = false;
 $OPTION['test']		 = false;
 $OPTION['phpdoc']	 = NULL;
+$OPTION['docbase']	 = NULL;
 $OPTION['seealso']	 = false;
 $OPTION['example']	 = false;
 
@@ -1023,6 +1032,7 @@ $arropts = array(
 	'help'	  		=> 'h',  /* help */
 	'pecl'			=> 'p',  /* pecl */
 	'phpdoc:'		=> 'd:', /* phpdoc dir*/
+	'docbase:'		=> 'b:', /* doc-base dir */
 	'copy'			=> 'a',  /* copy */
 	'test'			=> 't',  /* test */
 	'example'		=> 'x',  /* example */
@@ -1085,6 +1095,10 @@ foreach ($options as $opt => $value) {
 		case 'd':
 		case 'phpdoc':
 			$OPTION['phpdoc'] = realpath($value);
+			break;
+		case 'b':
+		case 'docbase':
+			$OPTION['docbase'] = realpath($value);
 			break;
 		case 'a':
 		case 'copy':
