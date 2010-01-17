@@ -5,8 +5,7 @@
 
   <para>
    This section explains the merits of the new Garbage Collection (also known
-   as GC) mechanism that is part of PHP 5.3. This was originally written as a
-   three part column for <link xlink:href='&url.phparchitect;'>php|architect</link>.
+   as GC) mechanism that is part of PHP 5.3.
   </para>
 
   <sect1 xml:id="features.gc.refcounting-basics">
@@ -342,18 +341,11 @@ a: (refcount=2, is_ref=1)=array (
   <sect1 xml:id="features.gc.collecting-cycles">
    <title>Collecting Cycles</title>
    <para>
-    Traditionally, reference counting memory mechanisms, such as that used by
-    PHP, fail to address those circular reference memory leaks. Back in 2007,
-    while looking into this issue, I was pointed to a paper by David F. Bacon
-    and V.T. Rajan titled "<link xlink:href='&url.gc-paper;'>Concurrent Cycle
-    Collection in Reference Counted Systems</link>". Although the paper was
-    written with Java in mind, I started to play around with it to see if it
-    was feasible to implement the synchronous algorithm, as outlined in the
-    paper, in PHP. At that moment, I didn't have a lot of time, but along came
-    the Google Summer of Code project and we put forward the implementation of
-    this paper as one of our ideas. Yiduo (David) Wang picked up this idea and
-    started hacking on the first version as part of the Summer of Code
-    project.
+    Traditionally, reference counting memory mechanisms, such as that used
+    previously by PHP, fail to address circular reference memory leaks.
+    As of 5.3.0 PHP however implements the synchronous algorithm from the 
+    <link xlink:href='&url.gc-paper;'>Concurrent Cycle Collection in Reference Counted Systems</link>
+    paper which addresses that issue.
    </para>
    <para>
     A full explanation of how the algorithm works would be slightly beyond the
@@ -380,7 +372,7 @@ a: (refcount=2, is_ref=1)=array (
     (zvals) in the "root buffer" (marking them "purple"). It also makes sure
     that each possible garbage root ends up in the buffer only once. Only when
     the root buffer is full does the collection mechanism start for all the
-    different zvals inside. See step A in the figure.
+    different zvals inside. See step A in the figure above.
    </para>
    <para>
     In step B, the algorithm runs a depth-first search on all possible roots
@@ -451,11 +443,6 @@ a: (refcount=2, is_ref=1)=array (
     then leaves an empty buffer so that there is more space for storing
     possible roots while the cycle collecting mechanism is turned off.
    </para>
-   <para>
-    In this section, we saw how the garbage collection mechanism works and
-    how it is integrated into PHP. In the third and final section,
-    we will look at performance considerations and benchmarks.
-   </para>
   </sect1>
 
   <sect1 xml:id="features.gc.performance-considerations">
@@ -488,15 +475,9 @@ a: (refcount=2, is_ref=1)=array (
      itself uses when starting up.
     </para>
     <para>
-     <mediaobject>
-      <alt>Comparison of memory usage between PHP 5.2 and PHP 5.3</alt>
-      <imageobject>
-       <imagedata fileref="en/features/figures/gc-benchmark.png" format="PNG"/>
-      </imageobject>
-     </mediaobject>
-    </para>
-    <para>
-     <programlisting role="php">
+     <example>
+      <title>Memory usage example</title>
+      <programlisting role="php">
 <![CDATA[
 <?php
 class Foo
@@ -517,11 +498,18 @@ for ( $i = 0; $i <= 100000; $i++ )
 }
 ?>
 ]]>
-     </programlisting>
+      </programlisting>
+      <mediaobject>
+       <alt>Comparison of memory usage between PHP 5.2 and PHP 5.3</alt>
+       <imageobject>
+        <imagedata fileref="en/features/figures/gc-benchmark.png" format="PNG"/>
+       </imageobject>
+      </mediaobject>
+     </example>
     </para>
     <para>
      In this very academic example, we are creating an object in which a
-     property is set to point back to the object itself. When the $a variable
+     property is set to point back to the object itself. When the <varname>$a</varname> variable
      in the script is re-assigned in the next iteration of the loop, a memory
      leak would typically occur. In this case, two zval-containers are leaked
      (the object zval, and the property zval), but only one possible root is
@@ -549,7 +537,9 @@ for ( $i = 0; $i <= 100000; $i++ )
      second script is here:
     </para>
     <para>
-     <programlisting role="php">
+     <example>
+      <title>GC performance influences</title>
+      <programlisting role="php">
 <![CDATA[
 <?php
 class Foo
@@ -566,7 +556,8 @@ for ( $i = 0; $i <= 1000000; $i++ )
 echo memory_get_peak_usage(), "\n";
 ?>
 ]]>
-     </programlisting>
+      </programlisting>
+     </example>
     </para>
     <para>
      We will run this script two times, once with the
@@ -574,13 +565,16 @@ echo memory_get_peak_usage(), "\n";
      turned off:
     </para>
     <para>
-     <programlisting role="shell">
-time ~/dev/php/php-5.3dev/sapi/cli/php -dzend.enable_gc=0 \
-  -dmemory_limit=-1 -n Listing1.php
+     <example>
+      <title>Running the above script</title>
+      <programlisting role="shell">
+<![CDATA[
+time php -dzend.enable_gc=0 -dmemory_limit=-1 -n example2.php
 # and
-time ~/dev/php/php-5.3dev/sapi/cli/php -dzend.enable_gc=1 \
-  -dmemory_limit=-1 -n Listing2.php
-     </programlisting>
+time php -dzend.enable_gc=1 -dmemory_limit=-1 -n example2.php
+]]>
+      </programlisting>
+     </example>
     </para>
     <para>
      On my machine, the first command seems to take consistently about 10.7
@@ -593,25 +587,6 @@ time ~/dev/php/php-5.3dev/sapi/cli/php -dzend.enable_gc=1 \
      same 7%, for this particular script, while the memory saving
      capabilities save more and more memory as more circular references are
      found during script execution.
-    </para>
-    <para>
-     Let's now have a look at non-academic situation. I first started looking
-     for circular reference collecting algorithms when I found out that while
-     running the tests of the eZ Components' Template component with PHPUnit,
-     I ended up swapping a lot, rendering my machine useless in the process.
-     In order to do some benchmarks for this article, I re-ran those same
-     tests with an empty php.ini file to disable the overhead and memory
-     allocation that Xdebug was creating while doing code-coverage analysis.
-    </para>
-    <para>
-     Memory consumption dropped 95% from 1.7Gb to 75Mb, and the runtime as
-     reported by PHPUnit increased from 2:17 for the non-GC enabled run to
-     2:33 for the GC enabled run, an increase of about 12%. However, with the
-     non-GC enabled run, PHP sat there doing "nothing" for almost 15 seconds.
-     Upon investigation with the Unix debugger, GDB, I noticed that those 15
-     seconds were all spent on freeing memory allocated for objects inside
-     the PHP runtime. The actual time that the script ran was about the same
-     in the end.
     </para>
    </sect2>
 
@@ -627,12 +602,17 @@ time ~/dev/php/php-5.3dev/sapi/cli/php -dzend.enable_gc=1 \
      sequence should do the trick:
     </para>
     <para>
-     <programlisting role="shell">
+     <example>
+      <title>Recompiling PHP to enable GC benchmarking</title>
+      <programlisting role="shell">
+<![CDATA[
 export CFLAGS=GC_BENCH=1
 ./config.nice
 make clean
 make
-     </programlisting>
+]]>
+      </programlisting>
+     </example>
     </para>
     <para>
      When you run the above example code again with the newly built PHP
@@ -640,7 +620,10 @@ make
      execution:
     </para>
     <para>
-     <programlisting role="shell">
+     <example>
+      <title>GC statistics</title>
+      <programlisting role="shell">
+<![CDATA[
 GC Statistics
 -------------
 Runs:               110
@@ -653,7 +636,9 @@ Root buffer peak:   10000
       --------  --------  -----------  ------
 ZVAL   7175487   1491291    1241690   3611871
 ZOBJ  28506264   1527980     677581   1025731
-     </programlisting>
+]]>
+      </programlisting>
+     </example>
     </para>
     <para>
      The most informative statistics are displayed in the first block. You
@@ -667,9 +652,7 @@ ZOBJ  28506264   1527980     677581   1025731
    <sect2 xml:id="features.gc.performance-considerations.conclusion">
     <title>Conclusion</title>
     <para>
-     In this third and final installment, we had a quick look at the
-     performance implications of the garbage collection mechanism that is now
-     part of PHP 5.3. In general, it will only cause a slowdown when the
+     In general the garbage collector in PHP will only cause a slowdown when the
      cycle collecting algorithm actually runs, whereas in normal (smaller)
      scripts there should be no performance hit at all.
     </para>
@@ -681,7 +664,7 @@ ZOBJ  28506264   1527980     677581   1025731
     </para>
     <para>
      The benefits are most apparent for longer-running scripts, such as
-     lengthy test suites or daemon scripts. Also, for PHP-GTK applications
+     lengthy test suites or daemon scripts. Also, for <link xlink:href="&url.php.gtk;">PHP-GTK</link> applications
      that generally tend to run longer than scripts for the Web, the new
      mechanism should make quite a bit of a difference regarding memory leaks
      creeping in over time.
