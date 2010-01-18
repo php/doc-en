@@ -10,36 +10,35 @@
 <![CDATA[
 <?php
 
-function callback_func($fd, $events, $arg)
+function print_line($fd, $events, $arg)
 {
-    static $max_requests;
+    static $max_requests = 0;
 
     $max_requests++;
 
-    if ($max_requests == 10) { /* exit loop after 10 writes */
+    if ($max_requests == 10) {
+        // exit loop after 10 writes
         event_base_loopexit($arg[1]);
     }
 
-    /* read while we can */
-    while (false !=== ($data = fread($fd, 4096))) {
-        echo $data;
-    }
+    // print the line
+    echo  fgets($fd);
 }
 
-/* create base and event */
+// create base and event
 $base = event_base_new();
 $event = event_new();
 
 $fd = STDIN;
 
-/* set event flags */
-event_set($event, $fd, EV_READ | EV_PERSIST, "callback_func", array($event, $base));
-/* set event base */
+// set event flags
+event_set($event, $fd, EV_READ | EV_PERSIST, "print_line", array($event, $base));
+// set event base
 event_base_set($event, $base);
 
-/* enable event */
+// enable event
 event_add($event);
-/* start event loop */
+// start event loop
 event_base_loop($base);
 
 ?>
@@ -54,7 +53,7 @@ event_base_loop($base);
 <![CDATA[
 <?php
 
-function callback_func($buf, $arg)
+function print_line($buf, $arg)
 {
     static $max_requests;
 
@@ -64,22 +63,20 @@ function callback_func($buf, $arg)
         event_base_loopexit($arg);
     }
 
-    /* read while we can */
-    while (false !=== ($data = event_buffer_read($buf, 10))) {
-        echo $data;
-    }
+    // print the line
+    echo event_buffer_read($buf, 4096);
 }
 
 function error_func($buf, $what, $arg)
 {
-    /* handle an error */
+    // handle errors
 }
 
 $base = event_base_new();
-$b = event_buffer_new(STDIN, "callback_func", NULL, "error_func", $base);
+$eb = event_buffer_new(STDIN, "print_line", NULL, "error_func", $base);
 
-event_buffer_base_set($b, $base);
-event_buffer_enable($b, EV_READ);
+event_buffer_base_set($eb, $base);
+event_buffer_enable($eb, EV_READ);
 
 event_base_loop($base);
 
