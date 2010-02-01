@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<part xml:id="mongo.types" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+
+ <title>Types</title>
+
+ <partintro>
+
+  <section>
+   <para>
+    MongoDB allows programmers to save and query for data expressed in all of the 
+    basic PHP types, compound types (arrays, associative arrays, and objects), and
+    a half-dozen classes provided by the MongoDB PHP driver (for regular 
+    expressions, dates, and other specialized applications).
+   </para>
+   <para>
+    MongoDB uses a storage format called "BSON," Binary Serializable Object 
+    Notation, which is similar to JSON but more compact and rich in types. Listed
+    below is the exact byte size of each type (or information required to compute 
+    its size, in the case of variable-length types).  Keep in mind that these
+    sizes do not include field names. The size of an object can be manually
+    computed, but it may be easier for programmers to call the 
+    <function>bson_encode</function> function and take the length of the resulting
+    string.
+   </para>
+   <para>
+    An example of manually computing BSON size for saving the object 
+    array("x" => null, "y" => 40):
+    <programlisting>
+     <![CDATA[
+4 bytes (object size)
+
+1 byte  (type of "x" field)
+2 bytes ("x" and "\0")
+0 bytes (for null)
+
+1 byte  (type of "y" field)
+2 bytes ("y" and "\0")
+4 bytes (for an integer)
+
+1 byte  (end-of-object byte)
+-----------------------
+15 bytes
+]]>
+    </programlisting>
+   </para>
+  </section>
+
+  <section>
+    <title>Simple Types</title>
+    <para>
+     The built-in types are:
+    </para>
+    <para>
+     <informaltable>
+      <tgroup cols="3">
+       <thead>
+        <row>
+         <entry>Type</entry>
+         <entry>Description</entry>
+         <entry>Size in MongoDB (bytes)</entry>
+        </row>
+       </thead>
+       <tbody>
+        <row>
+         <entry>&null;</entry>
+         <entry>Fairly self-explanatory.</entry>
+         <entry>0</entry>
+        </row>
+        <row>
+         <entry>boolean</entry>
+         <entry>&true; and &false;</entry>
+         <entry>1</entry>
+        </row>
+        <row>
+         <entry>int</entry>
+         <entry>Integer values.</entry>
+         <entry>4</entry>
+        </row>
+        <row>
+         <entry>float</entry>
+         <entry>Double values.</entry>
+         <entry>8</entry>
+        </row>
+        <row>
+         <entry>string</entry>
+         <entry>Strings of UTF-8 characters.</entry>
+         <entry>string length + 1</entry>
+        </row>
+       </tbody>
+      </tgroup>
+     </informaltable>
+    </para>
+  </section>
+
+  <section>
+   <title>Arrays and Objects</title>
+
+   <para>
+    Arrays and objects can also be saved to the database.  An array with ascending
+    numeric keys will be saved as a an array, anything else will be saved as an
+    object.
+   </para>
+
+   <programlisting role="php">
+    <![CDATA[
+<?php
+
+  // $scores will be saved as an array
+  $scores = array(98, 100, 73, 85);
+  $collection->insert(array("scores" => $scores);
+
+// $scores will be saved as an object
+$scores = array("quiz1" => 98, "midterm" => 100, "quiz2" => 73, "final" => 85);
+$collection->insert(array("scores" => $scores);
+
+?>
+]]>
+   </programlisting>
+
+   <para>
+    If you query for these objects using the database shell, they will look like:
+    <programlisting>
+     <![CDATA[
+> db.students.find()
+{ "_id" : ObjectId("4b06beada9ad6390dab17c43"), "scores" : [ 98, 100, 73, 85 ] }
+{ "_id" : ObjectId("4b06bebea9ad6390dab17c44"), "scores" : { "quiz1" : 98, "midterm" : 100, "quiz2" : 73, "final" : 85 } }
+]]>
+    </programlisting>
+   </para>
+
+   <para>
+    The database can also save arbitrary PHP objects (although they will be 
+    returned as associative arrays).  The fields are used for the key/value
+    pairs.  For example, a blog post might look like:
+    <programlisting role="php">
+     <![CDATA[
+<?php
+
+  // the blog post class
+  class Post {
+
+  var $author;
+  var $content;
+  var $comments = array();
+  var $date;
+
+  public function __construct($author, $content) {
+  $this->author = $author;
+$this->content = $content;
+    $this->date = new MongoDate();
+  }
+
+  public function setTitle($title) {
+    $this->title = $title;
+  }
+}
+
+// create a simple blog post and insert it into the database
+$post1 = new Post("Adam", "This is a blog post");
+
+$blog->insert($post1);
+
+
+// there is nothing restricting the type of the "author" field, so we can make 
+// it a nested object
+$author = array("name" => "Fred", "karma" => 42);
+$post2 = new Post($author, "This is another blog post.");
+
+// we create an extra field by setting the title
+$post2->setTitle("Second Post");
+
+$blog->insert($post2);
+
+?>
+]]>
+    </programlisting>
+   </para>
+
+   <para>
+    From the database shell, this will look something like:
+    <programlisting>
+     <![CDATA[
+> db.blog.find()
+{ "_id" : ObjectId("4b06c263edb87a281e09dad8"), "author" : "Adam", "content" : "This is a blog post", "comments" : [ ], "date" : "Fri Nov 20 2009 11:22:59 GMT-0500 (EST)" }
+{ "_id" : ObjectId("4b06c282edb87a281e09dad9"), "author" : { "name" : "Fred", "karma" : 42 }, "content" : "This is a blog post", "comments" : [ ], "date" : "Fri Nov 20 2009 11:23:30 GMT-0500 (EST)", "title" : "Second Post" }
+]]>
+    </programlisting>
+   </para>
+  </section>
+
+  <section>
+   <title>MongoDB Types</title>
+
+   <para>
+    The Mongo PHP driver also defines a few new types to use with the database.
+    See class documentation for details and examples.
+   </para>
+   <para>
+    <informaltable>
+     <tgroup cols="3">
+      <thead>
+       <row>
+        <entry>Type</entry>
+        <entry>Description</entry>
+        <entry>Size in MongoDB (bytes)</entry>
+       </row>
+      </thead>
+      <tbody>
+       <row>
+        <entry><classname>MongoBinData</classname></entry>
+        <entry>Binary data.</entry>
+        <entry>Number of bytes in binary data + 5</entry>
+       </row>
+       <row>
+        <entry><classname>MongoCode</classname></entry>
+        <entry>JavaScript code.</entry>
+        <entry>String length of code + object size of scope.</entry>
+       </row>
+       <row>
+        <entry><classname>MongoDate</classname></entry>
+        <entry>Dates and times.  Stored as milliseconds since the epoch.</entry>
+        <entry>8</entry>
+       </row>
+       <row>
+        <entry><classname>MongoId</classname></entry>
+        <entry>Unique document id:
+         <itemizedlist>
+          <listitem>
+           <para>4 bytes of timestamp</para>
+           <para>
+            No two records can have the same id if they were inserted at different 
+            times.
+           </para>
+          </listitem>
+          <listitem>
+           <para>3 bytes machine id</para>
+           <para>
+            No two records can have the same id if they were inserted on different 
+            machines
+           </para>
+          </listitem>
+          <listitem>
+           <para>2 bytes thread id</para>
+           <para>
+            No two records can have the same id if they were inserted by different 
+            threads running on the same machine.
+           </para>
+          </listitem>
+          <listitem>
+           <para>3 bytes incrementing value</para>
+           <para>
+            Each time an id is created, a global counter is incremented and used
+            as the increment value of the next id.  
+           </para>
+          </listitem>
+         </itemizedlist>
+         Thus, no two records can have the same id unless a single process on a
+         single machine managed to insert 256^3 (over 16 million) documents in
+         one second, overflowing the increment field.
+        </entry>
+        <entry>12</entry>
+       </row>
+       <row>
+        <entry><classname>MongoMinKey</classname></entry>
+        <entry>Always smaller than any other value.</entry>
+        <entry>String length of code + object size of scope.</entry>
+       </row>
+       <row>
+        <entry><classname>MongoMaxKey</classname></entry>
+        <entry>JavaScript code.</entry>
+        <entry>Always larger than any other value.</entry>
+       </row>
+       <row>
+        <entry><classname>MongoRegex</classname></entry>
+        <entry>Regular expressions.</entry>
+        <entry>
+         Number of characters in regular expression + number of flags
+        </entry>
+       </row>
+       <row>
+        <entry><classname>MongoTimestamp</classname></entry>
+        <entry>Sharding timestamp</entry>
+        <entry>8</entry>
+       </row>
+      </tbody>
+     </tgroup>
+    </informaltable>
+   </para>
+  </section>
+
+  <section>
+   <title>Unsupported Types</title>
+
+   <para>Types supported by Mongo, but not the PHP driver:</para>
+   <para>
+    <informaltable>
+     <tgroup cols="3">
+      <thead>
+       <row>
+        <entry>Type</entry>
+        <entry>Description</entry>
+        <entry>Size in MongoDB (bytes)</entry>
+       </row>
+      </thead>
+      <tbody>
+       <row>
+        <entry>long</entry>
+        <entry>
+         As PHP does not support 8 byte integers, longs fetched from the database 
+         are converted to doubles.  Integers will always be saved to the database 
+         as 4 byte ints (even on machines that support 8 byte ints) and doubles 
+         will be saved as 8 bytes doubles, so there is no way to save a long to
+         the database with the PHP driver.
+        </entry>
+        <entry>8</entry>
+       </row>
+      </tbody>
+     </tgroup>
+    </informaltable>
+   </para>
+  </section>
+ </partintro>
+
+ &reference.mongo.mongoid;
+ &reference.mongo.mongocode;
+ &reference.mongo.mongodate;
+ &reference.mongo.mongoregex;
+ &reference.mongo.mongobindata;
+ &reference.mongo.mongodbref;
+ &reference.mongo.mongominkey;
+ &reference.mongo.mongomaxkey;
+ &reference.mongo.mongotimestamp;
+
+</part>
