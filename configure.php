@@ -552,6 +552,7 @@ if ($ac['HOWTO'] === 'yes') {
         errors_are_bad(1);
     } else {
         echo "INFO: If this isn't enough information, try again with --enable-xml-details)\n";
+        echo "INFO: Or if --enable-xml-details seems too slow (it will), instead try with --disable-segfault-error\n";
         print_xml_errors(false);
         errors_are_bad(1);
     }
