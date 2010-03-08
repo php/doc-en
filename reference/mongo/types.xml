@@ -14,37 +14,6 @@
     a half-dozen classes provided by the MongoDB PHP driver (for regular 
     expressions, dates, and other specialized applications).
    </para>
-   <para>
-    MongoDB uses a storage format called "BSON," Binary Serializable Object 
-    Notation, which is similar to JSON but more compact and rich in types. Listed
-    below is the exact byte size of each type (or information required to compute 
-    its size, in the case of variable-length types).  Keep in mind that these
-    sizes do not include field names. The size of an object can be manually
-    computed, but it may be easier for programmers to call the 
-    <function>bson_encode</function> function and take the length of the resulting
-    string.
-   </para>
-   <para>
-    An example of manually computing BSON size for saving the object 
-    array("x" => null, "y" => 40):
-    <programlisting>
-     <![CDATA[
-4 bytes (object size)
-
-1 byte  (type of "x" field)
-2 bytes ("x" and "\0")
-0 bytes (for null)
-
-1 byte  (type of "y" field)
-2 bytes ("y" and "\0")
-4 bytes (for an integer)
-
-1 byte  (end-of-object byte)
------------------------
-15 bytes
-]]>
-    </programlisting>
-   </para>
   </section>
 
   <section>
@@ -107,9 +76,9 @@
     <![CDATA[
 <?php
 
-  // $scores will be saved as an array
-  $scores = array(98, 100, 73, 85);
-  $collection->insert(array("scores" => $scores);
+// $scores will be saved as an array
+$scores = array(98, 100, 73, 85);
+$collection->insert(array("scores" => $scores);
 
 // $scores will be saved as an object
 $scores = array("quiz1" => 98, "midterm" => 100, "quiz2" => 73, "final" => 85);
@@ -181,12 +150,35 @@ $blog->insert($post2);
    <para>
     From the database shell, this will look something like:
     <programlisting>
-     <![CDATA[
+<![CDATA[
 > db.blog.find()
 { "_id" : ObjectId("4b06c263edb87a281e09dad8"), "author" : "Adam", "content" : "This is a blog post", "comments" : [ ], "date" : "Fri Nov 20 2009 11:22:59 GMT-0500 (EST)" }
 { "_id" : ObjectId("4b06c282edb87a281e09dad9"), "author" : { "name" : "Fred", "karma" : 42 }, "content" : "This is a blog post", "comments" : [ ], "date" : "Fri Nov 20 2009 11:23:30 GMT-0500 (EST)", "title" : "Second Post" }
 ]]>
     </programlisting>
+   </para>
+
+   <para>
+    The driver will not detect reference loops in arrays and objects.  For 
+    example, this will give a fatal error:
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$collection->insert($GLOBALS);
+
+?>
+]]>
+    </programlisting>
+    <programlisting>
+<![CDATA[
+
+Fatal error: Nesting level too deep - recursive dependency?
+
+]]>
+    </programlisting>
+    If you need to insert documents that may have recursive dependency, you have
+    to check for it yourself before passing it to the driver.
    </para>
   </section>
 
@@ -321,6 +313,42 @@ $blog->insert($post2);
     </informaltable>
    </para>
   </section>
+
+  <section>
+   <title>BSON</title>
+   <para>
+    MongoDB uses a storage format called "BSON," Binary Serializable Object 
+    Notation, which is similar to JSON but more compact and rich in types. Listed
+    below is the exact byte size of each type (or information required to compute 
+    its size, in the case of variable-length types).  Keep in mind that these
+    sizes do not include field names. The size of an object can be manually
+    computed, but it may be easier for programmers to call the 
+    <function>bson_encode</function> function and take the length of the resulting
+    string.
+   </para>
+   <para>
+    An example of manually computing BSON size for saving the object 
+    array("x" => null, "y" => 40):
+    <programlisting>
+     <![CDATA[
+4 bytes (object size)
+
+1 byte  (type of "x" field)
+2 bytes ("x" and "\0")
+0 bytes (for null)
+
+1 byte  (type of "y" field)
+2 bytes ("y" and "\0")
+4 bytes (for an integer)
+
+1 byte  (end-of-object byte)
+-----------------------
+15 bytes
+]]>
+    </programlisting>
+   </para>
+  </section>
+
  </partintro>
 
  &reference.mongo.mongoid;
