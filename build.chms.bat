@@ -16,7 +16,7 @@ ECHO SVN Updating...
 ECHO Upgrading PhD
 CALL "%PEAR%" upgrade doc.php.net/phd-beta > logs\pear.log 2<&1
 
-FOR %%A IN (en bg de es fr ja kr pl pt_BR ro ru tr) DO (
+FOR %%A IN (en bg de es fa fr ja kr pl pt_BR ro ru tr) DO (
 	ECHO Configuring %%A...
 	"%PHP%" doc-base/configure.php --with-php=%PHP% --with-lang=%%A --enable-chm > logs\configure.%%A.log 2<&1
 
