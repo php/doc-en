@@ -1,7 +1,7 @@
 @ECHO OFF
 REM This file assumes phpdoc/modules/doc-all checkout
 
-SET PHP=c:\php53\php.exe
+SET PHP=C:\php\binaries\PHP_5_3\php.exe
 SET PHD=C:\pear\phd.bat
 SET HH=C:\Program Files (x86)\HTML Help Workshop\hhc.exe
 SET CP=C:\Program Files (x86)\PuTTY\pscp.exe
