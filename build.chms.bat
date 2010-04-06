@@ -12,7 +12,7 @@ SET SVN=C:\Program Files\SlikSvn\bin\svn.exe
 cd c:\doc-all\
 
 ECHO SVN Updating...
-"%SVN%" up > logs\cvs.log 2<&1
+"%SVN%" up > logs\svn.log 2<&1
 ECHO Upgrading PhD
 CALL "%PEAR%" upgrade doc.php.net/phd > logs\pear.log 2<&1
 
