@@ -2,11 +2,89 @@
 <!-- $Revision$ -->
  <chapter xml:id="internals2.variables" xmlns="http://docbook.org/ns/docbook">
   <title>Working with variables</title>
-  <para>
-  </para>
- </chapter>
+  <section xml:id="internals2.variables.intro">
+   <title>Intro</title>
+   <para>
+    For working with variables in PHP's core you have to learn about different
+    fundamental concepts used in PHP. Firstly PHP is a dynamic and weak typed
+    language. Secondly PHP uses a copy on write mechanism with reference
+    counting for memory handling. Please check the <xref
+     linkend="features.gc.refcounting-basics"/> chapter for details how
+    reference counting and references work.
+   </para>
+   <para>
+    PHP variables, in general, consist out of two things: The label, which 
+    might, for instance, be an entry in a symbol table, and the actual variable
+    container. For the most parts of this manual we will focus on the variable
+    container.
+   </para>
+   <para>
+    The variable container, in code called <code>zval</code>, is holding all
+    data needed to handle the variable. This includes not only the actual value
+    but also the current type, a counter counting the number of labels pointing
+    to this container and a flag whether these labels should be treated as
+    references or copies. In PHP 5.3 the relevant structures, which you can
+    find in <code>Zend/zend.h</code>, look like this:
+   </para>
+   <screen>
+<![CDATA[
+typedef struct _zval_struct zval;
 
-<!-- Keep this comment at the end of the file
+typedef union _zvalue_value {
+    long lval;                 /* long value */
+    double dval;               /* double value */
+    struct {                   /* string type */
+        char *val;
+        int len;
+    } str;
+    HashTable *ht;             /* hash table value */
+    zend_object_value obj;
+} zvalue_value;
+ 
+struct _zval_struct {
+    /* Variable information */
+    zvalue_value value;        /* value */
+    zend_uint refcount__gc;
+    zend_uchar type;           /* active type */
+    zend_uchar is_ref__gc;
+};
+
+]]>
+   </screen>
+   <para>
+    In the <code>zvalue_value</code> one can find the internal representation
+    for the different types the fields used should be clear from the names and
+    comments - especially if one knows that PHP's arrays are infact hash
+    tables. Nonetheless, knowing PHP's types one might miss a few:
+    <code>NULL</code>, <code>boolean</code> and <code>resources</code>. For
+    <code>NULL</code> we need no value, as <code>NULL</code> is the value of
+    that type. For <code>boolean</code> and <code>resource</code> values PHP
+    re-uses the value field. In the case of a <code>boolean</code> it holds
+    either <code>0</code> for <code>false</code> or <code>1</code> for
+    <code>true</code>. For <code>resource</code>-typed variables it holds the
+    resource id.
+   </para>
+   <para>
+    Now the good message is that you don't have to know these things in detail 
+    as there are - like always in PHP - acces macros. The bad news is that there
+    are many of them: There are macros to access any aspect of the
+    <code>zval</code> and then, as one often deals with pointers to 
+    <code>zval</code>s and even pointers to pointers to <code>zval</code>s, for 
+    most of them there are shortcuts dereferencing these pointers. These macros
+    are spread over <code>Zend/zend.h</code>,
+    <code>Zend/zend_operators.h</code> and <code>Zend/zend_API.h</code>.
+   </para>
+  </section>
+  <section xml:id="internals2.variables.creating">
+   <title>Creating variables and setting values</title>
+   <para>
+    <!-- ... -->
+   </para>
+  </section>
+
+ </chapter>
+ 
+ <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml
 sgml-omittag:t
