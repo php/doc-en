@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php // vim: ts=4 sw=4 et tw=78 fdm=marker
 
 /*
