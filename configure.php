@@ -61,6 +61,8 @@ Package-specific:
   --with-partial=ID         Root ID to build [{$acd['PARTIAL']}]
   --disable-broken-file-listing  Do not ignore translated files in broken-files.txt
 
+  --output=FILENAME         Save to given file (i.e. not .manual.xml) [{$acd['OUTPUT_FILENAME']}]
+
 HELPCHUNK;
 } // }}}
 
@@ -267,6 +269,7 @@ $acd = array( // {{{
     'HOWTO' => 'no',
     'USE_BROKEN_TRANSLATION_FILENAME' => 'yes',
     'COPYRIGHT_YEAR' => date('Y'),
+    'OUTPUT_FILENAME' => $srcdir . '/.manual.xml',
 ); // }}}
 
 $ac = $acd;
@@ -375,6 +378,10 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
             $ac['basedir'] = $v;
             break;
         
+        case 'output':
+            $ac['OUTPUT_FILENAME'] = $v;
+            break;
+
         case 'broken-file-listing':
             $ac['USE_BROKEN_TRANSLATION_FILENAME'] = $v;
 
@@ -393,6 +400,9 @@ $ac['WORKDIR'] = $ac['srcdir'];
 $ac['ROOTDIR'] = $ac['rootdir'];
 $ac['BASEDIR'] = $ac['basedir'];
 checkvalue($ac['srcdir']);
+
+checking('for output filename');
+checkvalue($ac['OUTPUT_FILENAME']);
 
 checking('whether to save an invalid .manual.xml');
 checkvalue($ac['FORCE_DOM_SAVE']);
@@ -625,10 +635,10 @@ if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') { // {{{
     exit(0);
 } // }}} 
 
-$mxml = "{$ac['srcdir']}/.manual.xml";
+$mxml = $ac["OUTPUT_FILENAME"];
 if ($dom->validate()) {
     echo "done.\n";
-    echo "\nAll good. Saving .manual.xml... ";
+    printf("\nAll good. Saving %s... ", basename($ac["OUTPUT_FILENAME"]));
     flush(STDOUT);
     $dom->save($mxml);
 
@@ -647,7 +657,7 @@ if ($dom->validate()) {
 
     // Allow the .manual.xml file to be created, even if it is not valid.
     if ($ac['FORCE_DOM_SAVE'] == 'yes') { 
-        echo "writing .manual.xml anyway, and ";
+        printf("writing %s anyway, and ", basename($ac["OUTPUT_FILENAME"]));
         $dom->save($mxml);
     }
 
