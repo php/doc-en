@@ -505,7 +505,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 
 
 	/* {PROPERTIES_LIST} */
-	if ($properties = $class->getProperties(ReflectionProperty::IS_PUBLIC + ReflectionProperty::IS_PROTECTED + ReflectionProperty::IS_STATIC)) {
+	if ($properties = $class->getProperties(ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PROTECTED | ReflectionProperty::IS_STATIC)) {
 		$ident = get_ident_size('PROPERTIES_LIST', $content);
 
 		$markup = "<classsynopsisinfo role=\"comment\">Properties</classsynopsisinfo>\n";
