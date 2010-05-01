@@ -43,8 +43,8 @@ if (!extension_loaded('sqlite3')) {
 
 define ('VERBOSE', (isset($options['v']) ? TRUE : FALSE));
 
-$undefined       = array('functions' => array(), 'methods' => array(), 'inis' => array());
-$counts_defined  = array('functions' => 0,       'methods' => 0,       'inis' => 0);
+$undefined       = array('functions' => array(), 'methods' => array(), 'inis' => array(), 'classes' => array());
+$counts_defined  = array('functions' => 0,       'methods' => 0,       'inis' => 0,       'classes' => 0);
 
 if (!$db = new SQLite3($doc_db)) {
 	echo "ERROR: Failed to utilize the powers of sqlite3.\n";
@@ -91,6 +91,16 @@ foreach ($classes as $class) {
 		$sql = "SELECT count(*) FROM ids WHERE LOWER(sdesc) = '" . strtolower($tmp) . "'";
 
 		if ($db->querySingle($sql) === 0) {
+
+			// Does this fully work? :)
+			$rm = new ReflectionMethod($class, $method);
+			$rp = $rm->getDeclaringClass();
+			
+			// Skip if inherited
+			if ($rp->name !== $class) {
+				continue;
+			}
+			
 			if (VERBOSE) {
 				echo $tmp . "\n";
 			}
