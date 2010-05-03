@@ -55,7 +55,7 @@ if (!empty($_SERVER['argv'][2])) {
 }
 
 $search_str	= trim($_SERVER['argv'][1]);
-$output		= trim(shell_exec("grep -i -r '{$search_str}' {$langdir}* "));
+$output		= trim(shell_exec("egrep --exclude=\*.svn\* -i -r '{$search_str}' {$langdir}* "));
 
 if (empty($output)) {
 	echo "INFO: No matches for string '{$search_str}'\n";
