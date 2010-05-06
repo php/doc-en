@@ -56,6 +56,7 @@ Package-specific:
   --enable-howto            Configure the phpdoc howto, not the phpdoc docs [{$acd['HOWTO']}]
   --disable-segfault-error  LIBXML may segfault with broken XML, use this if it does [{$acd['SEGFAULT_ERROR']}]
   --disable-version-files   Do not merge the extension specific version.xml files
+  --disable-libxml-check    Disable the libxml 2.7.4+ requirement check
   --with-php=PATH           Path to php CLI executable [detect]
   --with-lang=LANG          Language to build [{$acd['LANG']}]
   --with-partial=ID         Root ID to build [{$acd['PARTIAL']}]
@@ -266,6 +267,7 @@ $acd = array( // {{{
     'DETAILED_ERRORMSG' => 'no',
     'SEGFAULT_ERROR' => 'yes',
     'VERSION_FILES'  => 'yes',
+    'LIBXML_CHECK' => 'yes',
     'HOWTO' => 'no',
     'USE_BROKEN_TRANSLATION_FILENAME' => 'yes',
     'COPYRIGHT_YEAR' => date('Y'),
@@ -366,6 +368,10 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
             $ac['VERSION_FILES'] = $v;
             break;
 
+        case 'libxml-check':
+            $ac['LIBXML_CHECK'] = $v;
+            break;
+
         case 'howto':
             $ac['HOWTO']  =$v;
             break;
@@ -389,6 +395,15 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
             echo "WARNING: Unknown option '{$o}'!\n";
             break;
     }
+} // }}}
+
+// Reject 'old' LibXML installations, due to LibXML feature #502960 {{{
+if (version_compare(LIBXML_DOTTED_VERSION, '2.7.4', '<') && $ac['LIBXML_CHECK'] === 'yes') {
+	echo "LibXML 2.7.4+ added a 'feature' to break things, typically namespace related, and unfortunately we must require it.\n";
+	echo "For a few related details, see: http://www.mail-archive.com/debian-bugs-dist@lists.debian.org/msg777646.html\n";
+	echo "Please recompile PHP with a LibXML version 2.7.4 or greater. Version detected: " . LIBXML_DOTTED_VERSION . "\n";
+	echo "Or, pass in --disable-libxml-check if doing so feels safe.\n\n";
+	exit(100);
 } // }}}
 
 checking('for source directory');
