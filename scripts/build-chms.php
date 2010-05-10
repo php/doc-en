@@ -47,6 +47,8 @@
 	define('PATH_LOG', 	'C:\doc-all\logs');
 	define('PATH_DOC', 	'C:\doc-all');
 
+	define('DEBUG',		true);
+
 	/**
 	 * Languages to build
 	 */
@@ -106,7 +108,7 @@
 		/**
 		 * Generate .manual.xml
 		 */
-		execute_task('- Configure', PATH_PHP, PATH_DOC . '\doc-base\configure.php --with-php="' . PATH_PHP . '" --with-lang=' . $lang . ' --enable-chm', 'configure_' . $lang);
+		execute_task('- Configure', PATH_PHP, PATH_DOC . '\doc-base\configure.php --disable-libxml-check --with-php="' . PATH_PHP . '" --with-lang=' . $lang . ' --enable-chm', 'configure_' . $lang);
 
 		if(!is_file(PATH_DOC . '\\doc-base\\.manual.xml'))
 		{
@@ -152,7 +154,7 @@
 		/**
 		 * Update the CHM on the rsync server
 		 */
-		//execute_task('- rsync', PATH_SCP, '-batch -q -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_' . $lang);
+		execute_task('- rsync', PATH_SCP, '-batch -q -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_' . $lang);
 
 		/**
 		 * Cleanup
@@ -160,7 +162,11 @@
 		echo('- Clean up' . PHP_EOL);
 
 		unlink(PATH_DOC . '\\doc-base\\.manual.xml');
-		//rmdir_recursive(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\');
+
+		if(!DEBUG)
+		{
+			rmdir_recursive(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\');
+		}
 	}
 
 	echo('Done!');
@@ -218,5 +224,16 @@
 		}
 
 		rmdir($dir);
+	}
+
+	/**
+	 * Gets the contents of a specific log
+	 *
+	 * @param	string 			Name of the log (usually "program_lang")
+	 * @return	string			Contents of the log
+	 */
+	function log_get_contents($logname)
+	{
+		return(@file_get_contents(PATH_LOG . '\\' . $log . '.log'));
 	}
 ?>
