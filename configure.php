@@ -195,8 +195,8 @@ function print_xml_errors($details = true) {
     $errors = libxml_get_errors();
     if ($errors && count($errors) > 0) {
         foreach($errors as $err) {
-            // Skip all XInclude errors and buffer increases
-            if (!strpos($err->message, 'xi:include') && !strpos($err->message, 'element include')) {
+            // Skip all XInclude, buffer increases, fallback and XPointer
+            if (!strpos($err->message, 'xi:include') && !strpos($err->message, 'element include') && !strpos($err->message, 'element fallback') && False === strpos($err->message, 'XPointer evaluation failed:')) {
                 $errmsg = wordwrap(" " . trim($err->message), 80, "\n ");
                 if ($details && $err->file) {
                     $file = file(urldecode($err->file)); // libxml appears to urlencode() its errors strings
