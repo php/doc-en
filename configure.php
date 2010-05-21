@@ -476,6 +476,8 @@ checkvalue($ac['PARTIAL']);
 checking('whether to enable detailed XML error messages');
 checkvalue($ac['DETAILED_ERRORMSG']);
 
+checking('libxml version');
+checkvalue(LIBXML_DOTTED_VERSION);
 
 // We shouldn't be globbing for this. autoconf requires you to tell it which files to use, we should do the same
 // Notice how doing it this way results in generating less than half as many files.
