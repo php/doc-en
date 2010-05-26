@@ -15,7 +15,6 @@ This _WILL_ give false positives due to the following reasons:
 TODO
 	- Deal with the above, hopefully fix
 	- Deal with aliases (store them and/or find where/how they are stored, then use this info
-	- Skip intentionally undocumented stuff
 	- Make the output more useful
 	- Use some reflection?
 USAGE
@@ -59,6 +58,12 @@ $table = $r->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_UNIQUE);
 $functions = get_defined_functions();
 foreach($functions['internal'] as $function) {
 	$function = strtolower($function);
+	
+	if (skip_documentation($function)) {
+		$skipped['functions'][] = $function;
+		continue;
+	}
+	
 	if(isset($table[$function])) {
 		$documented['functions'][] = $function;
 	} else {
@@ -70,6 +75,12 @@ foreach($functions['internal'] as $function) {
 foreach(get_declared_classes() as $class) {
 	// Classes
 	$class_l = strtolower($class);
+
+	if (skip_documentation($class_l)) {
+		$skipped['classes'][] = $class;
+		continue;
+	}
+
 	if(isset($table[$class_l])) {
 		$documented['classes'][] = $class;
 	} else {
@@ -78,6 +89,7 @@ foreach(get_declared_classes() as $class) {
 	// Methods
 	foreach(get_class_methods($class) as $method) {
 		$method_l  = strtolower($method);
+		$method_d  = $class . '::' . $method;
 
 		$rm = new ReflectionMethod($class, $method);
 		if(strtolower($rm->getDeclaringClass()->name) === $class_l) {
@@ -89,9 +101,13 @@ foreach(get_declared_classes() as $class) {
 			$v = strtolower($class_l . '->'    . $method_l);
 
 			if(isset($table[$j]) || isset($table[$v]) || isset($table[$o])) {
-				$documented['methods'][] = $method;
+				if (skip_documentation($j)) {
+					$skipped['methods'][] = $method_d;
+					continue;
+				}
+				$documented['methods'][] = $method_d;
 			} else {
-				$missing['methods'][] = $class . '::' . $method;
+				$missing['methods'][] = $method_d;
 			}
 		}
 	}
@@ -136,3 +152,30 @@ print_r($counts_missing);
 echo "Counts: Documented documentation", PHP_EOL;
 print_r($counts_documented);
 
+
+function skip_documentation($name) {
+	$name = strtolower(trim($name));
+	$skips = array(
+		// Intentional
+		'leak', 'crash', 'zend_test_func','php_real_logo_guid','php_egg_logo_guid',
+
+		// Old deprecated aliases
+		'mbregex_encoding', 'mbereg', 'mberegi', 'mbereg_replace', 'mberegi_replace',
+		'mbsplit', 'mbereg_match', 'mbereg_search', 'mbereg_search_pos',
+		'mbereg_search_regs', 'mbereg_search_init', 'mbereg_search_getregs',
+		'mbereg_search_getpos', 'mbereg_search_setpos', 'mysql',
+		'mysql_fieldname','mysql_fieldtable','mysql_fieldlen','mysql_fieldflags',
+		'mysql_selectdb','mysql_freeresult','mysql_numfields','mysql_numrows',
+		'mysql_listdbs','mysql_listtables','mysql_listfields',
+		'socket_getopt','socket_setopt','key_exists',
+
+		// Class::Methods
+		// Classes
+		'__PHP_Incomplete_Class',
+	);
+	
+	if (in_array($name, $skips)) {
+		return true;
+	}
+	return false;
+}
