@@ -612,9 +612,8 @@ echo "done.\n";
 echo "Validating manual.xml... ";
 flush(STDOUT);
 
-// We really don't care about xinclude errors.
-@$dom->xinclude();
-libxml_clear_errors();
+$dom->xinclude();
+print_xml_errors();
 
 if ($ac['PARTIAL'] != '' && $ac['PARTIAL'] != 'no') { // {{{
     $dom->validate(); // we don't care if the validation works or not
