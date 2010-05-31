@@ -189,7 +189,14 @@
 			return;
 		}
 
-		@popen($p = sprintf('"%s"%s%s', $program, (!$parameters ?: ' ' . $parameters), (!$log ?: ' > ' . PATH_LOG . '\\' . $log . '.log 2<&1')), 'r');
+		if($program == PATH_SCP)
+		{
+			$log = false;
+		}
+
+		$cmd = sprintf('"%s"%s%s', $program, (!$parameters ?: ' ' . $parameters), (!$log ? '' : ' > ' . PATH_LOG . '\\' . $log . '.log 2<&1'));
+
+		@popen($cmd, 'r');
 	}
 
 	/**
