@@ -243,4 +243,3 @@
 	{
 		return(@file_get_contents(PATH_LOG . '\\' . $log . '.log'));
 	}
-?>
