@@ -36,16 +36,16 @@
 	/**
 	 * Configuration
 	 */
-	define('PATH_PHP', 	'C:\php\binaries\PHP_5_3\php.exe');
-	define('PATH_PHD', 	'C:\pear\phd.bat');
-	define('PATH_HHC', 	'C:\Program Files (x86)\HTML Help Workshop\hhc.exe');
-	define('PATH_SCP', 	'C:\Program Files (x86)\PuTTY\pscp.exe');
-	define('PATH_PPK', 	'C:\Documents and Settings\bjori\My Documents\my.privates.ppk');
-	define('PATH_SVN', 	'C:\Program Files\SlikSvn\bin\svn.exe');
-	define('PATH_PEAR', 	'C:\pear\pear.bat');
-	define('PATH_CHM', 	'C:\doc-all\chmfiles');
-	define('PATH_LOG', 	'C:\doc-all\logs');
-	define('PATH_DOC', 	'C:\doc-all');
+	define('PATH_PHP', 	'C:\\php\\binaries\\PHP_5_3\\php.exe');
+	define('PATH_PHD', 	'C:\\pear\\phd.bat');
+	define('PATH_HHC', 	'C:\\Program Files (x86)\HTML Help Workshop\hhc.exe');
+	define('PATH_SCP', 	'C:\\Program Files (x86)\PuTTY\pscp.exe');
+	define('PATH_PPK', 	'C:\\php-sdk\\keys\\php-doc-host.ppk');
+	define('PATH_SVN', 	'C:\\Program Files\\SlikSvn\\bin\\svn.exe');
+	define('PATH_PEAR', 	'C:\\pear\\pear.bat');
+	define('PATH_CHM', 	'C:\doc-all\\chmfiles');
+	define('PATH_LOG', 	'C:\\doc-all\\logs');
+	define('PATH_DOC', 	'C:\\doc-all');
 
 	define('DEBUG',		true);
 
