@@ -140,6 +140,15 @@
 
 			continue;
 		}
+		
+		/**
+		 * Anything smaller than ~5MB is broken. Common broken sizes are 2MB and 15K. Common good size are 10-12MB.
+		 */
+		if (filesize(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.chm') < 5000000) {
+			echo('- Build error: CHM file too small, something went wrong.' . PHP_EOL);
+			
+			continue;
+		}
 
 		/**
 		 * Copy the CHM file into the archive
