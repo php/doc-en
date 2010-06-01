@@ -281,22 +281,20 @@ function create_markup_to_parameter_section(Reflector $obj, $content) { /* {{{ *
 		if ($ident = get_ident_size('PARAMETERS_DESCRIPTION', $content)) {
 			$count = 1;
 
-			$markup  = "<para>\n";
-			$markup .= str_repeat(' ', $ident + 1) ."<variablelist>\n";
+			$markup = "<variablelist>\n";
 			foreach ($parameters as $param) {
-				$markup .= str_repeat(' ', $ident + 2) ."<varlistentry>\n";
-				$markup .= str_repeat(' ', $ident + 3) .'<term><parameter>'. ($param->getName() ? $param->getName() : 'param'. $count) ."</parameter></term>\n";
-				$markup .= str_repeat(' ', $ident + 3) ."<listitem>\n";
-      			$markup .= str_repeat(' ', $ident + 4) ."<para>\n";
-       			$markup .= str_repeat(' ', $ident + 5) ."\n";
-       			$markup .= str_repeat(' ', $ident + 4) ."</para>\n";
-     			$markup .= str_repeat(' ', $ident + 3) ."</listitem>\n";
-    			$markup .= str_repeat(' ', $ident + 2) ."</varlistentry>\n";
+				$markup .= str_repeat(' ', $ident + 1) ."<varlistentry>\n";
+				$markup .= str_repeat(' ', $ident + 2) .'<term><parameter>'. ($param->getName() ? $param->getName() : 'param'. $count) ."</parameter></term>\n";
+				$markup .= str_repeat(' ', $ident + 2) ."<listitem>\n";
+				$markup .= str_repeat(' ', $ident + 3) ."<para>\n";
+				$markup .= str_repeat(' ', $ident + 4) ."\n";
+				$markup .= str_repeat(' ', $ident + 3) ."</para>\n";
+				$markup .= str_repeat(' ', $ident + 2) ."</listitem>\n";
+				$markup .= str_repeat(' ', $ident + 1) ."</varlistentry>\n";
 
-    			$count++;
+				$count++;
 			}
-			$markup .= str_repeat(' ', $ident + 1) ."</variablelist>\n";
-			$markup .= str_repeat(' ', $ident) ."</para>";
+			$markup .= str_repeat(' ', $ident) ."</variablelist>";
 
 			$content = preg_replace('/\{PARAMETERS_DESCRIPTION\}/', $markup, $content, 1);
 		}
@@ -920,11 +918,9 @@ function get_default_role ($role, $funcname, $default) {
 		$out = <<<ROLE
  <refsect1 role="seealso">
   &reftitle.seealso;
-  <para>
-   <simplelist>
-    <member></member>
-   </simplelist>
-  </para>
+  <simplelist>
+   <member></member>
+  </simplelist>
  </refsect1>
 ROLE;
 	}
@@ -934,10 +930,9 @@ ROLE;
 		$out = <<<ROLE
  <refsect1 role="examples">
   &reftitle.examples;
-  <para>
-   <example>
-    <title><function>$funcname</function> example</title>
-    <programlisting role="php">
+  <example>
+   <title><function>$funcname</function> example</title>
+   <programlisting role="php">
 <![CDATA[
 <?php
 
@@ -945,15 +940,14 @@ ROLE;
 
 ?>
 ]]>
-    </programlisting>
-    &example.outputs.similar;
-    <screen>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
 <![CDATA[
 ...
 ]]>
-    </screen>
-   </example>
-  </para>
+   </screen>
+  </example>
  </refsect1>
 ROLE;
 	}
@@ -963,42 +957,38 @@ ROLE;
 		$out = <<<ROLE
  <refsect1 role="examples">
   &reftitle.examples;
-  <para>
-   <example>
-    <title>Object oriented style</title>
-    <programlisting role="php">
+  <example>
+   <title>Object oriented style</title>
+   <programlisting role="php">
 <![CDATA[
 <?php
 /* ... */
 ?>
 ]]>
-     </programlisting>
-     &example.outputs.similar;
-     <screen>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
 <![CDATA[
 ...
 ]]>
-    </screen>
-   </example>
-  </para>
-  <para>
-   <example>
-    <title>Procedural style</title>
-    <programlisting role="php">
+   </screen>
+  </example>
+  <example>
+   <title>Procedural style</title>
+   <programlisting role="php">
 <![CDATA[
 <?php
 /* ... */
 ?>
 ]]>
-     </programlisting>
-     &example.outputs.similar;
-     <screen>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
 <![CDATA[
 ...
 ]]>
-    </screen>
-   </example>
-  </para>
+   </screen>
+  </example>
  </refsect1>
 ROLE;
 	}
