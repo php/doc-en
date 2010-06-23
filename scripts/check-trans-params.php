@@ -33,8 +33,7 @@ $current_only = false;
 if (!empty($_SERVER["argv"][3])) {
 	$current_only = true;
 }
-echo "$basedir/$lang/reference";
-exit;
+
 if (!isset($_SERVER["argv"][1]) || !is_dir("$basedir/$lang/reference")) {
 	echo "Purpose: Check parameters (types, optional, reference) in translated manual.\n";
 	echo "Usage:\tcheck-trans-params.php language [1=output html, 0=not] [1=current translations only, 0=all]\n";

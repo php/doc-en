@@ -155,20 +155,7 @@ print_r($counts_documented);
 
 function skip_documentation($name) {
 	$name = strtolower(trim($name));
-	
-	$classes = array(
-		// Are documented elsewhere, as non-standard ids
-		'__php_incomplete_class','stdclass','closure',
-
-		// Dom is full of "not implemented" classes/methods....
-		'domlocator', 'domconfiguration', 'domstringextend', 'domstringlist','domimplementationsource','domimplementationlist',
-		'domimplementation','domuserdatahandler','domnamelist','domerrorhandler','domdomerror','domtypeinfo', // Bogus
-	);
-
-	$methods = array(
-	);
-	
-	$functions = array(
+	$skips = array(
 		// Intentional
 		'leak', 'crash', 'zend_test_func','php_real_logo_guid','php_egg_logo_guid',
 
@@ -181,11 +168,14 @@ function skip_documentation($name) {
 		'mysql_selectdb','mysql_freeresult','mysql_numfields','mysql_numrows',
 		'mysql_listdbs','mysql_listtables','mysql_listfields',
 		'socket_getopt','socket_setopt','key_exists',
+
+		// Class::Methods
+		// Classes
+		'__PHP_Incomplete_Class',
 	);
 	
-	if (in_array($name, ($functions + $methods + $classes))) {
+	if (in_array($name, $skips)) {
 		return true;
 	}
-	
 	return false;
 }
