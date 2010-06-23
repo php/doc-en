@@ -82,12 +82,12 @@ Class BugHunter {
 	var $argc            = Array();
 	var $argv            = Array();
 	var $script_version  = '1.0';
-	var $php_min_version = '4.3.1-dev';
+	var $php_min_version = '4.3.1';
 	var $parse_all       = '';
 	var $parse_ext       = '';
-	var $module          = 'php4';
+	var $module          = 'branches/PHP_5_3/';
 	var $root            = '../../';
-	var $funclist        = 'phpdoc/funclist.txt';
+	var $funclist        = 'phpdoc/doc-base/funclist.txt';
 	var $index           = Array();
 	var $php_types       = Array(
 		 'int'

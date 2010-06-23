@@ -82,7 +82,7 @@ function check_dir($dir, &$used_tags)
     while ($file = @readdir($handle)) {
 
       // Collect directories and XML files
-      if ($file != 'CVS' && $file != '.' &&
+      if ($file != '.svn' && $file != '.' &&
           $file != '..' && is_dir($dir.$file)) {
         $directories[] = $file;
       }
