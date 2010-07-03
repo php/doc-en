@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
 
 <refentry xml:id="rararchive.open" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -14,13 +14,15 @@
    <methodsynopsis>
    <modifier>public</modifier> <modifier>static</modifier> <type>RarArchive</type><methodname>RarArchive::open</methodname>
    <methodparam><type>string</type><parameter>filename</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>password</parameter></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>password</parameter><initializer>NULL</initializer></methodparam>
+   <methodparam choice="opt"><type>callback</type><parameter>volume_callback</parameter><initializer>NULL</initializer></methodparam>
    </methodsynopsis>
   <para>Procedural style:</para>
   <methodsynopsis>
    <type>RarArchive</type><methodname>rar_open</methodname>
    <methodparam><type>string</type><parameter>filename</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>password</parameter></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>password</parameter><initializer>NULL</initializer></methodparam>
+   <methodparam choice="opt"><type>callback</type><parameter>volume_callback</parameter><initializer>NULL</initializer></methodparam>
   </methodsynopsis>
   <para>
    Open specified RAR archive and return <type>RarArchive</type> instance representing it.
@@ -55,6 +57,23 @@
       </para>
      </listitem>
     </varlistentry>
+    <varlistentry>
+     <term><parameter>volume_callback</parameter></term>
+     <listitem>
+      <para>
+       A function that receives one parameter – the path of the volume
+       that was not found – and returns a string with the correct path
+       for such volume or <literal>NULL</literal> if such volume does
+       not exist or is not known. The programmer should ensure the
+       passed function doesn't cause loops as this function is called
+       repetedly if the path returned in a previous call did not
+       correspond to the needed volume. Specifying this parameter omits
+       the notice that would otherwise be emitted whenever a volume is
+       not found; an implementation that only returns &false; can
+       therefore be used to merely omit such notices.
+      </para>
+     </listitem>
+    </varlistentry>
    </variablelist>
   </para>
   <warning>
@@ -67,6 +86,30 @@
   &reftitle.returnvalues;
   <para>
    Returns the requested <type>RarArchive</type> instance &return.falseforfailure;.
+  </para>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>3.0.0</entry>
+       <entry>
+        <parameter>volume_callback</parameter> was added.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
   </para>
  </refsect1>
 
@@ -144,6 +187,27 @@ echo stream_get_contents($stream);
 
 fclose($stream);
 ?>
+]]>
+     </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Volume Callback</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* In this example, there's a volume named multi_broken.part1.rar
+ * whose next volume is named multi.part2.rar */
+function resolve($vol) {
+	if (preg_match('/_broken/', $vol))
+		return str_replace('_broken', '', $vol);
+	else
+		return null;
+}
+$rar_file1 = rar_open(dirname(__FILE__).'/multi_broken.part1.rar', null, 'resolve');
+$entry = $rar_file1->getEntry('file2.txt');
+$entry->extract(null, dirname(__FILE__) . "/temp_file2.txt");
 ]]>
      </programlisting>
    </example>
