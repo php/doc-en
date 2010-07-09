@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<refentry xml:id="function.mysqlnd_qc_get_query_trace_log" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <refnamediv>
+    <refname>mysqlnd_qc_get_query_trace_log</refname>
+    <refpurpose>Returns a backtrace for each query inspected by the query cache</refpurpose>
+  </refnamediv>
+
+  <refsect1 role="description">
+  &reftitle.description;
+    <methodsynopsis>
+      <type>array</type>
+      <methodname>mysqlnd_qc_get_query_trace_log</methodname>
+      <void />
+    </methodsynopsis>
+    <para>
+      Returns a backtrace for each query inspected by the query cache.
+      The collection of the backtrace is disabled by default. To collect
+      the backtrace you have to set the PHP configuration directive
+      <literal>mysqlnd_qc.collect_query_trace</literal> to
+      <literal>1</literal>
+    </para>
+    <para>
+       The maximum depth of the backtrace is limited to the depth set
+       with the PHP configuration directive 
+      <literal>mysqlnd_qc.query_trace_bt_depth</literal>.
+    </para>
+
+  </refsect1>
+
+  <refsect1 role="parameters">
+  &reftitle.parameters;
+  &no.function.parameters;
+  </refsect1>
+
+  <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+    <para>
+      An array of query backtrace. Every list entry contains
+      the query string, a backtrace and further detail information.
+    </para>
+
+    <informaltable>
+      <tgroup cols="2">
+        <colspec colwidth="10%"/>
+        <colspec colwidth="90%"/>
+        <thead>
+          <row>
+            <entry>Key</entry>
+            <entry>Description</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry>
+              <literal>query</literal>
+            </entry>
+            <entry>
+              Query string.
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <literal>origin</literal>
+            </entry>
+            <entry>
+              Code backtrace.
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <literal>run_time</literal>
+            </entry>
+            <entry>
+              Query run time in milliseconds. The collection of
+              of all times and the necessary
+              <literal>gettimeofday</literal>
+              system calls can be disabled by setting the PHP configuration
+              directive 
+              <literal>mysqlnd_qc.time_statistics</literal> to
+              <literal>0</literal>
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <literal>store_time</literal>
+            </entry>
+            <entry>
+              Query result set store time in milliseconds. The collection of
+              of all times and the necessary
+              <literal>gettimeofday</literal>
+              system calls can be disabled by setting the PHP configuration
+              directive
+              <literal>mysqlnd_qc.time_statistics</literal> to
+              <literal>0</literal>
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <literal>eligible_for_caching</literal>
+            </entry>
+            <entry>
+              <literal>TRUE</literal> if query is cacheble otherwise
+              <literal>FALSE</literal>.
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <literal>no_table</literal>
+            </entry>
+            <entry>
+              <literal>TRUE</literal> if the query has generated a result
+              set and at least one column from the result set has no table
+              name set in its metadata. This is usually the case with
+              queries which one probably do not want to cache such as
+              <literal>SELECT SLEEP(1)</literal>. By default any such query
+              will not be added to the cache. See also PHP configuration directive
+              <literal>mysqlnd_qc.cache_no_table</literal>.
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <literal>was_added</literal>
+            </entry>
+            <entry>
+              <literal>TRUE</literal> if the query result has been put into
+              the cache, otherwise
+              <literal>FALSE</literal>.
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <literal>was_already_in_cache</literal>
+            </entry>
+            <entry>
+              <literal>TRUE</literal> if the query result would have been
+              added to the cache if it was not already in the cache (cache hit).
+              Otherwise
+              <literal>FALSE</literal>.
+            </entry>
+          </row>
+
+        </tbody>
+      </tgroup>
+    </informaltable>
+  </refsect1>
+
+
+  <refsect1 role="examples">
+  &reftitle.examples;
+    <example>
+      <programlisting role="php">
+<![CDATA[
+<?php
+/* Connect, create and populate test table */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2)");
+
+$res = $mysqli->query("SELECT id FROM test WHERE id = 1");
+var_dump($res->fetch_assoc());
+$res->free();
+
+$res = $mysqli->query("/*" . MYSQLND_QC_ENABLE_SWITCH . "*/" . "SELECT id FROM test WHERE id = 2");
+var_dump($res->fetch_assoc());
+$res->free();
+
+$res = $mysqli->query("/*" . MYSQLND_QC_ENABLE_SWITCH . "*/" . "SELECT id FROM test WHERE id = 2");
+var_dump($res->fetch_assoc());
+$res->free();
+?>
+]]>
+      </programlisting>
+   &examples.outputs;
+      <screen>
+<![CDATA[
+array(1) {
+  ["id"]=>
+  string(1) "1"
+}
+array(1) {
+  ["id"]=>
+  string(1) "2"
+}
+array(1) {
+  ["id"]=>
+  string(1) "2"
+}
+array(6) {
+  [0]=>
+  array(8) {
+    ["query"]=>
+    string(25) "DROP TABLE IF EXISTS test"
+    ["origin"]=>
+    string(85) "#0 /home/nixnutz/php/phpdoc/foo.php(7): mysqli->query('DROP TABLE IF E...')
+#1 {main}"
+    ["run_time"]=>
+    int(0)
+    ["store_time"]=>
+    int(0)
+    ["eligible_for_caching"]=>
+    bool(false)
+    ["no_table"]=>
+    bool(false)
+    ["was_added"]=>
+    bool(false)
+    ["was_already_in_cache"]=>
+    bool(false)
+  }
+  [1]=>
+  array(8) {
+    ["query"]=>
+    string(25) "CREATE TABLE test(id INT)"
+    ["origin"]=>
+    string(85) "#0 /home/nixnutz/php/phpdoc/foo.php(8): mysqli->query('CREATE TABLE te...')
+#1 {main}"
+    ["run_time"]=>
+    int(0)
+    ["store_time"]=>
+    int(0)
+    ["eligible_for_caching"]=>
+    bool(false)
+    ["no_table"]=>
+    bool(false)
+    ["was_added"]=>
+    bool(false)
+    ["was_already_in_cache"]=>
+    bool(false)
+  }
+  [2]=>
+  array(8) {
+    ["query"]=>
+    string(36) "INSERT INTO test(id) VALUES (1), (2)"
+    ["origin"]=>
+    string(85) "#0 /home/nixnutz/php/phpdoc/foo.php(9): mysqli->query('INSERT INTO tes...')
+#1 {main}"
+    ["run_time"]=>
+    int(0)
+    ["store_time"]=>
+    int(0)
+    ["eligible_for_caching"]=>
+    bool(false)
+    ["no_table"]=>
+    bool(false)
+    ["was_added"]=>
+    bool(false)
+    ["was_already_in_cache"]=>
+    bool(false)
+  }
+  [3]=>
+  array(8) {
+    ["query"]=>
+    string(32) "SELECT id FROM test WHERE id = 1"
+    ["origin"]=>
+    string(86) "#0 /home/nixnutz/php/phpdoc/foo.php(11): mysqli->query('SELECT id FROM ...')
+#1 {main}"
+    ["run_time"]=>
+    int(0)
+    ["store_time"]=>
+    int(15)
+    ["eligible_for_caching"]=>
+    bool(false)
+    ["no_table"]=>
+    bool(false)
+    ["was_added"]=>
+    bool(false)
+    ["was_already_in_cache"]=>
+    bool(false)
+  }
+  [4]=>
+  array(8) {
+    ["query"]=>
+    string(41) "/*qc=on*/SELECT id FROM test WHERE id = 2"
+    ["origin"]=>
+    string(86) "#0 /home/nixnutz/php/phpdoc/foo.php(15): mysqli->query('/*qc=on*/SELECT...')
+#1 {main}"
+    ["run_time"]=>
+    int(340)
+    ["store_time"]=>
+    int(3)
+    ["eligible_for_caching"]=>
+    bool(true)
+    ["no_table"]=>
+    bool(false)
+    ["was_added"]=>
+    bool(true)
+    ["was_already_in_cache"]=>
+    bool(false)
+  }
+  [5]=>
+  array(8) {
+    ["query"]=>
+    string(41) "/*qc=on*/SELECT id FROM test WHERE id = 2"
+    ["origin"]=>
+    string(86) "#0 /home/nixnutz/php/phpdoc/foo.php(19): mysqli->query('/*qc=on*/SELECT...')
+#1 {main}"
+    ["run_time"]=>
+    int(4)
+    ["store_time"]=>
+    int(2)
+    ["eligible_for_caching"]=>
+    bool(true)
+    ["no_table"]=>
+    bool(false)
+    ["was_added"]=>
+    bool(false)
+    ["was_already_in_cache"]=>
+    bool(true)
+  }
+}
+]]>
+      </screen>
+
+    </example>
+  </refsect1>
+
+  <refsect1 role="seealso">
+  &reftitle.seealso;
+    <para>
+      <simplelist>
+        <member>
+          <link linkend="mysqlnd-qc.configuration">Runtime configuration</link>
+        </member>
+        <member>
+          <link linkend="ini.mysqlnd-qc.collect-query-trace">mysqlnd_qc.collect_query_trace</link>
+        </member>
+        <member>
+          <link linkend="ini.mysqlnd-qc.query-trace-bt-depth">mysqlnd_qc.query_trace_bt_depth</link>
+        </member>        
+        <member>
+          <link linkend="ini.mysqlnd-qc.time-statistics">mysqlnd_qc.time_statistics</link>
+        </member>
+        <member>
+          <link linkend="ini.mysqlnd-qc.cache-no-table">mysqlnd_qc.cache_no_table</link>
+        </member>
+      </simplelist>
+    </para>
+  </refsect1>
+
+</refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
