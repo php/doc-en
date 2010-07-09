@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+<!-- Membership: pecl -->
+
+<book xml:id="book.mysqlnd-qc" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Mysqlnd query result cache plugin</title>
+  <titleabbrev>mysqlnd_qc</titleabbrev>
+
+  <preface xml:id="intro.mysqlnd-qc">
+  &reftitle.intro;
+    <para>
+      The mysqlnd query result cache plugin adds easy to use client-side query
+      caching to all PHP MySQL extensions using      
+      <link linkend="book.mysqlnd">mysqlnd</link>.
+    </para>
+    <para>
+      As of version PHP 5.3.3 the MySQL native driver for PHP (
+      <literal>mysqlnd</literal>)
+      features an internal plugin C API. C plugins, such as the query cache
+      plugin, can extend the functionality of    
+      <link linkend="book.mysqlnd">mysqlnd</link>.
+    </para>
+    <para>
+      The MySQL native driver for PHP is a C library which ships together with
+      PHP as of PHP 5.3.0. It serves as a drop-in replacement for the
+      MySQL Client Library (AKA libmysql/libmysqlclient). Using mysqlnd has
+      several advantages: no extra downloads because it comes with PHP,
+      PHP license, lower memory consumption in certain cases,
+      new functionality such as asynchronous queries.
+    </para>
+    <para>
+      Mysqlnd plugins such as the query cache plugin operate transparent
+      from a user perspective. The cache plugin supports all PHP applications
+      and all PHP MySQL extensions (
+      <link linkend="ref.mysqli">mysqli</link>,
+      <link linkend="ref.mysql">mysql</link>,
+      <link linkend="ref.pdo-mysql">PDO_MYSQL</link>).
+      It does not change existing APIs.
+    </para>
+    <para>
+      No significant application changes are required to cache a query.
+      The cache has two operation modes. It will either cache all
+      queries (not recommended) or only those queries marked with a
+      certain SQL hint (recommended).
+    </para>
+
+    <section xml:id="mysqlnd-qc.key_features">
+      <title>Key Features</title>
+      <para>
+        <itemizedlist>
+          <listitem>
+            <para>
+              Transparent and therefore easy to use
+            </para>
+            <para>
+              <itemizedlist>
+                <listitem>
+                  <para>
+                   supports all PHP MySQL extensions
+                  </para>
+                </listitem>
+                <listitem>
+                  <para>
+                   no API changes
+                  </para>
+                </listitem>
+                <listitem>
+                  <para>
+                   very little application changes required
+                  </para>
+                </listitem>
+              </itemizedlist>
+            </para>
+          </listitem>
+
+          <listitem>
+            <para>
+              Flexible invalidation strategy
+            </para>
+            <para>
+              <itemizedlist>
+                <listitem>
+                  <para>
+                   Time-to-Live (TTL)
+                  </para>
+                </listitem>
+                <listitem>
+                  <para>
+                   user-defined
+                  </para>
+                </listitem>
+              </itemizedlist>
+            </para>
+          </listitem>
+
+          <listitem>
+            <para>
+              Storage with different scope and life-span
+            </para>
+            <para>
+              <itemizedlist>
+                <listitem>
+                  <para>
+                   Default (Hash)
+                  </para>
+                </listitem>
+                <listitem>
+                  <para>
+                    <link linkend="ref.apc">APC</link>
+                  </para>
+                </listitem>
+                <listitem>
+                  <para>
+                   MEMCACHE
+                  </para>
+                </listitem>
+                <listitem>
+                  <para>
+                   sqlite
+                  </para>
+                </listitem>
+                <listitem>
+                  <para>
+                   user-defined
+                  </para>
+                </listitem>
+              </itemizedlist>
+            </para>
+          </listitem>
+        </itemizedlist>
+      </para>
+    </section>
+
+    <section xml:id="mysqlnd-qc.limitations">
+      <title>Limitations</title>
+      <para>
+        The query cache plugin prototype will not cache unbuffered
+        queries or results from prepared statements. This limitation
+        is likely to be lifted soon.
+      </para>
+      <para>
+        The following popular user API calls use buffered queries which
+        can be cached:
+      </para>
+      <para>
+        <itemizedlist>
+          <listitem>
+            <para>
+              <link linkend="ref.mysqli">mysqli</link>
+              <itemizedlist>
+                <listitem>
+                  <para>
+                    <function>mysqli_query</function>
+                  </para>
+                </listitem>
+                <listitem>
+                  <para>
+                    <function>mysqli_real_query</function> +
+                    <function>mysqli_store_result</function>
+                  </para>
+                </listitem>
+              </itemizedlist>
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <link linkend="ref.pdo-mysql">PDO_MYSQL</link>
+              <itemizedlist>
+                <listitem>
+                  <para>
+                    <function>PDO::query</function> if
+                    <literal>PDO::ATTR_EMULATE_PREPARES = 1</literal> (default setting)
+                  </para>
+                </listitem>
+              </itemizedlist>
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <link linkend="ref.mysql">mysql</link>
+              <itemizedlist>
+                <listitem>
+                  <para>
+                    <function>mysql_query</function>
+                  </para>
+                </listitem>
+              </itemizedlist>
+            </para>
+            
+          </listitem>
+        </itemizedlist>
+      </para>
+    </section>
+    
+    <section xml:id="mysqlnd-qc.architecture">
+      <title>Architecture</title>
+      <para>
+        The query cache is implemented as a PHP extension.
+        It is written in C and operates under the hood of PHP. During the
+        startup of the PHP interpreter it gets registered as a         
+        <link linkend="book.mysqlnd">mysqlnd</link> plugin to replace selected
+        mysqlnd C methods.
+      </para>
+      <para>
+        At PHP run time it proxies queries send from
+        mysqlnd (PHP) to the MySQL server. If a query string starts with the SQL hint 
+        (
+        <literal>/*qc=on*/</literal>) to enable caching of it and the query
+        is not cached (cache miss), the query cache plugin will record the
+        raw wire protocol data send from MySQL to PHP to answer the query.
+        The query cache records the wire protocol data in its cache
+        and replays it, if still valid, on a cache hit.
+      </para>
+      <para>
+        Note that the query cache does not hold decoded result sets consisting
+        of
+        <literal>zvals</literal> (C struct representing a PHP variable).
+        It stores the raw wire data of the MySQL client server protocol.
+        In case of a cache hits,
+        <link linkend="book.mysqlnd">mysqlnd</link> still needs
+        to decode the cached raw wire data into PHP variables before passing
+        the result to the user space.
+        This approach has one major advantage: simplicity. Furthermore this
+        approach eliminates the need for serializing data for cache storage.
+      </para>
+    </section>
+
+  </preface>
+
+
+ &reference.mysqlnd-qc.setup;
+ &reference.mysqlnd-qc.constants;
+ &reference.mysqlnd-qc.usage;
+ &reference.mysqlnd-qc.reference;
+
+</book>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
