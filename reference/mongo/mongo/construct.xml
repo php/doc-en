@@ -21,7 +21,7 @@
    <link linkend="ini.mongo.default-port">mongo.default_port</link>).
   </para>
   <para>
-   As of version 1.0.2, <parameter>server</parameter> can have a special form: 
+   As of version 1.0.2, <parameter>server</parameter> should have the form: 
    <programlisting>
 <![CDATA[
 mongodb://[username:password@]host1[:port1][,host2[:port2:],...]/db
@@ -29,8 +29,8 @@ mongodb://[username:password@]host1[:port1][,host2[:port2:],...]/db
    </programlisting>
   </para>
   <para>
-   It starts with <literal>mongodb://</literal>, to indicate it is a connection
-   string in this form. 
+   The connection string always starts with <literal>mongodb://</literal>, to 
+   indicate it is a connection string in this form. 
   </para>
   <para>If <literal>username</literal> and <literal>password</literal>
    are specified, the constructor will attempt to authenticate the connection 
@@ -144,6 +144,18 @@ $mongo->selectDB("foo")->command(array("distinct" => "bar", "key" => "age"));
           milliseconds).
          </para>
         </listitem>
+        <listitem>
+         <para>
+          <literal>"replicaSet"</literal>
+         </para>
+         <para>
+          If this hosts listed are seeds of a replica set.  If they are, the
+          master will be determined by using the <literal>ismaster</literal>
+          database command on the seeds, so the driver may end up connecting to
+          a server that was not even listed.  See the replica set example below
+          for details.
+         </para>
+        </listitem>
        </itemizedlist>
       </para>
      </listitem>
@@ -165,7 +177,8 @@ $mongo->selectDB("foo")->command(array("distinct" => "bar", "key" => "age"));
    Throws <classname>MongoConnectionException</classname> if it tries and fails 
    to connect to the database for all hostnames given.  It will also throw a
    <classname>MongoConnnectionException</classname> if an invalid username or
-   password is given.
+   password is given.  See <classname>MongoConnectionException</classname>
+   documentation for common exceptions and their causes.
   </para>
  </refsect1>
 
@@ -231,6 +244,12 @@ $mongo->selectDB("foo")->command(array("distinct" => "bar", "key" => "age"));
         </variablelist>
        </entry>
       </row>
+      <row>
+       <entry>1.0.9</entry>
+       <entry>
+        Added the <literal>replicaSet</literal> option.
+       </entry>
+      </row>
      </tbody>
     </tgroup>
    </informaltable>
@@ -240,28 +259,39 @@ $mongo->selectDB("foo")->command(array("distinct" => "bar", "key" => "age"));
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><function>Mongo::__construct</function> paired connection example</title>
+   <title><function>Mongo::__construct</function> replica set example</title>
    <para>
-    This example shows how to connect the driver to a replica pair of Mongo 
-    servers.
+    This example shows how to connect the driver to a replica set.  It assumes
+    that there is a set of three servers: sf1.example.com, sf2.example.com, and
+    ny1.example.com.  The master could be any one of these servers.
    </para>
    <programlisting role="php">
 <![CDATA[
 <?php
 
 // pass a comma-separated list of server names to the constructor
-$m1 = new Mongo("mongodb://www.example1.com,www.example2.com");
+$m1 = new Mongo("mongodb://sf2.example.com,ny1.example.com", array("replicaSet" => true));
 
-// if the database servers are not running on the default port (27017),
-// you'll need to specify the port
-$m2 = new Mongo("mongodb://www.example1.com:12345,www.example.com:54321");
-
-// you can connect to more that two, as well
-$m3 = new Mongo("mongodb://localhost:27017,localhost:27018,localhost:27019");
+// you only need to pass a single seed, the driver will derive the full list and
+// find the master from this seed
+$m2 = new Mongo("mongodb://ny1.example.com", array("replicaSet" => true));
 
 ?>
 ]]>
    </programlisting>
+   <para>
+    If the current master fails, the driver will figure out which secondary 
+    server became the new master and automatically start using that connection.
+    Automatic failover will not work correctly if <literal>replicaSet</literal>
+    is not specified.
+   </para>
+   <para>
+    At least one seed in the seed list must be up for the driver to connect to
+    the replica set.
+   </para>
+   <para>
+    If you include seeds from two separate replica sets, behavior is undefined.
+   </para>
   </example>
   <example>
    <title><function>Mongo::__construct</function> persistent connection example</title>
