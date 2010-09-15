@@ -12,7 +12,7 @@
   </para>
   <para>
    <example>
-    <title>Getting the data from inclued</title>
+    <title>Getting the data within the PHP application itself (function)</title>
     <programlisting role="php">
 <![CDATA[
 <?php
@@ -53,6 +53,66 @@ $ php graphviz.php -i /tmp/wp.ser -o wp.dot
 $ dot -Tpng -o inclued.png wp.dot
 ]]>
     </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Listing data via inclued dumps (configuration)</title>
+    <para>
+     When using the <link linkend="ini.inclued.dumpdir">inclued.dumpdir</link>
+     directive, files (include clues) are dumped with every request. Here's one
+     way to list those files, and <function>unserialize</function> them.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$path = ini_get('inclued.dumpdir');
+if ($path && is_dir($path)) {
+
+    echo "Path: $path", PHP_EOL;
+
+    $inclues = new GlobIterator($path . DIRECTORY_SEPARATOR . 'inclued*');
+
+    if ($inclues->count() === 0) {
+        echo 'No clues today', PHP_EOL;
+        exit;
+    }
+
+    foreach ($inclues as $inclue) {
+
+        echo 'Inclued file: ', $inclue->getFilename(), PHP_EOL;
+
+        $data = file_get_contents($inclue->getPathname());
+        if ($data) {
+            $inc = unserialize($data);
+            echo ' -- filename: ', $inc['request']['SCRIPT_FILENAME'], PHP_EOL;
+            echo ' -- number of includes: ', count($inc['includes']), PHP_EOL;
+        }
+        echo PHP_EOL;
+    }
+} else {
+    echo 'I am totally clueless today.', PHP_EOL;
+}
+?>
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+PATH: /tmp/inclued
+Inclued file: inclued.56521.1
+ -- filename: /Users/philip/test.php
+ -- number of includes: 1
+
+Inclued file: inclued.56563.1
+ -- filename: /tmp/none.php
+ -- number of includes: 0
+
+Inclued file: inclued.56636.1
+ -- filename: /tmp/three.php
+ -- number of includes: 3
+]]>
+    </screen>
    </example>
   </para>
  </section>
