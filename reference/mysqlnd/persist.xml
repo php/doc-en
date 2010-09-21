@@ -1,38 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
 <chapter xml:id="mysqlnd.persist" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
-
-  <title>Persistent Connections</title>
-
-  <para>
-    <emphasis role="bold">Using Persistent Connections</emphasis>
-  </para>
-
-  <para>
-    The MySQL database extensions do not support persistent connections
-    when used with the MySQL Client Library. However, they do when using
-    MySQL Native Driver. When creating a connection the hostname is
-    prepended with <quote>p:</quote>. This is demonstrated by the
-    following code snippet, which creates a new connection using
-    <literal>mysqli</literal>:
-  </para>
-
-  <programlisting role="php">
+ <title>Persistent Connections</title>
+ <para>
+  <emphasis role="bold">Using Persistent Connections</emphasis>
+ </para>
+ <para>
+  If <literal>mysqli</literal> is used with <literal>mysqlnd</literal>,
+  when a persistent connection is created it generates a
+  <literal>COM_CHANGE_USER</literal>
+  (<literal>mysql_change_user()</literal>) call on the server. This
+  ensures that re-authentication of the connection takes place.
+ </para>
+ <para>
+  As there is some overhead associated with the
+  <literal>COM_CHANGE_USER</literal> call, it is possible to switch this
+  off at compile time. Reusing a persistent connection will then
+  generate a <literal>COM_PING</literal> (<literal>mysql_ping</literal>)
+  call to simply test the connection is reusable.
+ </para>
+ <para>
+  Generation of <literal>COM_CHANGE_USER</literal> can be switched off
+  with the compile flag
+  <literal>MYSQLI_NO_CHANGE_USER_ON_PCONNECT</literal>. For example:
+ </para>
+<programlisting>
 <![CDATA[
-<?php
-$host = "p:localhost";
-$port = 3306;
-$socket = "/tmp/mysql.sock";
-$user = "root";
-$password = "password";
-$dbname = "test";
-
-$conn = new mysqli($host, $user, $password, $dbname, $port, $socket)
-   or die('Could not connect to the database server' . mysqli_connect_error());
-?>
+shell# CFLAGS="-DMYSQLI_NO_CHANGE_USER_ON_PCONNECT" ./configure --with-mysql=/usr/local/mysql/ --with-mysqli=/usr/local/mysql/bin/mysql_config --with-pdo-mysql=/usr/local/mysql/bin/mysql_config --enable-debug && make clean && make -j6
 ]]>
-  </programlisting>
-
+</programlisting>
+ <para>
+  Or alternatively:
+ </para>
+<programlisting>
+shell# export CFLAGS="-DMYSQLI_NO_CHANGE_USER_ON_PCONNECT"
+shell# configure --whatever-option
+shell# make clean
+shell# make
+</programlisting>
+ <para>
+  Note that only <literal>mysqli</literal> on <literal>mysqlnd</literal>
+  uses <literal>COM_CHANGE_USER</literal>. Other extension-driver
+  combinations use <literal>COM_PING</literal> on initial use of a
+  persistent connection.
+ </para>
 </chapter>
 <!-- Keep this comment at the end of the file
 Local variables:
