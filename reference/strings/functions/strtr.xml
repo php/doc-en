@@ -3,7 +3,7 @@
 <refentry xmlns="http://docbook.org/ns/docbook" xml:id="function.strtr" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>strtr</refname>
-  <refpurpose>Translate certain characters</refpurpose>
+  <refpurpose>Translate characters or replace substrings</refpurpose>
  </refnamediv>
  
  <refsect1 role="description">
@@ -20,15 +20,34 @@
    <methodparam><type>array</type><parameter>replace_pairs</parameter></methodparam>
   </methodsynopsis>
   <para>
-   This function returns a copy of <parameter>str</parameter>,
-   translating all occurrences of each character in
-   <parameter>from</parameter> to the corresponding character in
-   <parameter>to</parameter>.
+   If given three arguments, this function returns a copy of
+   <parameter>str</parameter> where all occurrences of each (single-byte)
+   character in <parameter>from</parameter> have been translated to the
+   corresponding character in <parameter>to</parameter>, i.e., every
+   occurrence of <literal>$from[$n]</literal> has been replaced with
+   <literal>$to[$n]</literal>, where <literal>$n</literal> is a valid
+   offset in both arguments.
   </para>
   <para>
-   If <parameter>from</parameter> and <parameter>to</parameter> are
+   If <parameter>from</parameter> and <parameter>to</parameter> have
    different lengths, the extra characters in the longer of the two
-   are ignored.
+   are ignored. The length of <parameter>str</parameter> will be the same as
+   the return value's.
+  </para>
+  <para>
+   If given two arguments, the second should be an <type>array</type> in the
+   form <literal>array('from' => 'to', ...)</literal>. The return value is
+   a <type>string</type> where all the occurrences of the array keys have been
+   replaced by the corresponding values. The longest keys will be tried first.
+   Once a substring has been replaced, its new value will not be searched
+   again.
+  </para>
+  <para>
+   In this case, the keys and the values may have any length, provided that
+   there is no empty key; additionaly, the length of the return value may
+   differ from that of <parameter>str</parameter>.
+   However, this function will be the most efficient when all the keys have the
+   same size.
   </para>
  </refsect1>
 
@@ -64,8 +83,8 @@
      <term><parameter>replace_pairs</parameter></term>
      <listitem>
       <para>
-       The <parameter>replace_pairs</parameter> parameter may be used as a substitute for 
-       <parameter>to</parameter> and <parameter>from</parameter> in which case it's an
+       The <parameter>replace_pairs</parameter> parameter may be used instead of 
+       <parameter>to</parameter> and <parameter>from</parameter>, in which case it's an
        <type>array</type> in the form <literal>array('from' => 'to', ...)</literal>. 
       </para>
      </listitem>
@@ -94,6 +113,8 @@
     <programlisting role="php">
 <![CDATA[
 <?php
+//In this form, strtr() does byte-by-byte translation
+//Therefore, we are assuming a single-byte encoding here:
 $addr = strtr($addr, "äåö", "aao");
 ?>
 ]]>
@@ -101,20 +122,17 @@ $addr = strtr($addr, "äåö", "aao");
    </example>
   </para>
   <para>
-   <function>strtr</function> may be called with only two
-   arguments. If called with two arguments it behaves in a new way:
-   <parameter>from</parameter> then has to be an array that contains
-   string -> string pairs that will be replaced in the source
-   string. <function>strtr</function> will always look for the
-   longest possible match first and will *NOT* try to replace stuff
-   that it has already worked on.
+   The next example shows the behavior of <function>strtr</function> when
+   called with only two arguments. Note the preference of the replacements
+   (<literal>"h"</literal> is not picked because there are longer matches)
+   and how replaced text was not searched again.
   </para>
   <example>
    <title><function>strtr</function> example with two arguments</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-$trans = array("hello" => "hi", "hi" => "hello");
+$trans = array("h" => "-", "hello" => "hi", "hi" => "hello");
 echo strtr("hi all, I said hello", $trans);
 ?>
 ]]>
@@ -123,6 +141,31 @@ echo strtr("hi all, I said hello", $trans);
     <screen>
 <![CDATA[
 hello all, I said hi
+]]>
+    </screen>
+  </example>
+  <para>
+   The two modes of behavior are substantially different. With three arguments,
+   <function>strtr</function> will replace bytes; with two, it may replace
+   longer substrings.
+  </para>
+  <example>
+   <title><function>strtr</function> behavior comparison</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+echo strtr("baab", "ab", "01"),"\n";
+
+$trans = array("ab" => "01");
+echo strtr("baab", $trans);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+1001
+ba01
 ]]>
     </screen>
   </example>
