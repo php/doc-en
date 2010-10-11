@@ -22,20 +22,23 @@
 
   $Id$
 */
-if ($argc < 2 || $argc > 3) {
+if ($argc < 2 || $argc > 4) {
 ?>
 
 Check the revision of translated files against
 the actual english xml files, and print statistics
 
   Usage:
-  <?php echo $argv[0]; ?> <language-code> [<maintainer>]
+  <?php echo $argv[0]; ?> <language-code> [<maintainer>] [--show-uptodate]
 
   <language-code> must be a valid language code used
   in the repository
 
   If you specify <maintainer>, the script only checks
   the files maintained by the person you add here
+
+  If you specify --show-uptodate option, the script will
+  also show uptodate files in the common file list
 
   Read more about Revision comments and related
   functionality in the PHP Documentation Howto:
@@ -76,16 +79,39 @@ $CSS = array(
   REV_WIP      => "wip",
 );
 
+function init_revisions() {
+	 global $CSS;
+	 return array_fill_keys(array_keys($CSS), 0);
+}
+
+function init_files_by_maint($persons) {
+  $result = array();
+  foreach($persons as $item) {
+    $result[$item['nick']] = init_revisions();
+  }
+
+ 	return $result;
+}
+
+$file_sizes_by_mark = $files_by_mark = init_revisions();
+
 // Option for the link to svn.php.net:
 define('SVN_OPT', '&amp;view=patch');
 define('SVN_OPT_NOWS', '');
 
 // Initializing variables from parameters
 $LANG = $argv[1];
+$MAINT = "";
+$SHOW_UPTODATE = FALSE;
 if ($argc == 3) {
+	if ($argv[2] == '--show-uptodate') {
+         $SHOW_UPTODATE = TRUE;
+    } else {
+         $MAINT = $argv[2];	
+	}
+} elseif ($argc == 4) {
     $MAINT = $argv[2];
-} else {
-    $MAINT = "";
+    $SHOW_UPTODATE = ($argv[3] == '--show-uptodate');
 }
 
 // Main directory of the PHP documentation (depends on the
@@ -172,7 +198,7 @@ function get_tags($file, $val = "en-rev") {
 function get_file_status($file) {
 
   // The information is contained in these global arrays and vars
-  global $DOCDIR, $LANG, $MAINT, $files_by_mark, $files_by_maint;
+  global $DOCDIR, $LANG, $MAINT, $SHOW_UPTODATE, $files_by_mark, $files_by_maint;
   global $file_sizes_by_mark;
   global $missing_files, $missing_tags, $using_rev;
 
@@ -246,23 +272,17 @@ function get_file_status($file) {
     $en_rev   = $en_rev;
   }
 
-  // If the file is up-to-date
-  if ($rev_diff === 0 && trim($this_status) === "ready") {
-    // Store file by status and maintainer
-    $files_by_mark[REV_UPTODATE]++;
-    $files_by_maint[$this_maint][REV_UPTODATE]++;
-    $file_sizes_by_mark[REV_UPTODATE] += $en_size;
-
-    return FALSE;
-  }
-
   // Compute times and diffs
   $en_date    = intval((time() - filemtime($file)) / 86400);
   $trans_date = intval((time() - filemtime($trans_file)) / 86400);
   $date_diff  = $en_date - $trans_date;
 
-  // Make decision on file category by revision, date and size
-  if ($rev_diff >= ALERT_REV || $size_diff >= ALERT_SIZE || $date_diff <= ALERT_DATE) {
+  // If the file is up-to-date
+  if ($rev_diff === 0 && trim($this_status) === "ready") {
+     $status_mark = REV_UPTODATE;
+  }
+  // Or make decision on file category by revision, date and size
+  elseif ($rev_diff >= ALERT_REV || $size_diff >= ALERT_SIZE || $date_diff <= ALERT_DATE) {
     $status_mark = REV_CRITICAL;
   } elseif ($rev_diff === "n/a") {
     $status_mark = REV_NOREV;
@@ -276,6 +296,10 @@ function get_file_status($file) {
   $files_by_mark[$status_mark]++;
   $files_by_maint[$this_maint][$status_mark]++;
   $file_sizes_by_mark[$status_mark] += $en_size;
+
+  if (REV_UPTODATE === $status_mark && !$SHOW_UPTODATE) {
+    return FALSE;
+  }
 
   return array(
       "full_name"  => $file,
@@ -579,6 +603,7 @@ list($charset, $translation) = parse_translation($DOCDIR, $LANG, $MAINT);
 // Add WIP files to maintainers file count and figure out,
 // if we need to use optional date and revision columns
 $using_date = FALSE; $using_rev = FALSE;
+$files_by_maint = init_files_by_maint($translation['persons']);
 foreach ($translation["files"] as $num => $fileinfo) {
   $files_by_maint[$fileinfo["person"]][REV_WIP]++;
   if (isset($fileinfo["date"]))     { $using_date = TRUE; }
