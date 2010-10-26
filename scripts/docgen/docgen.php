@@ -668,10 +668,12 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 				$markup .= str_repeat(' ', $ident + 1) ."<link xlink:href=\"&url.pecl.package;{EXT_NAME_ID}\">&url.pecl.package;{EXT_NAME_ID}</link>\n";
 				$markup .= str_repeat(' ', $ident) . "</para>\n";
 
+				/*
 				$markup2 .= "<para>\n";
 				$markup2 .= str_repeat(' ', $ident2 + 1) ."The latest PECL/{EXT_NAME_ID} Win32 DLL is available here:\n";
 				$markup2 .= str_repeat(' ', $ident2 + 1) ."<link xlink:href=\"&url.pecl.win.ext;php_{EXT_NAME_ID}.dll\">php_{EXT_NAME_ID}.dll</link>\n";
 				$markup2 .= str_repeat(' ', $ident2) ."</para>\n";
+				*/
 			} else {
 
 				$markup .= "<para>\n";
