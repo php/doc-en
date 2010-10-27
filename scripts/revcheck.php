@@ -897,8 +897,8 @@ END_OF_MULTILINE;
       // Store the new actual directory
       $prev_dir = $new_dir;
     }
-    // Drop out the unneeded parts from the dirname...
-    $display_dir = str_replace($DOCDIR."en/", "", dirname($file["full_name"]));
+    // Drop out the unneeded parts from the dirname, special case for root dir...
+    $display_dir = str_replace(array($DOCDIR."en/", $DOCDIR."en"), array("", '/'), dirname($file["full_name"]));
     $prev_diplay_dir = "<tr class=blue><th colspan=12>$display_dir";
 
     // Save the line for the current file (get file name shorter)
