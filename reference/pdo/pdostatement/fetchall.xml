@@ -12,7 +12,7 @@
   <methodsynopsis>
    <type>array</type><methodname>PDOStatement::fetchAll</methodname>
    <methodparam choice="opt"><type>int</type><parameter>fetch_style</parameter><initializer>PDO::FETCH_BOTH</initializer></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>fetch_argument</parameter><initializer>0</initializer></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>fetch_argument</parameter></methodparam>
    <methodparam choice="opt"><type>array</type><parameter>ctor_args</parameter><initializer>array()</initializer></methodparam>
   </methodsynopsis>
 
@@ -31,19 +31,19 @@
       </para>
       <para>
        To return an array consisting of all values of a single column from
-       the result set, specify <literal>PDO::FETCH_COLUMN</literal>. You
+       the result set, specify <constant>PDO::FETCH_COLUMN</constant>. You
        can specify which column you want with the
        <parameter>column-index</parameter> parameter.
       </para>
       <para>
        To fetch only the unique values of a single column from the result set,
-       bitwise-OR <literal>PDO::FETCH_COLUMN</literal> with
-       <literal>PDO::FETCH_UNIQUE</literal>.
+       bitwise-OR <constant>PDO::FETCH_COLUMN</constant> with
+       <constant>PDO::FETCH_UNIQUE</constant>.
       </para>
       <para>
        To return an associative array grouped by the values of a specified
-       column, bitwise-OR <literal>PDO::FETCH_COLUMN</literal> with
-       <literal>PDO::FETCH_GROUP</literal>.
+       column, bitwise-OR <constant>PDO::FETCH_COLUMN</constant> with
+       <constant>PDO::FETCH_GROUP</constant>.
       </para>
      </listitem>
     </varlistentry>
@@ -62,8 +62,14 @@
         </listitem>
         <listitem>
          <para>
-          <constant>PDO::FETCH_CLASS</constant>: Sets a custom class name for which 
-           the fetch results will be stored in.
+          <constant>PDO::FETCH_CLASS</constant>: Returns instances of the specified
+          class, mapping the columns of each row to named properties in the class.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          <constant>PDO::FETCH_FUNC</constant>: Returns the results of calling the
+          specified function, using each row's columns as parameters in the call.
          </para>
         </listitem>
        </itemizedlist>
@@ -226,6 +232,90 @@ array(3) {
   }
 }
 
+]]>
+    </screen>
+   </example>
+   <example><title>Instantiating a class for each result</title>
+    <para>
+     The following example demonstrates the behaviour of the
+     <constant>PDO::FETCH_CLASS</constant> fetch style.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class fruit {
+    public $name;
+    public $colour;
+}
+
+$sth = $dbh->prepare("SELECT name, colour FROM fruit");
+$sth->execute();
+
+$result = $sth->fetchAll(PDO::FETCH_CLASS, "fruit");
+var_dump($result);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(3) {
+  [0]=>
+  object(fruit)#1 (2) {
+    ["name"]=>
+    string(5) "apple"
+    ["colour"]=>
+    string(5) "green"
+  }
+  [1]=>
+  object(fruit)#2 (2) {
+    ["name"]=>
+    string(4) "pear"
+    ["colour"]=>
+    string(6) "yellow"
+  }
+  [2]=>
+  object(fruit)#3 (2) {
+    ["name"]=>
+    string(10) "watermelon"
+    ["colour"]=>
+    string(4) "pink"
+  }
+}
+]]>
+    </screen>
+   </example>
+   <example><title>Calling a function for each result</title>
+    <para>
+     The following example demonstrates the behaviour of the
+     <constant>PDO::FETCH_FUNC</constant> fetch style.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function fruit($name, $colour) {
+    return "{$name}: {$colour}";
+}
+
+$sth = $dbh->prepare("SELECT name, colour FROM fruit");
+$sth->execute();
+
+$result = $sth->fetchAll(PDO::FETCH_FUNC, "fruit");
+var_dump($result);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(3) {
+  [0]=>
+  string(12) "apple: green"
+  [1]=>
+  string(12) "pear: yellow"
+  [2]=>
+  string(16) "watermelon: pink"
+}
 ]]>
     </screen>
    </example>
