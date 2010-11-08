@@ -242,7 +242,7 @@ function get_file_status($file) {
 
   // Compute sizes and diffs
   $en_size    = intval(filesize($file) / 1024);
-  $trans_size = intval(filesize($trans_file) / 1024);
+  $trans_size = intval(mb_strlen(file_get_contents($trans_file), 'UTF-8') / 1024);
   $size_diff  = intval($en_size) - intval($trans_size);
 
   // If we found no revision tag, then collect this
