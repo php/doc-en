@@ -4,6 +4,175 @@
  <title>Querying</title>
 
  <section>
+  <title>Distributing queries to slaves</title>
+
+  <note>
+   <title>1.1.0+</title>
+   <para>
+    If you are using a
+    <link xlink:href="&url.mongodb.replica;">replica set</link> and version
+    1.1.0 or above of the driver, the driver can automatically route reads to 
+    slaves.  This behavior does not exist in earlier versions of the driver and
+    <emphasis>cannot</emphasis> be used with "normal" master-slave.
+   </para>
+  </note>
+
+  <para>
+   By default, the driver will send all queries to the master.  If you set the
+   "slaveOkay" option, the driver will send all queries to a non-primary server,
+   if possible.  The "slaveOkay" option can be set at every "level": 
+   <link linkend="mongo.setslaveokay">connection</link>,
+   <link linkend="mongodb.setslaveokay">database</link>, 
+   <link linkend="mongocollection.setslaveokay">collection</link>, and 
+   <link linkend="mongocursor.slaveokay">cursor</link>.  Each class inherits the
+   "slaveOkay" setting from the class above it, so if you do:
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+$db->setSlaveOkay(true);
+$c = $db->myCollection;
+
+$cursor = $c->find();
+
+?>
+]]>
+  </programlisting>
+
+  <para>
+   then the query will be executed against a slave (the collection inherited
+   "slaveOkay" from the database and the cursor inherited it from the 
+   collection).
+  </para>
+
+  <section>
+   <title>How slaves are chosen</title>
+
+   <para>
+    Each instance of <classname>Mongo</classname> gets its own slave, randomly 
+    chosen from the readable slaves.  This holds, even if you are using 
+    persistent connections.  So, if we do something like:
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// connects to a replica set with members ip0, ip1, and ip2
+// ip0 is the primary, ip1 and ip2 are secondaries
+$m1 = new Mongo("mongodb://ip0", array("replicaSet" => true, "persist" => "x"));
+echo "m1's slave is ".$m1->getSlave()."\n";
+
+// uses the same connection as $m1
+$m2 = new Mongo("mongodb://ip0", array("replicaSet" => true, "persist" => "x"));
+echo "m2's slave is ".$m2->getSlave()."\n";
+
+?>
+]]>
+   </programlisting>
+   <para>
+    we'd probably end up with something like:
+   </para>
+   <screen>
+m1's slave is: ip2
+m2's slave is: ip1
+   </screen>
+
+   <para>
+    If we continued to create new <classname>Mongo</classname>s, we should get a
+    fairly even distribution between ip1 and ip2.
+   </para>
+
+   <para>
+    Slaves are chosen on a per-instance basis and do no change (unless something 
+    bad happens to your set and they are forced to).  
+   </para>
+
+   <para>
+    You can see what the driver thinks is the current status of the set members
+    by running <function>Mongo::getHosts</function>.
+   </para>
+
+   <para>
+    If no non-primary server is readable, the driver will send 
+    reads to the primary (even if "slaveOkay" is set).  A server is considered 
+    readable if its state is 2 (SECONDARY) and its health is 1.  You can check 
+    this with <function>Mongo::getHosts</function> (some fields omitted for 
+    clarity):
+   </para>
+   <programlisting>
+<![CDATA[
+Array
+(
+    [ubuntu:27017] => Array
+        (
+            [_id] => 0
+            [name] => ip0
+            [health] => 1
+            [state] => 1
+            [stateStr] => PRIMARY
+        )
+
+    [ubuntu:27019] => Array
+        (
+            [_id] => 2
+            [name] => ip1
+            [health] => 1
+            [state] => 2
+            [stateStr] => SECONDARY
+        )
+
+    [ubuntu:27018] => Array
+        (
+            [_id] => 1
+            [name] => ip2
+            [health] => 1
+            [state] => 2
+            [stateStr] => SECONDARY
+        )
+
+)
+]]>
+   </programlisting>
+   <para>
+    The set above has two readable servers, "ip1" and "ip2".  If both of 
+    these went down or became stale, reads would go to "ip0".
+   </para>
+
+   <para>
+    If you enjoy twiddling knobs that you probably shouldn't mess with, you can 
+    force the driver to use a different slave by calling 
+    <function>Mongo::switchSlave</function>.  This randomly chooses a new slave 
+    to use and shouldn't be used unless you know what you're doing.
+   </para>
+
+  </section>
+  <section>
+   <title>Random notes</title>
+
+   <para>
+    Writes are always sent to the primary.  Database commands, even read-only 
+    commands, are also always sent to the primary.
+   </para>
+
+   <para>
+    The health and state of a slave is checked every 5 seconds or when the next 
+    operation occurs after 5 seconds.  It will also recheck the configuration 
+    when the driver has a problem reaching a server.  You can manually force the
+    driver to update the status by calling <function>Mongo::getHosts</function>.
+   </para>
+   
+   <para>
+    Note that a non-primary server may be behind the primary in operations, so 
+    your application must be okay with getting out-of-date data (or you must use
+    w for all writes).
+   </para>
+  </section>
+
+ </section>
+
+ <section>
   <title>Querying by _id</title>
   <para>
    Every object inserted is automatically assigned a unique _id field, which is
