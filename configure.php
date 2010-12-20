@@ -403,7 +403,7 @@ if (version_compare(LIBXML_DOTTED_VERSION, '2.7.4', '<') && $ac['LIBXML_CHECK'] 
 	echo "For a few related details, see: http://www.mail-archive.com/debian-bugs-dist@lists.debian.org/msg777646.html\n";
 	echo "Please recompile PHP with a LibXML version 2.7.4 or greater. Version detected: " . LIBXML_DOTTED_VERSION . "\n";
 	echo "Or, pass in --disable-libxml-check if doing so feels safe.\n\n";
-	exit(100);
+	#exit(100);
 } // }}}
 
 checking('for source directory');
