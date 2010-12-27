@@ -61,6 +61,7 @@ Package-specific:
   --with-lang=LANG          Language to build [{$acd['LANG']}]
   --with-partial=ID         Root ID to build [{$acd['PARTIAL']}]
   --disable-broken-file-listing  Do not ignore translated files in broken-files.txt
+  --redirect-stderr-to-stdout  Redirect STDERR to STDOUT. Use STDOUT as the standart output for XML errors [{$acd['STDERR_TO_STDOUT']}]
 
   --output=FILENAME         Save to given file (i.e. not .manual.xml) [{$acd['OUTPUT_FILENAME']}]
 
@@ -192,7 +193,9 @@ function make_scripts_executable($filename) // {{{
 
 // Loop through and print out all XML validation errors {{{
 function print_xml_errors($details = true) {
+    global $ac;
     $errors = libxml_get_errors();
+    $output = ( $ac['STDERR_TO_STDOUT'] == 'yes' ) ? STDOUT : STDERR;
     if ($errors && count($errors) > 0) {
         foreach($errors as $err) {
             // Skip all XInclude, buffer increases, fallback and XPointer
@@ -203,16 +206,16 @@ function print_xml_errors($details = true) {
                     if (isset($file[$err->line])) {
                         $line = rtrim($file[$err->line - 1]);
                         $padding = str_repeat("-", $err->column) . "^";
-                        fprintf(STDERR, "\nERROR (%s:%s:%s)\n%s\n%s\n%s\n", $err->file, $err->line, $err->column, $line, $padding, $errmsg);
+                        fprintf($output, "\nERROR (%s:%s:%s)\n%s\n%s\n%s\n", $err->file, $err->line, $err->column, $line, $padding, $errmsg);
                     } else {
-                        fprintf(STDERR, "\nERROR (%s:unknown)\n%s\n", $err->file, $errmsg);
+                        fprintf($output, "\nERROR (%s:unknown)\n%s\n", $err->file, $errmsg);
                     }
                 } else {
-                    fprintf(STDERR, "%s\n", $errmsg);
+                    fprintf($output, "%s\n", $errmsg);
                 }
                 // Error too severe, stopping
                 if ($err->level === LIBXML_ERR_FATAL) {
-                    fprintf(STDERR, "\n\nPrevious errors too severe. Stopping here.\n\n");
+                    fprintf($output, "\n\nPrevious errors too severe. Stopping here.\n\n");
                     break;
                 }
             }
@@ -272,6 +275,7 @@ $acd = array( // {{{
     'USE_BROKEN_TRANSLATION_FILENAME' => 'yes',
     'COPYRIGHT_YEAR' => date('Y'),
     'OUTPUT_FILENAME' => $srcdir . '/.manual.xml',
+    'STDERR_TO_STDOUT' => 'no'
 ); // }}}
 
 $ac = $acd;
@@ -290,6 +294,9 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
     } else if (strncmp($opt, '--with-', 7) == 0) {
         $o = substr($parts[0], 7);
         $v = isset($parts[1]) ? $parts[1] : 'yes';
+    } else if (strncmp($opt, '--redirect-', 11) == 0) {
+        $o = substr($parts[0], 11);
+        $v = 'yes';
     } else if (strncmp($opt, '--', 2) == 0) {
         $o = substr($parts[0], 2);
         $v = isset($parts[1]) ? $parts[1] : 'yes';
@@ -390,6 +397,10 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
 
         case 'broken-file-listing':
             $ac['USE_BROKEN_TRANSLATION_FILENAME'] = $v;
+
+        case 'stderr-to-stdout':
+            $ac['STDERR_TO_STDOUT'] = $v;
+            break;
 
         default:
             echo "WARNING: Unknown option '{$o}'!\n";
