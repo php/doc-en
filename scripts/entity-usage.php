@@ -38,7 +38,7 @@ if ($argc > 3 || $argc < 2 || in_array($argv[1], array('--help', '-help', '-h', 
 }
 
 // CONFIG SECTION
-$docdir = "../"; // Main directory of the PHP documentation (one dir up in cvs)
+$docdir = "../../"; // Main directory of the PHP documentation (one dir up in cvs)
 
 /*********************************************************************/
 /* Nothing to modify below this line                                 */
