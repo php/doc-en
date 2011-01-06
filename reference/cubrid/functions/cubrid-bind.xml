@@ -19,12 +19,19 @@
   <para>
     The <function>cubrid_bind</function> function is used to bind values in a <function>cubrid_prepare</function> variable, a various types in PHP and corresponding types in SQL. If bind_value_type is not given, string will be the default.
   </para>
+  <note>
   <para>
-				Note: Collection type (set, multiset or sequence) value can't be bind now.
+				Collection type (set, multiset or sequence) value can't be bind now.
   </para>
+  </note>
+  <note>
+   <para>
+    Known issue: If column data type is CLOB, binding parameter will fail. This bug will fixed later, better use BLOB now.
+   </para>
+  </note>
  </refsect1>
 
-  <refsect1 role="parameters">
+ <refsect1 role="parameters">
  &reftitle.parameters;
  <para>
   <variablelist>
@@ -42,14 +49,12 @@
    </varlistentry>
    <varlistentry>
   <term><parameter>bind_index</parameter></term>
-  <listitem><para>A type of the value to bind. (It is omitted by default. Thus, system internally use string by default. However, you need to specify the exact type of the value as an argument when they are either NCHAR or BIT).</para></listitem>
+  <listitem><para>A type of the value to bind. (It is omitted by default. Thus, system internally use string by default. However, you need to specify the exact type of the value as an argument when they are NCHAR, BIT, or BLOB/CLOB).</para></listitem>
    </varlistentry>
   </variablelist>
   </para>
  </refsect1>
  
- 
-
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
@@ -60,6 +65,30 @@
   </para>
  </refsect1>
 
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>8.3.1</entry>
+       <entry>
+        Added BLOB/CLOB data types support.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
+  </para>
+ </refsect1>
+
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
@@ -67,18 +96,40 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$con = cubrid_connect ("dbsvr.cubrid.com", 12345, "demodb");
+$con = cubrid_connect("dbsvr.cubrid.com", 12345, "demodb");
 if ($con) {
-$sql = "insert into tbl values ( ?,?,?)"; 
- $req = cubrid_prepare( $con, $sql, CUBRID_INCLUDE_OID ); 
- $i = 0;
- while ( $i < 2 ) { 
- $res = cubrid_bind( $req, 1, "1", "NUMBER"); 
- $res = cubrid_bind( $req, 2, "2"); 
- $res = cubrid_bind( $req, 3, "04:22:34 PM 08/07/2007"); 
- $res = cubrid_execute( $req );  
- $i = $i + 1; 
-}} 
+    $sql = "insert into tbl values (?,?,?)"; 
+    $req = cubrid_prepare($con, $sql, CUBRID_INCLUDE_OID); 
+
+    $i = 0;
+    while ($i < 2) { 
+        $res = cubrid_bind($req, 1, "1", "NUMBER"); 
+        $res = cubrid_bind($req, 2, "2"); 
+        $res = cubrid_bind($req, 3, "04:22:34 PM 08/07/2007"); 
+        $res = cubrid_execute( $req );  
+        $i = $i + 1; 
+    }
+} 
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <example>
+   <title><function>cubrid_bind</function> BLOB/CLOB example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$con = cubrid_connect ("localhost", 33000, "foo");
+if ($con) {
+    $sql = "INSERT INTO php_cubrid_lob_test(doc_content) VALUES(?)"; 
+    $req = cubrid_prepare($con, $sql); 
+
+    $fp = fopen("book.txt", "rb");
+
+    cubrid_bind($req, 1, $fp, "blob"); 
+    cubrid_execute($req);  
+}
 ?>
 ]]>
    </programlisting>
