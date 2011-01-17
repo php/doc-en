@@ -20,11 +20,6 @@
 	 * $Id$
 	 */
 
-	/**
-	 * TODO
-	 *
-	 * @todo	Check the following languages, as they generate bugged CHMS: de, es, fa, fr, pl, pt_BR, ro
-	 */
 
 	/**
 	 * This script is based off the original build.chms.bat 
@@ -62,7 +57,8 @@
 				'pl', 		/* Polish */
 				'pt_BR',	/* Brazilian Portuguese */
 				'ro',		/* Romanian */
-				'tr'		/* Turkish */
+				'tr', 		/* Turkish */
+				'zh'		/* Chinese (Simplified) */
 				);
 
 	/**
@@ -144,7 +140,8 @@
 		/**
 		 * Anything smaller than ~5MB is broken. Common broken sizes are 2MB and 15K. Common good size are 10-12MB.
 		 */
-		if (filesize(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.chm') < 5000000) {
+		if (filesize(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.chm') < 5000000)
+		{
 			echo('- Build error: CHM file too small, something went wrong.' . PHP_EOL);
 			
 			continue;
@@ -163,7 +160,7 @@
 		/**
 		 * Update the CHM on the rsync server
 		 */
-		execute_task('- rsync', PATH_SCP, '-batch -q -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_' . $lang);
+		execute_task('- rsync', PATH_SCP, ' -batch -v -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_' . $lang);
 
 		/**
 		 * Cleanup
@@ -200,12 +197,20 @@
 
 		if($program == PATH_SCP)
 		{
-			$log = false;
+			ob_start();
+
+			$log_file	= $log;
+			$log		= false;
 		}
 
 		$cmd = sprintf('"%s"%s%s', $program, (!$parameters ?: ' ' . $parameters), (!$log ? '' : ' > ' . PATH_LOG . '\\' . $log . '.log 2<&1'));
 
 		@popen($cmd, 'r');
+
+		if($program == PATH_SCP)
+		{
+			file_put_contents($log_file, ob_get_clean());
+		}
 	}
 
 	/**
