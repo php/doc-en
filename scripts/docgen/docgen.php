@@ -506,7 +506,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 	if ($properties = $class->getProperties(ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PROTECTED | ReflectionProperty::IS_STATIC)) {
 		$ident = get_ident_size('PROPERTIES_LIST', $content);
 
-		$markup = "<classsynopsisinfo role=\"comment\">Properties</classsynopsisinfo>\n";
+		$markup = "<classsynopsisinfo role=\"comment\">&Properties;</classsynopsisinfo>\n";
 		foreach ($properties as $property) {
 			/* Don't get inherited properties */
 			if ($property->getDeclaringClass()->name != $class->name) {
@@ -562,7 +562,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 	/* {METHOD_XINCLUDE} */
 	$ident = get_ident_size('METHOD_XINCLUDE', $content);
 	$content = preg_replace('/\{METHOD_XINCLUDE\}/',
-		"\n". str_repeat(' ', $ident) . "<classsynopsisinfo role=\"comment\">Methods</classsynopsisinfo>\n".
+		"\n". str_repeat(' ', $ident) . "<classsynopsisinfo role=\"comment\">&Methods;</classsynopsisinfo>\n".
 		str_repeat(' ', $ident) ."<xi:include xpointer=\"xmlns(db=http://docbook.org/ns/docbook) xpointer(id('class.". $id ."')/db:refentry/db:refsect1[@role='description']/descendant::db:methodsynopsis[1])\" />",
 		$content, 1);
 
@@ -570,7 +570,7 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 	if ($parent) {
 		$ident = get_ident_size('INHERITED_XINCLUDE', $content);
 		$content = preg_replace('/\{INHERITED_XINCLUDE\}/',
-			"\n". str_repeat(' ', $ident) ."<classsynopsisinfo role=\"comment\">Inherited methods</classsynopsisinfo>\n".
+			"\n". str_repeat(' ', $ident) ."<classsynopsisinfo role=\"comment\">&InheritedMethods;</classsynopsisinfo>\n".
 			str_repeat(' ', $ident) ."<xi:include xpointer=\"xmlns(db=http://docbook.org/ns/docbook) xpointer(id('class.". format_id($parent->getName()) ."')/db:refentry/db:refsect1[@role='description']/descendant::db:methodsynopsis[1])\" />\n",
 			$content, 1);
 	} else {
