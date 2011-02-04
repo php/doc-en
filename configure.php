@@ -673,7 +673,7 @@ if ($dom->validate()) {
 
     echo "done.\n";
     echo "All you have to do now is run 'phd -d {$mxml}'\n";
-    echo "If the script hangs here, you can abort with ^C.";
+    echo "If the script hangs here, you can abort with ^C.\n";
 
     if (function_exists('proc_nice')) {
         echo " (Run `nice php configure.php` next time!)\n";
