@@ -189,8 +189,10 @@ $source_types = array(); // array("function_name" => array("type_spec", filename
 $source_inits = array(); // array("function_name" => array(init, ...), ...)
 $return_types = array(); // array("function_name" => array("doc_type", filename, lineno), ...)
 $source_arg_counts = array(); // array("function_name" => array(disallowed_count => true, ...), ...)
-foreach ((isset($extension) ? array($extension) : array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), glob("$pecl_dir/*", GLOB_ONLYDIR), glob("$phpsrc_dir/sapi/*", GLOB_ONLYDIR))) as $dirname) {
-	if (dirname($dirname) == $pecl_dir && !file_exists("$phpdoc_dir/reference/" . strtolower(basename($dirname)))) {
+$classes = array(); // array("source_name" => "PHP name")
+$method_names = array(); // array("method_name" => "function_name")
+foreach ((isset($extension) ? glob($extension) : array_merge(array($zend_dir), glob("$phpsrc_dir/ext/*", GLOB_ONLYDIR), glob("$pecl_dir/*", GLOB_ONLYDIR), glob("$phpsrc_dir/sapi/*", GLOB_ONLYDIR))) as $dirname) {
+	if (realpath(dirname($dirname)) == $pecl_dir && !file_exists("$phpdoc_dir/reference/" . strtolower(basename($dirname)))) {
 		continue; // skip undocumented PECL extensions
 	}
 	$files = array();
@@ -237,6 +239,20 @@ foreach ((isset($extension) ? array($extension) : array_merge(array($zend_dir), 
 	}
 	
 	foreach ($files as $filename => $file) {
+		// methods
+		preg_match_all('~INIT(?:_OVERLOADED)?_CLASS_ENTRY\\(.*"([^"]+)"\\s*,\\s*([^)]+)~', $file, $matches, PREG_SET_ORDER);
+		foreach ($matches as $val) {
+			if (preg_match('~' . preg_quote($val[2], '~') . '\\[\\](.*)\\}~sU', $file, $matches2)) {
+				preg_match_all('~PHP_(?:FALIAS|ME_MAPPING|ME)\\((\\w+)\\s*,\\s*(\\w+)~', $matches2[1], $matches2, PREG_SET_ORDER);
+				foreach ($matches2 as $val2) {
+					$classes[$val2[1]] = $val[1];
+					$method_names[strtolower("$val[1]::$val2[1]")] = strtolower($val2[2]);
+				}
+			}
+		}
+	}
+	
+	foreach ($files as $filename => $file) {
 		if ($macros) {
 			$file = preg_replace_callback('~\\b(' . implode('|', array_keys($macros)) . ')\\b(\\(.*\\))?~', 'expand_macros', $file);
 		}
@@ -261,7 +277,11 @@ foreach ((isset($extension) ? array($extension) : array_merge(array($zend_dir), 
 		// read parameters
 		preg_match_all('~^(?:static )?(?:ZEND|PHP)(_NAMED)?_(?:FUNCTION|METHOD)\\(([^)]+)\\)(.*)^\\}~msU', $file, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE); // }}} is not in all sources so ^} is used instead
 		foreach ($matches as $val) {
-			$function_name = strtolower(trim(preg_replace('~\\s*,\\s*~', '::', ($val[1][0] ? $aliases[$val[2][0]] : $val[2][0]))));
+			$function_name = trim($val[1][0] ? $aliases[$val[2][0]] : $val[2][0]);
+			if (preg_match('~^(.+)\\s*,\\s*(.+)~', $function_name, $match)) {
+				$function_name = (isset($classes[$match[1]]) ? $classes[$match[1]] : $match[1]) . "::$match[2]";
+			}
+			$function_name = strtolower($function_name);
 			$function_body = $val[3][0];
 			$lineno = substr_count(substr($file, 0, $val[3][1]), "\n") + 1;
 			
@@ -308,13 +328,13 @@ foreach ((isset($extension) ? array($extension) : array_merge(array($zend_dir), 
 			// types and optional
 			if (!in_array($function_name, $difficult_params)
 			&& strpos($function_body, 'zend_parse_parameters_ex') === false // indicate difficulty
-			&& preg_match('~.*zend_parse(_method)?_parameters\\([^,]*,\\s*"([^"]*)"([^)]*)~s', $function_body, $matches2) // .* to catch last occurrence
+			&& preg_match('~.*zend_parse(_method)?_parameters\\([^,]*,(?:\\s*getThis\\(\\)\\s*,)?\\s*"([^"]*)"([^)]*)~s', $function_body, $matches2) // .* to catch last occurrence
 			) {
 				$source_types[$function_name] = array(($matches2[1] ? substr($matches2[2], 1) : $matches2[2]), $filename, $lineno);
 				preg_match_all('~,\\s*&([^,]+)~', $matches2[3], $matches3);
 				foreach ($matches3[1] as $val) {
 					if (preg_match('(\\b' . preg_quote($val) . '\\b(?:\\s*=\\s*([^,;]+))?)', $function_body, $match)) {
-						$source_inits[$function_name][] = $match[1];
+						$source_inits[$function_name][] = ($match[1] == "0L" ? "0" : $match[1]);
 					}
 				}
 			} elseif (!in_array($function_name, $difficult_arg_count)) {
@@ -366,23 +386,11 @@ foreach ((isset($extension) ? array($extension) : array_merge(array($zend_dir), 
 			}
 		}
 	}
-	
-	foreach ($files as $filename => $file) {
-		// methods
-		preg_match_all('~INIT(?:_OVERLOADED)?_CLASS_ENTRY\\(.*"([^"]+)"\\s*,\\s*([^)]+)~', $file, $matches, PREG_SET_ORDER);
-		foreach ($matches as $val) {
-			if (preg_match('~' . preg_quote($val[2], '~') . '\\[\\](.*)\\}~sU', $file, $matches2)) {
-				preg_match_all('~PHP_(?:FALIAS|ME_MAPPING)\\((\\w+)\\s*,\\s*(\\w+)~', $matches2[1], $matches2, PREG_SET_ORDER);
-				foreach ($matches2 as $val2) {
-					$function_name = strtolower($val2[2]);
-					$method_name = strtolower("$val[1]::$val2[1]");
-					foreach (array("source_types", "source_arg_counts", "return_types") as $var) {
-						if (isset($GLOBALS[$var][$function_name])) {
-							$GLOBALS[$var][$method_name] = $GLOBALS[$var][$function_name];
-						}
-					}
-				}
-			}
+}
+foreach ($method_names as $method_name => $function_name) {
+	foreach (array("source_types", "source_arg_counts", "return_types") as $var) {
+		if (isset($GLOBALS[$var][$function_name])) {
+			$GLOBALS[$var][$method_name] = $GLOBALS[$var][$function_name];
 		}
 	}
 }
@@ -402,7 +410,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$referen
 		// return type
 		if (isset($return_types[$function_name])) {
 			$counts["return"]++;
-			if (!preg_match('~::__construct$~', $function_name) && !preg_match("~<type>(" . $return_types[$function_name][0] . ")</type>~", $return_type) && ($return_types[$function_name][0] != "object" || preg_match("~<type>($valid_types|$invalid_types)</type>~", $return_type))) {
+			if (!preg_match('~::__construct$~', $function_name) && !preg_match("~<type>(" . $return_types[$function_name][0] . ")</type>~", $return_type) && ($return_types[$function_name][0] != "object" || preg_match("~<type>($valid_types|$invalid_types)</type>~", $return_type)) && $return_types[$function_name][0] != "mixed") {
 				echo "Wrong return type in $filename on line $lineno.\n";
 				echo $return_types[$function_name][1] . ":" . $return_types[$function_name][2] . ": " . $return_types[$function_name][0] . "\n";
 			}
@@ -461,8 +469,9 @@ foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$referen
 					if ($param == "bool" && strlen($init_source)) {
 						$init_source = ($init_source ? "true" : "false");
 					}
-					if (($optional_source || $optional_doc) && $matches[4][$i] != $init_source && $init_source != "NULL" && (is_int($source_refs[$function_name][0]) ? $source_refs[$function_name][0] > $i+1 : !in_array($i+1, (array) $source_refs[$function_name][0]))) {
-						$error .= "Parameter #" . ($i+1) . " has wrong initial value (" . $matches[4][$i] . " instead of $init_source) in $filename on line " . ($lineno + $i + 1) . ".\n";
+					$initializer = preg_replace('~^&(.+);$~', '\\1', $matches[4][$i]);
+					if (($optional_source || $optional_doc) && $initializer != $init_source && $init_source != "NULL" && (is_int($source_refs[$function_name][0]) ? $source_refs[$function_name][0] > $i+1 : !in_array($i+1, (array) $source_refs[$function_name][0]))) {
+						$error .= "Parameter #" . ($i+1) . " has wrong initial value ($initializer instead of $init_source) in $filename on line " . ($lineno + $i + 1) . ".\n";
 					}
 				}
 				if ($param == "string" || $param == "unicode") {
