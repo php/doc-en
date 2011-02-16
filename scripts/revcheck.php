@@ -421,6 +421,7 @@ function get_old_files($dir) {
     if (preg_match("/^\.{1,2}/", $file)
         || $file == '.svn'
         || substr($file, -1) == '~' // Emacs backup file
+        || substr($file, -4) == '.new'
        ) {
       continue;
     }
