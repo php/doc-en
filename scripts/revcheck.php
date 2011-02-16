@@ -702,7 +702,7 @@ print <<<END_OF_MULTILINE
 <th rowspan=2>Translator's name</th>
 <th rowspan=2>Contact email</th>
 <th rowspan=2>Nick</th>
-<th rowspan=2>C<br>V<br>S</th>
+<th rowspan=2>V<br>C<br>S</th>
 <th colspan=7>Files maintained</th>
 </tr>
 <tr>
@@ -736,7 +736,7 @@ END_OF_MULTILINE;
     $maint_by_nick[$person["nick"]] = $num;
 
     // Decide on the SVN text and the color of the line
-    if ($person["svn"] === "yes") {
+    if (isset($person["vcs"]) && $person["vcs"] === "yes") {
       $svnu = "x";
       $col = "old";
     } else {
