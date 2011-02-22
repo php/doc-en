@@ -23,16 +23,18 @@
 
 	/**
 	 * This script is based off the original build.chms.bat 
-	 * in the root of doc-base.
-	 *
-	 * This script requires PHP 5.3.0+
+	 * in the root of doc-base
 	 */
 
 	/**
 	 * Configuration
+	 *
+	 * Extended		- Generates the 'enhancedchm' version along the regular ones
+	 * Debug		- If enabled, output directories are not pruned
+	 * PhD Beta		- If enabled, then PhD is treated as an svn checkout rather than a pear package
 	 */
 	define('PATH_PHP', 	'C:\\php\\binaries\\PHP_5_3\\php.exe');
-	define('PATH_PHD', 	'C:\\pear\\phd.bat');
+	define('PATH_PHD', 	'C:\\pear\\phd-trunk\\phd.bat');
 	define('PATH_HHC', 	'C:\\Program Files (x86)\HTML Help Workshop\hhc.exe');
 	define('PATH_SCP', 	'C:\\Program Files (x86)\PuTTY\pscp.exe');
 	define('PATH_PPK', 	'C:\\php-sdk\\keys\\php-doc-host.ppk');
@@ -42,7 +44,9 @@
 	define('PATH_LOG', 	'C:\\doc-all\\logs');
 	define('PATH_DOC', 	'C:\\doc-all');
 
+	define('EXTENDED',	true);
 	define('DEBUG',		true);
+	define('PHD_BETA',	true);
 
 	/**
 	 * Languages to build
@@ -69,7 +73,16 @@
 	/**
 	 * Upgrade PhD, if any updates are available
 	 */
-	execute_task('Updating PhD', PATH_PEAR, 'upgrade doc.php.net/phd', 'pear');
+	if(PHD_BETA)
+	{
+		chdir(PATH_PHD);
+		execute_task('Updating PhD from svn', PATH_SVN, 'up', 'pear_svn');
+		chdir($cwd);
+	}
+	else
+	{
+		execute_task('Updating PhD', PATH_PEAR, 'upgrade doc.php.net/phd', 'pear');
+	}
 
 	/**
 	 * Update doc-base, to prevent build errors with 
@@ -140,9 +153,9 @@
 		/**
 		 * Anything smaller than ~5MB is broken. Common broken sizes are 2MB and 15K. Common good size are 10-12MB.
 		 */
-		if (filesize(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.chm') < 5000000)
+		if(filesize(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.chm') < 5000000)
 		{
-			echo('- Build error: CHM file too small, something went wrong.' . PHP_EOL);
+			echo('- Build error: CHM file too small, something went wrong' . PHP_EOL);
 			
 			continue;
 		}
@@ -160,18 +173,82 @@
 		/**
 		 * Update the CHM on the rsync server
 		 */
-		execute_task('- rsync', PATH_SCP, ' -batch -v -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_' . $lang);
+		execute_task('- rsync', PATH_SCP, ' -batch -v -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_' . $lang, false);
+
+		/**
+		 * Check if we are supposed to build the enhanced version
+		 */
+		if(EXTENDED)
+		{
+			/* ... */
+			/**
+			 * Run .manual.xml thru PhD (--css reset.css --css theme.css --css doc.css)
+			 */
+			execute_task('- [Enhanced] PhD', PATH_PHD, '-d "' . PATH_DOC . '\\doc-base\\.manual.xml' . '" -P PHP -f enhancedchm -o "' . PATH_DOC . '\\tmp\\' . $lang . '" --lang=' . $lang, 'phd_enhanced_' . $lang);
+
+			if(!is_file(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.hhp'))
+			{
+				echo('- Build error: Enhanced: PhD failed' . PHP_EOL);
+
+				goto cleanup;
+			}
+
+			/**
+			 * Run the HTML Help Compiler to generate the actual CHM file
+			 */
+			execute_task('- [Enhanced] HHC', PATH_HHC, '"' . PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.hhp"', 'hhc_' . $lang);
+
+			if(!is_file(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.chm'))
+			{
+				echo('- Build error: Enhanced: HHC failed' . PHP_EOL);
+
+				goto cleanup;
+			}
+		
+			/**
+			 * Anything smaller than ~5MB is broken. Common broken sizes are 2MB and 15K. Common good size are 10-12MB.
+			 */
+			if(filesize(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.chm') < 5000000)
+			{
+				echo('- Build error: Enhanced: CHM file too small, something went wrong' . PHP_EOL);
+			
+				goto cleanup;
+			}
+
+			/**
+			 * Copy the CHM file into the archive
+			 */
+			if(!copy(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.chm', PATH_DOC . '\\chmfiles\\php_enhanced_' . $lang . '.chm'))
+			{
+				echo('- Build error: Enhanced: Unable to copy CHM file into archive folder');
+
+				goto cleanup;
+			}
+
+			/**
+			 * Update the CHM on the rsync server
+			 */
+			execute_task('- [Enhanced] rsync', PATH_SCP, ' -batch -v -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_enhanced_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_enhanced_' . $lang, false);
+		}
 
 		/**
 		 * Cleanup
 		 */
-		echo('- Clean up' . PHP_EOL);
-
-		unlink(PATH_DOC . '\\doc-base\\.manual.xml');
-
-		if(!DEBUG)
+		cleanup:
 		{
-			rmdir_recursive(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\');
+			echo('- Clean up' . PHP_EOL);
+
+			unlink(PATH_DOC . '\\doc-base\\.manual.xml');
+
+			if(!DEBUG)
+			{
+				glob_recursive_apply('fsdelete', PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\');
+
+				if(!EXTENDED)
+				{
+					glob_recursive_apply('fsdelete', PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\');
+				}
+			}
 		}
 	}
 
@@ -181,10 +258,10 @@
 	/**
 	 * Helper function for execution a program
 	 *
-	 * @param	string		Path to the program to execute
-	 * @param	string		(optional) Parameters to pass the this call
-	 * @param	string		(optional) Log output to a specific file defined here
-	 * @return	void		No value is returned
+	 * @param	string			Path to the program to execute
+	 * @param	string			(optional) Parameters to pass the this call
+	 * @param	string			(optional) Log output to a specific file defined here
+	 * @return	void			No value is returned
 	 */
 	function execute_task($title, $program, $parameters, $log)
 	{
@@ -195,56 +272,57 @@
 			return;
 		}
 
-		if($program == PATH_SCP)
-		{
-			ob_start();
-
-			$log_file	= $log;
-			$log		= false;
-		}
-
 		$cmd = sprintf('"%s"%s%s', $program, (!$parameters ?: ' ' . $parameters), (!$log ? '' : ' > ' . PATH_LOG . '\\' . $log . '.log 2<&1'));
 
 		@popen($cmd, 'r');
-
-		if($program == PATH_SCP)
-		{
-			file_put_contents($log_file, ob_get_clean());
-		}
 	}
 
 	/**
 	 * Removes all files within a directory and then 
 	 * deletes the directory
 	 *
-	 * @param	string		Directory to remove
-	 * @return	void		No value is returned
+	 * @param	callback		Callback to the apply function
+	 * @param	string			Glob directory to begin
+	 * @param	string			(optional) The glob pattern to match on
+	 * @return	void			No value is returned
 	 */
-	function rmdir_recursive($dir)
+	function glob_recursive_apply($callback, $glob_dir, $pattern = '*')
 	{
 		if(!is_dir($dir))
 		{
 			return;
 		}
 
-		$glob = glob($dir . '*');
+		$glob = glob($glob_dir . $pattern);
 
 		if(sizeof($glob))
 		{
 			foreach($glob as $obj)
 			{
-				if(is_dir($obj))
-				{
-					rmdir_recursive($obj . '\\');
-				}
-				else
-				{
-					unlink($obj);
-				}
+				call_user_func($callback, $obj, $pattern);
 			}
 		}
 
-		rmdir($dir);
+		call_user_func($callback, $obj, $pattern);
+	}
+
+	/**
+	 * Deletes a directory or file
+	 *
+	 * @param	string			Directory or filename to delete
+	 * @param	string			The glob pattern to match on
+	 * @return	void			No value is returned
+	 */
+	function fsdelete($obj, $pattern = '*')
+	{
+		if(is_dir($obj))
+		{
+			glob_recursive_apply('fsdelete', $obj . '\\', $pattern);
+		}
+		else
+		{
+			unlink($obj);
+		}
 	}
 
 	/**
@@ -257,3 +335,4 @@
 	{
 		return(@file_get_contents(PATH_LOG . '\\' . $log . '.log'));
 	}
+?>
