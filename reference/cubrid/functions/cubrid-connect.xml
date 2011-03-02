@@ -4,7 +4,7 @@
 <refentry xml:id="function.cubrid-connect" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>cubrid_connect</refname>
-  <refpurpose>Is used to establish the environment for connecting to your server </refpurpose>
+  <refpurpose>Open a connection to a CUBRID Server</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -18,7 +18,11 @@
    <methodparam choice="opt"><type>string</type><parameter>passwd</parameter></methodparam>  
   </methodsynopsis>
   <para>
-    The <function>cubrid_connect</function> function is used to establish the environment for connecting to your server by using your server address, port number, database name, user name, and password.  If the user name and password is not given, then the "PUBLIC" connection will be made by default.
+    The <function>cubrid_connect</function> function is used to establish the
+    environment for connecting to your server by using your server address,
+    port number, database name, user name, and password. If the user name and
+    password is not given, then the "PUBLIC" connection will be made by
+    default.
   </para>
  </refsect1>
 
@@ -28,11 +32,11 @@
   <variablelist>
     <varlistentry>
   <term><parameter>host</parameter></term>
-  <listitem><para>Host name or IP address of CAS server.</para></listitem>
+  <listitem><para>Host name or IP address of CUBRID CAS server.</para></listitem>
    </varlistentry>
    <varlistentry>
   <term><parameter>port</parameter></term>
-		<listitem><para>Port number of CAS server (BROKER_PORT configured in $CUBRID/conf/cubrid_broker.conf).</para></listitem>
+		<listitem><para>Port number of CUBRID CAS server (BROKER_PORT configured in $CUBRID/conf/cubrid_broker.conf).</para></listitem>
    </varlistentry>
    <varlistentry>
   <term><parameter>dbname</parameter></term>
@@ -67,23 +71,56 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$con = cubrid_connect ("210.211.133.100", 12345, "demodb");
+printf("%-30s %s\n", "CUBRID PHP Version:", cubrid_version());
 
-if ($con) {
-   echo "connected successfully";
-   $req =cubrid_execute($con, "insert into person values(1,’James’)");
+printf("\n");
 
-   if ($req) {
-      cubrid_close_request ($req);
-      cubrid_commit ($con);
-   } else {
-      cubrid_rollback ($con);
-   }
-   cubrid_disconnect ($con);
+$conn = cubrid_connect("localhost", 33000, "demodb");
+
+if (!$conn) {
+    die('Connect Error ('. cubrid_error_code() .')' . cubrid_error_msg());
 }
+
+$db_params = cubrid_get_db_parameter($conn);
+
+while (list($param_name, $param_value) = each($db_params)) {
+    printf("%-30s %s\n", $param_name, $param_value);
+}
+
+printf("\n");
+
+$server_info = cubrid_get_server_info($conn);
+$client_info = cubrid_get_client_info();
+
+printf("%-30s %s\n", "Server Info:", $server_info);
+printf("%-30s %s\n", "Client Info:", $client_info);
+
+printf("\n");
+
+$charset = cubrid_get_charset($conn);
+
+printf("%-30s %s\n", "CUBRID Charset:", $charset);
+
+cubrid_disconnect($conn);
 ?>
 ]]>
    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+CUBRID PHP Version:            8.3.1.0005
+
+PARAM_ISOLATION_LEVEL          3
+LOCK_TIMEOUT                   -1
+MAX_STRING_LENGTH              1073741823
+PARAM_AUTO_COMMIT              0
+
+Server Info:                   8.3.1.0173
+Client Info:                   8.3.1
+
+CUBRID Charset:                iso8859-1
+]]>
+   </screen>
   </example>
  </refsect1>
  
@@ -91,6 +128,7 @@ if ($con) {
   &reftitle.seealso;
   <para>
    <simplelist>
+   <member><function>cubrid_connect_with_url</function></member>
    <member><function>cubrid_disconnect</function></member>
    </simplelist>
   </para>

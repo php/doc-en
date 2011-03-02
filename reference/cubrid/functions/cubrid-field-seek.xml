@@ -15,7 +15,10 @@
    <methodparam choice="opt"><type>int</type><parameter>field_offset</parameter><initializer>0</initializer></methodparam>
   </methodsynopsis>
   <para>
-    This function moves the result set cursor to the specified field offset. This offset is used by <function>cubrid_fetch_field</function> if it doesn't include a field offset. It returns TRUE on success or FALSE on failure.
+    This function moves the result set cursor to the specified field offset.
+    This offset is used by <function>cubrid_fetch_field</function> if it
+    doesn't include a field offset. It returns TRUE on success or FALSE on
+    failure.
   </para>
  </refsect1>
 
@@ -27,11 +30,15 @@
     <term><parameter>result</parameter></term>
     <listitem><para><parameter>result</parameter> comes from a call to <function>cubrid_execute</function></para></listitem>
    </varlistentry>
-     <varlistentry>
-  <term><parameter>field_offset</parameter></term>
-  <listitem><para>The numerical field offset. The <parameter>field_offset</parameter> starts at 0. If <parameter>field_offset</parameter> does not exist, an error of level <constant>E_WARNING</constant> is also issued.</para></listitem>
-   </varlistentry>
-  </variablelist>
+    <varlistentry>
+     <term><parameter>field_offset</parameter></term>
+     <listitem><para>
+       The numerical field offset. The <parameter>field_offset</parameter>
+       starts at 0. If <parameter>field_offset</parameter> does not exist, an
+       error of level <constant>E_WARNING</constant> is also issued.
+     </para></listitem>
+    </varlistentry>
+   </variablelist>
   </para>
  </refsect1>
 
@@ -52,52 +59,55 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-    $link = cubrid_connect("localhost", 30000, "demodb2", "dba", "");
-    if (!$link)
-    {
-        die('Could not connect.');
-    }
-    $query = 'SELECT id, name, address, salary FROM employees';
-    $result = cubrid_execute($link, $query);
-    if ($result) 
-    {
-        cubrid_field_seek($result,2);
-        $meta = cubrid_fetch_field($result);
-        if (!$meta) 
-        {
-            echo "No information available<br />\n";
-        }
-        echo "<pre>
-        max_length:        $meta->max_length
-        multiple_key:        $meta->multiple_key
-        name:            $meta->name
-        not_null:        $meta->not_null
-        numeric:        $meta->numeric
-        table:            $meta->table
-        type:            $meta->type
-        default:        $meta->def
-        unique_key:        $meta->unique_key
-        </pre>";
+$conn = cubrid_connect("localhost", 33000, "demodb");
+$req = cubrid_execute($conn, "SELECT event_code,athlete_code,nation_code,game_date FROM game WHERE host_year=1988 and event_code=20001;");
 
+var_dump(cubrid_fetch_row($req));
 
-        cubrid_close_request($result); 
-    }
+cubrid_field_seek($req, 1);
+$field = cubrid_fetch_field($req);
+
+printf("\n--- Field Properties ---\n");
+printf("%-30s %s\n", "name:", $field->name);
+printf("%-30s %s\n", "table:", $field->table);
+printf("%-30s \"%s\"\n", "default value:", $field->def);
+printf("%-30s %d\n", "max lenght:", $field->max_length);
+printf("%-30s %d\n", "not null:", $field->not_null);
+printf("%-30s %d\n", "unique key:", $field->unique_key);
+printf("%-30s %d\n", "multiple key:", $field->multiple_key);
+printf("%-30s %d\n", "numeric:", $field->numeric);
+printf("%-30s %s\n", "type:", $field->type);
+
+cubrid_close_request($req);
+
+cubrid_disconnect($conn);
 ?>
 ]]>
    </programlisting>
     &example.outputs;
     <screen>
 <![CDATA[
-Result:
-    max_length:        21
-    multiple_key:        1
-    name:            address
-    not_null:        0
-    numeric:            0
-    table:            employees
-    type:            STRING
-    default:        
-    unique_key:        0
+array(4) {
+  [0]=>
+  string(5) "20001"
+  [1]=>
+  string(5) "16681"
+  [2]=>
+  string(3) "KOR"
+  [3]=>
+  string(9) "1988-9-30"
+}
+
+--- Field Properties ---
+name:                          athlete_code
+table:                         game
+default value:                 ""
+max lenght:                    5
+not null:                      1
+unique key:                    1
+multiple key:                  0
+numeric:                       1
+type:                          integer
 ]]>
     </screen>
   </example>

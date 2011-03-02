@@ -4,7 +4,7 @@
 <refentry xml:id="function.cubrid-disconnect" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>cubrid_disconnect</refname>
-  <refpurpose>Ends the transaction currently on process</refpurpose>
+  <refpurpose>Closes a database connection</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -13,9 +13,11 @@
    <type>bool</type><methodname>cubrid_disconnect</methodname>
    <methodparam><type>resource</type><parameter>conn_identifier</parameter></methodparam>  
    </methodsynopsis>
-  <para>
-    The <function>cubrid_disconnect</function> function ends the transaction currently on process, closes the connection handle and disconnects from server. If there exists any request handle not closed yet at this point, it will be closed.
-  </para>
+   <para>
+    The <function>cubrid_disconnect</function> function closes the connection
+    handle and disconnects from server. If there exists any request handle not
+    closed yet at this point, it will be closed.
+   </para>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -47,25 +49,60 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$con = cubrid_connect ("210.211.133.100", 12345, "demodb");
-if ($con) {
-   echo "connected successfully";
-   $req = cubrid_execute ( $con, "insert into person values(1,’James’)");
-   if ($req) {
-      cubrid_close_request ($req);
-      cubrid_commit ($con);
-   } else {
-      cubrid_rollback ($con);
-   }
-   cubrid_disconnect ($con);
+printf("%-30s %s\n", "CUBRID PHP Version:", cubrid_version());
+
+printf("\n");
+
+$conn = cubrid_connect("localhost", 33000, "demodb");
+
+if (!$conn) {
+    die('Connect Error ('. cubrid_error_code() .')' . cubrid_error_msg());
 }
+
+$db_params = cubrid_get_db_parameter($conn);
+
+while (list($param_name, $param_value) = each($db_params)) {
+    printf("%-30s %s\n", $param_name, $param_value);
+}
+
+printf("\n");
+
+$server_info = cubrid_get_server_info($conn);
+$client_info = cubrid_get_client_info();
+
+printf("%-30s %s\n", "Server Info:", $server_info);
+printf("%-30s %s\n", "Client Info:", $client_info);
+
+printf("\n");
+
+$charset = cubrid_get_charset($conn);
+
+printf("%-30s %s\n", "CUBRID Charset:", $charset);
+
+cubrid_disconnect($conn);
 ?>
 ]]>
    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+CUBRID PHP Version:            8.3.1.0005
+
+PARAM_ISOLATION_LEVEL          3
+LOCK_TIMEOUT                   -1
+MAX_STRING_LENGTH              1073741823
+PARAM_AUTO_COMMIT              0
+
+Server Info:                   8.3.1.0173
+Client Info:                   8.3.1
+
+CUBRID Charset:                iso8859-1
+]]>
+   </screen>
   </example>
  </refsect1>
 
-     <refsect1 role="seealso">
+ <refsect1 role="seealso">
   &reftitle.seealso;
   <para>
    <simplelist>

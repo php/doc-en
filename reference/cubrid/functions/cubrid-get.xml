@@ -4,7 +4,7 @@
 <refentry xml:id="function.cubrid-get" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>cubrid_get</refname>
-  <refpurpose>Is used to get the attribute</refpurpose>
+  <refpurpose>Get a column using OID</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -16,7 +16,11 @@
    <methodparam choice="opt"><type>mixed</type><parameter>attr</parameter></methodparam>  
   </methodsynopsis>
   <para>
-    The <function>cubrid_get</function> function is used to get the attribute of the instance of the given <parameter>oid</parameter>.  You can get single attribute by using string data type for the <parameter>attr</parameter> argument, or many attributes by using array data type for the <parameter>attr</parameter> argument.
+    The <function>cubrid_get</function> function is used to get the attribute
+    of the instance of the given <parameter>oid</parameter>.  You can get
+    single attribute by using string data type for the
+    <parameter>attr</parameter> argument, or many attributes by using array
+    data type for the <parameter>attr</parameter> argument.
   </para>
  </refsect1>
 
@@ -30,7 +34,7 @@
    </varlistentry>
    <varlistentry>
   <term><parameter>oid</parameter></term>
-  <listitem><para>Oid of the instance that you want to read.</para></listitem>
+  <listitem><para>OID of the instance that you want to read.</para></listitem>
    </varlistentry>
    <varlistentry>
   <term><parameter>attr</parameter></term>
@@ -44,10 +48,17 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
 		<para>
-				Content of the requested attribute, when process is successful; When <parameter>attr</parameter> is set with string data type, the result is returned as a string; when <parameter>attr</parameter> is set with array data type (0-based numerical array), then the result is returned in associative array. When <parameter>attr</parameter> is omitted, then all attributes are received in array form.
+    Content of the requested attribute, when process is successful; When
+    <parameter>attr</parameter> is set with string data type, the result is
+    returned as a string; when <parameter>attr</parameter> is set with array
+    data type (0-based numerical array), then the result is returned in
+    associative array. When <parameter>attr</parameter> is omitted, then all
+    attributes are received in array form.
 		</para>
 		<para>
-				&false; when process is unsuccessful or result is NULL (If error occurs to distinguish empty string from NULL, then it prints the warning message.  You can check the error by using <function>cubrid_error_code</function>)
+    &false; when process is unsuccessful or result is NULL (If error occurs to
+    distinguish empty string from NULL, then it prints the warning message.
+    You can check the error by using <function>cubrid_error_code</function>)
 		</para>
  </refsect1>
 
@@ -58,12 +69,61 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$attrarray = cubrid_get ($con, $oid);
-echo $attrarray["id"];
-echo $attrarray["name"];
+$conn = cubrid_connect("localhost", 33000, "demodb");
+
+@cubrid_execute($conn, "DROP TABLE foo");
+cubrid_execute($conn, "CREATE TABLE foo(a int AUTO_INCREMENT, b set(int), c list(int), d char(10))");
+cubrid_execute($conn, "INSERT INTO foo(a, b, c, d) VALUES(1, {1,2,3}, {11,22,33,333}, 'a')");
+cubrid_execute($conn, "INSERT INTO foo(a, b, c, d) VALUES(2, {4,5,7}, {44,55,66,666}, 'b')");
+
+$req = cubrid_execute($conn, "SELECT * FROM foo", CUBRID_INCLUDE_OID);
+
+cubrid_move_cursor($req, 1, CUBRID_CURSOR_FIRST);
+$oid = cubrid_current_oid($req);
+
+$attr = cubrid_get($conn, $oid, "b");
+var_dump($attr);
+
+$attr = cubrid_get($conn, $oid);
+var_dump($attr);
+
+cubrid_close_request($req);
+cubrid_disconnect($conn);
 ?>
 ]]>
    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+string(9) "{1, 2, 3}"
+array(4) {
+  ["a"]=>
+  string(1) "1"
+  ["b"]=>
+  array(3) {
+    [0]=>
+    string(1) "1"
+    [1]=>
+    string(1) "2"
+    [2]=>
+    string(1) "3"
+  }
+  ["c"]=>
+  array(4) {
+    [0]=>
+    string(2) "11"
+    [1]=>
+    string(2) "22"
+    [2]=>
+    string(2) "33"
+    [3]=>
+    string(3) "333"
+  }
+  ["d"]=>
+  string(10) "a         "
+}
+]]>
+   </screen>
   </example>
  </refsect1>
 

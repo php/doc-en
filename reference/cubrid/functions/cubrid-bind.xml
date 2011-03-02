@@ -4,7 +4,7 @@
 <refentry xml:id="function.cubrid-bind" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>cubrid_bind</refname>
-  <refpurpose>Is used to bind values</refpurpose>
+  <refpurpose>Binds variables to a prepared statement as parameters</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -25,7 +25,7 @@
   <note>
    <para>
     Known issue: If column data type is CLOB, binding parameter will fail.
-    This bug will fixed later, better use BLOB now.
+    This bug will fixed later.
    </para>
   </note>
   <para>
@@ -198,23 +198,52 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$con = cubrid_connect("dbsvr.cubrid.com", 12345, "demodb");
-if ($con) {
-    $sql = "insert into tbl values (?,?,?)"; 
-    $req = cubrid_prepare($con, $sql, CUBRID_INCLUDE_OID); 
+$conn = cubrid_connect("localhost", 33000, "demodb");
 
-    $i = 0;
-    while ($i < 2) { 
-        $res = cubrid_bind($req, 1, "1", "NUMBER"); 
-        $res = cubrid_bind($req, 2, "2"); 
-        $res = cubrid_bind($req, 3, "04:22:34 PM 08/07/2007"); 
-        $res = cubrid_execute( $req );  
-        $i = $i + 1; 
-    }
-} 
+$result = cubrid_execute($conn, "SELECT code FROM event WHERE sports='Basketball' and gender='M'");
+$row = cubrid_fetch_array($result, CUBRID_ASSOC);
+$event_code = $row["code"];
+
+cubrid_close_request($result);
+
+$game_req = cubrid_prepare($conn, "SELECT athlete_code FROM game WHERE host_year=1992 and event_code=? and nation_code='USA'");
+cubrid_bind($game_req, 1, $event_code, "number");
+cubrid_execute($game_req);
+
+printf("--- Dream Team (1992 United States men's Olympic basketball team) ---\n");
+while ($athlete_code = cubrid_fetch_array($game_req, CUBRID_NUM)) {
+    $athlete_req = cubrid_prepare($conn, "SELECT name FROM athlete WHERE code=? AND nation_code='USA' AND event='Basketball' AND gender='M'");
+    cubrid_bind($athlete_req, 1, $athlete_code[0], "number");
+    cubrid_execute($athlete_req);
+    $row = cubrid_fetch_assoc($athlete_req);
+    printf("%s\n", $row["name"]);
+}
+
+cubrid_close_request($game_req);
+cubrid_close_request($athlete_req);
+
+cubrid_disconnect($conn);
 ?>
 ]]>
    </programlisting>
+&example.outputs;
+    <screen>
+<![CDATA[
+--- Dream Team (1992 United States men's Olympic basketball team) ---
+Stockton John
+Robinson David
+Pippen Scottie
+Mullin C.
+Malone Karl
+Laettner C.
+Jordan Michael
+Johnson Earvin
+Ewing Patrick
+Drexler Clyde
+Bird Larry
+Barkley Charles
+]]>
+   </screen>
   </example>
 
   <example>
@@ -222,7 +251,7 @@ if ($con) {
    <programlisting role="php">
 <![CDATA[
 <?php
-$con = cubrid_connect ("localhost", 33000, "foo");
+$con = cubrid_connect("localhost", 33000, "foo");
 if ($con) {
     $sql = "INSERT INTO php_cubrid_lob_test(doc_content) VALUES(?)"; 
     $req = cubrid_prepare($con, $sql); 

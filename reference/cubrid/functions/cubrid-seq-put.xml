@@ -4,7 +4,7 @@
 <refentry xml:id="function.cubrid-seq-put" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>cubrid_seq_put</refname>
-  <refpurpose>Is used to update the content</refpurpose>
+  <refpurpose>Update the element value of sequence type column using OID</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -18,7 +18,8 @@
    <methodparam><type>string</type><parameter>seq_element</parameter></methodparam>  
   </methodsynopsis>
   <para>
-    The <function>cubrid_seq_put</function> function is used to update the content of the requested element in a sequent type attribute.
+    The <function>cubrid_seq_put</function> function is used to update the
+    content of the requested element in a sequent type attribute using OID.
   </para>
  </refsect1>
 
@@ -32,7 +33,7 @@
    </varlistentry>
    <varlistentry>
   <term><parameter>oid</parameter></term>
-  <listitem><para>Oid of the instance you want to work with.</para></listitem>
+  <listitem><para>OID of the instance you want to work with.</para></listitem>
    </varlistentry>
        <varlistentry>
   <term><parameter>attr_name</parameter></term>
@@ -67,15 +68,59 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-cubrid_seq_put ($con, $oid, "tel", 1, "02-3430-1200");
-cubrid_seq_put ($con, $oid, "tel", 2, "02-3430-1300");
+$conn = cubrid_connect("localhost", 33000, "demodb");
+
+@cubrid_execute($conn, "DROP TABLE foo");
+cubrid_execute($conn, "CREATE TABLE foo(a int AUTO_INCREMENT, b set(int), c sequence(int), d char(10))");
+cubrid_execute($conn, "INSERT INTO foo(a, b, c, d) VALUES(1, {1,2,3}, {11,22,33,333}, 'a')");
+
+$req = cubrid_execute($conn, "SELECT * FROM foo", CUBRID_INCLUDE_OID);
+
+cubrid_move_cursor($req, 1, CUBRID_CURSOR_FIRST);
+$oid = cubrid_current_oid($req);
+
+$attr = cubrid_col_get($conn, $oid, "c");
+var_dump($attr);
+
+cubrid_seq_put($conn, $oid, "c", 1, "111");
+
+$attr = cubrid_col_get($conn, $oid, "c");
+var_dump($attr);
+
+cubrid_close_request($req);
+cubrid_disconnect($conn);
 ?>
 ]]>
    </programlisting>
+&example.outputs;
+    <screen>
+<![CDATA[
+array(4) {
+  [0]=>
+  string(2) "11"
+  [1]=>
+  string(2) "22"
+  [2]=>
+  string(2) "33"
+  [3]=>
+  string(3) "333"
+}
+array(4) {
+  [0]=>
+  string(3) "111"
+  [1]=>
+  string(2) "22"
+  [2]=>
+  string(2) "33"
+  [3]=>
+  string(3) "333"
+}
+]]>
+   </screen>
   </example>
  </refsect1>
 
-    <refsect1 role="seealso">
+ <refsect1 role="seealso">
   &reftitle.seealso;
   <para>
    <simplelist> 
