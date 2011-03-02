@@ -4,7 +4,7 @@
 <refentry xml:id="function.cubrid-prepare" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>cubrid_prepare</refname>
-  <refpurpose>Is a sort of API which represents SQL statements</refpurpose>
+  <refpurpose>Prepare an SQL statement for execution</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -60,20 +60,47 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-if ($con) {
-$sql = "insert into tbl values ( ?,?,?)"; 
- $req = cubrid_prepare( $con, $sql, CUBRID_INCLUDE_OID ); 
- $i = 0;
- while ( $i < 2 ) { 
- $res = cubrid_bind( $req, 1, "1", "NUMBER"); 
- $res = cubrid_bind( $req, 2, "2"); 
- $res = cubrid_bind( $req, 3, "04:22:34 PM 08/07/2007"); 
- $res = cubrid_execute( $req );  
- $i = $i + 1; 
-}} 
+$conn = cubrid_connect("localhost", 33000, "demodb");
+
+$sql = <<<EOD
+SELECT g.event_code, e.name 
+FROM game g 
+JOIN event e ON g.event_code=e.code 
+WHERE host_year = ? AND event_code NOT IN (SELECT event_code FROM game WHERE host_year=?) GROUP BY event_code;
+EOD;
+
+$req = cubrid_prepare($conn, $sql);
+
+cubrid_bind($req, 1, 2004);
+cubrid_bind($req, 2, 2000);
+cubrid_execute($req);
+
+$row_num = cubrid_num_rows($req);
+printf("There are %d event that exits in 2004 olympic but not in 2000. For example:\n\n", $row_num);
+
+printf("%-15s %s\n", "Event_code", "Event_name");
+printf("----------------------------\n");
+
+$row = cubrid_fetch_assoc($req);
+printf("%-15d %s\n", $row["event_code"], $row["name"]);
+$row = cubrid_fetch_assoc($req);
+printf("%-15d %s\n", $row["event_code"], $row["name"]);
+
+cubrid_disconnect($conn);
 ?>
 ]]>
    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+There are 27 event that exits in 2004 olympic but not in 2000. For example:
+
+Event_code      Event_name
+----------------------------
+20063           +91kg
+20070           64kg
+]]>
+   </screen>
   </example>
  </refsect1>
 

@@ -4,7 +4,7 @@
 <refentry xml:id="function.cubrid-put" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>cubrid_put</refname>
-  <refpurpose>Is used to update an attribute</refpurpose>
+  <refpurpose>Update a column using OID</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -17,10 +17,16 @@
    <methodparam><type>mixed</type><parameter>value</parameter></methodparam>  
   </methodsynopsis>
   <para>
-						The <function>cubrid_put</function> function is used to update an attribute of the instance of the given <parameter>oid</parameter>.
+      The <function>cubrid_put</function> function is used to update an
+      attribute of the instance of the given <parameter>oid</parameter>.
   </para>
   <para>
-						You can update single attribute by using string data type to set <parameter>attr</parameter>.  In such case, you can use integer, float-point, or string type data for the <parameter>value</parameter> argument. To update multiple number of attributes, you can disregard the <parameter>attr</parameter> argument, and set <parameter>value</parameter> argument with associative array data type. However, you cannot use the method for attribute of collection type.  You have to use APIs related to collection type (<function>cubrid_set_add</function>, <function>cubrid_set_drop</function>, etc) when you want to use <function>cubrid_put</function> on collection typed attribute.
+      You can update single attribute by using string data type to set
+      <parameter>attr</parameter>.  In such case, you can use integer,
+      float-point, or string type data for the <parameter>value</parameter>
+      argument. To update multiple number of attributes, you can disregard the
+      <parameter>attr</parameter> argument, and set
+      <parameter>value</parameter> argument with associative array data type.
   </para>
  </refsect1>
 
@@ -28,21 +34,21 @@
   &reftitle.parameters;
   <para>
   <variablelist>
-    <varlistentry>
-  <term><parameter>conn_identifier</parameter></term>
-  <listitem><para>Connection identifier.</para></listitem>
+   <varlistentry>
+    <term><parameter>conn_identifier</parameter></term>
+    <listitem><para>Connection identifier.</para></listitem>
    </varlistentry>
    <varlistentry>
-  <term><parameter>oid</parameter></term>
-  <listitem><para>Oid of the instance that you want to update.</para></listitem>
+    <term><parameter>oid</parameter></term>
+    <listitem><para>OID of the instance that you want to update.</para></listitem>
    </varlistentry>
    <varlistentry>
-  <term><parameter>attr</parameter></term>
-  <listitem><para>Name of the attribute that you want to update.</para></listitem>
+    <term><parameter>attr</parameter></term>
+    <listitem><para>Name of the attribute that you want to update.</para></listitem>
    </varlistentry>
    <varlistentry>
-  <term><parameter>value</parameter></term>
-  <listitem><para>New value that you want to assign to the attribute.</para></listitem>
+    <term><parameter>value</parameter></term>
+    <listitem><para>New value that you want to assign to the attribute.</para></listitem>
    </varlistentry>
   </variablelist>
   </para>
@@ -65,14 +71,52 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$attrarray = cubrid_get ($con, $oid);
-$attrarray["name"] = "New Name";
-cubrid_put ($con, $oid, $attrarray);
-cubrid_put ($con, $oid, "name", "New Name2");
-cubrid_put ($con, $oid, "hobbies", array("aa", "bb"));
+$conn = cubrid_connect("localhost", 33000, "demodb");
+
+@cubrid_execute($conn, "DROP TABLE foo");
+cubrid_execute($conn, "CREATE TABLE foo(a int AUTO_INCREMENT, b set(int), c list(int), d char(10))");
+cubrid_execute($conn, "INSERT INTO foo(a, b, c, d) VALUES(1, {1,2,3}, {11,22,33,333}, 'a')");
+cubrid_execute($conn, "INSERT INTO foo(a, b, c, d) VALUES(2, {4,5,7}, {44,55,66,666}, 'b')");
+
+$req = cubrid_execute($conn, "SELECT * FROM foo", CUBRID_INCLUDE_OID);
+
+cubrid_move_cursor($req, 1, CUBRID_CURSOR_FIRST);
+$oid = cubrid_current_oid($req);
+
+$attr = cubrid_col_get($conn, $oid, "b");
+var_dump($attr);
+
+cubrid_put($conn, $oid, "b", array(2, 4, 8));
+
+$attr = cubrid_col_get($conn, $oid, "b");
+var_dump($attr);
+
+cubrid_close_request($req);
+cubrid_disconnect($conn);
 ?>
 ]]>
    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(3) {
+  [0]=>
+  string(1) "1"
+  [1]=>
+  string(1) "2"
+  [2]=>
+  string(1) "3"
+}
+array(3) {
+  [0]=>
+  string(1) "2"
+  [1]=>
+  string(1) "4"
+  [2]=>
+  string(1) "8"
+}
+]]>
+   </screen>
   </example>
  </refsect1>
 

@@ -4,7 +4,7 @@
 <refentry xml:id="function.cubrid-execute" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>cubrid_execute</refname>
-  <refpurpose>Is used to execute the given SQL sentence.</refpurpose>
+  <refpurpose>Executes a prepared SQL statement</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -15,19 +15,35 @@
    <methodparam><type>string</type><parameter>SQL</parameter></methodparam>  
    <methodparam choice="opt"><type>int</type><parameter>option</parameter></methodparam>  
   </methodsynopsis>
-   <methodsynopsis>
+  <methodsynopsis>
    <type>bool</type><methodname>cubrid_execute</methodname>
    <methodparam><type>resource</type><parameter>request_identifier</parameter></methodparam>  
    <methodparam choice="opt"><type>int</type><parameter>option</parameter></methodparam>  
   </methodsynopsis>
     <para>
-        The <function>cubrid_execute</function> function is used to execute the given SQL sentence. It executes the query by using <parameter>conn_identifier</parameter> and SQL, and then returns the request identifier created. It is used for simple execution of query, where the parameter binding is not needed. In addition, the <function>cubrid_execute</function> function is used to execute the prepared statement by means of <function>cubrid_prepare</function> and <function>cubrid_bind</function>. At this time, you need to specify arguments of <parameter>request_identifier</parameter> and <parameter>option</parameter>.
+        The <function>cubrid_execute</function> function is used to execute
+        the given SQL sentence. It executes the query by using
+        <parameter>conn_identifier</parameter> and SQL, and then returns the
+        request identifier created. It is used for simple execution of query,
+        where the parameter binding is not needed. In addition, the
+        <function>cubrid_execute</function> function is used to execute the
+        prepared statement by means of <function>cubrid_prepare</function> and
+        <function>cubrid_bind</function>. At this time, you need to specify
+        arguments of <parameter>request_identifier</parameter> and
+        <parameter>option</parameter>.
     </para>
     <para>
-        You can use the <parameter>option</parameter> argument to tell whether to receive oid of the row after the execution, and, whether to execute the query in asynchronous mode. You can use it by setting the CUBRID_INCLUDE_OID and CUBRID_ASYNC using bitwise or operator. If the both variables are not explicitly given, they are not selected by default.
+        You can use the <parameter>option</parameter> argument to tell whether
+        to receive oid of the row after the execution, and, whether to execute
+        the query in asynchronous mode. You can use it by setting the
+        CUBRID_INCLUDE_OID and CUBRID_ASYNC using bitwise or operator. If the
+        both variables are not explicitly given, they are not selected by
+        default.
     </para>
     <para>
-        If the first argument is <parameter>request_identifier</parameter> to execute the <function>cubrid_prepare</function> function, you can specify an option, CUBRID_ASYNC only.
+        If the first argument is <parameter>request_identifier</parameter> to
+        execute the <function>cubrid_prepare</function> function, you can
+        specify an option, CUBRID_ASYNC only.
     </para>
  </refsect1>
 
@@ -58,7 +74,9 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-    Request identifier, when process is successful and first param is conn_identifier; &true;, when process is successful and first argument is request_identifier.
+    Request identifier, when process is successful and first param is
+    conn_identifier; &true;, when process is successful and first argument is
+    request_identifier.
   </para>
   <para>
     &false;, when process is unsuccessful.
@@ -72,39 +90,37 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$con = cubrid_connect ("dbsvr.cubrid.com", 33000, "demodb"); 
-if ($con) { 
-				echo "connected successfully"; 
-				$req = cubrid_execute ($con, "select * from members", CUBRID_INCLUDE_OID | CUBRID_ASYNC); 
-				if ($req) {
-								while (list ($id, $name) = cubrid_fetch ($req)) {
-												echo $id;
-												echo $name;
-								}
-								cubrid_close_request ($req);
-				}
+$conn = cubrid_connect("localhost", 33000, "demodb");
 
-				cubrid_disconnect ($con);
-}
-			
-$con = cubrid_connect ("dbsvr.cubrid.com", 33000, "demodb"); 
-if ($con) { 
-				echo "connected successfully"; 
-				$sql = "insert into tbl values (?, ?, ?)"; 
-				$req = cubrid_prepare($con, $sql, CUBRID_INCLUDE_OID); 
+$result = cubrid_execute($conn, "SELECT code FROM event WHERE name='100m Butterfly' and gender='M'", CUBRID_ASYNC);
+$row = cubrid_fetch_array($result, CUBRID_ASSOC);
+$event_code = $row["code"];
 
-				$i = 0;
-				while ( $i < 2 ) {
-								$res = cubrid_bind($req, 1, "1", "NUMBER");
-								$res = cubrid_bind($req, 2, "2");
-								$res = cubrid_bind($req, 3, "04:22:34 PM 08/07/2007");
-								$res = cubrid_execute($req);
-								$i = $i + 1;
-				}
+cubrid_close_request($result);
+
+$history_req = cubrid_prepare($conn, "SELECT * FROM history WHERE event_code=?");
+cubrid_bind($history_req, 1, $event_code, "number");
+cubrid_execute($history_req);
+
+printf("%-20s %-9s %-10s %-5s\n", "athlete", "host_year", "score", "unit");
+while ($row = cubrid_fetch_array($history_req, CUBRID_ASSOC)) {
+    printf("%-20s %-9s %-10s %-5s\n", 
+        $row["athlete"], $row["host_year"], $row["score"], $row["unit"]);
 }
+
+cubrid_close_request($history_req);
+
+cubrid_disconnect($conn);
 ?>
 ]]>
    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+athlete              host_year score      unit 
+Phelps Michael       2004      51.25      time 
+]]>
+   </screen>
   </example>
  </refsect1>
 

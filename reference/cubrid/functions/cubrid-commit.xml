@@ -4,7 +4,7 @@
 <refentry xml:id="function.cubrid-commit" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>cubrid_commit</refname>
-  <refpurpose>Is used to execute commit on the transaction</refpurpose>
+  <refpurpose>Commits a transaction</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -13,7 +13,17 @@
    <type>bool</type><methodname>cubrid_commit</methodname>
    <methodparam><type>resource</type><parameter>conn_identifier</parameter></methodparam>  </methodsynopsis>
   <para>
-    The <function>cubrid_commit</function> function is used to execute commit on the transaction pointed by <parameter>conn_handle</parameter>, currently on progress. Connection to the server is closed after the <function>cubrid_commit</function> function is called; the connection handle is still valid, however.
+    The <function>cubrid_commit</function> function is used to execute commit
+    on the transaction pointed by <parameter>conn_identifier</parameter>,
+    currently on progress. Connection to the server is closed after the
+    <function>cubrid_commit</function> function is called; the connection
+    handle is still valid, however.
+  </para>
+  <para>
+   In CUBRID PHP, an auto-commit mode is disabled by default for transaction
+   management, and it can't be enabled in current version CUBRID PHP. It can
+   be set in next version. And auto commit modes can be applied only for
+   SELECT statements by setting broker parameters.
   </para>
  </refsect1>
 
@@ -46,18 +56,72 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$req = cubrid_execute ($oid, "insert into person values (2,’John’)");
-if ($req) {
-   cubrid_close_request ($req);
-   if ($failed) {
-      cubrid_rollback ($con);
-   } else {
-      cubrid_commit ($con);
-   }
+$conn = cubrid_connect("127.0.0.1", 33000, "demodb");
+
+@cubrid_execute($conn, "DROP TABLE publishers");
+
+$sql = <<<EOD
+CREATE TABLE publishers(
+pub_id CHAR(3), 
+pub_name VARCHAR(20), 
+city VARCHAR(15), 
+state CHAR(2), 
+country VARCHAR(15)
+)
+EOD;
+
+if (!cubrid_execute($conn, $sql)) {
+    printf("Error facility: %d\nError code: %d\nError msg: %s\n", cubrid_error_code_facility(), cubrid_error_code(), cubrid_error_msg());
+
+    cubrid_disconnect($conn);
+    exit;
 }
+
+$req = cubrid_prepare($conn, "INSERT INTO publishers VALUES(?, ?, ?, ?, ?)");
+
+$id_list = array("P01", "P02", "P03", "P04");
+$name_list = array("Abatis Publishers", "Core Dump Books", "Schadenfreude Press", "Tenterhooks Press");
+$city_list = array("New York", "San Francisco", "Hamburg", "Berkeley");
+$state_list = array("NY", "CA", NULL, "CA");
+$country_list = array("USA", "USA", "Germany", "USA");
+
+for ($i = 0, $size = count($id_list); $i < $size; $i++) {
+    cubrid_bind($req, 1, $id_list[$i]);
+    cubrid_bind($req, 2, $name_list[$i]);
+    cubrid_bind($req, 3, $city_list[$i]);
+    cubrid_bind($req, 4, $state_list[$i]);
+    cubrid_bind($req, 5, $country_list[$i]);
+
+    if (!($ret = cubrid_execute($req))) {
+        break;
+    }
+}
+
+if (!$ret) {
+    cubrid_rollback($conn);
+} else {
+    cubrid_commit($conn);
+
+    $req = cubrid_execute($conn, "SELECT * FROM publishers");
+    while ($result = cubrid_fetch_assoc($req)) {
+        printf("%-3s %-20s %-15s %-3s %-15s\n", 
+            $result["pub_id"], $result["pub_name"], $result["city"], $result["state"], $result["country"]);
+    }
+}
+
+cubrid_disconnect($conn);
 ?>
 ]]>
    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+P01 Abatis Publishers    New York        NY  USA            
+P02 Core Dump Books      San Francisco   CA  USA            
+P03 Schadenfreude Press  Hamburg             Germany        
+P04 Tenterhooks Press    Berkeley        CA  USA            
+]]>
+   </screen>
   </example>
  </refsect1>
 

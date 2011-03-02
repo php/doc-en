@@ -4,7 +4,7 @@
 <refentry xml:id="function.cubrid-real-escape-string" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>cubrid_real_escape_string</refname>
-  <refpurpose>Returns the escaped string version of the given string</refpurpose>
+  <refpurpose>Escapes special characters in a string for use in an SQL statement</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -15,7 +15,17 @@
    <methodparam choice="opt"><type>resource</type><parameter>conn_identifier</parameter></methodparam>
   </methodsynopsis>
   <para>
-    This function returns the escaped string version of the given string. It pre-appends backslashes to the following characters: <constant>'</constant>. This function must always (with few exceptions) be used to make data safe before sending a query to CUBRID.
+    This function returns the escaped string version of the given string. It
+    will escape the following characters: <constant>'</constant>. 
+
+    In general, single quotations are used to enclose character string. Double
+    quotations may be used as well depending on the value of ansi_quotes,
+    which is a parameter related to SQL statement. If the ansi_quotes value is
+    set to no, character string enclosed by double quotations is handled as
+    character string, not as an identifier. The default value is yes.
+
+    If you want to include a single quote as part of a character string, enter
+    two single quotes in a row.
   </para>
  </refsect1>
 
@@ -24,13 +34,16 @@
  <para>
   <variablelist>
     <varlistentry>
-  <term><parameter>unescaped_string</parameter></term>
-  <listitem><para>The string that is to be escaped.</para></listitem>
-   </varlistentry>
-     <varlistentry>
-  <term><parameter>conn_identifier</parameter></term>
-  <listitem><para>The CUBRID connection. If the connection identifier is not specified, the last link opened by <function>cubrid_connect</function> is assumed.</para></listitem>
-   </varlistentry>
+     <term><parameter>unescaped_string</parameter></term>
+     <listitem><para>The string that is to be escaped.</para></listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>conn_identifier</parameter></term>
+     <listitem><para>
+     The CUBRID connection. If the connection identifier is not specified, the
+     last connection opened by <function>cubrid_connect</function> is assumed.
+     </para></listitem>
+    </varlistentry>
   </variablelist>
   </para>
  </refsect1>
@@ -52,21 +65,34 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-    $user = "'username'";
-    $password = "\"pass\"";
-    $query = sprintf("SELECT * FROM users WHERE user='%s' AND password='%s'",
-            cubrid_real_escape_string($user),
-            cubrid_real_escape_string($password));
-    
-    echo $query;
+$conn = cubrid_connect("localhost", 33000, "demodb");
+
+$unescaped_str = ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~';
+$escaped_str = cubrid_real_escape_string($unescaped_str);
+
+$len = strlen($unescaped_str);
+
+@cubrid_execute($conn, "DROP TABLE cubrid_test");
+cubrid_execute($conn, "CREATE TABLE cubrid_test (t char($len))");
+cubrid_execute($conn, "INSERT INTO cubrid_test (t) VALUES('$escaped_str')");
+
+$req = cubrid_execute($conn, "SELECT * FROM cubrid_test");
+$row = cubrid_fetch_assoc($req);
+
+var_dump($row);
+
+cubrid_close_request($req);
+cubrid_disconnect($conn);
 ?>
 ]]>
    </programlisting>
     &example.outputs;
     <screen>
 <![CDATA[
-Result:
-SELECT * FROM users WHERE user='\'username\'' AND password='"pass"'
+array(1) {
+  ["t"]=>
+  string(95) " !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+}
 ]]>
     </screen>
   </example>

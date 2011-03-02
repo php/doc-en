@@ -4,7 +4,7 @@
 <refentry xml:id="function.cubrid-lock-read" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>cubrid_lock_read</refname>
-  <refpurpose>Is used to put read lock</refpurpose>
+  <refpurpose>Sets a read lock on the given OID</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -15,7 +15,8 @@
    <methodparam><type>string</type><parameter>oid</parameter></methodparam>  
   </methodsynopsis>
   <para>
-    The <function>cubrid_lock_read</function> function is used to put read lock on the instance pointed by given <parameter>oid</parameter>.
+    The <function>cubrid_lock_read</function> function is used to put read
+    lock on the instance pointed by given <parameter>oid</parameter>.
   </para>
  </refsect1>
 
@@ -23,13 +24,13 @@
   &reftitle.parameters;
   <para>
   <variablelist>
-    <varlistentry>
-  <term><parameter>conn_identifier</parameter></term>
-  <listitem><para>Connection identifier.</para></listitem>
+   <varlistentry>
+    <term><parameter>conn_identifier</parameter></term>
+    <listitem><para>Connection identifier.</para></listitem>
    </varlistentry>
    <varlistentry>
   <term><parameter>oid</parameter></term>
-  <listitem><para>Oid of the instance that you want to put read lock on.</para></listitem>
+  <listitem><para>OID of the instance that you want to put read lock on.</para></listitem>
    </varlistentry>
   </variablelist>
   </para>
@@ -52,11 +53,63 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$lock_oid = cubrid_get ($con, $oid, "next_id");
-$res = cubrid_lock_read ($con, $lock_oid);
+$conn = cubrid_connect("localhost", 33088, "demodb");
+
+@cubrid_execute($conn, "DROP TABLE foo");
+cubrid_execute($conn, "CREATE TABLE foo(a int AUTO_INCREMENT, b set(int), c list(int), d char(10))");
+cubrid_execute($conn, "INSERT INTO foo(a, b, c, d) VALUES(1, {1,2,3}, {11,22,33,333}, 'a')");
+cubrid_execute($conn, "INSERT INTO foo(a, b, c, d) VALUES(2, {4,5,7}, {44,55,66,666}, 'b')");
+
+$req = cubrid_execute($conn, "SELECT * FROM foo", CUBRID_INCLUDE_OID);
+
+cubrid_move_cursor($req, 1, CUBRID_CURSOR_FIRST);
+$oid = cubrid_current_oid($req);
+
+cubrid_lock_read($conn, $oid);
+
+$attr = cubrid_get($conn, $oid, "b");
+var_dump($attr);
+
+$attr = cubrid_get($conn, $oid);
+var_dump($attr);
+
+cubrid_close_request($req);
+cubrid_disconnect($conn);
 ?>
 ]]>
    </programlisting>
+&example.outputs;
+    <screen>
+<![CDATA[
+string(9) "{1, 2, 3}"
+array(4) {
+  ["a"]=>
+  string(1) "1"
+  ["b"]=>
+  array(3) {
+    [0]=>
+    string(1) "1"
+    [1]=>
+    string(1) "2"
+    [2]=>
+    string(1) "3"
+  }
+  ["c"]=>
+  array(4) {
+    [0]=>
+    string(2) "11"
+    [1]=>
+    string(2) "22"
+    [2]=>
+    string(2) "33"
+    [3]=>
+    string(3) "333"
+  }
+  ["d"]=>
+  string(10) "a         "
+}
+]]>
+   </screen>
   </example>
  </refsect1>
 
