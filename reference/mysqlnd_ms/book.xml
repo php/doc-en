@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<book xml:id="book.mysqlnd-ms" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Mysqlnd replication and load balancing plugin</title>
+ <titleabbrev>mysqlnd_ms</titleabbrev>
+
+ <preface xml:id="intro.mysqlnd-ms">
+  &reftitle.intro;
+  <para>
+   The mysqlnd replication and load balancing plugin (<literal>mysqlnd_ms</literal>)
+   adds easy to use MySQL replication support to all PHP MySQL extensions that use
+   <link linkend="book.mysqlnd">mysqlnd</link>.
+  </para>
+  <para>
+   As of version PHP 5.3.3 the MySQL native driver for PHP 
+   (<literal>mysqlnd</literal>)
+   features an internal plugin C API. C plugins, such as the replication and
+   load balancing plugin, can extend the functionality of
+   <link linkend="book.mysqlnd">mysqlnd</link>.
+  </para>
+  <para>
+   The MySQL native driver for PHP is a C library which ships together with
+   PHP as of PHP 5.3.0. It serves as a drop-in replacement for the
+   MySQL Client Library (AKA libmysql/libmysqlclient). Using mysqlnd has
+   several advantages: no extra downloads because it comes with PHP,
+   PHP license, lower memory consumption in certain cases,
+   new functionality such as asynchronous queries.
+  </para>
+  <para>
+   Mysqlnd plugins such as the replication and load balancing plugin operate
+   mostly transparent from an user perspective. The replication and load balancing
+   plugin supports all PHP applications
+   and all PHP MySQL extensions (
+   <link linkend="ref.mysqli">mysqli</link>,
+   <link linkend="ref.mysql">mysql</link>,
+   <link linkend="ref.pdo-mysql">PDO_MYSQL</link>).
+   It does not change existing APIs. Therefore, it can easily be used with
+   existing PHP applications.
+  </para>
+  <note>
+   <para>
+    The mysqlnd replication and load balancing plugin is in alpha status.
+    It is not feature complete.
+   </para>
+  </note>
+  <section xml:id="mysqlnd-ms.key_features">
+   <title>Key Features</title>
+   <para>
+    <itemizedlist>
+     <listitem>
+      <para>
+       Transparent and therefore easy to use
+      </para>
+      <para>
+       <itemizedlist>
+        <listitem>
+         <para>
+          supports all PHP MySQL extensions
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          no API changes
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          very little, if any, application changes required, dependent on the usage scenario required
+         </para>
+        </listitem>
+       </itemizedlist>
+      </para>
+     </listitem>
+
+     <listitem>
+      <para>
+       Featured read-write split strategies
+      </para>
+      <para>
+       <itemizedlist>
+        <listitem>
+         <para>
+          Automatic detection of SELECT, supports SQL hints to overrule automatism
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          user-defined
+         </para>
+        </listitem>
+       </itemizedlist>
+      </para>
+     </listitem>
+
+     <listitem>
+      <para>
+       Featured load balancing strategies
+      </para>
+      <para>
+       <itemizedlist>
+        <listitem>
+         <para>
+          Round Robin: choose different slave in round robin fashion for every slave request.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          Random: choose random slave for every slave request.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          Random once (sticky): choose random slave once to run all slave requests for the duration of a web request.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          User-defined. The application can register callbacks with mysqlnd_ms.
+         </para>
+        </listitem>
+       </itemizedlist>
+      </para>
+     </listitem>
+    </itemizedlist>
+   </para>
+  </section>
+
+  <section xml:id="mysqlnd-ms.limitations">
+   <title>Limitations</title>
+   <para>
+    The plugin does not support MySQL replication setups with more
+    than one master server.
+   </para>
+   <para>
+    The built-in read/write-split mechanism is very basic. Every
+    query which starts with <literal>SELECT</literal>
+    is considered a read request to be sent to a MySQL slave server.
+    All other queries, including, for example, <literal>SHOW</literal>
+    statements, are considered as write requests to be sent to the MySQL master server.
+    The build-in behaviour can be overruled using 
+    <link linkend="mysqlnd-ms.constants">SQL hints</link> or an user-defined
+    <link linkend="function.mysqlnd-ms-set-user-pick-server">callback function</link>.
+   </para>
+   <para>
+    The read/write splitter is not aware of multi-statements. Multi-statements
+    are considered as one statement. The decision of where to run the statement
+    will be based on the beginning of the statement string.
+   </para>
+   <para>
+    The plugin does not support native prepared statements. Please
+    note that <link linkend="ref.pdo-mysql">PDO_MySQL</link> is using a
+    client-side prepared statement emulation by default. Client-side emulated
+    prepared statements are fully supported by the replication and load balancing
+    plugin because the emulation is not using native prepared statements.
+    If you are using PHP based database abstraction, please consult the
+    vendor manual to learn if a client-side prepared statement emulation is
+    used.
+   </para>
+   <note>
+    <para>
+     Application must be aware of the consequences of connection switches performed
+     for load balancing purpose. Please check the documentation on 
+     <link linkend="mysqlnd-ms.pooling">connection pooling and switching</link>,
+     <link linkend="mysqlnd-ms.transaction">transaction handling</link>,
+     <link linkend="mysqlnd-ms.failover">failover</link> 
+     <link linkend="mysqlnd-ms.loadbalancing">load balancing</link> and 
+     <link linkend="mysqlnd-ms.rwsplit">read-write splitting</link> carefully.
+    </para>
+   </note>
+  </section>
+  
+  <section xml:id="mysqlnd-ms.name">
+   <title>On the name</title>
+   <para>
+    The shortcut <literal>mysqlnd_ms</literal> 
+    stands for <literal>mysqlnd master slave plugin</literal>. The name
+    was choosen for a quick-and-dirty proof-of-concept. In the beginning
+    the developers did not expect to continue using the code base.
+   </para>
+  </section>
+ </preface>
+
+ &reference.mysqlnd-ms.quickstart;
+ &reference.mysqlnd-ms.concepts;
+ &reference.mysqlnd-ms.setup;
+ &reference.mysqlnd-ms.constants; 
+ &reference.mysqlnd-ms.reference; 
+
+</book>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

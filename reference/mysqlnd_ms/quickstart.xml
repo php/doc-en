@@ -1,0 +1,611 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: $ -->
+<chapter xml:id="mysqlnd-ms.quickstart" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Quickstart and Examples</title>
+ <para>
+  The mysqlnd replication load balancing plugin is easy to use.
+  The quickstart will demo typical use-cases and give practical advice on getting
+  started.  
+ </para>
+ <para>
+  It is strongly recommended to read the reference sections in addition to the
+  quickstart. The quickstart tries to avoid discussing theoretical concepts
+  and limitations. Instead, it will link to the reference sections. It is safe
+  to begin with the quickstart. However, before using the plugin in mission critical
+  environments we urge you to read additionally the background information from the
+  reference sections. 
+ </para>
+ <section xml:id="mysqlnd-ms.quickstart.configuration">
+  <title>Setup</title>
+  <para>
+   The plugin is implemented as a PHP extension. 
+   Please, follow the 
+   <link linkend="mysqlnd-ms.installation">installation instructions</link> to
+   install the 
+   <link xlink:href="&url.pecl.package;mysqlnd_ms">PECL/mysqlnd_ms</link> extension.
+   Then, load the extension into PHP and activate the plugin in the PHP configuration
+   file using the PHP configuration directive named
+   <link linkend="ini.mysqlnd-ms.enable">mysqlnd_ms.enable</link>. 
+  </para>
+  <para>
+   The plugin is using its own configuration file. Use the PHP
+   configuration directive
+   <link linkend="ini.mysqlnd-ms.ini-file">mysqlnd_ms.ini_file</link>
+   to set the full path to the plugin-specific configuration file.
+   This file must be readable by PHP.
+  </para>
+  <para>
+   <example>
+    <title>Enabling the plugin (php.ini)</title>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_ms.enable=1
+mysqlnd_ms.ini_file=/path/to/mysqlnd_ms_plugin.ini
+]]>
+    </programlisting>
+    </example>
+  </para>
+  <para>
+   Create a plugin-specific configuration file. Save the file to the path
+   set by the PHP configuration directive 
+   <link linkend="ini.mysqlnd-ms.ini-file">mysqlnd_ms.ini_file</link>.
+   The plugin-specific file must be readable by PHP.
+  </para>
+  <para>
+   The plugins configuration file is divided into one or more sections.
+   Each section has a name, for example, <literal>myapp</literal>. Every section
+   makes its own set of configuration settings.   
+  </para>
+  <para>
+    A section must at least list the MySQL replication master server.
+    The plugin supports using only one master server per section. Multi-master
+    MySQL replication setups are not supported.
+    Use the configuration directive
+    <link linkend="ini.mysqlnd-ms-plugin-config.master">master[]</link>
+    to set the hostname and the port or socket of the MySQL master server.
+  </para>
+  <para>
+   <example>
+    <title>Minimal plugin-specific configuration file (mysqlnd_ms_plugin.ini)</title>
+    <programlisting role="ini">
+<![CDATA[
+[myapp]
+master[]=localhost:/tmp/mysql.sock
+]]>
+    </programlisting>
+    </example>
+  </para>
+  <para>
+   It is allowed to set no MySQL slave server but it is not recommended to do.
+   You should always configure at least one slave server as well. Slave servers
+   are set using the configuration directive
+   <link linkend="ini.mysqlnd-ms-plugin-config.slave">slave[]</link>.
+   A configuration section may contain no, one or multiple 
+   <literal>slave[]</literal> directives to set no, one or multiple
+   MySQL slaves. 
+  </para>
+  <para>
+   <example>
+    <title>Recommended minimal plugin-specific config (mysqlnd_ms_plugin.ini)</title>
+    <programlisting role="ini">
+<![CDATA[
+[myapp]
+master[]=localhost:/tmp/mysql.sock
+slave[]=192.168.2.27:3306
+]]>
+    </programlisting>
+    </example>
+  </para>
+  <para>
+   If there are
+   at least two servers in total, the plugin can start to load balance and switch
+   connections. Switching connections is not always transparent and can cause
+   issues in certain cases. The reference section on 
+   <link linkend="mysqlnd-ms.pooling">connection pooling and switching</link>,
+   <link linkend="mysqlnd-ms.transaction">transaction handling</link>,
+   <link linkend="mysqlnd-ms.failover">fail over</link> 
+   <link linkend="mysqlnd-ms.loadbalancing">load balancing</link> and 
+   <link linkend="mysqlnd-ms.rwsplit">read-write splitting</link> gives details.
+   For now you can continue reading the quickstart. Potential pitfalls 
+   will be described later in the quickstart guide.
+  </para>
+  <para>   
+   It is responsibility of the application to handle potential issues caused
+   by connection switches. By always configuring a master and at lease one slave
+   server you can be sure to detect issues early because switches become 
+   possible.
+  </para>
+  <para>
+   The MySQL master and MySQL slave servers, which you configure, do not need to 
+   be part of MySQL replication setup. For testing purpose you can use single
+   MySQL server and make it known to the plugin as a master and slave server 
+   as shown below. This could help you to detect many potential issues with 
+   connection switches. However, such a setup will not be prone to the issues
+   caused by replication lag. 
+  </para>
+  <para>
+   <example>
+    <title>Using one server as a master and as a slave (testing only!)</title>
+    <programlisting role="ini">
+<![CDATA[
+[myapp]
+master[]=localhost:/tmp/mysql.sock
+slave[]=127.0.0.1:3306
+]]>
+    </programlisting>
+    </example>
+  </para>
+  
+ </section>
+ 
+ <section xml:id="mysqlnd-ms.quickstart.usage">
+  <title>Running statements</title>
+  <para>
+   The plugin can be used with any PHP MySQL extension 
+   (<link linkend="ref.mysqli">mysqli</link>,
+   <link linkend="ref.mysql">mysql</link>,
+   <link linkend="ref.pdo-mysql">PDO_MYSQL</link>) 
+   compiled to use the <link linkend="book.mysqlnd">mysqlnd</link> library.
+   PECL/mysqlnd_ms plugs into the <link linkend="book.mysqlnd">mysqlnd</link> library.
+   It does not change the PHP MySQL extensions and their API.  
+  </para>
+  <para>
+   Whenever a connection to MySQL is being opened, the plugin compares the host
+   parameter value of the connect call with the section names 
+   from the plugin specific configuration file. If, for example, the
+   plugin specific configuration file has a section <literal>myapp</literal>
+   the section should be referenced by opening a MySQL connection to the
+   host <literal>myapp</literal>
+  </para>
+  <para>
+   <example>
+    <title>Plugin specific configuration file (mysqlnd_ms_plugin.ini)</title>
+    <programlisting role="ini">
+<![CDATA[
+[myapp]
+master[]=localhost:/tmp/mysql.sock
+slave[]=192.168.2.27:3306
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Opening a load balanced connection</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* Load balanced following "myapp" section rules from the plugins config file */
+$mysqli = new mysqli("myapp", "username", "password", "database");
+$pdo = new PDO('mysql:host=myapp;dbname=database', 'username', 'password');
+$mysql = mysql_connect("myapp", "username", "password");
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   All of three connections opened in the example will be load balanced.
+   The plugin will send read-only statements to the MySQL slave server with the
+   IP <literal>192.168.2.27</literal> and listening on port <literal>3306</literal>
+   for MySQL client connection. All other statements will be directed to the
+   MySQL master server running on the host <literal>localhost</literal> accepting 
+   MySQL client connection on the Unix domain socket <literal>/tmp/mysql.sock</literal>.
+   The plugin will use the user name <literal>username</literal> and the password
+   <literal>password</literal> to connect to any of the MySQL servers listed in
+   the section <literal>myapp</literal> of the plugins configuration file. Upon
+   connect, the plugin will select <literal>database</literal> as the current 
+   schemata. The username, password and schema name are taken from the connect
+   API calls and used for all servers. In other words: you must use the same 
+   username and password for every MySQL server listed in a plugin configuration 
+   file section.
+  </para>
+  <para>
+   The plugin does not change the API for running statements.    
+   <link linkend="mysqlnd-ms.rwsplit">Read-write splitting</link>
+   works out of the box. The following example assumes that there is no 
+   significant replication lag between the master and the slave.
+  </para>
+  <para>
+   <example>
+    <title>Executing statements</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* Load balanced following "myapp" section rules from the plugins config file */
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* Statements will be run on the master */
+if (!$mysqli->query("DROP TABLE IF EXISTS test")) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+if (!$mysqli->query("CREATE TABLE test(id INT)")) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+if (!$mysqli->query("INSERT INTO test(id) VALUES (1)")) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+
+/* read-only: statement will be run on a slave */
+if (!($res = $mysqli->query("SELECT id FROM test")) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+} else {
+ $row = $res->fetch_assoc(); 
+ $res->close();
+ printf("Slave returns id = '%s'\n", $row['id'];
+}
+$mysqli->close();
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Slave returns id = '1'
+]]>
+    </screen>
+   </example>
+  </para>  
+  <note>
+   <para>
+    The plugin does not support native prepared statements. Prepared
+    statements are not load balanced. Most users of 
+    <link linkend="ref.pdo-mysql">PDO_MYSQL</link>
+    will be unaffected by this restriction because
+    <link linkend="ref.pdo-mysql">PDO_MYSQL</link> is using a 
+    client-side prepared statement emulation by default.
+   </para>
+  </note>
+ </section>
+ 
+ <section xml:id="mysqlnd-ms.quickstart.connectionpooling">
+  <title>Connection state</title>
+  <para>
+   The plugin changes the semantics of a PHP MySQL connection handle. 
+   A connection handle does no longer represent a single MySQL client-server
+   network connection but a connection pool. The connection pool consists
+   of a master connection and none, one or multiple slave connections.
+  </para>
+  <para>
+   Every connection from the connection pool has its own state. For example,
+   SQL user variables, temporary tables and transactions are part of the state. 
+   Please, find a complete list of what belongs to the state of a connection
+   at the concepts page on
+   <link linkend="mysqlnd-ms.pooling">connection pooling and switching</link>.
+   If the plugin decides to switch connections for load balancing the
+   application could be given connection which has a different state.
+   Applications must be made aware of this!
+  </para>
+  <para>
+   <example>
+    <title>Plugin config with one slave and one master</title>
+    <programlisting role="ini">
+<![CDATA[
+[myapp]
+master[]=localhost:/tmp/mysql.sock
+slave[]=192.168.2.27:3306
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Pitfall: connection state and SQL user variables</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* Connection 1, connection bound SQL user variable, no SELECT thus run on master */
+if (!$mysqli->query("SET @myrole='master'")) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+
+/* Connection 2, run on slave because SELECT */
+if (!($res = $mysqli->query("SELECT @myrole AS _role"))) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+} else {
+ $row = $res->fetch_assoc();
+ $res->close();
+ printf("@myrole = '%s'\n", $row['_role']);
+}
+$mysqli->close();
+?>
+]]>
+    </programlisting>
+&example.outputs;
+    <screen>
+<![CDATA[
+@myrole = ''
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   The example openes a load balanced connection and executes two statements. 
+   The first statement <literal>SET @myrole='master'</literal> does not begin
+   with the string <literal>SELECT</literal>. Therefore the plugin does not
+   recognize it as a read-only query which shall be run on a slave. The
+   plugin runs the statement on the connection to the master. The statement
+   sets a SQL user variable which is bound to the master connection. The
+   state of the master connection has been changed.
+  </para>
+  <para>
+   The next statement is <literal>SELECT @myrole AS _role</literal>. 
+   The plugin does recognize it as a read-only query and sends it to 
+   the slave. The statement is run on a connection to the slave. This
+   second connection does not have any SQL user variables bound to it.
+   It has a different state than the first connection to the master.
+   The requested SQL user variable is not set. The example script prints
+   <literal>@myrole = ''</literal>.
+  </para>
+  <para>
+   It is the responsibility of the application developer to take care
+   of the connection state. The plugin does not monitor all 
+   connection state changing activities. Monitoring all possible cases would
+   be a very CPU intensive task, if it could be done at all.
+  </para>
+  <para>
+   The pitfalls can easily be worked around using SQL hints.
+  </para>
+  </section>
+ 
+ <section xml:id="mysqlnd-ms.quickstart.sqlhints">
+  <title>SQL Hints</title>
+  <para>
+   SQL hints can be used to force the plugin to pick a certain server from
+   the connection pool. Hinting the plugin to use a certain server can solve
+   issues caused by connection switches and connection state.
+  </para>
+  <para>
+   SQL hints are standard compliant SQL comments. Because
+   SQL comments are supposed to be ignored by SQL processing systems they
+   do not infere with other programs such as the MySQL Server, the MySQL Proxy
+   or a firewall.
+  </para>
+  <para>
+   Three SQL hints are supported by the plugin: 
+   <constant>MYSQLND_MS_MASTER_SWITCH</constant>,
+   <constant>MYSQLND_MS_SLAVE_SWITCH</constant> and
+   <constant>MYSQLND_MS_LAST_USED_SWITCH</constant>. 
+   <constant>MYSQLND_MS_MASTER_SWITCH</constant> makes the plugin run a statement
+   on the master, <constant>MYSQLND_MS_SLAVE_SWITCH</constant> enforces the use
+   of the slave and <constant>MYSQLND_MS_MASTER_SWITCH</constant> will run a 
+   statement on the same server that has been used for running the previous 
+   statement.
+  </para>
+  <para>
+   The plugin scans the beginning of a statement for the existance of a SQL
+   hint. SQL hints are only recognized if they appear at the very beginning of
+   the statement.
+  </para>
+   <para>
+   <example>
+    <title>Plugin config with one slave and one master</title>
+    <programlisting role="ini">
+<![CDATA[
+[myapp]
+master[]=localhost:/tmp/mysql.sock
+slave[]=192.168.2.27:3306
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>SQL hints to prevent connection switches</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* Connection 1, connection bound SQL user variable, no SELECT thus run on master */
+if (!$mysqli->query("SET @myrole='master'")) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+
+/* Connection 1, run on master because of SQL hint */
+if (!($res = $mysqli->query(sprintf("/*%s*/SELECT @myrole AS _role", MYSQLND_MS_LAST_USED_SWITCH)))) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+} else {
+ $row = $res->fetch_assoc();
+ $res->close();
+ printf("@myrole = '%s'\n", $row['_role']);
+}
+$mysqli->close();
+?>
+]]>
+    </programlisting>
+&example.outputs;
+    <screen>
+<![CDATA[
+@myrole = 'master'
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   In the example the session variables issue from the previous page is solved 
+   using <constant>MYSQLND_MS_LAST_USED_SWITCH</constant> to prevent switching 
+   from the master to a slave when running the <literal>SELECT</literal> statement.
+  </para>
+  <para>
+   SQL hints can also be used to run <literal>SELECT</literal> statements
+   on the MySQL master server. This may be desired if the MySQL slave servers
+   tend to be behind the master but you need current data from the database.
+  </para>
+  <para>
+   <example>
+    <title>Fighting replication lag</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* Force use of master, master has always fresh and current data */
+if (!$mysqli->query(sprintf("/*%s*/SELECT critical_data FROM important_table", MYSQLND_MS_MASTER_SWITCH))) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+?>
+]]>
+    </programlisting>    
+   </example>
+  </para>
+  <para>
+   use case may include the creation of tables on a slave.
+   If no SQL hint is given, the plugin will send <literal>CREATE</literal>
+   and <literal>INSERT</literal> statements to the master. Use the
+   SQL hint <constant>MYSQLND_MS_SLAVE_SWITCH</constant> if you want to 
+   run any such statement on a slave, for example, to build temporary
+   reporting tables.
+  </para>
+  <para>
+   <example>
+    <title>Table creation on a slave</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* Force use of slave */
+if (!$mysqli->query(sprintf("/*%s*/CREATE TABLE slave_reporting(id INT)", MYSQLND_MS_SLAVE_SWITCH))) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+/* Continue using this particular slave connection */
+if (!$mysqli->query(sprintf("/*%s*/INSERT INTO slave_reporting(id) VALUES (1), (2), (3)", MYSQLND_MS_LAST_USED_SWITCH))) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+/* Don't use MYSQLND_MS_SLAVE_SWITCH which would allow switching to another slave! */
+if ($res = $mysqli->query(sprintf("/*%s*/SELECT COUNT(*) AS _num FROM slave_reporting", MYSQLND_MS_LAST_USED_SWITCH))) {
+  $row = $res->fetch_assoc();
+  $res->close();
+  printf("There are %d rows in the table 'slave_reporting'", $row['_num']);
+} else {
+  printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+$mysqli->close();
+?>
+]]>
+    </programlisting>    
+   </example>
+  </para>
+  <para>
+   The SQL hint <constant>MYSQLND_MS_LAST_USED</constant> forbids switching
+   connection and forces the use of the previously used connection.   
+  </para>
+ </section>
+  
+ <section xml:id="mysqlnd-ms.quickstart.transactions">
+  <title>Transactions</title>
+  <para>
+   The current version of the plugin is not transaction safe,
+   because it is not transaction aware. SQL transactions are 
+   units of work to be run on a single server. 
+   The plugin does not know when the unit of work starts and when it ends.
+   Therefore, the plugin may decide to switch connections in the middle 
+   of a transaction.
+  </para>
+  <para>
+   You must use SQL hints to work around this limitation.
+  </para>
+  <para>
+   <example>
+    <title>Plugin config with one slave and one master</title>
+    <programlisting role="ini">
+<![CDATA[
+[myapp]
+master[]=localhost:/tmp/mysql.sock
+slave[]=192.168.2.27:3306
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Using SQL hints for transactions</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+  
+/* Not a SELECT, will use master */
+if (!$mysqli->query("START TRANSACTION")) {
+ /* Please use better error handling in your code */
+ die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+}
+
+/* Prevent connection switch! */
+if (!$mysqli->query(sprintf("/*%s*/INSERT INTO test(id) VALUES (1)", MYSQLND_MS_LAST_USED_SWITCH)))) { 
+ /* Please do proper ROLLBACK in your code, don't just die */
+ die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error)); 
+}
+if ($res = $mysqli->query(sprintf("/*%s*/SELECT COUNT(*) AS _num FROM test", MYSQLND_MS_LAST_USED_SWITCH)))) {
+  $row = $res->fetch_assoc();
+  $res->close();
+  if ($row['_num'] > 1000) {
+   if (!$mysqli->query(sprintf("/*%s*/INSERT INTO events(task) VALUES ('cleanup')", MYSQLND_MS_LAST_USED_SWITCH)))) {
+     die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+   }
+  }  
+} else {
+ die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+}
+if (!$mysqli->query(sprintf("/*%s*/UPDATE log SET last_update = NOW()", MYSQLND_MS_LAST_USED_SWITCH)))) {
+ die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+}
+if (!$mysqli->query(sprintf("/*%s*/COMMIT", MYSQLND_MS_LAST_USED_SWITCH)))) {
+ die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+}
+
+$mysqli->close();
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+    Future versions of the plugin may be made aware of transactions started, 
+    rolled back and committed using API calls. Therefore, whenever possible
+    you should start using API calls to control transactions unlike using
+    SQL statements, as shown in the above example.
+  </para> 
+ </section>
+</chapter>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
