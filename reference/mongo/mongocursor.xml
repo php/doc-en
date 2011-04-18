@@ -12,16 +12,66 @@
   <section xml:id="mongocursor.intro">
    &reftitle.intro;
    <para>
-    Result object for database query.
+    A cursor is used to iterate through the results of a database query.  For 
+    example, to query the database and see all results, you could do:
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$cursor = $collection->find();
+var_dump(iterator_to_array($cursor));
+
+?>
+]]>
+    </programlisting>
    </para>
    <para>
+    You don't generally create cursors using the 
+    <classname>MongoCursor</classname> constructor, you get a new cursor by
+    calling <function>MongoCollection::find</function> (as shown above).
+   </para>
+   <para>
+    Suppose that, in the example above, <literal>$collection</literal> was a
+    50GB collection.  We certainly wouldn't want to load that into memory all 
+    at once, which is what a cursor is for: allowing the client to access the 
+    collection in dribs and drabs.  
+   </para>
+   <para>
+    If we have a large result set, we can iterate through it, loading a few 
+    megabytes of results into memory at a time.  For example, we could do:
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$cursor = $collection->find();
+
+foreach ($cursor as $doc) {
+    // do something to each document
+}
+
+?>
+]]>
+    </programlisting>
+    This will go through each document in the collection, loading and garbage 
+    collecting documents as needed.
+   </para>
+   <para>
+    Note that this means that a cursor does not "contain" the database results, 
+    it just manages them.  Thus, if you print a cursor (with, say, 
+    <function>var_dump</function> or <function>print_r</function>), you'll just 
+    get the cursor object, not your documents.  To get the documents themselves, 
+    you can use one of the methods shown above.
+   </para>
+  </section>
+
+  <section>
+   <title>Cursor Stages</title>
+   <para>
     A <classname>MongoCursor</classname> has two "life stages": pre- and post-
-    query.  A cursor can be created manually by calling the constructor, but it
-    is most often created by calling <function>MongoCollection::find</function>.
-    When a cursor is created, it has not yet contacted the database, so it is in
-    its pre-query state.  In this state, the client can further specify what
-    they want the query to do, including adding limits, skips, sorts, and more
-    advanced options.
+    query. When a cursor is created, it has not yet contacted the database, so 
+    it is in its pre-query state.  In this state, the client can further specify
+    what they want the query to do, including adding limits, skips, sorts, and 
+    more advanced options.
    </para>
    <para>
     When the client attempts to get a result (by calling 
