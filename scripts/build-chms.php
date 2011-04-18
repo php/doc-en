@@ -196,7 +196,7 @@
 			/**
 			 * Run the HTML Help Compiler to generate the actual CHM file
 			 */
-			execute_task('- [Enhanced] HHC', PATH_HHC, '"' . PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.hhp"', 'hhc_' . $lang);
+			execute_task('- [Enhanced] HHC', PATH_HHC, '"' . PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.hhp"', 'hhc_enhanced_' . $lang);
 
 			if(!is_file(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.chm'))
 			{
