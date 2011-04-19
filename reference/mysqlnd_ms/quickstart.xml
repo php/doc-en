@@ -582,11 +582,90 @@ $mysqli->close();
    </example>
   </para>
   <para>
-    Future versions of the plugin may be made aware of transactions started, 
-    rolled back and committed using API calls. Therefore, whenever possible
-    you should start using API calls to control transactions unlike using
-    SQL statements, as shown in the above example.
-  </para> 
+   Starting with PHP 5.3.99 the <literal>mysqlnd</literal> library allows the
+   plugin to monitor the status of the <literal>autocommit</literal> mode, if
+   the mode is set by API calls instead of using SQL statements such as
+   <literal>SET AUTOCOMMIT=0</literal>. This makes it possible for the plugin to
+   become transaction aware.
+  </para>
+  <para>
+    If using PHP 5.3.99, API calls to set the <literal>autocommit</literal> mode
+    and setting the experimental plugin configuration option 
+    <link linkend="ini.mysqlnd-ms-plugin-config.trx_stickiness"><literal>trx_stickiness=master</literal></link>
+    the plugin can automatically disable load balancing and connection switches
+    for SQL transactions. In this configuration the plugin stops load balancing,
+    if <literal>autocommit</literal> is disabled and directs all statements to
+    the master. This is done to prevent connection switches in the middle of
+    a transaction. Once <literal>autocommit</literal> gets enabled again, the plugin
+    starts to load balance statements again. 
+  </para>
+  <para>
+   <example>
+    <title>Experimental trx_stickiness setting</title>
+    <programlisting role="ini">
+<![CDATA[
+[myapp]
+master[]=localhost:/tmp/mysql.sock
+slave[]=192.168.2.27:3306
+trx_stickiness=master
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Outlook: transaction aware</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+if (version_compare(PHP_VERSION, "5.3.99", "<"))
+  die("This feature requires PHP 5.3.99, you are using " . PHP_VERSION);
+  
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* Disable autocommit, plugin will run all statements on the master */
+$mysqli->autocommit(FALSE);
+
+if (!$mysqli->query("INSERT INTO test(id) VALUES (1)")) { 
+ /* Please do proper ROLLBACK in your code, don't just die */
+ die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error)); 
+}
+if ($res = $mysqli->query("SELECT COUNT(*) AS _num FROM test")) {
+  $row = $res->fetch_assoc();
+  $res->close();
+  if ($row['_num'] > 1000) {
+   if (!$mysqli->query("INSERT INTO events(task) VALUES ('cleanup')")) {
+     die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+   }
+  }  
+} else {
+ die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+}
+if (!$mysqli->query("UPDATE log SET last_update = NOW()")) {
+ die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+}
+if (!$mysqli->commit()) {
+ die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+}
+
+/* Plugin assumes that the transaction has ended and starts load balancing again */
+$mysqli->autocommit(TRUE);
+$mysqli->close();
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <note>
+   <para>
+    The plugin configuration option
+    <link linkend="ini.mysqlnd-ms-plugin-config.trx_stickiness"><literal>trx_stickiness=master</literal></link>
+    is an experimental feature. It requires PHP 5.3.99.
+   </para>
+  </note>
  </section>
 </chapter>
 <!-- Keep this comment at the end of the file
