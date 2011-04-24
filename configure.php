@@ -669,6 +669,8 @@ if ($dom->validate()) {
     echo "done.\n";
     printf("\nAll good. Saving %s... ", basename($ac["OUTPUT_FILENAME"]));
     flush(STDOUT);
+    $t = $dom->doctype;
+    $dom->removeChild($t);
     $dom->save($mxml);
 
     echo "done.\n";
@@ -678,6 +680,7 @@ if ($dom->validate()) {
     if (function_exists('proc_nice')) {
         echo " (Run `nice php configure.php` next time!)\n";
     }
+    echo "Yes. I know this segfaults. Thats OK. Thats next on the fixlist\n";
 
     exit(0); // Tell the shell that this script finished successfully.
 } else {
