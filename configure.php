@@ -55,6 +55,7 @@ Package-specific:
   --enable-xml-details      Enable detailed XML error messages [{$acd['DETAILED_ERRORMSG']}]
   --enable-howto            Configure the phpdoc howto, not the phpdoc docs [{$acd['HOWTO']}]
   --disable-segfault-error  LIBXML may segfault with broken XML, use this if it does [{$acd['SEGFAULT_ERROR']}]
+  --disable-segfault-speed  PHP (<5.3.7) will segfault during shutdown. Disabling that segfault causes performance issues. [{$acd['SEGFAULT_SPEED']}]
   --disable-version-files   Do not merge the extension specific version.xml files
   --disable-libxml-check    Disable the libxml 2.7.4+ requirement check
   --with-php=PATH           Path to php CLI executable [detect]
@@ -269,6 +270,7 @@ $acd = array( // {{{
     'PARTIAL' => 'no',
     'DETAILED_ERRORMSG' => 'no',
     'SEGFAULT_ERROR' => 'yes',
+    'SEGFAULT_SPEED' => 'yes',
     'VERSION_FILES'  => 'yes',
     'LIBXML_CHECK' => 'yes',
     'HOWTO' => 'no',
@@ -369,6 +371,10 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
 
         case 'segfault-error':
             $ac['SEGFAULT_ERROR'] = $v;
+            break;
+
+        case 'segfault-speed':
+            $ac['SEGFAULT_SPEED'] = $v;
             break;
 
         case 'version-files':
@@ -489,6 +495,12 @@ checkvalue($ac['DETAILED_ERRORMSG']);
 
 checking('libxml version');
 checkvalue(LIBXML_DOTTED_VERSION);
+
+checking('whether to enable detailed error reporting (may segfault)');
+checkvalue($ac['SEGFAULT_ERROR']);
+checking('whether to optimize out the DTD (performance gain, but segfaults)');
+checkvalue($ac['SEGFAULT_SPEED']);
+
 
 // We shouldn't be globbing for this. autoconf requires you to tell it which files to use, we should do the same
 // Notice how doing it this way results in generating less than half as many files.
@@ -669,8 +681,10 @@ if ($dom->validate()) {
     echo "done.\n";
     printf("\nAll good. Saving %s... ", basename($ac["OUTPUT_FILENAME"]));
     flush(STDOUT);
-    $t = $dom->doctype;
-    $dom->removeChild($t);
+    if ($ac["SEGFAULT_SPEED"]) {
+        $t = $dom->doctype;
+        $dom->removeChild($t);
+    }
     $dom->save($mxml);
 
     echo "done.\n";
@@ -680,7 +694,10 @@ if ($dom->validate()) {
     if (function_exists('proc_nice')) {
         echo " (Run `nice php configure.php` next time!)\n";
     }
-    echo "Yes. I know this segfaults. Thats OK. Thats next on the fixlist\n";
+    if ($ac["SEGFAULT_SPEED"] && version_compare(PHP_VERSION, "5.3.7-dev", "lt")) {
+        $b = basename($mxml);
+        echo "\n\nPHP will segfault now :) - Don't worry though, the $b has been saved :D\n";
+    }
 
     exit(0); // Tell the shell that this script finished successfully.
 } else {
