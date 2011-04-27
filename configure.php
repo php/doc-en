@@ -280,7 +280,7 @@ $acd = array( // {{{
     'OUTPUT_FILENAME' => $srcdir . '/.manual.xml',
     'GENERATE' => 'no',
     'STDERR_TO_STDOUT' => 'no',
-    'INPUT_FILENAME'   => $srcdir . '/manual.xml',
+    'INPUT_FILENAME'   => 'manual.xml',
 ); // }}}
 
 $ac = $acd;
