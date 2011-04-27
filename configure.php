@@ -180,7 +180,7 @@ function generate_output_file($in, $out, $ac) // {{{
         return false;
     }
     foreach ($ac as $k => $v) {
-        $data = preg_replace('/@' . preg_quote($k) . '@/', $v, $data);
+        $data = str_replace("@$k@", $v, $data);
     }
 
     return file_put_contents($out, $data);
