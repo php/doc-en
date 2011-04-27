@@ -765,6 +765,11 @@ if ($dom->validate()) {
 
     // Exit normally when don't care about validation
     if ($ac["FORCE_DOM_SAVE"] == "yes") {
+        if ($ac["SEGFAULT_SPEED"] && version_compare(PHP_VERSION, "5.3.7-dev", "lt")) {
+            $b = basename($mxml);
+            echo "\n\nPHP will segfault now :) - Don't worry though, the $b has been saved :D\n";
+        }
+
         exit(0);
     }
 
