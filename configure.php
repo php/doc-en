@@ -65,6 +65,7 @@ Package-specific:
   --redirect-stderr-to-stdout  Redirect STDERR to STDOUT. Use STDOUT as the standart output for XML errors [{$acd['STDERR_TO_STDOUT']}]
 
   --output=FILENAME         Save to given file (i.e. not .manual.xml) [{$acd['OUTPUT_FILENAME']}]
+  --generate=FILENAME       Create an XML only for provided file
 
 HELPCHUNK;
 } // }}}
@@ -277,7 +278,9 @@ $acd = array( // {{{
     'USE_BROKEN_TRANSLATION_FILENAME' => 'yes',
     'COPYRIGHT_YEAR' => date('Y'),
     'OUTPUT_FILENAME' => $srcdir . '/.manual.xml',
-    'STDERR_TO_STDOUT' => 'no'
+    'GENERATE' => 'no',
+    'STDERR_TO_STDOUT' => 'no',
+    'INPUT_FILENAME'   => $srcdir . '/manual.xml',
 ); // }}}
 
 $ac = $acd;
@@ -401,6 +404,10 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
             $ac['OUTPUT_FILENAME'] = $v;
             break;
 
+        case 'generate':
+            $ac['GENERATE'] = $v;
+            break;
+
         case 'broken-file-listing':
             $ac['USE_BROKEN_TRANSLATION_FILENAME'] = $v;
 
@@ -435,9 +442,6 @@ checkvalue($ac['srcdir']);
 
 checking('for output filename');
 checkvalue($ac['OUTPUT_FILENAME']);
-
-checking('whether to save an invalid .manual.xml');
-checkvalue($ac['FORCE_DOM_SAVE']);
 
 checking('whether to include CHM');
 $ac['CHMONLY_INCL_BEGIN'] = ($ac['CHMENABLED'] == 'yes' ? '' : '<!--');
@@ -508,6 +512,7 @@ $infiles = array(
     'manual.xml.in',
     'install-unix.xml.in',
     'install-win.xml.in',
+    'developer.template.xml.in',
     'entities/version.ent.in',
     'scripts/file-entities.php.in',
 );
@@ -617,14 +622,32 @@ $redir = ($ac['quiet'] == 'yes') ? ' > ' . (is_windows() ? 'nul' : '/dev/null') 
 
 quietechorun("\"{$ac['PHP']}\" -q \"{$ac['basedir']}/scripts/file-entities.php\"{$redir}");
 
-echo "Loading and parsing manual.xml... ";
+
+checking("for if we should generate a simplified file");
+if ($ac["GENERATE"] != "no") {
+    if (!file_exists($ac["GENERATE"])) {
+        checkerror("Can't find {$ac["GENERATE"]}");
+    }
+    $tmp = realpath($ac["GENERATE"]);
+    $ac["GENERATE"] = str_replace($ac["LANGDIR"], "", $tmp);
+    $str = "\n<!ENTITY developer.include.file SYSTEM 'file:///{$ac["GENERATE"]}'>";
+    file_put_contents("{$ac["basedir"]}/entities/file-entities.ent", $str, FILE_APPEND);
+    $ac["INPUT_FILENAME"] = "developer.template.xml";
+    $ac["FORCE_DOM_SAVE"] = "yes";
+}
+checkvalue($ac["GENERATE"]);
+
+checking('whether to save an invalid .manual.xml');
+checkvalue($ac['FORCE_DOM_SAVE']);
+
+echo "Loading and parsing {$ac["INPUT_FILENAME"]}... ";
 flush(STDOUT);
 
 $dom = new DOMDocument();
 
 // realpath() is important: omitting it causes severe performance degradation
 // and doubled memory usage on Windows.
-$didLoad = $dom->load(realpath("{$ac['srcdir']}/manual.xml"), $LIBXML_OPTS);
+$didLoad = $dom->load(realpath("{$ac['srcdir']}/{$ac["INPUT_FILENAME"]}"), $LIBXML_OPTS);
 
 // Check if the XML was simply broken, if so then just bail out
 if ($didLoad === false) {
@@ -634,7 +657,7 @@ if ($didLoad === false) {
 }
 
 echo "done.\n";
-echo "Validating manual.xml... ";
+echo "Validating {$ac["INPUT_FILENAME"]}... ";
 flush(STDOUT);
 
 $dom->xinclude();
@@ -709,6 +732,10 @@ if ($dom->validate()) {
     // Allow the .manual.xml file to be created, even if it is not valid.
     if ($ac['FORCE_DOM_SAVE'] == 'yes') { 
         printf("writing %s anyway, and ", basename($ac["OUTPUT_FILENAME"]));
+        if ($ac["SEGFAULT_SPEED"]) {
+            $t = $dom->doctype;
+            $dom->removeChild($t);
+        }
         $dom->save($mxml);
     }
 
@@ -717,7 +744,7 @@ if ($dom->validate()) {
         echo "(This could take awhile. If you experience segfaults here, try again with --disable-xml-details)\n";
         libxml_clear_errors(); // Clear the errrors, they contain incorrect filename&linenr
 
-        $dom->load("{$ac['srcdir']}/manual.xml", $LIBXML_OPTS | LIBXML_DTDVALID);
+        $dom->load("{$ac['srcdir']}/{$ac["INPUT_FILENAME"]}", $LIBXML_OPTS | LIBXML_DTDVALID);
         print_xml_errors();
     } else {
         echo "here are the errors I got:\n";
