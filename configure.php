@@ -629,7 +629,7 @@ if ($ac["GENERATE"] != "no") {
         checkerror("Can't find {$ac["GENERATE"]}");
     }
     $tmp = realpath($ac["GENERATE"]);
-    $ac["GENERATE"] = str_replace($ac["LANGDIR"], "", $tmp);
+    $ac["GENERATE"] = str_replace($ac["ROOTDIR"].$ac["LANGDIR"], "", $tmp);
     $str = "\n<!ENTITY developer.include.file SYSTEM 'file:///{$ac["GENERATE"]}'>";
     file_put_contents("{$ac["basedir"]}/entities/file-entities.ent", $str, FILE_APPEND);
     $ac["INPUT_FILENAME"] = "developer.template.xml";
