@@ -259,6 +259,7 @@ $acd = array( // {{{
     'SRCDIR' => $srcdir,
     'BASEDIR' => $basedir,
     'ROOTDIR' => $rootdir,
+    'ONLYDIR' => '',
     'PHP' => '',
     'CHMENABLED' => 'no',
     'CHMONLY_INCL_BEGIN' => '<!--',
@@ -504,6 +505,10 @@ checking('whether to enable detailed error reporting (may segfault)');
 checkvalue($ac['SEGFAULT_ERROR']);
 checking('whether to optimize out the DTD (performance gain, but segfaults)');
 checkvalue($ac['SEGFAULT_SPEED']);
+
+if ($ac["GENERATE"] != "no") {
+    $ac["ONLYDIR"] = dirname(realpath($ac["GENERATE"]));
+}
 
 
 // We shouldn't be globbing for this. autoconf requires you to tell it which files to use, we should do the same
