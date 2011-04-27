@@ -554,12 +554,18 @@ if ($ac['VERSION_FILES'] === 'yes') {
 
 
     echo "Iterating over extension specific version files... ";
-    if (file_exists($ac['rootdir'] . '/en/trunk')) {
-        $globdir = $ac['rootdir'] . '/en/trunk';
-    } else {
-        $globdir = $ac['rootdir'] . '/en';
+    if ($ac["ONLYDIR"]) {
+        $globdir = $ac["ONLYDIR"] . "{/../,.}versions.xml";
     }
-    foreach(glob("$globdir/*/*/versions.xml") as $file) {
+    else {
+        if (file_exists($ac['rootdir'] . '/en/trunk')) {
+            $globdir = $ac['rootdir'] . '/en/trunk';
+        } else {
+            $globdir = $ac['rootdir'] . '/en';
+        }
+        $globdir .= "/*/*/versions.xml";
+    }
+    foreach(glob($globdir, GLOB_BRACE) as $file) {
         if($tmp->load($file)) {
             foreach($tmp->getElementsByTagName("function") as $function) {
                 $function = $dom->importNode($function, true);
@@ -755,6 +761,11 @@ if ($dom->validate()) {
         echo "here are the errors I got:\n";
         echo "(If this isn't enough information, try again with --enable-xml-details)\n";
         print_xml_errors(false);
+    }
+
+    // Exit normally when don't care about validation
+    if ($ac["FORCE_DOM_SAVE"] == "yes") {
+        exit(0);
     }
 
     errors_are_bad(1); // Tell the shell that this script finished with an error.
