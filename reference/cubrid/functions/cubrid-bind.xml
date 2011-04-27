@@ -12,20 +12,23 @@
   <methodsynopsis>
    <type>bool</type><methodname>cubrid_bind</methodname>
    <methodparam><type>resource</type><parameter>req_identifier</parameter></methodparam>
-   <methodparam><type>int</type><parameter>bind_index</parameter></methodparam>
-   <methodparam><type>string</type><parameter>bind_value</parameter></methodparam>
+   <methodparam><type>mixed</type><parameter>bind_param</parameter></methodparam>
+   <methodparam><type>mixed</type><parameter>bind_value</parameter></methodparam>
    <methodparam choice="opt"><type>string</type><parameter>bind_value_type</parameter></methodparam>
   </methodsynopsis>
   <para>
-    The <function>cubrid_bind</function> function is used to bind values in a
-    <function>cubrid_prepare</function> variable, a various types in PHP and
-    corresponding types in SQL. If bind_value_type is not given, string will
-    be the default.
+   The <function>cubrid_bind</function> function is used to bind values to a
+   corresponding named or question mark placeholder in the SQL statement that
+   was passed to <function>cubrid_prepare</function>. If
+   <parameter>bind_value_type</parameter> is not given, string will be the
+   default.
   </para>
   <note>
    <para>
-    Known issue: If column data type is CLOB, binding parameter will fail.
-    This bug will fixed later.
+    If the type of data to be bound is BLOB/CLOB, CUBRID will try to map the
+    data as a PHP stream. If the actually bind value type is not stream,
+    CUBRID will convert it to string, and use it as the full path and file
+    name of a file on the client filesystem.
    </para>
   </note>
   <para>
@@ -139,15 +142,20 @@
     <function>cubrid_prepare</function>.</para></listitem>
    </varlistentry>
    <varlistentry>
-  <term><parameter>bind_index</parameter></term>
-  <listitem><para>Index for binding.</para></listitem>
+  <term><parameter>bind_param</parameter></term>
+  <listitem><para>Parameter identifier. For a prepared statement using named
+    placeholders, this will be a parameter name of the form :name (Note that
+    the name can only contain digit, alphabet, and underscore, and it can not 
+    begin with digit. The name length can not be longer than 32). For a prepared
+    statement using question mark placeholders, this will be the 1-indexed
+    position of the parameter.</para></listitem>
    </varlistentry>
    <varlistentry>
   <term><parameter>bind_value</parameter></term>
   <listitem><para>Actual value for binding.</para></listitem>
    </varlistentry>
    <varlistentry>
-  <term><parameter>bind_index</parameter></term>
+  <term><parameter>bind_value_type</parameter></term>
   <listitem><para>A type of the value to bind. (It is omitted by default.
     Thus, system internally use string by default. However, you need to
     specify the exact type of the value as an argument when they are NCHAR,
@@ -179,6 +187,13 @@
       </row>
      </thead>
      <tbody>
+      <row>
+       <entry>8.4.0</entry>
+       <entry>
+        Added named parameter support; When binding the LOB data type, it can
+        directly binding the path name of a file.
+       </entry>
+      </row>
       <row>
        <entry>8.3.1</entry>
        <entry>
@@ -247,6 +262,53 @@ Barkley Charles
   </example>
 
   <example>
+   <title><function>cubrid_bind</function> named parameter example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$conn = cubrid_connect("localhost", 33000, "demodb");
+
+$sql_stmt = <<<EOD
+SELECT s.name FROM stadium s, game g 
+WHERE s.code = g.stadium_code AND g.medal = :medal_type 
+GROUP BY g.stadium_code ORDER BY count(medal) DESC LIMIT 1;
+EOD;
+
+$req = cubrid_prepare($conn, $sql_stmt);
+printf("%-30s %s\n", "Medal Type", "Stadium where most medals were ever won");
+
+cubrid_bind($req, ":medal_type", "G");
+cubrid_execute($req);
+$row = cubrid_fetch_assoc($req);
+printf("%-30s %s\n", "Gold", $row["name"]);
+
+cubrid_bind($req, ":medal_type", "S");
+cubrid_execute($req);
+$row = cubrid_fetch_assoc($req);
+printf("%-30s %s\n", "Silver", $row["name"]);
+
+cubrid_bind($req, ":medal_type", "B");
+cubrid_execute($req);
+$row = cubrid_fetch_assoc($req);
+printf("%-30s %s\n", "Bronze", $row["name"]);
+
+cubrid_close_request($req);
+cubrid_disconnect($conn);
+?>
+]]>
+  </programlisting>
+&example.outputs;
+    <screen>
+<![CDATA[
+Medal Type                     Stadium where most medals were ever won
+Gold                           Olympic Aquatic Centre
+Silver                         Olympic Aquatic Centre
+Bronze                         Sydney Convention and Exhibition Centre
+]]>
+   </screen>
+  </example>
+
+  <example>
    <title><function>cubrid_bind</function> BLOB/CLOB example</title>
    <programlisting role="php">
 <![CDATA[
@@ -258,7 +320,25 @@ if ($con) {
 
     $fp = fopen("book.txt", "rb");
 
-    cubrid_bind($req, 1, $fp, "blob"); 
+    cubrid_bind($req, 1, $fp, "clob"); 
+    cubrid_execute($req);  
+}
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <example>
+   <title><function>cubrid_bind</function> BLOB/CLOB example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$con = cubrid_connect("localhost", 33000, "foo");
+if ($con) {
+    $sql = "INSERT INTO php_cubrid_lob_test(image) VALUES(?)"; 
+    $req = cubrid_prepare($con, $sql); 
+
+    cubrid_bind($req, 1, "cubrid_logo.png", "blob"); 
     cubrid_execute($req);  
 }
 ?>
@@ -267,7 +347,7 @@ if ($con) {
   </example>
  </refsect1>
 
-  <refsect1 role="seealso">
+ <refsect1 role="seealso">
   &reftitle.seealso;
   <para>
    <simplelist>
