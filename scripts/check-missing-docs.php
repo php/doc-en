@@ -172,11 +172,11 @@ function skip_documentation($name) {
 		'mysql_fieldname','mysql_fieldtable','mysql_fieldlen','mysql_fieldflags',
 		'mysql_selectdb','mysql_freeresult','mysql_numfields','mysql_numrows',
 		'mysql_listdbs','mysql_listtables','mysql_listfields',
-		'socket_getopt','socket_setopt','key_exists',
+		'socket_getopt','socket_setopt','key_exists', '_',
 
 		// Class::Methods
 		// Classes
-		'__PHP_Incomplete_Class',
+		'__php_incomplete_class',
 	);
 	
 	if (in_array($name, $skips)) {
@@ -193,7 +193,7 @@ function skip_documentation($name) {
 
 function skip_documentation_pattern($name) {
 	
-	$skip_patterns = array('xdebug', 'xhprof');
+	$skip_patterns = array('xdebug');
 	
 	foreach ($skip_patterns as $skip_pattern) {
 		if (false !== strpos($name, $skip_pattern)) {
