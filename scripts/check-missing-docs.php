@@ -122,6 +122,11 @@ echo 'Scanning ini settings', PHP_EOL;
 foreach ($inis as $ini => $ini_value) {
 	$ini_search = 'ini.' . strtolower(str_replace('_', '-', $ini));
 	
+	if (skip_documentation_pattern($ini)) {
+		$skipped['inis'][] = $ini_search;
+		continue;
+	}
+	
 	if (in_array($ini_search, $table)) {
 		$documented['inis'][] = $ini;
 	} else {
@@ -176,6 +181,24 @@ function skip_documentation($name) {
 	
 	if (in_array($name, $skips)) {
 		return true;
+	}
+
+	
+	if (skip_documentation_pattern($name)) {
+		return true;
+	}
+
+	return false;
+}
+
+function skip_documentation_pattern($name) {
+	
+	$skip_patterns = array('xdebug', 'xhprof');
+	
+	foreach ($skip_patterns as $skip_pattern) {
+		if (false !== strpos($name, $skip_pattern)) {
+			return true;
+		}
 	}
 	return false;
 }
