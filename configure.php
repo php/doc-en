@@ -717,7 +717,7 @@ if ($dom->validate()) {
     echo "done.\n";
     printf("\nAll good. Saving %s... ", basename($ac["OUTPUT_FILENAME"]));
     flush(STDOUT);
-    if ($ac["SEGFAULT_SPEED"]) {
+    if ($ac["SEGFAULT_SPEED"] == "yes") {
         $t = $dom->doctype;
         $dom->removeChild($t);
     }
@@ -730,11 +730,12 @@ if ($dom->validate()) {
     if (function_exists('proc_nice')) {
         echo " (Run `nice php configure.php` next time!)\n";
     }
-    if ($ac["SEGFAULT_SPEED"] && version_compare(PHP_VERSION, "5.3.7-dev", "lt")) {
+    if ($ac["SEGFAULT_SPEED"] == "yes" && version_compare(PHP_VERSION, "5.3.7-dev", "lt")) {
         $b = basename($mxml);
         echo "\n\nPHP will segfault now :) - Don't worry though, the $b has been saved :D\n";
     }
 
+    var_dump($ac);
     exit(0); // Tell the shell that this script finished successfully.
 } else {
     echo "failed.\n";
@@ -743,7 +744,7 @@ if ($dom->validate()) {
     // Allow the .manual.xml file to be created, even if it is not valid.
     if ($ac['FORCE_DOM_SAVE'] == 'yes') { 
         printf("writing %s anyway, and ", basename($ac["OUTPUT_FILENAME"]));
-        if ($ac["SEGFAULT_SPEED"]) {
+        if ($ac["SEGFAULT_SPEED"] == "yes") {
             $t = $dom->doctype;
             $dom->removeChild($t);
         }
@@ -765,7 +766,7 @@ if ($dom->validate()) {
 
     // Exit normally when don't care about validation
     if ($ac["FORCE_DOM_SAVE"] == "yes") {
-        if ($ac["SEGFAULT_SPEED"] && version_compare(PHP_VERSION, "5.3.7-dev", "lt")) {
+        if ($ac["SEGFAULT_SPEED"] == "yes" && version_compare(PHP_VERSION, "5.3.7-dev", "lt")) {
             $b = basename($mxml);
             echo "\n\nPHP will segfault now :) - Don't worry though, the $b has been saved :D\n";
         }
