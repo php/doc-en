@@ -735,7 +735,6 @@ if ($dom->validate()) {
         echo "\n\nPHP will segfault now :) - Don't worry though, the $b has been saved :D\n";
     }
 
-    var_dump($ac);
     exit(0); // Tell the shell that this script finished successfully.
 } else {
     echo "failed.\n";
