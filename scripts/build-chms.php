@@ -117,7 +117,7 @@
 		/**
 		 * Generate .manual.xml
 		 */
-		execute_task('- Configure', PATH_PHP, PATH_DOC . '\doc-base\configure.php --disable-libxml-check --with-php="' . PATH_PHP . '" --with-lang=' . $lang . ' --enable-chm', 'configure_' . $lang);
+		execute_task('- Configure', PATH_PHP, PATH_DOC . '\doc-base\configure.php --disable-libxml-check --disable-segfault-speed --with-php="' . PATH_PHP . '" --with-lang=' . $lang . ' --enable-chm', 'configure_' . $lang);
 
 		if(!is_file(PATH_DOC . '\\doc-base\\.manual.xml'))
 		{
