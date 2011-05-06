@@ -554,8 +554,8 @@ if ($ac['VERSION_FILES'] === 'yes') {
 
 
     echo "Iterating over extension specific version files... ";
-    if ($ac["ONLYDIR"]) {
-        $globdir = $ac["ONLYDIR"] . "{/../,.}versions.xml";
+    if ($ac["GENERATE"] != "no") {
+        $globdir = dirname($ac["GENERATE"]) . "/{../,./}versions.xml";
     }
     else {
         if (file_exists($ac['rootdir'] . '/en/trunk')) {
