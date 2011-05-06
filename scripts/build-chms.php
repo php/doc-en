@@ -75,7 +75,7 @@
 	 */
 	if(PHD_BETA)
 	{
-		chdir(PATH_PHD);
+		chdir(dirname(PATH_PHD));
 		execute_task('Updating PhD from svn', PATH_SVN, 'up', 'pear_svn');
 		chdir($cwd);
 	}
@@ -105,7 +105,7 @@
 	 */
 	foreach($languages as $lang)
 	{
-		echo('Processing language \'' . $lang . '\':' . PHP_EOL);
+		echo(date('r') . ' Processing language \'' . $lang . '\':' . PHP_EOL);
 
 		/**
 		 * Update that specific language folder in SVN
@@ -121,19 +121,21 @@
 
 		if(!is_file(PATH_DOC . '\\doc-base\\.manual.xml'))
 		{
-			echo('- Build error: configure failed' . PHP_EOL);
+			echo(date('r') . ' - Build error: configure failed' . PHP_EOL);
 
 			continue;
 		}
 
 		/**
-		 * Run .manual.xml thru PhD
+		 * Run .manual.xml thru PhD, including the enhanced build if required
 		 */
-		execute_task('- PhD', PATH_PHD, '-d "' . PATH_DOC . '\\doc-base\\.manual.xml' . '" -P PHP -f chm -o "' . PATH_DOC . '\\tmp\\' . $lang . '" --lang=' . $lang, 'phd_' . $lang);
+		$enhanced = (EXTENDED) ? '-f enhancedchm' : '';
+
+		execute_task('- PhD', PATH_PHD, '-d "' . PATH_DOC . '\\doc-base\\.manual.xml' . '" -P PHP -f chm ' . $enhanced . ' -o "' . PATH_DOC . '\\tmp\\' . $lang . '" --lang=' . $lang, 'phd_' . $lang);
 
 		if(!is_file(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.hhp'))
 		{
-			echo('- Build error: PhD failed' . PHP_EOL);
+			echo(date('r') . ' - Build error: PhD failed' . PHP_EOL);
 
 			continue;
 		}
@@ -145,7 +147,7 @@
 
 		if(!is_file(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.chm'))
 		{
-			echo('- Build error: HHC failed' . PHP_EOL);
+			echo(date('r') . ' - Build error: HHC failed' . PHP_EOL);
 
 			continue;
 		}
@@ -155,7 +157,7 @@
 		 */
 		if(filesize(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.chm') < 5000000)
 		{
-			echo('- Build error: CHM file too small, something went wrong' . PHP_EOL);
+			echo(date('r') . ' - Build error: CHM file too small, something went wrong' . PHP_EOL);
 			
 			continue;
 		}
@@ -165,7 +167,7 @@
 		 */
 		if(!copy(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.chm', PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm'))
 		{
-			echo('- Build error: Unable to copy CHM file into archive folder');
+			echo(date('r') . ' - Build error: Unable to copy CHM file into archive folder');
 
 			continue;
 		}
@@ -184,14 +186,15 @@
 			/**
 			 * Run .manual.xml thru PhD (--css reset.css --css theme.css --css doc.css)
 			 */
+			/* The PhD rendering is taking place along side the main rendering. Should improve speed.
 			execute_task('- [Enhanced] PhD', PATH_PHD, '-d "' . PATH_DOC . '\\doc-base\\.manual.xml' . '" -P PHP -f enhancedchm -o "' . PATH_DOC . '\\tmp\\' . $lang . '" --lang=' . $lang, 'phd_enhanced_' . $lang);
 
 			if(!is_file(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.hhp'))
 			{
-				echo('- Build error: Enhanced: PhD failed' . PHP_EOL);
+				echo(date('r') . ' - Build error: Enhanced: PhD failed' . PHP_EOL);
 
 				goto cleanup;
-			}
+			}*/
 
 			/**
 			 * Run the HTML Help Compiler to generate the actual CHM file
@@ -200,7 +203,7 @@
 
 			if(!is_file(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.chm'))
 			{
-				echo('- Build error: Enhanced: HHC failed' . PHP_EOL);
+				echo(date('r') . ' - Build error: Enhanced: HHC failed' . PHP_EOL);
 
 				goto cleanup;
 			}
@@ -210,7 +213,7 @@
 			 */
 			if(filesize(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.chm') < 5000000)
 			{
-				echo('- Build error: Enhanced: CHM file too small, something went wrong' . PHP_EOL);
+				echo(date('r') . ' - Build error: Enhanced: CHM file too small, something went wrong' . PHP_EOL);
 			
 				goto cleanup;
 			}
@@ -220,7 +223,7 @@
 			 */
 			if(!copy(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.chm', PATH_DOC . '\\chmfiles\\php_enhanced_' . $lang . '.chm'))
 			{
-				echo('- Build error: Enhanced: Unable to copy CHM file into archive folder');
+				echo(date('r') . ' - Build error: Enhanced: Unable to copy CHM file into archive folder');
 
 				goto cleanup;
 			}
@@ -236,7 +239,7 @@
 		 */
 		cleanup:
 		{
-			echo('- Clean up' . PHP_EOL);
+			echo(date('r') . ' - Clean up' . PHP_EOL);
 
 			unlink(PATH_DOC . '\\doc-base\\.manual.xml');
 
@@ -252,7 +255,7 @@
 		}
 	}
 
-	echo('Done!');
+	echo(date('r') . ' Done!');
 
 
 	/**
@@ -265,7 +268,7 @@
 	 */
 	function execute_task($title, $program, $parameters, $log)
 	{
-		echo($title . '...' . PHP_EOL);
+		echo(date('r') . ' ' . $title . '...' . PHP_EOL);
 
 		if(empty($program))
 		{
