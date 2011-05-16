@@ -101,6 +101,11 @@
 	}
 
 	/**
+	 * Hold the results of this build
+	 */
+	$a_BuildHistory = array();
+
+	/**
 	 * Start iterating over each translation
 	 */
 	foreach($languages as $lang)
@@ -165,11 +170,16 @@
 		/**
 		 * Copy the CHM file into the archive
 		 */
-		if(!copy(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.chm', PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm'))
+		if(!copy(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.chm', $s_CHMFilename = PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm'))
 		{
 			echo(date('r') . ' - Build error: Unable to copy CHM file into archive folder');
 
 			continue;
+		} else {
+			/**
+			 * Add to history
+			 */
+			$a_BuildHistory[] = array('php_manual_' . $lang . '.chm', md5_file($s_CHMFilename), filemtime($s_CHMFilename));
 		}
 
 		/**
@@ -221,11 +231,16 @@
 			/**
 			 * Copy the CHM file into the archive
 			 */
-			if(!copy(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.chm', PATH_DOC . '\\chmfiles\\php_enhanced_' . $lang . '.chm'))
+			if(!copy(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.chm', $s_CHMFilename = PATH_DOC . '\\chmfiles\\php_enhanced_' . $lang . '.chm'))
 			{
 				echo(date('r') . ' - Build error: Enhanced: Unable to copy CHM file into archive folder');
 
 				goto cleanup;
+			} else {
+				/**
+				 * Add to history
+				 */
+				$a_BuildHistory[] = array('php_enhanced_' . $lang . '.chm', md5_file($s_CHMFilename), filemtime($s_CHMFilename));
 			}
 
 			/**
@@ -254,6 +269,12 @@
 			}
 		}
 	}
+
+
+	/**
+	 * Save build history
+	 */
+	file_put_contents(PATH_DOC . '\\chmfiles\\LatestCHMBuilds.txt', implode(PHP_EOL, array_map(function($a_SingleBuild){ return implode("\t", $a_SingleBuild);}, $a_BuildHistory)));
 
 	echo(date('r') . ' Done!');
 
