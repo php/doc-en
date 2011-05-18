@@ -103,12 +103,12 @@
 	/**
 	 * Allow the build to run without rsync.
 	 */
-	$b_AllowRsync = !in_array('--norsync' $argv);
+	$allow_rsync = !in_array('--norsync' $argv);
 	
 	/**
 	 * Hold the results of this build
 	 */
-	$a_BuildHistory = array();
+	$build_history = array();
 
 	/**
 	 * Start iterating over each translation
@@ -184,13 +184,13 @@
 			/**
 			 * Add to history
 			 */
-			$a_BuildHistory[] = array('php_manual_' . $lang . '.chm', md5_file($s_CHMFilename), filemtime($s_CHMFilename));
+			$build_history[] = array('php_manual_' . $lang . '.chm', md5_file($s_CHMFilename), filemtime($s_CHMFilename));
 		}
 
 		/**
 		 * Update the CHM on the rsync server
 		 */
-		if ($b_AllowRsync)
+		if ($allow_rsync)
 		{
 			execute_task('- rsync', PATH_SCP, ' -batch -v -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_' . $lang, false);
 		}
@@ -248,13 +248,13 @@
 				/**
 				 * Add to history
 				 */
-				$a_BuildHistory[] = array('php_enhanced_' . $lang . '.chm', md5_file($s_CHMFilename), filemtime($s_CHMFilename));
+				$build_history[] = array('php_enhanced_' . $lang . '.chm', md5_file($s_CHMFilename), filemtime($s_CHMFilename));
 			}
 
 			/**
 			 * Update the CHM on the rsync server
 			 */
-			if ($b_AllowRsync)
+			if ($allow_rsync)
 			{
 				execute_task('- [Enhanced] rsync', PATH_SCP, ' -batch -v -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_enhanced_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_enhanced_' . $lang, false);
 			}
@@ -285,7 +285,7 @@
 	/**
 	 * Save build history
 	 */
-	file_put_contents(PATH_DOC . '\\chmfiles\\LatestCHMBuilds.txt', implode(PHP_EOL, array_map(function($a_SingleBuild){ return implode("\t", $a_SingleBuild);}, $a_BuildHistory)));
+	file_put_contents(PATH_DOC . '\\chmfiles\\LatestCHMBuilds.txt', implode(PHP_EOL, array_map(function($single_build){ return implode("\t", $single_build);}, $build_history)));
 
 	echo(date('r') . ' Done!');
 
