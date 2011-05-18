@@ -101,6 +101,11 @@
 	}
 
 	/**
+	 * Allow the build to run without rsync.
+	 */
+	$b_AllowRsync = !in_array('--norsync' $argv);
+	
+	/**
 	 * Hold the results of this build
 	 */
 	$a_BuildHistory = array();
@@ -185,7 +190,10 @@
 		/**
 		 * Update the CHM on the rsync server
 		 */
-		execute_task('- rsync', PATH_SCP, ' -batch -v -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_' . $lang, false);
+		if ($b_AllowRsync)
+		{
+			execute_task('- rsync', PATH_SCP, ' -batch -v -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_' . $lang, false);
+		}
 
 		/**
 		 * Check if we are supposed to build the enhanced version
@@ -246,7 +254,10 @@
 			/**
 			 * Update the CHM on the rsync server
 			 */
-			execute_task('- [Enhanced] rsync', PATH_SCP, ' -batch -v -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_enhanced_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_enhanced_' . $lang, false);
+			if ($b_AllowRsync)
+			{
+				execute_task('- [Enhanced] rsync', PATH_SCP, ' -batch -v -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_enhanced_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_enhanced_' . $lang, false);
+			}
 		}
 
 		/**
