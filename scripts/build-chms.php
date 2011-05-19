@@ -35,13 +35,13 @@
 	 */
 	define('PATH_PHP', 	'C:\\php\\binaries\\PHP_5_3\\php.exe');
 	define('PATH_PHD', 	'C:\\pear\\phd-trunk\\phd.bat');
-	define('PATH_HHC', 	'C:\\Program Files (x86)\HTML Help Workshop\hhc.exe');
-	define('PATH_SCP', 	'C:\\Program Files (x86)\PuTTY\pscp.exe');
+	define('PATH_HHC', 	'C:\\Program Files (x86)\\HTML Help Workshop\\hhc.exe');
+	define('PATH_SCP', 	'C:\\Program Files (x86)\\PuTTY\\pscp.exe');
 	define('PATH_PPK', 	'C:\\php-sdk\\keys\\php-doc-host.ppk');
 	define('PATH_SVN', 	'C:\\Program Files\\SlikSvn\\bin\\svn.exe');
 	define('PATH_PEAR', 	'C:\\pear\\pear.bat');
-	define('PATH_CHM', 	'C:\doc-all\\chmfiles');
-	define('PATH_LOG', 	'C:\\doc-all\\logs');
+	define('PATH_CHM', 	'C:\\doc-all\\chmfiles');
+	define('PATH_LOG', 	'C:\\doc-all\\chmfiles\\logs');
 	define('PATH_DOC', 	'C:\\doc-all');
 
 	define('EXTENDED',	true);
@@ -100,11 +100,6 @@
 		$languages = Array($argv[1]);
 	}
 
-	/**
-	 * Allow the build to run without rsync.
-	 */
-	$allow_rsync = !in_array('--norsync' $argv);
-	
 	/**
 	 * Hold the results of this build
 	 */
@@ -188,32 +183,10 @@
 		}
 
 		/**
-		 * Update the CHM on the rsync server
-		 */
-		if ($allow_rsync)
-		{
-			execute_task('- rsync', PATH_SCP, ' -batch -v -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_' . $lang, false);
-		}
-
-		/**
 		 * Check if we are supposed to build the enhanced version
 		 */
 		if(EXTENDED)
 		{
-			/* ... */
-			/**
-			 * Run .manual.xml thru PhD (--css reset.css --css theme.css --css doc.css)
-			 */
-			/* The PhD rendering is taking place along side the main rendering. Should improve speed.
-			execute_task('- [Enhanced] PhD', PATH_PHD, '-d "' . PATH_DOC . '\\doc-base\\.manual.xml' . '" -P PHP -f enhancedchm -o "' . PATH_DOC . '\\tmp\\' . $lang . '" --lang=' . $lang, 'phd_enhanced_' . $lang);
-
-			if(!is_file(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.hhp'))
-			{
-				echo(date('r') . ' - Build error: Enhanced: PhD failed' . PHP_EOL);
-
-				goto cleanup;
-			}*/
-
 			/**
 			 * Run the HTML Help Compiler to generate the actual CHM file
 			 */
@@ -249,14 +222,6 @@
 				 * Add to history
 				 */
 				$build_history[] = array('php_enhanced_' . $lang . '.chm', md5_file($s_CHMFilename), filemtime($s_CHMFilename));
-			}
-
-			/**
-			 * Update the CHM on the rsync server
-			 */
-			if ($allow_rsync)
-			{
-				execute_task('- [Enhanced] rsync', PATH_SCP, ' -batch -v -i "' . PATH_PPK . '" -l bjori "' . PATH_DOC . '\\chmfiles\\php_enhanced_' . $lang . '.chm" rsync.php.net:/home/bjori/manual-chms-new/', 'rsync_enhanced_' . $lang, false);
 			}
 		}
 
