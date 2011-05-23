@@ -7,21 +7,21 @@
  <section>
   <title>Request Injection Attacks</title>
   <para>
-   If you are passing <literal>$_GET</literal> parameters to your queries, make 
-   sure that they are cast to strings first.  Users can insert associative 
+   If you are passing <literal>$_GET</literal> parameters to your queries, make
+   sure that they are cast to strings first.  Users can insert associative
    arrays in GET requests, which could then become unwanted $-queries.
   </para>
 
   <para>
    A fairly innocuous example: suppose you are looking up a user's information
-   with the request <emphasis>http://www.example.com?username=bob</emphasis>. 
-   Your application does the query 
-   <literal>$collection->find(array("username" => $_GET['username']))</literal>. 
+   with the request <emphasis>http://www.example.com?username=bob</emphasis>.
+   Your application does the query
+   <literal>$collection->find(array("username" => $_GET['username']))</literal>.
   </para>
 
   <para>
-   Someone could subvert this by getting 
-   <emphasis>http://www.example.com?username[$ne]=foo</emphasis>, which PHP 
+   Someone could subvert this by getting
+   <emphasis>http://www.example.com?username[$ne]=foo</emphasis>, which PHP
    will magically turn into an associative array, turning your query into
    <literal>$collection->find(array("username" => array('$ne' => "foo")))</literal>,
    which will return all users not named "foo" (all of your users, probably).
@@ -34,6 +34,12 @@
   </para>
 
   <para>
+   Note that this type of attack can be used with any databases interation that
+   locates a document, including updates, upserts, find-and-modifies, and
+   removes.
+  </para>
+
+  <para>
    Thanks to <link xlink:href="&url.mongodb.injection;">Phil</link> for pointing this out.
   </para>
 
@@ -43,6 +49,100 @@
   </para>
  </section>
 
+ <section>
+  <title>Script Injection Attacks</title>
+  <para>
+   If you are using JavaScript, make sure that any variables that cross the PHP-
+   to-JavaScript boundry are passed in the <literal>scope</literal> field of
+   <classname>MongoCode</classname>, not interpolated into the JavaScript
+   string. This can come up when using <function>MongoDB::execute</function>,
+   <literal>$where</literal> clauses, MapReduces, group-bys, and any other time
+   you may pass JavaScript into the database.
+  </para>
+  <note>
+   <para>
+    MapReduce ignore the <literal>scope</literal> field of
+    <classname>MongoCode</classname>, but there is a <literal>scope</literal>
+    option on the command that can be used instead.
+   </para>
+  </note>
+  <para>
+   For example, suppose we have some JavaScript to greet a user in the database
+   logs.  We could do:
+  </para>
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+// don't do this!
+
+$username = $_POST['username'];
+$db->execute("print('Hello, $username!');");
+
+?>
+]]>
+  </programlisting>
+  <para>
+   However, what if a malicious user passes in some JavaScript?
+  </para>
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+// don't do this!
+
+// $username is set to "'); db.users.drop(); print('"
+$db->execute("print('Hello, $username!');");
+
+?>
+]]>
+  </programlisting>
+  <para>
+   Now MongoDB executes the JavaScript string
+   <literal>"print('Hello, '); db.users.drop(); print('!');"</literal>.
+   This attack is easy to avoid: use <literal>scope</literal> to pass
+   variables from PHP to JavaScript:
+  </para>
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+$scope = array("user" => $username);
+$db->execute(new MongoCode("print('Hello, user!');", $scope));
+
+?>
+]]>
+  </programlisting>
+  <para>
+   This adds a variable <literal>user</literal> to the JavaScript scope. Now if
+   someone tries to send malicious code, MongoDB will harmlessly print
+   <literal>Hello, '); db.dropDatabase(); print('!</literal>.
+  </para>
+
+  <para>
+   Using <literal>scope</literal> helps prevent malicious input from being
+   executed by the database.  However, you must make sure that your code does
+   not turn around and execute the input anyway! For example, never use the
+   JavaScript <literal>eval</literal> function on user input:
+  </para>
+  <programlisting>
+<![CDATA[
+<?php
+
+// don't do this!
+
+// $jsShellInput is "db.users.drop();"
+$scope = array("input" => $jsShellInput);
+$db->execute(new MongoCode("eval(input);", $scope));
+
+?>
+]]>
+  </programlisting>
+  <para>
+   Always use <literal>scope</literal> and never allow the database to execute
+   user input as code.
+  </para>
+ </section>
 </section>
 
 <!-- Keep this comment at the end of the file
