@@ -6,94 +6,183 @@
  <title>Types</title>
 
  <partintro>
-
-  <section>
-   <title>Change in number handling</title>
-   <para>
-    <emphasis>
-     The default behavior for numbers will be changing in version 1.1.0.  For
-     most programmers, this will make the driver's numeric handling smoother and
-     more natural, but it may require updating application code to work.
-    </emphasis>
-   </para>
-   <para>
-    The backwards-breaking changes will be related to the serialization and 
-    deserialization of integers.  You can test how these changes will affect 
-    your code by specifying the .ini changes now: mongo.native_int and 
-    mongo.long_as_object will default to &true;.
-   </para>
-   <para>
-    Serialization: by default pre-1.1.0, all PHP integers are serialized as 
-    32-bit integers, even on 64-bit machines.  This means that large numbers get
-    silently truncated.  In 1.1.0, 64-bit machines will, by default, save 
-    integers as 64-bit integers.  32-bit machines will continue to save integers
-    as 32-bit integers (you can also use the <classname>MongoInt32</classname> 
-    and <classname>MongoInt64</classname> classes to use 32-bit int on a 64-bit
-    machine or visa versa).
-   </para>
-   <para>
-    Deserialization: by default pre-1.1.0, 64-bit integers will be deserialized 
-    as doubles.  This is not a perfect mapped and means they will be resaved as 
-    the wrong type (double instead of 64-bit integer).  In 1.1.0, 64-bit 
-    integers will be returned as <classname>MongoInt64</classname>'s on 32-bit
-    machines.
-   </para>
-  </section>
-
   <section>
    <para>
-    MongoDB allows programmers to save and query for data expressed in all of the 
+    MongoDB allows programmers to save and query for data expressed in all of the
     basic PHP types, compound types (arrays, associative arrays, and objects), and
-    a half-dozen classes provided by the MongoDB PHP driver (for regular 
+    a half-dozen classes provided by the MongoDB PHP driver (for regular
     expressions, dates, and other specialized applications).
    </para>
   </section>
 
   <section>
-    <title>Simple Types</title>
+   <title>Booleans and &null;</title>
+   <para>
+    &true;, &false;, and &null; can be used as-is.
+   </para>
+  </section>
+
+  <section>
+   <title>Numbers</title>
+   <para>
+    Numbers are distinct from strings in MongoDB: "123" does not match 123.
+    Thus, if you want to make sure numbers are sorted and matched correctly, you
+    must make sure that they are actually saved as numbers.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$doc = array("a" => 123, "b" => "123");
+$collection->insert($doc);
+
+$doc->find(array("a" => 123));   // matches
+$doc->find(array("a" => "123")); // doesn't match
+$doc->find(array("a" => 123.0)); // matches
+$doc->find(array("b" => 123));   // doesn't match
+$doc->find(array("b" => "123")); // matches
+
+?>
+]]>
+   </programlisting>
+   <para>
+    As noted above, floating point numbers do compare with/match integer numbers
+    as one would expect.
+   </para>
+   <section>
+    <title>Large Numbers</title>
     <para>
-     The built-in types are:
+     By default, on a 32-bit system, numbers are sent to the database as 32-bit
+     integers. On a 64-bit system, they are sent as 64-bit integers.  For
+     backwards compatibility, all systems deserialize 64-bit integers as floating
+     point numbers.  Floating point numbers are not exact.  If you need exact
+     values, you must tweak your
+     <link xlink:href="mongo.configure;">php.ini settings</link>.
     </para>
     <para>
-     <informaltable>
-      <tgroup cols="3">
-       <thead>
-        <row>
-         <entry>Type</entry>
-         <entry>Description</entry>
-         <entry>Size in MongoDB (bytes)</entry>
-        </row>
-       </thead>
-       <tbody>
-        <row>
-         <entry>&null;</entry>
-         <entry>Fairly self-explanatory.</entry>
-         <entry>0</entry>
-        </row>
-        <row>
-         <entry>boolean</entry>
-         <entry>&true; and &false;</entry>
-         <entry>1</entry>
-        </row>
-        <row>
-         <entry>int</entry>
-         <entry>Integer values.</entry>
-         <entry>4</entry>
-        </row>
-        <row>
-         <entry>float</entry>
-         <entry>Double values.</entry>
-         <entry>8</entry>
-        </row>
-        <row>
-         <entry>string</entry>
-         <entry>Strings of UTF-8 characters.</entry>
-         <entry>string length + 1</entry>
-        </row>
-       </tbody>
-      </tgroup>
-     </informaltable>
+     On a 32-bit system, if <literal>mongo.long_as_object</literal> is set,
+     64-bit integers will be returns as <classname>MongoInt64</classname>
+     objects.  The integer will be stored in the <literal>value</literal> field
+     with perfect precision (as a string). You can also use
+     <classname>MongoInt64</classname> to save 64-bit integers on 32-bit
+     machines.
     </para>
+    <para>
+     On 64-bit systems, you can either set <literal>mongo.long_as_object</literal>
+     or set <literal>mongo.native_long</literal>.
+     <literal>mongo.native_long</literal> will return 64-bit integers and
+     "normal" PHP integers.  You can use <classname>MongoInt32</classname> to
+     save 32-bit integers on 64-bit machines.
+    </para>
+    <para>
+     You should set the <literal>mongo.long_as_object</literal> and
+     <literal>mongo.native_long</literal> behavior that you plan to use, even if
+     it is the default behavior (to protect against future changes to the
+     defaults).
+    </para>
+    <para>
+     See also: <link xlink:href="mongo.configure;">php.ini Options</link>,
+     <classname>MongoInt32</classname>, <classname>MongoInt64</classname>.
+    </para>
+   </section>
+  </section>
+
+  <section>
+   <title>Strings</title>
+   <para>
+    Strings must be UTF-8. Non-UTF-8 strings must either be converted to UTF-8
+    before being sent to the database or saved as binary data.
+   </para>
+   <para>
+    Regular expressions can be used to match strings, and are expressed using the
+    <classname>MongoRegex</classname> class.
+   </para>
+  </section>
+
+  <section>
+   <title>Binary Data</title>
+   <para>
+    Non-UTF-8 strings, images, and any other binary data should be sent to the
+    database using the <classname>MongoBinData</classname> type.
+   </para>
+  </section>
+
+  <section>
+   <title>Dates</title>
+   <para>
+    Dates can be created using the <classname>MongoDate</classname> class.  They
+    are stored as milliseconds since the epoch.
+   </para>
+   <para>
+    <classname>MongoTimestamp</classname> is not for saving dates or timestamps,
+    it is used internally by MongoDB.  Unless you are creating a tool that
+    interacts with the internals of replication or sharding, you should use
+    <classname>MongoDate</classname>, <emphasis>not</emphasis>
+    <classname>MongoTimestamp</classname>.
+   </para>
+  </section>
+
+  <section>
+   <title>Unique Ids</title>
+   <para>
+    The driver will automatically create an <literal>_id</literal> field before
+    inserting a document (unless one is specified by the user).  This field is an
+    instance of <classname>MongoId</classname> (called "ObjectId" in most other
+    languages).
+   </para>
+   <para>
+    These ids are 12 bytes long and composed of:
+    <itemizedlist>
+     <listitem>
+      <para>4 bytes of timestamp</para>
+      <para>
+       No two records can have the same id if they were inserted at different
+       times.
+      </para>
+     </listitem>
+     <listitem>
+      <para>3 bytes machine id</para>
+      <para>
+       No two records can have the same id if they were inserted on different
+       machines
+      </para>
+     </listitem>
+     <listitem>
+      <para>2 bytes thread id</para>
+      <para>
+       No two records can have the same id if they were inserted by different
+       threads running on the same machine.
+      </para>
+     </listitem>
+     <listitem>
+      <para>3 bytes incrementing value</para>
+      <para>
+       Each time an id is created, a global counter is incremented and used
+       as the increment value of the next id.
+      </para>
+     </listitem>
+    </itemizedlist>
+    Thus, no two records can have the same id unless a single process on a
+    single machine managed to insert 256^3 (over 16 million) documents in
+    one second, overflowing the increment field.
+   </para>
+  </section>
+
+  <section>
+   <title>JavaScript</title>
+   <para>
+    MongoDB comes with a JavaScript engine, so you can embed JavaScript in
+    queries (using a $where clause), send it directly to the database to be
+    executed, and use it to perform aggregations.
+   </para>
+   <para>
+    For security, use <classname>MongoCode</classname>'s <literal>scope</literal>
+    field to use PHP variables in JavaScript.  Code that does not require
+    external values can either use <classname>MongoCode</classname> or just be
+    a string.  See the
+    <link xlink:href="mongo.security;">section on security</link> for more
+    information about sending JavaScript to the database.
+   </para>
   </section>
 
   <section>
@@ -106,7 +195,7 @@
    </para>
 
    <programlisting role="php">
-    <![CDATA[
+<![CDATA[
 <?php
 
 // $scores will be saved as an array
@@ -124,7 +213,7 @@ $collection->insert(array("scores" => $scores));
    <para>
     If you query for these objects using the database shell, they will look like:
     <programlisting>
-     <![CDATA[
+<![CDATA[
 > db.students.find()
 { "_id" : ObjectId("4b06beada9ad6390dab17c43"), "scores" : [ 98, 100, 73, 85 ] }
 { "_id" : ObjectId("4b06bebea9ad6390dab17c44"), "scores" : { "quiz1" : 98, "midterm" : 100, "quiz2" : 73, "final" : 85 } }
@@ -133,11 +222,11 @@ $collection->insert(array("scores" => $scores));
    </para>
 
    <para>
-    The database can also save arbitrary PHP objects (although they will be 
+    The database can also save arbitrary PHP objects (although they will be
     returned as associative arrays).  The fields are used for the key/value
     pairs.  For example, a blog post might look like:
     <programlisting role="php">
-     <![CDATA[
+<![CDATA[
 <?php
 
   // the blog post class
@@ -165,7 +254,7 @@ $post1 = new Post("Adam", "This is a blog post");
 $blog->insert($post1);
 
 
-// there is nothing restricting the type of the "author" field, so we can make 
+// there is nothing restricting the type of the "author" field, so we can make
 // it a nested object
 $author = array("name" => "Fred", "karma" => 42);
 $post2 = new Post($author, "This is another blog post.");
@@ -192,7 +281,7 @@ $blog->insert($post2);
    </para>
 
    <para>
-    The driver will not detect reference loops in arrays and objects.  For 
+    The driver will not detect reference loops in arrays and objects.  For
     example, this will give a fatal error:
     <programlisting role="php">
 <![CDATA[
@@ -214,151 +303,12 @@ Fatal error: Nesting level too deep - recursive dependency?
     to check for it yourself before passing it to the driver.
    </para>
   </section>
-
-  <section>
-   <title>MongoDB Types</title>
-
-   <para>
-    The Mongo PHP driver also defines a few new types to use with the database.
-    See class documentation for details and examples.
-   </para>
-   <para>
-    <informaltable>
-     <tgroup cols="3">
-      <thead>
-       <row>
-        <entry>Type</entry>
-        <entry>Description</entry>
-        <entry>Size in MongoDB (bytes)</entry>
-       </row>
-      </thead>
-      <tbody>
-       <row>
-        <entry><classname>MongoBinData</classname></entry>
-        <entry>Binary data.</entry>
-        <entry>Number of bytes in binary data + 5</entry>
-       </row>
-       <row>
-        <entry><classname>MongoCode</classname></entry>
-        <entry>JavaScript code.</entry>
-        <entry>String length of code + object size of scope.</entry>
-       </row>
-       <row>
-        <entry><classname>MongoDate</classname></entry>
-        <entry>Dates and times.  Stored as milliseconds since the epoch.</entry>
-        <entry>8</entry>
-       </row>
-       <row>
-        <entry><classname>MongoId</classname></entry>
-        <entry>Unique document id:
-         <itemizedlist>
-          <listitem>
-           <para>4 bytes of timestamp</para>
-           <para>
-            No two records can have the same id if they were inserted at different 
-            times.
-           </para>
-          </listitem>
-          <listitem>
-           <para>3 bytes machine id</para>
-           <para>
-            No two records can have the same id if they were inserted on different 
-            machines
-           </para>
-          </listitem>
-          <listitem>
-           <para>2 bytes thread id</para>
-           <para>
-            No two records can have the same id if they were inserted by different 
-            threads running on the same machine.
-           </para>
-          </listitem>
-          <listitem>
-           <para>3 bytes incrementing value</para>
-           <para>
-            Each time an id is created, a global counter is incremented and used
-            as the increment value of the next id.  
-           </para>
-          </listitem>
-         </itemizedlist>
-         Thus, no two records can have the same id unless a single process on a
-         single machine managed to insert 256^3 (over 16 million) documents in
-         one second, overflowing the increment field.
-        </entry>
-        <entry>12</entry>
-       </row>
-       <row>
-        <entry><classname>MongoMinKey</classname></entry>
-        <entry>Always smaller than any other value.</entry>
-        <entry>String length of code + object size of scope.</entry>
-       </row>
-       <row>
-        <entry><classname>MongoMaxKey</classname></entry>
-        <entry>JavaScript code.</entry>
-        <entry>Always larger than any other value.</entry>
-       </row>
-       <row>
-        <entry><classname>MongoRegex</classname></entry>
-        <entry>Regular expressions.</entry>
-        <entry>
-         Number of characters in regular expression + number of flags
-        </entry>
-       </row>
-       <row>
-        <entry><classname>MongoTimestamp</classname></entry>
-        <entry>Replication timestamp</entry>
-        <entry>8</entry>
-       </row>
-      </tbody>
-     </tgroup>
-    </informaltable>
-   </para>
-  </section>
-
-  <section>
-   <title>BSON</title>
-   <para>
-    MongoDB uses a storage format called "BSON," Binary Serializable Object 
-    Notation, which is similar to JSON but more compact and rich in types. Listed
-    below is the exact byte size of each type (or information required to compute 
-    its size, in the case of variable-length types).  Keep in mind that these
-    sizes do not include field names. The size of an object can be manually
-    computed, but it may be easier for programmers to call the 
-    <function>bson_encode</function> function and take the length of the resulting
-    string.
-   </para>
-   <para>
-    An example of manually computing BSON size for saving the object 
-    array("x" => null, "y" => 40):
-    <programlisting>
-     <![CDATA[
-4 bytes (object size)
-
-1 byte  (type of "x" field)
-2 bytes ("x" and "\0")
-0 bytes (for null)
-
-1 byte  (type of "y" field)
-2 bytes ("y" and "\0")
-4 bytes (for an integer)
-
-1 byte  (end-of-object byte)
------------------------
-15 bytes
-]]>
-    </programlisting>
-   </para>
-  </section>
-
  </partintro>
-
  &reference.mongo.mongoid;
  &reference.mongo.mongocode;
  &reference.mongo.mongodate;
  &reference.mongo.mongoregex;
  &reference.mongo.mongobindata;
- &reference.mongo.mongoint32;
- &reference.mongo.mongoint64;
  &reference.mongo.mongodbref;
  &reference.mongo.mongominkey;
  &reference.mongo.mongomaxkey;
