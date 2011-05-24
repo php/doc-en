@@ -41,7 +41,7 @@ foreach($chms as $line) {
 
 $errors = err();
 if ($errors) {
-    mail("phpdoc@lists.php.net", "Errors copying CHM files", var_export($errors), "From: phpdoc@lists.php.net\r\n", "-fnoreply@php.net");
+    mail("phpdoc@lists.php.net", "Errors copying CHM files", var_export($errors, true), "From: phpdoc@lists.php.net\r\n", "-fnoreply@php.net");
     return 2;
 }
 
