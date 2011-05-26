@@ -115,9 +115,9 @@
 	/**
 	 * We may want to try build a single language
 	 */
-	if($argc >= 2 && in_array($argv[1], $languages))
+	if($argc >= 2 && in_array($argv[1], array_keys($ACTIVE_ONLINE_LANGUAGES)))
 	{
-		$languages = Array($argv[1]);
+		$ACTIVE_ONLINE_LANGUAGES = Array($argv[1] => $ACTIVE_ONLINE_LANGUAGES[$argv[1]]);
 	}
 
 	/**
