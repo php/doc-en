@@ -43,27 +43,47 @@
 	define('PATH_CHM', 	'C:\\doc-all\\chmfiles');
 	define('PATH_LOG', 	'C:\\doc-all\\chmfiles\\logs');
 	define('PATH_DOC', 	'C:\\doc-all');
+	define('PATH_WGET',	'C:\\php\\win32build\\bin\\wget.exe');
 
 	define('EXTENDED',	true);
 	define('DEBUG',		true);
 	define('PHD_BETA',	true);
 
 	/**
-	 * Languages to build
+	 * Fallback to a set of known languages in the event of a failure to retrieve online list.
 	 */
-	$languages = Array(
-				'en', 		/* English */
-				'de', 		/* German */
-				'es', 		/* Spanish */
-				'fa', 		/* Persian */
-				'fr', 		/* French */
-				'ja', 		/* Japanese */
-				'pl', 		/* Polish */
-				'pt_BR',	/* Brazilian Portuguese */
-				'ro',		/* Romanian */
-				'tr', 		/* Turkish */
-				'zh'		/* Chinese (Simplified) */
+	$ACTIVE_ONLINE_LANGUAGES = Array(
+				'en'    => 'English',
+				'de'    => 'German',
+				'es'    => 'Spanish',
+				'fa'    => 'Persian',
+				'fr'    => 'French',
+				'ja'    => 'Japanese',
+				'pl'    => 'Polish',
+				'pt_BR' => 'Brazilian Portuguese',
+				'ro'    => 'Romanian',
+				'tr'    => 'Turkish',
+				'zh'    => 'Chinese (Simplified)',
 				);
+	/**
+	 * The languages to build are retrieved from https://svn.php.net/repository/web/php/trunk/include/languages.inc
+	 */
+	if (file_exists('./languages.inc'))
+	{
+		unlink('./languages.inc');
+	}
+	execute_task('Get list of online languages', PATH_WGET, '--debug --verbose --no-check-certificate https://svn.php.net/repository/web/php/trunk/include/languages.inc --output-document=' . __DIR__ . '\\languages.inc', 'wget_langs');
+	if (file_exists('./languages.inc'))
+	{
+		include_once './languages.inc';
+	}
+
+	/**
+	 * Always build English first.
+	 */
+	unset($ACTIVE_ONLINE_LANGUAGES['en']);
+	ksort($ACTIVE_ONLINE_LANGUAGES);
+	$ACTIVE_ONLINE_LANGUAGES = array('en' => 'English') + $ACTIVE_ONLINE_LANGUAGES;
 
 	/**
 	 * Get the current working directory
@@ -108,21 +128,21 @@
 	/**
 	 * Start iterating over each translation
 	 */
-	foreach($languages as $lang)
+	foreach($ACTIVE_ONLINE_LANGUAGES as $lang_code => $language)
 	{
-		echo(date('r') . ' Processing language \'' . $lang . '\':' . PHP_EOL);
+		echo(date('r') . ' Processing language ' . $language . ' \'' . $lang_code . '\':' . PHP_EOL);
 
 		/**
 		 * Update that specific language folder in SVN
 		 */
-		chdir(PATH_DOC . '\\' . $lang . '\\');
-		execute_task('- SVN', PATH_SVN, 'up', 'svn_' . $lang);
+		chdir(PATH_DOC . '\\' . $lang_code . '\\');
+		execute_task('- SVN', PATH_SVN, 'up', 'svn_' . $lang_code);
 		chdir($cwd);
 
 		/**
 		 * Generate .manual.xml
 		 */
-		execute_task('- Configure', PATH_PHP, PATH_DOC . '\doc-base\configure.php --disable-libxml-check --disable-segfault-speed --with-php="' . PATH_PHP . '" --with-lang=' . $lang . ' --enable-chm', 'configure_' . $lang);
+		execute_task('- Configure', PATH_PHP, PATH_DOC . '\doc-base\configure.php --disable-libxml-check --disable-segfault-speed --with-php="' . PATH_PHP . '" --with-lang=' . $lang_code . ' --enable-chm', 'configure_' . $lang_code);
 
 		if(!is_file(PATH_DOC . '\\doc-base\\.manual.xml'))
 		{
@@ -136,9 +156,9 @@
 		 */
 		$enhanced = (EXTENDED) ? '-f enhancedchm' : '';
 
-		execute_task('- PhD', PATH_PHD, '-d "' . PATH_DOC . '\\doc-base\\.manual.xml' . '" -P PHP -f chm ' . $enhanced . ' -o "' . PATH_DOC . '\\tmp\\' . $lang . '" --lang=' . $lang, 'phd_' . $lang);
+		execute_task('- PhD', PATH_PHD, '-d "' . PATH_DOC . '\\doc-base\\.manual.xml' . '" -P PHP -f chm ' . $enhanced . ' -o "' . PATH_DOC . '\\tmp\\' . $lang_code . '" --lang=' . $lang_code, 'phd_' . $lang_code);
 
-		if(!is_file(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.hhp'))
+		if(!is_file(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\php_manual_' . $lang_code . '.hhp'))
 		{
 			echo(date('r') . ' - Build error: PhD failed' . PHP_EOL);
 
@@ -148,9 +168,9 @@
 		/**
 		 * Run the HTML Help Compiler to generate the actual CHM file
 		 */
-		execute_task('- HHC', PATH_HHC, '"' . PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.hhp"', 'hhc_' . $lang);
+		execute_task('- HHC', PATH_HHC, '"' . PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\php_manual_' . $lang_code . '.hhp"', 'hhc_' . $lang_code);
 
-		if(!is_file(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.chm'))
+		if(!is_file(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\php_manual_' . $lang_code . '.chm'))
 		{
 			echo(date('r') . ' - Build error: HHC failed' . PHP_EOL);
 
@@ -160,7 +180,7 @@
 		/**
 		 * Anything smaller than ~5MB is broken. Common broken sizes are 2MB and 15K. Common good size are 10-12MB.
 		 */
-		if(filesize(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.chm') < 5000000)
+		if(filesize(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\php_manual_' . $lang_code . '.chm') < 5000000)
 		{
 			echo(date('r') . ' - Build error: CHM file too small, something went wrong' . PHP_EOL);
 			
@@ -170,7 +190,7 @@
 		/**
 		 * Copy the CHM file into the archive
 		 */
-		if(!copy(PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\php_manual_' . $lang . '.chm', $s_CHMFilename = PATH_DOC . '\\chmfiles\\php_manual_' . $lang . '.chm'))
+		if(!copy(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\php_manual_' . $lang_code . '.chm', $s_CHMFilename = PATH_DOC . '\\chmfiles\\php_manual_' . $lang_code . '.chm'))
 		{
 			echo(date('r') . ' - Build error: Unable to copy CHM file into archive folder');
 
@@ -179,7 +199,7 @@
 			/**
 			 * Add to history
 			 */
-			$build_history[] = array('php_manual_' . $lang . '.chm', md5_file($s_CHMFilename), filemtime($s_CHMFilename));
+			$build_history[] = array('php_manual_' . $lang_code . '.chm', md5_file($s_CHMFilename), filemtime($s_CHMFilename));
 		}
 
 		/**
@@ -190,9 +210,9 @@
 			/**
 			 * Run the HTML Help Compiler to generate the actual CHM file
 			 */
-			execute_task('- [Enhanced] HHC', PATH_HHC, '"' . PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.hhp"', 'hhc_enhanced_' . $lang);
+			execute_task('- [Enhanced] HHC', PATH_HHC, '"' . PATH_DOC . '\\tmp\\' . $lang_code . '\\php-enhancedchm\\php_manual_' . $lang_code . '.hhp"', 'hhc_enhanced_' . $lang_code);
 
-			if(!is_file(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.chm'))
+			if(!is_file(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-enhancedchm\\php_manual_' . $lang_code . '.chm'))
 			{
 				echo(date('r') . ' - Build error: Enhanced: HHC failed' . PHP_EOL);
 
@@ -202,7 +222,7 @@
 			/**
 			 * Anything smaller than ~5MB is broken. Common broken sizes are 2MB and 15K. Common good size are 10-12MB.
 			 */
-			if(filesize(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.chm') < 5000000)
+			if(filesize(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-enhancedchm\\php_manual_' . $lang_code . '.chm') < 5000000)
 			{
 				echo(date('r') . ' - Build error: Enhanced: CHM file too small, something went wrong' . PHP_EOL);
 			
@@ -212,7 +232,7 @@
 			/**
 			 * Copy the CHM file into the archive
 			 */
-			if(!copy(PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\php_manual_' . $lang . '.chm', $s_CHMFilename = PATH_DOC . '\\chmfiles\\php_enhanced_' . $lang . '.chm'))
+			if(!copy(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-enhancedchm\\php_manual_' . $lang_code . '.chm', $s_CHMFilename = PATH_DOC . '\\chmfiles\\php_enhanced_' . $lang_code . '.chm'))
 			{
 				echo(date('r') . ' - Build error: Enhanced: Unable to copy CHM file into archive folder');
 
@@ -221,7 +241,7 @@
 				/**
 				 * Add to history
 				 */
-				$build_history[] = array('php_enhanced_' . $lang . '.chm', md5_file($s_CHMFilename), filemtime($s_CHMFilename));
+				$build_history[] = array('php_enhanced_' . $lang_code . '.chm', md5_file($s_CHMFilename), filemtime($s_CHMFilename));
 			}
 		}
 
@@ -236,11 +256,11 @@
 
 			if(!DEBUG)
 			{
-				glob_recursive_apply('fsdelete', PATH_DOC . '\\tmp\\' . $lang . '\\php-chm\\');
+				glob_recursive_apply('fsdelete', PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\');
 
 				if(!EXTENDED)
 				{
-					glob_recursive_apply('fsdelete', PATH_DOC . '\\tmp\\' . $lang . '\\php-enhancedchm\\');
+					glob_recursive_apply('fsdelete', PATH_DOC . '\\tmp\\' . $lang_code . '\\php-enhancedchm\\');
 				}
 			}
 		}
