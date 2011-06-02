@@ -140,11 +140,11 @@
 		chdir($cwd);
 
 		/**
-		 * Generate .manual.xml
+		 * Generate .manual-lang.xml
 		 */
-		execute_task('- Configure', PATH_PHP, PATH_DOC . '\doc-base\configure.php --disable-libxml-check --disable-segfault-speed --with-php="' . PATH_PHP . '" --with-lang=' . $lang_code . ' --enable-chm', 'configure_' . $lang_code);
+		execute_task('- Configure', PATH_PHP, PATH_DOC . '\doc-base\configure.php --disable-libxml-check --disable-segfault-speed --with-php="' . PATH_PHP . '" --with-lang=' . $lang_code . ' --enable-chm --output=.manual-' . $lang_code . '.xml', 'configure_' . $lang_code);
 
-		if(!is_file(PATH_DOC . '\\doc-base\\.manual.xml'))
+		if(!is_file(PATH_DOC . '\\doc-base\\.manual-' . $lang_code . '.xml'))
 		{
 			echo(date('r') . ' - Build error: configure failed' . PHP_EOL);
 
@@ -156,7 +156,7 @@
 		 */
 		$enhanced = (EXTENDED) ? '-f enhancedchm' : '';
 
-		execute_task('- PhD', PATH_PHD, '-d "' . PATH_DOC . '\\doc-base\\.manual.xml' . '" -P PHP -f chm ' . $enhanced . ' -o "' . PATH_DOC . '\\tmp\\' . $lang_code . '" --lang=' . $lang_code, 'phd_' . $lang_code);
+		execute_task('- PhD', PATH_PHD, '-d "' . PATH_DOC . '\\doc-base\\.manual-' . $lang_code . '.xml' . '" -P PHP -f chm ' . $enhanced . ' -o "' . PATH_DOC . '\\tmp\\' . $lang_code . '" --lang=' . $lang_code, 'phd_' . $lang_code);
 
 		if(!is_file(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\php_manual_' . $lang_code . '.hhp'))
 		{
@@ -252,7 +252,7 @@
 		{
 			echo(date('r') . ' - Clean up' . PHP_EOL);
 
-			unlink(PATH_DOC . '\\doc-base\\.manual.xml');
+			unlink(PATH_DOC . '\\doc-base\\.manual-' . $lang_code . '.xml');
 
 			if(!DEBUG)
 			{
