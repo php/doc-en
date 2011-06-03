@@ -56,9 +56,9 @@ foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($phpdoc_pa
 	}
 }
 
-echo 'List of undocumented functions/methods', PHP_EOL;
+echo 'List of underdocumented functions/methods', PHP_EOL;
 print_r($undocumented);
-echo "Number undocumented: ", $count, PHP_EOL;
+echo "Number underdocumented: ", $count, PHP_EOL;
 
 function usage() {
 	echo PHP_EOL, 'USAGE:', PHP_EOL;
