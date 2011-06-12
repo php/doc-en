@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 299459 $ -->
+
+<refentry xml:id="snmp.walk" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <refnamediv>
+  <refname>SNMP::walk</refname>
+  <refpurpose>Fetch <acronym>SNMP</acronym> object subtree</refpurpose>
+ </refnamediv>
+
+ <refsect1 role="description">
+  &reftitle.description;
+
+  <methodsynopsis role="oop">
+   <type>array</type><methodname>SNMP::walk</methodname>
+   <methodparam><type>string</type><parameter>object_id</parameter></methodparam>
+   <methodparam choice="opt"><type>bool</type><parameter>suffix_as_key</parameter><initializer>&false;</initializer></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>non_repeaters</parameter></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>max_repetitions</parameter></methodparam>
+  </methodsynopsis>
+  <para>
+   <methodname>SNMP::walk</methodname> is used to read <acronym>SNMP</acronym> subtree rooted at specified <parameter>object_id</parameter>.
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <variablelist>
+   <varlistentry>
+    <term><parameter>object_id</parameter></term>
+    <listitem>
+     <para>
+      Root of subtree to be fetched
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>suffix_as_key</parameter></term>
+    <listitem>
+     <para>
+      By default full OID notation is used for keys in output array.
+      If set to &true; subtree prefix will be removed from keys leaving only suffix of object_id.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>non_repeaters</parameter></term>
+    <listitem>
+     <para>
+      This specifies the number of supplied variables that should not be iterated over.
+      The default is to use this value from <acronym>SNMP</acronym> object.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>max_repetitions</parameter></term>
+    <listitem>
+     <para>
+       This specifies the maximum number of iterations over the repeating variables.
+       The default is to use this value from <acronym>SNMP</acronym> object.
+     </para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   Returns an associative array of the <acronym>SNMP</acronym> object ids and their values on success or &false; on error.
+   When a <acronym>SNMP</acronym> error occures <methodname>SNMP::get_errno</methodname> and
+   <methodname>SNMP::get_error</methodname> can be used for retrieving error
+   number (specific to SNMP extension, see class constants) and error message
+   respectively.
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example xml:id="snmp.walk.example.basic">
+   <title><methodname>SNMP::walk</methodname> example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+  $session = new SNMP(SNMP_VERSION_1, "127.0.0.1", "public");
+  $fulltree = $session->walk(".");
+  print_r($fulltree);
+  $session->close();
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+Array
+(
+    [SNMPv2-MIB::sysDescr.0] => STRING: Test server
+    [SNMPv2-MIB::sysObjectID.0] => OID: NET-SNMP-MIB::netSnmpAgentOIDs.8
+    [DISMAN-EVENT-MIB::sysUpTimeInstance] => Timeticks: (1150681750) 133 days, 4:20:17.50
+    [SNMPv2-MIB::sysContact.0] => STRING: Nobody
+    [SNMPv2-MIB::sysName.0] => STRING: server.localdomain
+    ...
+)
+]]>
+   </screen>
+  </example>
+  <example xml:id="snmp.walk.example.suffix_as_key">
+   <title><parameter>suffix_as_key</parameter> example</title>
+   <para>
+     <parameter>suffix_as_key</parameter> may be used when merging multiple <acronym>SNMP</acronym> subtrees into one.
+     This example maps interface names to their type.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+  $session = new SNMP(SNMP_VERSION_1, "127.0.0.1", "public");
+  $session->valueretrieval = SNMP_VALUE_PLAIN;
+  $ifDescr = $session->walk(".1.3.6.1.2.1.2.2.1.2", TRUE);
+  $session->valueretrieval = SNMP_VALUE_LIBRARY;
+  $ifType = $session->walk(".1.3.6.1.2.1.2.2.1.3", TRUE);
+  print_r($ifDescr);
+  print_r($ifType);
+  $result = array();
+  foreach($ifDescr as $i => $n) {
+    $result[$n] = $ifType[$i];
+  }
+  print_r($result);
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+Array
+(
+    [1] => igb0
+    [2] => igb1
+    [3] => ipfw0
+    [4] => lo0
+    [5] => lagg0
+)
+Array
+(
+    [1] => INTEGER: ieee8023adLag(161)
+    [2] => INTEGER: ieee8023adLag(161)
+    [3] => INTEGER: ethernetCsmacd(6)
+    [4] => INTEGER: softwareLoopback(24)
+    [5] => INTEGER: ethernetCsmacd(6)
+)
+Array
+(
+    [igb0] => INTEGER: ieee8023adLag(161)
+    [igb1] => INTEGER: ieee8023adLag(161)
+    [ipfw0] => INTEGER: ethernetCsmacd(6)
+    [lo0] => INTEGER: softwareLoopback(24)
+    [lagg0] => INTEGER: ethernetCsmacd(6)
+)
+]]>
+   </screen>
+  </example>
+ </refsect1>
+
+ <refsect1 role="notes">
+  &reftitle.notes;
+  <caution>
+   <para>
+    There are some functions and methods that are responsible for both OID
+    and values output format globally or session-wise. See references in
+    seealso section.
+   </para>
+  </caution>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <simplelist>
+   <member><methodname>SNMP::get_errno</methodname></member>
+   <member><methodname>SNMP::get_error</methodname></member>
+  </simplelist>
+ </refsect1>
+
+</refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
