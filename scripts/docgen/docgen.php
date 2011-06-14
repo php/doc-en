@@ -162,7 +162,7 @@ function format_id($name) { /* {{{ */
 function format_filename($name) { /* {{{ */
         $name = strtolower(trim($name));
         $name = ltrim($name, '_');
-        $name = str_replace('_', '-', $name);
+        $name = str_replace(array('_', '\\'), array('-', '.'), $name);
         return $name;
 }
 /* }}} */
