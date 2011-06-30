@@ -5,8 +5,8 @@
  <title>Connecting</title>
 
  <para>
-  Connecting to MongoDB can be as easy as <literal>new Mongo</literal>, but 
-  there are many additional options and configurations. The 
+  Connecting to MongoDB can be as easy as <literal>new Mongo</literal>, but
+  there are many additional options and configurations. The
   <function>Mongo::__construct</function> page covers all of the API options,
   but this page gives some more details and advice for practical use cases.
  </para>
@@ -14,9 +14,27 @@
  <section>
   <title>Logging In on Connection</title>
   <para>
-   If MongoDB is started with the <literal>--auth</literal> option, connections
-   must be authenticated before they are used.  You can do this on a 
-   per-database level with <function>MongoDB::authenticate</function>:
+   If MongoDB is started with the <literal>--auth</literal> or
+   <literal>--keyFile</literal> options, you must log in before you can do any
+   operations with the driver.  You can log in on connection by supplying the
+   username and password in the connection URI:
+  </para>
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+$m = new Mongo("mongodb://${username}:${password}@localhost");
+
+?>
+]]>
+  </programlisting>
+  <para>
+   If your connection is dropped, the driver will automatically attempt to
+   reconnect and reauthenticate you.
+  </para>
+  <para>
+   You can also authenticate on a per-database level with
+   <function>MongoDB::authenticate</function>:
   </para>
   <programlisting role="php">
 <![CDATA[
@@ -35,27 +53,10 @@ $db->authenticate($username, $password);
    dropped and then reconnected, the connection will no longer be authenticated.
   </para>
   <para>
-   If you use the connection string format described by 
-   <function>Mongo::__construct</function>, the database will authenticate on
-   connection and reauthenticate if the connection is re-established.
-  </para>
-  <para>
-   This is equivalent to the code above, except that reconnections to the 
-   database will be authenticated automatically:
-  </para>
-  <programlisting role="php">
-<![CDATA[
-<?php
-
-$m = new Mongo("mongodb://${username}:${password}@localhost");
-
-?>
-]]>
-  </programlisting>
-  <para>
-   By default, the driver will authenticate the user against the admin database.
-   To authenticate with a different database, specify the database name after 
-   the hosts.  This example will log the user into the "blog" database:
+   If you use the URI format, the driver will authenticate the user against the
+   admin database. To authenticate with a different database, specify the
+   database name after the hosts.  This example will log the user into the
+   "blog" database:
   </para>
   <programlisting role="php">
 <![CDATA[
@@ -78,107 +79,38 @@ $m = new Mongo("mongodb://${username}:${password}@localhost/blog");
 <![CDATA[
 <?php
 
-$m = new Mongo("mongodb://localhost:27017", array("replicaSet" => true));
+$m = new Mongo("mongodb://localhost:27017", array("replicaSet" => "myReplSetName"));
 
 ?>
 ]]>
   </programlisting>
   <para>
-   Version 1.0.9+ of the driver is required to connect to a replica set 
-   (earlier versions of the driver will not autodetect the master or reconnect 
+   Version 1.0.9+ of the driver is required to connect to a replica set
+   (earlier versions of the driver will not autodetect the master or reconnect
    correctly).
   </para>
   <para>
    The PHP driver will query the database server(s) listed to figure out who is
-   master.  So long as it can connect to at least one host listed and find a 
+   master.  So long as it can connect to at least one host listed and find a
    master, the connection will succeed.  If it cannot make a connection to any
-   servers listed or cannot find a master, a 
+   servers listed or cannot find a master, a
    <classname>MongoConnectionException</classname> will be thrown.
   </para>
   <para>
-   If the master becomes unavailable, the slaves will not promote a new master 
-   for a few seconds.  During that time, this connection will not be able to 
+   If the master becomes unavailable, the slaves will not promote a new master
+   for a few seconds.  During that time, this connection will not be able to
    perform any database operations (connections to slaves will still be able to
    perform reads).  Thus, if you attempt to do any sort of read or write on this
    connection, it will throw an exception.
   </para>
   <para>
-   Once a master is elected, attempting to perform a read or write will allow 
-   the driver to detect the new master. The driver will make this its primary 
+   Once a master is elected, attempting to perform a read or write will allow
+   the driver to detect the new master. The driver will make this its primary
    database connection and continue operating normally.
   </para>
   <para>
-   For more information on replica sets, see the 
+   For more information on replica sets, see the
    <link xlink:href="&url.mongodb.replica;">core documentation</link>.
-  </para>
- </section>
-
- <section>
-  <title>Persistent Connections</title>
-
-  <para>
-   Creating new connection to the database is very slow.  To minimize the number
-   of connections that you need to make, you can use persistent connections.  A 
-   persistent connection is saved by PHP, so you can use the same connection for
-   multiple requests.
-  </para>
-
-  <para>
-   For example, this simple program connects to the database 1000 times:
-  </para>
-
-  <programlisting role="php">
-<![CDATA[
-<?php
-
-for ($i=0; $i<1000; $i++) {
-  $m = new Mongo();
-}
-
-?>
-]]>
-  </programlisting>
-
-  <para>
-   It takes approximately 18 seconds to execute.  If we change it to use a 
-   persistent connection:
-  </para>
-
-  <programlisting role="php">
-<![CDATA[
-<?php
-
-for ($i=0; $i<1000; $i++) {
-  $m = new Mongo("localhost:27017", array("persist" => "x"));
-}
-
-?>
-]]>
-  </programlisting>
-
-  <para>
-   ...it takes less than .02 seconds to execute, as it only makes one database
-   connection.
-  </para>
-
-  <para>
-   Persistent connections need an identifier string (which is "x" in the above
-   example) to uniquely identify them.  For a persistent connection to be used,
-   the hostname, port, persist string, and username and password (if given) must
-   match an existing persistent connection.  Otherwise, a new connection will be
-   created with this identifying information.
-  </para>
-  <para>
-   Persistent connections are <emphasis>highly recommended</emphasis> and should
-   always be used in production unless there is a compelling reason not to.  
-   Most of the reasons that they are not recommended for relational databases 
-   are irrelevant to MongoDB.
-  </para>
-  <para>
-   Persistent connections will become the default connection type in 1.0.12. To
-   create a non-persistent connection, you will need to pass 
-   <literal>"persist" =&gt; false</literal> to 
-   <function>Mongo::__construct</function>.
   </para>
  </section>
 
@@ -186,13 +118,13 @@ for ($i=0; $i<1000; $i++) {
   <title>Domain Socket Support</title>
 
   <para>
-   If you are running MongoDB locally and have version 1.0.9 or better of the 
+   If you are running MongoDB locally and have version 1.0.9 or better of the
    driver, you can connect to the database via file.  MongoDB automatically
    opens a socket file on startup: /tmp/mongodb-&lt;port&gt;.sock.
   </para>
 
   <para>
-   To connect to the socket file, specify the path in your MongoDB connection 
+   To connect to the socket file, specify the path in your MongoDB connection
    string:
   </para>
 
@@ -222,6 +154,95 @@ $m = new Mongo("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
 ]]>
   </programlisting>
 
+ </section>
+
+ <section>
+  <title>Connection Pooling</title>
+  <para>
+   In version 1.2.0+, the driver will automatically manage connection pools for
+   the user.
+  </para>
+  <para>
+   When a user creates a new instance of <classname>Mongo</classname>, all
+   necessary connections will be taken from their pools (replica set connections
+   may require multple connections). When the <classname>Mongo</classname>
+   instance goes out of scope, the connections will be returned to the pool.
+  </para>
+ </section>
+
+ <section>
+  <title>Persistent Connections</title>
+  <note>
+   <para>
+    This section is not relevant for 1.2.0+. In 1.2.0+, connections are always
+    persistent and managed automatically by the driver.
+   </para>
+  </note>
+
+  <para>
+   Creating new connection to the database is very slow.  To minimize the number
+   of connections that you need to make, you can use persistent connections.  A
+   persistent connection is saved by PHP, so you can use the same connection for
+   multiple requests.
+  </para>
+
+  <para>
+   For example, this simple program connects to the database 1000 times:
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+for ($i=0; $i<1000; $i++) {
+  $m = new Mongo();
+}
+
+?>
+]]>
+  </programlisting>
+
+  <para>
+   It takes approximately 18 seconds to execute.  If we change it to use a
+   persistent connection:
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+for ($i=0; $i<1000; $i++) {
+  $m = new Mongo("localhost:27017", array("persist" => "x"));
+}
+
+?>
+]]>
+  </programlisting>
+
+  <para>
+   ...it takes less than .02 seconds to execute, as it only makes one database
+   connection.
+  </para>
+
+  <para>
+   Persistent connections need an identifier string (which is "x" in the above
+   example) to uniquely identify them.  For a persistent connection to be used,
+   the hostname, port, persist string, and username and password (if given) must
+   match an existing persistent connection.  Otherwise, a new connection will be
+   created with this identifying information.
+  </para>
+  <para>
+   Persistent connections are <emphasis>highly recommended</emphasis> and should
+   always be used in production unless there is a compelling reason not to.
+   Most of the reasons that they are not recommended for relational databases
+   are irrelevant to MongoDB.
+  </para>
+  <para>
+   Persistent connections will become the default connection type in 1.0.12. To
+   create a non-persistent connection, you will need to pass
+   <literal>"persist" =&gt; false</literal> to
+   <function>Mongo::__construct</function>.
+  </para>
  </section>
 
 </section>

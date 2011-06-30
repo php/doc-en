@@ -11,7 +11,7 @@
    <para>
     If you are using a
     <link xlink:href="&url.mongodb.replica;">replica set</link> and version
-    1.1.0 or above of the driver, the driver can automatically route reads to 
+    1.1.0 or above of the driver, the driver can automatically route reads to
     slaves.  This behavior does not exist in earlier versions of the driver and
     <emphasis>cannot</emphasis> be used with "normal" master-slave.
    </para>
@@ -20,10 +20,10 @@
   <para>
    By default, the driver will send all queries to the master.  If you set the
    "slaveOkay" option, the driver will send all queries to a non-primary server,
-   if possible.  The "slaveOkay" option can be set at every "level": 
+   if possible.  The "slaveOkay" option can be set at every "level":
    <link linkend="mongo.setslaveokay">connection</link>,
-   <link linkend="mongodb.setslaveokay">database</link>, 
-   <link linkend="mongocollection.setslaveokay">collection</link>, and 
+   <link linkend="mongodb.setslaveokay">database</link>,
+   <link linkend="mongocollection.setslaveokay">collection</link>, and
    <link linkend="mongocursor.slaveokay">cursor</link>.  Each class inherits the
    "slaveOkay" setting from the class above it, so if you do:
   </para>
@@ -43,7 +43,7 @@ $cursor = $c->find();
 
   <para>
    then the query will be executed against a slave (the collection inherited
-   "slaveOkay" from the database and the cursor inherited it from the 
+   "slaveOkay" from the database and the cursor inherited it from the
    collection).
   </para>
 
@@ -51,21 +51,23 @@ $cursor = $c->find();
    <title>How slaves are chosen</title>
 
    <para>
-    Each instance of <classname>Mongo</classname> gets its own slave, randomly 
-    chosen from the readable slaves.  This holds, even if you are using 
-    persistent connections.  So, if we do something like:
+    Each instance of <classname>Mongo</classname> chooses its own slave using
+    the available slave with the lowest ping time.  So, if we had a PHP client
+    in Europe and one in Australia and we had one secondary in each of these
+    data centers, we could do:
    </para>
    <programlisting role="php">
 <![CDATA[
 <?php
 
-// connects to a replica set with members ip0, ip1, and ip2
-// ip0 is the primary, ip1 and ip2 are secondaries
-$m1 = new Mongo("mongodb://ip0", array("replicaSet" => true, "persist" => "x"));
+// P is the primary
+
+// on the Australian client
+$m1 = new Mongo("mongodb://P", array("replicaSet" => true));
 echo "m1's slave is ".$m1->getSlave()."\n";
 
-// uses the same connection as $m1
-$m2 = new Mongo("mongodb://ip0", array("replicaSet" => true, "persist" => "x"));
+// on the European client
+$m2 = new Mongo("mongodb://P", array("replicaSet" => true));
 echo "m2's slave is ".$m2->getSlave()."\n";
 
 ?>
@@ -75,23 +77,9 @@ echo "m2's slave is ".$m2->getSlave()."\n";
     we'd probably end up with something like:
    </para>
    <screen>
-m1's slave is: ip2
-m2's slave is: ip1
+m1's slave is: australianHost
+m2's slave is: europeanHost
    </screen>
-
-   <para>
-    If we continued to create new <classname>Mongo</classname>s, we should get a
-    fairly even distribution between ip1 and ip2.  Keep in mind that all 
-    secondaries listed by the <function>isMaster</function> command will be in
-    the pool of possible readers (even ones with priority 0 or slaveDelay set).
-    If you have certain servers you do not wish to read from, either route reads
-    manually or add the hidden option to the server's replica set configuration.
-   </para>
-
-   <para>
-    Slaves are chosen on a per-instance basis and do no change (unless something 
-    bad happens to your set and they are forced to).  
-   </para>
 
    <para>
     You can see what the driver thinks is the current status of the set members
@@ -99,56 +87,18 @@ m2's slave is: ip1
    </para>
 
    <para>
-    If no non-primary server is readable, the driver will send 
-    reads to the primary (even if "slaveOkay" is set).  A server is considered 
-    readable if its state is 2 (SECONDARY) and its health is 1.  You can check 
-    this with <function>Mongo::getHosts</function> (some fields omitted for 
-    clarity):
-   </para>
-   <programlisting>
-<![CDATA[
-Array
-(
-    [ubuntu:27017] => Array
-        (
-            [_id] => 0
-            [name] => ip0
-            [health] => 1
-            [state] => 1
-            [stateStr] => PRIMARY
-        )
-
-    [ubuntu:27019] => Array
-        (
-            [_id] => 2
-            [name] => ip1
-            [health] => 1
-            [state] => 2
-            [stateStr] => SECONDARY
-        )
-
-    [ubuntu:27018] => Array
-        (
-            [_id] => 1
-            [name] => ip2
-            [health] => 1
-            [state] => 2
-            [stateStr] => SECONDARY
-        )
-
-)
-]]>
-   </programlisting>
-   <para>
-    The set above has two readable servers, "ip1" and "ip2".  If both of 
-    these went down or became stale, reads would go to "ip0".
+    If no non-primary server is readable, the driver will send
+    reads to the primary (even if "slaveOkay" is set).  A server is considered
+    readable if its state is 2 (SECONDARY) and its health is 1.  You can check
+    this with <function>Mongo::getHosts</function>.
    </para>
 
    <para>
-    If you enjoy twiddling knobs that you probably shouldn't mess with, you can 
-    force the driver to use a different slave by calling 
-    <function>Mongo::switchSlave</function>.  This randomly chooses a new slave 
-    to use and shouldn't be used unless you know what you're doing.
+    If you enjoy twiddling knobs that you probably shouldn't mess with, you can
+    request the driver to use a different slave by calling
+    <function>Mongo::switchSlave</function>.  This may choose a new slave
+    (if one is available) and shouldn't be used unless you know what you're
+    doing.
    </para>
 
   </section>
@@ -156,19 +106,18 @@ Array
    <title>Random notes</title>
 
    <para>
-    Writes are always sent to the primary.  Database commands, even read-only 
+    Writes are always sent to the primary.  Database commands, even read-only
     commands, are also always sent to the primary.
    </para>
 
    <para>
-    The health and state of a slave is checked every 5 seconds or when the next 
-    operation occurs after 5 seconds.  It will also recheck the configuration 
-    when the driver has a problem reaching a server.  You can manually force the
-    driver to update the status by calling <function>Mongo::getHosts</function>.
+    The health and state of a slave is checked every 5 seconds or when the next
+    operation occurs after 5 seconds.  It will also recheck the configuration
+    when the driver has a problem reaching a server.
    </para>
-   
+
    <para>
-    Note that a non-primary server may be behind the primary in operations, so 
+    Note that a non-primary server may be behind the primary in operations, so
     your application must be okay with getting out-of-date data (or you must use
     w for all writes).
    </para>
@@ -202,10 +151,10 @@ $joe = $people->findOne(array("_id" => $person['_id']));
    </programlisting>
   </para>
   <para>
-   Unless the user has specified otherwise, the _id field is a 
-   <classname>MongoId</classname>.  The most common mistake is attepting to use 
-   a string to match a <classname>MongoId</classname>.  Keep in mind that these 
-   are two different datatypes, and will not match each other in the same way 
+   Unless the user has specified otherwise, the _id field is a
+   <classname>MongoId</classname>.  The most common mistake is attepting to use
+   a string to match a <classname>MongoId</classname>.  Keep in mind that these
+   are two different datatypes, and will not match each other in the same way
    that the string "array()" is not the same as an empty array.  For example:
 
    <programlisting role="php">
@@ -232,11 +181,11 @@ $joe = $people->findOne(array("_id" => $pid));
   <title>Arrays</title>
 
   <para>
-   Arrays are special in a couple ways.  First, there are two types that 
+   Arrays are special in a couple ways.  First, there are two types that
    MongoDB uses: "normal" arrays and associative arrays.  Associative arrays can
-   have any mix of key types and values.  "Normal" arrays are defined as arrays 
-   with ascending numeric indexes starting at 0 and increasing by one for each 
-   element.  These are, typically, just your usual PHP array.  
+   have any mix of key types and values.  "Normal" arrays are defined as arrays
+   with ascending numeric indexes starting at 0 and increasing by one for each
+   element.  These are, typically, just your usual PHP array.
   </para>
 
   <para>
@@ -255,8 +204,8 @@ $collection->save(array("awards" => array("gold", "silver", "bronze")));
   </programlisting>
 
   <para>
-   Queries can reach into arrays to search for elements.  Suppose that we wish 
-   to find all documents with an array element of a given value. For example, 
+   Queries can reach into arrays to search for elements.  Suppose that we wish
+   to find all documents with an array element of a given value. For example,
    documents with a "gold" award, such as:
   </para>
 
@@ -265,9 +214,9 @@ $collection->save(array("awards" => array("gold", "silver", "bronze")));
 { "_id" : ObjectId("4b06c282edb87a281e09dad9"), "awards" : ["gold", "silver", "bronze"]}
 ]]>
   </programlisting>
-  
+
   <para>
-   This can be done with a simple query, ignoring the fact that "awards" is an 
+   This can be done with a simple query, ignoring the fact that "awards" is an
    array:
   </para>
 
@@ -288,15 +237,15 @@ $collection->save(array("awards" => array("gold", "silver", "bronze")));
 
   <programlisting>
 <![CDATA[
-{ 
-     "_id" : ObjectId("4b06c282edb87a281e09dad9"), 
-     "awards" : 
+{
+     "_id" : ObjectId("4b06c282edb87a281e09dad9"),
+     "awards" :
      [
         {
             "first place" : "gold"
         },
         {
-            "second place" : "silver" 
+            "second place" : "silver"
         },
         {
             "third place" :  "bronze"
@@ -323,7 +272,7 @@ $cursor = $collection->find(array("awards.first place" => "gold"));
 
   <para>
    Notice that it doesn't matter that there is a space in the field name
-   (although it may be best not to use spaces, just to make things more 
+   (although it may be best not to use spaces, just to make things more
    readable).
   </para>
 
