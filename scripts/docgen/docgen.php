@@ -611,7 +611,7 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
     				$markup2 .= str_repeat(' ', $ident + 1) ."</listitem>". PHP_EOL;
    					$markup2 .= str_repeat(' ', $ident) ."</varlistentry>". PHP_EOL;
 				}
-				$markup .= "</tbody>";
+				$markup .= str_repeat(' ', $ident) ."</tbody>";
 
 				/* {INI_ENTRIES} */
 				$content = preg_replace('/\{INI_ENTRIES\}/', $markup, $content, 1);
