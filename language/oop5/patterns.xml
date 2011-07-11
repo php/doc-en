@@ -6,7 +6,7 @@
   Patterns are ways to describe best practices and good designs.
   They show a flexible solution to common programming problems.
  </para>
-
+ 
  <sect2 xml:id="language.oop5.patterns.factory">
   <title>Factory</title>
   <para>
@@ -55,85 +55,100 @@ $sqlite = Example::factory('SQLite');
    </programlisting>
   </example>
  </sect2>
-
+ 
  <sect2 xml:id="language.oop5.patterns.singleton">
   <title>Singleton</title>
   <para>
-   The Singleton pattern applies to situations in which
-   there needs to be a single instance of a class.
-   The most common example of this is a database connection.
-   Implementing this pattern allows a programmer to make this
-   single instance easily accessible by many other objects.
+   The Singleton ensures that there can be only one instance of a Class and provides a 
+   global access point to that instance. Singleton is a "Gang of Four" Creational Pattern.
   </para>
+  <para>The Singleton pattern is often implemented in Database Classes, Loggers, Front 
+   Controllers or Request and Response objects.
+  </para>
+  
   <example>
-   <title>Singleton Function</title>
-   <programlisting role="php">
-<![CDATA[
+   <title xml:id="language.oop5.patterns.singleton.examples.basic">Singleton example</title>
+   <programlisting role="php"><![CDATA[
 <?php
 class Example
 {
-    // Hold an instance of the class
     private static $instance;
-    
-    // A private constructor; prevents direct creation of object
-    private function __construct() 
+    private $count = 0;
+
+    private function __construct()
     {
-        echo 'I am constructed';
     }
 
-    // The singleton method
-    public static function singleton() 
+    public static function singleton()
     {
         if (!isset(self::$instance)) {
-            $c = __CLASS__;
-            self::$instance = new $c;
+            echo 'Creating new instance.';
+            $className = __CLASS__;
+            self::$instance = new $className;
         }
-
         return self::$instance;
     }
-    
-    // Example method
-    public function bark()
+
+    public function increment()
     {
-        echo 'Woof!';
+        return $this->count++;
     }
 
-    // Prevent users to clone the instance
     public function __clone()
     {
         trigger_error('Clone is not allowed.', E_USER_ERROR);
     }
 
+    public function __wakeup()
+    {
+        trigger_error('Unserializing is not allowed.', E_USER_ERROR);
+    }
 }
-
 ?>
 ]]>
    </programlisting>
-   <para>
-    This allows a single instance of the <literal>Example</literal>
-    class to be retrieved.
-   </para>
-   <programlisting role="php">
-<![CDATA[
+   <para>Illustrated below is how the Singleton behaves</para>
+   <programlisting role="php"><![CDATA[
 <?php
-// This would fail because the constructor is private
-$test = new Example;
+$singleton = Example::singleton(); // prints "Creating new instance."
+echo $singleton->increment(); // 0
+echo $singleton->increment(); // 1
 
-// This will always retrieve a single instance of the class
-$test = Example::singleton();
-$test->bark();
+$singleton = Example::singleton(); // reuses existing instance now
+echo $singleton->increment(); // 2
+echo $singleton->increment(); // 3
 
-// This will issue an E_USER_ERROR.
-$test_clone = clone $test;
-
+// all of these will raise a Fatal Error
+$singleton2 = new Example;
+$singleton3 = clone $singleton;
+$singleton4 = unserialize(serialize($singleton));
 ?>
-]]>
+   ]]>
    </programlisting>
   </example>
+  <warning xml:id="warn.singleton.controversy">
+   <para>
+    The Singleton pattern is one of the more controversial patterns. Critics argue that 
+    Singletons introduce Global State into an application and tightly couple the Singleton 
+    and its consuming classes. This leads to hidden dependencies and unexpected side-effects, 
+    which in turn leads to code that is harder to test and maintain.
+   </para>
+   <para>
+    Critics further argue that it is pointless to use a Singleton in a Shared Nothing Architecture 
+    like PHP where objects are unique within the Request only anyways. It is easier and cleaner to 
+    create collaborator object graphs by using Builders and Factory patterns once at the beginning 
+    of the Request.
+   </para>
+   <para>
+    Singletons also violate several of the "SOLID" OOP design principles and the Law of Demeter.
+    Singletons cannot be serialized. They cannot be subtyped (before PHP 5.3) and won't be Garbage
+    Collected because of the instance being stored as a static attribute of the Singleton.
+   </para>   
+  </warning>
  </sect2>
-
-</sect1>
  
+</sect1>
+
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml
