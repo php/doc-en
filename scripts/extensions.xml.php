@@ -23,7 +23,6 @@
 /*
  This script updates the appendices/extensions.xml file automatically based
  on the tags placed in the 'reference.xml' files:
-<!-- Purpose: xx -->
 <!-- Membership: core, pecl, bundled, external -->
 <!-- State: deprecated, experimental -->
 
@@ -33,13 +32,13 @@
 $basedir = realpath(dirname(__FILE__) . '/../..');
 $files   = array_merge(glob("$basedir/en/reference/*/book.xml"), glob("$basedir/en/reference/pdo_*/reference.xml"));
 sort($files);
-$Purpose = $Membership = $State = $Alphabetical = $debug = array();
+$Membership = $State = $Alphabetical = $debug = array();
 
 // read the files and save the tags' info
 foreach ($files as $filename) {
 
 	$file = file_get_contents($filename);
-	$miss = array('Purpose'=>1, 'Membership'=>1);
+	$miss = array('Membership'=>1);
 
 	// get the extension's name
 	preg_match('/<(?:reference|book)[^>]+(?:xml:)?id=[\'"]([^\'"]+)[\'"]/S', $file, $match);
@@ -55,8 +54,6 @@ foreach ($files as $filename) {
 
 		foreach ($matches as $match) {
 			switch($match[1]) {
-				case 'Purpose':
-					$ext_list[$ext] = rtrim($match[2]); // for debugging purposes
 				case 'State':
 					${$match[1]}[rtrim($match[2])][$ext] = 1;
 					unset($miss[$match[1]]); // for the debug part below
@@ -87,11 +84,6 @@ foreach ($files as $filename) {
 	// if the extension is deprecated, we don't need any more info
 	if (empty($State['deprecated'][$ext])) {
 
-		// purpose not set
-		if (isset($miss['Purpose'])) {
-			$debug['purpose'][] = $ext;
-		}
-
 		// membership not set
 		if (isset($miss['Membership'])) {
 			$debug['membership'][] = $ext;
@@ -115,65 +107,36 @@ $simplexml = simplexml_load_string($xml);
 foreach ($simplexml->children() as $node) {
 
 	$tmp = explode('.', (string)$node->attributes('xml', true));
-	$section = ucfirst($tmp[1]); // Alphabetical, Purpose, State or Membership
+	$section = ucfirst($tmp[1]); // Alphabetical, State or Membership
 
 	foreach (($section != 'Alphabetical' ? $node->section : array($node)) as $topnode) {
 		$tmp     = explode('.', (string)$topnode->attributes('xml', true));
 		$topname = $tmp[count($tmp)-1];
 
-		// this means that we have 2 levels (e.g. basic.*)
-		if ($topnode->section->itemizedlist) {
-			foreach ($topnode as $lastnode) {
-				$tmp  = explode('.', (string)$lastnode->attributes('xml', true));
-				$name = $tmp[1].'.'.$tmp[2];
+		$tmp = $$section;
 
-				$lastnode->itemizedlist = PHP_EOL; // clean the list
+		// we can get here as a father of 2 levels childs
+		if (empty($tmp[$topname])) continue;
 
-				foreach ($Purpose[$name] as $ext => $dummy) {
-					unset($ext_list[$ext]); // to generate the debug messages later
+		$topnode->itemizedlist = PHP_EOL; // clean the list
 
-					$lastnode->itemizedlist = $lastnode->itemizedlist . <<< XML
-     <listitem><para><xref linkend="$ext"/></para></listitem>
+		foreach($tmp[$topname] as $ext => $dummy) {
 
-XML;
-				}
-
-				$lastnode->itemizedlist = $lastnode->itemizedlist . '    ';
-
-			}
-
-		} else { // just 1 level
-
-			$tmp = $$section;
-
-			// we can get here as a father of 2 levels childs
-			if (empty($tmp[$topname])) continue;
-
-			$topnode->itemizedlist = PHP_EOL; // clean the list
-
-			foreach($tmp[$topname] as $ext => $dummy) {
-
-				// to generate the debug messages later
-				if ($section == 'Purpose') {
-					unset($ext_list[$ext]);
-				}
-
-				if ($section != 'Alphabetical') {
-					$topnode->itemizedlist = $topnode->itemizedlist . <<< XML
+			if ($section != 'Alphabetical') {
+				$topnode->itemizedlist = $topnode->itemizedlist . <<< XML
     <listitem><para><xref linkend="$ext"/></para></listitem>
 
 XML;
-				} else {
-					$topnode->itemizedlist = $topnode->itemizedlist . <<< XML
+			} else {
+				$topnode->itemizedlist = $topnode->itemizedlist . <<< XML
    <listitem><simpara><xref linkend="$ext"/></simpara></listitem>
 
 XML;
-				}
 			}
+		}
 
-			$topnode->itemizedlist = $topnode->itemizedlist . ($section != 'Alphabetical' ? '   ' : '  ');
+		$topnode->itemizedlist = $topnode->itemizedlist . ($section != 'Alphabetical' ? '   ' : '  ');
 
-		} //end of 1 level handling
 	}
 }
 
@@ -185,18 +148,6 @@ file_put_contents("$basedir/en/appendices/extensions.xml", $xml);
 
 
 // print the debug messages:
-if (isset($debug['purpose'])) {
-	echo "\nExtensions Missing Purpose:\n";
-	print_r($debug['purpose']);
-}
-
-if (count($ext_list)) {
-	echo "\nExtensions with bogus Purpose:\n";
-
-	foreach ($ext_list as $ext => $bug) {
-		echo "$ext \t => '$bug'\n";
-	}
-}
 
 if (isset($debug['membership'])) {
 	echo "\nExtensions Missing Membership:\n";
