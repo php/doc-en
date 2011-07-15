@@ -30,10 +30,10 @@
 		--- NOTE: PHP >= 5.2 needed ---
 */
 
-$basedir = realpath(dirname(__FILE__) . '/..');
-$files   = glob("$basedir/en/reference/*/reference.xml");
+$basedir = realpath(dirname(__FILE__) . '/../..');
+$files   = array_merge(glob("$basedir/en/reference/*/book.xml"), glob("$basedir/en/reference/pdo_*/reference.xml"));
 sort($files);
-$Purpose = $Membership = $State = $debug = array();
+$Purpose = $Membership = $State = $Alphabetical = $debug = array();
 
 // read the files and save the tags' info
 foreach ($files as $filename) {
@@ -42,13 +42,14 @@ foreach ($files as $filename) {
 	$miss = array('Purpose'=>1, 'Membership'=>1);
 
 	// get the extension's name
-	preg_match('/<reference[^>]+(?:xml:)?id=[\'"]([^\'"]+)[\'"]/S', $file, $match);
+	preg_match('/<(?:reference|book)[^>]+(?:xml:)?id=[\'"]([^\'"]+)[\'"]/S', $file, $match);
 	if (empty($match[1])) {
 		$debug['unknown-extension'][] = $filename;
 		continue;
 	} else {
 		$ext = $match[1];
 	}
+	$Alphabetical['alphabetical'][$ext] = 1;
 	
 	if (preg_match_all('/<!--\s*(\w+):\s*([^-]+)-->/S', $file, $matches, PREG_SET_ORDER)) {
 
@@ -114,9 +115,9 @@ $simplexml = simplexml_load_string($xml);
 foreach ($simplexml->children() as $node) {
 
 	$tmp = explode('.', (string)$node->attributes('xml', true));
-	$section = ucfirst($tmp[1]); // Purpose, State or Membership
+	$section = ucfirst($tmp[1]); // Alphabetical, Purpose, State or Membership
 
-	foreach ($node->children() as $topnode) {
+	foreach (($section != 'Alphabetical' ? $node->section : array($node)) as $topnode) {
 		$tmp     = explode('.', (string)$topnode->attributes('xml', true));
 		$topname = $tmp[count($tmp)-1];
 
@@ -157,20 +158,27 @@ XML;
 					unset($ext_list[$ext]);
 				}
 
-				$topnode->itemizedlist = $topnode->itemizedlist . <<< XML
+				if ($section != 'Alphabetical') {
+					$topnode->itemizedlist = $topnode->itemizedlist . <<< XML
     <listitem><para><xref linkend="$ext"/></para></listitem>
 
 XML;
+				} else {
+					$topnode->itemizedlist = $topnode->itemizedlist . <<< XML
+   <listitem><simpara><xref linkend="$ext"/></simpara></listitem>
+
+XML;
+				}
 			}
 
-			$topnode->itemizedlist = $topnode->itemizedlist . '   ';
+			$topnode->itemizedlist = $topnode->itemizedlist . ($section != 'Alphabetical' ? '   ' : '  ');
 
 		} //end of 1 level handling
 	}
 }
 
 
-$xml = strtr(html_entity_decode($simplexml->asXML()), array("\r\n" => "\n", "\r" => PHP_EOL, "\n" => PHP_EOL));
+$xml = strtr(html_entity_decode($simplexml->asXML()), array("\r\n" => PHP_EOL, "\r" => PHP_EOL, "\n" => PHP_EOL));
 // get the entities back again
 $xml = preg_replace('/( *)[\r\n]*<!--\s+entity: "([^"]+)"\s+-->[\r\n]*/', '$1&$2;'.PHP_EOL.PHP_EOL, $xml);
 file_put_contents("$basedir/en/appendices/extensions.xml", $xml);
