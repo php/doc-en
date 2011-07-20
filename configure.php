@@ -467,7 +467,7 @@ $ac['PHP'] = abspath($ac['PHP']);
 checkvalue($ac['PHP']);
 
 checking("for language to build");
-if ($ac['LANG'] == '' || $ac['LANG'] == 'no') {
+if ($ac['LANG'] == '' /* || $ac['LANG'] == 'no' */) {
     checkerror("Using '--with-lang=' or '--without-lang' is just going to cause trouble.");
 } else if ($ac['LANG'] == 'yes') {
     $ac['LANG'] = 'en';
