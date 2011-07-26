@@ -472,6 +472,10 @@ if ($ac['LANG'] == '' /* || $ac['LANG'] == 'no' */) {
 } else if ($ac['LANG'] == 'yes') {
     $ac['LANG'] = 'en';
 }
+if ($ac["LANG"] == "en") {
+    $ac["ENGLISH_ONLY_INCL_BEGIN"] = "<!--";
+    $ac["ENGLISH_ONLY_INCL_END"] = "-->";
+}
 checkvalue($ac['LANG']);
 
 checking("whether the language is supported");
