@@ -282,6 +282,8 @@ $acd = array( // {{{
     'GENERATE' => 'no',
     'STDERR_TO_STDOUT' => 'no',
     'INPUT_FILENAME'   => 'manual.xml',
+    'ENGLISH_ONLY_INCL_BEGIN' => '',
+    'ENGLISH_ONLY_INCL_END' => '',
 ); // }}}
 
 $ac = $acd;
