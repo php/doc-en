@@ -41,31 +41,40 @@ Usage: ./configure [OPTION]...
 Defaults for the options are specified in brackets.
 
 Configuration:
-  -h, --help                Display this help and exit
-  -V, --version             Display version information and exit
-  -q, --quiet, --silent     Do not print `checking...' messages
-      --srcdir=DIR          Find the sources in DIR [configure dir or `.']
-      --basedir             Doc-base directory [{$acd['BASEDIR']}]
-      --rootdir             Root directory of SVN Doc checkouts [{$acd['ROOTDIR']})
+  -h, --help                     Display this help and exit
+  -V, --version                  Display version information and exit
+  -q, --quiet, --silent          Do not print `checking...' messages
+      --srcdir=DIR               Find the sources in DIR [configure dir or `.']
+      --basedir                  Doc-base directory
+                                 [{$acd['BASEDIR']}]
+      --rootdir                  Root directory of SVN Doc checkouts
+                                 [{$acd['ROOTDIR']})
 
 Package-specific:
-  --enable-force-dom-save   Force .manual.xml to be saved in a full build even
-                            if it fails validation [{$acd['FORCE_DOM_SAVE']}]
-  --enable-chm              Enable Windows HTML Help Edition pages [{$acd['CHMENABLED']}]
-  --enable-xml-details      Enable detailed XML error messages [{$acd['DETAILED_ERRORMSG']}]
-  --enable-howto            Configure the phpdoc howto, not the phpdoc docs [{$acd['HOWTO']}]
-  --disable-segfault-error  LIBXML may segfault with broken XML, use this if it does [{$acd['SEGFAULT_ERROR']}]
-  --disable-segfault-speed  PHP (<5.3.7) will segfault during shutdown. Disabling that segfault causes performance issues. [{$acd['SEGFAULT_SPEED']}]
-  --disable-version-files   Do not merge the extension specific version.xml files
-  --disable-libxml-check    Disable the libxml 2.7.4+ requirement check
-  --with-php=PATH           Path to php CLI executable [detect]
-  --with-lang=LANG          Language to build [{$acd['LANG']}]
-  --with-partial=ID         Root ID to build [{$acd['PARTIAL']}]
-  --disable-broken-file-listing  Do not ignore translated files in broken-files.txt
-  --redirect-stderr-to-stdout  Redirect STDERR to STDOUT. Use STDOUT as the standart output for XML errors [{$acd['STDERR_TO_STDOUT']}]
-
-  --output=FILENAME         Save to given file (i.e. not .manual.xml) [{$acd['OUTPUT_FILENAME']}]
-  --generate=FILENAME       Create an XML only for provided file
+  --enable-force-dom-save        Force .manual.xml to be saved in a full build
+                                 even if it fails validation [{$acd['FORCE_DOM_SAVE']}]
+  --enable-chm                   Enable Windows HTML Help Edition pages [{$acd['CHMENABLED']}]
+  --enable-xml-details           Enable detailed XML error messages [{$acd['DETAILED_ERRORMSG']}]
+  --enable-howto                 Configure the phpdoc howto, not the phpdoc
+                                 docs [{$acd['HOWTO']}]
+  --disable-segfault-error       LIBXML may segfault with broken XML, use this
+                                 if it does [{$acd['SEGFAULT_ERROR']}]
+  --disable-segfault-speed       PHP (<5.3.7) will segfault during shutdown.
+                                 Disabling that segfault causes performance
+                                 ssues. [{$acd['SEGFAULT_SPEED']}]
+  --disable-version-files        Do not merge the extension specific
+                                 version.xml files
+  --disable-libxml-check         Disable the libxml 2.7.4+ requirement check
+  --with-php=PATH                Path to php CLI executable [detect]
+  --with-lang=LANG               Language to build [{$acd['LANG']}]
+  --with-partial=ID              Root ID to build [{$acd['PARTIAL']}]
+  --disable-broken-file-listing  Do not ignore translated files in 
+                                 broken-files.txt
+  --redirect-stderr-to-stdout    Redirect STDERR to STDOUT. Use STDOUT as the
+                                 standard output for XML errors [{$acd['STDERR_TO_STDOUT']}]
+  --output=FILENAME              Save to given file (i.e. not .manual.xml)
+                                 [{$acd['OUTPUT_FILENAME']}]
+  --generate=FILENAME            Create an XML only for provided file
 
 HELPCHUNK;
 } // }}}
