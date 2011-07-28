@@ -48,7 +48,7 @@ Configuration:
       --basedir                  Doc-base directory
                                  [{$acd['BASEDIR']}]
       --rootdir                  Root directory of SVN Doc checkouts
-                                 [{$acd['ROOTDIR']})
+                                 [{$acd['ROOTDIR']}]
 
 Package-specific:
   --enable-force-dom-save        Force .manual.xml to be saved in a full build
