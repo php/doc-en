@@ -282,8 +282,8 @@ $acd = array( // {{{
     'GENERATE' => 'no',
     'STDERR_TO_STDOUT' => 'no',
     'INPUT_FILENAME'   => 'manual.xml',
-    'ENGLISH_ONLY_INCL_BEGIN' => '',
-    'ENGLISH_ONLY_INCL_END' => '',
+    'TRANSLATION_ONLY_INCL_BEGIN' => '',
+    'TRANSLATION_ONLY_INCL_END' => '',
 ); // }}}
 
 $ac = $acd;
@@ -475,8 +475,8 @@ if ($ac['LANG'] == '' /* || $ac['LANG'] == 'no' */) {
     $ac['LANG'] = 'en';
 }
 if ($ac["LANG"] == "en") {
-    $ac["ENGLISH_ONLY_INCL_BEGIN"] = "<!--";
-    $ac["ENGLISH_ONLY_INCL_END"] = "-->";
+    $ac["TRANSLATION_ONLY_INCL_BEGIN"] = "<!--";
+    $ac["TRANSLATION_ONLY_INCL_END"] = "-->";
 }
 checkvalue($ac['LANG']);
 
