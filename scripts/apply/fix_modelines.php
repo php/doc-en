@@ -29,14 +29,13 @@ function apply($input)
 		}
 
 		if ($modeline_started) {
-			if (ereg("sgml-default-dtd-file(.*)manual\.ced", $line, $regs)) {
-				$manual_ced_line = "sgml-default-dtd-file$regs[1]manual.ced\"";
+			$found_ced = preg_match("sgml-default-dtd-file:.*manual\.ced", $line);
 			}
 		}
 						
 						
 
-		if (!$modeline_started) {
+		if (1 !== $found_ced) {
 			$output .= "$line\n";
 		}
 	}
@@ -47,7 +46,6 @@ function apply($input)
 
 	if (!$manual_ced_line) {
 		echo "WARNING: did NOT found a ced-line!\n";
-		$manual_ced_line = 'sgml-default-dtd-file:"../../manual.ced"';
 	}
 
 	$output .= <<<HEREDOC
@@ -62,10 +60,7 @@ sgml-indent-step:1
 sgml-indent-data:t
 indent-tabs-mode:nil
 sgml-parent-document:nil
-
-HEREDOC;
-	$output .= "$manual_ced_line\n";
-	$output .= <<<HEREDOC
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
 sgml-exposed-tags:nil
 sgml-local-catalogs:nil
 sgml-local-ecat-files:nil

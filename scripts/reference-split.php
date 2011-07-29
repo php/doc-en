@@ -119,8 +119,10 @@ function convert_file($dir,$file) {
     // convert numbered sections to generic ones, prep. for hierachical ref
     $line = ereg_replace("(</?)sect[123456]","\\1section",$line);
 
+    /* Use fixed location for manual.ced.
     // file will move one level down, so path to emacs dtd-file needs one more ..
     $line = str_replace('../../manual.ced','../../../manual.ced',$line);
+    */
 
 		if (strstr($line,("<?xml"))&&($lineno==1)) { // remember xml header
 			$xmlhead=$line;
@@ -187,7 +189,7 @@ sgml-indent-step:1
 sgml-indent-data:t
 indent-tabs-mode:nil
 sgml-parent-document:nil
-sgml-default-dtd-file:"../../../../manual.ced"
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
 sgml-exposed-tags:nil
 sgml-local-catalogs:nil
 sgml-local-ecat-files:nil

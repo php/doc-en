@@ -194,7 +194,7 @@ function write_reference_xml()
        "sgml-indent-data:t\n" .
        "indent-tabs-mode:nil\n" .
        "sgml-parent-document:nil\n" .
-       "sgml-default-dtd-file:\"../../../manual.ced\"\n" .
+       "sgml-default-dtd-file:\"~/.phpdoc/manual.ced\"\n" .
        "sgml-exposed-tags:nil\n" .
        "sgml-local-catalogs:nil\n" .
        "sgml-local-ecat-files:nil\n" .
@@ -383,7 +383,7 @@ function write_functions_xml()
         "sgml-indent-data:t\n" .
         "indent-tabs-mode:nil\n" .
         "sgml-parent-document:nil\n" .
-        "sgml-default-dtd-file:\"../../../../manual.ced\"\n" .
+        "sgml-default-dtd-file:\"~/.phpdoc/manual.ced\"\n" .
         "sgml-exposed-tags:nil\n" .
         "sgml-local-catalogs:nil\n" .
         "sgml-local-ecat-files:nil\n" .
@@ -545,7 +545,7 @@ function write_constants_xml()
                "sgml-indent-data:t\n" .
                "indent-tabs-mode:nil\n" .
                "sgml-parent-document:nil\n" .
-               "sgml-default-dtd-file:\"../../../../manual.ced\"\n" .
+               "sgml-default-dtd-file:\"~/.phpdoc/manual.ced\"\n" .
                "sgml-exposed-tags:nil\n" .
                "sgml-local-catalogs:nil\n" .
                "sgml-local-ecat-files:nil\n" .
