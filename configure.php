@@ -61,7 +61,7 @@ Package-specific:
                                  if it does [{$acd['SEGFAULT_ERROR']}]
   --disable-segfault-speed       PHP (<5.3.7) will segfault during shutdown.
                                  Disabling that segfault causes performance
-                                 ssues. [{$acd['SEGFAULT_SPEED']}]
+                                 issues. [{$acd['SEGFAULT_SPEED']}]
   --disable-version-files        Do not merge the extension specific
                                  version.xml files
   --disable-libxml-check         Disable the libxml 2.7.4+ requirement check
