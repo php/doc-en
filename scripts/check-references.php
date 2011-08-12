@@ -334,7 +334,7 @@ foreach ((isset($extension) ? glob($extension) : array_merge(array($zend_dir), g
 				preg_match_all('~,\\s*&([^,]+)~', $matches2[3], $matches3);
 				foreach ($matches3[1] as $val) {
 					if (preg_match('(\\b' . preg_quote($val) . '\\b(?:\\s*=\\s*([^,;]+))?)', $function_body, $match)) {
-						$source_inits[$function_name][] = ($match[1] == "0L" ? "0" : $match[1]);
+						$source_inits[$function_name][] = preg_replace('~^(\\d+)L$~', '\\1', $match[1]);
 					}
 				}
 			} elseif (!in_array($function_name, $difficult_arg_count)) {
@@ -410,7 +410,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$referen
 		// return type
 		if (isset($return_types[$function_name])) {
 			$counts["return"]++;
-			if (!preg_match('~::__construct$~', $function_name) && !preg_match("~<type>(" . $return_types[$function_name][0] . ")</type>~", $return_type) && ($return_types[$function_name][0] != "object" || preg_match("~<type>($valid_types|$invalid_types)</type>~", $return_type)) && $return_types[$function_name][0] != "mixed") {
+			if (!preg_match('~::__construct$~', $function_name) && !preg_match("~<type>(" . $return_types[$function_name][0] . ")</type>~", $return_type) && ($return_types[$function_name][0] != "object" || preg_match("~<type>($valid_types|$invalid_types)</type>~", $return_type))) {
 				echo "Wrong return type in $filename on line $lineno.\n";
 				echo $return_types[$function_name][1] . ":" . $return_types[$function_name][2] . ": " . $return_types[$function_name][0] . "\n";
 			}
@@ -437,7 +437,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$referen
 		}
 		
 		// parameter types and optional
-		preg_match_all('~<methodparam(\\s+choice=[\'"]opt[\'"])?>\\s*<type>([^<]+)</type>\\s*<parameter(?: role="reference")?>([^<]+)</parameter>(?:<initializer>([^<]+)</initializer>)?~i', $methodsynopsis, $matches); // (PREG_OFFSET_CAPTURE can be used to get precise line numbers)
+		preg_match_all('~<methodparam(\\s+choice=[\'"]opt[\'"])?>\\s*<type>([^<]+)</type>\\s*<parameter(?: role="reference")?>([^<]+)</parameter>(?:<initializer>(.*?)</initializer>)?~i', $methodsynopsis, $matches); // (PREG_OFFSET_CAPTURE can be used to get precise line numbers)
 		foreach ($matches[2] as $i => $val) {
 			if (preg_match("~^(void|$invalid_types)\$~", $val)) {
 				echo "Parameter #" . ($i+1) . " has wrong type '$val' in $filename on line " . ($lineno + $i + 1) . ".\n";
@@ -469,7 +469,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$referen
 					if ($param == "bool" && strlen($init_source)) {
 						$init_source = ($init_source ? "true" : "false");
 					}
-					$initializer = preg_replace('~^&(.+);$~', '\\1', $matches[4][$i]);
+					$initializer = preg_replace('~^&(.+);$~', '\\1', strip_tags($matches[4][$i]));
 					if (($optional_source || $optional_doc) && $initializer != $init_source && $init_source != "NULL" && (is_int($source_refs[$function_name][0]) ? $source_refs[$function_name][0] > $i+1 : !in_array($i+1, (array) $source_refs[$function_name][0]))) {
 						$error .= "Parameter #" . ($i+1) . " has wrong initial value ($initializer instead of $init_source) in $filename on line " . ($lineno + $i + 1) . ".\n";
 					}
