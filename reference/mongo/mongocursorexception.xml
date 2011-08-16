@@ -12,14 +12,52 @@
   <section xml:id="mongocursorexception.intro">
    &reftitle.intro;
    <para>
-    Caused by accessing a cursor incorrectly or a error receiving a reply.
+    Caused by accessing a cursor incorrectly or a error receiving a reply. Note
+    that this can be thrown by any database request that receives a reply, not
+    just queries.  Writes, commands, and any other operation that sends
+    information to the database and waits for a response can throw a
+    <classname>MongoCursorException</classname>.  The only exception is
+    <literal>new Mongo()</literal> (creating a new connection), which will only
+    throw <classname>MongoConnectionException</classname>s.
    </para>
 
    <para>
-    If there is an error receiving a reply, there will be a more 
-    specific error message to help diagnose the problem.  As it is a bit 
-    programmatically awkward to parse an exception message, there is also an
-    error code associated with each cause of the exception.  
+    This returns a specific error message to help diagnose the problem and a
+    numeric error code associated with the cause of the exception.
+   </para>
+
+   <para>
+    For example, suppose you tried to insert two documents with the same _id:
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+try {
+    $collection->insert(array("_id" => 1), array("safe" => true));
+    $collection->insert(array("_id" => 1), array("safe" => true));
+}
+catch (MongoCursorException $e) {
+    echo "error message: ".$e->getMessage()."\n";
+    echo "error code: ".$e->getCode()."\n";
+}
+
+?>
+]]>
+    </programlisting>
+    This would produce output like:
+    <programlisting>
+<![CDATA[
+error message: E11000 duplicate key error index: foo.bar.$_id_  dup key: { : 1 }
+error code: 11000
+]]>
+    </programlisting>
+    Note that the MongoDB error code (11000) is used for the PHP error code. The
+    PHP driver uses the "native" error code wherever possible.
+   </para>
+
+   <para>
+    The following is a list of common errors, codes, and causes.  Exact errors
+    are in italics, errors where the message can vary are described in obliques.
    </para>
 
    <itemizedlist>
@@ -34,6 +72,33 @@
       You are calling a method that sets up the query after executing the query.
       Reset the cursor and try again.
      </para>
+     <para>
+      An example:
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+try {
+    $cursor = $collection->find();
+    var_dump($cursor->getNext());
+
+    // getNext() queried the database, it's too late to set a limit
+    $cursor->limit(1);
+}
+catch (MongoCursorException $e) {
+    echo "error message: ".$e->getMessage()."\n";
+    echo "error code: ".$e->getCode()."\n";
+}
+
+// this will work, though:
+$cursor->getNext();
+$cursor->reset();
+$cursor->limit(1);
+
+?>
+]]>
+      </programlisting>
+     </para>
     </listitem>
 
     <listitem>
@@ -44,7 +109,7 @@
       Code: 1
      </para>
      <para>
-      Could not send the query to the database.  Make sure the database is 
+      Could not send the query to the database.  Make sure the database is
       still up and the network is okay.
      </para>
     </listitem>
@@ -59,19 +124,36 @@
      <para>
       The driver was trying to fetch more results from the database, but the
       database did not have a record of the query.  This usually means that the
-      cursor timed out on the server side: after a few minutes of inactivity, 
-      the database will kill a cursor (see 
+      cursor timed out on the server side: after a few minutes of inactivity,
+      the database will kill a cursor (see
       <function>MongoCursor::immortal</function> for information on preventing
       this).
      </para>
-    </listitem>
+     <para>
+      An example:
+      <programlisting role="php">
+<![CDATA[
+<?php
 
-    <listitem>
-     <para>
-      Couldn't get response header.
-     </para>
-     <para>
-      Code: 4
+try {
+    $cursor = $collection->find();
+    $cursor->getNext();
+
+    // sleep for 15 minutes
+    sleep(60*15);
+
+    while ($cursor->hasNext()) {
+        $cursor->getNext();
+    }
+}
+catch (MongoCursorException $e) {
+    echo "error message: ".$e->getMessage()."\n";
+    echo "error code: ".$e->getCode()."\n";
+}
+
+?>
+]]>
+      </programlisting>
      </para>
     </listitem>
 
@@ -83,8 +165,8 @@
       Code: 3
      </para>
      <para>
-      This may indicate you are out of hard driver space or some other 
-      extraordinary circumstance.
+      This may indicate you are out of RAM or some other extraordinary
+      circumstance.
      </para>
     </listitem>
 
@@ -96,9 +178,8 @@
       Code: 4
      </para>
      <para>
-      The driver could not fetch a reply header from the database, so it gave 
-      up.  Check if the database is still up and the network is connected and 
-      try the query again.
+      A common error if the database or network goes down. This means that the
+      driver couldn't get a response from the connection.
      </para>
     </listitem>
 
@@ -110,24 +191,22 @@
       Code: 5
      </para>
      <para>
-      This may not even be an error, for example, the database command 
-      "shutdown" returns no response.  However, if you were expecting a 
+      This may not even be an error, for example, the database command
+      "shutdown" returns no response.  However, if you were expecting a
       response, this means the database didn't give one.
      </para>
     </listitem>
 
     <listitem>
      <para>
-      <literal>bad response length: %d, max: %d, did the db assert?</literal>
+      <literal>bad response length: %d, did the db assert?</literal>
      </para>
      <para>
       Code: 6
      </para>
      <para>
-      This means that the database said that its response was greater than 4Mb 
-      or less than 0.  Generally, a number greater than 5Mb should be reported 
-      to the developers as a potential database bug (max response length is 
-      4Mb).  A response of less than 0 often means a database assertion occured.
+      This means that the database said that its response was less than 0.  This
+      error probably indicates a network error or database corruption.
      </para>
     </listitem>
 
@@ -139,7 +218,7 @@
       Code: 7
      </para>
      <para>
-      Highly unusual.  Occurs if the database response started out correctly, 
+      Highly unusual.  Occurs if the database response started out correctly,
       but broke off in the middle.  Probably indicates a network problem.
      </para>
     </listitem>
@@ -152,7 +231,7 @@
       Code: 8
      </para>
      <para>
-      Highly unusual.  Occurs if the database response started out correctly, 
+      Highly unusual.  Occurs if the database response started out correctly,
       but broke off in the middle.  Probably indicates a network problem.
      </para>
     </listitem>
@@ -177,7 +256,7 @@
       Code: 10
      </para>
      <para>
-      The socket was closed or encountered an error.  The driver should 
+      The socket was closed or encountered an error.  The driver should
       automatically reconnect (if possible) on the next operation.
      </para>
     </listitem>
@@ -190,8 +269,8 @@
       Code: 11
      </para>
      <para>
-      The driver saves any database responses it cannot immediately match with a 
-      request. This exception occurs if the driver has already passed your 
+      The driver saves any database responses it cannot immediately match with a
+      request. This exception occurs if the driver has already passed your
       request's response and cannot find your response in its cache.
      </para>
     </listitem>
@@ -204,7 +283,7 @@
       <literal>WSA error getting database response: errstr</literal>
      </para>
      <para>
-      "errstr" is an io error reported directly from the C socket 
+      "errstr" is an io error reported directly from the C socket
       subsystem.  On Windows, the error message is prefixed with "WSA".
      </para>
     </listitem>
@@ -232,6 +311,29 @@
       C socket error on send.
      </para>
     </listitem>
+
+    <listitem>
+     <para>
+      <literal>max number of retries exhausted, couldn't send query</literal>
+     </para>
+     <para>
+      Code: 19
+     </para>
+     <para>
+      The driver will automatically retry "plain" queries (not commands) a
+      couple of times if the first attempt failed for certain reasons.  This is
+      to cause fewer exceptions during replica set failover (although you will
+      probably still have to deal with some) and gloss over transient network
+      issues.
+     </para>
+     <para>
+      This can also be caused by the driver not being able to reconnect at all
+      to the database (if, for example, the database is unreachable).
+     </para>
+     <para>
+      Version 1.2.2+.
+     </para>
+    </listitem>
    </itemizedlist>
   </section>
 
@@ -239,7 +341,8 @@
   <section>
    <title>Errors passed through by the database</title>
    <para>
-    Database errors should always trigger MongoCursorExceptions on queries. 
+    Database errors should always trigger
+    <classname>MongoCursorExceptions</classname> on queries.
     Error messages and codes are sent directly from the database and you should
     be able to see matching errors in the database log.
    </para>
@@ -269,9 +372,9 @@
       Codes: 10107, 13435, and 10058
      </para>
      <para>
-      Not master errors, piped through by the database.  Each of these will 
+      Not master errors, piped through by the database.  Each of these will
       cause the driver to disconnect and attempt to find a new master.  The
-      actual error you get on failover may not be a "not master" error, 
+      actual error you get on failover may not be a "not master" error,
       depending on when the change in master occurs.
      </para>
     </listitem>
@@ -295,7 +398,7 @@
      </ooclass>
     </classsynopsisinfo>
     <!-- }}} -->
-    
+
    </classsynopsis>
    <!-- }}} -->
 
