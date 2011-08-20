@@ -23,7 +23,7 @@
   $Id$
 */
 
-error_reporting(E_ALL);
+error_reporting(-1);
 $cvs_id = '$Id$';
 
 echo "configure.php: $cvs_id\n";
