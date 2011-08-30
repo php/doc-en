@@ -49,14 +49,14 @@ $db->authenticate($username, $password);
 ]]>
   </programlisting>
   <para>
-   There is a major disadvantage to this method: if the database connection is
-   dropped and then reconnected, the connection will no longer be authenticated.
+   There is a major disadvantage to this method: if the connection is dropped
+   and then reconnects, the new connection will not be authenticated. If you use
+   the URI format, the PHP driver will automatically authenticate the user
+   whenever a new connection is made.
   </para>
   <para>
-   If you use the URI format, the driver will authenticate the user against the
-   admin database. To authenticate with a different database, specify the
-   database name after the hosts.  This example will log the user into the
-   "blog" database:
+   To authenticate with a different  database, specify the database name after
+   the hosts.  This example will log the user into the "blog" database:
   </para>
   <programlisting role="php">
 <![CDATA[
@@ -157,17 +157,107 @@ $m = new Mongo("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
  </section>
 
  <section>
-  <title>Connection Pooling</title>
+  <title>Connection Pooling (version 1.2.0+)</title>
   <para>
-   In version 1.2.0+, the driver will automatically manage connection pools for
-   the user.
+   Creating connections is one of the most heavyweight things that the driver
+   does. It can take hundreds of milliseconds to set up a connection correctly,
+   even on a fast network.  Thus, the driver tries to minimize the number of new
+   connections created by reusing connections from a pool.
   </para>
   <para>
    When a user creates a new instance of <classname>Mongo</classname>, all
-   necessary connections will be taken from their pools (replica set connections
-   may require multple connections). When the <classname>Mongo</classname>
-   instance goes out of scope, the connections will be returned to the pool.
+   necessary connections will be taken from their pools (replica sets may
+   require multple connections, one for each member of the set). When the
+   <classname>Mongo</classname> instance goes out of scope, the connections will
+   be returned to the pool.  When the PHP process exits, all connections in the
+   pools will be closed.
   </para>
+  <section>
+   <title>"Why do I have so many open connections?"</title>
+   <para>
+    Connection pools can generate a large number of connections. This is expected
+    and, using a little arithmetic, you can figure out how many connections to
+    expect.  There are three factors in the total number of connections:
+   </para>
+   <itemizedlist>
+    <listitem>
+     <para>
+      <literal>
+       connections_per_pool
+      </literal>
+     </para>
+     <para>
+      Each connection pool will create, by default, an unlimited number of
+      connections. One might assume that this is a problem: if it can create an
+      unlimited number of connections, couldn't it create thousands and the
+      server would run out of file descriptors? In practice, this is unlikely,
+      as unused connections are returned to the pool to be used later, so future
+      connections will use the same connection instead of creating a new one.
+      Unless you create thousands of connections at once without letting any go
+      out of scope, the number of connections open should stay at a reasonable
+      number.
+     </para>
+     <para>
+      You can see how many connections you have in a pool using the
+      <function>MongoPool::info</function> function.  Add up the "in use" and
+      "in pool" fields for a given server.  That is the total number of
+      connections for that pool.
+     </para>
+    </listitem>
+    <listitem>
+     <para>
+      <literal>
+       pools_per_process
+      </literal>
+     </para>
+     <para>
+      Each MongoDB server address you're connecting to gets its own connection
+      pool.  For example, if your local hostname is "example.net", connecting
+      to "example.net:27017", "localhost:27017", and "/tmp/mongodb-27017.sock"
+      will create three connection pools.  You can see how many connection pools
+      you have open using <function>MongoPool::info</function>.
+     </para>
+    </listitem>
+    <listitem>
+     <para>
+      <literal>
+       processes
+      </literal>
+     </para>
+     <para>
+      Each PHP process has a separate set of pools.  PHP-FPM and Apache
+      generally create between 6 and a couple dozen PHP worker children. Check
+      your settings to see what the max number of PHP processes is that can be
+      spawned.
+     </para>
+     <para>
+      If you are using PHP-FPM, estimating the number of connections can be
+      tricky because it will spawn more PHP-FPM workers under heavy load. To be
+      on the safe side, look at the max_children parameter or add up
+      spare_servers+start_servers (choose whichever number is higher).  That's
+      how many PHP processes (and, thus sets of pools) you should plan for.
+     </para>
+    </listitem>
+   </itemizedlist>
+   <para>
+    The three variables above can be multiplied together to give the max
+    number of connections expected:
+    <literal>connections_per_pool*pools_per_process*processes</literal>.  Note
+    that <literal>connections_per_pool</literal> can be different for different
+    pools, so <literal>connections_per_pool</literal> should be the max.
+   </para>
+   <para>
+    For example, suppose we're getting 30 connections per pool, 10 pools per PHP
+    process, and 128 PHP processes.  Then we can expect 38400 connections from
+    this machine.  Thus, we should set this machine's file descriptor limit to
+    be high enough to handle all of these connections or it may run out of file
+    descriptors.
+   </para>
+   <para>
+    See <classname>MongoPool</classname> for more information on connection
+    pooling.
+   </para>
+  </section>
  </section>
 
  <section>
@@ -175,7 +265,8 @@ $m = new Mongo("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
   <note>
    <para>
     This section is not relevant for 1.2.0+. In 1.2.0+, connections are always
-    persistent and managed automatically by the driver.
+    persistent and managed automatically by the driver.  See
+    <classname>MongoPool</classname> for more information on pooling.
    </para>
   </note>
 
@@ -236,12 +327,6 @@ for ($i=0; $i<1000; $i++) {
    always be used in production unless there is a compelling reason not to.
    Most of the reasons that they are not recommended for relational databases
    are irrelevant to MongoDB.
-  </para>
-  <para>
-   Persistent connections will become the default connection type in 1.0.12. To
-   create a non-persistent connection, you will need to pass
-   <literal>"persist" =&gt; false</literal> to
-   <function>Mongo::__construct</function>.
   </para>
  </section>
 
