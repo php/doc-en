@@ -275,7 +275,6 @@ $acd = array( // {{{
     'CHMONLY_INCL_END' => '-->',
     'LANG' => 'en',
     'LANGDIR' => "{$rootdir}/en",
-    'PHP_BUILD_DATE' => date('Y-m-d H:i:s'),
     'ENCODING' => 'utf-8',
     'FORCE_DOM_SAVE' => 'no',
     'PARTIAL' => 'no',
@@ -286,7 +285,6 @@ $acd = array( // {{{
     'LIBXML_CHECK' => 'yes',
     'HOWTO' => 'no',
     'USE_BROKEN_TRANSLATION_FILENAME' => 'yes',
-    'COPYRIGHT_YEAR' => date('Y'),
     'OUTPUT_FILENAME' => $srcdir . '/.manual.xml',
     'GENERATE' => 'no',
     'STDERR_TO_STDOUT' => 'no',
@@ -533,7 +531,6 @@ $infiles = array(
     'install-unix.xml.in',
     'install-win.xml.in',
     'developer.template.xml.in',
-    'entities/version.ent.in',
     'scripts/file-entities.php.in',
 );
 
