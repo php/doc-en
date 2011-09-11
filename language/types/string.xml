@@ -8,8 +8,8 @@
   A <type>string</type> is series of characters, where a character is
   the same as a byte. This means that PHP only supports a 256-character set,
   and hence does not offer native Unicode support. See
-  <function>utf8_encode</function> and <function>utf8_decode</function> for some
-  basic Unicode functionality.
+  <link linkend="language.types.string.details">details of the string
+  type</link>.
  </para>
 
  <note>
@@ -988,6 +988,112 @@ echo "\$foo==$foo; type is " . gettype ($foo) . "<br />\n";
    characters.
   </para>
 
+ </sect2>
+
+ <sect2 xml:id="language.types.string.details">
+  
+  <title>Details of the String Type</title>
+  
+  <para>
+   The <type>string</type> in PHP is implemented as an array of bytes and an
+   integer indicating the length of the buffer. It has no information about how
+   those bytes translate to characters, leaving that task to the programmer.
+   There are no limitations on the values the string can be composed of; in
+   particular, bytes with value <literal>0</literal> (“NUL bytes”) are allowed
+   anywhere in the string (however, a few functions, said in this manual not to
+   be “binary safe”, may hand off the strings to libraries that ignore data
+   after a NUL byte.)
+  </para>
+  <para>
+   This nature of the string type explains why there is no separate “byte” type
+   in PHP – strings take this role. Functions that return no textual data – for
+   instance, arbitrary data read from a network socket – will still return
+   strings.
+  </para>
+  <para>
+   Given that PHP does not dictate a specific encoding for strings, one might
+   wonder how string literals are encoded. For instance, is the string
+   <literal>"á"</literal> equivalent to <literal>"\xE1"</literal> (ISO-8859-1),
+   <literal>"\xC3\xA1"</literal> (UTF-8, C form),
+   <literal>"\x61\xCC\x81"</literal> (UTF-8, D form) or any other possible
+   representation? The answer is that string will be encoded in whatever fashion
+   it is encoded in the script file. Thus, if the script is written in
+   ISO-8859-1, the string will be encoded in ISO-8859-1 and so on. However,
+   this does not apply if Zend Multibyte is enabled; in that case, the script
+   may be written in an arbitrary encoding (which is explicity declared or is
+   detected) and then converted to a certain internal encoding, which is then
+   the encoding that will be used for the string literals.
+   Note that there are some constraints on the encoding of the script (or on the
+   internal encoding, should Zend Multibyte be enabled) – this almost always
+   means that this encoding should be a compatible superset of ASCII, such as
+   UTF-8 or ISO-8859-1. Note, however, that state-dependent encodings where
+   the same byte values can be used in initial and non-initial shift states
+   may be problematic.
+  </para>
+  <para>
+   Of course, in order to useful, functions that operate on text may have to
+   make some assumptions about how the string is encoded. Unfortunately, there
+   is much variation on this matter throughout PHP’s functions:
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     Some functions assume that the string is encoded in some (any) single-byte
+     encoding, but they do not need to interpret those bytes as specific
+     characters. This is case of, for instance, <function>substr</function>, 
+     <function>strpos</function>, <function>strlen</function> or
+     <function>strcmp</function>. Another way to think of these functions is
+     that operate on memory buffers, i.e., they work with bytes and byte
+     offsets.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Other functions are passed the encoding of the string, possibly they also
+     assume a default if no such information is given. This is the case of
+     <function>htmlentities</function> and the majority of the
+     functions in the <link linkend="book.mbstring">mbstring</link> extension.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Others use the current locale (see <function>setlocale</function>), but
+     operate byte-by-byte. This is the case of <function>strcasecmp</function>,
+     <function>strtoupper</function> and <function>ucfirst</function>.
+     This means they can be used only with single-byte encodings, as long as
+     the encoding is matched by the locale. For instance
+     <literal>strtoupper("á")</literal> may return <literal>"Á"</literal> if the
+     locale is correctly set and <literal>á</literal> is encoded with a single
+     byte. If it is encoded in UTF-8, the correct result will not be returned
+     and the resulting string may or may not be returned corrupted, depending
+     on the current locale.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Finally, they may just assume the string is using a specific encoding,
+     usually UTF-8. This is the case of most functions in the
+     <link linkend="book.intl">intl</link> extension and in the
+     <link linkend="book.pcre">PCRE</link> extension
+     (in the last case, only when the <literal>u</literal> modifier is used).
+     Although this is due to their special purpose, the function
+     <function>utf8_decode</function> assumes a UTF-8 encoding and the
+     function <function>utf8_encode</function> assumes an ISO-8859-1 encoding.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para>
+   Ultimately, this means writing correct programs using Unicode depends on
+   carefully avoiding functions that will not work and that most likely will
+   corrupt the data and using instead the functions that do behave correctly,
+   generally from the <link linkend="book.intl">intl</link> and
+   <link linkend="book.mbstring">mbstring</link> extensions.
+   However, using functions that can handle Unicode encodings is just the
+   beginning. No matter the functions the language provides, it is essential to
+   know the Unicode specification. For instance, a program that assumes there is
+   only uppercase and lowercase is making a wrong assumption.
+  </para>
  </sect2>
 </sect1><!-- end string -->
  
