@@ -349,7 +349,14 @@ function get_dir_status($dir) {
     ) {
       continue;
     }
+/*
+    $full_path = $dir . '/' . $file;
+    $size = mb_strlen(file_get_contents($full_path), 'UTF-8');
 
+    if (is_file($full_path) && $size < 2 * 1024) {
+        continue;
+    }
+*/
     if ($file != '.' && $file != '..' && $file != '.svn' && $dir != '/functions') {
       if (is_dir($dir.'/' .$file)) {
           $directories[] = $file;
@@ -998,8 +1005,9 @@ if ($count > 0) {
         "<th colspan=3>Sizes in kB</th></tr>\n".
         "<tr class=blue><th>en</th><th>$LANG</th><th>diff</th></tr>\n";
 
-  foreach($missing_tags as $val) {
+  $prev_dir = '';
 
+  foreach($missing_tags as $val) {
     // Shorten the filename (we have directory headers)
     $short_file = basename($val[0]);
 
