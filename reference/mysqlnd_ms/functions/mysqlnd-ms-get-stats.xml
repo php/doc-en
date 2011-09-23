@@ -74,12 +74,34 @@
        <literal>use_slave</literal>
       </entry>
       <entry>
-       Number of statements considered as read-only by the built-in query analyzer.
-       Neither statements which begin with a SQL hint to force
-       use of slave nor statements directed to a slave by an user-defined
-       callback are included. The total number of statements sent to the slaves is 
-       <literal>use_slave</literal> + <literal>use_slave_sql_hint</literal> +
-       <literal>use_slave_callback</literal>.
+       <para>
+         The semantics of this statistic has changed between 1.0.1 - 1.1.0.
+       </para>
+       <para>
+         The meaning for version 1.0.1 is as follows.
+         Number of statements considered as read-only by the built-in query analyzer.
+         Neither statements which begin with a SQL hint to force
+         use of slave nor statements directed to a slave by an user-defined
+         callback are included. The total number of statements sent to the slaves is 
+         <literal>use_slave</literal> + <literal>use_slave_sql_hint</literal> +
+         <literal>use_slave_callback</literal>.
+        </para>
+        <para>
+         PECL/mysqlnd_ms 1.1.0 introduces a new concept of chained filters. The
+         statictics is now set by the internal load balancing filter. With
+         version 1.1.0 the load balancing filter is always the last in the
+         filter chain, if used. In future versions a load balancing filter may be
+         followed by other filters causing another change in the meaning of
+         the statistic. If, in the future, a load balancing filter is followed
+         by another filter it is no longer guaranteed that the satement, whichs
+         increments <literal>use_slave</literal>, will be executed on the slaves.         
+        </para>
+        <para>
+         The meaning for version 1.1.0 is as follows. Number of statements
+         sent to the slaves. Statements directed to a slave by the user filter
+         (an user-defined callback) are not included. The latter are counted by
+         <literal>use_slave_callback</literal>.
+        </para>
       </entry>
       <entry>Since 1.0.0.</entry>
      </row>
@@ -88,14 +110,66 @@
        <literal>use_master</literal>
       </entry>
       <entry>
-       Number of statements not considered as read-only by the built-in query analyzer.
-       Neither statements which begin with a SQL hint to force
-       use of master nor statements directed to a master by an user-defined
-       callback are included. The total number of statements sent to the master is 
-       <literal>use_master</literal> + <literal>use_master_sql_hint</literal> +
-       <literal>use_master_callback</literal>.
+       <para>
+         The semantics of this statistic has changed between 1.0.1 - 1.1.0.
+       </para>
+       <para>
+        The meaning for version 1.0.1 is as follows.
+        Number of statements not considered as read-only by the built-in query analyzer.
+        Neither statements which begin with a SQL hint to force
+        use of master nor statements directed to a master by an user-defined
+        callback are included. The total number of statements sent to the master is 
+        <literal>use_master</literal> + <literal>use_master_sql_hint</literal> +
+        <literal>use_master_callback</literal>.
+       </para>
+       <para>
+         PECL/mysqlnd_ms 1.1.0 introduces a new concept of chained filters. The
+         statictics is now set by the internal load balancing filter. With
+         version 1.1.0 the load balancing filter is always the last in the
+         filter chain, if used. In future versions a load balancing filter may be
+         followed by other filters causing another change in the meaning of
+         the statistic. If, in the future, a load balancing filter is followed
+         by another filter it is no longer guaranteed that the satement, whichs
+         increments <literal>use_master</literal>, will be executed on the slaves.
+        </para>
+        <para>
+         The meaning for version 1.1.0 is as follows. Number of statements
+         sent to the masters. Statements directed to a master by the user filter
+         (an user-defined callback) are not included. The latter are counted by
+         <literal>use_master_callback</literal>.
+        </para>
       </entry>
       <entry>Since 1.0.0.</entry>
+     </row>
+     <row>
+      <entry>
+       <literal>use_slave_guess</literal>
+      </entry>
+      <entry>
+       Number of statements the built-in query analyzer recommends sending to
+       a slave because they contain no SQL hint to force use of a
+       certain server. The recommendation may be overruled in the following.
+       It is not guaranteed whether the statement will be excuted on a slave
+       or not. This is how often the internal <literal>is_select</literal>
+       function has guessed that a slave shall be used. Please, see also the
+       user space function <function>mysqlnd_ms_query_is_select</function>.
+      </entry>
+      <entry>Since 1.1.0.</entry>
+     </row>
+     <row>
+      <entry>
+       <literal>use_master_guess</literal>
+      </entry>
+      <entry>
+       Number of statements the built-in query analyzer recommends sending to
+       a master because they contain no SQL hint to force use of a
+       certain server. The recommendation may be overruled in the following.
+       It is not guaranteed whether the statement will be excuted on a slave
+       or not. This is how often the internal <literal>is_select</literal>
+       function has guessed that a master shall be used. Please, see also the
+       user space function <function>mysqlnd_ms_query_is_select</function>.
+      </entry>
+      <entry>Since 1.1.0.</entry>
      </row>
      <row>
       <entry>
@@ -301,6 +375,7 @@
     <programlisting role="php">
 <![CDATA[
 <?php
+printf("mysqlnd_ms.enable = %d\n", ini_get("mysqlnd_ms.enable"));
 printf("mysqlnd_ms.collect_statistics = %d\n", ini_get("mysqlnd_ms.collect_statistics"));
 var_dump(mysqlnd_ms_get_stats());
 ?>
@@ -309,17 +384,26 @@ var_dump(mysqlnd_ms_get_stats());
     &example.outputs;
     <screen>
 <![CDATA[
-mysqlnd_ms.collect_statistics = 0
-array(13) {
+mysqlnd_ms.enable = 1
+mysqlnd_ms.collect_statistics = 1
+array(20) {
   ["use_slave"]=>
   string(1) "0"
   ["use_master"]=>
   string(1) "0"
-  ["use_slave_forced"]=>
+  ["use_slave_guess"]=>
   string(1) "0"
-  ["use_master_forced"]=>
+  ["use_master_guess"]=>
   string(1) "0"
-  ["use_last_used_forced"]=>
+  ["use_slave_sql_hint"]=>
+  string(1) "0"
+  ["use_master_sql_hint"]=>
+  string(1) "0"
+  ["use_last_used_sql_hint"]=>
+  string(1) "0"
+  ["use_slave_callback"]=>
+  string(1) "0"
+  ["use_master_callback"]=>
   string(1) "0"
   ["non_lazy_connections_slave_success"]=>
   string(1) "0"
