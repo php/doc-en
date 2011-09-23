@@ -82,7 +82,8 @@
    the user connection may change. The applications must be aware of this.
   </para>
   <para>
-   The following list shows what the connection state consists of.
+   The following list shows what the connection state consists of. The list
+   may not be complete.
   </para>
   <para>
     <itemizedlist>
@@ -129,19 +130,139 @@
    </itemizedlist>
   </para>
   <para>
+    Connection switches happen right before queries are run. The plugin does
+    not switch the current connection until the moment in time when
+    the next statement is executed.
+  </para>
+  <para>
+   Please, do not miss the MySQL reference manual chapter on
+   replication features and issues. Some restrictions you hit may not be related
+   to the PHP plugin but are properties of the MySQL replication system.
+  </para>
+  <para>Broadcasted messages</para>
+  <para>
    The plugins philosophy is to align the state of connections in the
    pool only if the state is under full control of the plugin, or if it is
    necessary for security reasons. Just a few  actions that change the
-   state of the connection fall into this category. The plugin does broadcast
-   the following state changing client calls to all currently open
-   connections in the connection pool: <literal>change_user</literal>,
-   <literal>select_db</literal>, <literal>set_charset</literal>,
-   <literal>set_server_option</literal>, <literal>set_client_option</literal>,
-   <literal>autocommit</literal>. 
+   state of the connection fall into this category.
   </para>
   <para>
+   List of connection state changing client library calls broadcasted to all
+   open connections in the connection pool.
+  </para>
+  <informaltable>
+   <tgroup cols="3">
+    <colspec colwidth="10%"/>
+    <colspec colwidth="70%"/>
+    <colspec colwidth="20%"/>
+    <thead>
+     <row>
+      <entry>Library call</entry>
+      <entry>Notes</entry>
+      <entry>Version</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>
+       <literal>change_user</literal>
+      </entry>
+      <entry>
+       Called by the <literal>mysqli_change_user</literal> user API call.
+       Also triggered upon reuse of a persistent <literal>mysqli</literal>
+       connection.
+      </entry>
+      <entry>Since 1.0.0.</entry>
+     </row>
+     <row>
+      <entry>
+       <literal>select_db</literal>
+      </entry>
+      <entry>
+       Called by the following user API calls:
+       <function>mysql_select_db</function>,
+       <function>mysql_list_tables</function>,
+       <function>mysql_db_query</function>,
+       <function>mysql_list_fields</function>,
+       <function>mysqli_select_db</function>.
+      </entry>
+      <entry>Since 1.0.0.</entry>
+     </row>
+     <row>
+      <entry>
+       <literal>set_charset</literal>
+      </entry>
+      <entry>
+       Called by the following user API calls:
+       <function>mysql_set_charset</function>.
+       <function>mysqli_set_charset</function>.
+      </entry>
+      <entry>Since 1.0.0.</entry>
+     </row>
+     <row>
+      <entry>
+       <literal>set_server_option</literal>
+      </entry>
+      <entry>
+        Called by the following user API calls:
+        <function>mysqli_multi_query</function>,
+        <function>mysqli_real_query</function>,
+        <function>mysqli_query</function>,
+        <function>mysql_query</function>.
+      </entry>
+      <entry>Since 1.0.0.</entry>
+     </row>
+     <row>
+      <entry>
+       <literal>set_client_option</literal>
+      </entry>
+      <entry>
+        Called by the following user API calls:
+        <function>mysqli_options</function>,
+        <function>mysqli_ssl_set</function>,
+        <function>mysqli_connect</function>,
+        <function>mysql_connect</function>,
+        <function>mysql_pconnect</function>.
+      </entry>
+      <entry>Since 1.0.0.</entry>
+     </row>
+     <row>
+      <entry>
+       <literal>set_autocommit</literal>
+      </entry>
+      <entry>
+        Called by the following user API calls:
+        <function>mysqli_autocommit</function>,
+        <function>PDO::setAttribute(PDO::ATTR_AUTOCOMMIT)</function>.
+      </entry>
+      <entry>Since 1.0.0. PHP &gt;= 5.4.0.</entry>
+     </row>
+     <row>
+      <entry>
+       <literal>ssl_set</literal>
+      </entry>
+      <entry>
+       Called by the following user API calls:
+       <function>mysqli_ssl_set</function>.
+      </entry>
+      <entry>Since 1.1.0.</entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
+  <para>
+    If any of the above listed calls is to be executed,
+    the plugin loops over all currently open master and slave connections.
+    The loop continues until all servers have been contacted. The loop does
+    not break, if a server indicates a failure. If possible, the failure will be
+    propagated to the calling user API function. Depending on the user API
+    function, which has triggered the underlying library function, users may
+    be able to detect the failure.
+  </para>
+  <para>Broadcasting and lazy connections</para>
+  <para>
    The plugin does not proxy or
-   <quote>remember</quote> settings to apply them on connections
+   <quote>remember</quote> all settings to apply them on connections
    opened in the future. This is important to remember, if
    using 
    <link linkend="ini.mysqlnd-ms-plugin-config.lazy_connections">lazy connections</link>.
@@ -150,14 +271,71 @@
    Use of lazy connections is the default plugin action.
   </para>
   <para>
-    Connection switches happen right before queries are run. The plugin does
-    not switch the current connection until the moment in time when
-    the next statement is executed.
+   Settings of the following connection state changing library calls are
+   recorded to be used when opening a lazy connection to ensure that connection
+   state of all connections in the connection pool is comparable.
   </para>
+  <informaltable>
+   <tgroup cols="3">
+    <colspec colwidth="10%"/>
+    <colspec colwidth="70%"/>
+    <colspec colwidth="20%"/>
+    <thead>
+     <row>
+      <entry>Library call</entry>
+      <entry>Notes</entry>
+      <entry>Version</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>
+       <literal>change_user</literal>
+      </entry>
+      <entry>
+       User, password and database recorded for future use.
+      </entry>
+      <entry>Since 1.1.0.</entry>
+     </row>
+     <row>
+      <entry>
+       <literal>select_db</literal>
+      </entry>
+      <entry>
+       Database recorded for future use.
+      </entry>
+      <entry>Since 1.1.0.</entry>
+     </row>
+     <row>
+      <entry>
+       <literal>set_charset</literal>
+      </entry>
+      <entry>
+       Calls <literal>set_client_option(MYSQL_SET_CHARSET_NAME, charset)</literal>
+       on lazy connection to ensure <literal>charset</literal> will be used
+       upon opening the lazy connection.
+      </entry>
+      <entry>Since 1.1.0.</entry>
+     </row>
+     <row>
+      <entry>
+       <literal>set_autocommit</literal>
+      </entry>
+      <entry>
+       Adds <literal>SET AUTOCOMMIT=0|1</literal> to the list of init commands
+       of a lazy connection using
+       <literal>set_client_option(MYSQL_INIT_COMMAND, &quot;SET AUTOCOMMIT=...%quot;)</literal>.       
+      </entry>
+      <entry>Since 1.1.0. PHP &gt;= 5.4.0.</entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
   <para>
-   Please, do not miss the MySQL reference manual chapter on 
-   replication features and issues. Some restrictions you hit may not be related
-   to the PHP plugin but are properties of the MySQL replication system.   
+   Please note that the connection state is not only changed by API calls. Thus,
+   even if PECL mysqlnd_ms monitors all API calls, the application still needs
+   to take care. Ultimately, it is in the application developers reposibility
+   to maintain connection state, if needed.
   </para>
  </section>
 
@@ -226,7 +404,7 @@
   </para>
   <para>
     An user who does not change the connection state after opening a connection 
-    may activate automatic master failover. 
+    may activate automatic master failover.
   </para>
   <para>
     The failover policy is configured in the plugins configuration file by help
