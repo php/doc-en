@@ -25,8 +25,865 @@
  &reference.mysqlnd-ms.configure;
  &reference.mysqlnd-ms.ini;
 
- <section xml:id="mysqlnd-ms.plugin-ini">
-  <title xmlns="http://docbook.org/ns/docbook">Plugin configuration file</title>
+ <section xml:id="mysqlnd-ms.plugin-ini-json">
+  <title xmlns="http://docbook.org/ns/docbook">Plugin configuration file (&gt;=1.1.x)</title>  
+  <note>
+   <para>
+    The below description applies to PECL/mysqlnd_ms &gt;= 1.1.0-beta.
+    It is not valid for prior versions.
+   </para>
+  </note>  
+  <para>
+   The plugin is using its own configuration file. The configuration file
+   holds information on the MySQL replication master server,
+   the MySQL replication slave servers, the server pick (load balancing) policy,
+   the failover strategy and the use of lazy connections.
+  </para>
+  <para>
+   The PHP configuration directive
+   <link linkend="ini.mysqlnd-ms.ini-file"><literal>mysqlnd_ms.ini_file</literal></link>
+   is used to set the plugins configuration file.
+  </para>
+  <para>
+   As of mysqlnd 1.1.0-beta <literal>JSON</literal> format is used
+   for the plugins configuration file. <literal>JSON</literal> structures
+   are fast to parse by the plugin, thanks PHPs JSON support.
+   The <literal>JSON</literal>  format makes it easy to define hierarchical
+   data structures. Hierachical data structures are used, for example,
+   to allow definition of chained filters. Expressing hierarchical data structures
+   with the standard <literal>php.ini</literal> format is much more inconvenient.
+  </para>
+  <para>
+   If you are unfamiliar with the <literal>JSON</literal> you may want to convert
+   the configuration file into a PHP hash, edit the hash and convert it back
+   to <literal>JSON</literal> format.
+  </para>
+  <para>
+   <example>
+    <title>Converting a PHP hash into JSON format</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$config = array(
+  "myapp" => array(
+    "master" => array(
+      "master_0" => array(
+        "host"   => "localhost",
+        "socket" => "/tmp/mysql.sock",
+      ),
+    ),
+    "slave" => array(),
+  ),
+);
+
+file_put_contents("mysqlnd_ms.ini", json_encode($config, JSON_PRETTY_PRINT));
+printf("mysqlnd_ms.ini file created...\n");
+printf("Dumping file contents...\n");
+printf("%s\n", str_repeat("-", 80));
+echo file_get_contents("mysqlnd_ms.ini");
+printf("\n%s\n", str_repeat("-", 80));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+mysqlnd_ms.ini file created...
+Dumping file contents...
+--------------------------------------------------------------------------------
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": [
+
+        ]
+    }
+}
+--------------------------------------------------------------------------------
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   A plugin configuration file consists of one or more sections. Sections
+   are represented by the top-level object properties of the
+   object encoded in the <literal>JSON</literal> file. Sections could also
+   be called configuration names.
+  </para>
+  <para>
+   Applications reference sections by their name. Applications use section names
+   as the host (server) parameter to the various connect methods of the
+   <link linkend="ref.mysqli">mysqli</link>,
+   <link linkend="ref.mysql">mysql</link> and
+   <link linkend="ref.pdo-mysql">PDO_MYSQL</link> extensions. Upon connect
+   the <link linkend="book.mysqlnd">mysqlnd</link> plugin compares the hostname
+   with all section names from the plugin configuration file. If hostname and
+   section name match, the plugin will load the sections settings.
+  </para>
+  <para xml:id="mysqlnd-ms.plugin-ini-json.using_section">
+   <example>
+    <title>Using section names example</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.2.27"
+            },
+            "slave_1": {
+                "host": "192.168.2.27",
+                "port": 3306
+            }
+        }
+    },
+    "localhost": {
+        "master": [
+            {
+                "host": "localhost",
+                "socket": "\/path\/to\/mysql.sock"
+            }
+        ],
+        "slave": [
+            {
+                "host": "192.168.3.24",
+                "port": "3305"
+            },
+            {
+                "host": "192.168.3.65",
+                "port": "3309"
+            }
+        ]
+    }
+}
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* All of the following connections will be load balanced */
+$mysqli = new mysqli("myapp", "username", "password", "database");
+$pdo = new PDO('mysql:host=myapp;dbname=database', 'username', 'password');
+$mysql = mysql_connect("myapp", "username", "password");
+
+$mysqli = new mysqli("localhost", "username", "password", "database");
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Section names are strings. It is valid to use a section name such as
+   <literal>192.168.2.1</literal>, <literal>127.0.0.1</literal> or
+   <literal>localhost</literal>. If, for example, an application
+   connects to <literal>localhost</literal> and a plugin
+   configuration section <literal>localhost</literal> exists, the
+   semantics of the connect operation are changed. The application will
+   no longer only use the MySQL server running on the host
+   <literal>localhost</literal> but the plugin will start to load balance
+   MySQL queries following the rules from the <literal>localhost</literal>
+   configuration section. This way you can load balance queries from
+   an application without changing the applications source code.
+  </para>
+  <para xml:id="mysqlnd-ms.plugin-ini-json.server_list_syntax">
+   Each configuration section contains at least a list of master servers
+   and a list of slave servers. The master list is configured with the keyword
+   <literal>master</literal>, the slave list is configured with the <literal>slave</literal>
+   Failing to provide a slave list will result in an error of type
+   <literal>E_ERROR</literal> (fatal error). Although you are not allowed
+   to omit the slave list, it may be empty.
+  </para>
+  <para>  
+   The master and slave server lists can be optionally indexed by symbolic
+   names for the servers they describe. If optional indexing entries
+   by symbolic names is not needed, use an array of server descriptions for
+   the slave or master that is to be described.
+   <example>
+    <title>List of anonymous slaves</title>
+        <programlisting role="ini">
+<![CDATA[
+"slave": [
+    {
+        "host": "192.168.3.24",
+        "port": "3305"
+    },
+    {
+        "host": "192.168.3.65",
+        "port": "3309"
+    }
+]
+]]>
+    </programlisting>
+   </example>
+   An anonymous server list is encoded by the <literal>JSON array</literal> type.
+   You can optionally use symbolic names for indexing the slave or master servers
+   of a server list. In the latter case you have to use the
+   <literal>JSON object</literal> type.
+   <example>
+    <title>Master list using symbolic names</title>
+        <programlisting role="ini">
+<![CDATA[
+"master": {
+    "master_0": {
+        "host": "localhost"
+    }
+}
+]]>
+    </programlisting>
+   </example>
+   It is recommended to index the server lists with symbolic server names.
+   The alias names will be shown in error messages.
+  </para>
+  <para>
+   The order of servers is preserved and taken into account by mysqlnd_ms.
+   If, for example, you configure round robin load balancing strategy, the
+   first <literal>SELECT</literal> statement will be executed on the
+   slave that appears first in the slave server list.
+  </para>
+  <para>
+   A configured server can be described with the <literal>host</literal>,
+   <literal>port</literal>, <literal>socket</literal>, <literal>db</literal>,
+   <literal>user</literal>, <literal>password</literal> and <literal>connect_flags</literal>.
+   It is mandatory to set the database server host using the <literal>host</literal>
+   keyword. All other settings are optional.
+   <example>
+    <title>Keywords to configure a server</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "db_server_host",
+                "port": "db_server_port",
+                "socket": "db_server_socket",
+                "db": "database_resp_schema",
+                "user": "user",
+                "password": "password",
+                "connect_flags": 0
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "db_server_host",
+                "port": "db_server_port",
+                "socket": "db_server_socket"
+            }
+        }
+    }
+}
+]]>
+    </programlisting>
+   </example>
+   If a setting is omitted, the plugin will use the value provided by the user
+   API call used to open a connection. Please, see the 
+   <link linkend="mysqlnd-ms.plugin-ini-json.using_section">using section names example</link> above.
+  </para>
+  <para>
+   The configuration file format has been changed in version 1.1.0-beta to allow for
+   chained filters. Filters are responsible for filtering the configured list of
+   servers to identify a server for execution of a given statement.
+   Filters are configured with the <literal>filter</literal> keyword. Filters
+   are executed by mysqlnd_ms in the order of their appearance.
+   Defining filters is optional. A configuration section in the plugins
+   configuration file does not need to have a <literal>filters</literal> entry.
+  </para>
+  <para>
+   Filters replace the
+   <link linkend="ini.mysqlnd-ms-plugin-config.pick"><literal>pick[]</literal></link>
+   setting from prior versions. The new <literal>random</literal> and
+   <literal>roundrobin</literal> provide the same functionality.
+   <example>
+    <title>New <literal>roundrobin</literal> filter, old functionality</title>
+    <programlisting role="ini">
+<![CDATA[
+   {
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            },
+            "slave_1": {
+                "host": "192.168.78.137",
+                "port": "3306"
+            }
+        },
+        "filters": {
+            "roundrobin": [
+
+            ]
+        }
+    }
+}
+]]>
+    </programlisting>
+   </example>
+   The function
+   <link linkend="function.mysqlnd-ms-set-user-pick-server">
+   <function>mysqlnd_ms_set_user_pick_server</function></link>
+   has been removed. Setting a callback is now done with the <literal>user</literal>
+   filter. Some filters accept parameters. The <literal>user</literal> filter
+   requires and accepts a mandatory <literal>callback</literal> parameter
+   to set the callback previously set through the function <function>mysqlnd_ms_set_user_pick_server</function>.   
+   <example>
+    <title>The <literal>user</literal> filter replaces <function>mysqlnd_ms_set_user_pick_server</function></title>
+    <programlisting role="ini">
+<![CDATA[
+"filters": {
+    "user": {
+        "callback": "pick_server"
+    }
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Here is a short explanation of the configuration directives that can be used.
+  </para>
+  <para>
+  <variablelist>
+   <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.master">
+     <term>
+      <parameter>master</parameter>
+      <type>array or object</type>
+     </term>
+     <listitem>
+      <para>
+       List of MySQL replication master servers. The list of either
+       of the <literal>JSON type array</literal> to declare an anonymous list
+       of servers or of the <literal>JSON type object</literal>. Please,
+       see <link linkend="mysqlnd-ms.plugin-ini-json.server_list_syntax">above</link>
+       for examples. 
+      </para>
+      <para>
+       Setting at least one master server is mandatory. The plugin will issue an
+       error of type <literal>E_ERROR</literal> if the user has failed to
+       provide a master server list for a configuration section.
+       The fatal error may read
+       <literal>(mysqlnd_ms) Section [master] doesn't exist for host
+       [name_of_a_config_section] in %s on line %d</literal>.
+      </para>
+      <para>
+       A server is described with
+       the <literal>host</literal>, <literal>port</literal>,
+       <literal>socket</literal>, <literal>db</literal>,
+       <literal>user</literal>, <literal>password</literal> and
+       <literal>connect_flags</literal>. It is mandatory to
+       provide at  a value for <literal>host</literal>. If any of the
+       other values is not given, it will be taken from the user
+       API connect call, please, see also:
+       <link linkend="mysqlnd-ms.plugin-ini-json.using_section">using section names example</link>.
+      </para>
+      <para xml:id="mysqlnd-ms.plugin-ini-json.server_config_keywords">
+       Table of server configuration keywords.
+      </para>
+      <informaltable>
+       <tgroup cols="3">
+        <colspec colwidth="10%"/>
+        <colspec colwidth="70%"/>
+        <colspec colwidth="20%"/>
+        <thead>
+         <row>
+          <entry>Keyword</entry>
+          <entry>Description</entry>
+          <entry>Version</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+           <entry>
+             <literal>host</literal>
+           </entry>
+           <entry>
+            <para>
+             Database server host. This is a mandatory setting.
+             Failing to provide, will cause an error of type <literal>E_RECOVERABLE_ERROR</literal>
+             when the plugin tries to connect to the server. The error message may
+             read <literal>(mysqlnd_ms) Cannot find [host] in
+             [%s] section in config in %s on line %d</literal>.
+            </para>
+          </entry>
+          <entry>Since 1.1.0.</entry>
+         </row>
+         <row>
+           <entry>
+             <literal>port</literal>
+           </entry>
+           <entry>
+            <para>
+              Database server TCP/IP port.
+            </para>
+          </entry>
+          <entry>Since 1.1.0.</entry>
+         </row>
+         <row>
+           <entry>
+             <literal>socket</literal>
+           </entry>
+           <entry>
+            <para>
+              Database server Unix domain socket.
+            </para>
+          </entry>
+          <entry>Since 1.1.0.</entry>
+         </row>
+         <row>
+           <entry>
+             <literal>db</literal>
+           </entry>
+           <entry>
+            <para>
+              Database (schemata).
+            </para>
+          </entry>
+          <entry>Since 1.1.0.</entry>
+         </row>
+         <row>
+           <entry>
+             <literal>user</literal>
+           </entry>
+           <entry>
+            <para>
+              MySQL database user.
+            </para>
+          </entry>
+          <entry>Since 1.1.0.</entry>
+         </row>
+         <row>
+           <entry>
+             <literal>password</literal>
+           </entry>
+           <entry>
+            <para>
+              MySQL database user password.
+            </para>
+          </entry>
+          <entry>Since 1.1.0.</entry>
+         </row>
+         <row>
+           <entry>
+             <literal>connect_flags</literal>
+           </entry>
+           <entry>
+            <para>
+              Connection flags.
+            </para>
+          </entry>
+          <entry>Since 1.1.0.</entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </informaltable>  
+      <para>
+       The plugin supports using only one master server. An experimental
+       setting exists to enable multi-master support. The details are
+       not documented. The setting is meant for development only.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.slave">
+    <term>
+      <parameter>slave</parameter>
+      <type>array or object</type>
+     </term>
+     <listitem>
+      <para>
+       List of one or more MySQL replication slave servers. The syntax is
+       identical to setting master servers, please, see
+       <link linkend="ini.mysqlnd-ms-plugin-config-v2.master"><literal>master</literal></link>
+       above for details.
+      </para>
+      <para>
+       The plugin supports using one or more slave servers.
+      </para>
+      <para>
+       Setting a list of slave servers is mandatory. The plugin will report
+       an error of the type <literal>E_ERROR</literal> if <literal>slave</literal>
+       is not given for a configuration section. The fatal error message may read
+       <literal>(mysqlnd_ms) Section [slave] doesn't exist for host [%s] in %s on line %d</literal>.
+       Note, that it is valid to use an empty slave server list.
+       The error has been introduced to prevent accidently setting no slaves by
+       forgetting about the <literal>slave</literal> setting.
+       A master-only setup is still possible using an empty slave server list.       
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.filters">
+     <term>
+      <parameter>filters</parameter>
+      <type>object</type>
+     </term>
+     <listitem>
+      <para>
+       List of filters. A filter is responsible to filter the list of available
+       servers for executing a given statement. Filters can be chained.
+       The <literal>random</literal> and <literal>roundrobin</literal> filter
+       replace the 
+       <link linkend="ini.mysqlnd-ms-plugin-config.pick"><literal>pick[]</literal></link>
+       directive used in prior version to select a load balancing policy.
+       The <literal>user</literal> filter replaces the
+       <link linkend="function.mysqlnd-ms-set-user-pick-server">
+       <function>mysqlnd_ms_set_user_pick_server</function></link> function
+      </para>
+      <para>
+       Filters may accept parameters to refine their actions.  
+      </para>
+      <para>
+       If no load balancing policy is set, the plugin will default to
+       <literal>random_once</literal>. The <literal>random_once</literal>
+       policy picks a random slave server when running the first read-only
+       statement. The slave server will be used for all read-only
+       statements until the PHP script execution ends. No load balancing
+       policy is set and thus, defaulting takes place,
+       if neither the <literal>random</literal> nor the
+       <literal>roundrobin</literal> are part of a configuration section.
+      </para>
+    </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.filter_random">
+     <term>
+      Filter: <parameter>random</parameter>
+      <type>object</type>
+     </term>
+     <listitem>
+      <para>
+        The <literal>random</literal> filter features the load balancing policies
+        <literal>random</literal> and <literal>random_once</literal>, previously set
+        through the
+        <link linkend="ini.mysqlnd-ms-plugin-config.pick"><literal>pick[]</literal></link>
+        directive in older versions.
+      </para>
+      <para>
+        The <literal>random</literal> policy will pick a random server whenever
+        a read-only statement is to be executed. The <literal>random_once</literal>
+        picks a random slave server once and continues using the slave for the
+        rest of the PHP web request. <literal>random_once</literal> is a default,
+        if load balancing is not configured through a filter.
+      </para>
+      <para>
+       If the <literal>random</literal> filter is not given any arguments, it
+       stands for <literal>random</literal> load balancing policy.
+       <example>
+        <title><literal>random</literal> load balancing policy</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            },
+            "slave_1": {
+                "host": "192.168.78.137",
+                "port": "3306"
+            }
+        },
+        "filters": [
+            "random"
+        ]
+    }
+}
+
+]]>
+         </programlisting>
+       </example>
+       Optionally, the <literal>sticky</literal> argument can be passed to the
+       filter. If the parameter <literal>sticky</literal> is set to the string
+       <literal>1</literal>, the filter provides the <literal>random_once</literal>
+       load balancing policy.
+       <example>
+        <title><literal>random_once</literal> load balancing policy</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "filters": {
+        "random": {
+            "sticky": "1"
+        }
+    }
+}
+]]>
+        </programlisting>
+       </example>
+       Unknown arguments are ignored. No warning or error is given.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.filter_roundrobin">
+     <term>
+      Filter: <parameter>roundrobin</parameter>
+      <type>object</type>
+     </term>
+     <listitem>
+      <para>
+       If using <literal>roundrobin</literal> the plugin iterates over the list of
+       configured slave servers to pick a server for statement execution.
+       If the plugin reaches the end of the list, it wraps around to the beginning
+       of the list and picks the first configured slave server.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.failover">
+     <term>
+      <parameter>failover</parameter>
+      <type>string</type>
+     </term>
+     <listitem>
+      <para>
+       Failover policy. Supported policies:
+       <literal>disabled</literal> (default), <literal>master</literal>.
+      </para>
+      <para>
+       If no failover policy is set, the plugin will not do any
+       automatic failover (<literal>failover=disabled</literal>). Whenever
+       the plugin fails to connect a server it will emit a warning and
+       set the connections error code and message. Thereafter it is up to
+       the application to handle the error and, for example, resent the
+       last statement to trigger the selection of another server.
+      </para>
+      <para>
+       If using <literal>failover=master</literal> the plugin will implicitly
+       failover to a slave, if available. Please check the
+       concepts documentation to learn about potential
+       pitfalls and risks of using <literal>failover=master</literal>.
+       <example>
+        <title>Optional master failover when failing to connect to slave</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            }
+        },
+        "failover": "master"
+    }
+}
+]]>
+        </programlisting>
+       </example>       
+      </para>
+      <para>
+       Setting <literal>failover</literal> to any other value but
+       <literal>disabled</literal> or <literal>master</literal> will not
+       emit any warning or error.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.lazy_connections">
+     <term>
+      <parameter>lazy_connections</parameter>
+      <type>bool</type>
+     </term>
+     <listitem>
+      <para>
+       Controls the use of lazy connections. Lazy connections
+       are connections which are not opened before the client sends the first
+       connection. Lazy connections are a default.
+      </para>
+      <para>
+       It is strongly recommended to use lazy connections.
+       Lazy connections help to keep the number of open connections low.
+       If you disable lazy connections and, for example, configure one MySQL
+       replication master server and two MySQL replication slaves, the
+       plugin will open three connections upon the first call to a
+       connect function although the application might use the master
+       connection only.
+      </para>
+      <para>
+       Lazy connections bare a risk if you make heavy use of actions
+       which change the state of a connection. The plugin does not dispatch
+       all state changing actions to all connections from the connection pool.
+       The few dispatched actions are applied to already opened connections
+       only. Lazy connections opened in the future are not affected.
+       Only some settings are &quot;remembered&quot; and applied when lazy
+       connections are opened.
+       <example>
+        <title>Disabling lazy connection</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            }
+        },
+        "lazy_connections": 0
+    }
+}
+]]>
+        </programlisting>
+       </example>
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.master_on_write">
+     <term>
+      <parameter>master_on_write</parameter>
+      <type>bool</type>
+     </term>
+     <listitem>
+      <para>
+       If set, the plugin will use the master server only after the
+       first statement has been executed on the master. Applications
+       can still send statements to the slaves using SQL hints to
+       overrule the automatic decision.
+      </para>
+      <para>
+       The setting may help with replication lag. If an application runs
+       an <literal>INSERT</literal> the plugin will, by default, use the
+       master to execute all following statements, including
+       <literal>SELECT</literal> statements. This helps to avoid problems
+       with reads from slaves which have not replicated the
+       <literal>INSERT</literal> yet.
+       <example>
+        <title>Master on write for consistent reads</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            }
+        },
+        "master_on_write": 1
+    }
+}
+]]>
+        </programlisting>
+       </example>
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.trx_stickiness">
+     <term>
+      <parameter>trx_stickiness</parameter>
+      <type>string</type>
+     </term>
+     <listitem>
+      <para>
+       Transaction stickiness policy. Supported policies:
+       <literal>disabled</literal> (default), <literal>master</literal>.
+      </para>
+      <para>
+       Experimental feature.
+      </para>
+      <para>
+       The setting requires 5.4.0 or newer. If used with PHP older than 5.4.0,
+       the plugin will emit a warning like
+       <literal>(mysqlnd_ms) trx_stickiness strategy is not supported before PHP 5.3.99</literal>.
+      </para>
+      <para>
+       If no transaction stickiness policy is set or,
+       if setting <literal>trx_stickiness=disabled</literal>,
+       the plugin is not transaction aware. Thus, the plugin may load balance
+       connections and switch connections in the middle of a transaction.
+       The plugin is not transaction safe. SQL hints must be used
+       avoid connection switches during a transaction.
+      </para>
+      <para>
+       As of PHP 5.4.0 the mysqlnd library allows the plugin to monitor
+       the <literal>autocommit</literal> mode set by calls to the
+       libraries <literal>set_autocommit()</literal> function.
+       If setting <literal>set_stickiness=master</literal> and
+       <literal>autocommit</literal> gets disabled by a PHP MySQL extension
+       invoking the <literal>mysqlnd</literal> library internal
+       function call <literal>set_autocommit()</literal>, the plugin is made
+       aware of the begin of a transaction. Then, the plugin stops load balancing
+       and directs all statements to the master server until
+       <literal>autocommit</literal> is enabled. Thus, no SQL hints are required.
+      </para>
+      <para>
+       An example of a PHP MySQL API function calling the <literal>mysqlnd</literal>
+       library internal function call <literal>set_autocommit()</literal> is
+       <function>mysqli_autocommit</function>.
+      </para>
+      <para>
+       Although setting <literal>ser_stickiness=master</literal>, the plugin
+       cannot be made aware of <literal>autocommit</literal> mode changes caused
+       by SQL statements such as <literal>SET AUTOCOMMIT=0</literal>.
+       <example>
+        <title>Using master to execute transactions</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            }
+        },
+        "trx_stickiness": "master"
+    }
+}
+]]>
+        </programlisting>
+       </example>
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+ </section>
+
+ <section xml:id="mysqlnd-ms.plugin-ini-v1">
+  <title xmlns="http://docbook.org/ns/docbook">Plugin configuration file (&lt;= 1.0.x)</title>
+  <note>
+   <para>
+    The below description applies to PECL/mysqlnd_ms &lt; 1.1.0-beta.
+    It is not valid for later versions.
+   </para>
+  </note>  
   <para>
    The plugin is using its own configuration file. The configuration file
    holds information on the MySQL replication master server,
@@ -37,7 +894,7 @@
    The PHP configuration directive 
    <link linkend="ini.mysqlnd-ms.ini-file"><literal>mysqlnd_ms.ini_file</literal></link> 
    is used to set the plugins configuration file.
-  </para>
+  </para>  
   <para>
    The configuration file mimics standard the <literal>php.ini</literal> format.
    It consists of one or more sections. Every section defines its own unit
@@ -328,7 +1185,7 @@ slave[] = mysql_slave_2
        avoid connection switches during a transaction.
       </para>
       <para>
-       As of PHP 5.4.ß the mysqlnd library allows the plugin to monitor
+       As of PHP 5.4.0 the mysqlnd library allows the plugin to monitor
        the <literal>autocommit</literal> mode set by calls to the 
        libraries <literal>trx_autocommit()</literal> function. 
        If setting <literal>trx_stickiness=master</literal> and 
