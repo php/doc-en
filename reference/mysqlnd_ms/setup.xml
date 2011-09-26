@@ -429,6 +429,125 @@ putenv("MYSQL_TEST_SLAVE_HOST=myserver_hostname:/path/to/socket"));
    </para>
  </section>
 
+ <section xml:id="mysqlnd-ms.debugging">
+  <title xmlns="http://docbook.org/ns/docbook">Debugging and Tracing</title>
+  <para>
+   The mysqlnd debug log can be used to debug and trace the actitivities of
+   PECL/mysqlnd_ms. As a mysqlnd PECL/mysqlnd_ms adds trace information to the
+   mysqlnd library debug file. Please, see the
+   <link linkend="mysqlnd.debug"><literal>mysqlnd.debug</literal></link>
+   PHP configuration directive documentation for a detailed description
+   on how to configure the debug log.
+  </para>
+  <para>
+  Configuration setting example to activate the debug log:
+  <programlisting>
+<![CDATA[
+mysqlnd.debug=d:t:x:O,/tmp/mysqlnd.trace
+]]>
+  </programlisting>
+  <note>
+    <para>
+     This feature is only available with a debug build of PHP. Works
+     on Microsoft Windows if using a debug build of PHP and PHP was
+     built using Microsoft Visual C version 9 and above.
+    </para>
+   </note>
+  </para>
+  <para>
+   The debug log shows mysqlnd library and PECL/mysqlnd_ms plugin function calls,
+   similar to a trace log. Mysqlnd library calls are usually prefixed with
+   <literal>mysqlnd_</literal>. PECL/mysqlnd internal calls begin with
+   <literal>mysqlnd_ms</literal>. 
+  </para>
+  <para>
+   Example excerpt from the debug log (connect):
+   <programlisting>
+<![CDATA[
+[...]
+>mysqlnd_connect
+| info : host=myapp user=root db=test port=3306 flags=131072
+| >mysqlnd_ms::connect
+| | >mysqlnd_ms_config_json_section_exists
+| | | info : section=[myapp] len=[5]
+| | | >mysqlnd_ms_config_json_sub_section_exists
+| | | | info : section=[myapp] len=[5]
+| | | | info : ret=1
+| | | <mysqlnd_ms_config_json_sub_section_exists
+| | | info : ret=1
+| | <mysqlnd_ms_config_json_section_exists
+[...]
+]]>
+   </programlisting>
+  </para>
+  <para>
+   The debug log is not only useful for plugin developers but also to find the
+   cause of user errors. For example, if your application does not do proper
+   error handling and fails to record error messages, checking the debug
+   and trace log may help finding the cause.
+  </para>  
+  <para>
+   Example excerpt from the debug log (connection failure):
+   <programlisting>
+<![CDATA[
+[...]
+| | | | | | | info : adding error [Access denied for user 'root'@'localhost' (using password: YES)] to the list
+| | | | | | | info : PACKET_FREE(0)
+| | | | | | | info : PACKET_FREE(0x7f3ef6323f50)
+| | | | | | | info : PACKET_FREE(0x7f3ef6324080)
+| | | | | | <mysqlnd_auth_handshake
+| | | | | | info : switch_to_auth_protocol=n/a
+| | | | | | info : conn->error_info.error_no = 1045
+| | | | | <mysqlnd_connect_run_authentication
+| | | | | info : PACKET_FREE(0x7f3ef63236d8)
+| | | | | >mysqlnd_conn::free_contents
+| | | | | | >mysqlnd_net::free_contents
+| | | | | | <mysqlnd_net::free_contents
+| | | | | | info : Freeing memory of members
+| | | | | | info : scheme=unix:///tmp/mysql.sock
+| | | | | | >mysqlnd_error_list_pdtor
+| | | | | | <mysqlnd_error_list_pdtor
+| | | | | <mysqlnd_conn::free_contents
+| | | | <mysqlnd_conn::connect
+[...]
+]]>
+   </programlisting>
+  </para>
+  <para>  
+   The trace log can also be used to verify correct behaviour
+   of PECL/mysqlnd_ms itself, for example, to check which server has been
+   selected for query execution and why.
+  </para>  
+  <para>
+   Example excerpt from the debug log (plugin decision):
+   <programlisting>
+<![CDATA[
+[...]
+>mysqlnd_ms::query
+| info : query=DROP TABLE IF EXISTS test
+| >_mysqlnd_plugin_get_plugin_connection_data
+| | info : plugin_id=5
+| <_mysqlnd_plugin_get_plugin_connection_data
+| >mysqlnd_ms_pick_server_ex
+| | info : conn_data=0x7fb6a7d3e5a0 *conn_data=0x7fb6a7d410d0
+| | >mysqlnd_ms_select_servers_all
+| | <mysqlnd_ms_select_servers_all
+| | >mysqlnd_ms_choose_connection_rr
+| | | >mysqlnd_ms_query_is_select
+[...]
+| | | <mysqlnd_ms_query_is_select
+[...]
+| | | info : Init the master context
+| | | info : list(0x7fb6a7d3f598) has 1
+| | | info : Using master connection
+| | | >mysqlnd_ms_advanced_connect
+| | | | >mysqlnd_conn::connect
+| | | | | info : host=localhost user=root db=test port=3306 flags=131072 persistent=0 state=0
+]]>
+   </programlisting>
+  </para>
+ </section>
+
 </chapter>
 
 <!-- Keep this comment at the end of the file
