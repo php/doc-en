@@ -15,6 +15,17 @@
   environments we urge you to read additionally the background information from the
   reference sections.
  </para>
+ <note>
+   <para>
+    The documentation has been updated to show the syntax used as of version
+    1.1.0-beta. PECL/mysqlnd_ms 1.1.0-beta introduces many
+    <link linkend="mysqlnd-ms.changes_one_one">changes</link>. Among
+    others, it is using a new <literal>JSON</literal>
+    based
+    <link linkend="mysqlnd-ms.plugin-ini-json">plugin configuration file</link>
+    format.
+   </para>
+  </note>
  <section xml:id="mysqlnd-ms.quickstart.configuration">
   <title>Setup</title>
   <para>
@@ -52,46 +63,77 @@ mysqlnd_ms.ini_file=/path/to/mysqlnd_ms_plugin.ini
    The plugin-specific file must be readable by PHP.
   </para>
   <para>
-   The plugins configuration file is divided into one or more sections.
+   The plugins <link linkend="mysqlnd-ms.plugin-ini-json">configuration file</link>
+   is <literal>JSON</literal> based. It is divided into one or more sections.
    Each section has a name, for example, <literal>myapp</literal>. Every section
    makes its own set of configuration settings.
   </para>
   <para>
-    A section must at least list the MySQL replication master server.
-    The plugin supports using only one master server per section. Multi-master
-    MySQL replication setups are not supported.
-    Use the configuration directive
-    <link linkend="ini.mysqlnd-ms-plugin-config.master">master[]</link>
+    A section must at least list the MySQL replication master server and set
+    a list of slaves. The plugin supports using only one master server per section.
+    Multi-master MySQL replication setups are not supported.
+    Use the configuration setting
+    <link linkend="ini.mysqlnd-ms-plugin-config-v2.master">master</link>
     to set the hostname and the port or socket of the MySQL master server.
+    MySQL slave servers are configured using the
+    <link linkend="ini.mysqlnd-ms-plugin-config-v2.slave">slave</link>
+    keyword.
   </para>
   <para>
    <example>
     <title>Minimal plugin-specific configuration file (mysqlnd_ms_plugin.ini)</title>
     <programlisting role="ini">
 <![CDATA[
-[myapp]
-master[]=localhost:/tmp/mysql.sock
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": [
+
+        ]
+    }
+}
 ]]>
     </programlisting>
     </example>
   </para>
   <para>
-   It is allowed to set no MySQL slave server but it is not recommended to do.
-   You should always configure at least one slave server as well. Slave servers
-   are set using the configuration directive
-   <link linkend="ini.mysqlnd-ms-plugin-config.slave">slave[]</link>.
-   A configuration section may contain no, one or multiple
-   <literal>slave[]</literal> directives to set no, one or multiple
-   MySQL slaves.
+   It is not allowed to omit the MySQL slave server list. However,
+   an empty list may be configured. Doing so is not recommended.
+   You should always configure at least one slave server as well.
+   The slave server list may consist of one or more servers.
+  </para>
+  <para>
+   Server lists can use <link linkend="mysqlnd-ms.plugin-ini-json.server_list_syntax">
+   anonymous or non-anonymous syntax</link>. Non-anonymous
+   lists include alias names for the servers, such as <literal>master_0</literal>
+   for the master in the above example. The quickstart uses the
+   more verbose non-anonymous syntax.
   </para>
   <para>
    <example>
     <title>Recommended minimal plugin-specific config (mysqlnd_ms_plugin.ini)</title>
     <programlisting role="ini">
 <![CDATA[
-[myapp]
-master[]=localhost:/tmp/mysql.sock
-slave[]=192.168.2.27:3306
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.2.27",
+                "port": "3306"
+            }
+        }
+    }
+}
 ]]>
     </programlisting>
     </example>
@@ -128,9 +170,22 @@ slave[]=192.168.2.27:3306
     <title>Using one server as a master and as a slave (testing only!)</title>
     <programlisting role="ini">
 <![CDATA[
-[myapp]
-master[]=localhost:/tmp/mysql.sock
-slave[]=127.0.0.1:3306
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "127.0.0.1",
+                "port": "3306"
+            }
+        }
+    }
+}
 ]]>
     </programlisting>
     </example>
@@ -162,9 +217,22 @@ slave[]=127.0.0.1:3306
     <title>Plugin specific configuration file (mysqlnd_ms_plugin.ini)</title>
     <programlisting role="ini">
 <![CDATA[
-[myapp]
-master[]=localhost:/tmp/mysql.sock
-slave[]=192.168.2.27:3306
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.2.27",
+                "port": "3306"
+            }
+        }
+    }
+}
 ]]>
     </programlisting>
    </example>
@@ -249,16 +317,6 @@ Slave returns id = '1'
     </screen>
    </example>
   </para>
-  <note>
-   <para>
-    The plugin does not support native prepared statements. Prepared
-    statements are not load balanced. Most users of
-    <link linkend="ref.pdo-mysql">PDO_MYSQL</link>
-    will be unaffected by this restriction because
-    <link linkend="ref.pdo-mysql">PDO_MYSQL</link> is using a
-    client-side prepared statement emulation by default.
-   </para>
-  </note>
  </section>
 
  <section xml:id="mysqlnd-ms.quickstart.connectionpooling">
@@ -284,9 +342,22 @@ Slave returns id = '1'
     <title>Plugin config with one slave and one master</title>
     <programlisting role="ini">
 <![CDATA[
-[myapp]
-master[]=localhost:/tmp/mysql.sock
-slave[]=192.168.2.27:3306
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.2.27",
+                "port": "3306"
+            }
+        }
+    }
+}
 ]]>
     </programlisting>
    </example>
@@ -390,9 +461,22 @@ $mysqli->close();
     <title>Plugin config with one slave and one master</title>
     <programlisting role="ini">
 <![CDATA[
-[myapp]
-master[]=localhost:/tmp/mysql.sock
-slave[]=192.168.2.27:3306
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.2.27",
+                "port": "3306"
+            }
+        }
+    }
+}
 ]]>
     </programlisting>
    </example>
@@ -529,8 +613,22 @@ $mysqli->close();
     <programlisting role="ini">
 <![CDATA[
 [myapp]
-master[]=localhost:/tmp/mysql.sock
-slave[]=192.168.2.27:3306
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.2.27",
+                "port": "3306"
+            }
+        }
+    }
+}
 ]]>
     </programlisting>
    </example>
@@ -591,7 +689,7 @@ $mysqli->close();
   <para>
     If using PHP 5.4.0 or newer, API calls to set the <literal>autocommit</literal> mode
     and setting the experimental plugin configuration option
-    <link linkend="ini.mysqlnd-ms-plugin-config.trx_stickiness"><literal>trx_stickiness=master</literal></link>
+    <link linkend="ini.mysqlnd-ms-plugin-config-v2.trx_stickiness"><literal>trx_stickiness=master</literal></link>
     the plugin can automatically disable load balancing and connection switches
     for SQL transactions. In this configuration the plugin stops load balancing,
     if <literal>autocommit</literal> is disabled and directs all statements to
@@ -604,10 +702,23 @@ $mysqli->close();
     <title>Experimental trx_stickiness setting</title>
     <programlisting role="ini">
 <![CDATA[
-[myapp]
-master[]=localhost:/tmp/mysql.sock
-slave[]=192.168.2.27:3306
-trx_stickiness=master
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "127.0.0.1",
+                "port": "3306"
+            }
+        },
+        "trx_stickiness": "master"
+    }
+}
 ]]>
     </programlisting>
    </example>
@@ -618,9 +729,6 @@ trx_stickiness=master
     <programlisting role="php">
 <![CDATA[
 <?php
-if (version_compare(PHP_VERSION, "5.3.99", "<"))
-  die("This feature requires PHP 5.3.99, you are using " . PHP_VERSION);
-
 $mysqli = new mysqli("myapp", "username", "password", "database");
 if (!$mysqli)
   /* Of course, your error handling is nicer... */
@@ -662,7 +770,7 @@ $mysqli->close();
   <note>
    <para>
     The plugin configuration option
-    <link linkend="ini.mysqlnd-ms-plugin-config.trx_stickiness"><literal>trx_stickiness=master</literal></link>
+    <link linkend="ini.mysqlnd-ms-plugin-config-v2.trx_stickiness"><literal>trx_stickiness=master</literal></link>
     is an experimental feature. It requires PHP 5.4.0 or newer.
    </para>
   </note>
