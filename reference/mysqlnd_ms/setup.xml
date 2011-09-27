@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision$ --> 
+<!-- $Revision$ -->
 
 <chapter xml:id="mysqlnd-ms.setup" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  &reftitle.setup;
@@ -11,7 +11,7 @@
   </para>
   <para>
    The <literal>mysqlnd_ms</literal> replication and load balancing
-   plugin supports all PHP applications and all availablePHP MySQL extensions 
+   plugin supports all PHP applications and all availablePHP MySQL extensions
    (<link linkend="ref.mysqli">mysqli</link>,
    <link linkend="ref.mysql">mysql</link>,
    <link linkend="ref.pdo-mysql">PDO_MYSQL</link>).
@@ -26,13 +26,13 @@
  &reference.mysqlnd-ms.ini;
 
  <section xml:id="mysqlnd-ms.plugin-ini-json">
-  <title xmlns="http://docbook.org/ns/docbook">Plugin configuration file (&gt;=1.1.x)</title>  
+  <title xmlns="http://docbook.org/ns/docbook">Plugin configuration file (&gt;=1.1.x)</title>
   <note>
    <para>
     The below description applies to PECL/mysqlnd_ms &gt;= 1.1.0-beta.
     It is not valid for prior versions.
    </para>
-  </note>  
+  </note>
   <para>
    The plugin is using its own configuration file. The configuration file
    holds information on the MySQL replication master server,
@@ -203,7 +203,7 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
    <literal>E_ERROR</literal> (fatal error). Although you are not allowed
    to omit the slave list, it may be empty.
   </para>
-  <para>  
+  <para>
    The master and slave server lists can be optionally indexed by symbolic
    names for the servers they describe. If optional indexing entries
    by symbolic names is not needed, use an array of server descriptions for
@@ -286,7 +286,7 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
     </programlisting>
    </example>
    If a setting is omitted, the plugin will use the value provided by the user
-   API call used to open a connection. Please, see the 
+   API call used to open a connection. Please, see the
    <link linkend="mysqlnd-ms.plugin-ini-json.using_section">using section names example</link> above.
   </para>
   <para>
@@ -340,7 +340,7 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
    has been removed. Setting a callback is now done with the <literal>user</literal>
    filter. Some filters accept parameters. The <literal>user</literal> filter
    requires and accepts a mandatory <literal>callback</literal> parameter
-   to set the callback previously set through the function <function>mysqlnd_ms_set_user_pick_server</function>.   
+   to set the callback previously set through the function <function>mysqlnd_ms_set_user_pick_server</function>.
    <example>
     <title>The <literal>user</literal> filter replaces <function>mysqlnd_ms_set_user_pick_server</function></title>
     <programlisting role="ini">
@@ -370,7 +370,7 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
        of the <literal>JSON type array</literal> to declare an anonymous list
        of servers or of the <literal>JSON type object</literal>. Please,
        see <link linkend="mysqlnd-ms.plugin-ini-json.server_list_syntax">above</link>
-       for examples. 
+       for examples.
       </para>
       <para>
        Setting at least one master server is mandatory. The plugin will issue an
@@ -490,7 +490,7 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
          </row>
         </tbody>
        </tgroup>
-      </informaltable>  
+      </informaltable>
       <para>
        The plugin supports using only one master server. An experimental
        setting exists to enable multi-master support. The details are
@@ -523,6 +523,14 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
        forgetting about the <literal>slave</literal> setting.
        A master-only setup is still possible using an empty slave server list.
       </para>
+      <para>
+       If an empty slave list is configured and an attempt is made to
+       execute a statement on a slave the plugin may emit a warning like
+       <literal>mysqlnd_ms) Couldn't find the appropriate slave connection.
+       0 slaves to choose from.</literal> upon statement execution.
+       It is possible that another warning follows such as
+       <literal>(mysqlnd_ms) No connection selected by the last filter</literal>.
+      </para>
      </listitem>
     </varlistentry>
     <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.filters">
@@ -535,7 +543,7 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
        List of filters. A filter is responsible to filter the list of available
        servers for executing a given statement. Filters can be chained.
        The <literal>random</literal> and <literal>roundrobin</literal> filter
-       replace the 
+       replace the
        <link linkend="ini.mysqlnd-ms-plugin-config.pick"><literal>pick[]</literal></link>
        directive used in prior version to select a load balancing policy.
        The <literal>user</literal> filter replaces the
@@ -683,6 +691,7 @@ PHP Warning:  mysqli::query(): Couldn't fetch mysqli in filter_warning.php on li
        </example>
        Unknown arguments are ignored. No warning or error is given.
       </para>
+
       <para>
         Expects one or more servers as input. Outputs one server.
         A filter sequence such as
@@ -739,6 +748,334 @@ PHP Warning:  mysqli::query(): Couldn't fetch mysqli in filter_warning.php on li
       </para>
      </listitem>
     </varlistentry>
+    <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.filter_user">
+     <term>
+      Filter: <parameter>user</parameter>
+      <type>object</type>
+     </term>
+     <listitem>
+      <para>
+        The <literal>user</literal> replaces <link linkend="function.mysqlnd-ms-set-user-pick-server">
+       <function>mysqlnd_ms_set_user_pick_server</function></link> function,
+       which was removed in 1.1.0-beta. The filter sets a callback for user-defined
+       read/write splitting and server selection.
+      </para>
+      <para>
+        The plugins built-in read/write query split mechanism decisions can be
+        overwritten in two ways. The easiest way is to prepend a query string
+        with the SQL hints <constant>MYSQLND_MS_MASTER_SWITCH</constant>,
+        <constant>MYSQLND_MS_SLAVE_SWITCH</constant> or
+        <constant>MYSQLND_MS_LAST_USED_SWITCH</constant>. Using SQL hints one can
+        control, for example, whether a query shall be send to the MySQL replication
+        master server or one of the slave servers. By help of SQL hints it is
+        not possible to pick a certain slave server for query execution.
+      </para>
+      <para>
+       Full control on server selection can be gained using a callback function.
+       Use of a callback is recommended to expert users only because the callback
+       has to cover all cases otherwise handled by the plugin.
+      </para>
+      <para>
+       The plugin will invoke the callback function for selecting a server from the
+       lists of configured master and slave servers. The callback function
+       inspects the query to run and picks a server for query execution by returning
+       the hosts URI, as found in the master and slave list.
+      </para>
+      <para>
+       If the lazy connections are enabled and the callback choses a slave server for
+       which no connection has been established so far and establishing the connection
+       to the slave fails, the plugin will return an error upon the next action
+       on the failed connection, for example, when running a query. It is the
+       responsibility of the application developer to handle the error. For example,
+       the application can re-run the query to trigger a new server selection and
+       callback invocation. If so, the callback must make sure to select
+       a different slave, or check slave availability, before returning to
+       the plugin to prevent an endless loop.
+      </para>
+      <para>
+       <example>
+        <title>Setting a callback</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            }
+        },
+        "filters": {
+            "user": {
+                "callback": "pick_server"
+            }
+        }
+    }
+}
+]]>
+         </programlisting>
+       </example>
+      </para>
+      <para>
+       The callback is supposed to return a host to run the query on.
+       The host URI is to be taken from the master and slave connection lists
+       passed to the callback function. If callback returns a value neither
+       found in the master nor in the slave connection lists the plugin
+       will emit an error of the type <literal>E_RECOVERABLE_ERROR</literal>
+       The error may read like
+       <literal>  (mysqlnd_ms) User filter callback has returned an unknown server.
+       The server 'server that is not in master or slave list' can neither be found
+       in the master list nor in the slave list</literal>.
+       If the application catches the error to ignore it, follow up errors
+       may be set on the connection handle, for example,
+       <literal>(mysqlnd_ms) No connection selected by the last filter</literal> with
+       the error code <literal>2000</literal> and the sqlstate <literal>HY000</literal>.
+       Furthermore a warning may be emitted.
+      </para>
+      <para>
+       Referencing a non-existing function as a callback will result
+       in any error of the type <literal>E_RECOVERABLE_ERROR</literal> whenever
+       the plugin tries to callback function. The error message may reads like:
+       <literal>(mysqlnd_ms) Specified callback (pick_server) is
+       not a valid callback</literal>. If the application catches the error to
+       ignore it, follow up errors may be set on the connection handle, for example,
+       <literal>(mysqlnd_ms) Specified callback (pick_server) is
+       not a valid callback</literal> with the error code <literal>2000</literal>
+       and the sqlstate <literal>HY000</literal>. Furthermore a warning
+       may be emitted.
+      </para>
+      <para>
+       The following parameters are passed from the plugin to the callback.
+      </para>
+      <informaltable>
+       <tgroup cols="3">
+        <colspec colwidth="10%"/>
+        <colspec colwidth="70%"/>
+        <colspec colwidth="20%"/>
+        <thead>
+         <row>
+          <entry>Parameter</entry>
+          <entry>Description</entry>
+          <entry>Version</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+           <entry>
+             <literal>connected_host</literal>
+           </entry>
+           <entry>
+            <para>
+             URI of the currently connected database server.
+            </para>
+          </entry>
+          <entry>Since 1.1.0.</entry>
+         </row>
+         <row>
+           <entry>
+             <literal>query</literal>
+           </entry>
+           <entry>
+            <para>
+             Query string of the statement for which a server needs
+             to be picked.
+            </para>
+          </entry>
+          <entry>Since 1.1.0.</entry>
+         </row>
+         <row>
+           <entry>
+             <literal>masters</literal>
+           </entry>
+           <entry>
+            <para>
+             List of master servers to choose from. Note, that the list of master
+             servers may not be identical to the list of configured master
+             servers if the filter is not the first in the filter chain.
+             Previously run filters may have reduced the master
+             list already.
+            </para>
+          </entry>
+          <entry>Since 1.1.0.</entry>
+         </row>
+         <row>
+           <entry>
+             <literal>slaves</literal>
+           </entry>
+           <entry>
+            <para>
+             List of slave servers to choose from. Note, that the list of master
+             servers may not be identical to the list of configured master
+             servers if the filter is not the first in the filter chain.
+             Previously run filters may have reduced the master
+             list already.
+            </para>
+          </entry>
+          <entry>Since 1.1.0.</entry>
+         </row>
+         <row>
+           <entry>
+             <literal>last_used_connection</literal>
+           </entry>
+           <entry>
+            <para>
+              URI of the server of the connection used to execute the previous
+              statement on.
+            </para>
+          </entry>
+          <entry>Since 1.1.0.</entry>
+         </row>
+         <row>
+           <entry>
+             <literal>in_transaction</literal>
+           </entry>
+           <entry>
+            <para>
+             Boolean flag indicating wheter the statement is
+             part of an open transaction. If autocommit mode is turned
+             off, this will be set to <literal>TRUE</literal>. Otherwise
+             it is set to <literal>FALSE</literal>.
+            </para>
+            <para>
+             Transaction detection is based on monitoring the
+             mysqlnd library call <literal>set_autocommit</literal>.
+             Monitoring is not possible beofre PHP 5.4.0. Please, see
+             <link linkend="mysqlnd-ms.pooling">connection pooling and switching</link>
+             concepts discussion for further details.
+            </para>
+          </entry>
+          <entry>Since 1.1.0.</entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </informaltable>
+     <para>
+      <example>
+        <title>Using a callback</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.2.27",
+                "port": "3306"
+            },
+            "slave_1": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            }
+        },
+        "filters": {
+            "user": {
+                "callback": "pick_server"
+            }
+        }
+    }
+}
+]]>
+         </programlisting>
+         <programlisting role="php">
+<![CDATA[
+<?php
+function pick_server($connected, $query, $masters, $slaves, $last_used_connection, $in_transaction)
+{
+ static $slave_idx = 0;
+ static $num_slaves = NULL;
+ if (is_null($num_slaves))
+  $num_slaves = count($slaves);
+
+ /* default: fallback to the plugins build-in logic */
+ $ret = NULL;
+
+ printf("User has connected to '%s'...\n", $connected);
+ printf("... deciding where to run '%s'\n", $query);
+
+ $where = mysqlnd_ms_query_is_select($query);
+ switch ($where)
+ {
+  case MYSQLND_MS_QUERY_USE_MASTER:
+   printf("... using master\n");
+   $ret = $masters[0];
+   break;
+  case MYSQLND_MS_QUERY_USE_SLAVE:
+   /* SELECT or SQL hint for using slave */
+   if (stristr($query, "FROM table_on_slave_a_only"))
+   {
+    /* a table which is only on the first configured slave  */
+    printf("... access to table available only on slave A detected\n");
+    $ret = $slaves[0];
+   }
+   else
+   {
+    /* round robin */
+    printf("... some read-only query for a slave\n");
+    $ret = $slaves[$slave_idx++ % $num_slaves];
+   }
+   break;
+  case MYSQLND_MS_QUERY_LAST_USED:
+   printf("... using last used server\n");
+   $ret = $last_used_connection;
+   break;
+ }
+
+ printf("... ret = '%s'\n", $ret);
+ return $ret;
+}
+
+$mysqli = new mysqli("myapp", "root", "", "test");
+
+if (!($res = $mysqli->query("SELECT 1 FROM DUAL")))
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+else
+ $res->close();
+
+if (!($res = $mysqli->query("SELECT 2 FROM DUAL")))
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+else
+ $res->close();
+
+
+if (!($res = $mysqli->query("SELECT * FROM table_on_slave_a_only")))
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+else
+ $res->close();
+
+$mysqli->close();
+?>
+]]>
+         </programlisting>
+         &example.outputs;
+         <screen>
+<![CDATA[
+User has connected to 'myapp'...
+... deciding where to run 'SELECT 1 FROM DUAL'
+... some read-only query for a slave
+... ret = 'tcp://192.168.2.27:3306'
+User has connected to 'myapp'...
+... deciding where to run 'SELECT 2 FROM DUAL'
+... some read-only query for a slave
+... ret = 'tcp://192.168.78.136:3306'
+User has connected to 'myapp'...
+... deciding where to run 'SELECT * FROM table_on_slave_a_only'
+... access to table available only on slave A detected
+... ret = 'tcp://192.168.2.27:3306'
+]]>
+         </screen>
+       </example>
+      </para>
+     </listitem>
+    </varlistentry>
     <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.failover">
      <term>
       <parameter>failover</parameter>
@@ -784,7 +1121,7 @@ PHP Warning:  mysqli::query(): Couldn't fetch mysqli in filter_warning.php on li
 }
 ]]>
         </programlisting>
-       </example>       
+       </example>
       </para>
       <para>
        Setting <literal>failover</literal> to any other value but
@@ -976,7 +1313,7 @@ PHP Warning:  mysqli::query(): Couldn't fetch mysqli in filter_warning.php on li
     The below description applies to PECL/mysqlnd_ms &lt; 1.1.0-beta.
     It is not valid for later versions.
    </para>
-  </note>  
+  </note>
   <para>
    The plugin is using its own configuration file. The configuration file
    holds information on the MySQL replication master server,
@@ -984,10 +1321,10 @@ PHP Warning:  mysqli::query(): Couldn't fetch mysqli in filter_warning.php on li
    the failover strategy and the use of lazy connections.
   </para>
   <para>
-   The PHP configuration directive 
-   <link linkend="ini.mysqlnd-ms.ini-file"><literal>mysqlnd_ms.ini_file</literal></link> 
+   The PHP configuration directive
+   <link linkend="ini.mysqlnd-ms.ini-file"><literal>mysqlnd_ms.ini_file</literal></link>
    is used to set the plugins configuration file.
-  </para>  
+  </para>
   <para>
    The configuration file mimics standard the <literal>php.ini</literal> format.
    It consists of one or more sections. Every section defines its own unit
@@ -1144,17 +1481,17 @@ slave[] = mysql_slave_2
        If no load balancing policy is set, the plugin will default to
        <literal>random_once</literal>. The <literal>random_once</literal>
        policy picks a random slave server when running the first read-only
-       statement. The slave server will be used for all read-only 
+       statement. The slave server will be used for all read-only
        statements until the PHP script execution ends.
       </para>
      <para>
        The <literal>random</literal> policy will pick a random server whenever
-       a read-only statement is to be executed. 
+       a read-only statement is to be executed.
      </para>
      <para>
-       If using 
+       If using
        <literal>roundrobin</literal> the plugin iterates over the list of
-       configured slave servers to pick a server for statement execution. 
+       configured slave servers to pick a server for statement execution.
        If the plugin reaches the end of the list, it wraps around to the beginning
        of the list and picks the first configured slave server.
       </para>
@@ -1180,14 +1517,14 @@ slave[] = mysql_slave_2
       <para>
        If no failover policy is set, the plugin will not do any
        automatic failover (<literal>failover=disabled</literal>). Whenever
-       the plugin fails to connect a server it will emit a warning and 
-       set the connections error code and message. Thereafter it is up to 
+       the plugin fails to connect a server it will emit a warning and
+       set the connections error code and message. Thereafter it is up to
        the application to handle the error and, for example, resent the
        last statement to trigger the selection of another server.
       </para>
       <para>
        If using <literal>failover=master</literal> the plugin will implicitly
-       failover to a slave, if available. Please check the 
+       failover to a slave, if available. Please check the
        concepts documentation to learn about potential
        pitfalls and risks of using <literal>failover=master</literal>.
       </para>
@@ -1202,26 +1539,26 @@ slave[] = mysql_slave_2
       <para>
        Controls the use of lazy connections. Lazy connections
        are connections which are not opened before the client sends the first
-       connection. 
+       connection.
       </para>
       <para>
        It is strongly recommended to use lazy connections.
        Lazy connections help to keep the number of open connections low.
-       If you disable lazy connections and, for example, configure one MySQL 
-       replication master server and two MySQL replication slaves, the 
-       plugin will open three connections upon the first call to a 
-       connect function although the application might use the master 
-       connection only. 
+       If you disable lazy connections and, for example, configure one MySQL
+       replication master server and two MySQL replication slaves, the
+       plugin will open three connections upon the first call to a
+       connect function although the application might use the master
+       connection only.
       </para>
       <para>
        Lazy connections bare a risk if you make heavy use of actions
        which change the state of a connection. The plugin does not dispatch
        all state changing actions to all connections from the connection pool.
        The few dispatched actions are applied to already opened connections
-       only. Lazy connections opened in the future are not affected. 
-       If, for example, the connection character set is changed using a 
-       PHP MySQL API call, the plugin will change the character set of all 
-       currently opened connection. It will not remember the character set 
+       only. Lazy connections opened in the future are not affected.
+       If, for example, the connection character set is changed using a
+       PHP MySQL API call, the plugin will change the character set of all
+       currently opened connection. It will not remember the character set
        change to apply it on lazy connections opened in the future. As a
        result the internal connection pool would hold connections using
        different character sets. This is not desired. Remember that character
@@ -1244,9 +1581,9 @@ slave[] = mysql_slave_2
       <para>
        The setting may help with replication lag. If an application runs
        an <literal>INSERT</literal> the plugin will, by default, use the
-       master to execute all following statements, including 
-       <literal>SELECT</literal> statements. This helps to avoid problems 
-       with reads from slaves which have not replicated the 
+       master to execute all following statements, including
+       <literal>SELECT</literal> statements. This helps to avoid problems
+       with reads from slaves which have not replicated the
        <literal>INSERT</literal> yet.
       </para>
      </listitem>
@@ -1266,32 +1603,32 @@ slave[] = mysql_slave_2
       </para>
       <para>
        The setting requires 5.4.0 or newer. If used with PHP older than 5.4.0,
-       the plugin will emit a warning like 
+       the plugin will emit a warning like
        <literal>(mysqlnd_ms) trx_stickiness strategy is not supported before PHP 5.3.99</literal>.
       </para>
       <para>
-       If no transaction stickiness policy is set or, 
-       if setting <literal>trx_stickiness=disabled</literal>, 
+       If no transaction stickiness policy is set or,
+       if setting <literal>trx_stickiness=disabled</literal>,
        the plugin is not transaction aware. Thus, the plugin may load balance
        connections and switch connections in the middle of a transaction.
-       The plugin is not transaction safe. SQL hints must be used 
+       The plugin is not transaction safe. SQL hints must be used
        avoid connection switches during a transaction.
       </para>
       <para>
        As of PHP 5.4.0 the mysqlnd library allows the plugin to monitor
-       the <literal>autocommit</literal> mode set by calls to the 
-       libraries <literal>trx_autocommit()</literal> function. 
-       If setting <literal>trx_stickiness=master</literal> and 
+       the <literal>autocommit</literal> mode set by calls to the
+       libraries <literal>trx_autocommit()</literal> function.
+       If setting <literal>trx_stickiness=master</literal> and
        <literal>autocommit</literal> gets disabled by a PHP MySQL extension
        invoking the <literal>mysqlnd</literal> library internal
        function call <literal>trx_autocommit()</literal>, the plugin is made
        aware of the begin of a transaction. Then, the plugin stops load balancing
-       and directs all statements to the master server until 
+       and directs all statements to the master server until
        <literal>autocommit</literal> is enabled. Thus, no SQL hints are required.
       </para>
       <para>
-       An example of a PHP MySQL API function calling the <literal>mysqlnd</literal> 
-       library internal function call <literal>trx_autocommit()</literal> is 
+       An example of a PHP MySQL API function calling the <literal>mysqlnd</literal>
+       library internal function call <literal>trx_autocommit()</literal> is
        <function>mysqli_autocommit</function>.
       </para>
       <para>
@@ -1408,7 +1745,7 @@ mysqlnd.debug=d:t:x:O,/tmp/mysqlnd.trace
    The debug log shows mysqlnd library and PECL/mysqlnd_ms plugin function calls,
    similar to a trace log. Mysqlnd library calls are usually prefixed with
    <literal>mysqlnd_</literal>. PECL/mysqlnd internal calls begin with
-   <literal>mysqlnd_ms</literal>. 
+   <literal>mysqlnd_ms</literal>.
   </para>
   <para>
    Example excerpt from the debug log (connect):
@@ -1435,7 +1772,7 @@ mysqlnd.debug=d:t:x:O,/tmp/mysqlnd.trace
    cause of user errors. For example, if your application does not do proper
    error handling and fails to record error messages, checking the debug
    and trace log may help finding the cause.
-  </para>  
+  </para>
   <para>
    Example excerpt from the debug log (connection failure):
    <programlisting>
@@ -1463,11 +1800,11 @@ mysqlnd.debug=d:t:x:O,/tmp/mysqlnd.trace
 ]]>
    </programlisting>
   </para>
-  <para>  
+  <para>
    The trace log can also be used to verify correct behaviour
    of PECL/mysqlnd_ms itself, for example, to check which server has been
    selected for query execution and why.
-  </para>  
+  </para>
   <para>
    Example excerpt from the debug log (plugin decision):
    <programlisting>
