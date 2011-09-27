@@ -521,7 +521,7 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
        Note, that it is valid to use an empty slave server list.
        The error has been introduced to prevent accidently setting no slaves by
        forgetting about the <literal>slave</literal> setting.
-       A master-only setup is still possible using an empty slave server list.       
+       A master-only setup is still possible using an empty slave server list.
       </para>
      </listitem>
     </varlistentry>
@@ -540,10 +540,10 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
        directive used in prior version to select a load balancing policy.
        The <literal>user</literal> filter replaces the
        <link linkend="function.mysqlnd-ms-set-user-pick-server">
-       <function>mysqlnd_ms_set_user_pick_server</function></link> function
+       <function>mysqlnd_ms_set_user_pick_server</function></link> function.
       </para>
       <para>
-       Filters may accept parameters to refine their actions.  
+       Filters may accept parameters to refine their actions.
       </para>
       <para>
        If no load balancing policy is set, the plugin will default to
@@ -555,6 +555,60 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
        if neither the <literal>random</literal> nor the
        <literal>roundrobin</literal> are part of a configuration section.
       </para>
+      <para>
+       If a filter chain is configured so that a filter which output no
+       more than once server is used as input for a filter which should be given
+       more than one server as input, the plugin may emit a warning upon
+       opening a connection. The warning may read: <literal>(mysqlnd_ms) Error while creating
+       filter '%s' . Non-multi filter '%s' already created.
+       Stopping in %s on line %d</literal>. Futhermore an error of
+       the error code <literal>2000</literal>, the sql state <literal>HY000</literal>
+       and an error message similar to the warning may be set on the connection
+       handle.
+       <example>
+        <title>Invalid filter sequence</title>
+        <programlisting role="ini">
+<![CDATA[
+       {
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            }
+        },
+        "filters": [
+            "roundrobin",
+            "random"
+        ]
+    }
+}
+]]>
+         </programlisting>
+         <programlisting role="php">
+<![CDATA[
+<?php
+$link = new mysqli("myapp", "root", "", "test");
+printf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error());
+$link->query("SELECT 1 FROM DUAL");
+?>
+]]>
+         </programlisting>
+         &example.outputs;
+        <screen>
+<![CDATA[
+PHP Warning:  mysqli::mysqli(): (HY000/2000): (mysqlnd_ms) Error while creating filter 'random' . Non-multi filter 'roundrobin' already created. Stopping in filter_warning.php on line 1
+[2000] (mysqlnd_ms) Error while creating filter 'random' . Non-multi filter 'roundrobin' already created. Stopping
+PHP Warning:  mysqli::query(): Couldn't fetch mysqli in filter_warning.php on line 3
+]]>
+        </screen>
+       </example>
+      </para>
     </listitem>
     </varlistentry>
     <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.filter_random">
@@ -564,24 +618,23 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
      </term>
      <listitem>
       <para>
-        The <literal>random</literal> filter features the load balancing policies
-        <literal>random</literal> and <literal>random_once</literal>, previously set
-        through the
+        The <literal>random</literal> filter features the random and random once
+        load balancing policies, set through the
         <link linkend="ini.mysqlnd-ms-plugin-config.pick"><literal>pick[]</literal></link>
         directive in older versions.
       </para>
       <para>
-        The <literal>random</literal> policy will pick a random server whenever
-        a read-only statement is to be executed. The <literal>random_once</literal>
+        The random policy will pick a random server whenever
+        a read-only statement is to be executed. The random once strategy
         picks a random slave server once and continues using the slave for the
-        rest of the PHP web request. <literal>random_once</literal> is a default,
+        rest of the PHP web request. Random once is a default,
         if load balancing is not configured through a filter.
       </para>
       <para>
        If the <literal>random</literal> filter is not given any arguments, it
-       stands for <literal>random</literal> load balancing policy.
+       stands for random load balancing policy.
        <example>
-        <title><literal>random</literal> load balancing policy</title>
+        <title>Random load balancing with <literal>random</literal> filter</title>
         <programlisting role="ini">
 <![CDATA[
 {
@@ -612,10 +665,10 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
        </example>
        Optionally, the <literal>sticky</literal> argument can be passed to the
        filter. If the parameter <literal>sticky</literal> is set to the string
-       <literal>1</literal>, the filter provides the <literal>random_once</literal>
-       load balancing policy.
+       <literal>1</literal>, the filter follows the random once
+       load balancing strategy.
        <example>
-        <title><literal>random_once</literal> load balancing policy</title>
+        <title>Random once load balancing with <literal>random</literal> filter</title>
         <programlisting role="ini">
 <![CDATA[
 {
@@ -630,6 +683,13 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
        </example>
        Unknown arguments are ignored. No warning or error is given.
       </para>
+      <para>
+        Expects one or more servers as input. Outputs one server.
+        A filter sequence such as
+        <literal>random</literal>, <literal>roundrobin</literal> may
+        cause a warning and an error message to be set on the connection
+        handle when executing a statement.
+      </para>
      </listitem>
     </varlistentry>
     <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.filter_roundrobin">
@@ -639,10 +699,43 @@ $mysqli = new mysqli("localhost", "username", "password", "database");
      </term>
      <listitem>
       <para>
-       If using <literal>roundrobin</literal> the plugin iterates over the list of
-       configured slave servers to pick a server for statement execution.
-       If the plugin reaches the end of the list, it wraps around to the beginning
-       of the list and picks the first configured slave server.
+       If using the <literal>roundrobin</literal> filter, the plugin
+       iterates over the list of  configured slave servers to pick a server
+       for statement execution. If the plugin reaches the end of the list,
+       it wraps around to the beginning of the list and picks the first
+       configured slave server.
+       <example>
+        <title><literal>roundrobin</literal> filter</title>
+        <programlisting role="ini">
+<![CDATA[
+       {
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            }
+        },
+        "filters": [
+            "roundrobin"
+        ]
+    }
+}
+]]>
+        </programlisting>
+       </example>
+      </para>
+      <para>
+        Expects one or more servers as input. Outputs one server.
+        A filter sequence such as
+        <literal>roundrobin</literal>, <literal>random</literal> may
+        cause a warning and an error message to be set on the connection
+        handle when executing a statement.
       </para>
      </listitem>
     </varlistentry>
