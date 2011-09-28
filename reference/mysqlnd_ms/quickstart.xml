@@ -43,7 +43,7 @@
    configuration directive
    <link linkend="ini.mysqlnd-ms.ini-file">mysqlnd_ms.ini_file</link>
    to set the full path to the plugin-specific configuration file.
-   This file must be readable by PHP.
+   his file must be readable by PHP (i.e. the web server user).
   </para>
   <para>
    <example>
@@ -71,7 +71,7 @@ mysqlnd_ms.ini_file=/path/to/mysqlnd_ms_plugin.ini
   <para>
     A section must at least list the MySQL replication master server and set
     a list of slaves. The plugin supports using only one master server per section.
-    Multi-master MySQL replication setups are not supported.
+    Multi-master MySQL replication setups are not yet fully supported.
     Use the configuration setting
     <link linkend="ini.mysqlnd-ms-plugin-config-v2.master">master</link>
     to set the hostname and the port or socket of the MySQL master server.
@@ -152,7 +152,7 @@ mysqlnd_ms.ini_file=/path/to/mysqlnd_ms_plugin.ini
    will be described later in the quickstart guide.
   </para>
   <para>
-   It is responsibility of the application to handle potential issues caused
+   It is the responsibility of the application to handle potential issues caused
    by connection switches. By always configuring a master and at lease one slave
    server you can be sure to detect issues early because switches become
    possible.
@@ -257,8 +257,10 @@ $mysql = mysql_connect("myapp", "username", "password");
    The plugin will send read-only statements to the MySQL slave server with the
    IP <literal>192.168.2.27</literal> and listening on port <literal>3306</literal>
    for MySQL client connection. All other statements will be directed to the
-   MySQL master server running on the host <literal>localhost</literal> accepting
-   MySQL client connection on the Unix domain socket <literal>/tmp/mysql.sock</literal>.
+   MySQL master server running on the host <literal>localhost</literal>. If on Unix like
+   operating systems, the master on <literal>localhost</literal> will be accepting
+   MySQL client connection on the Unix domain socket <literal>/tmp/mysql.sock</literal>,
+   on Windows the default TCP/IP port will be used.
    The plugin will use the user name <literal>username</literal> and the password
    <literal>password</literal> to connect to any of the MySQL servers listed in
    the section <literal>myapp</literal> of the plugins configuration file. Upon
@@ -488,7 +490,7 @@ $mysqli->close();
 <![CDATA[
 <?php
 $mysqli = new mysqli("myapp", "username", "password", "database");
-if (!$mysqli)
+if (mysqli_connect_errno())
   /* Of course, your error handling is nicer... */
   die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
 
@@ -548,7 +550,7 @@ if (!$mysqli->query(sprintf("/*%s*/SELECT critical_data FROM important_table", M
    </example>
   </para>
   <para>
-   use case may include the creation of tables on a slave.
+   Use case may include the creation of tables on a slave.
    If no SQL hint is given, the plugin will send <literal>CREATE</literal>
    and <literal>INSERT</literal> statements to the master. Use the
    SQL hint <constant>MYSQLND_MS_SLAVE_SWITCH</constant> if you want to
