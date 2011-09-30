@@ -1225,7 +1225,7 @@ if (!empty($OPTION['copy']) && !empty($OPTION['phpdoc'])) {
 if (!empty($WARNING) && !$OPTION['quiet']) {
 	print "\nWarnings:\n";
 	foreach ($WARNING as $file => $messages) {
-		printf("- %s\n", $file);
+		printf("- %s\n", realpath($file));
 		foreach ($messages as $message) {
 			printf("\t-- %s\n", $message);
 		}
