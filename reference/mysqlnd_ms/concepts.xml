@@ -4,7 +4,7 @@
 <chapter xml:id="mysqlnd-ms.concepts" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <title>Concepts</title>
  <para>
-  The concept section explains the overall architecture and important concepts
+  The concepts section explains the overall architecture and important concepts
   of the plugin. The materials aim to help you understanding the impact of
   MySQL replication and using the plugin for your development tasks.
   Any application using MySQL replication must take care of certain tasks that
@@ -34,18 +34,25 @@
    the SQL hint <literal>/*ms=slave*/</literal> or a slave had been choose for
    running the previous query and the query starts with the SQL hint
    <literal>/*ms=last_used*/</literal>. In all other cases the query will
-   be sent to the MySQL replication master server.
+   be sent to the MySQL replication master server. Applications are requested
+   to use the <constant>MYSQLND_MS_MASTER_SWITCH</constant>,
+    <constant>MYSQLND_MS_SLAVE_SWITCH</constant> and
+    <constant>MYSQLND_MS_LAST_USED_SWITCH</constant>
+    <link linkend="mysqlnd-ms.constants">predefined constants</link>
+    instead of their literal  values,
+    such as <literal>/*ms=slave*/</literal>,
+    for better portability.
   </para>
   <para>
    The plugin takes care internally of opening and closing the database connections
    to the master server and the slave servers. From an application
    point of view there continues to be only one connection handle. However,
    internally, this one public connection handle represents a pool of
-   internal connections managed by the plugin. The plugin proxies queries
+   network connections managed by the plugin. The plugin proxies queries
    to the master server and the slave ones using multiple connections.
   </para>
   <para>
-    Database connections have a state consisting, for example, transaction
+    Database connections have a state consisting of, for example, transaction
     status, transaction settings, character set settings, temporary tables.
     The plugin will try to maintain the same state among all internal
     connections, whenever this can be done in an automatic and transparent way.
@@ -84,7 +91,7 @@
    At some point in time one and the same PHP connection handle
    may point to the MySQL master server. Later on, it may point
    to one of the slave servers or still the master. Manipulating
-   and replacing the wire connection referenced by a PHP MySQL
+   and replacing the network connection referenced by a PHP MySQL
    connection handle is not a transparent operation.
   </para>
   <para>
@@ -121,7 +128,7 @@
     </listitem>
     <listitem>
      <simpara>
-      The current database set using <literal>USE</literal>
+      The current database set using <literal>USE</literal> and other state chaning SQL commands
      </simpara>
     </listitem>
     <listitem>
@@ -155,7 +162,7 @@
   <para>
    The plugins philosophy is to align the state of connections in the
    pool only if the state is under full control of the plugin, or if it is
-   necessary for security reasons. Just a few  actions that change the
+   necessary for security reasons. Just a few actions that change the
    state of the connection fall into this category.
   </para>
   <para>
@@ -348,7 +355,7 @@
   <para>
    Please note that the connection state is not only changed by API calls. Thus,
    even if PECL mysqlnd_ms monitors all API calls, the application still needs
-   to take care. Ultimately, it is in the application developers reposibility
+   to take care. Ultimately, it is in the applications reposibility
    to maintain connection state, if needed.
   </para>
  </section>
@@ -395,6 +402,213 @@
   </para>
  </section>
 
+ <section xml:id="mysqlnd-ms.errorhandling">
+  <title>Error handling</title>
+  <para>
+   Applications using PECL/mysqlnd_ms should to proper error handling
+   of any user API call. Due to the fact that the plugin changes the semantics
+   of a connection handle, API calls may return unexpected errors. If using
+   the plugin a connection handle no longer represents an individual network
+   connection but a connection pool. An error code and error message will
+   be set on the connection handle whenever an error occurs on any of the network
+   connections behind.
+  </para>
+  <para>
+   If using lazy connections, which is a default, connections are not
+   opened until needed for query execution. Therefore, it can happen that
+   an API call for statement execution returns a connection error.
+   In the example an error is provoked when trying to run a statement on a slave.
+   Opening a slave connection fails because the plugins configuration file
+   lists an invalid host name of the slave.
+  </para>
+  <para>
+   <example>
+    <title>Provoking a connection error</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "invalid_host_name",
+            }
+        },
+        "lazy_connections": 1
+    }
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Explicitly activating lazy connections is done for demonstration purpose.
+  </para>
+  <para>
+   <example>
+    <title>Connection error on query execution</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (mysqli_connect_errno())
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* Connection 1, connection bound SQL user variable, no SELECT thus run on master */
+if (!$mysqli->query("SET @myrole='master'")) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+
+/* Connection 2, run on slave because SELECT, provoke connection error */
+if (!($res = $mysqli->query("SELECT @myrole AS _role"))) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+} else {
+ $row = $res->fetch_assoc();
+ $res->close();
+ printf("@myrole = '%s'\n", $row['_role']);
+}
+$mysqli->close();
+?>
+]]>
+    </programlisting>
+&example.outputs;
+    <screen>
+<![CDATA[
+PHP Warning:  mysqli::query(): php_network_getaddresses: getaddrinfo failed: Name or service not known in %s on line %d
+PHP Warning:  mysqli::query(): [2002] php_network_getaddresses: getaddrinfo failed: Name or service not known (trying to connect via tcp://invalid_host_name:3306) in %s on line %d
+[2002] php_network_getaddresses: getaddrinfo failed: Name or service not known
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   Applications are expected to be able to handle the connection error. In
+   most cases this will not require code changes, if the application does
+   proper error handling already.
+  </para>
+  <para>
+   Depending on the use case applications may want to handle connection errors
+   differently from other errors.  Typical connection errors are
+   <literal>2002 (CR_CONNECTION_ERROR) - Can't connect to local MySQL server through socket '%s' (%d)</literal>,
+   <literal>2003 (CR_CONN_HOST_ERROR) - Can't connect to MySQL server on '%s' (%d)</literal> and
+   <literal>2005 (CR_UNKNOWN_HOST) - Unknown MySQL server host '%s' (%d)</literal>.
+   For example, the application may test for the error codes and manually
+   perform fail over. The plugins philosophy is not to offer automatic fail over
+   beyond master fail over because fail over is not a transparent operation.
+  </para>
+  <para>
+   <example>
+    <title>Provoking a connection error</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "invalid_host_name"
+            },
+            "slave_1": {
+                "host": "192.168.78.136"
+            }
+        },
+        "lazy_connections": 1,
+        "filters": {
+            "roundrobin": [
+
+            ]
+        }
+    }
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Explicitly activating lazy connections is done for demonstration purpose.
+   Please, note that round robin load balancing is used instead of the default
+   random once.
+  </para>
+  <para>
+   <example>
+    <title>Most basic failover</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (mysqli_connect_errno())
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* Connection 1, connection bound SQL user variable, no SELECT thus run on master */
+if (!$mysqli->query("SET @myrole='master'")) {
+ printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+
+/* Connection 2, first slave */
+$res = $mysqli->query("SELECT VERSION() AS _version");
+/* Hackish manual fail over */
+if (2002 == $mysqli->errno || 2003 == $mysqli->errno || 2004 == $mysqli->errno) {
+  /* Connection 3, first slave connection failed, trying next slave */
+  $res = $mysqli->query("SELECT VERSION() AS _version");
+}
+
+if (!$res) {
+  printf("ERROR, [%d] '%s'\n", $mysqli->errno, $mysqli->error);
+} else {
+ /* Error messages are taken from connection 3, thus no error */
+ printf("SUCCESS, [%d] '%s'\n", $mysqli->errno, $mysqli->error);
+ $row = $res->fetch_assoc();
+ $res->close();
+ printf("version = %s\n", $row['_version']);
+}
+$mysqli->close();
+?>
+]]>
+    </programlisting>
+&example.outputs;
+    <screen>
+<![CDATA[
+[1045] Access denied for user 'username'@'localhost' (using password: YES)
+PHP Warning:  mysqli::query(): php_network_getaddresses: getaddrinfo failed: Name or service not known in %s on line %d
+PHP Warning:  mysqli::query(): [2002] php_network_getaddresses: getaddrinfo failed: Name or service not known (trying to connect via tcp://invalid_host_name:3306) in %s on line %d
+SUCCESS, [0] ''
+version = 5.6.2-m5-log
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   In some cases, it may not be easily possible to retrieve all errors that
+   occur on all network connections through a connection handle. Assume a
+   connection handle represents a pool of three open connections. One connection
+   to a master and two connections to the slaves. The application changes the
+   current database using the user API call <function>mysqli_select_db</function>,
+   which in turn calls the mysqlnd library function to change the schemata.
+   PECL/mysqlnd_ms monitors the function and tries to change the current
+   database on all connections.to harmonize their state. Let the master succeed
+   in changing the database and let both slaves fail. Upon the first error
+   from the first slave, the plugin will set an appropriate error on the
+   connection handle. The same is done when the second slave fails to change the
+   database. The error message from the first slave is lost.
+  </para>
+  <para>
+   Such cases can be debugged by either checking for errors of the type
+   <literal>E_WARNING</literal> (see above) or, if no other option, investigation
+   of the <link linkend="mysqlnd-ms.debugging">debug and trace log</link>.
+  </para>
+ </section>
+
  <section xml:id="mysqlnd-ms.failover">
   <title>Failover</title>
   <para>
@@ -408,8 +622,8 @@
   <para>
    It is up to
    the application to handle the error and, if need be, re-issue the query to
-   trigger selection of another slave server for statement execution. The plugin
-   will make no attempts to failover automatically because the plugin
+   trigger selection of another slave server for statement execution.
+   The plugin will make no attempts to failover automatically because the plugin
    cannot ensure that an automatic failover will not change the state of
    the connection. For example, the application may have issued a query
    which depends on SQL user variables which are bound to a specific connection.
@@ -428,6 +642,10 @@
     of the
     <literal><link linkend="ini.mysqlnd-ms-plugin-config-v2.failover">failover</link></literal>
     configuration directive.
+  </para>
+  <para>
+    A most basic manual failover example is given under
+    <link linkend="mysqlnd-ms.errorhandling">error handling</link>.
   </para>
  </section>
 
@@ -488,7 +706,7 @@
   <para>
     A user-defined read-write splitter can ask the built-in logic to make
     a proposal where to sent a statement by invoking
-    <function>mysqlnd_ms_is_select</function>.
+    <link linkend="function.mysqlnd-ms-query-is-select"><function>mysqlnd_ms_is_select</function></link>.
   </para>
   <note>
    <para>
