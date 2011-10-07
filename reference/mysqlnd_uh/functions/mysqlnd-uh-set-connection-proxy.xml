@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<refentry xml:id="function.mysqlnd-uh-set-connection-proxy" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <refnamediv>
+  <refname>mysqlnd_uh_set_connection_proxy</refname>
+  <refpurpose>Installs a proxy for mysqlnd connections</refpurpose>
+ </refnamediv>
+
+ <refsect1 role="description">
+  &reftitle.description;
+  <methodsynopsis>
+   <type>bool</type><methodname>mysqlnd_uh_set_connection_proxy</methodname>
+   <methodparam><type>MysqlndUhConnection object</type><parameter role="reference">connection_proxy</parameter></methodparam>
+   <methodparam choice="opt"><type>mysqli</type><parameter role="reference">mysqli_connection</parameter></methodparam>
+  </methodsynopsis>
+  <para>
+   Installs a proxy object to hook mysqlnd's connection objects methods.
+   Once installed, the proxy will be used for all MySQL connections
+   opened with <link linkend="ref.mysqli">mysqli</link>,
+   <link linkend="ref.mysql">mysql</link> or
+   <link linkend="ref.pdo-mysql">PDO_MYSQL</link>, assuming that the listed
+   extensions are compiled to use the <link linkend="book.mysqlnd">mysqlnd</link>
+   library.
+  </para>
+  <para>
+   The function can be disabled with
+   <literal><link linkend="ini.mysqlnd-uh.enable">mysqlnd_uh.enable</link></literal>.
+   If <literal><link linkend="ini.mysqlnd-uh.enable">mysqlnd_uh.enable</link></literal>
+   is set to <literal>FALSE</literal> the function will not install the proxy and
+   always return <literal>TRUE</literal>. Additionally, an error of the
+   type <literal>E_WARNING</literal> may be emitted. The error message may
+   read like <literal>PHP Warning:  mysqlnd_uh_set_connection_proxy(): (Mysqlnd User Handler)
+   The plugin has been disabled by setting the configuration parameter mysqlnd_uh.enable = false.
+   The proxy has not been installed [...]</literal>.
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <variablelist>
+   <varlistentry>
+    <term><parameter>connection_proxy</parameter></term>
+    <listitem>
+     <para>
+      A proxy object of type <literal>MysqlndUhConnection</literal>.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>mysqli_connection</parameter></term>
+    <listitem>
+     <para>
+      Object of type <literal>mysqli</literal>.
+      If given, the proxy will be set for this particular connection only.
+     </para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   Returns <literal>TRUE</literal> on success.
+   Otherwise, returns <literal>FALSE</literal>
+  </para>
+ </refsect1>
+
+<refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>mysqlnd_uh_set_connection_proxy</function> example</title>
+        <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("localhost", "root", "", "test");
+$mysqli->query("SELECT 'No proxy installed, yet'");
+
+class proxy extends MysqlndUhConnection {
+ public function query($res, $query) {
+   printf("%s(%s)\n", __METHOD__, var_export(func_get_args(), true));
+   $ret = parent::query($res, $query);
+   printf("%s returns %s\n", __METHOD__, var_export($ret, true));
+   return $ret;
+ }
+}
+mysqlnd_uh_set_connection_proxy(new proxy());
+
+$mysqli->query("SELECT 'mysqlnd rocks!'");
+
+$mysql = mysql_connect("localhost", "root", "", "test");
+mysql_query("SELECT 'Ahoy Andrey!'", $mysql);
+
+$pdo = new PDO("mysql:host=localhost;dbname=test", "root", "");
+$pdo->query("SELECT 'Moin Johannes!'");
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+proxy::query(array (
+  0 => NULL,
+  1 => 'SELECT \'mysqlnd rocks!\'',
+))
+proxy::query returns true
+proxy::query(array (
+  0 => NULL,
+  1 => 'SELECT \'Ahoy Andrey!\'',
+))
+proxy::query returns true
+proxy::query(array (
+  0 => NULL,
+  1 => 'SELECT \'Moin Johannes!\'',
+))
+proxy::query returns true
+]]>
+    </screen>
+   </example>
+  </para>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member>
+     <function>mysqlnd_uh_set_statement_proxy</function>
+    </member>
+    <member>
+     <literal><link linkend="ini.mysqlnd-uh.enable">mysqlnd_uh.enable</link></literal>
+    </member>
+   </simplelist>
+  </para>
+ </refsect1>
+
+</refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
