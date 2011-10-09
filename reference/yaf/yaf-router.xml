@@ -12,10 +12,112 @@
   <section xml:id="yaf-router.intro">
    &reftitle.intro;
    <para>
+   <classname>Yaf_Router</classname> is the standard framework router. Routing is
+   the process of taking a URI endpoint (that part of the URI which comes
+   after the base URL) and decomposing it into parameters to determine which
+   module, controller, and action of that controller should receive the
+   request. This values of the module, controller, action and other parameters
+   are packaged into a <classname>Yaf_Request_Abstract</classname> object which is then
+   processed by <classname>Yaf_Dispatcher</classname>. Routing occurs only once:
+   when the request is initially received and before the first controller is
+   dispatched.
 
+   <classname>Yaf_Router</classname> is designed to allow for mod_rewrite-like
+   functionality using pure PHP structures. It is very loosely based on Ruby
+   on Rails routing and does not require any prior knowledge of webserver URL
+   rewriting. It is designed to work with a single Apache mod_rewrite rule
+   (one of):
+   <programlisting role="conf">
+<![CDATA[
+RewriteEngine on
+RewriteRule !\.(js|ico|gif|jpg|png|css|html)$ index.php
+]]>
+   </programlisting>
+   or (preferred):
+   <programlisting role="conf">
+<![CDATA[
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} -s [OR]
+RewriteCond %{REQUEST_FILENAME} -l [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^.*$ - [NC,L]
+RewriteRule ^.*$ index.php [NC,L]
+]]>
+   </programlisting>
+   If using Lighttpd, the following rewrite rule is valid:
+   <programlisting role="conf">
+<![CDATA[
+url.rewrite-once = (
+  ".*\?(.*)$" => "/index.php?$1",
+  ".*\.(js|ico|gif|jpg|png|css|html)$" => "$0",
+  "" => "/index.php"
+)
+]]>
+   </programlisting>
    </para>
   </section>
 <!-- }}} -->
+
+  <section xml:id="yaf-router.default">
+   <title>Default route</title>
+   <para>
+   Yaf_Router comes preconfigured with a default route, which
+   will match URIs in the shape of controller/action. Additionally, a module
+   name may be specified as the first path element, allowing URIs of the form
+   module/controller/action. Finally, it will also match any additional
+   parameters appended to the URI by default -
+   controller/action/var1/value1/var2/value2.
+   <note>
+    <para>
+     Module name must be defined like application.module="Index,Foo,Bar"
+     in this case, only index, foo and bar can be considerd as a module name,
+     defaultly, there is only one module name "Index" was preconfigured. 
+    </para>
+   </note>
+
+   Some examples of how such routes are matched:
+   <programlisting role="conf">
+<![CDATA[
+// Assuming the following configure:
+$conf = array(
+   "application" => array(
+      "modules" => "Index,Blog",
+   ),
+);
+
+Controller only:
+http://example/news
+    controller == news
+Action only(when defined yaf.action_prefer=1 in php.ini)
+    action  == news
+ 
+Invalid module maps to controller name:
+http://example/foo
+    controller == foo
+ 
+Module + controller:
+http://example/blog/archive
+    module     == blog
+    controller == archive
+ 
+Module + controller + action:
+http://example/blog/archive/list
+    module     == blog
+    controller == archive
+    action     == list
+ 
+Module + controller + action + params:
+http://example/blog/archive/list/sort/alpha/date/desc
+    module     == blog
+    controller == archive
+    action     == list
+    sort       == alpha
+    date       == desc
+]]>
+   </programlisting>
+
+  </para>
+  </section>
 
   <section xml:id="yaf-router.synopsis">
    &reftitle.classsynopsis;
