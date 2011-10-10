@@ -11,7 +11,7 @@
  <?php
  /* Is called when eio_nop() finished */
  function my_nop_cb($data, $result) {
-  echo "my_nop, ", $data, "\n";
+  echo "my_nop ", $data, "\n";
  }
 
 // This eio_nop() call will be cancelled
@@ -22,7 +22,7 @@ eio_cancel($req);
 // This time eio_nop() will be processed
 eio_nop(EIO_PRI_DEFAULT, "my_nop_cb", "2");
 
-// Process enqueued eio_* calls
+// Process requests 
 eio_event_loop();
 ?>
 ]]>
@@ -128,7 +128,7 @@ int(1001)
  * Create a group request to open, read and close a file
  */
 
-$temp_filename = "eio-file.tmp";
+$temp_filename = dirname(__FILE__) ."/eio-file.tmp";
 $fp = fopen($temp_filename, "w");
 fwrite($fp, "some data");
 fclose($fp);
@@ -148,7 +148,7 @@ function my_grp_file_opened_callback($data, $result) {
 
  var_dump($result > 0);
 
- // Enqueue eio_read()
+ // Create eio_read() request and add it to the group
  $req = eio_read($my_file_fd, 4, 0, EIO_PRI_DEFAULT, "my_grp_file_read_callback");
  eio_grp_add($grp, $req);
 }
@@ -159,16 +159,16 @@ function my_grp_file_read_callback($data, $result) {
 
  var_dump($result);
 
+ // Create eio_close() request and add it to the group
  $req = eio_close($my_file_fd);
-
- // Enqueue eio_close()
  eio_grp_add($grp, $req);
 }
 
 $grp = eio_grp("my_grp_done", "my_grp_data");
 
-// Enqueue eio_open()
-$req = eio_open($temp_filename, EIO_O_RDWR | EIO_O_APPEND , NULL, 0, "my_grp_file_opened_callback", NULL);
+// Create eio_open() request and add it to the group
+$req = eio_open($temp_filename, EIO_O_RDWR | EIO_O_APPEND , NULL,
+  EIO_PRI_DEFAULT, "my_grp_file_opened_callback", NULL);
 eio_grp_add($grp, $req);
 var_dump($grp);
 
