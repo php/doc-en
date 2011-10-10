@@ -53,68 +53,72 @@
   &reftitle.examples;
   <example>
   <title>Grouping requests</title>
-   <programlisting role="php">
-   <![CDATA[
-  <?php 
-  /*
-  * Create a group request to open, read and close a file
-  */
+  <programlisting role="php"><![CDATA[
+<?php 
+/*
+ * Create a group request to open, read and close a file
+ */
 
-  $temp_filename = "eio-file.tmp";
-  $fp = fopen($temp_filename, "w");
-  fwrite($fp, "some data");
-  fclose($fp);
+// Create temporary file and write some bytes to it
+$temp_filename = dirname(__FILE__) ."/eio-file.tmp";
+$fp = fopen($temp_filename, "w");
+fwrite($fp, "some data");
+fclose($fp);
 
-  /* Is called when the group requests are done */
-  function my_grp_done($data, $result) {
-   global $temp_filename;
-   var_dump($result == 0); 
-   @unlink($temp_filename);
-  }
+/* Is called when the group requests are done */
+function my_grp_done($data, $result) {
+ var_dump($result == 0); 
+ @unlink($data);
+}
 
-  /* Is called when eio_open() done */
-  function my_grp_file_opened_callback($data, $result) {
-   global $my_file_fd, $grp;
+/* Is called when eio_open() done */
+function my_grp_file_opened_callback($data, $result) {
+ global $grp;
 
-   $my_file_fd = $result;
+ // $result should contain the file descriptor
+ var_dump($result > 0);
 
-   var_dump($result > 0);
+ // Create eio_read() request and add it to the group
+ // Pass file descriptor to the callback
+ $req = eio_read($result, 4, 0, 
+   EIO_PRI_DEFAULT, "my_grp_file_read_callback", $result);
+ eio_grp_add($grp, $req);
+}
 
-   // Enqueue eio_read()
-   $req = eio_read($my_file_fd, 4, 0, EIO_PRI_DEFAULT, "my_grp_file_read_callback");
-   eio_grp_add($grp, $req);
-  }
+/* Is called when eio_read() done */
+function my_grp_file_read_callback($data, $result) {
+ global $grp;
 
-  /* Is called when eio_read() done */
-  function my_grp_file_read_callback($data, $result) {
-   global $my_file_fd, $grp;
+ // Read bytes
+ var_dump($result);
 
-   var_dump($result);
+ // Create eio_close() request and add it to the group
+ // $data should contain the file descriptor
+ $req = eio_close($data);
+ eio_grp_add($grp, $req);
+}
 
-   $req = eio_close($my_file_fd);
+// Create request group
+$grp = eio_grp("my_grp_done", $temp_filename);
+var_dump($grp);
 
-   // Enqueue eio_close()
-   eio_grp_add($grp, $req);
-  }
+// Create eio_open() request and add it to the group
+$req = eio_open($temp_filename, EIO_O_RDWR | EIO_O_APPEND , NULL,
+  EIO_PRI_DEFAULT, "my_grp_file_opened_callback", NULL);
+eio_grp_add($grp, $req);
 
-  $grp = eio_grp("my_grp_done", "my_grp_data");
-
-  // Enqueue eio_open()
-  $req = eio_open($temp_filename, EIO_O_RDWR | EIO_O_APPEND , NULL, 0, "my_grp_file_opened_callback", NULL);
-  eio_grp_add($grp, $req);
-  var_dump($grp);
-
-  eio_event_loop();
-  ?>
-  ]]></programlisting>
+// Process requests
+eio_event_loop();
+?>
+]]></programlisting>
   &example.outputs.similar;
-  <screen><![CDATA[
-  resource(6) of type (EIO Group Descriptor)
-  bool(true)
-  string(4) "some"
-  bool(true)
-  ]]></screen>
-  </example>
+ <screen><![CDATA[
+resource(6) of type (EIO Group Descriptor)
+bool(true)
+string(4) "some"
+bool(true)
+]]></screen>
+ </example>
  </refsect1>
 
  <refsect1 role="seealso">

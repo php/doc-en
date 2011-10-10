@@ -11,8 +11,95 @@
    This extension provides asyncronous POSIX I/O by means of <link
    xlink:href="&url.eio.libeio;">libeio</link> C
    library written by Marc Lehmann.
+  </para>
 
   &note.no-windows.extension;
+
+  <para>
+
+  <warning>
+  <simpara>
+  It is important to aware that each request is executed in a thread, and the
+  order of execution of continuously queued requests basically is
+  unpredictable. For instance, the following piece of code is incorrect.
+  </simpara>
+  </warning>
+
+  <example>
+  <title>Incorrect requests</title>
+  <programlisting role="php"><![CDATA[
+<?php 
+// Request to create symlink of $filename to $link
+eio_symlink($filename, $link);
+
+// Request to move $filename to $new_filename
+eio_rename($filename, $new_filename);
+
+// Process requests
+eio_event_loop();
+?>
+]]>
+   </programlisting>
+   </example>
+   In the example above <function>eio_rename</function> request may finish
+   before <function>eio_symlink</function>. To fix it you might call <function>eio_rename</function>
+   in the callback of <function>eio_symlink</function>:
+  <example>
+   <title>Calling request from a request callback</title>
+   <programlisting role="php"><![CDATA[
+<?php 
+function my_symlink_done($filename, $result) {
+ // Request to move $filename to $new_filename
+ eio_rename($filename, "/path/to/new-name");
+
+ // Process requests
+ eio_event_loop();
+}
+
+// Request to create symlink of $filename to $link
+eio_symlink($filename, $link, EIO_PRI_DEFAULT, "my_symlink_done", $filename);
+
+// Process requests
+eio_event_loop();
+?>
+   ]]>
+   </programlisting>
+  </example>
+  Alternatively, you might want to create a request group:
+  <example>
+   <title>Calling request from a request callback</title>
+   <programlisting role="php"><![CDATA[
+<?php 
+/* Is called when the group requests are done */
+function my_grp_done($data, $result) {
+ // ...
+}
+
+function my_symlink_done($filename, $result) {
+ // Create eio_rename request and add it to the group
+ $req = eio_rename($filename, "/path/to/new-name");
+ eio_grp_add($grp, $req);
+ // You might want to add more requests...
+}
+
+// Create a request group
+$grp = eio_grp("my_grp_done", "my_grp_data");
+
+// Create eio_symlink request and add it to the group
+// Pass $filename to the callback
+$req = eio_symlink($filename, $link, 
+  EIO_PRI_DEFAULT, "my_symlink_done", $filename);
+eio_grp_add($grp, $req);
+
+// Process requests
+eio_event_loop();
+?>
+]]></programlisting>
+  </example>
+  Group is a special kind of request that could accumulate a set of regular
+  <emphasis>eio</emphasis> requests. This could be used to create a complex
+  request that opens, reads and closes a file.
+
   </para>
  </preface>
 <!--}}}-->
