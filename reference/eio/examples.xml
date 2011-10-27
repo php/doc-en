@@ -188,6 +188,71 @@ bool(true)
  </example>
  </para>
 
+<para>
+  <example>
+   <title>Using eio with libevent</title>
+   <programlisting role="php"><![CDATA[
+<?php
+function my_eio_poll($fd, $events, $arg) {
+	/* Some libevent regulation might go here .. */
+	if (eio_nreqs()) {
+		eio_poll();
+	}
+	/* .. and here */
+}
+
+function my_nop_cb($d, $r) {
+	var_dump($r); var_dump($d);
+}
+
+$base = event_base_new();
+$event = event_new();
+
+// Get eio's file descriptor
+$fd = eio_get_eventfd();
+var_dump($fd);
+
+eio_nop(EIO_PRI_DEFAULT, "my_nop_cb", "nop data");
+eio_mkdir("/tmp/abc-eio-temp", 0750, EIO_PRI_DEFAULT, "my_nop_cb", "nop data");
+/* some other eio_* calls here ... */
+
+
+// set event flags
+event_set($event, $fd, EV_READ /*| EV_PERSIST*/, "my_eio_poll", array($event, $base));
+
+// Set event priorities
+event_base_priority_init($base, 10);
+
+// set event base 
+event_base_set($event, $base);
+
+// This one is currently in SVN, but should appear in the next libevent
+// release 
+event_priority_set($event, 2);
+
+// enable event
+event_add($event);
+
+// start event loop
+event_base_loop($base);
+
+/* The same will be available via buffered libevent interface */
+?>
+]]></programlisting>
+
+&example.outputs.similar;
+<screen>
+ <![CDATA[
+int(3)
+int(0)
+string(8) "nop data"
+int(0)
+string(10) "mkdir data"
+ ]]>
+ </screen>
+</example>
+</para>
+
 </chapter>
 
 <!-- Keep this comment at the end of the file
