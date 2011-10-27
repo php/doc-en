@@ -41,6 +41,7 @@ eio_event_loop();
 ]]>
    </programlisting>
    </example>
+
    In the example above <function>eio_rename</function> request may finish
    before <function>eio_symlink</function>. To fix it you might call <function>eio_rename</function>
    in the callback of <function>eio_symlink</function>:
@@ -65,7 +66,9 @@ eio_event_loop();
    ]]>
    </programlisting>
   </example>
+
   Alternatively, you might want to create a request group:
+
   <example>
    <title>Calling request from a request callback</title>
    <programlisting role="php"><![CDATA[
@@ -96,9 +99,70 @@ eio_event_loop();
 ?>
 ]]></programlisting>
   </example>
+
   Group is a special kind of request that could accumulate a set of regular
   <emphasis>eio</emphasis> requests. This could be used to create a complex
   request that opens, reads and closes a file.
+  </para>
+  <para>
+  Since version 0.3.0 alpha, a file descriptor used for communications with
+  libeio internally, could be retrieved with
+  <function>eio_get_eventfd</function>. The file descriptor could be used to
+  bind to an event loop supported by some other extension. For instance,
+  <emphasis>libevent</emphasis> currently(Fri Oct 28 01:07:55 UZT 2011)
+  supports numeric file descriptors in both basic and buffered APIs in SVN.
+  Thus, you might organize a simple event loop where eio and libevent work
+  together:
+  <example>
+   <title>Using eio with libevent</title>
+   <programlisting role="php"><![CDATA[
+<?php
+function my_eio_poll($fd, $events, $arg) {
+	/* Some libevent regulation might go here .. */
+	if (eio_nreqs()) {
+		eio_poll();
+	}
+	/* .. and here */
+}
+
+function my_res_cb($d, $r) {
+	var_dump($r); var_dump($d);
+}
+
+$base = event_base_new();
+$event = event_new();
+
+// Get eio's file descriptor
+$fd = eio_get_eventfd();
+
+eio_nop(EIO_PRI_DEFAULT, "my_res_cb", "nop data");
+eio_mkdir("/tmp/abc-eio-temp", 0750, EIO_PRI_DEFAULT, "my_res_cb", "mkdir data");
+/* some other eio_* calls here ... */
+
+
+// set event flags
+event_set($event, $fd, EV_READ /*| EV_PERSIST*/, "my_eio_poll", array($event, $base));
+
+// Set event priorities
+event_base_priority_init($base, 10);
+
+// set event base 
+event_base_set($event, $base);
+
+// This one is currently in SVN, but should appear in the next libevent
+// release 
+event_priority_set($event, 2);
+
+// enable event
+event_add($event);
+
+// start event loop
+event_base_loop($base);
+
+/* The same will be available via buffered libevent interface */
+?>
+]]></programlisting>
+  </example>
 
   </para>
  </preface>
