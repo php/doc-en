@@ -3,20 +3,21 @@
 
 <refentry xml:id="function.eio-get-eventfd" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
-  <refname>eio_get_eventfd</refname>
-  <refpurpose>Get the file descriptor used in internal communications with libeio.</refpurpose>
+  <refname>eio_get_event_stream</refname>
+  <refpurpose>Get stream representing a variable used in internal communications with libeio.</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <type>int</type><methodname>eio_get_eventfd</methodname>
+   <type>mixed</type><methodname>eio_get_event_stream</methodname>
    <void />
   </methodsynopsis>
   <para>
-   <function>eio_get_eventfd</function> acquires the file descriptor used in
-   internal communications with libeio. Could be used to bind with some event
-   loop provided by other PECL extension, for example libevent.
+   <function>eio_get_event_stream</function> acquires stream representing a
+   variable used in internal communications with libeio. Could be used to bind
+   with some event loop provided by other PECL extension, for example
+   libevent.
   </para>
  </refsect1>
 
@@ -28,7 +29,8 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   <function>eio_get_eventfd</function> returns the numeric file desriptor.
+   <function>eio_get_event_stream</function> returns stream on success;
+   otherwise, &null;
   </para>
  </refsect1>
 
@@ -47,34 +49,26 @@ function my_eio_poll($fd, $events, $arg) {
 	/* .. and here */
 }
 
-function my_nop_cb($d, $r) {
+function my_res_cb($d, $r) {
 	var_dump($r); var_dump($d);
 }
 
 $base = event_base_new();
 $event = event_new();
 
-// Get eio's file descriptor
-$fd = eio_get_eventfd();
+$fd = eio_get_event_stream();
 var_dump($fd);
 
-eio_nop(EIO_PRI_DEFAULT, "my_nop_cb", "nop data");
-eio_mkdir("/tmp/abc-eio-temp", 0750, EIO_PRI_DEFAULT, "my_nop_cb", "nop data");
+eio_nop(EIO_PRI_DEFAULT, "my_res_cb", "nop data");
+eio_mkdir("/tmp/abc-eio-temp", 0750, EIO_PRI_DEFAULT, "my_res_cb", "mkdir data");
 /* some other eio_* calls here ... */
 
 
 // set event flags
 event_set($event, $fd, EV_READ /*| EV_PERSIST*/, "my_eio_poll", array($event, $base));
 
-// Set event priorities
-event_base_priority_init($base, 10);
-
 // set event base 
 event_base_set($event, $base);
-
-// This one is currently in SVN, but should appear in the next libevent
-// release 
-event_priority_set($event, 2);
 
 // enable event
 event_add($event);
