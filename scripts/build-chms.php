@@ -68,14 +68,14 @@
 	/**
 	 * The languages to build are retrieved from https://svn.php.net/repository/web/php/trunk/include/languages.inc
 	 */
-	if (file_exists('./languages.inc'))
+	if (file_exists(__DIR__ . '\\languages.inc'))
 	{
-		unlink('./languages.inc');
+		unlink(__DIR__ . '\\languages.inc');
 	}
 	execute_task('Get list of online languages', PATH_WGET, '--debug --verbose --no-check-certificate https://svn.php.net/repository/web/php/trunk/include/languages.inc --output-document=' . __DIR__ . '\\languages.inc', 'wget_langs');
-	if (file_exists('./languages.inc'))
+	if (file_exists(__DIR__ . '\\languages.inc'))
 	{
-		include_once './languages.inc';
+		include_once __DIR__ . '\\languages.inc';
 	}
 
 	/**
