@@ -4,7 +4,7 @@
 <refentry xml:id="yaf-dispatcher.setview" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Yaf_Dispatcher::setView</refname>
-  <refpurpose>The setView purpose</refpurpose>
+  <refpurpose>Set a custom view engine</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -14,7 +14,8 @@
    <methodparam><type>Yaf_View_Interface</type><parameter>view</parameter></methodparam>
   </methodsynopsis>
   <para>
-
+     This method proviods a solution for that if you want use a custom view
+     engine instead of <classname>Yaf_View_Simple</classname>
   </para>
 
   &warn.undocumented.func;
@@ -28,7 +29,7 @@
     <term><parameter>view</parameter></term>
     <listitem>
      <para>
-      
+       A Yaf_View_Interface instance
      </para>
     </listitem>
    </varlistentry>
@@ -42,7 +43,192 @@
   </para>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title><function>A custom View engine</function>example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+require "/path/to/smarty/Smarty.class.php";
 
+class Smarty_Adapter implements Yaf_View_Interface
+{
+    /**
+     * Smarty object
+     * @var Smarty
+     */
+    public $_smarty;
+ 
+    /**
+     * Constructor
+     *
+     * @param string $tmplPath
+     * @param array $extraParams
+     * @return void
+     */
+    public function __construct($tmplPath = null, $extraParams = array()) {
+        $this->_smarty = new Smarty;
+ 
+        if (null !== $tmplPath) {
+            $this->setScriptPath($tmplPath);
+        }
+ 
+        foreach ($extraParams as $key => $value) {
+            $this->_smarty->$key = $value;
+        }
+    }
+ 
+    /**
+     * Set the path to the templates
+     *
+     * @param string $path The directory to set as the path.
+     * @return void
+     */
+    public function setScriptPath($path)
+    {
+        if (is_readable($path)) {
+            $this->_smarty->template_dir = $path;
+            return;
+        }
+ 
+        throw new Exception('Invalid path provided');
+    }
+ 
+    /**
+     * Assign a variable to the template
+     *
+     * @param string $key The variable name.
+     * @param mixed $val The variable value.
+     * @return void
+     */
+    public function __set($key, $val)
+    {
+        $this->_smarty->assign($key, $val);
+    }
+ 
+    /**
+     * Allows testing with empty() and isset() to work
+     *
+     * @param string $key
+     * @return boolean
+     */
+    public function __isset($key)
+    {
+        return (null !== $this->_smarty->get_template_vars($key));
+    }
+ 
+    /**
+     * Allows unset() on object properties to work
+     *
+     * @param string $key
+     * @return void
+     */
+    public function __unset($key)
+    {
+        $this->_smarty->clear_assign($key);
+    }
+ 
+    /**
+     * Assign variables to the template
+     *
+     * Allows setting a specific key to the specified value, OR passing
+     * an array of key => value pairs to set en masse.
+     *
+     * @see __set()
+     * @param string|array $spec The assignment strategy to use (key or
+     * array of key => value pairs)
+     * @param mixed $value (Optional) If assigning a named variable,
+     * use this as the value.
+     * @return void
+     */
+    public function assign($spec, $value = null) {
+        if (is_array($spec)) {
+            $this->_smarty->assign($spec);
+            return;
+        }
+ 
+        $this->_smarty->assign($spec, $value);
+    }
+ 
+    /**
+     * Clear all assigned variables
+     *
+     * Clears all variables assigned to Zend_View either via
+     * {@link assign()} or property overloading
+     * ({@link __get()}/{@link __set()}).
+     *
+     * @return void
+     */
+    public function clearVars() {
+        $this->_smarty->clear_all_assign();
+    }
+ 
+    /**
+     * Processes a template and returns the output.
+     *
+     * @param string $name The template to process.
+     * @return string The output.
+     */
+    public function render($name, $value = NULL) {
+        return $this->_smarty->fetch($name);
+    }
+
+    public function display($name, $value = NULL) {
+        echo $this->_smarty->fetch($name);
+    }
+
+}
+?>
+]]>
+   </programlisting>
+  </example>
+  <example>
+   <title><function>Yaf_Dispatcher::setView</function>example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract {
+
+    /**
+     * there are some config for smarty in the config:
+     *
+     * smarty.left_delimiter   = "{{"
+     * smarty.right_delimiter  = "}}"
+     * smarty.template_dir     = APPLICATION_PATH "/views/scripts/"
+     * smarty.compile_dir      = APPLICATION_PATH "/views/templates_c/"
+     * smarty.cache_dir        = APPLICATION_PATH "/views/templates_d/"
+     *
+     */
+    public function _initConfig() {
+        $config = Yaf_Application::app()->getConfig();
+        Yaf_Registry::set("config", $config);
+    }
+
+    public function _initLocalName() {
+        /** we put class Smarty_Adapter under the local library directory */
+        Yaf_Loader::getInstance()->registerLocalNamespace('Smarty');
+    }
+
+    public function _initSmarty(Yaf_Dispatcher $dispatcher) {
+        $smarty = new Smarty_Adapter(null, Yaf_Registry::get("config")->get("smarty"));
+        $dispatcher->setView($smarty);
+        /* now the Smarty view engine become the default view engine of Yaf */
+    }
+}
+?>
+]]>
+   </programlisting>
+  </example>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <simplelist>
+   <member><classname>Yaf_View_Interface</classname></member>
+   <member><classname>Yaf_View_Simple</classname></member>
+  </simplelist>
+ </refsect1>
 </refentry>
 
 <!-- Keep this comment at the end of the file
