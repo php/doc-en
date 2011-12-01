@@ -4,7 +4,7 @@
 <refentry xml:id="yaf-router.getcurrentroute" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Yaf_Router::getCurrentRoute</refname>
-  <refpurpose>Get the name of activated route</refpurpose>
+  <refpurpose>Get the effective route name</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -14,7 +14,13 @@
    <void />
   </methodsynopsis>
   <para>
-
+   Get the name of the route which is effective in the route process.
+   <note>
+    <para>
+     You should call this method after the route process finished, since
+     before that, this method will always return NULL.
+    </para>
+   </note>
   </para>
 
   &warn.undocumented.func;
@@ -29,10 +35,98 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-
+   String, the name of the effective route.
   </para>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title>Register some routes in Bootstrap</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract{
+    public function _initConfig() {
+        $config = Yaf_Application::app()->getConfig();
+        Yaf_Registry::set("config", $config);
+    }
+
+    public function _initRoute(Yaf_Dispatcher $dispatcher) {
+        $router = $dispatcher->getRouter();
+        $rewrite_route  = new Yaf_Route_Rewrite(
+            "/product/list/:page",
+            array(
+                "controller" => "product",
+                "action"     => "list",
+            )
+        ); 
+
+        $regex_route  = new Yaf_Route_Rewrite(
+            "#^/product/info/(\d+)",
+            array(
+                "controller" => "product",
+                "action"     => "info",
+            )
+        ); 
+        
+        $router->addRoute('rewrite', $rewrite_route)->addRoute('regex', $regex_route);
+    } 
+
+    /**
+     * register plugin 
+     */
+    public function __initPlugins(Yaf_Dispatcher $dispatcher) {
+        $dispatcher->registerPlugin(new DummyPlugin());
+    }
+?>
+]]>
+   </programlisting>
+  </example>
+  <example>
+   <title>plugin Dummy.php (under APPLICATION_PATH/plugins)</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class DummyPlugin extends Yaf_Plugin_Abstract {
+
+    public function routerShutdown(Yaf_Request_Abstract $request, Yaf_Response_Abstract $response) {
+         var_dump(Yaf_Dispatcher::getInstance()->getRouter()->getCurrentRoute());
+    }
+?>
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+/* for http://yourdomain.com/product/list/1
+ * DummyPlugin will output:
+ */
+string(7) "rewrite"
+
+/* for http://yourdomain.com/product/info/34
+ * DummyPlugin will output:
+ */
+string(5) "regex"
+
+/* for other request URI
+ * DummyPlugin will output:
+ */
+string(8) "_default"
+]]>
+   </screen>
+  </example>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <simplelist>
+   <member><classname>Yaf_Bootstrap_Abstract</classname></member>
+   <member><classname>Yaf_Plugin_Abstract</classname></member>
+   <member><methodname>Yaf_Router::addRoute</methodname></member>
+  </simplelist>                       
+ </refsect1>  
 
 </refentry>
 
