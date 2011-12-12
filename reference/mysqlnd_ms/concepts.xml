@@ -30,7 +30,7 @@
    <literal>/*ms=last_used*/</literal>. In all other cases, the query will
    be sent to the MySQL replication master server.
   </para>
-  <para> 
+  <para>
    For better portability, applications should use the
    <constant>MYSQLND_MS_MASTER_SWITCH</constant>,
    <constant>MYSQLND_MS_SLAVE_SWITCH</constant>, and
@@ -150,7 +150,7 @@
   <note>
    <title>Replication issues</title>
    <para>
-    See also the MySQL reference manual chapter about 
+    See also the MySQL reference manual chapter about
     <link xlink:href="&url.mysql.docs.replication;">replication features</link> and
     related issues. Some restrictions may not be related to the PHP plugin, but
     are properties of the MySQL replication system.
@@ -388,7 +388,7 @@
     detect the status of <literal>autocommit</literal> mode.
    </para>
    <para>
-    Added support for for 
+    Added support for
     <link linkend="ini.mysqlnd-ms-plugin-config-v2.trx_stickiness">trx_stickiness=master</link>
    </para>
   </note>
@@ -807,7 +807,7 @@ version = 5.6.2-m5-log
     </listitem>
    </itemizedlist>
   </para>
-  
+
   <note>
    <title>pick[] versus filters</title>
    <para>
@@ -823,13 +823,13 @@ version = 5.6.2-m5-log
     previously used for this purpose.
    </para>
   </note>
-  
-  <para>  
+
+  <para>
    The <literal>random</literal> filter implements the 'random' and 'random once'
    load balancing policies. The 'round robin' load balancing can be configured
    through the <literal>roundrobin</literal> filter. Setting a 'user defined
    callback' for server selection is possible with the <literal>user</literal>
-   filter. 
+   filter.
   </para>
   <para>
    Filters can accept parameters to change their behaviour.
@@ -960,6 +960,324 @@ version = 5.6.2-m5-log
   </para>
  </section>
 
+ <section xml:id="mysqlnd-ms.qos_consistency">
+  <title>Service level and consistency</title>
+  <note>
+   <title>Version requirement</title>
+   <para>
+    Service levels have been introduced in mysqlnd_ms version 1.2.0-alpha.
+   </para>
+  </note>
+  <para>
+   The plugin can be used with different kinds of MySQL database clusters.
+   Different clusters can deliver different levels of service to applications.
+   The service levels can be grouped by the data consistency levels that
+   can be achieved. The plugin knows about:
+   <itemizedlist>
+    <listitem>
+     <simpara>eventual consistency</simpara>
+    </listitem>
+    <listitem>
+     <simpara>session consistency</simpara>
+    </listitem>
+    <listitem>
+     <simpara>strong consistency</simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <para>
+   Service levels can be set through the qualify-of-service filter in the
+   <link linkend="mysqlnd-ms.plugin-ini-json">plugins configuration file</link>
+   and at runtime using the function <literal>mysqlnd_ms_set_qos()</literal>.
+  </para>
+  <para>
+   The plugin defines the different service levels as follows.
+  </para>
+  <para>
+   Eventual consistency is the default service provided by an asynchronous
+   cluster, such as classical MySQL replication. A read operation executed
+   on an arbitrary node may or may not return stale data. The applications
+   view of the data is eventual consistent.
+  </para>
+  <para>
+   Session consistency is given if a client can always read its own writes.
+   An asynchronous MySQL replication cluster can deliver session consistency if clients
+   always use the master after the first write or never query a slave which has
+   not yet replicated the clients write operation.
+  </para>
+  <para>
+   The plugins understanding of strong consistency is that all clients always
+   see the comitted writes of all other clients. This is the default when
+   using MySQL Cluster or any other cluster offering
+   synchronous data distribution.
+  </para>
+  <para>
+   <emphasis role="bold">Service level parameters</emphasis>
+  </para>
+  <para>
+   Eventual consistency and session consistency service level accept parameters.
+  </para>
+  <para>
+   Eventual consistency is the service provided by classical MySQL replication.
+   By default, all nodes qualify for read requests. An optional <literal>age</literal>
+   parameter can be given to filter out nodes which lag more than a certain number of
+   seconds behind the master. The plugin is using <literal>SHOW SLAVE STATUS</literal>
+   to measure the lag. Please, see the MySQL reference manual to learn about accuracy and
+   reliability of the <literal>SHOW SLAVE STATUS</literal> command.
+  </para>
+  <para>
+   Session consistency (read your writes) accepts an optional <literal>GTID</literal>
+   parameter to consider reading not only from the master but also from slaves
+   which already have replicated a certain write described by its transaction identifier.
+   This way, when using asynchronous MySQL replication, read requests may be load balanced
+   over slaves while still ensuring session consistency.
+  </para>
+  <para>
+   The latter requires the use of
+   <link linkend="mysqlnd-ms.gtid">client-side global transaction id injection</link>.
+  </para>
+ </section>
+
+ <section xml:id="mysqlnd-ms.gtid">
+  <title>Global transaction IDs</title>
+  <note>
+   <title>Version requirement</title>
+   <para>
+    Client side global transaction ID injection exists as of mysqlnd_ms version 1.2.0-alpha.
+    Transaction boundaries are detected by monitoring API calls. This is possible
+    as of PHP 5.4.0. Please, see also <link linkend="mysqlnd-ms.transaction">Transaction handling</link>.
+   </para>
+  </note>
+  <para>
+   PECL/mysqlnd_ms can do client-side transparent global transaction ID injection.
+   In its most basic form, a global transaction identifier is a counter which is
+   incremented for every transaction executed on the master. The counter is held
+   in a table on the master. Slaves replicate the counter table.
+  </para>
+  <para>
+   In case of a master failure a database administrator can easily identify the
+   most recent slave for promiting it as a new master. The most recent slave has
+   the highest transaction identifier.
+  </para>
+  <para>
+   Application developers can ask the plugin for the global transaction identifier
+   (GTID) for their last successful write operation. The plugin will return
+   an identifier that refers to an transaction no older than that of the clients last
+   write operation. Then, the GTID can be passed as a parameter
+   to the quality of service (QoS) filter as an option for session consistency.
+   Session consistency ensures read your writes. The filter ensures that all
+   reads are either directed to a master or a slave which has replicated the write
+   referenced by the GTID.
+  </para>
+  <para>
+   <emphasis role="bold">When injection is done</emphasis>
+  </para>
+  <para>
+   The plugin transparently maintains the GTID table on the master.
+   In autocommit mode the plugin injects an <literal>UPDATE</literal> statement
+   before executing the users statement for every master use. In manual
+   transaction mode, the injection is done before the application calls
+   <literal>commit()</literal> to close a transaction. The configuration option
+   <literal>report_error</literal> of the GTID section in the plugins configuration
+   file is used to control whether a failed injection shall abort the current
+   operation or be ignored silently (default).
+  </para>
+  <para>
+   Please note, the
+   PHP version requirements for
+   <link linkend="mysqlnd-ms.transaction">transaction boundary monitoring</link>
+   and their limits.
+  </para>
+  <para>
+   <emphasis role="bold">Limitations</emphasis>
+  </para>
+  <para>
+   Client-side global transaction ID injection has shortcomings. The potential
+   issues are not specific to PECL/mysqlnd_ms but are rather of general nature.
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      The GTID can have holes. Only PHP clients using the plugin will
+      maintain the table. Other clients will not.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Client-side transaction boundary detection is based on API calls only.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Client-side transaction boundary detection does not take implicit
+      commit into account. Some MySQL SQL statements cause an implicit
+      commit and cannot be rolled back.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+ </section>
+
+ <section xml:id="mysqlnd-ms.supportedclusters">
+  <title>Supported clusters</title>
+  <para>
+   Any application using any kind of MySQL cluster is faced with the same tasks:
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      Identify nodes capable of executing a given statement with
+      the required service level
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+       Load balance requests within the list of candidates
+     </simpara>
+   </listitem>
+   <listitem>
+     <simpara>
+       Automatic fail over within candidates, if needed
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <para>
+   The plugin is optimized for fulfilling these tasks in the context of a classical
+   asynchronous MySQL replication cluster consisting of a single master and many slaves.
+   When using classical, asynchronous MySQL replication all of the above listed tasks
+   need to be mastered at the client level.
+  </para>
+  <para>
+   Other types of MySQL cluster may have lower requirements on the application side.
+   For example, if all nodes in the cluster can answer read and write requests, no
+   read-write splitting needs to be done. If all nodes in the cluster are synchronous,
+   they automatically provide the higest possible quality of service which makes
+   choosing a node easier. In those cases, the plugin may serve the application after
+   some reconfiguration to disable certain features, such as built-in read-write splitting.
+  </para>
+  <note>
+   <title>Documentation focus</title>
+   <para>
+    The documentation focusses describing the use of the plugin with classical
+    asynchronous MySQL replication clusters. Support for this kind of cluster
+    has been the original development goal. Use of other clusters is briefly described below.
+    Please note, that this is still work in progress.
+   </para>
+  </note>
+  <para>
+    <emphasis role="bold">Using asynchronous clusters with single master</emphasis>
+  </para>
+  <para>
+   Primary use case of the plugin. Follow the hints given in the descriptions of each feature.
+  </para>
+  <note>
+   <title>Version requirement</title>
+   <para>
+    The following cluster may require use of settings not available before mysqlnd_ms 1.2.0-alpha.
+   </para>
+  </note>
+  <para>
+    <emphasis role="bold">Using asynchronous clusters with multiple masters</emphasis>
+  </para>
+  <para>
+   This setup is currently unsupported.
+  </para>
+  <para>
+   The plugin has no built-in functionality to direct certain writes to certain
+   masters. It is considered to add table filtering to future versions. Table filter
+   would allow restricting both read and writes to certain slaves and masters based
+   on the database/schema and table used by a statement.
+  </para>
+  <para>
+   A table filtering feature is prepared in the plugins source code. However, it is
+   instable and must not be used. Bug reports on table filtering will be rejected.
+  </para>
+  <para>
+   <emphasis role="bold">Using synchronous clusters such as MySQL Cluster</emphasis>
+  </para>
+  <para>
+   MySQL Cluster is a synchronous cluster solution. All cluster nodes accept
+   read and write requests. In the context of the plugin, all nodes shall
+   be considered as masters.
+  </para>
+  <para>
+   Use the load balancing and fail over features only.
+  </para>
+  <para>
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      Disable the plugins <link linkend="mysqlnd-ms.rwsplit">built-in read-write splitting</link>.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Configure masters only.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Consider random once load balancing strategy, which is the plugins default.
+      If random once is used, only masters are configured and no SQL hints are used
+      to force using a certain node, no connection switches will happen for the
+      duration of a web request. Thus, no special handling is required
+      for transactions. The plugin will pick one master at the beginning of the
+      PHP script and use it until the script terminates.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Do not set the quality of service. All nodes have all the data. This
+      automatically gives you the highest possible service quality (strong consistency).
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Do not enable client-side global transaction injection. It is neither
+      required to help with server-side fail over nor to assist the quality of service
+      filter choosing an appropiate node.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <para>
+   Disabling built-in read-write splitting.
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      Set
+      <link linkend="mysqlnd-ms.configuration"><literal>mysqlnd_ms.disable_rw_split=1</literal></link>
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Do not use <link linkend="mysqlnd-ms.rwsplit">SQL hints</link>
+      to enforce the use of slaves
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <para>
+   Configure masters only.
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      Set
+      <link linkend="mysqlnd-ms.configuration"><literal>mysqlnd_ms.multi_master=1</literal></link>
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>Do not configure any slaves</simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Set
+      <literal><link linkend="mysqlnd-ms.plugin-ini-json">failover=master</link></literal>
+      in the plugins configuration file to avoid warnings about the empty slave list
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+ </section>
 </chapter>
 
 <!-- Keep this comment at the end of the file
