@@ -777,6 +777,623 @@ $mysqli->close();
    </para>
   </note>
  </section>
+ <section xml:id="mysqlnd-ms.quickstart.qos_consistency">
+  <title>Service level and consistency</title>
+  <note>
+   <title>Version requirement</title>
+   <para>
+    Service levels have been introduced in mysqlnd_ms version 1.2.0-alpha.
+   </para>
+  </note>
+  <para>
+   Different types of MySQL cluster solutions offer different service and
+   data consistency levels to their users. An asynchronous MySQL replication cluster
+   offers eventual consistency by default. A read executed on an asynchronous slave
+   may return current, stale or no data at all, depending on whether the slave
+   has replayed all master changes or not.
+  </para>
+  <para>
+   Applications using an MySQL replication cluster need to be designed to work
+   correctly with eventual consistent data. In some cases, however, stale data
+   is not acceptable. In those cases only certain slaves or even only master accesses are
+   allowed to achieve the required quality of service from the cluster.
+  </para>
+  <para>
+   As of PECL/mysqlnd_ms 1.2.0 the plugin is capable of selecting automatically
+   MySQL replication nodes that can deliver session consistency or
+   strong consistency. Session consistency means that one client can read its writes.
+   Other clients may or may not see the clients' write. Strong consistency means
+   that all clients will see all writes from the client.
+  </para>
+  <para>
+   <example>
+    <title>Session consistency: read your writes</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "127.0.0.1",
+                "port": "3306"
+            }
+        }
+    }
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Requesting session consistency</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* read-write splitting: master used */
+if (!$mysqli->query("INSERT INTO orders(order_id, item) VALUES (1, 'christmas tree, 1.8m')")) {
+   /* Please use better error handling in your code */
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+}
+
+/* Request session consistency: read your writes */
+if (!mysqlnd_ms_set_qos($mysqli, MYSQLND_MS_QOS_CONSISTENCY_SESSION))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+/* Plugin picks a node which has the changes, here: master */
+if (!$res = $mysqli->query("SELECT item FROM orders WHERE order_id = 1"))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+var_dump($res->fetch_assoc());
+
+/* Back to eventual consistency: stale data allowed */
+if (!mysqlnd_ms_set_qos($mysqli, MYSQLND_MS_QOS_CONSISTENCY_EVENTUAL))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+/* Plugin picks any slave, stale data is allowed */
+if (!$res = $mysqli->query("SELECT item, price FROM specials"))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Service levels can be set in the plugins configuration file and at runtime
+   using mysqlnd_ms_set_qos(). In the example the function is used to enforce
+   session consistency (read your writes) for all future statements until further notice.
+   The <literal>SELECT</literal> statement on the <literal>orders</literal> table
+   is run on the master to ensure the previous write can be seen by the client.
+   Read-write splitting logic has been adapted to fulfill the service level.
+  </para>
+  <para>
+    After the application has read its changes from the <literal>orders</literal> table
+    it returns to the default service level, which is eventual consistency. Eventual
+    consistency puts no restrictions on choosing a node for statement execution.
+    Thus, the <literal>SELECT</literal> statement on the <literal>specials</literal>
+    table is executed on a slave.
+  </para>
+  <para>
+   <example>
+    <title>Maximum age/slave lag</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "127.0.0.1",
+                "port": "3306"
+            }
+        },
+        "failover" : "master"
+    }
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Limiting slave lag</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* Read from slaves lagging no more than four seconds */
+$ret = mysqlnd_ms_set_qos($mysqli,
+         MYSQLND_MS_QOS_CONSISTENCY_EVENTUAL,
+         MYSQLND_MS_QOS_OPTION_AGE, 4);
+
+if (!$ret)
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+/* Plugin picks any slave, which may or may not have the changes */
+if (!$res = $mysqli->query("SELECT item, price FROM daytrade"))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+
+/* Back to default: use of all slaves and masters permitted */
+if (!mysqlnd_ms_set_qos($mysqli, MYSQLND_MS_QOS_CONSISTENCY_EVENTUAL))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   The eventual consistency service level can be used with an optional
+   parameter to set a maximum slave lag for choosing slaves. If set,
+   the plugin checks <literal>SHOW SLAVE STATUS</literal> for all
+   configured slaves. In case of the example, only slaves
+   for which <literal>Slave_IO_Running=Yes</literal>,
+   <literal>Slave_SQL_Running=Yes</literal> and
+   <literal>Seconds_Behind_Master &lt;= 4</literal>
+   is true are considered for executing the statement
+   <literal>SELECT item, price FROM daytrade</literal>.
+  </para>
+  <para>
+   Checking <literal>SHOW SLAVE STATUS</literal> is done transparently from
+   an applications perspective. Errors, if any, are reported as
+   warnings. No error will be set on the connection handle. Even if all
+   <literal>SHOW SLAVE STATUS</literal> SQL statements executed by
+   the plugin fail, the execution of the users statement is not stopped, given
+   that master fail over is enabled. Thus, no application changes are required.
+  </para>
+  <note>
+   <title>Expensive and slow operation</title>
+   <para>
+    Checking <literal>SHOW SLAVE STATUS</literal> for all slaves adds overhead
+    to the application. It is an expensive and slow background operation.
+    Try to minimize the use of it. Unfortunately, a MySQL replication cluster
+    does not give clients the  possibility to request a list of candidates
+    from a central instance.
+    Thus, a more efficient way of checking the slaves lag is not available.
+   </para>
+   <para>
+    Please, note the limitations and properties of <literal>SHOW SLAVE STATUS</literal>
+    as explained in the MySQL reference manual.
+   </para>
+  </note>
+  <para>
+   To prevent mysqlnd_ms from emitting a warning if no slaves can be found
+   that lag no more than four seconds behind the master, it is necessary to
+   enable master fail over in the plugins configuration file. If no slaves
+   can be found and fail over is turned on, the plugin picks a master for
+   executing the statement.
+  </para>
+  <para>
+   If no slave can be found and fail over is turned off, the plugin emits
+   a warning, it does not execute the statement and it sets an error
+   on the connection.
+  </para>
+  <para>
+   <example>
+    <title>Fail over not set</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "127.0.0.1",
+                "port": "3306"
+            }
+        }
+    }
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>No slave within time limit</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* Read from slaves lagging no more than four seconds */
+$ret = mysqlnd_ms_set_qos($mysqli,
+         MYSQLND_MS_QOS_CONSISTENCY_EVENTUAL,
+         MYSQLND_MS_QOS_OPTION_AGE, 4);
+
+if (!$ret)
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+/* Plugin picks any slave, which may or may not have the changes */
+if (!$res = $mysqli->query("SELECT item, price FROM daytrade"))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+
+/* Back to default: use of all slaves and masters permitted */
+if (!mysqlnd_ms_set_qos($mysqli, MYSQLND_MS_QOS_CONSISTENCY_EVENTUAL))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+PHP Warning:  mysqli::query(): (mysqlnd_ms) Couldn't find the appropriate slave connection. 0 slaves to choose from. Something is wrong in %s on line %d
+PHP Warning:  mysqli::query(): (mysqlnd_ms) No connection selected by the last filter in %s on line %d
+[2000] (mysqlnd_ms) No connection selected by the last filter
+]]>
+    </screen>
+   </example>
+  </para>
+  <note>
+   <title>Fail over logic is work in progress</title>
+   <para>
+    The details of the fail over logic may change in future versions.
+   </para>
+  </note>
+ </section>
+ <section xml:id="mysqlnd-ms.quickstart.gtid">
+  <title>Global transaction IDs</title>
+  <note>
+   <title>Version requirement</title>
+   <para>
+    Global transaction ID injection has been introduced in mysqlnd_ms version 1.2.0-alpha.
+    The feature is not required for synchronous clusters, such as MySQL Cluster.
+    Use it with asynchronous clusters such as classical MySQL replication.
+   </para>
+  </note>
+  <para>
+   In its most basic form a global transaction ID (GTID) is a counter in a table on the
+   master. The counter is incremented whenever a transaction is comitted on the master.
+   Slaves replicate the table. The counter serves two puposes. In case of a
+   master failure, it helps the database administrator to identify the most recent slave
+   for promoting it to the new master. The most recent slave is the one with the
+   highest counter value. Applications can use the global transaction ID to search
+   for slaves which have replicated a certain write (identified by a global transaction ID)
+   already.
+  </para>
+  <para>
+   PECL/mysqlnd_ms can inject SQL for every comitted transaction to increment a GTID counter.
+   The so created GTID is accessible by the application to identify an applications
+   write operation. This enables the plugin to deliver session consistency (read your writes)
+   service level by not only quering masters but also slaves which have replicated
+   the change already. Read load is taken away from the master.
+  </para>
+  <para>
+   Client-side global transaction ID injection has some limitations. Please,
+   read the <link linkend="mysqlnd-ms.gtid">concepts section</link>
+   carefully to fully understand the principles and ideas
+   behind it, before using in production environments. The background knowledge
+   is not required to continue with the quickstart.
+  </para>
+  <para>
+   First, create a counter table on your master server and insert a record into it.
+   The plugin does not assist creating the table.
+   Database administrators must make sure it  exists. Depending on the error
+   reporting mode, the plugin will silently ignore the lack of the table or bail out.
+  </para>
+  <para>
+   <example>
+    <title>Create counter table on master</title>
+    <programlisting role="sql">
+<![CDATA[
+CREATE TABLE `trx` (
+  `trx_id` int(11) DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+INSERT INTO `trx`(`trx_id`) VALUES (1);
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   In the plugins configuration file set the SQL to update the
+   global transaction ID table using <literal>on_commit</literal>
+   from the <literal>global_transaction_id_injection</literal>
+   section. Make sure the table name used for the <literal>UPDATE</literal>
+   statement is fully qualified. In the example,
+   <literal>test.trx</literal> is used to refer to table <literal>trx</literal>
+   in the schema <literal>test</literal>. Use the table that was created in
+   the previous step. It is important to set the fully qualified table name
+   because the connection on which the injection is done may use a different
+   default database. Make sure the user that opens the connection
+   is allowed to execute the <literal>UPDATE</literal>.
+  </para>
+  <para>
+   Enable reporting of errors that may occur when mysqlnd_ms does global
+   transaction ID injection.
+  </para>
+  <para>
+   <example>
+    <title>Plugin config: SQL for client-side GTID injection</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "127.0.0.1",
+                "port": "3306"
+            }
+        },
+        "global_transaction_id_injection":{
+            "on_commit":"UPDATE test.trx SET trx_id = trx_id + 1",
+            "report_error":true
+        }
+    }
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Transparent global transaction ID injection</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "root", "", "test");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* auto commit mode, transaction on master, GTID must be incremented */
+if (!$mysqli->query("DROP TABLE IF EXISTS test"))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+/* auto commit mode, transaction on master, GTID must be incremented */
+if (!$mysqli->query("CREATE TABLE test(id INT)"))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+/* auto commit mode, transaction on master, GTID must be incremented */
+if (!$mysqli->query("INSERT INTO test(id) VALUES (1)"))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+/* auto commit mode, read on slave, no increment */
+if (!($res = $mysqli->query("SELECT id FROM test")))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+var_dump($res->fetch_assoc());
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(1) {
+  ["id"]=>
+  string(1) "1"
+}
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   The example runs three statements in auto commit mode on the master, causing
+   three transactions on the master. For every such statement, the plugin will
+   inject the configured <literal>UPDATE</literal> transparently before executing
+   the users SQL statement. After the example script has finished the global
+   transaciton ID counter on the master has been incremented by three.
+  </para>
+  <para>
+   The fourth SQL statement executed in the example, a <literal>SELECT</literal>,
+   does not trigger an increment. Only transactions (writes) executed on a master
+   shall increment the GTID counter.
+  </para>
+  <note>
+   <title>SQL for global transaction ID: efficient solution wanted!</title>
+   <para>
+    The SQL used for the client-side global transaction ID emulation is inefficient.
+    It is optimized for clearity not for performance. Do not use it for production
+    environments. Please, help finding an efficient solution for inclusion in the manual.
+    We appreciate your input.
+   </para>
+  </note>
+  <para>
+   <example>
+    <title>Plugin config: SQL for fetching GTID</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "127.0.0.1",
+                "port": "3306"
+            }
+        },
+        "global_transaction_id_injection":{
+            "on_commit":"UPDATE test.trx SET trx_id = trx_id + 1",
+            "fetch_last_gtid" : "SELECT MAX(trx_id) FROM test.trx",
+            "report_error":true
+        }
+    }
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Obtaining GTID after injection</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "root", "", "test");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* auto commit mode, transaction on master, GTID must be incremented */
+if (!$mysqli->query("DROP TABLE IF EXISTS test"))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+printf("GTID after transaction %s\n", mysqlnd_ms_get_last_gtid($mysqli));
+
+/* auto commit mode, transaction on master, GTID must be incremented */
+if (!$mysqli->query("CREATE TABLE test(id INT)"))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+printf("GTID after transaction %s\n", mysqlnd_ms_get_last_gtid($mysqli));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+GTID after transaction 7
+GTID after transaction 8
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   Applications can ask mysqlnd_ms for a global transaction ID which
+   belongs to the last write transactions. The function <literal>mysqlnd_ms_get_last_gtid()</literal>
+   may be called after the GTID has been incremented. The
+   function returns the GTID obtained when executing the SQL statement from
+   the <literal>fetch_last_gtid</literal> entry of the
+   <literal>global_transaction_id_injection</literal> section from
+   the plugins configuration file. Applications are advices not to run the SQL
+   statement themselves as this bares the risk of accidently causing an implicit
+   GTID increment. Also, if the function is used, it is easy to migrate
+   an application from one SQL statement for fetching a transaction ID to another,
+   for example, if any MySQL server ever features built-in global transaction ID support.
+  </para>
+  <para>
+   The quickstart shows a SQL statement which will return a GTID equal or greater
+   to that created for the previous statement. It is exactly the GTID created
+   for the previous statement if no other clients have incremented the GTID in the
+   time span between the statement execution and the <literal>SELECT</literal>
+   to fetch the GTID. Otherwise, it is greater.
+  </para>
+  <para>
+   <example>
+    <title>Plugin config: Checking for a certain GTID</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "127.0.0.1",
+                "port": "3306"
+            }
+        },
+        "global_transaction_id_injection":{
+            "on_commit":"UPDATE test.trx SET trx_id = trx_id + 1",
+            "fetch_last_gtid" : "SELECT MAX(trx_id) FROM test.trx",
+            "check_for_gtid" : "SELECT trx_id FROM test.trx WHERE trx_id >= #GTID",
+            "report_error":true
+        }
+    }
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Session consistency service level and GTID combined</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "root", "", "test");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* auto commit mode, transaction on master, GTID must be incremented */
+if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
+    !$mysqli->query("CREATE TABLE test(id INT)") ||
+    !$mysqli->query("INSERT INTO test(id) VALUES (1)"))
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+/* GTID as an identifier for the last write */
+$gtid = mysqlnd_ms_get_last_gtid($mysqli);
+
+/* Session consistency (read your writes): try to read from slaves not only master */
+if (false == mysqlnd_ms_set_qos($mysqli, MYSQLND_MS_QOS_CONSISTENCY_SESSION, MYSQLND_MS_QOS_OPTION_GTID, $gtid)) {
+	die(sprintf("[006] [%d] %s\n", $mysqli->errno, $mysqli->error));
+}
+
+/* Either run on master or a slave which has replicated the INSERT */
+if (!($res = $mysqli->query("SELECT id FROM test"))) {
+	die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+}
+
+var_dump($res->fetch_assoc());
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   A GTID returned from <literal>mysqlnd_ms_get_last_gtid()</literal>
+   can be used as an option for the session consistency service level.
+   Session consistency delivers read your writes. Session consistency can
+   be requested by calling <literal>mysqlnd_ms_set_qos()</literal>.
+   In the example, the plugin will execute the <literal>SELECT</literal>
+   statement either on the master or on a slave which has replicated
+   the previous <literal>INSERT</literal> already.
+  </para>
+  <para>
+   PECL/mysqlnd_ms will transparently check every configured slave if
+   it has replicated the <literal>INSERT</literal> by checking the slaves
+   GTID table. The check is done running the SQL set with the
+   <literal>check_for_gtid</literal> option from the
+   <literal>global_transaction_id_injection</literal> section of
+   the plugins configuration file. Please note, that this is a slow and
+   expensive procedure. Applications should try to use it sparsely and only
+   if read load on the master becomes to high otherwise.
+  </para>
+ </section>
 </chapter>
 <!-- Keep this comment at the end of the file
 Local variables:
