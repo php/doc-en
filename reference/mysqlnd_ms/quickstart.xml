@@ -740,7 +740,7 @@ $mysqli->close();
   </para>
   <para>
    <example>
-    <title>Outlook: transaction aware</title>
+    <title>Transaction aware</title>
     <programlisting role="php">
 <![CDATA[
 <?php
@@ -1120,7 +1120,7 @@ PHP Warning:  mysqli::query(): (mysqlnd_ms) No connection selected by the last f
   <para>
    First, create a counter table on your master server and insert a record into it.
    The plugin does not assist creating the table.
-   Database administrators must make sure it  exists. Depending on the error
+   Database administrators must make sure it exists. Depending on the error
    reporting mode, the plugin will silently ignore the lack of the table or bail out.
   </para>
   <para>
@@ -1144,7 +1144,7 @@ INSERT INTO `trx`(`trx_id`) VALUES (1);
    section. Make sure the table name used for the <literal>UPDATE</literal>
    statement is fully qualified. In the example,
    <literal>test.trx</literal> is used to refer to table <literal>trx</literal>
-   in the schema <literal>test</literal>. Use the table that was created in
+   in the schema (database) <literal>test</literal>. Use the table that was created in
    the previous step. It is important to set the fully qualified table name
    because the connection on which the injection is done may use a different
    default database. Make sure the user that opens the connection
@@ -1229,8 +1229,8 @@ array(1) {
    The example runs three statements in auto commit mode on the master, causing
    three transactions on the master. For every such statement, the plugin will
    inject the configured <literal>UPDATE</literal> transparently before executing
-   the users SQL statement. After the example script has finished the global
-   transaciton ID counter on the master has been incremented by three.
+   the users SQL statement. When the script ends the global
+   transaction ID counter on the master has been incremented by three.
   </para>
   <para>
    The fourth SQL statement executed in the example, a <literal>SELECT</literal>,
@@ -1311,13 +1311,17 @@ GTID after transaction 8
    </example>
   </para>
   <para>
-   Applications can ask mysqlnd_ms for a global transaction ID which
-   belongs to the last write transactions. The function <literal>mysqlnd_ms_get_last_gtid()</literal>
-   may be called after the GTID has been incremented. The
-   function returns the GTID obtained when executing the SQL statement from
+   Applications can ask PECL mysqlnd_ms for a global transaction ID which
+   belongs to the last write operation performed by the application.
+   The function <function>mysqlnd_ms_get_last_gtid</function> returns the
+   GTID obtained when executing the SQL statement from
    the <literal>fetch_last_gtid</literal> entry of the
    <literal>global_transaction_id_injection</literal> section from
-   the plugins configuration file. Applications are advices not to run the SQL
+   the plugins configuration file. The function may be called
+   after the GTID has been incremented.
+  </para>
+  <para>
+   Applications are adviced not to run the SQL
    statement themselves as this bares the risk of accidently causing an implicit
    GTID increment. Also, if the function is used, it is easy to migrate
    an application from one SQL statement for fetching a transaction ID to another,
@@ -1398,7 +1402,7 @@ var_dump($res->fetch_assoc());
    </example>
   </para>
   <para>
-   A GTID returned from <literal>mysqlnd_ms_get_last_gtid()</literal>
+   A GTID returned from <function>mysqlnd_ms_get_last_gtid</function>
    can be used as an option for the session consistency service level.
    Session consistency delivers read your writes. Session consistency can
    be requested by calling
@@ -1408,7 +1412,7 @@ var_dump($res->fetch_assoc());
    the previous <literal>INSERT</literal> already.
   </para>
   <para>
-   PECL/mysqlnd_ms will transparently check every configured slave if
+   PECL mysqlnd_ms will transparently check every configured slave if
    it has replicated the <literal>INSERT</literal> by checking the slaves
    GTID table. The check is done running the SQL set with the
    <literal>check_for_gtid</literal> option from the

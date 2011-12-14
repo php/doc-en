@@ -988,6 +988,16 @@ version = 5.6.2-m5-log
    </itemizedlist>
   </para>
   <para>
+   Depending how a cluster is used it may be possible to achieve higher service
+   levels than the default one. For example, a read from an asynchronous
+   MySQL replication slave is eventual consistent. Thus, one may say the default
+   consistency level of a MySQL replication cluster is eventual consistency.
+   However, if the master only is used by a client for reading and writing during a
+   session, session consistency (read your writes) is given. PECL mysqlnd 1.2.0
+   abstracts the details of choosing an appropriate node for any of the above
+   service levels from the user.
+  </para>
+  <para>
    Service levels can be set through the qualify-of-service filter in the
    <link linkend="mysqlnd-ms.plugin-ini-json">plugins configuration file</link>
    and at runtime using the function
@@ -1038,6 +1048,56 @@ version = 5.6.2-m5-log
   <para>
    The latter requires the use of
    <link linkend="mysqlnd-ms.gtid">client-side global transaction id injection</link>.
+  </para>
+  <para>
+   <emphasis role="bold">Advantages of the new approach</emphasis>
+  </para>
+  <para>
+   The new approach supersedes the use of SQL hints and the configuration option
+   <literal>master_on_write</literal> in some respects. If an application
+   running on top of an asynchonous MySQL replication cluster cannot accept stale
+   data for certain reads, it is easier to tell the plugin to choose appropriate
+   nodes than prefixing all read statements in question with the SQL hint
+   to enforce the use of the master. Furthermore, the plugin may be able to
+   use selected slaves for reading.
+  </para>
+  <para>
+   The <literal>master_on_write</literal> configuration option makes the plugin
+   use the master after the first write (session consistency, read your writes).
+   In some cases, session consistency may not be needed for the rest of the session
+   but only for some, few read operations. Thus, <literal>master_on_write</literal>
+   may result in more read load on the master than necessary. In those cases it
+   is better to request a higher than default service level only for those reads
+   that actually need it. Once the reads are done, the application can return to
+   default service level. Switching between service levels is only possible
+   using <link linkend="function.mysqlnd-ms-set-qos"><function>mysqlnd_ms_set_qos</function></link>.
+  </para>
+  <para>
+   <emphasis role="bold">Performance considerations</emphasis>
+  </para>
+  <para>
+   A MySQL replication cluster cannot tell clients which slaves are capable
+   of delivering which level of service. Thus, in some cases,
+   clients need to query the slaves to check their status.
+   PECL mysqlnd_ms transparently runs the necessary SQL in the
+   background. However, this is an expensive and slow operation. SQL statements
+   are run if eventual consistency is combined with an age (slave lag) limit and
+   if session consistency is combined with a global transaction ID.
+  </para>
+  <para>
+   If no parameters and options are set, no SQL is needed. In that case,
+   the plugin consider all nodes of the type shown below.
+   <itemizedlist>
+    <listitem>
+     <simpara>eventual consistency, no further options set: all masters, all slaves</simpara>
+    </listitem>
+    <listitem>
+     <simpara>session consistency, no further options set: all masters</simpara>
+    </listitem>
+    <listitem>
+     <simpara>strong consistency (no options allowed): all masters</simpara>
+    </listitem>
+   </itemizedlist>
   </para>
  </section>
 
