@@ -15,6 +15,12 @@
   environments we urge you to read additionally the background information from the
   reference sections.
  </para>
+ <para>
+  The focus is on using PECL mysqlnd_ms for work with an asynchronous MySQL cluster,
+  namelys MySQL replication. Generally speaking an asynchronous cluster is more
+  difficult to use than a synchronous one. Thus, users of, for example, MySQL Cluster
+  will find more information than needed.
+ </para>
  <note>
    <para>
     The documentation has been updated to show the syntax used as of version
@@ -526,7 +532,13 @@ $mysqli->close();
   <para>
    SQL hints can also be used to run <literal>SELECT</literal> statements
    on the MySQL master server. This may be desired if the MySQL slave servers
-   are typically behind the master, but you need current data from the database.
+   are typically behind the master, but you need current data from the cluster.
+  </para>
+  <para>
+   In version 1.2.0 the concept of a service level has been introduced to address
+   cases when current data is required. Using a service level requires less attention
+   and removes the need of using SQL hints for this use case. Please, find more
+   information below in the service level and consistency section.
   </para>
   <para>
    <example>
@@ -598,7 +610,7 @@ $mysqli->close();
  <section xml:id="mysqlnd-ms.quickstart.transactions">
   <title>Transactions</title>
   <para>
-   The current version of the plugin is not transaction safe,
+   The current version of the plugin is not transaction safe by default,
    because it is not transaction aware. SQL transactions are
    units of work to be run on a single server.
    The plugin does not know when the unit of work starts and when it ends.
@@ -606,7 +618,9 @@ $mysqli->close();
    of a transaction.
   </para>
   <para>
-   You must use SQL hints to work around this limitation.
+   You can either use SQL hints to work around this limitation. Alternatively,
+   you can activate transaction API call monitoring. In the latter case you
+   must use API calls only to control transactins, see below.
   </para>
   <para>
    <example>
@@ -689,7 +703,7 @@ $mysqli->close();
   </para>
   <para>
     If using PHP 5.4.0 or newer, API calls that enable <literal>autocommit</literal> mode,
-    and when setting the experimental plugin configuration option
+    and when setting the plugin configuration option
     <link linkend="ini.mysqlnd-ms-plugin-config-v2.trx_stickiness">trx_stickiness=master</link>,
     the plugin can automatically disable load balancing and connection switches
     for SQL transactions. In this configuration, the plugin stops load balancing
@@ -700,7 +714,7 @@ $mysqli->close();
   </para>
   <para>
    <example>
-    <title>Experimental trx_stickiness setting</title>
+    <title>Transaction aware load balancing: trx_stickiness setting</title>
     <programlisting role="ini">
 <![CDATA[
 {
@@ -769,11 +783,11 @@ $mysqli->close();
    </example>
   </para>
   <note>
-   <title>Experimental PHP 5.4.0+ feature</title>
+   <title>Version requirement</title>
    <para>
     The plugin configuration option
     <link linkend="ini.mysqlnd-ms-plugin-config-v2.trx_stickiness">trx_stickiness=master</link>
-    is an experimental feature, and requires PHP 5.4.0 or newer.
+    requires PHP 5.4.0 or newer.
    </para>
   </note>
  </section>
@@ -782,7 +796,7 @@ $mysqli->close();
   <note>
    <title>Version requirement</title>
    <para>
-    Service levels have been introduced in mysqlnd_ms version 1.2.0-alpha.
+    Service levels have been introduced in PECL mysqlnd_ms version 1.2.0-alpha.
     <link linkend="function.mysqlnd-ms-set-qos"><function>mysqlnd_ms_set_qos</function></link>
     is available with PHP 5.4.0 or newer.
    </para>
@@ -792,7 +806,7 @@ $mysqli->close();
    data consistency levels to their users. An asynchronous MySQL replication cluster
    offers eventual consistency by default. A read executed on an asynchronous slave
    may return current, stale or no data at all, depending on whether the slave
-   has replayed all master changes or not.
+   has replayed all changesets from the master or not.
   </para>
   <para>
    Applications using an MySQL replication cluster need to be designed to work
@@ -801,8 +815,8 @@ $mysqli->close();
    allowed to achieve the required quality of service from the cluster.
   </para>
   <para>
-   As of PECL/mysqlnd_ms 1.2.0 the plugin is capable of selecting automatically
-   MySQL replication nodes that can deliver session consistency or
+   As of PECL mysqlnd_ms 1.2.0 the plugin is capable of selecting
+   MySQL replication nodes automatically that deliver session consistency or
    strong consistency. Session consistency means that one client can read its writes.
    Other clients may or may not see the clients' write. Strong consistency means
    that all clients will see all writes from the client.
@@ -881,11 +895,17 @@ if (!$res = $mysqli->query("SELECT item, price FROM specials"))
    Read-write splitting logic has been adapted to fulfill the service level.
   </para>
   <para>
-    After the application has read its changes from the <literal>orders</literal> table
-    it returns to the default service level, which is eventual consistency. Eventual
-    consistency puts no restrictions on choosing a node for statement execution.
-    Thus, the <literal>SELECT</literal> statement on the <literal>specials</literal>
-    table is executed on a slave.
+   After the application has read its changes from the <literal>orders</literal> table
+   it returns to the default service level, which is eventual consistency. Eventual
+   consistency puts no restrictions on choosing a node for statement execution.
+   Thus, the <literal>SELECT</literal> statement on the <literal>specials</literal>
+   table is executed on a slave.
+  </para>
+  <para>
+   The new functionality supersedes the use of SQL hints and the
+   <literal>master_on_write</literal> configuration option. In many cases
+   <function>mysqlnd_ms_set_qos</function> is easier to use, more powerful
+   improves portability.
   </para>
   <para>
    <example>
@@ -970,7 +990,7 @@ if (!mysqlnd_ms_set_qos($mysqli, MYSQLND_MS_QOS_CONSISTENCY_EVENTUAL))
     Checking <literal>SHOW SLAVE STATUS</literal> for all slaves adds overhead
     to the application. It is an expensive and slow background operation.
     Try to minimize the use of it. Unfortunately, a MySQL replication cluster
-    does not give clients the  possibility to request a list of candidates
+    does not give clients the possibility to request a list of candidates
     from a central instance.
     Thus, a more efficient way of checking the slaves lag is not available.
    </para>
@@ -981,10 +1001,10 @@ if (!mysqlnd_ms_set_qos($mysqli, MYSQLND_MS_QOS_CONSISTENCY_EVENTUAL))
   </note>
   <para>
    To prevent mysqlnd_ms from emitting a warning if no slaves can be found
-   that lag no more than four seconds behind the master, it is necessary to
-   enable master fail over in the plugins configuration file. If no slaves
-   can be found and fail over is turned on, the plugin picks a master for
-   executing the statement.
+   that lag no more than the defined number of seconds behind the master,
+   it is necessary to enable master fail over in the plugins configuration file.
+   If no slaves  can be found and fail over is turned on, the plugin
+   picks a master for  executing the statement.
   </para>
   <para>
    If no slave can be found and fail over is turned off, the plugin emits
