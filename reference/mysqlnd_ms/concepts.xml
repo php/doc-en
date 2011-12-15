@@ -1085,6 +1085,32 @@ version = 5.6.2-m5-log
    if session consistency is combined with a global transaction ID.
   </para>
   <para>
+   If eventual consistency is combined with an maximum age (slave lag), the plugin
+   selects candidates for statement execution and load balancing for each statement
+   as follows. If the statement is a write all masters are considered as candidates. Slaves
+   are not checked and not considered as candidates. If the statement is a read, the
+   plugin transparently executes <literal>SHOW SLAVE STATUS</literal> on every slaves
+   connection. It will loop over all connections, send the statement and then start
+   checking for results. Usually, this is slighly faster than a loop over all connections
+   in which for every connection a query is send and the plugin waits for its results.
+   A slave is considered a candidate if <literal>SHOW SLAVE STATUS</literal> reports
+   <literal>Slave_IO_Running=Yes</literal>,
+   <literal>Slave_SQL_Running=Yes</literal> and
+   <literal>Seconds_Behind_Master</literal> is less or equal than the allowed maximum age.
+   In case of an SQL error, the plugin emits a warning but does not set an error on
+   the connection. The error is not set to make it possible to use the plugin as a drop-in.
+  </para>
+  <para>
+   If session consistency is combined with a global transaction ID, the plugin executes
+   the SQL statement set with the <literal>fetch_last_gtid</literal> entry of the
+   <literal>global_transaction_id_injection</literal> section from the plugins configuration file.
+   Further details are identical to those described above.
+  </para>
+  <para>
+   In version 1.2.0 no additional optimizations are done for executing background queries.
+   Future versions may contain optimizations, depending on user demand.
+  </para>
+  <para>
    If no parameters and options are set, no SQL is needed. In that case,
    the plugin consider all nodes of the type shown below.
    <itemizedlist>
@@ -1182,10 +1208,10 @@ version = 5.6.2-m5-log
    <title>Server-side global transaction ID support</title>
    <para>
     The plugin is prepared to support MySQL servers which implement global
-    transaction ID support and maintain a global transaction ID themselves.
+    transaction ID support and which maintain a global transaction ID themselves.
     Client-side injection would not be necessary with such servers. However,
-    without any server supporting it yet and in heterogenous environments with
-    old MySQL servers, client-side injection is a valuable, although not ideal,
+    without any server supporting it yet and, in heterogenous environments with
+    old MySQL servers, client-side injection is a valuable, although not perfect,
     option.
    </para>
   </note>
