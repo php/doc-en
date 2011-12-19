@@ -1686,16 +1686,17 @@ slave[] = mysql_slave_2
    phpt tests, which are described on the PHP Quality Assurance Teams website.
   </para>
   <para>
+   Running the tests requires setting up one to four MySQL servers. Some tests don't
+   connect to MySQL at all. Others require one server for testing. Some require
+   two distict servers. In some cases two servers are used to emulate a
+   replication setup. In other cases a master and a slave of an existing MySQL replication
+   setup are required for testing. The tests will try to detect how many servers
+   and what kind of servers are given. If the required servers are not found, the
+   test will be skipped automatically.
+  </para>
+  <para>
    Before running the tests, edit <filename>tests/config.inc</filename> to
-   configure the MySQL servers to be used for testing. You will need at least
-   one MySQL server to run the tests. However, configuring two distinct MySQL
-   servers is better. If two distinct servers are configured, the tests can use
-   one of them as a logical master and the other one as a logical slave. Those
-   two servers do not need to be part of a MySQL replication cluster. Tests
-   are written in a way that they can be successfully executed without having
-   to setup a MySQL replication cluster. If two servers are configured they
-   must allow login to a test database using the same username and password on
-   both servers.
+   configure the MySQL servers to be used for testing.
   </para>
   <para>
    The most basic configuration is as follows.
@@ -1713,8 +1714,13 @@ slave[] = mysql_slave_2
  putenv("MYSQL_TEST_CONNECT_FLAGS=0");
  putenv("MYSQL_TEST_EXPERIMENTAL=0");
 
- putenv("MYSQL_TEST_MASTER_HOST=". getenv("MYSQL_TEST_HOST"));
- putenv("MYSQL_TEST_SLAVE_HOST=". getenv("MYSQL_TEST_HOST"));
+ /* replication cluster emulation */
+ putenv("MYSQL_TEST_EMULATED_MASTER_HOST=". getenv("MYSQL_TEST_HOST"));
+ putenv("MYSQL_TEST_EMULATED_SLAVE_HOST=". getenv("MYSQL_TEST_HOST"));
+
+ /* real replication cluster */
+ putenv("MYSQL_TEST_MASTER_HOST=". getenv("MYSQL_TEST_EMULATED_MASTER_HOST"));
+ putenv("MYSQL_TEST_SLAVE_HOST=". getenv("MYSQL_TEST_EMULATED_SLAVE_HOST"));
 ]]>
      </programlisting>
    </para>
@@ -1724,23 +1730,18 @@ slave[] = mysql_slave_2
     TCP/IP port and Unix domain socket of the default database server.
     <literal>MYSQL_TEST_USER</literal> and <literal>MYSQL_TEST_PASSWD</literal>
     contain the user and password needed to connect to the database/schema
-    configured with <literal>MYSQL_TEST_DB</literal>. If using two distinct
-    servers, a logical master and a logical slave server, both of them must
-    have the same database user configured to give access to the test database.
+    configured with <literal>MYSQL_TEST_DB</literal>. All configured
+    servers must  have the same database user configured to give access to
+    the test database.
    </para>
    <para>
-    Some tests require availability of two distinct MySQL test servers. Those
-    tests will be skipped, if only one server is configured. To configure a logical
-    slave server that runs on a different host and/or listens to a different port
-    or socket than the default server, set <literal>MYSQL_TEST_SLAVE_HOST</literal>.
     Using <literal>host</literal>, <literal>host:port</literal> or <literal>host:/path/to/socket</literal>
-    syntax for <literal>MYSQL_TEST_SLAVE_HOST</literal> you can set an alternate
-    host, host and port or host and socket for the logical slave host.
-    The same syntax can be used to set <literal>MYSQL_TEST_MASTER_HOST</literal>.
+    syntax one can set an alternate  host, host and port or host and socket for any
+    of the servers.
    <programlisting>
 <![CDATA[
 putenv("MYSQL_TEST_SLAVE_HOST=192.168.78.136:3307"));
-putenv("MYSQL_TEST_SLAVE_HOST=myserver_hostname:/path/to/socket"));
+putenv("MYSQL_TEST_MASTER_HOST=myserver_hostname:/path/to/socket"));
 ]]>
      </programlisting>
    </para>
