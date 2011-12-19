@@ -802,34 +802,21 @@ version = 5.6.2-m5-log
     <listitem>
      <simpara>
       Selection filter:
-      <link linkend="ini.mysqlnd-ms-plugin-config-v2.filters">user</link>.
+      <link linkend="ini.mysqlnd-ms-plugin-config-v2.filters">user</link>,
+      <link linkend="ini.mysqlnd-ms-plugin-config-v2.filters">quality-of-service (qos)</link>.
      </simpara>
     </listitem>
    </itemizedlist>
   </para>
-
-  <note>
-   <title>pick[] versus filters</title>
-   <para>
-    The <literal>random</literal> and <literal>roundrobin</literal>
-    filters replace the
-    <link linkend="ini.mysqlnd-ms-plugin-config.pick">pick[]</link>
-    configuration directive found in mysqlnd_ms versions prior to
-    1.1.0-beta.
-   </para>
-   <para>
-    And the <literal>user</literal> filter replaces the
-    <function>mysqlnd_ms_set_user_pick_server</function> function, which was
-    previously used for this purpose.
-   </para>
-  </note>
 
   <para>
    The <literal>random</literal> filter implements the 'random' and 'random once'
    load balancing policies. The 'round robin' load balancing can be configured
    through the <literal>roundrobin</literal> filter. Setting a 'user defined
    callback' for server selection is possible with the <literal>user</literal>
-   filter.
+   filter. The <literal>qos</literal> (quality-of-service) filter finds cluster
+   nodes capable of delivering a certain service, for example, read-your-writes or,
+   not lagging more seconds behind the master than allowed.
   </para>
   <para>
    Filters can accept parameters to change their behaviour.
@@ -842,15 +829,15 @@ version = 5.6.2-m5-log
   </para>
   <para>
    One of the biggest strength of the filter concept is the possibility to
-   chain filters. This strength does not become immediately visible with the
-   filters provided by version 1.1.0-beta because all of the above filters
-   are supposed to output no more than one server. If a filter reduces
-   the list of candidates for running a statement to only one server, it
-   makes little sense to use that one server as input for another filter for
-   further reduction of the list of candidates.
+   chain filters. This strength does not become immediately visible because
+   tje <literal>random</literal>, <literal>roundrobin</literal> and
+   <literal>user</literal> filters  are supposed to output no more than one server.
+   If a filter reduces the list of candidates for running a statement to
+   only one server, it  makes little sense to use that one server as
+   input for another filter for  further reduction of the list of candidates.
   </para>
   <para>
-   A filter sequence that will fail:
+   An example filter sequence that will fail:
    <itemizedlist>
     <listitem>
      <simpara>
@@ -891,11 +878,68 @@ version = 5.6.2-m5-log
    line %d</literal>. Furthermore, an appropriate error on the connection handle
    may be set.
   </para>
-  <note>
+  <para>
+   A second type of filter exists: multi filter. A multi filter emits zero, one or multiple
+   servers after processing. The <literal>qos</literal> (quality-of-service) filter
+   is an example. If the service quality requested sets an upper limit for the slave
+   lag and more than one slave is lagging behind less than the allowed number of seconds,
+   the filter returns more than one cluster node. A multi filter must be followed by other
+   to further reduce the list of candidates for statement execution until a candidate
+   is found.
+  </para>
+  <para>
+   A filter sequence with the <literal>qos</literal> (quality-of-service)
+   multi filter followed by a load balancing filter.
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      Statement to be executed: <literal>SELECT sum(price) FROM orders WHERE order_id = 1</literal>.
+      Passed to all filters.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      All configured nodes are passed as input to the first filter.
+      Master nodes: <literal>master_0</literal>.
+      Slave nodes: <literal>slave_0</literal>, <literal>slave_1</literal>,
+      <literal>slave_2</literal>, <literal>slave_3</literal>
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Filter: <literal>qos</literal>, rule set: read-your-writes
+      Output: <literal>master_0</literal>
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Output of <literal>master_0</literal>
+      and the statement to be executed
+      is passed as input to the next filter, which is <literal>roundrobin</literal>.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Filter: <literal>roundrobin</literal>. Server list consists of
+      one server. Round robin selects <literal>master_0</literal>.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <para>
+   A filter sequence must not end with a multi filter. If trying to use
+   a filter sequence which ends with a multi filter the plugin may emit a
+   warning like <literal>(mysqlnd_ms) Error in configuration. Last filter is multi
+   filter. Needs to be non-multi one. Stopping in %s on line %d</literal>.
+   Furthermore, an appropriate error on the connection handle
+   may be set.
+  </para>
+  <para>
+   <note>
    <title>Speculation towards the future: MySQL replication filtering</title>
    <para>
-    In future versions, there may be filters which return more than one candidate
-    for statement execution. For example, there may be a <literal>table</literal>
+    In future versions, there may be additional multi filters.
+    For example, there may be a <literal>table</literal>
     filter to support MySQL replication filtering. This would allow
     you to define rules for which database or table is to be replicated to which
     node of a replication cluster. Assume your replication cluster
@@ -910,53 +954,6 @@ version = 5.6.2-m5-log
     a load balancing filter to identify a server for statement execution.
    </para>
   </note>
-  <para>
-   A hypothetical filter sequence, assuming the existence of a <literal>table</literal>
-   filter to support MySQL replication filtering (client-side partitioning).
-   <itemizedlist>
-    <listitem>
-     <simpara>
-      Statement to be executed: <literal>SELECT col FROM sales.reports</literal>. Passed to all filters.
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      All configured nodes are passed as input to the first filter.
-      Master nodes: <literal>master_0</literal>.
-      Slave nodes: <literal>slave_0</literal>, <literal>slave_1</literal>,
-      <literal>slave_2</literal>, <literal>slave_3</literal>
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      Filter: <literal>table</literal>, rules set for database <literal>sales</literal>.
-      Output: <literal>slave_0</literal>, <literal>slave_1</literal>.
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      Output of <literal>slave_0</literal>, <literal>slave_1</literal>
-      and the statement to be executed
-      is passed as input to the next filter, which is <literal>roundrobin</literal>.
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      Filter: <literal>roundrobin</literal>. Server list consists of
-      two servers. Round robin selects <literal>slave_0</literal>.
-      Upon subsequent execution, if the same server list is given as
-      input, the filter will return <literal>slave_1</literal> followed
-      by <literal>slave_0</literal>, <literal>slave_1</literal>,
-      <literal>slave_0</literal> and so forth.
-     </simpara>
-    </listitem>
-   </itemizedlist>
-   <note>
-    <para>
-     The example aims to illustrate the strength of the filter
-     concept. It does not make any promises on future features.
-    </para>
-   </note>
   </para>
  </section>
 
