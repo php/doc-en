@@ -1119,19 +1119,19 @@ User has connected to 'myapp'...
     </varlistentry>
     <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.filter_qos">
      <term>
-      Filter: <parameter>qos</parameter>
+      Filter: <parameter>quality_of_service</parameter>
       <type>object</type>
      </term>
      <listitem>
       <para>
-       The quality-of-service (qos) filter identifies cluster nodes
+       The <literal>quality_of_service</literal> identifies cluster nodes
        capable of delivering a certain quality of service. It is a multi filter
        which returns zero, one or multiple of its input servers. Thus, it
        must be followed by other filters to reduce the number of candidates
        down to one for statement execution.
       </para>
       <para>
-       The <literal>qos</literal> filter has been introduced in 1.2.0-alpha.
+       The <literal>quality_of_service</literal> filter has been introduced in 1.2.0-alpha.
        In the 1.2 series the filters focus is on the consistency aspect of
        service quality. Different types of clusters offer different
        default data consistencies. For example, an asynchronous MySQL
@@ -1140,15 +1140,25 @@ User has connected to 'myapp'...
        it may serve stale database because its lagging behind or it may serve
        current information. Often, this is acceptable. In some cases
        higher consistency levels are needed for the application to work correct.
-       In those cases, the <literal>qos</literal> can filter out cluster nodes
+       In those cases, the <literal>quality_of_service</literal> can filter out cluster nodes
        which cannot deliver the necessary quality of service.
       </para>
       <para>
-       The <literal>qos</literal> filter can be replaced
+       The <literal>quality_of_service</literal> filter can be replaced or created
        at runtime. A successful call to
        <link linkend="function.mysqlnd-ms-set-qos"><function>mysqlnd_ms_set_qos</function></link>
        removes all existing <literal>qos</literal> filter entries from the
-       filter list and installs a new one at the very beginning.
+       filter list and installs a new one at the very beginning. All settings
+       that can be made through
+       <link linkend="function.mysqlnd-ms-set-qos"><function>mysqlnd_ms_set_qos</function></link>
+       can also be in the plugins configuration file. However, use of the function
+       is by far the most common use case. Instead of setting session consistency and
+       strong consistency service levels in the plugins configuration file it is
+       recommended to define only masters and no slaves. Both service levels will
+       force the use of masters only. Using an empty slave list shortens the
+       configuration file, thus improving readability. The only service level for which
+       there is a case of defining in the plugins configuration file is the combination
+       of eventual consistency and maximum slave lag.
       </para>
       <informaltable>
        <tgroup cols="3">
@@ -1171,6 +1181,57 @@ User has connected to 'myapp'...
             <para>
              Request eventual consistency. Allows the use of all
              master and slave servers. Data returned may or may not be current.
+            </para>
+            <para>
+             Eventual consistency accepts an optional <literal>age</literal>
+             parameter. If <literal>age</literal> is given the plugin considers
+             only slaves for reading for which MySQL replication reports
+             a slave lag less or equal to <literal>age</literal>.
+             The repliation lag is measure using <literal>SHOW SLAVE STATUS</literal>.
+             If the plugin fails to fetch the replication lag, the slave tested
+             is skipped. Implementation details and tipps are given in the
+             <link linkend="mysqlnd-ms.qos_consistency">quality of service concepts section</link>.
+            </para>
+            <para>
+              Please note, if a filter chain
+              generates an empty slave list and the PHP configuration directive
+              <literal>mysqlnd_ms.multi_master=0</literal> is used, the plugin may
+              emit a warning.
+            </para>
+            <para>
+             <example>
+               <title>Global limit on slave lag</title>
+                <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.2.27",
+                "port": "3306"
+            },
+            "slave_1": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            }
+        },
+        "filters": {
+            "quality_of_service": {
+                "eventual_consistency": {
+                    "age":123
+                }
+            }
+        }
+    }
+}
+]]>
+              </programlisting>
+             </example>
             </para>
           </entry>
           <entry>Since 1.2.0.</entry>
@@ -1376,7 +1437,7 @@ User has connected to 'myapp'...
        </example>
       </para>
       <para>
-       Please, note the <literal>qos</literal> (quality of service) filter introduced
+       Please, note the <literal>quality_of_service</literal> filter introduced
        in version 1.2.0-alpha. It gives finer control, for example, for achieving read-your-writes
        and, it offers additional functionality introducing
        <link linkend="mysqlnd-ms.qos_consistency">service levels</link>.
