@@ -478,21 +478,18 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 		$markup  = PHP_EOL ."<!-- {{{ ". $class->getName() ." constants -->". PHP_EOL;
 		$markup .= str_repeat(' ', $ident) .'<section xml:id="'. $id .".constants\">". PHP_EOL;
 		$markup .= str_repeat(' ', $ident + 1) ."&reftitle.constants;". PHP_EOL;
-   		$markup .= str_repeat(' ', $ident + 1) .'<section xml:id="'. $id .".constants.types\">". PHP_EOL;
-   		$markup .= str_repeat(' ', $ident + 2) .'<title>'. $class->getName() ." Node Types</title>". PHP_EOL;
-    	$markup .= str_repeat(' ', $ident + 2) ."<variablelist>". PHP_EOL . PHP_EOL;
+    	$markup .= str_repeat(' ', $ident + 1) ."<variablelist>". PHP_EOL . PHP_EOL;
 
 		foreach ($constants as $constant => $value) {
-     		$markup .= str_repeat(' ', $ident + 3) .'<varlistentry xml:id="'. $id .".constants.". format_id($constant) ."\">". PHP_EOL;
-     		$markup .= str_repeat(' ', $ident + 4) .'<term><constant>'. $class->getName() .'::'. $constant ."</constant></term>". PHP_EOL;
-      		$markup .= str_repeat(' ', $ident + 4) ."<listitem>". PHP_EOL;
-       		$markup .= str_repeat(' ', $ident + 5) ."<para></para>". PHP_EOL;
-      		$markup .= str_repeat(' ', $ident + 4) ."</listitem>". PHP_EOL;
-     		$markup .= str_repeat(' ', $ident + 3) ."</varlistentry>". PHP_EOL . PHP_EOL;
+     		$markup .= str_repeat(' ', $ident + 2) .'<varlistentry xml:id="'. $id .".constants.". format_id($constant) ."\">". PHP_EOL;
+     		$markup .= str_repeat(' ', $ident + 3) .'<term><constant>'. $class->getName() .'::'. $constant ."</constant></term>". PHP_EOL;
+      		$markup .= str_repeat(' ', $ident + 3) ."<listitem>". PHP_EOL;
+       		$markup .= str_repeat(' ', $ident + 4) ."<para></para>". PHP_EOL;
+      		$markup .= str_repeat(' ', $ident + 3) ."</listitem>". PHP_EOL;
+     		$markup .= str_repeat(' ', $ident + 2) ."</varlistentry>". PHP_EOL . PHP_EOL;
 		}
 
-		$markup .= str_repeat(' ', $ident + 2) ."</variablelist>". PHP_EOL;
-  		$markup .= str_repeat(' ', $ident + 1) ."</section>". PHP_EOL;
+		$markup .= str_repeat(' ', $ident + 1) ."</variablelist>". PHP_EOL;
   		$markup .= str_repeat(' ', $ident) ."</section>". PHP_EOL;
   		$markup .= "<!-- }}} -->". PHP_EOL;
 
