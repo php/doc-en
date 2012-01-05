@@ -1117,6 +1117,88 @@ User has connected to 'myapp'...
       </para>
      </listitem>
     </varlistentry>
+    <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.filter_user_multi">
+     <term>
+      Filter: <parameter>user_multi</parameter>
+      <type>object</type>
+     </term>
+     <listitem>
+      <para>
+       The <literal>user_multi</literal> differs from the <literal>user</literal>
+       only in one aspect. Otherwise, their syntax is identical.
+       The <literal>user</literal> filter must pick
+       and return exactly one node for statement execution. A filter chain
+       usually ends with a filter that emits only one node. The filter chain
+       shall reduce the list of candidates for statement execution down to
+       one. This, only one node left, is the case after the <literal>user</literal>
+       filter has been run.
+      </para>
+      <para>
+       The <literal>user_multi</literal> filter is a multi filter. It returns a
+       list of slave and a list of master servers. This list needs further filtering
+       to identify exactly one node for statement execution. A multi filter is typically
+       placed at the top of the filter chain. The <literal>quality_of_service</literal>
+       filter is another example of a multi filter.
+      </para>
+      <para>
+       The return value of the callback set for <literal>user_multi</literal> must
+       be an an array with two elements. The first element holds a list of selected master
+       servers. The second element contains a list of selected slave servers. The
+       lists shall contain the keys of the slave and master servers as found in
+       the slave and master lists passed to the callback. The below example returns
+       random master and slave lists extracted from the functions input.
+      </para>
+      <para>
+      <example>
+        <title>Returning random masters and slaves</title>
+        <programlisting role="php">
+<![CDATA[
+<?php
+function pick_server($connected, $query, $masters, $slaves, $last_used_connection, $in_transaction)
+{
+  $picked_masters = array()
+  foreach ($masters as $key => $value) {
+    if (mt_rand(0, 2) > 1)
+      $picked_masters[] = $key;
+  }
+  $picked_slaves = array()
+  foreach ($slaves as $key => $value) {
+    if (mt_rand(0, 2) > 1)
+      $picked_slaves[] = $key;
+  }
+  return array($picked_masters, $picked_slaves);
+}
+]]>
+         </programlisting>
+       </example>
+      </para>
+      <para>
+       The plugin will issue an
+       error of type <literal>E_RECOVERABLE</literal> if the callback fails to return
+       a server list. The error may read <literal>(mysqlnd_ms) User multi
+       filter callback has not returned a list of servers to use.
+       The callback must return an array in %s on line %d</literal>. In case the
+       server list is not empty but has invalid servers key/ids in it, an error
+       of type <literal>E_RECOVERABLE</literal> will the thrown with an
+       error message like <literal>(mysqlnd_ms) User multi filter callback
+       has returned an invalid list of servers to use.
+       Server id is negative in %s on line %d</literal>, or similar.
+      </para>
+      <para>
+       Whether an error is emitted in case of an empty slave or master list
+       depends on the configuration. If an empty master list is returned
+       for a write operation, it is likely that the plugin will emit a
+       warning that may read <literal>(mysqlnd_ms) Couldn't find the appropriate
+       master connection. 0 masters to choose from. Something is wrong in %s on line %d</literal>.
+       Typically a follow up error of type <literal>E_ERROR</literal> will happen.
+       In case of a read operation and an empty slave list the behviour depends
+       on the fail over configuration. If fail over to master is enabled, no
+       error should appear. If fail over to master is deactivated the plugin will
+       emit a warning that may read <literal>(mysqlnd_ms) Couldn't find the appropriate
+       slave connection. 0 slaves to choose from. Something is wrong in %s on line %d</literal>.
+      </para>
+     </listitem>
+    </varlistentry>
     <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.filter_qos">
      <term>
       Filter: <parameter>quality_of_service</parameter>
@@ -2061,6 +2143,110 @@ mysqlnd.debug=d:t:x:O,/tmp/mysqlnd.trace
     as you can easily guess from the functions name <literal>>mysqlnd_ms_choose_connection_rr</literal>.
     It has been sent to a master server running on
     <literal>host=localhost user=root db=test port=3306 flags=131072 persistent=0 state=0</literal>.
+  </para>
+ </section>
+
+ <section xml:id="mysqlnd-ms.monitoring">
+  <title xmlns="http://docbook.org/ns/docbook">Monitoring</title>
+  <para>
+   Plugin activity can be monitored using the mysqlnd trace log,
+   mysqlnd statistics, mysqlnd_ms plugin statistics and external PHP debugging tools.
+   Use of the trace log should be limited to debugging. It is recommended
+   to use the plugins statistics for monitoring.
+  </para>
+  <para>
+   Writing a trace log is a slow operation. If using an external PHP debugging tool,
+   please refer to the vendors manual about its perfomance impact and the
+   type of information collected. In many cases, external debugging tools will
+   provide call stacks. Often, a call stack or a trace log is more difficult to interpret
+   than the statistics provided by the plugin.
+  </para>
+  <para>
+   Plugin statistics tell how often which kind of cluster node has been used (slave or master),
+   why the node was used, if lazy connections have been used and if global transaction
+   ID injection has been performed. The monitoring information provided enables
+   user to verify plugin decisions and to plan their cluster resources based on usage pattern.
+   The function <link linkend="function.mysqlnd-ms-get-stats"><function>mysqlnd_ms_get_stats</function></link>
+   is used to access the statistics. Please, see the functions description for a list
+   of available statistics.
+  </para>
+  <para>
+   Statistics are collected on a per PHP process basis. Their scope is a PHP process.
+   Depending on the PHP deployment model a process may serve one or multiple web requests.
+   If using CGI model, a PHP process serves one web request. If using FastCGI or
+   pre-fork web server models, a PHP process usually serves multiple web requests.
+   The same is the case with a threaded web server. Please, note that threads running
+   in parallel can update the statistics in parallel. Thus, if using a threaded PHP
+   deployment model, statistics can be changed by more than one script at a time. A
+   script cannot rely on the fact that it sees only its own changes to statistics.
+  </para>
+  <para>
+   <example>
+    <title>Verify plugin activity in a non-threaded deployment model</title>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_ms.enable=1
+mysqlnd_ms.collect_statistics=1
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* Load balanced following "myapp" section rules from the plugins config file (not shown) */
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (mysqli_connect_errno())
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+$stats_before = mysqlnd_ms_get_stats();
+if ($res = $mysqli->query("SELECT 'Read request' FROM DUAL")) {
+  var_dump($res->fetch_all());
+}
+$stats_after = mysqlnd_ms_get_stats();
+if ($stats_after['use_slave'] <= $stats_before['use_slave']) {
+  echo "According to the statistics the read request has not been run on a slave!";
+}
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Statistics are aggregated for all plugin activities and all connections handled by
+   the plugin. It is not possible to tell how much a certain connection handle has
+   contributed to the overall statistics.
+  </para>
+  <para>
+   Utilizing PHPs <function>register_shutdown_function</function> function or the
+   <literal>auto_append_file</literal> PHP configuration directive it is
+   easily possible to dump statistics into, for example, a log file when a script
+   finishes. Instead of using a log file it is also possible to send the statistics
+   to an external monitoring tool for recording and display.
+  </para>
+  <para>
+   <example>
+    <title>Recording statistics during shutdown</title>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_ms.enable=1
+mysqlnd_ms.collect_statistics=1
+error_log=/tmp/php_errors.log
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function check_stats() {
+  $msg = str_repeat("-", 80) . "\n";
+  $msg .= var_export(mysqlnd_ms_get_stats(), true) . "\n";
+  $msg .= str_repeat("-", 80) . "\n";
+  error_log($msg);
+}
+register_shutdown_function("check_stats");
+?>
+]]>
+    </programlisting>
+   </example>
   </para>
  </section>
 
