@@ -137,10 +137,6 @@ function add_warning($err_msg) { /* {{{ */
 /* }}} */
 
 function create_markup_to_modifiers(ReflectionMethod $method) { /* {{{ */
-	if ($method->isConstructor()) {
-		return '';
-	}
-
 	$modifiers = Reflection::getModifierNames($method->getModifiers());
 	$markup = '';
 
