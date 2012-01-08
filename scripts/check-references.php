@@ -66,7 +66,7 @@ $number_refs = array(
 );
 
 $valid_types = "int|float|string|bool|resource|array|object|mixed|number";
-$invalid_types = "integer|long|double|boolean|class"; // objects are written as appropriate class name so there is no complete list of valid types
+$invalid_types = "integer|long|double|boolean|class|ReturnType"; // objects are written as appropriate class name so there is no complete list of valid types
 $retval_mapping = array(
 	"TRUE" => "bool", "BOOL" => "bool",
 	"LONG" => "int",
@@ -470,7 +470,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$referen
 						$init_source = ($init_source ? "true" : "false");
 					}
 					$initializer = preg_replace('~^&(.+);$~', '\\1', strip_tags($matches[4][$i]));
-					if (($optional_source || $optional_doc) && $initializer != $init_source && $init_source != "NULL" && (is_int($source_refs[$function_name][0]) ? $source_refs[$function_name][0] > $i+1 : !in_array($i+1, (array) $source_refs[$function_name][0]))) {
+					if (($optional_source || $optional_doc) && $initializer != $init_source && $initializer != "NULL" && $init_source != "NULL" && (is_int($source_refs[$function_name][0]) ? $source_refs[$function_name][0] > $i+1 : !in_array($i+1, (array) $source_refs[$function_name][0]))) {
 						$error .= "Parameter #" . ($i+1) . " has wrong initial value ($initializer instead of $init_source) in $filename on line " . ($lineno + $i + 1) . ".\n";
 					}
 				}
