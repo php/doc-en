@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 321919 $ -->
+
+<refentry xml:id="function.mysqlnd_qc_get_normalized_query_trace_log" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <refnamediv>
+  <refname>mysqlnd_qc_get_normalized_query_trace_log</refname>
+  <refpurpose>Returns a normalized query trace log for each query inspected by the query cache</refpurpose>
+ </refnamediv>
+
+ <refsect1 role="description">
+  &reftitle.description;
+  <methodsynopsis>
+   <type>array</type>
+   <methodname>mysqlnd_qc_get_normalized_query_trace_log</methodname>
+   <void />
+  </methodsynopsis>
+  <para>
+   Returns a normalized query trace log for each query inspected by the query cache.
+   The collection of the trace log is disabled by default. To collect
+   the trace log you have to set the PHP configuration directive
+   <literal>mysqlnd_qc.collect_normalized_query_trace</literal> to
+   <literal>1</literal>
+  </para>
+  <para>
+   Entries in the trace log are grouped by the normalized query statement.
+   The normalized query statement is the query statement with all statement
+   parameter values being replaced with a question mark. For example, the two
+   statements <literal>SELECT id FROM test WHERE id = 1</literal> and
+   <literal>SELECT id FROM test WHERE id = 2</literal> are normalized as
+   <literal>SELECT id FROM test WHERE id = ?</literal>. Whenever a statement
+   is inspected by the query cache which matches the normalized statement pattern,
+   its statistics are grouped by the normalized statement string.
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  &no.function.parameters;
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   An array of query log. Every list entry contains
+   the normalized query stringand further detail information.
+  </para>
+
+  <informaltable>
+   <tgroup cols="2">
+    <colspec colwidth="1*"/>
+    <colspec colwidth="9*"/>
+    <thead>
+     <row>
+      <entry>Key</entry>
+      <entry>Description</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>
+       <literal>query</literal>
+      </entry>
+      <entry>
+       Normalized statement string.
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <literal>occurences</literal>
+      </entry>
+      <entry>
+       How many statements have matched the normalized statement
+       string in addition to the one which has created the log entry.
+       The value is zero if a statement has been normalized, its normalized
+       representation has been added to the log but no further queries inspected
+       by PECL/mysqlnd_qc have the same normalized statement string.
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <literal>eligible_for_caching</literal>
+      </entry>
+      <entry>
+       Whether the statement could be cached. An statement eligible for
+       caching has not necessarily been cached. It not possible to tell
+       for sure if or how many cached statement have contributed to the
+       aggregated normalized statement log entry. However, comparing
+       the minimum and average run time one can make an educated guess.
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <literal>avg_run_time</literal>
+      </entry>
+      <entry>
+       The average run time of all queries contributing to the
+       query log entry. The run time is the time between sending the
+       query statement to MySQL and receiving an answer from MySQL.
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <literal>avg_store_time</literal>
+      </entry>
+      <entry>
+       The average store time of all queries contributing to the
+       query log entry. The store time is the time needed to fetch
+       a statements result set from the server to the client and,
+       storing it on the client.
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <literal>min_run_time</literal>
+      </entry>
+      <entry>
+       The minimum run time of all queries contributing to the
+       query log entry.
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <literal>min_store_time</literal>
+      </entry>
+      <entry>
+       The minimum store time of all queries contributing to the
+       query log entry.
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <literal>max_run_time</literal>
+      </entry>
+      <entry>
+       The maximum run time of all queries contributing to the
+       query log entry.
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <literal>max_store_time</literal>
+      </entry>
+      <entry>
+       The maximum store time of all queries contributing to the
+       query log entry.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
+ </refsect1>
+
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+  <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.collect_normalized_query_trace=1
+]]>
+   </programlisting>
+   <programlisting role="php">
+<![CDATA[
+<?php
+/* Connect, create and populate test table */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2)");
+
+/* not cached */
+$res = $mysqli->query("SELECT id FROM test WHERE id = 1");
+var_dump($res->fetch_assoc());
+$res->free();
+
+/* cache put */
+$res = $mysqli->query("/*" . MYSQLND_QC_ENABLE_SWITCH . "*/" . "SELECT id FROM test WHERE id = 2");
+var_dump($res->fetch_assoc());
+$res->free();
+
+/* cache hit */
+$res = $mysqli->query("/*" . MYSQLND_QC_ENABLE_SWITCH . "*/" . "SELECT id FROM test WHERE id = 2");
+var_dump($res->fetch_assoc());
+$res->free();
+
+var_dump(mysqlnd_qc_get_normalized_query_trace_log());
+?>
+]]>
+   </programlisting>
+   &examples.outputs;
+   <screen>
+<![CDATA[
+array(1) {
+  ["id"]=>
+  string(1) "1"
+}
+array(1) {
+  ["id"]=>
+  string(1) "2"
+}
+array(1) {
+  ["id"]=>
+  string(1) "2"
+}
+array(4) {
+  [0]=>
+  array(9) {
+    ["query"]=>
+    string(25) "DROP TABLE IF EXISTS test"
+    ["occurences"]=>
+    int(0)
+    ["eligible_for_caching"]=>
+    bool(false)
+    ["avg_run_time"]=>
+    int(0)
+    ["min_run_time"]=>
+    int(0)
+    ["max_run_time"]=>
+    int(0)
+    ["avg_store_time"]=>
+    int(0)
+    ["min_store_time"]=>
+    int(0)
+    ["max_store_time"]=>
+    int(0)
+  }
+  [1]=>
+  array(9) {
+    ["query"]=>
+    string(27) "CREATE TABLE test (id INT )"
+    ["occurences"]=>
+    int(0)
+    ["eligible_for_caching"]=>
+    bool(false)
+    ["avg_run_time"]=>
+    int(0)
+    ["min_run_time"]=>
+    int(0)
+    ["max_run_time"]=>
+    int(0)
+    ["avg_store_time"]=>
+    int(0)
+    ["min_store_time"]=>
+    int(0)
+    ["max_store_time"]=>
+    int(0)
+  }
+  [2]=>
+  array(9) {
+    ["query"]=>
+    string(40) "INSERT INTO test (id ) VALUES (? ), (? )"
+    ["occurences"]=>
+    int(0)
+    ["eligible_for_caching"]=>
+    bool(false)
+    ["avg_run_time"]=>
+    int(0)
+    ["min_run_time"]=>
+    int(0)
+    ["max_run_time"]=>
+    int(0)
+    ["avg_store_time"]=>
+    int(0)
+    ["min_store_time"]=>
+    int(0)
+    ["max_store_time"]=>
+    int(0)
+  }
+  [3]=>
+  array(9) {
+    ["query"]=>
+    string(31) "SELECT id FROM test WHERE id =?"
+    ["occurences"]=>
+    int(2)
+    ["eligible_for_caching"]=>
+    bool(true)
+    ["avg_run_time"]=>
+    int(159)
+    ["min_run_time"]=>
+    int(12)
+    ["max_run_time"]=>
+    int(307)
+    ["avg_store_time"]=>
+    int(10)
+    ["min_store_time"]=>
+    int(8)
+    ["max_store_time"]=>
+    int(13)
+  }
+}
+]]>
+   </screen>
+
+  </example>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member>
+     <link linkend="mysqlnd-qc.configuration">Runtime configuration</link>
+    </member>
+    <member>
+     <link linkend="ini.mysqlnd-qc.collect-query-trace">mysqlnd_qc.collect_normalized_query_trace</link>
+    </member>
+    <member>
+     <link linkend="ini.mysqlnd-qc.time-statistics">mysqlnd_qc.time_statistics</link>
+    </member>
+    <member>
+     <link linkend="function.mysqlnd_qc_get_query_trace_log"><function>mysqlnd_qc_get_query_trace_log</function></link>
+    </member>
+   </simplelist>
+  </para>
+ </refsect1>
+
+</refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
