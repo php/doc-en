@@ -315,6 +315,9 @@ foreach ($info as $name => $row) {
     }
 }
 
+// special case
+$changelog['max_input_nesting_level'] = 'Available since PHP 4.4.8 and PHP 5.2.3.';
+
 // if in debug mode
 if (empty($included)) {
     foreach ($changelog as $key => $val) {
