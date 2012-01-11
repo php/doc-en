@@ -1,0 +1,922 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 321951 $ -->
+
+<chapter xml:id="mysqlnd-qc.quickstart" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Quickstart and Examples</title>
+ <para>
+  The mysqlnd query cache plugin is easy to use.
+  This quickstart will demo typical use-cases, and provide practical advice on getting
+  started.
+ </para>
+ <para>
+  It is strongly recommended to read the reference sections in addition to the
+  quickstart. It is safe to begin with the quickstart.
+  However, before using the plugin in mission critical
+  environments we urge you to read additionally the background information from the
+  reference sections.
+ </para>
+ <para>
+   Most of the examples use the <link linkend="ref.mysqli">mysqli</link> extension
+   because it is the most feature complete PHP MySQL extension. However, the plugin
+   can be used with any PHP MySQL extension that is using the
+   <link linkend="book.mysqlnd">mysqlnd</link> library.
+  </para>
+
+ <section xml:id="mysqlnd-qc.quickstart.concepts" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Architecture and Concepts</title>
+   <para>
+    The query cache plugin is implemented as a PHP extension.
+    It is written in C and operates under the hood of PHP. During the
+    startup of the PHP interpreter it gets registered as a
+    <link linkend="book.mysqlnd">mysqlnd</link> plugin to replace selected
+    mysqlnd C methods. Hereby, it can change the behaviour of any
+    PHP MySQL extension (<link linkend="ref.mysqli">mysqli</link>,
+    <link linkend="ref.pdo-mysql">PDO_MYSQL</link>,
+    <link linkend="ref.mysql">mysql</link>) compiled to use the
+    mysqlnd library without changing the extensions API. This makes
+    the plugin compatible with each and every PHP MySQL application.
+    Because existing APIs are not changed, it is almost transparent
+    to use. Please, see the
+    <link linkend="mysqlnd.plugin">mysqlnd plugin API description</link>
+    for a discussion of the advantages of the plugin architecture and
+    a comparison with proxy based solutions.
+   </para>
+   <para>
+     <emphasis role="bold">Transparent to use</emphasis>
+   </para>
+   <para>
+    At PHP run time PECL/mysqlnd_qc can proxy queries send from PHP
+    (<link linkend="book.mysqlnd">mysqlnd</link>) to the MySQL server.
+    It then inspects the statement string to find whether it shall cache
+    its results. If so, result set is cached using a storage handler and
+    further executions of the statement are served from the cache for
+    a user-defined period. The Time to Live (TTL) of the cache entry
+    can either be set globally or on a per statement basis.
+   </para>
+   <para>
+    A statement is either cached if the plugin is instructed to cache all
+    statements globally using a or, if the query string starts with the SQL hint
+    (<literal>/*qc=on*/</literal>). The plugin is capable of caching any
+    query isssued by calling appropriate API calls of any of the existing
+    PHP MySQL extensions.
+   </para>
+   <para>
+     <emphasis role="bold">Flexible storage: various storage handler</emphasis>
+   </para>
+   <para>
+    Various storage handler are supported to offer different scopes for cache
+    entries. Different scopes allow for different degrees in sharing cache
+    entries among clients.
+   </para>
+   <para>
+   <itemizedlist>
+    <listitem>
+     <para><literal>default</literal> (built-in): process memory, scope: process, one or more web requests depending on PHP deployment model used</para>
+    </listitem>
+    <listitem>
+     <para><literal>APC</literal>: shared memory, scope: single server, multiple web requests</para>
+    </listitem>
+    <listitem>
+     <para><literal>SQLite</literal>: memory or file, scope: single server, multiple web requests</para>
+    </listitem>
+    <listitem>
+     <para><literal>MEMCACHE</literal>: main memory, scope: single or multiple server, multiple web requests</para>
+    </listitem>
+    <listitem>
+     <para><literal>user</literal> (built-in): user-defined - any, scope: user-defined - any</para>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <para>
+   Support for the <literal>APC</literal>, <literal>SQLite</literal> and <literal>
+   MEMCACHE</literal> storage handler has to be enabled at compile time. The <literal>
+   default</literal> and <literal>user</literal> handler are built-in. It is possible
+   to switch between compiled-in storage handlers on a per query basis at run time.
+   However, it is recommended to pick one storage handler and use it for all cache entries.
+  </para>
+  <para>
+     <emphasis role="bold">Built-in slam defence to avoid overloading</emphasis>
+   </para>
+  <para>
+   To avoid overload situations the cache plugin has a built-in slam defense mechanism.
+   If a popular cache entries expires many clients using the cache entries will try
+   to refresh the cache entry. For the duration of the refresh many clients may
+   access the database server concurrently. In the worst case, the database server
+   becomes overloaded and it takes more and more time to refresh the cache entry, which
+   in turn lets more and more clients try to refresh the cache entry. To prevent
+   this from happening the plugin has a slam defence mechanism. If slam defense is
+   enabled and the plugin detects an expired cache entry it extends the life time
+   of the cache entry before it refreshes the cache entry. This way other concurrent
+   accesses to the expired cache entry are still served from the cache for a certain
+   time. The other concurrent accesses to not trigger a concurrent refresh. Ideally,
+   the cache entry gets refreshed by the client which extended the cache entries lifespan
+   before other clients try to refresh the cache and potentially cause an overload
+   situation.
+  </para>
+  <para>
+     <emphasis role="bold">Unique approach to caching</emphasis>
+   </para>
+  <para>
+   PECL/mysqlnd_qc has a unique approach to caching result sets that is superior
+   to application based cache solutions. Application based solutions first fetch
+   a result set into PHP variables. Then, the PHP variables are serialized for
+   storing in a persistent cache and unserialized when fetching. The mysqlnd
+   query cache stores the raw wire protocol data send from MySQL to PHP in its cache
+   and replayes it, if still valid, on a cache hit. This way, it saves an extra
+   serialization step for a cache put that all application based solutions have to
+   do. It can store the raw wire protocol data in the cache without having to
+   serizalize into a PHP variable first and deserializing the PHP variable for storing
+   in the cache again.
+  </para>
+ </section>
+
+ <section xml:id="mysqlnd-qc.quickstart.configuration">
+  <title>Setup</title>
+  <para>
+   The plugin is implemented as a PHP extension. See also the
+   <link linkend="mysqlnd-qc.installation">installation instructions</link> to
+   install the
+   <link xlink:href="&url.pecl.package;mysqlnd_qc">PECL/mysqlnd_qc</link> extension.
+  </para>
+  <para>
+   Compile or configure the PHP MySQL extension (<link linkend="ref.mysqli">mysqli</link>,
+   <link linkend="ref.pdo-mysql">PDO_MYSQL</link>,
+   <link linkend="ref.mysql">mysql</link>) that you plan to use with support
+   for the <link linkend="book.mysqlnd">mysqlnd</link> library. PECL/mysqlnd_qc
+   is a plugin for the mysqlnd library. To use the plugin with any of the existing PHP
+   MySQL extensions (APIs), the extension has to use the mysqlnd library.
+  </para>
+  <para>
+   Then, load the extension into PHP and activate the plugin in the PHP configuration
+   file using the PHP configuration directive named
+   <link linkend="ini.mysqlnd-qc.enable-qc">mysqlnd_qc.enable_qc</link>.
+  </para>
+  <para>
+   <example>
+    <title>Enabling the plugin (php.ini)</title>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.enable_qc=1
+]]>
+    </programlisting>
+    </example>
+  </para>
+ </section>
+
+ <section xml:id="mysqlnd-qc.quickstart.caching">
+  <title>Caching queries</title>
+  <para>
+   The plugin can either cache all statements by default or, only those that begin
+   with an SQL hint to enable caching. A SQL hint is a SQL standards compliant
+   comment. As a SQL comment it is ignored by the database. A statement is considered
+   eligable for caching if it either begins with the SQL hint enabling caching
+   or it is a <literal>SELECT</literal> statement.
+  </para>
+  <para>
+   An individual query which shall be cached must begin with the SQL hint
+   <literal>/*qc=on*/</literal>. It is recommended to use the PHP constant
+   <literal><link linkend="mysqlnd-qc.constants">MYSQLND_QC_ENABLE_SWITCH</link></literal>
+   instead of using the string value.
+  </para>
+  <para>
+   <itemizedlist>
+   <listitem>
+     <para>
+      not eliable for caching and not cached: <literal>INSERT INTO test(id) VALUES (1)</literal>
+     </para>
+    </listitem>
+    <listitem>
+     <para>
+      not eliable for caching and not cached: <literal>SHOW ENGINES</literal>
+     </para>
+    </listitem>
+    <listitem>
+     <para>
+      eliable for caching but uncached: <literal>SELECT id FROM test</literal>
+     </para>
+    </listitem>
+    <listitem>
+     <para>
+      eliable for caching and cached: <literal>/*qc=on*/SELECT id FROM test</literal>
+     </para>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <para>
+   The examples <literal>SELECT</literal> statement string is prefixed with the
+   <literal><link linkend="mysqlnd-qc.constants">MYSQLND_QC_ENABLE_SWITCH</link></literal>
+   SQL hint to enable caching of the statement. The SQL hint must be given at
+   the very beginning of the statement string to enable caching.
+  </para>
+  <para>
+   <example>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.enable_qc=1
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* Connect, create and populate test table */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2)");
+
+/* Will be cached because of the SQL hint */
+$start = microtime(true);
+$res = $mysqli->query("/*" . MYSQLND_QC_ENABLE_SWITCH . "*/" . "SELECT id FROM test WHERE id = 1");
+var_dump($res->fetch_assoc());
+$res->free();
+printf("Total time uncached query: %.6fs\n", microtime(true) - $start);
+
+/* Cache hit */
+$start = microtime(true);
+$res = $mysqli->query("/*" . MYSQLND_QC_ENABLE_SWITCH . "*/" . "SELECT id FROM test WHERE id = 1");
+var_dump($res->fetch_assoc());
+$res->free();
+printf("Total time cached query: %.6fs\n", microtime(true) - $start);
+?>
+]]>
+    </programlisting>
+   &examples.outputs;
+    <screen>
+<![CDATA[
+array(1) {
+  ["id"]=>
+  string(1) "1"
+}
+Total time uncached query: 0.000740s
+array(1) {
+  ["id"]=>
+  string(1) "1"
+}
+Total time cached query: 0.000098s
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   If nothing else is configured, as it is the case in the quickstart example,
+   the plugin will use the built-in <literal>default</literal> storage handler.
+   The <literal>default</literal> storage handler uses process memory to hold a cache entry.
+   Depending on the PHP deploymnet model a PHP process may serve one or more
+   web requests. Please, consult the web server manual for details.
+   Details make no difference for the examples given in the quickstart.
+  </para>
+  <para>
+   The query cache plugin will cache all queries regardless if
+   the query string begins with the SQL hint which enables caching or not,
+   if the PHP configuration directive
+   <literal><link linkend="mysqlnd-qc.configuration">mysqlnd_qc.cache_by_default</link></literal>
+   is set to <literal>1</literal>. The setting
+   <literal><link linkend="mysqlnd-qc.configuration">mysqlnd_qc.cache_by_default</link></literal>
+   is evaluated by the core of the query cache plugins.
+   Neither the built-in nor user-defined storage handler can overrule the setting.
+  </para>
+  <para>
+   The SQL hint <literal>/*qc=off*/</literal> can be used to disable caching
+   of individual queries if
+   <literal><link linkend="mysqlnd-qc.configuration">mysqlnd_qc.cache_by_default = 1</link></literal>
+   It is recommended to use the PHP constant
+   <literal><link linkend="mysqlnd-qc.constants">MYSQLND_QC_DISABLE_SWITCH</link></literal>
+   instead of using the string value.
+  </para>
+  <para>
+   <example>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.enable_qc=1
+mysqlnd_qc.cache_by_default=1
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* Connect, create and populate test table */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2)");
+
+/* Will be cached although no SQL hint is present because of mysqlnd_qc.cache_by_default = 1*/
+$res = $mysqli->query("SELECT id FROM test WHERE id = 1");
+var_dump($res->fetch_assoc());
+$res->free();
+
+$mysqli->query("DELETE FROM test WHERE id = 1");
+
+/* Cache hit - no automatic invalidation and still valid! */
+$res = $mysqli->query("SELECT id FROM test WHERE id = 1");
+var_dump($res->fetch_assoc());
+$res->free();
+
+/* Cache miss - query must not be cached because of the SQL hint */
+$res = $mysqli->query("/*" . MYSQLND_QC_DISABLE_SWITCH . "*/SELECT id FROM test WHERE id = 1");
+var_dump($res->fetch_assoc());
+$res->free();
+?>
+]]>
+    </programlisting>
+   &examples.outputs;
+    <screen>
+<![CDATA[
+array(1) {
+  ["id"]=>
+  string(1) "1"
+}
+array(1) {
+  ["id"]=>
+  string(1) "1"
+}
+NULL
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   PECL/mysqlnd_qc forbids caching of statements for which at least one
+   column from the statements result set shows no table name in its meta data by default.
+   This is usually the case for columns originating from SQL functions such as
+   <literal>NOW()</literal> or <literal>LAST_INSERT_ID()</literal>. The policy
+   aims to prevent pitfalls if caching by default is used.
+  </para>
+  <para>
+   <example>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.enable_qc=1
+mysqlnd_qc.cache_by_default=1
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* Connect, create and populate test table */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1)");
+
+for ($i = 0; $i < 3; $i++) {
+
+  $start = microtime(true);
+
+  /* Note: statement will not be cached because of NOW() use */
+  $res = $mysqli->query("SELECT id, NOW() AS _time FROM test");
+  $row = $res->fetch_assoc();
+
+  /* dump results */
+  var_dump($row);
+
+  printf("Total time: %.6fs\n", microtime(true) - $start);
+
+  /* pause one second */
+  sleep(1);
+}
+?>
+]]>
+    </programlisting>
+   &examples.outputs;
+    <screen>
+<![CDATA[
+array(2) {
+  ["id"]=>
+  string(1) "1"
+  ["_time"]=>
+  string(19) "2012-01-11 15:43:10"
+}
+Total time: 0.000540s
+array(2) {
+  ["id"]=>
+  string(1) "1"
+  ["_time"]=>
+  string(19) "2012-01-11 15:43:11"
+}
+Total time: 0.000555s
+array(2) {
+  ["id"]=>
+  string(1) "1"
+  ["_time"]=>
+  string(19) "2012-01-11 15:43:12"
+}
+Total time: 0.000549s
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   It is possible to enable caching for all statements including those
+   which has columns in their result set for which MySQL reports no table, such as
+   the statement from the example. Set
+   <link linkend="ini.mysqlnd-qc.cache-no-table"><literal>mysqlnd_qc.cache_no_table = 1</literal></link>
+   to enable caching of such statements. Please, note the difference in the
+   measured times for the above and below examples.
+  </para>
+  <para>
+   <example>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.enable_qc=1
+mysqlnd_qc.cache_by_default=1
+mysqlnd_qc.cache_no_table=1
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* Connect, create and populate test table */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1)");
+
+for ($i = 0; $i < 3; $i++) {
+
+  $start = microtime(true);
+
+  /* Note: statement will not be cached because of NOW() use */
+  $res = $mysqli->query("SELECT id, NOW() AS _time FROM test");
+  $row = $res->fetch_assoc();
+
+  /* dump results */
+  var_dump($row);
+
+  printf("Total time: %.6fs\n", microtime(true) - $start);
+
+  /* pause one second */
+  sleep(1);
+}
+?>
+]]>
+    </programlisting>
+   &examples.outputs;
+    <screen>
+<![CDATA[
+array(2) {
+  ["id"]=>
+  string(1) "1"
+  ["_time"]=>
+  string(19) "2012-01-11 15:47:45"
+}
+Total time: 0.000546s
+array(2) {
+  ["id"]=>
+  string(1) "1"
+  ["_time"]=>
+  string(19) "2012-01-11 15:47:45"
+}
+Total time: 0.000187s
+array(2) {
+  ["id"]=>
+  string(1) "1"
+  ["_time"]=>
+  string(19) "2012-01-11 15:47:45"
+}
+Total time: 0.000167s
+]]>
+    </screen>
+   </example>
+  </para>
+  <note>
+   <para>
+    Although <link linkend="ini.mysqlnd-qc.cache-no-table"><literal>mysqlnd_qc.cache_no_table = 1</literal></link>
+    has been created for use with
+    <literal><link linkend="mysqlnd-qc.configuration">mysqlnd_qc.cache_by_default = 1</link></literal>
+    it is bound it. The plugin will evaluate the
+    <link linkend="ini.mysqlnd-qc.cache-no-table"><literal>mysqlnd_qc.cache_no_table</literal></link>
+    whenever a query is to be cached, no matter whether caching has been enabled using a
+    SQL hint or any other measure.
+   </para>
+  </note>
+ </section>
+
+ <section xml:id="mysqlnd-qc.per_query_ttl" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Setting the TTL</title>
+  <para>
+   The default invalidation strategy of the query cache plugin is Time to Live
+   (<literal>TTL</literal>). The built-in storage handlers will use the default
+   <literal>TTL</literal> defined by the PHP configuration value
+   <literal><link linkend="mysqlnd-qc.configuration">mysqlnd_qc.ttl</link></literal>
+   unless the query string contains a hint for setting a different
+   <literal>TTL</literal>. The <literal>TTL</literal> is specified in seconds.
+   By default cache entries expire after <literal>30</literal> seconds
+  </para>
+  <para>
+   The example sets <literal>mysqlnd_qc.ttl=3</literal> to cache
+   statements for three seconds by default. Every second it updates
+   a database table record to hold the current time and executes
+   a <literal>SELECT</literal> statement to fetch the record from the
+   database. The <literal>SELECT</literal> statement is cached for
+   three seconds because it is prefixed with the SQL hint enabling
+   caching. The output verifies that the query results are taken
+   from the cache for the duration of three seconds before they
+   are refreshed.
+  </para>
+  <para>
+   <example>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.enable_qc=1
+mysqlnd_qc.ttl=3
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* Connect, create and populate test table */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id VARCHAR(255))");
+
+for ($i = 0; $i < 7; $i++) {
+
+  /* update DB row  */
+  if (!$mysqli->query("DELETE FROM test") ||
+      !$mysqli->query("INSERT INTO test(id) VALUES (NOW())"))
+    /* Of course, a real-life script should do better error handling */
+    die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+
+  /* select latest row but cache results */
+  $query  = "/*" . MYSQLND_QC_ENABLE_SWITCH . "*/";
+  $query .= "SELECT id AS _time FROM test";
+  if (!($res = $mysqli->query($query)) ||
+      !($row = $res->fetch_assoc()))
+  {
+    printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+  }
+  $res->free();
+  printf("Wall time %s - DB row time %s\n", date("H:i:s"), $row['_time']);
+
+  /* pause one second */
+  sleep(1);
+}
+?>
+]]>
+    </programlisting>
+   &examples.outputs;
+    <screen>
+<![CDATA[
+Wall time 14:55:59 - DB row time 2012-01-11 14:55:59
+Wall time 14:56:00 - DB row time 2012-01-11 14:55:59
+Wall time 14:56:01 - DB row time 2012-01-11 14:55:59
+Wall time 14:56:02 - DB row time 2012-01-11 14:56:02
+Wall time 14:56:03 - DB row time 2012-01-11 14:56:02
+Wall time 14:56:04 - DB row time 2012-01-11 14:56:02
+Wall time 14:56:05 - DB row time 2012-01-11 14:56:05
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   As can be seen from the example, any <literal>TTL</literal> based cache
+   can serve stale data. Cache entries are not automatically invalidated,
+   if underlying data changes. Applications using the default
+   <literal>TTL</literal> invalidation strategy must be able to work correctly
+   with stale data.
+  </para>
+  <para>
+   User-defined cache storage handler can implement any invalidation strategy
+   to work around this limitation. Please, find more on this below.
+  </para>
+  <para>
+   The default <literal>TTL</literal> can be overruled using the SQL hint
+   <literal>/*qc_tt=seconds*/</literal>. The SQL hint must be appear immediately
+   after the SQL hint which enables caching. It is recommended to use the PHP constant
+   <literal><link linkend="mysqlnd-qc.constants">MYSQLND_QC_TTL_SWITCH</link></literal>
+   instead of using the string value.
+  </para>
+  <para>
+   <example>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$start = microtime(true);
+
+/* Connect, create and populate test table */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2)");
+
+printf("Default TTL\t: %d seconds\n", ini_get("mysqlnd_qc.ttl"));
+
+/* Will be cached for 2 seconds */
+$sql = sprintf("/*%s*//*%s%d*/SELECT id FROM test WHERE id = 1",
+ MYSQLND_QC_ENABLE_SWITCH,
+ MYSQLND_QC_TTL_SWITCH,
+ 2);
+$res = $mysqli->query($sql);
+var_dump($res->fetch_assoc());
+$res->free();
+
+$mysqli->query("DELETE FROM test WHERE id = 1");
+sleep(1);
+
+/* Cache hit - no automatic invalidation and still valid! */
+$res = $mysqli->query($sql);
+var_dump($res->fetch_assoc());
+$res->free();
+
+sleep(2);
+
+/* Cache miss - cache entry has expired */
+$res = $mysqli->query($sql);
+var_dump($res->fetch_assoc());
+$res->free();
+
+printf("Script runtime\t: %d seconds\n", microtime(true) - $start);
+?>
+]]>
+    </programlisting>
+   &examples.outputs;
+    <screen>
+<![CDATA[
+Default TTL     : 30 seconds
+array(1) {
+  ["id"]=>
+  string(1) "1"
+}
+array(1) {
+  ["id"]=>
+  string(1) "1"
+}
+NULL
+Script runtime  : 3 seconds
+]]>
+    </screen>
+
+   </example>
+  </para>
+ </section>
+
+ <section xml:id="mysqlnd-qc.set_user_handlers" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Procedural user-defined storage handler</title>
+  <para>
+   The query cache plugin supports the use of user-defined storage handler.
+   User-defined storage handler can use arbitrarily complex invalidation
+   algorithms and support arbitrary storage media.
+  </para>
+  <para>
+   All user-defined storage handlers have to provide a certain interface.
+   The functions of the user-defined storage handler will be called by the
+   core of the cache plugin. The necessary interface consists of seven
+   public functions. Both procedural and object oriented user-defined storage
+   handler must implement the same set of functions.
+  </para>
+  <para>
+   Please check the example for details.
+  </para>
+  <para>
+   <example>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* Enable default caching of all statements */
+ini_set("mysqlnd_qc.cache_by_default", 1);
+
+/* Procedural user defined storage handler functions */
+
+$__cache = array();
+
+function get_hash($host_info, $port, $user, $db, $query) {
+  global $__cache;
+  printf("\t%s(%d)\n", __FUNCTION__, func_num_args());
+
+  return md5(sprintf("%s%s%s%s%s", $host_info, $port, $user, $db, $query));
+}
+
+function find_query_in_cache($key) {
+  global $__cache;
+  printf("\t%s(%d)\n", __FUNCTION__, func_num_args());
+
+  if (isset($__cache[$key])) {
+    $tmp = $__cache[$key];
+    if ($tmp["valid_until"] < time()) {
+      unset($__cache[$key]);
+      $ret = NULL;
+    } else {
+      $ret = $__cache[$key]["data"];
+    }
+  } else {
+    $ret = NULL;
+  }
+
+  return $ret;
+}
+
+function return_to_cache($key) {
+  /*
+     Called on cache hit after cached data has been processed,
+     may be used for reference counting
+  */
+  printf("\t%s(%d)\n", __FUNCTION__, func_num_args());
+}
+
+function add_query_to_cache_if_not_exists($key, $data, $ttl, $run_time, $store_time, $row_count) {
+  global $__cache;
+  printf("\t%s(%d)\n", __FUNCTION__, func_num_args());
+
+  $__cache[$key] = array(
+    "data"               => $data,
+    "row_count"          => $row_count,
+    "valid_until"        => time() + $ttl,
+    "hits"               => 0,
+    "run_time"           => $run_time,
+    "store_time"         => $store_time,
+    "cached_run_times"   => array(),
+    "cached_store_times" => array(),
+  );
+
+  return TRUE;
+}
+
+function query_is_select($query) {
+  printf("\t%s('%s'): ", __FUNCTION__, $query);
+
+  $ret = FALSE;
+  if (stristr($query, "SELECT") !== FALSE) {
+    /* cache for 5 seconds */
+    $ret = 5;
+  }
+
+  printf("%s\n", (FALSE === $ret) ? "FALSE" : $ret);
+  return $ret;
+}
+
+function update_query_run_time_stats($key, $run_time, $store_time) {
+  global $__cache;
+  printf("\t%s(%d)\n", __FUNCTION__, func_num_args());
+
+  if (isset($__cache[$key])) {
+    $__cache[$key]['hits']++;
+    $__cache[$key]["cached_run_times"][] = $run_time;
+    $__cache[$key]["cached_store_times"][] = $store_time;
+  }
+}
+
+function get_stats($key = NULL) {
+  global $__cache;
+  printf("\t%s(%d)\n", __FUNCTION__, func_num_args());
+
+  if ($key && isset($__cache[$key])) {
+    $stats = $__cache[$key];
+  } else {
+    $stats = array();
+    foreach ($__cache as $key => $details) {
+      $stats[$key] = array(
+        'hits'              => $details['hits'],
+        'bytes'             => strlen($details['data']),
+        'uncached_run_time' => $details['run_time'],
+        'cached_run_time'   => (count($details['cached_run_times']))
+                                  ? array_sum($details['cached_run_times']) / count($details['cached_run_times'])
+                                  : 0,
+      );
+    }
+  }
+
+  return $stats;
+}
+
+function clear_cache() {
+  global $__cache;
+  printf("\t%s(%d)\n", __FUNCTION__, func_num_args());
+
+  $__cache = array();
+  return TRUE;
+}
+
+/* Install procedural user-defined storage handler */
+if (!mysqlnd_qc_set_user_handlers("get_hash", "find_query_in_cache",
+      "return_to_cache", "add_query_to_cache_if_not_exists",
+      "query_is_select", "update_query_run_time_stats",
+       "get_stats", "clear_cache")) {
+  printf("Failed to install user-defined storage handler\n");
+}
+
+
+/* Connect, create and populate test table */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2)");
+
+printf("\nCache put/cache miss\n");
+
+$res = $mysqli->query("SELECT id FROM test WHERE id = 1");
+var_dump($res->fetch_assoc());
+$res->free();
+
+/* Delete record to verify we get our data from the cache */
+$mysqli->query("DELETE FROM test WHERE id = 1");
+
+printf("\nCache hit\n");
+
+$res = $mysqli->query("SELECT id FROM test WHERE id = 1");
+var_dump($res->fetch_assoc());
+$res->free();
+
+printf("\nDisplay cache statistics\n");
+var_dump(mysqlnd_qc_get_cache_info());
+
+printf("\nFlushing cache, cache put/cache miss");
+var_dump(mysqlnd_qc_clear_cache());
+
+$res = $mysqli->query("SELECT id FROM test WHERE id = 1");
+var_dump($res->fetch_assoc());
+$res->free();
+?>
+]]>
+    </programlisting>
+   &examples.outputs;
+    <screen>
+<![CDATA[
+        query_is_select('DROP TABLE IF EXISTS test'): FALSE
+        query_is_select('CREATE TABLE test(id INT)'): FALSE
+        query_is_select('INSERT INTO test(id) VALUES (1), (2)'): FALSE
+
+Cache put/cache miss
+        query_is_select('SELECT id FROM test WHERE id = 1'): 5
+        get_hash(5)
+        find_query_in_cache(1)
+        add_query_to_cache_if_not_exists(6)
+array(1) {
+  ["id"]=>
+  string(1) "1"
+}
+        query_is_select('DELETE FROM test WHERE id = 1'): FALSE
+
+Cache hit
+        query_is_select('SELECT id FROM test WHERE id = 1'): 5
+        get_hash(5)
+        find_query_in_cache(1)
+        return_to_cache(1)
+        update_query_run_time_stats(3)
+array(1) {
+  ["id"]=>
+  string(1) "1"
+}
+
+Display cache statistics
+        get_stats(0)
+array(4) {
+  ["num_entries"]=>
+  int(1)
+  ["handler"]=>
+  string(4) "user"
+  ["handler_version"]=>
+  string(5) "1.0.0"
+  ["data"]=>
+  array(1) {
+    ["18683c177dc89bb352b29965d112fdaa"]=>
+    array(4) {
+      ["hits"]=>
+      int(1)
+      ["bytes"]=>
+      int(71)
+      ["uncached_run_time"]=>
+      int(398)
+      ["cached_run_time"]=>
+      int(4)
+    }
+  }
+}
+
+Flushing cache, cache put/cache miss    clear_cache(0)
+bool(true)
+        query_is_select('SELECT id FROM test WHERE id = 1'): 5
+        get_hash(5)
+        find_query_in_cache(1)
+        add_query_to_cache_if_not_exists(6)
+NULL
+
+]]>
+    </screen>
+
+   </example>
+  </para>
+ </section>
+
+</chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
