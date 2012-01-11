@@ -69,21 +69,31 @@
     entries among clients.
    </para>
    <para>
-   <itemizedlist>
-    <listitem>
-     <para><literal>default</literal> (built-in): process memory, scope: process, one or more web requests depending on PHP deployment model used</para>
+    <itemizedlist>
+     <listitem>
+     <para>
+      <literal>default</literal> (built-in): process memory, scope: process, one or more web requests depending on PHP deployment model used
+     </para>
     </listitem>
     <listitem>
-     <para><literal>APC</literal>: shared memory, scope: single server, multiple web requests</para>
+     <para>
+      <literal>APC</literal>: shared memory, scope: single server, multiple web requests
+     </para>
     </listitem>
     <listitem>
-     <para><literal>SQLite</literal>: memory or file, scope: single server, multiple web requests</para>
+     <para>
+      <literal>SQLite</literal>: memory or file, scope: single server, multiple web requests
+     </para>
     </listitem>
     <listitem>
-     <para><literal>MEMCACHE</literal>: main memory, scope: single or multiple server, multiple web requests</para>
+     <para>
+      <literal>MEMCACHE</literal>: main memory, scope: single or multiple server, multiple web requests
+     </para>
     </listitem>
     <listitem>
-     <para><literal>user</literal> (built-in): user-defined - any, scope: user-defined - any</para>
+     <para>
+      <literal>user</literal> (built-in): user-defined - any, scope: user-defined - any
+     </para>
     </listitem>
    </itemizedlist>
   </para>
@@ -95,7 +105,7 @@
    However, it is recommended to pick one storage handler and use it for all cache entries.
   </para>
   <para>
-     <emphasis role="bold">Built-in slam defence to avoid overloading</emphasis>
+     <emphasis role="bold">Built-in slam defense to avoid overloading</emphasis>
    </para>
   <para>
    To avoid overload situations the cache plugin has a built-in slam defense mechanism.
@@ -104,7 +114,7 @@
    access the database server concurrently. In the worst case, the database server
    becomes overloaded and it takes more and more time to refresh the cache entry, which
    in turn lets more and more clients try to refresh the cache entry. To prevent
-   this from happening the plugin has a slam defence mechanism. If slam defense is
+   this from happening the plugin has a slam defense mechanism. If slam defense is
    enabled and the plugin detects an expired cache entry it extends the life time
    of the cache entry before it refreshes the cache entry. This way other concurrent
    accesses to the expired cache entry are still served from the cache for a certain
@@ -648,6 +658,65 @@ Script runtime  : 3 seconds
     </screen>
 
    </example>
+  </para>
+ </section>
+
+ <section xml:id="mysqlnd-qc.slam_defense" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Slam defense</title>
+  <para>
+   A badly designed cache can do more harm than good. In the worst case a cache
+   can increase database server load instead of minimizing it. An overload situation
+   can occur if a highly shared cache entry expires.
+  </para>
+  <para>
+   Cache entries are shared and reused to a different degree depending on
+   the storage used. The default storage handler stores cache entries in process memory.
+   Thus, a cache entry can be reused for the life-span of a process. Other PHP
+   processes cannot access it. If Memcache is used, a cache entry can be shared
+   among multiple PHP processes and even among multiple machines, depending on the
+   set up being used.
+  </para>
+  <para>
+   If a highly shared cache entry stored, for example, in Memcache expires, many
+   clients gets a cache miss. Many client requests can no longer be served from
+   the cache but try to run the underlying query on the database server. Until
+   the cache entry is refreshed, more and more clients contact the database server.
+   In the worst case, a total lost of service is the result.
+  </para>
+  <para>
+   The overload can be avoided using a storage handler which limits the reuse of cache
+   entries to few clients. Then, at the average, its likely that only a limited number
+   of clients will try to refresh a cache entry concurrently.
+  </para>
+  <para>
+   Additionally, the built-in slam defense mechanism can and should be used. If
+   slam defense is activated an expired cache entry is given an extended life time.
+   The first client getting a cache miss for the expired cache entry tries to
+   refresh the cache entry within the extended life time. All other clients requesting
+   the cache entry are temporarily served from the cache although the original
+   <literal>TTL</literal> of the cache entry has expired. The other clients will
+   not experience a cache miss before the extended life time is over.
+  </para>
+  <para>
+   <example>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.slam_defense=1
+mysqlnd_qc.slam_defense_ttl=1
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   The slam defense mechanism is enabled with the PHP configuration directive
+   <link linkend="ini.mysqlnd-qc.slam-defense"><literal>mysqlnd_qc.slam_defense</literal></link>.
+   The extended life time of a cache entry is set with
+   <link linkend="ini.mysqlnd-qc.slam-defense-ttl"><literal>mysqlnd_qc.slam_defense_ttl</literal></link>.
+  </para>
+  <para>
+   It is not possible to give a one-fits-all recommendation on the slam defense
+   configuration. Users are advised to monitor and test their setup and derive
+   settings accordingly.
   </para>
  </section>
 
