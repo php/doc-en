@@ -585,14 +585,15 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 				$markup = "<tbody>". PHP_EOL;
 				$markup2 = '';
 				foreach ($ini as $config => $value) {
+					$id = "ini.". format_config($config);
 					$markup .= str_repeat(' ', $ident + 1) ."<row>". PHP_EOL;
-					$markup .= str_repeat(' ', $ident + 2) ."<entry>". $config ."</entry>". PHP_EOL;
+					$markup .= str_repeat(' ', $ident + 2) ."<entry><link linkend=\"". $id ."\">". $config ."</link></entry>". PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 2) ."<entry>". $value ."</entry>". PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 2) ."<entry>its PHP_INI_* value</entry>". PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 2) ."<entry><!-- leave empty, this will be filled by an automatic script --></entry>". PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 1) ."</row>". PHP_EOL;
 
-					$markup2 .= ($markup2 ? str_repeat(' ', $ident) : '') ."<varlistentry xml:id=\"ini.". format_config($config) ."\">". PHP_EOL;
+					$markup2 .= ($markup2 ? str_repeat(' ', $ident) : '') ."<varlistentry xml:id=\"". $id ."\">". PHP_EOL;
 					$markup2 .= str_repeat(' ', $ident + 1) ."<term>". PHP_EOL;
 					$markup2 .= str_repeat(' ', $ident + 2) ."<parameter>". $config ."</parameter>". PHP_EOL;
 					$markup2 .= str_repeat(' ', $ident + 2) ."<type>". get_type_by_string($value) ."</type>". PHP_EOL;
