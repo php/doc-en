@@ -953,7 +953,7 @@ ROLE;
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title>Object oriented style</title>
+   <title>&style.oop;</title>
    <programlisting role="php">
 <![CDATA[
 <?php
@@ -969,7 +969,7 @@ ROLE;
    </screen>
   </example>
   <example>
-   <title>Procedural style</title>
+   <title>&style.procedural;</title>
    <programlisting role="php">
 <![CDATA[
 <?php

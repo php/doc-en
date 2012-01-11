@@ -10,12 +10,12 @@
 
  <refsect1 role="description">
   &reftitle.description;
-  <para>Object oriented style (method):</para>
+  <para>&style.oop; (method):</para>
    <methodsynopsis>
    {MODIFIERS}{RETURN_TYPE}<methodname>{FULL_METHOD_NAME}</methodname>
    {METHOD_PARAMETERS}
    </methodsynopsis>
-  <para>Procedural style:</para>
+  <para>&style.procedural;:</para>
   <methodsynopsis>
    <type>ReturnType</type><methodname>{FUNCTION_NAME}</methodname>
    {FUNCTION_PARAMETERS}
