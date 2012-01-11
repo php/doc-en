@@ -111,7 +111,7 @@ $links       = array();
 $link_files  = array();
 $ini_files   = glob("$phpdoc_dir/en/reference/*/ini.xml");
 $ini_files[] = "$phpdoc_dir/en/features/safe-mode.xml";
-$ini_files[] = "$phpdoc_dir/en/appendices/ini.xml";
+$ini_files[] = "$phpdoc_dir/en/appendices/ini.core.xml";
 
 foreach ($ini_files as $filename) {
 
@@ -209,12 +209,12 @@ if ($link_files) {
 
 
 /* Now write the final result */
-$file = file_get_contents("$phpdoc_dir/en/appendices/ini.xml");
+$file = file_get_contents("$phpdoc_dir/en/appendices/ini.list.xml");
 
 $pos = strpos($file, '<tbody>', strpos($file, '<title>Configuration options</title>')) + strlen('<tbody>');
 $pos2 = strpos($file, '</tbody>', $pos);
 
-file_put_contents("$phpdoc_dir/en/appendices/ini.xml", substr($file, 0, $pos) . PHP_EOL . $string . '     ' . substr($file, $pos2));
+file_put_contents("$phpdoc_dir/en/appendices/ini.list.xml", substr($file, 0, $pos) . PHP_EOL . $string . '     ' . substr($file, $pos2));
 echo "\n\nWrote the main table\n";
 
 
