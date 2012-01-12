@@ -714,14 +714,613 @@ mysqlnd_qc.slam_defense_ttl=1
    <link linkend="ini.mysqlnd-qc.slam-defense-ttl"><literal>mysqlnd_qc.slam_defense_ttl</literal></link>.
   </para>
   <para>
+   The function <link linkend="function.mysqlnd-qc-get-core-stats">
+   <function>mysqlnd_qc_get_core_stats</function></link> returns an array of
+   statistics. The statistics <literal>slam_stale_refresh</literal> and
+   <literal>slam_stale_hit</literal> are incremented if slam defense takes place.
+  </para>
+  <para>
    It is not possible to give a one-fits-all recommendation on the slam defense
    configuration. Users are advised to monitor and test their setup and derive
    settings accordingly.
   </para>
  </section>
 
+ <section xml:id="mysqlnd-qc.cache_candidates" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Finding cache candidates</title>
+  <para>
+   A statement should be considered for caching if it is executed often and has
+   a long run time. Cache candidates are found by creating a list of statements
+   sorted by the product of the number of executions multiplied by the
+   statements run time. The function
+   <link linkend="function.mysqlnd-qc-get-query-trace-log"><function>mysqlnd_qc_get_query_trace_log</function></link>
+   returns a query log which help with the task.
+  </para>
+  <para>
+   Collecting a query trace is a slow operation. Thus, it is disabled by default.
+   The PHP configuration directive
+   <link linkend="ini.mysqlnd-qc.collect-query-trace"><literal>mysqlnd_qc.collect_query_trace</literal></link>
+   is used to enable it. The functions trace contains one entry for every
+   query issued before the function is called.
+  </para>
+  <para>
+   <example>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.enable_qc=1
+mysqlnd_qc.collect_query_trace=1
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* connect to MySQL */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+
+/* dummy queries to fill the query trace */
+for ($i = 0; $i < 2; $i++) {
+  $res = $mysqli->query("SELECT 1 AS _one FROM DUAL");
+  $res->free();
+}
+
+/* dump trace */
+var_dump(mysqlnd_qc_get_query_trace_log());
+?>
+]]>
+    </programlisting>
+   &examples.outputs;
+    <screen>
+<![CDATA[
+array(2) {
+  [0]=>
+  array(8) {
+    ["query"]=>
+    string(26) "SELECT 1 AS _one FROM DUAL"
+    ["origin"]=>
+    string(102) "#0 qc.php(7): mysqli->query('SELECT 1 AS _on...')
+#1 {main}"
+    ["run_time"]=>
+    int(0)
+    ["store_time"]=>
+    int(25)
+    ["eligible_for_caching"]=>
+    bool(false)
+    ["no_table"]=>
+    bool(false)
+    ["was_added"]=>
+    bool(false)
+    ["was_already_in_cache"]=>
+    bool(false)
+  }
+  [1]=>
+  array(8) {
+    ["query"]=>
+    string(26) "SELECT 1 AS _one FROM DUAL"
+    ["origin"]=>
+    string(102) "#0 qc.php(7): mysqli->query('SELECT 1 AS _on...')
+#1 {main}"
+    ["run_time"]=>
+    int(0)
+    ["store_time"]=>
+    int(8)
+    ["eligible_for_caching"]=>
+    bool(false)
+    ["no_table"]=>
+    bool(false)
+    ["was_added"]=>
+    bool(false)
+    ["was_already_in_cache"]=>
+    bool(false)
+  }
+}
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   Assorted information is given in the trace. Among them
+   timings and the origin of the query call. The origin property
+   holds a code backtrace to identify the source of the query.
+   The depth of the backtrace can be limited with
+   the PHP configuration directive
+   <link linkend="ini.mysqlnd-qc.query-trace-bt-depth"><literal>mysqlnd_qc.query_trace_bt_depth</literal></link>.
+   The default depth is <literal>3</literal>.
+  </para>
+  <para>
+   <example>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.enable_qc=1
+mysqlnd_qc.collect_query_trace=1
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* connect to MySQL */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3)");
+
+/* dummy queries to fill the query trace */
+for ($i = 0; $i < 3; $i++) {
+  $res = $mysqli->query("SELECT id FROM test WHERE id = " . $mysqli->real_escape_string($i));
+  $res->free();
+}
+
+$trace = mysqlnd_qc_get_query_trace_log();
+$summary = array();
+foreach ($trace as $entry) {
+  if (!isset($summary[$entry['query']])) {
+    $summary[$entry['query']] = array(
+      "executions" => 1,
+      "time"       => $entry['run_time'] + $entry['store_time'],
+    );
+  } else {
+    $summary[$entry['query']]['executions']++;
+    $summary[$entry['query']]['time'] += $entry['run_time'] + $entry['store_time'];
+ }
+}
+foreach ($summary as $query => $details) {
+  printf("%45s: %5dms (%dx)\n",
+   $query, $details['time'], $details['executions']);
+}
+?>
+]]>
+    </programlisting>
+   &examples.outputs;
+    <screen>
+<![CDATA[
+                    DROP TABLE IF EXISTS test:     0ms (1x)
+                    CREATE TABLE test(id INT):     0ms (1x)
+    INSERT INTO test(id) VALUES (1), (2), (3):     0ms (1x)
+             SELECT id FROM test WHERE id = 0:    25ms (1x)
+             SELECT id FROM test WHERE id = 1:    10ms (1x)
+             SELECT id FROM test WHERE id = 2:     9ms (1x)
+]]>
+    </screen>
+   </example>
+  </para>
+ </section>
+
+ <section xml:id="mysqlnd-qc.cache_efficiency" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Measuring cache efficiency</title>
+  <para>
+   PECL/mysqlnd_qc offers three ways to measure the cache efficiency.
+   The function
+   <link linkend="function.mysqlnd-qc-get-normalized-query-trace-log">
+    <function>mysqlnd_qc_get_normalized_query_trace_log</function>
+   </link>
+   returns statistics aggregated by the normalized query string,
+   <link linkend="function.mysqlnd-qc-get-cache-info">
+    <function>mysqlnd_qc_get_cache_info</function>
+   </link> gives storage handler specific information which includes a list
+   of all cached items, depending on the storage handler. Additionally, the
+   core of PECL/mysqlnd_qc collects high-level summary statistics aggregated
+   per PHP process. The high-level satistics are returned by
+   <link linkend="function.mysqlnd-qc-get-core-stats">
+    <function>mysqlnd_qc_get_core_stats</function>
+   </link>.
+  </para>
+  <para>
+   The functions <link linkend="function.mysqlnd-qc-get-normalized-query-trace-log">
+    <function>mysqlnd_qc_get_normalized_query_trace_log</function>
+   </link> and
+   <link linkend="function.mysqlnd-qc-get-core-stats">
+    <function>mysqlnd_qc_get_core_stats</function>
+   </link> will not collect data unless, data collection has been
+   enabled through their corresponding PHP configuration directives. Please,
+   find the names of the configuration directives in the examples. Data collection
+   is disabled by default for performance considerations. It has been made
+   configurable through <link linkend="ini.mysqlnd-qc.time-statistics">
+   <literal>mysqlnd_qc.time_statistics</literal></link> whether to collect timing
+   information or not. Collection of time statistics is enabled by default
+   but only performed, if data collection as such has been enabled.
+   Recording time statistics causes extra system calls. In most cases,
+   the benefit of the monitoring outweights any potential performance penalty of
+   the additional system calls.
+  </para>
+  <para>
+   <example>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.enable_qc=1
+mysqlnd_qc.collect_statistics=1
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* connect to MySQL */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3)");
+
+/* dummy queries */
+for ($i = 1; $i <= 4; $i++) {
+  $query = sprintf("/*%s*/SELECT id FROM test WHERE id = %d",
+     MYSQLND_QC_ENABLE_SWITCH,
+     $i % 2);
+  $res = $mysqli->query($query);
+  $res->free();
+}
+
+var_dump(mysqlnd_qc_get_core_stats());
+?>
+]]>
+    </programlisting>
+   &examples.outputs;
+    <screen>
+<![CDATA[
+array(26) {
+  ["cache_hit"]=>
+  string(1) "2"
+  ["cache_miss"]=>
+  string(1) "2"
+  ["cache_put"]=>
+  string(1) "2"
+  ["query_should_cache"]=>
+  string(1) "4"
+  ["query_should_not_cache"]=>
+  string(1) "3"
+  ["query_not_cached"]=>
+  string(1) "3"
+  ["query_could_cache"]=>
+  string(1) "4"
+  ["query_found_in_cache"]=>
+  string(1) "2"
+  ["query_uncached_other"]=>
+  string(1) "0"
+  ["query_uncached_no_table"]=>
+  string(1) "0"
+  ["query_uncached_no_result"]=>
+  string(1) "0"
+  ["query_uncached_use_result"]=>
+  string(1) "0"
+  ["query_aggr_run_time_cache_hit"]=>
+  string(2) "28"
+  ["query_aggr_run_time_cache_put"]=>
+  string(3) "900"
+  ["query_aggr_run_time_total"]=>
+  string(3) "928"
+  ["query_aggr_store_time_cache_hit"]=>
+  string(2) "14"
+  ["query_aggr_store_time_cache_put"]=>
+  string(2) "40"
+  ["query_aggr_store_time_total"]=>
+  string(2) "54"
+  ["receive_bytes_recorded"]=>
+  string(3) "136"
+  ["receive_bytes_replayed"]=>
+  string(3) "136"
+  ["send_bytes_recorded"]=>
+  string(2) "84"
+  ["send_bytes_replayed"]=>
+  string(2) "84"
+  ["slam_stale_refresh"]=>
+  string(1) "0"
+  ["slam_stale_hit"]=>
+  string(1) "0"
+  ["request_counter"]=>
+  int(1)
+  ["process_hash"]=>
+  int(1929695233)
+}
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   For a quick overview, call <link linkend="function.mysqlnd-qc-get-core-stats">
+   <function>mysqlnd_qc_get_core_stats</function></link>. It delivers
+   cache usage, cache timing and traffic related statistics. Values are aggregated
+   on a per process basis for all queries issued by any PHP MySQL API call.
+  </para>
+  <para>
+   Some storage handler, such as the default handler, can report cache entries,
+   statistics related to the entries and meta data for the underlying query through the
+   <link linkend="function.mysqlnd-qc-get-cache-info">
+    <function>mysqlnd_qc_get_cache_info</function>
+   </link> function.  Please note, that the information returned depends
+   on the storage handler. Values are aggregated on a per process basis.
+  </para>
+  <para>
+   <example>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.enable_qc=1
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* connect to MySQL */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3)");
+
+/* dummy queries to fill the query trace */
+for ($i = 1; $i <= 4; $i++) {
+  $query = sprintf("/*%s*/SELECT id FROM test WHERE id = %d",
+     MYSQLND_QC_ENABLE_SWITCH,
+     $i % 2);
+  $res = $mysqli->query($query);
+  $res->free();
+}
+var_dump(mysqlnd_qc_get_cache_info());
+?>
+]]>
+    </programlisting>
+   &examples.outputs;
+    <screen>
+<![CDATA[
+array(4) {
+  ["num_entries"]=>
+  int(2)
+  ["handler"]=>
+  string(7) "default"
+  ["handler_version"]=>
+  string(5) "1.0.0"
+  ["data"]=>
+  array(2) {
+    ["Localhost via UNIX socket
+3306
+root
+test|/*qc=on*/SELECT id FROM test WHERE id = 1"]=>
+    array(2) {
+      ["statistics"]=>
+      array(11) {
+        ["rows"]=>
+        int(1)
+        ["stored_size"]=>
+        int(71)
+        ["cache_hits"]=>
+        int(1)
+        ["run_time"]=>
+        int(391)
+        ["store_time"]=>
+        int(27)
+        ["min_run_time"]=>
+        int(16)
+        ["max_run_time"]=>
+        int(16)
+        ["min_store_time"]=>
+        int(8)
+        ["max_store_time"]=>
+        int(8)
+        ["avg_run_time"]=>
+        int(8)
+        ["avg_store_time"]=>
+        int(4)
+      }
+      ["metadata"]=>
+      array(1) {
+        [0]=>
+        array(8) {
+          ["name"]=>
+          string(2) "id"
+          ["orig_name"]=>
+          string(2) "id"
+          ["table"]=>
+          string(4) "test"
+          ["orig_table"]=>
+          string(4) "test"
+          ["db"]=>
+          string(4) "test"
+          ["max_length"]=>
+          int(1)
+          ["length"]=>
+          int(11)
+          ["type"]=>
+          int(3)
+        }
+      }
+    }
+    ["Localhost via UNIX socket
+3306
+root
+test|/*qc=on*/SELECT id FROM test WHERE id = 0"]=>
+    array(2) {
+      ["statistics"]=>
+      array(11) {
+        ["rows"]=>
+        int(0)
+        ["stored_size"]=>
+        int(65)
+        ["cache_hits"]=>
+        int(1)
+        ["run_time"]=>
+        int(299)
+        ["store_time"]=>
+        int(13)
+        ["min_run_time"]=>
+        int(11)
+        ["max_run_time"]=>
+        int(11)
+        ["min_store_time"]=>
+        int(6)
+        ["max_store_time"]=>
+        int(6)
+        ["avg_run_time"]=>
+        int(5)
+        ["avg_store_time"]=>
+        int(3)
+      }
+      ["metadata"]=>
+      array(1) {
+        [0]=>
+        array(8) {
+          ["name"]=>
+          string(2) "id"
+          ["orig_name"]=>
+          string(2) "id"
+          ["table"]=>
+          string(4) "test"
+          ["orig_table"]=>
+          string(4) "test"
+          ["db"]=>
+          string(4) "test"
+          ["max_length"]=>
+          int(0)
+          ["length"]=>
+          int(11)
+          ["type"]=>
+          int(3)
+        }
+      }
+    }
+  }
+}
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   It is possible to further break down the granularity of statistics
+   to the level of the normalized statement string.
+   The normalized statement string is the statements string with all parameters
+   replaced with question marks. For example, the two statements
+   <literal>SELECT id FROM test WHERE id = 0</literal> and
+   <literal>SELECT id FROM test WHERE id = 1</literal> are normalized into
+   <literal>SELECT id FROM test WHERE id = ?</literal>. Their both
+   statistics are aggregated into one entry for
+   <literal>SELECT id FROM test WHERE id = ?</literal>.
+  </para>
+  <para>
+   <example>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.enable_qc=1
+mysqlnd_qc.collect_normalized_query_trace=1
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* connect to MySQL */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3)");
+
+/* dummy queries to fill the query trace */
+for ($i = 1; $i <= 4; $i++) {
+  $query = sprintf("/*%s*/SELECT id FROM test WHERE id = %d",
+     MYSQLND_QC_ENABLE_SWITCH,
+     $i % 2);
+  $res = $mysqli->query($query);
+  $res->free();
+}
+var_dump(mysqlnd_qc_get_normalized_query_trace_log());
+?>
+]]>
+    </programlisting>
+   &examples.outputs;
+    <screen>
+<![CDATA[
+array(4) {
+  [0]=>
+  array(9) {
+    ["query"]=>
+    string(25) "DROP TABLE IF EXISTS test"
+    ["occurences"]=>
+    int(0)
+    ["eligible_for_caching"]=>
+    bool(false)
+    ["avg_run_time"]=>
+    int(0)
+    ["min_run_time"]=>
+    int(0)
+    ["max_run_time"]=>
+    int(0)
+    ["avg_store_time"]=>
+    int(0)
+    ["min_store_time"]=>
+    int(0)
+    ["max_store_time"]=>
+    int(0)
+  }
+  [1]=>
+  array(9) {
+    ["query"]=>
+    string(27) "CREATE TABLE test (id INT )"
+    ["occurences"]=>
+    int(0)
+    ["eligible_for_caching"]=>
+    bool(false)
+    ["avg_run_time"]=>
+    int(0)
+    ["min_run_time"]=>
+    int(0)
+    ["max_run_time"]=>
+    int(0)
+    ["avg_store_time"]=>
+    int(0)
+    ["min_store_time"]=>
+    int(0)
+    ["max_store_time"]=>
+    int(0)
+  }
+  [2]=>
+  array(9) {
+    ["query"]=>
+    string(46) "INSERT INTO test (id ) VALUES (? ), (? ), (? )"
+    ["occurences"]=>
+    int(0)
+    ["eligible_for_caching"]=>
+    bool(false)
+    ["avg_run_time"]=>
+    int(0)
+    ["min_run_time"]=>
+    int(0)
+    ["max_run_time"]=>
+    int(0)
+    ["avg_store_time"]=>
+    int(0)
+    ["min_store_time"]=>
+    int(0)
+    ["max_store_time"]=>
+    int(0)
+  }
+  [3]=>
+  array(9) {
+    ["query"]=>
+    string(31) "SELECT id FROM test WHERE id =?"
+    ["occurences"]=>
+    int(4)
+    ["eligible_for_caching"]=>
+    bool(true)
+    ["avg_run_time"]=>
+    int(179)
+    ["min_run_time"]=>
+    int(11)
+    ["max_run_time"]=>
+    int(393)
+    ["avg_store_time"]=>
+    int(12)
+    ["min_store_time"]=>
+    int(7)
+    ["max_store_time"]=>
+    int(25)
+  }
+}
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   The source distribution of PECL/mysqlnd_qc contains a directory
+   <literal>web/</literal> in which web based monitoring
+   scripts can be found which give an example how to write a cache monitor.
+   Please, follow the instructions given in the source.
+  </para>
+ </section>
+
  <section xml:id="mysqlnd-qc.set-user-handlers" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
-  <title>Procedural user-defined storage handler</title>
+  <title>Beyond TTL: user-defined storage</title>
   <para>
    The query cache plugin supports the use of user-defined storage handler.
    User-defined storage handler can use arbitrarily complex invalidation
