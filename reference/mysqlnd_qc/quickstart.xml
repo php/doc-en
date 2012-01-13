@@ -661,6 +661,110 @@ Script runtime  : 3 seconds
   </para>
  </section>
 
+ <section xml:id="mysqlnd-qc.pattern_based_caching" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Pattern based caching</title>
+  <para>
+   An application has three options for telling PECL/mysqlnd_qc whether a particular
+   statement shall be used. The most basic approach is to cache all statements by
+   setting <literal><link linkend="mysqlnd-qc.configuration">
+   mysqlnd_qc.cache_by_default = 1</link></literal>. This apporach is often of little
+   practical value. But it enables users to make a quick estimation about
+   the maximum performance gains from caching. An application designed to
+   use a cache may able to prefix selected statements with the appropriate SQL
+   hints. However, altering an applications source code may not always be possible
+   or desired, for example, to avoid problems with software updates. Therefore,
+   PECL/mysqlnd_qc allows setting a callback which decides if a query is to be
+   cached.
+  </para>
+  <para>
+   The callback is installed with the <function>mysqlnd_qc_set_is_select</function>
+   function. The callback is given the statement string of every statement
+   inspected by the plugin. Then, the callback can decide whether to cache
+   the function. The callback is supposed to return <literal>FALSE</literal>
+   if the statement shall not be cached. A return value of <literal>TRUE</literal>
+   makes the plugin try to add the statement into the cache. The cache entry
+   will be given the default TTL (<literal><link linkend="mysqlnd-qc.configuration">
+   mysqlnd_qc.ttl</link></literal>). If the callback returns
+   a numberical value it is used as the TTL instead of the global default.
+  </para>
+  <para>
+   <example>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_qc.enable_qc=1
+mysqlnd_qc.collect_statistics=1
+]]>
+    </programlisting>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* callback which decides if query is cached */
+function is_select($query) {
+  static $patterns = array(
+   /* true - use default from mysqlnd_qc.ttl */
+   "@SELECT\s+.*\s+FROM\s+test@ismU" => true,
+   /* 3 - use TTL = 3 seconds */
+   "@SELECT\s+.*\s+FROM\s+news@ismU" => 3
+  );
+
+  /* check if query does match pattern */
+  foreach ($patterns as $pattern => $ttl) {
+    if (preg_match($pattern, $query)) {
+      printf("is_select(%45s): cache\n", $query);
+      return $ttl;
+    }
+  }
+  printf("is_select(%45s): do not cache\n", $query);
+  return false;
+}
+/* install callback */
+mysqlnd_qc_set_is_select("is_select");
+
+/* Connect, create and populate test table */
+$mysqli = new mysqli("host", "user", "password", "schema", "port", "socket");
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3)");
+
+/* cache put */
+$mysqli->query("SELECT id FROM test WHERE id = 1");
+/* cache hit */
+$mysqli->query("SELECT id FROM test WHERE id = 1");
+/* cache put */
+$mysqli->query("SELECT * FROM test");
+
+$stats = mysqlnd_qc_get_core_stats();
+printf("Cache put: %d\n", $stats['cache_put']);
+printf("Cache hit: %d\n", $stats['cache_hit']);
+?>
+]]>
+    </programlisting>
+   &examples.outputs;
+    <screen>
+<![CDATA[
+is_select(                    DROP TABLE IF EXISTS test): do not cache
+is_select(                    CREATE TABLE test(id INT)): do not cache
+is_select(    INSERT INTO test(id) VALUES (1), (2), (3)): do not cache
+is_select(             SELECT id FROM test WHERE id = 1): cache
+is_select(             SELECT id FROM test WHERE id = 1): cache
+is_select(                           SELECT * FROM test): cache
+Cache put: 2
+Cache hit: 1
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   The examples callback tests if a statement string matches a pattern.
+   If this is the case, it either returns <literal>TRUE</literal> to cache
+   the statement using the global default TTL or an alternative TTL.
+  </para>
+  <para>
+   To minimize application changes the callback can put into and registered
+   in an auto prepend file.
+  </para>
+ </section>
+
  <section xml:id="mysqlnd-qc.slam-defense" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
   <title>Slam defense</title>
   <para>
