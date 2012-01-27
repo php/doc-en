@@ -221,6 +221,74 @@ session_start();
 ]]>
     </programlisting>
    </example>
+      <example>
+    <title>
+     <function>session_set_save_handler</function> using
+     <classname>SessionHandler</classname>
+    </title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class MySessionHandler extends SessionHandler {
+  public function open($save_path, $sessionid)
+  {
+    global $sess_save_path;
+
+    $sess_save_path = $save_path;
+    return(true);
+  }
+  public function close()
+  {
+    return true;
+  }
+  public function read($sessionid)
+  {
+    global $sess_save_path;
+
+    $sess_file = "$sess_save_path/sess_$id";
+    return (string) @file_get_contents($sess_file);
+  }
+  public function write($sessionid, $sessiondata)
+  {
+    global $sess_save_path;
+
+    $sess_file = "$sess_save_path/sess_$id";
+    if ($fp = @fopen($sess_file, "w")) {
+      $return = fwrite($fp, $sess_data);
+      fclose($fp);
+      return $return;
+    } else {
+      return(false);
+    }
+  }
+  public function destroy($sessionid)
+  {
+    global $sess_save_path;
+
+    $sess_file = "$sess_save_path/sess_$id";
+    return(@unlink($sess_file));
+  }
+  public function gc($maxlifetime)
+  {
+    global $sess_save_path;
+
+    foreach (glob("$sess_save_path/sess_*") as $filename) {
+      if (filemtime($filename) + $maxlifetime < time()) {
+        @unlink($filename);
+      }
+    }
+    return true;
+  }
+}
+
+$handler = new MySessionHandler();
+session_set_save_handler($handler);
+
+session_start();
+?>
+]]>
+    </programlisting>
+   </example>
   </para>
  </refsect1>
 
