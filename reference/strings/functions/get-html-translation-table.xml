@@ -11,14 +11,14 @@
   <methodsynopsis>
    <type>array</type><methodname>get_html_translation_table</methodname>
    <methodparam choice="opt"><type>int</type><parameter>table</parameter><initializer>HTML_SPECIALCHARS</initializer></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>quote_style</parameter><initializer>ENT_COMPAT</initializer></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>charset_hint</parameter></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>flags</parameter><initializer>ENT_COMPAT | ENT_HTML401</initializer></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>charset</parameter></methodparam>
   </methodsynopsis>
   <para>
    <function>get_html_translation_table</function> will return the
    translation table that is used internally for
    <function>htmlspecialchars</function> and
-   <function>htmlentities</function> with the default charset.
+   <function>htmlentities</function>.
   </para>
   <note>
    <para>
@@ -40,32 +40,69 @@
      <term><parameter>table</parameter></term>
      <listitem>
       <para>
-       There are two new constants (<constant>HTML_ENTITIES</constant>,
-       <constant>HTML_SPECIALCHARS</constant>) that allow you to specify the
-       table you want.
+       Which table to return. Either <constant>HTML_ENTITIES</constant> or
+       <constant>HTML_SPECIALCHARS</constant>.
       </para>
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>quote_style</parameter></term>
+     <term><parameter>flags</parameter></term>
      <listitem>
       <para>
-       Like the <function>htmlspecialchars</function> and
-       <function>htmlentities</function> functions you can optionally specify
-       the <parameter>quote_style</parameter> you are working with.
-       See the description
-       of these modes in <function>htmlspecialchars</function>.
+       A bitmask of one or more of the following flags, which specify which quotes the
+       table will contain as well as which document type the table is for. The default is
+       <literal>ENT_COMPAT | ENT_HTML401</literal>.
+       <table>
+        <title>Available <parameter>flags</parameter> constants</title>
+        <tgroup cols="2">
+         <thead>
+          <row>
+           <entry>Constant Name</entry>
+           <entry>Description</entry>
+          </row>
+         </thead>
+         <tbody>
+          <row>
+           <entry><constant>ENT_COMPAT</constant></entry>
+           <entry>Table will contain entities for double-quotes, but not for single-quotes.</entry>
+          </row>
+          <row>
+           <entry><constant>ENT_QUOTES</constant></entry>
+           <entry>Table will contain entities for both double and single quotes.</entry>
+          </row>
+          <row>
+           <entry><constant>ENT_NOQUOTES</constant></entry>
+           <entry>Table will neither contain entities for single quotes nor for double quotes.</entry>
+          </row>
+          <row>
+           <entry><constant>ENT_HTML401</constant></entry>
+           <entry>Table for HTML 4.01.</entry>
+          </row>
+          <row>
+           <entry><constant>ENT_XML1</constant></entry>
+           <entry>Table for XML 1.</entry>
+          </row>
+          <row>
+           <entry><constant>ENT_XHTML</constant></entry>
+           <entry>Table for XHTML.</entry>
+          </row>
+          <row>
+           <entry><constant>ENT_HTML5</constant></entry>
+           <entry>Table for HTML 5.</entry>
+          </row>
+         </tbody>
+        </tgroup>
+       </table>
       </para>
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>charset_hint</parameter></term>
+     <term><parameter>charset</parameter></term>
      <listitem>
       <para>
-       Like <function>htmlentities</function>, it takes an optional
-       third argument <parameter>charset</parameter> which defines character
-       set used in conversion.
-       Presently, the ISO-8859-1 character set is used as the default.
+       Character set to use.
+       If omitted, the default value for this argument is ISO-8859-1 in
+       versions of PHP prior to 5.4.0, and UTF-8 from PHP 5.4.0 onwards.
       </para>
       &reference.strings.charsets;
      </listitem>
@@ -77,7 +114,8 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns the translation table as an array.
+   Returns the translation table as an array, with the original characters
+   as keys and entities as values.
   </para>
  </refsect1>
 
@@ -94,9 +132,23 @@
      </thead>
      <tbody>
       <row>
+       <entry>5.4.0</entry>
+       <entry>
+        The default value for the <parameter>charset</parameter> parameter was
+        changed to UTF-8.
+       </entry>
+      </row>
+      <row>
+       <entry>5.4.0</entry>
+       <entry>
+        The constants <constant>ENT_HTML401</constant>, <constant>ENT_XML1</constant>,
+        <constant>ENT_XHTML</constant> and <constant>ENT_HTML5</constant> were added.
+       </entry>
+      </row>
+      <row>
        <entry>5.3.4</entry>
        <entry>
-        The <parameter>charset_hint</parameter> parameter was added.
+        The <parameter>charset</parameter> parameter was added.
        </entry>
       </row>
      </tbody>
@@ -113,18 +165,35 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-$trans = get_html_translation_table(HTML_ENTITIES);
-$str = "Hallo & <Frau> & Krämer";
-$encoded = strtr($str, $trans);
-
-echo $encoded;
+var_dump(get_html_translation_table(HTML_ENTITIES, ENT_QUOTES | ENT_HTML5));
 ?>
 ]]>
     </programlisting>
-    &example.outputs;
+    &example.outputs.similar;
     <screen>
 <![CDATA[
-Hallo &amp; &lt;Frau&gt; &amp; Kr&auml;mer
+array(1510) {
+  ["	"]=>
+  string(5) "&Tab;"
+  ["
+"]=>
+  string(9) "&NewLine;"
+  ["!"]=>
+  string(6) "&excl;"
+  ["""]=>
+  string(6) "&quot;"
+  ["#"]=>
+  string(5) "&num;"
+  ["$"]=>
+  string(8) "&dollar;"
+  ["%"]=>
+  string(8) "&percnt;"
+  ["&"]=>
+  string(5) "&amp;"
+  ["'"]=>
+  string(6) "&apos;"
+  // ...
+}
 ]]>
     </screen>
    </example>
