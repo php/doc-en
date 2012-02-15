@@ -4,81 +4,100 @@
 <refentry xml:id="amqpqueue.consume" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>AMQPQueue::consume</refname>
-  <refpurpose>The consume purpose</refpurpose>
+  <refpurpose>Consume messages from a queue</refpurpose>
  </refnamediv>
- 
+
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>array</type><methodname>AMQPQueue::consume</methodname>
-   <methodparam choice="opt"><type>array</type><parameter>options</parameter><initializer>array()</initializer></methodparam>
+   <modifier>public</modifier> <type>void</type><methodname>AMQPQueue::consume</methodname>
+   <methodparam><type>callback</type><parameter>callback</parameter></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>flags</parameter><initializer><constant>AMQP_NOPARAM</constant></initializer></methodparam>
   </methodsynopsis>
   <para>
-    This is a blocking function, in that the function will not return until the minimum number of of messages as specified by the <parameter>min</parameter> are read off of the queue.
-    To use a non-blocking function, see <methodname>AMQPQueue::get</methodname>.
+   Blocking function that will retrieve the next message from the queue as it becomes available and will pass it off to the callback.
   </para>
  </refsect1>
- 
+
  <refsect1 role="parameters">
   &reftitle.parameters;
   <para>
    <variablelist>
+     <varlistentry>
+      <term><parameter>callback</parameter></term>
+      <listitem>
+       <para>
+        A callback function to which the consumed message will be passed. The function must accept at a minimum one parameter, an <classname>AMQPEnvelope</classname> object,
+        and an optional second parameter the <classname>AMQPQueue</classname> from which the message was consumed.
+       </para>
+       <para>
+         The <methodname>AMQPQueue::consume</methodname> will not return the processing thread back to the PHP script until the callback function returns &false;.
+       </para>
+      </listitem>
+     </varlistentry>
     <varlistentry>
-     <term><parameter>options</parameter></term>
+     <term><parameter>flags</parameter></term>
      <listitem>
       <para>
-       <parameter>options</parameter> is a an array of consume options. The keys used in the <parameter>options</parameter> array are: min, max, and ack. All other keys will be ignored.
-      </para>
-      <para>
-       For each missing option, the extension will check the ini settings or use the default value.
+       A bitmask of any of the flags: <constant>AMQP_NOACK</constant>.
       </para>
      </listitem>
     </varlistentry>
    </variablelist>
   </para>
  </refsect1>
- 
- <refsect1 role="returnvalues">
-  &reftitle.returnvalues;
+
+ <refsect1 role="errors">
+  &reftitle.errors;
   <para>
-   An array containing the messages consumed. The number of returned messages will be at least the number given by <parameter>min</parameter> in the <parameter>options</parameter> array. But not more than the number given by <parameter>max</parameter>.
+   Throws <classname>AMQPChannelException</classname> if the channel is not open.
+  </para>
+  <para>
+   Throws <classname>AMQPConnectionException</classname> if the connection to the broker was lost.
   </para>
  </refsect1>
- 
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+ </refsect1>
+
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
    <example>
     <title><methodname>AMQPQueue::consume</methodname> example</title>
     <programlisting role="php">
-<![CDATA[
-<?php
+     <![CDATA[
+     <?php
 
-/* Create a connection using all default credentials: */
-$connection = new AMQPConnection();
-$connection->connect();
+     /* Create a connection using all default credentials: */
+     $connection = new AMQPConnection();
+     $connection->connect();
 
-/* create a queue object */
-$queue = new AMQPQueue($connection);
+     $channel = new AMQPChannel($connection);
 
-//declare the queue
-$queue->declare('myqueue');
+     /* create a queue object */
+     $queue = new AMQPQueue($channel);
 
-$options = array(
-    'min' => 1,
-    'max' => 10,
-    'ack' => true
-);
+     //declare the queue
+     $queue->declare('myqueue');
 
-//get the messages
-$messages = $queue->consume($options);
+     $i = 0;
+     function processMessage($envelope, $queue) {
+        global $i;
+        echo "Message $i: " . $envelope->getBody() . "\n";
+        $i++;
+        if ($i > 10) {
+            // Bail after 10 messages
+            return false;
+        }
+     }
 
-foreach ($messages as $message) {
-    echo $message['message_body'];
-}
+     // Consume messages on queue
+     $queue->consume("processMessage");
 
-?>
-]]>
+     ?>
+     ]]>
     </programlisting>
    </example>
   </para>
