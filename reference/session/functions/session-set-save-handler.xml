@@ -5,7 +5,7 @@
   <refname>session_set_save_handler</refname>
   <refpurpose>Sets user-level session storage functions</refpurpose>
  </refnamediv>
- 
+
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
@@ -17,6 +17,9 @@
    <methodparam><type>callback</type><parameter>destroy</parameter></methodparam>
    <methodparam><type>callback</type><parameter>gc</parameter></methodparam>
   </methodsynopsis>
+  <para>
+   Since PHP 5.4 it is possible to register the following prototype:
+  </para>
   <methodsynopsis>
    <type>bool</type><methodname>session_set_save_handler</methodname>
    <methodparam><type>SessionHandlerInterface</type><parameter>sessionhandler</parameter></methodparam>
@@ -43,7 +46,7 @@
        An instance of a class implementing
        <interfacename>SessionHandlerInterface</interfacename>, such as
        <classname>SessionHandler</classname>, to register as the session
-       handler.
+       handler. Since PHP 5.4 only.
       </para>
      </listitem>
     </varlistentry>
@@ -62,43 +65,65 @@
 
    <variablelist>
     <varlistentry>
-     <term><parameter>open</parameter></term>
+     <term><parameter>open(string $savePath, string $sessionName)</parameter></term>
      <listitem>
       <para>
-       Open function, this works like a constructor in classes and is 
-       executed when the session is being opened. The open function 
-       expects two parameters, where the first is the save path and 
-       the second is the session name.
+       Open function, this works like a constructor in classes and is
+       executed when the session is being opened.  It is the first callback
+       function executed when the session is started automatically or
+       manually with <function>session_start</function>.
+       Return value is &true; for success, &false; for failure.
       </para>
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>close</parameter></term>
+     <term><parameter>close()</parameter></term>
      <listitem>
       <para>
-       Close function, this works like a destructor in classes and is 
-       executed when the session operation is done.
+       Close function, this works like a destructor in classes and is
+       executed after the session write callback has been called. It is also invoked when
+       <function>session_write_close</function> is called.
+       Return value should be &true; for success, &false; for failure.
       </para>
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>read</parameter></term>
+     <term><parameter>read(string $sessionId)</parameter></term>
      <listitem>
       <para>
-       Read function must return string value always to make save handler
-       work as expected. Return empty string if there is no data to read.
-       Return values from other handlers are converted to boolean expression.
-       &true; for success, &false; for failure.
+       The <parameter>read</parameter> function must always return a session encoded (serialized)
+       string, or an empty string if there is no data to read.
+      </para>
+      <para>
+       This callback is automatically called by PHP when the session starts or
+       when <function>session_start</function> is called.  Before this function is called
+       PHP will invoke the <parameter>open</parameter> callback.
+      </para>
+      <para>
+       The value this callback returns must be in exactly the same serialized format that was originally
+       passed for storage to the <parameter>write</parameter> callback.  The value returned will be
+       unserialized automatically by PHP and used to populate the $_SESSION superglobal.
+       While the data looks similar to <function>serialize</function> please note it is a different format
+       which is speficied in the <link linkend="ini.session.serialize-handler">session.serialize_handler</link> ini setting.
       </para>
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>write</parameter></term>
+     <term><parameter>write(string $sessionId, string $data)</parameter></term>
      <listitem>
       <para>
-       Write function that is called when session data is to be saved. This
-       function expects two parameters: an identifier and the data associated
-       with it.
+       The <parameter>write</parameter> callback is called when the session needs to be saved and closed. This
+       callback receives the current session ID a serialized version the $_SESSION superglobal.  The serialization
+       method used by PHP is specified in the <link linkend="ini.session.serialize-handler">session.serialize_handler</link> ini setting.
+      </para>
+      <para>
+       The serialized session data passed to this callback should be stored against the passed session ID. When retrieving
+       this data, the <parameter>read</parameter> callback must return the exact value that was originally passed to
+       the <parameter>write</parameter> callback.
+      </para>
+      <para>
+       This function is called PHP shuts down or explicitly when <function>session_write_close</function>
+       is called.  Note that after executing this function PHP will call the <parameter>close</parameter> callback.
        <note>
         <para>
          The "write" handler is not executed until after the output stream is
@@ -112,25 +137,29 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>destroy</parameter></term>
+     <term><parameter>destroy($sessionId)</parameter></term>
      <listitem>
       <para>
-       The destroy handler, this is executed when a session is destroyed with 
-       <function>session_destroy</function> and takes the session id as its 
-       only parameter.
+       The destroy handler taked one parameter, the session ID. This is executed when
+       a session is destroyed with <function>session_destroy</function> or with <function>session_regenerate_id</function> with
+       the destroy parameter set to &true;.
+       Return value should be &true; for success, &false; for failure.
       </para>
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>gc</parameter></term>
+     <term><parameter>gc($lifetime)</parameter></term>
      <listitem>
       <para>
-       The garbage collector, this is executed when the session garbage collector 
-       is executed and takes the max session lifetime as its only parameter.
+       The garbage collector, this is executed when the session garbage collector
+       is executed and takes the max session lifetime in seconds as its only parameter.
+       This method is called at random according to the frequency set by
+       <link linkend="ini.session.gc-probability">session.gc_probability</link> and <link linkend="ini.session.gc-divisor">session.gc_divisor</link>.
+       The value of lifetime which is passed to this function can be set in <link linkend="ini.session.gc-maxlifetime">session.gc_maxlifetime</link>.
+       Return value should be &true; for success, &false; for failure.
       </para>
      </listitem>
-    </varlistentry>
-   </variablelist>
+    </varlistentry>   </variablelist>
   </para>
  </refsect1>
 
@@ -350,7 +379,7 @@ session_start();
    </simplelist>
   </para>
  </refsect1>
- 
+
 </refentry>
 
 <!-- Keep this comment at the end of the file
