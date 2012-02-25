@@ -175,6 +175,15 @@
     <title>
      <function>session_set_save_handler</function> using <classname>SessionHandlerInterface</classname>
     </title>
+    <para>
+     The following code is for PHP version 5.4.0 and above.
+    </para>
+    <para>
+     The following example provides file based session storage similar to the
+     PHP sessions default save handler <parameter>files</parameter>.  This
+     example could easily be extended to cover database storage using your
+     favorite PHP supported database engine.
+    </para>
     <programlisting role="php">
 <![CDATA[
 <?php
@@ -185,6 +194,9 @@ class MySessionHandler implements SessionHandlerInterface
     public function open($savePath, $sessionName)
     {
         $this->savePath = $savePath;
+        if (!is_dir($this->savePath)) {
+            mkdir($this->savePath, 0777);
+        }
 
         return true;
     }
@@ -196,20 +208,12 @@ class MySessionHandler implements SessionHandlerInterface
 
     public function read($id)
     {
-        $file = "$this->savePath/sess_$id";
-        return (string)@file_get_contents($file);
+        return (string)@file_get_contents("$this->savePath/sess_$id");
     }
 
     public function write($id, $data)
     {
-        $file = "$this->savePath/sess_$id";
-        if ($fp = @fopen($file, "w")) {
-            $return = fwrite($fp, $data);
-            fclose($fp);
-            return $return;
-        } else {
-            return false;
-        }
+        return file_put_contents("$savePath/sess_$id", $data) === false ? false : true;
     }
 
     public function destroy($id)
@@ -235,7 +239,7 @@ class MySessionHandler implements SessionHandlerInterface
 }
 
 $handler = new MySessionHandler();
-session_set_save_handler($handler);
+session_set_save_handler($handler, true);
 session_start();
 
 // proceed to set and retrieve values by key from $_SESSION
@@ -245,6 +249,9 @@ session_start();
    <example>
     <title><function>session_set_save_handler</function> example</title>
     <para>
+     The following code is for PHP versions less than 5.4.0.
+    </para>
+    <para>
      The following example provides file based session storage similar to the
      PHP sessions default save handler <parameter>files</parameter>.  This
      example could easily be extended to cover database storage using your
@@ -253,69 +260,69 @@ session_start();
     <programlisting role="php">
 <![CDATA[
 <?php
-function open($savePath, $sessionName)
+class FileSessionHandler
 {
-    global $sess_save_path;
+    private $savePath;
 
-    $sess_save_path = $savePath;
+    function open($savePath, $sessionName)
+    {
+        $this->savePath = $savePath;
+        if (!is_dir($this->savePath)) {
+            mkdir($this->savePath, 0777);
+        }
 
-    return true;
-}
-
-function close()
-{
-    return true;
-}
-
-function read($id)
-{
-    global $sess_save_path;
-
-    $sess_file = "$sess_save_path/sess_$id";
-
-    return (string)@file_get_contents($sess_file);
-}
-
-function write($id, $data)
-{
-    global $sess_save_path;
-
-    $sess_file = "$sess_save_path/sess_$id";
-    if ($fp = @fopen($sess_file, "w")) {
-        $return = fwrite($fp, $data);
-        fclose($fp);
-
-        return $return;
-    } else {
-        return false;
+        return true;
     }
-}
 
-function destroy($id)
-{
-    global $sess_save_path;
-
-    $file = "$sess_save_path/sess_$id";
-    if (file_exists($file)) {
-        unlink($file);
+    function close()
+    {
+        return true;
     }
-    return true;
-}
 
-function gc($maxlifetime)
-{
-    global $sess_save_path;
+    function read($id)
+    {
+        return (string)@file_get_contents("$this->savePath/sess_$id");
+    }
 
-    foreach (glob("$sess_save_path/sess_*") as $file) {
-        if (filemtime($file) + $maxlifetime < time() && file_exists($file)) {
+    function write($id, $data)
+    {
+        return file_put_contents("$savePath/sess_$id", $data) === false ? false : true;
+    }
+
+    function destroy($id)
+    {
+        $file = "$this->savePath/sess_$id";
+        if (file_exists($file)) {
             unlink($file);
         }
+
+        return true;
     }
 
-    return true;
+    function gc($maxlifetime)
+    {
+        foreach (glob("$this->savePath/sess_*") as $file) {
+            if (filemtime($file) + $maxlifetime < time() && file_exists($file)) {
+                unlink($file);
+            }
+        }
+
+        return true;
+    }
 }
 
-session_set_save_handler("open", "close", "read", "write", "destroy", "gc");
+$handler = new FileSessionHandler();
+session_set_save_handler(
+    array($handler, 'open'),
+    array($handler, 'close'),
+    array($handler, 'read'),
+    array($handler, 'write'),
+    array($handler, 'destroy'),
+    array($handler, 'gc')
+    );
+
+// the following prevents unexpected effects when using objects as save handlers
+register_shutdown_function('session_write_close');
 
 session_start();
 // proceed to set and retrieve values by key from $_SESSION
@@ -327,6 +334,21 @@ session_start();
 
  <refsect1 role="notes">
   &reftitle.notes;
+  <warning>
+   <para>
+    When using objects as session save handlers, it is important to register the
+    shutdown function with PHP to avoid unexpected side-effects from the way
+    PHP internally destroys objects on shutdown.  Typically you should register
+    <parameter>'session_write_close'</parameter> using the
+    <function>register_shutdown_function</function> function.
+   </para>
+   <para>
+    As of PHP 5.4.0 you can use <function>register_shutdown_function</function> or
+    simply use the 'register shutdown' flag when invoking
+    <function>session_set_save_handler</function> using the OOP method (passing an
+    instance that implements <classname>SessionHandlerInterface</classname>.
+   </para>
+  </warning>
   <warning>
    <para>
     As of PHP 5.0.5 the <parameter>write</parameter> and
