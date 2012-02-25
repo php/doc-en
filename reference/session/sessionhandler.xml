@@ -12,19 +12,28 @@
   <section xml:id="sessionhandler.intro">
    &reftitle.intro;
    <para>
-    <classname>SessionHandler</classname> a file-based session save handler class and is
-    the default implementation for PHP.
+    <classname>SessionHandler</classname> a special class that can be used to extend
+    the current internal PHP session save handler by using inheritance.  There are six methods which
+    wrap the six session save handler callbacks.  By default PHP uses the <parameter>files</parameter>
+    save handler as defined by <link linkend="ini.session.save-handler">session.save_handler</link>.
+    Others are provided by PHP extensions such as SQLite (as <parameter>sqlite</parameter>),
+    Memcache (as <parameter>memcache</parameter>), and <parameter>Memcached</parameter>.
    </para>
    <para>
-    This class can be extended, and its methods overridden. It's interface,
-    <classname>SessionHandlerInterface</classname>, can be implemented by a
-    custom class as well, completely bypassing this default session handler.
+    This class can be extended, and it's methods overridden by inheritance including
+    the ability to call the parent class methods.  This allows one for example, to intercept the
+    <parameter>read</parameter> and <parameter>write</parameter> methods to encrypt/decrypt the
+    session data and then pass the result to and from the parent class.
    </para>
    <para>
-    An instance of this class, one extending it, or a custom class
-    implementing <classname>SessionHandlerInterface</classname>, is passed to
-    <function>session_set_save_handler</function> in order to replace the
-    currently configured session handler.
+    Because the <classname>SessionHandler</classname> wraps the current internal save handler
+    methods, the above example of encryption can be applied to any internal save handler without
+    having to know the internals of the handlers.
+   </para>
+   <para>
+    To use this class, pass an instance of this class or one extending it
+    to <function>session_set_save_handler</function>.  This will cause which ever
+    native (internal) session handler in use to be wrapped by that instance.
    </para>
   </section>
 <!-- }}} -->
@@ -53,6 +62,51 @@
    </classsynopsis>
 <!-- }}} -->
 
+  </section>
+  <section xml:id="sessionhandler.examples">
+   <example>
+    <title>
+     Using <classname>SessionHandler</classname> to add encryption to internal PHP save handlers.
+    </title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class EncryptedSessionHandler implements SessionHandler
+{
+    private $key;
+
+    public function __construct($key)
+    {
+        $this->key = $key
+    }
+
+    public function read($id)
+    {
+        $data = parent::read($id);
+
+        return mycrypt_decrypt(MCRYPT_3DES, $this->key, $data, MCRYPT_MODE_ECB);
+    }
+
+    public function write($id, $data)
+    {
+        $data = mcrypt_encrypt(MCRYPT_3DES, $this->key, $data, MCRYPT_MODE_ECB);
+
+        return parent::write($id, $data);
+    }
+}
+
+// we'll intercept the native 'files' handler, but will equally work
+// with other internal native handlers like 'sqlite', 'memcache' or 'memcached'
+// which are provided by PHP extensions.
+ini_set('session.save_handler', 'files');
+$handler = new EncryptedSessionHandler('mykey');
+session_set_save_handler($handler, true);
+session_start();
+
+// proceed to set and retrieve values by key from $_SESSION
+]]>
+    </programlisting>
+   </example>
   </section>
 
  </partintro>
