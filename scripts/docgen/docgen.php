@@ -627,7 +627,7 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 				$markup .= str_repeat(' ', $ident + 1) ."<variablelist>". PHP_EOL;
 
 				foreach ($constants as $name => $value) {
-					$markup .= str_repeat(' ', $ident + 2) ."<varlistentry>". PHP_EOL;
+					$markup .= str_repeat(' ', $ident + 2) .'<varlistentry xml:id="constant.'. format_id($name) .'">'. PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 3) ."<term>". PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 4) ."<constant>". $name ."</constant>". PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 4) ."(<type>". gettype($value) ."</type>)". PHP_EOL;
