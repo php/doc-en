@@ -12,18 +12,28 @@
   <section xml:id="sessionhandler.intro">
    &reftitle.intro;
    <para>
-    <classname>SessionHandler</classname> a special class that can be used to extend
-    the current internal PHP session save handler by using inheritance.  There are six methods which
-    wrap the six session save handler callbacks.  By default PHP uses the <parameter>files</parameter>
-    save handler as defined by <link linkend="ini.session.save-handler">session.save_handler</link>.
-    Others are provided by PHP extensions such as SQLite (as <parameter>sqlite</parameter>),
+    <classname>SessionHandler</classname> a special class that can be used to expose
+    the current internal PHP session save handler by inheritance.  There are six methods which
+    wrap the six internal session save handler callbacks (<parameter>open</parameter>, <parameter>close</parameter>,
+    <parameter>read</parameter>, <parameter>write</parameter>, <parameter>destroy</parameter> and <parameter>gc</parameter>).
+    By default, this class will wrap whatever internal save handler is set as as defined by the
+    <link linkend="ini.session.save-handler">session.save_handler</link> configuration directive which is usually
+    <parameter>files</parameter> by default.
+    Other internal session save hadlers are provided by PHP extensions such as SQLite (as <parameter>sqlite</parameter>),
     Memcache (as <parameter>memcache</parameter>), and Memcached (as <parameter>Memcached</parameter>).
    </para>
    <para>
-    This class can be extended, and it's methods overridden by inheritance including
-    the ability to call the parent class methods.  This allows one for example, to intercept the
-    <parameter>read</parameter> and <parameter>write</parameter> methods to encrypt/decrypt the
-    session data and then pass the result to and from the parent class.
+    When a plain instance of <classname>SessionHandler</classname> is set as the save handler using
+    <function>session_set_save_handler</function> it will wrap the current save handlers.
+    A class extending from <classname>SessionHandler</classname> allows you to override
+    the methods or intercept or filter them by calls the parent class methods which ultimately wrap
+    the interal PHP session handlers.
+   </para>
+   <para>
+    This allows you, for example, to intercept the <parameter>read</parameter> and <parameter>write</parameter>
+    methods to encrypt/decrypt the session data and then pass the result to and from the parent class.
+    Alternatively one might chose to entirely override a method like the garbage collection callback
+    <parameter>gc</parameter>.
    </para>
    <para>
     Because the <classname>SessionHandler</classname> wraps the current internal save handler
@@ -31,9 +41,14 @@
     having to know the internals of the handlers.
    </para>
    <para>
-    To use this class, pass an instance of this class or one extending it
-    to <function>session_set_save_handler</function>.  This will cause which ever
-    native (internal) session handler in use to be wrapped by that instance.
+    To use this class, first set the save handler you wish to expose using
+    <link linkend="ini.session.save-handler">session.save_handler</link> and then pass an instance of
+    <classname>SessionHandler</classname> or one extending it to <function>session_set_save_handler</function>.
+   </para>
+   <para>
+    Please note the callback methods of this class are designed to be called internally by
+    PHP and are not meant to be called from user-space code.  The return values are equally processed internally
+    by PHP.  For more information on the session workflow, please refer <function>session_set_save_handler</function>.
    </para>
   </section>
 <!-- }}} -->
@@ -63,6 +78,17 @@
 <!-- }}} -->
 
   </section>
+
+  <section xml:id="session.notes">
+   <warning>
+    <para>
+     This class is designed to expose the current internal PHP session save handler, if you you want to
+     write your own custom save handlers, please implement the <classname>SessionHandlerInterface</classname>
+     interface instead of extending from <classname>SessionHandler</classname>.
+    </para>
+   </warning>
+  </section>
+
   <section xml:id="sessionhandler.examples">
    <example>
     <title>
