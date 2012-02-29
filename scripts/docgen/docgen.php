@@ -580,6 +580,17 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 	switch ($xml_file) {
 		case 'ini.xml':
 			if ($ini = $obj->getINIEntries()) {
+				
+				// ReflectionExtension doesn't provide API for INI visibility but it exports this information to a string
+				$visibility = array();
+				if (preg_match('~\n  - INI \{(.*)\n  }~sU', (string) $obj, $match)) {
+					preg_match_all('~\n    Entry \[ (\S+) <(.+)> \]\n~', $match[1], $matches, PREG_SET_ORDER);
+					foreach ($matches as $match) {
+						list(, $config, $visible) = $match;
+						$visibility[$config] = "PHP_INI_" . str_replace(",", "|PHP_INI_", $visible);
+					}
+				}
+				
 				$ident = get_ident_size('INI_ENTRIES', $content);
 
 				$markup = "<tbody>". PHP_EOL;
@@ -589,7 +600,7 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 					$markup .= str_repeat(' ', $ident + 1) ."<row>". PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 2) ."<entry><link linkend=\"". $id ."\">". $config ."</link></entry>". PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 2) ."<entry>". $value ."</entry>". PHP_EOL;
-					$markup .= str_repeat(' ', $ident + 2) ."<entry>its PHP_INI_* value</entry>". PHP_EOL;
+					$markup .= str_repeat(' ', $ident + 2) ."<entry>" . (isset($visibility[$config]) ? $visibility[$config] : "its PHP_INI_* value") . "</entry>". PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 2) ."<entry><!-- leave empty, this will be filled by an automatic script --></entry>". PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 1) ."</row>". PHP_EOL;
 
