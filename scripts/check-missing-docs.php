@@ -168,11 +168,11 @@ function skip_documentation($name) {
 		'mbregex_encoding', 'mbereg', 'mberegi', 'mbereg_replace', 'mberegi_replace',
 		'mbsplit', 'mbereg_match', 'mbereg_search', 'mbereg_search_pos',
 		'mbereg_search_regs', 'mbereg_search_init', 'mbereg_search_getregs',
-		'mbereg_search_getpos', 'mbereg_search_setpos', 'mysql',
+		'mbereg_search_getpos', 'mbereg_search_setpos', 'mysql', 'mysql_fieldtype',
 		'mysql_fieldname','mysql_fieldtable','mysql_fieldlen','mysql_fieldflags',
 		'mysql_selectdb','mysql_freeresult','mysql_numfields','mysql_numrows',
-		'mysql_listdbs','mysql_listtables','mysql_listfields',
-		'socket_getopt','socket_setopt','key_exists', '_',
+		'mysql_listdbs','mysql_listtables','mysql_listfields', 'mysql_dbname', 
+		'mysql_table_name', 'socket_getopt','socket_setopt','key_exists', '_', 
 
 		// Class::Methods
 		// Classes
