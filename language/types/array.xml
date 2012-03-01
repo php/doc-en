@@ -26,49 +26,276 @@
    <title>Specifying with <function>array</function></title>
 
    <para>
-    An <type>array</type> can be created by the <function>array</function>
-    language construct. It takes as parameters any number of comma-separated
-    <literal><replaceable>key</replaceable> =&gt;
-    <replaceable>value</replaceable></literal> pairs.
+    An <type>array</type> can be created using the <function>array</function>
+    language construct. It takes any number of comma-separated
+    <literal><replaceable>key</replaceable> =&gt; <replaceable>value</replaceable></literal> pairs
+    as arguments.
    </para>
 
    <synopsis>
-array( <optional> <replaceable>key</replaceable> =&gt; </optional> <replaceable>value</replaceable>
-     , ...
-     )
-// <replaceable>key</replaceable> may only be an <type>integer</type> or <type>string</type>
-// <replaceable>value</replaceable> may be any value of any type</synopsis>
+array(
+    <optional><replaceable>key</replaceable>  =&gt; </optional><replaceable>value</replaceable>,
+    <optional><replaceable>key2</replaceable> =&gt; </optional><replaceable>value2</replaceable>,
+    <optional><replaceable>key3</replaceable> =&gt; </optional><replaceable>value3</replaceable>,
+    ...
+)</synopsis>
    <!-- Do not fix the whitespace for the synopsis end element. A limitation of PhD prevents proper trimming -->
 
-   <informalexample>
+   <para>
+    As of PHP 5.4 you can also use the short array syntax, which replaces
+    <literal>array()</literal> with <literal>[]</literal>.
+   </para>
+   
+   <example>
+    <title>A simple array</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-$arr = array("foo" => "bar", 12 => true);
+$array = array(
+    "foo" => "bar",
+    "bar" => "foo"
+);
 
-echo $arr["foo"]; // bar
-echo $arr[12];    // 1
+// as of PHP 5.4
+$array = [
+    "foo" => "bar",
+    "bar" => "foo"
+];
 ?>
 ]]>
     </programlisting>
-   </informalexample>
-
+   </example>
+   
    <para>
-    A <varname>key</varname> may be either an <type>integer</type> or a
-    <type>string</type>. If a key is the standard representation of an
-    <type>integer</type>, it will be interpreted as such (i.e.
-    <literal>"8"</literal> will be interpreted as <literal>8</literal>, while
-    <literal>"08"</literal> will be interpreted as <literal>"08"</literal>).
-    <type>Float</type>s in <varname>key</varname> are truncated to
-    <type>integer</type>. The indexed and associative <type>array</type> types
-    are the same type in PHP, which can both contain <type>integer</type> and
-    <type>string</type> indices.
+    The <replaceable>key</replaceable> can either be an <type>integer</type>
+    or a <type>string</type>. The <replaceable>value</replaceable> can be
+    of any type.
    </para>
-
+   
    <para>
-    A value can be any PHP type.
+    Additionally the following <replaceable>key</replaceable> casts will occur:
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       <type>String</type>s containing valid <type>integer</type>s will be cast to the
+       <type>integer</type> type. E.g. the key <literal>"8"</literal> will actually be
+       stored under <literal>8</literal>. On the other hand <literal>"08"</literal> will
+       not be cast, as it isn't a valid decimal integer.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <type>Float</type>s are also cast to <type>integer</type>s, which means that the
+       fractional part will be truncated. E.g. the key <literal>8.7</literal> will actually
+       be stored under <literal>8</literal>.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <type>Bool</type>s are cast to <type>integer</type>s, too, i.e. the key
+       <literal>true</literal> will actually be stored under <literal>1</literal>
+       and the key <literal>false</literal> under <literal>0</literal>.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <type>Null</type> will be cast to the empty string, i.e. the key
+       <literal>null</literal> will actually be stored under <literal>""</literal>.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <type>Array</type>s and <type>object</type>s <emphasis>can not</emphasis> be used as keys.
+       Doing so will result in a warning: <literal>Illegal offset type</literal>.
+      </simpara>
+     </listitem>
+    </itemizedlist>
    </para>
+   
+   <para>
+    If multiple elements in the array declaration use the same key, only the last one
+    will be used as all others are overwritten.
+   </para>
+   
+   <example>
+    <title>Type Casting and Overwriting example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$array = array(
+    1    => "a",
+    "1"  => "b",
+    1.5  => "c",
+    true => "d",
+);
+var_dump($array);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(1) {
+  [1]=>
+  string(1) "d"
+}
+]]>
+    </screen>
+    <para>
+     As all the keys in the above example are cast to <literal>1</literal>, the value will be overwritten
+     on every new element and the last assined value <literal>"d"</literal> is the only one left over.
+    </para>
+   </example>  
+   
+   <para>
+    PHP arrays can contain <type>integer</type> and <type>string</type> keys at the same time
+    as PHP does not distinguish between indexed and associative arrays.
+   </para>
+   
+   <example>
+    <title>Mixed <type>integer</type> and <type>string</type> keys</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$array = array(
+    "foo" => "bar",
+    "bar" => "foo",
+    100   => -100,
+    -100  => 100,
+);
+var_dump($array);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(4) {
+  ["foo"]=>
+  string(3) "bar"
+  ["bar"]=>
+  string(3) "foo"
+  [100]=>
+  int(-100)
+  [-100]=>
+  int(100)
+}
+]]>
+    </screen>
+   </example>
+   
+   <para>
+    The <replaceable>key</replaceable> is optional. If it is not specified, PHP will
+    use the increment of the largest previously used <type>integer</type> key.
+   </para>
+   
+   <example>
+    <title>Indexed arrays without key</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$array = array("foo", "bar", "hallo", "world");
+var_dump($array);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(4) {
+  [0]=>
+  string(3) "foo"
+  [1]=>
+  string(3) "bar"
+  [2]=>
+  string(5) "hallo"
+  [3]=>
+  string(5) "world"
+}
+]]>
+    </screen>
+   </example>
+   
+   <para>
+    It is possible to specify the key only for some elements and leave it out for others:
+   </para>
+   
+   <example>
+    <title>Keys not on all elements</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$array = array(
+         "a",
+         "b",
+    6 => "c",
+         "d",
+);
+var_dump($array);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(4) {
+  [0]=>
+  string(1) "a"
+  [1]=>
+  string(1) "b"
+  [6]=>
+  string(1) "c"
+  [7]=>
+  string(1) "d"
+}
+]]>
+    </screen>
+    <para>
+     As you can see the last value <literal>"d"</literal> was assigned the key
+     <literal>7</literal>. This is because the largest integer key before that
+     was <literal>6</literal>.
+    </para>
+   </example>
+  </sect3>
+  
+  <sect3 xml:id="language.types.array.syntax.accessing">
+   <title>Accessing array elements with square bracket syntax</title>
+   
+   <para>
+    Array elements can be accessed using the <literal>array[key]</literal> syntax.
+   </para>
+   
+   <example>
+    <title>Accessing array elements</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$array = array(
+    "foo" => "bar",
+    42    => 24,
+    "multi" => array(
+         "dimensional" => array(
+             "array" => "foo"
+         )
+    )
+);
 
+var_dump($array["foo"]);
+var_dump($array[42]);
+var_dump($array["multi"]["dimensional"]["array"]);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+string(3) "bar"
+int(24)
+string(3) "foo"
+]]>
+    </screen>
+   </example>
+   
    <note>
     <para>
       Attempting to access an array key which has not been defined is
@@ -77,64 +304,6 @@ echo $arr[12];    // 1
       issued, and the result will be &null;.
     </para>
    </note>
-
-   <informalexample>
-    <programlisting role="php">
-<![CDATA[
-<?php
-$arr = array("somearray" => array(6 => 5, 13 => 9, "a" => 42));
-
-echo $arr["somearray"][6];    // 5
-echo $arr["somearray"][13];   // 9
-echo $arr["somearray"]["a"];  // 42
-?>
-]]>
-    </programlisting>
-   </informalexample>
-
-   <para>
-    If a key is not specified for a value, the maximum of the
-    <type>integer</type> indices is taken and the new key will be that value
-    plus 1. If a key that already has an assigned value is specified, that value
-    will be overwritten.
-   </para>
-   
-   <informalexample>
-    <programlisting role="php">
-<![CDATA[
-<?php
-// This array is the same as ...
-array(5 => 43, 32, 56, "b" => 12);
-
-// ...this array
-array(5 => 43, 6 => 32, 7 => 56, "b" => 12);
-?>
-]]>
-    </programlisting>
-   </informalexample>
-
-   <warning>
-    <simpara>
-     Before PHP 4.3.0, appending to an <type>array</type> in which the current
-     maximum key was negative would create a new key as described above. Since
-     PHP 4.3.0, the new key will be <literal>0</literal>.
-    </simpara>
-   </warning>
-
-   <para>
-    Using &true; as <varname>key</varname> will evaluate to <type>integer</type>
-    <literal>1</literal> as a key. Using &false; as <varname>key</varname> will
-    evaluate to <type>integer</type> <literal>0</literal> as a key. Using
-    &null; as a key will evaluate to the empty string. Using the empty string as
-    a key will create (or overwrite) a key with the empty string and its value;
-    it is <emphasis>not</emphasis> the same as using empty brackets.
-   </para>
-
-   <para>
-    <type>Array</type>s and <type>object</type>s can not be used as keys. Doing
-    so will result in a warning: <literal>Illegal offset type</literal>.
-   </para>
-
   </sect3>
   
   <sect3 xml:id="language.types.array.syntax.modifying">
