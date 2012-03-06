@@ -1134,7 +1134,16 @@ version = 5.6.2-m5-log
     Transaction boundaries are detected by monitoring API calls. This is possible
     as of PHP 5.4.0. Please, see also <link linkend="mysqlnd-ms.transaction">Transaction handling</link>.
    </para>
+   <para>
+    As of MySQL 5.6.4-m8 the MySQL server features built-in global transaction identifiers.
+    The MySQL built-in global transaction ID feature is supported by PECL/mysqlnd_ms 1.3.0-alpha or
+    later. Neither are client-side transaction boundary monitoring nor any setup
+    activities required if using the server feature.
+   </para>
   </note>
+  <para>
+   <emphasis role="bold">Idea and client-side emulation</emphasis>
+  </para>
   <para>
    PECL/mysqlnd_ms can do client-side transparent global transaction ID injection.
    In its most basic form, a global transaction identifier is a counter which is
@@ -1184,6 +1193,11 @@ version = 5.6.2-m5-log
    <itemizedlist>
     <listitem>
      <simpara>
+      Global transaction ID tables must be deployed on all masters and replicas.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
       The GTID can have holes. Only PHP clients using the plugin will
       maintain the table. Other clients will not.
      </simpara>
@@ -1202,17 +1216,48 @@ version = 5.6.2-m5-log
     </listitem>
    </itemizedlist>
   </para>
-  <note>
-   <title>Server-side global transaction ID support</title>
-   <para>
-    The plugin is prepared to support MySQL servers which implement global
-    transaction ID support and which maintain a global transaction ID themselves.
-    Client-side injection would not be necessary with such servers. However,
-    without any server supporting it yet and, in heterogenous environments with
-    old MySQL servers, client-side injection is a valuable, although not perfect,
-    option.
-   </para>
-  </note>
+<para>
+    <emphasis role="bold">Using server-side global transaction identifier</emphasis>
+  </para>
+  <para>
+   Starting with PECL/mysqlnd_ms 1.3.0-alpha the MySQL 5.6.4-m8 or newer built-in global
+   transaction identifier feature is supported. Use of the server feature lifts
+   all of the above listed limitations. Please, see the MySQL Reference Manual
+   for limitations and preconditions for using server built-in global transaction
+   identifiers.
+  </para>
+  <para>
+   Whether to use the client-side emulation or the server built-in
+   functionality is a question not directly related to the plugin, thus it is not
+   discussed in depth. There are no plans to remove the client-side emulation and
+   you can continue to use it, if the server-side solution is no option. This may
+   be the case in heterogenous environments with old MySQL server or, if any of the
+   server-side solution limitations is not acceptable.
+  </para>
+  <para>
+   From an applications perspective there is hardly a difference in using one or the
+   other approach. The following properties differ.
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      Client-side emulation, as shown in the manual, is using an easy to compare sequence number
+      for global transactions. Multi-master is not handled to keep the manual examples easy.
+     </simpara>
+     <simpara>
+      Server-side built-in feature is using a combination of a server identifier
+      and a sequence number as a global transaction identifier. Comparison cannot
+      use numeric algebra. Instead a SQL function must be used. Please,
+      see the MySQL Reference Manual for details.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Plugin global transaction ID statistics are only available with client-side
+      emulation because they monitor the emulation.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
  </section>
 
  <section xml:id="mysqlnd-ms.supportedclusters">

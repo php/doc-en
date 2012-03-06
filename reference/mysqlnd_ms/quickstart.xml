@@ -1098,11 +1098,31 @@ PHP Warning:  mysqli::query(): (mysqlnd_ms) No connection selected by the last f
   <note>
    <title>Version requirement</title>
    <para>
-    Global transaction ID injection has been introduced in mysqlnd_ms version 1.2.0-alpha.
+    A client-side global transaction ID injection has been introduced in mysqlnd_ms version 1.2.0-alpha.
     The feature is not required for synchronous clusters, such as MySQL Cluster.
     Use it with asynchronous clusters such as classical MySQL replication.
    </para>
+   <para>
+    As of MySQL 5.6.4-m8 the MySQL server features built-in global transaction identifiers.
+    The MySQL built-in global transaction ID feature is supported by PECL/mysqlnd_ms 1.3.0-alpha or
+    later.
+   </para>
   </note>
+  <para>
+   PECL/mysqlnd_ms can either use its own global transaction ID emulation or the
+   global transaction ID feature built-in to MySQL 5.6.4-m8 or later. From a developer
+   perspective the client-side and server-side approach offer the same features with
+   regards to service levels provided by PECL/mysqlnd_ms. Their differences
+   are discussed in the <link linkend="mysqlnd-ms.gtid">concepts section</link>.
+  </para>
+  <para>
+   The quickstart first demonstrates the use of the client-side global transaction ID emulation
+   built-in to PECL/mysqlnd_ms before its show how to use the server-side counterpart.
+   The order ensures that the underlying idea is discussed first.
+  </para>
+  <para>
+   <emphasis role="bold">Idea and client-side emulation</emphasis>
+  </para>
   <para>
    In its most basic form a global transaction ID (GTID) is a counter in a table on the
    master. The counter is incremented whenever a transaction is comitted on the master.
@@ -1431,6 +1451,65 @@ var_dump($res->fetch_assoc());
    expensive procedure. Applications should try to use it sparsely and only
    if read load on the master becomes to high otherwise.
   </para>
+  <para>
+   <emphasis role="bold">Use of the server-side global transaction ID feature</emphasis>
+  </para>
+  <para>
+   Starting with MySQL 5.6.4-m8 the MySQL Replication system features server-side
+   global transaction IDs. Transaction identifiers are automatically generated and
+   maintained by the server. Users do not need to take care of maintaining them.
+   There is no need to setup any tables in advance, or for setting
+   <literal>on_commit</literal>. A client-side emulation is no longer needed.
+  </para>
+  <para>
+    Clients can continue to use global transaction identifier to achieve
+    session consistency when reading from MySQL Replication slaves. The algorithm
+    works as described above. Different SQL statements must be configured for
+    <literal>fetch_last_gtid</literal> and <literal>check_for_gtid</literal>.
+    The statements are given below. Please note, MySQL 5.6.4-m8 is a development
+    version. Details of the server implementation may change in the future and require
+    adoption of the SQL statements shown.
+  </para>
+  <para>
+    Using the following configuration any of the above described functionality can
+    be used together with the server-side global transaction ID feature.
+    <function>mysqlnd_ms_get_last_gtid</function> and <function>mysqlnd_ms_set_qos</function>
+    continue to work as described above. The only difference is that the server
+    does not use a simple sequence number but a string containing of a server identifier
+    and a sequence number. Thus, users cannot easily derive an order from GTIDs returned
+    by <function>mysqlnd_ms_get_last_gtid</function>.
+  </para>
+  <para>
+   <example>
+    <title>Plugin config: using MySQL 5.6.4-m8 built-in GTID feature</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "127.0.0.1",
+                "port": "3306"
+            }
+        },
+        "global_transaction_id_injection":{
+            "fetch_last_gtid" : "SELECT @@GLOBAL.GTID_DONE AS trx_id FROM DUAL",
+            "check_for_gtid" : "SELECT GTID_SUBSET('#GTID', @@GLOBAL.GTID_DONE) AS trx_id FROM DUAL",
+            "report_error":true
+        }
+    }
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+
  </section>
 </chapter>
 <!-- Keep this comment at the end of the file
