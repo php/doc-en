@@ -104,7 +104,7 @@ function params_source_to_doc($type_spec)
 		"H" => "array",
 		"U" => "unicode",
 		"S" => "string",
-		"f" => "callback",
+		"f" => "callable",
 		"x" => "string",
 		"T" => "unicode",
 		
@@ -414,7 +414,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$referen
 				echo "Wrong return type in $filename on line $lineno.\n";
 				echo $return_types[$function_name][1] . ":" . $return_types[$function_name][2] . ": " . $return_types[$function_name][0] . "\n";
 			}
-		} elseif (preg_match("~<type>(callback|$invalid_types)</type>~", $return_type)) {
+		} elseif (preg_match("~<type>($invalid_types)</type>~", $return_type)) {
 			echo "Wrong return type in $filename on line $lineno.\n";
 		}
 		

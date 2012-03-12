@@ -301,7 +301,7 @@
 	 * Removes all files within a directory and then 
 	 * deletes the directory
 	 *
-	 * @param	callback		Callback to the apply function
+	 * @param	callable		Callback to the apply function
 	 * @param	string			Glob directory to begin
 	 * @param	string			(optional) The glob pattern to match on
 	 * @return	void			No value is returned
