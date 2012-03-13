@@ -3,11 +3,23 @@
  <sect1 xml:id="language.oop5.typehinting" xmlns="http://docbook.org/ns/docbook">
   <title>Type Hinting</title>
   <para>
-   PHP 5 introduces Type Hinting. Functions are now able to force parameters
+   PHP 5 introduces type hinting. Functions are now able to force parameters
    to be objects (by specifying the name of the class in the function
-   prototype) or arrays (since PHP 5.1). However, if <type>NULL</type> is used
+   prototype), interfaces, arrays (since PHP 5.1) or <type>callable</type>
+   (since PHP 5.4). However, if <type>NULL</type> is used
    as the default parameter value, it will be allowed as an argument for any 
    later call.
+  </para>
+  
+  <para>
+   If class or interface is specified as type hint then all its children or
+   implementations are allowed too.
+  </para>
+  
+  <para>
+   Type hints can not be used with scalar types such as <type>int</type> or
+   <type>string</type>.
+   <link linkend="language.oop5.traits">Traits</link> are not allowed either.
   </para>
   
   <example>
@@ -35,6 +47,20 @@ class MyClass
      */
     public function test_array(array $input_array) {
         print_r($input_array);
+    }
+    
+    /**
+     * First parameter must be iterator
+     */
+    public function test_interface(Traversable $iterator) {
+        echo get_class($iterator);
+    }
+    
+    /**
+     * First parameter must be callable
+     */
+    public function test_callable(callable $callback, $data) {
+        call_user_func($callback, $data);
     }
 }
 
@@ -73,6 +99,12 @@ $myclass->test_array('a string');
 
 // Works: Prints the array
 $myclass->test_array(array('a', 'b', 'c'));
+
+// Works: Prints ArrayObject
+$myclass->test_interface(new ArrayObject(array()));
+
+// Works: Prints int(1)
+$myclass->test_callable('var_dump', 1);
 ?>
 ]]>
    </programlisting>
@@ -92,13 +124,13 @@ class MyClass {
  *
  * First parameter must be an object of type MyClass
  */
-function MyFunction (MyClass $foo) {
+function myFunction(MyClass $foo) {
     echo $foo->var;
 }
 
 // Works
 $myclass = new MyClass;
-MyFunction($myclass);
+myFunction($myclass);
 ?>
 ]]>
    </programlisting>
@@ -121,11 +153,6 @@ test(new stdClass);
 ]]>
    </programlisting>
   </example>
-  <para>
-   Type Hints can only be of the <type>object</type> and <type>array</type>
-   (since PHP 5.1) type. Traditional type hinting with <type>int</type> and
-   <type>string</type> isn't supported.
-  </para>
  </sect1>
  
 <!-- Keep this comment at the end of the file
