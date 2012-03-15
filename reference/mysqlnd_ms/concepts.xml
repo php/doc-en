@@ -1282,6 +1282,159 @@ version = 5.6.2-m5-log
   </note>
  </section>
 
+ <section xml:id="mysqlnd-ms.concept_cache">
+  <title>Cache integration</title>
+  <note>
+   <title>Version requirement</title>
+   <para>
+    The feature requires used of PECL/mysqlnd_ms 1.3.0-beta or later
+    and PECL/mysqlnd_qc 1.1.0-alpha or new. PECL/mysqlnd_ms must be
+    compiled to support the feature. PHP 5.4.0 or newer is required.
+   </para>
+  </note>
+  <note>
+   <title>Suitable MySQL clusters</title>
+   <para>
+    The feature is targetted for use with MySQL Replication (primary copy).
+    Currently, no other kinds of MySQL clusters are supported. Users
+    of such cluster must control PECL/mysqlnd_qc manually if they are
+    interested in client-side query caching.
+   </para>
+  </note>
+  <para>
+   Support for MySQL replication clusters (asynchronous primary copy) is the
+   main focus of PECL/mysqlnd_ms. The slaves of a MySQL replication cluster
+   may or may not reflect the latest updates from the master.
+   Slaves are asynchronous and can lag behind the master. A read from a slave
+   is eventual consistent from a cluster-wide perspective.
+  </para>
+  <para>
+   The same level of consistency is offered by a local cache using time-to-live (TTL)
+   invalidation strategy. Current data or stale data may be served. Eventually, data
+   searched for in the cache is not available and the source of the cache needs to
+   be accessed.
+  </para>
+  <para>
+   Given that both a MySQL Replication slave (asynchronous secondary) and a local
+   TTL-driven cache deliver the same level of service it is possible to transparently
+   replace a remote database access with a local cache access to gain better possiblity.
+  </para>
+  <para>
+   As of PECL/mysqlnd_ms 1.3.0-beta the plugin is capable of transparently controlling
+   PECL/mysqlnd_ms 1.1.0-alpha or newer to cache a read-only query if explicitly
+   allowed by setting an appropriate quality of service through
+   <function>mysqlnd_ms_set_qos</function>. Please, see the
+   <link linkend="mysqlnd-ms.quickstart.cache">quickstart</link> for a code example.
+   Both plugins must be installed, PECL/mysqlnd_ms must be compiled to support the
+   cache feature and PHP 5.4.0 or newer has to be used.
+  </para>
+  <para>
+   Applications have full control of cache usage and can request fresh data
+   at any time, if need be. Thec ache usage can be enabled and disabled
+   time during the execution of a script. The cache will be used
+   if <function>mysqlnd_ms_set_qos</function> sets the quality of service
+   to eventual consistency and enables cache usage. Cache usage is disabled by
+   requesting higher consistency levels, for example,
+   session consistency (read your writes). Once the quality of service has been
+   relaxed to eventual consistency the cache can be used again.
+  </para>
+  <para>
+   If caching is enabled for a read-only statement, PECL/mysqlnd_ms may inject
+   <link linkend="mysqlnd-qc.quickstart.caching">SQL hints to control caching</link>
+   by PECL/mysqlnd_qc. It may modify the SQL statement it got from the application.
+   Subsequent SQL processors are supposed to ignore the SQL hints. A SQL hint is a
+   SQL comment. Comments must not be ignored, for example, by the database server.
+  </para>
+  <para>
+   The TTL of a cache entry is computed on a per statement basis. Applications
+   set an maximum age for the data they want to retrieve using
+   <function>mysqlnd_ms_set_qos</function>. The age sets an approximate upper limit
+   of how many seconds the data returned may lag behind the master.
+  </para>
+  <para>
+   The following logic is used to compute the actual TTL if caching is enabled.
+   The logic takes the estimated slave lag into account for choosing a TTL. If,
+   for example, there are two slaves lagging 5 and 10 seconds behind and the maximum
+   age allowed is 60 seconds, the TTL is set to 50 seconds. Please note, the
+   age setting is no more than an estimated guess.
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      Check whether the statement is read-only. If not, don't cache.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      If caching is enabled, check the slave lag of all configured slaves.
+      Establish slave connections if none exist so far and lazy connections are
+      used.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Send <literal>SHOW SLAVE STATUS</literal> to all slaves. Do not wait
+      for the first slave to reply before sending to the second slave. Clients
+      often wait long for replies, thus we send out all requests in a burst before
+      fetching in a second stage.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Loop over all slaves. For every slave wait for its reply. Do not start
+      checking another slave before the currently waited for slave has replied.
+      Check for <literal>Slave_IO_Running=Yes</literal> and <literal>Slave_SQL_Running=Yes</literal>.
+      If both conditions hold true, fetch the value of <literal>Seconds_Behind_Master</literal>.
+      In case of any errors or if conditions fail, set an error on the slave connection.
+      Skip any such slave connection for the rest of connection filtering.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Search for the maximum value of <literal>Seconds_Behind_Master</literal> from
+      all slaves that passed the previous conditions. Substract the value from
+      the maximum age provided by the user with <function>mysqlnd_ms_set_qos</function>.
+      Use the result as a TTL.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      The filtering may sort out all slaves. If so, the maximum age is used as
+      TTL, because the maximum lag found equals zero. It is perfectly valid to
+      sort out all slaves. In the following it is up to subsequent filter
+      to decide what to do. The built-in load balancing filter will pick the
+      master.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Inject the appropriate SQL hints to enable caching by PECL/mysqlnd_qc.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Proceed with the connection filtering, e.g. apply load balancing rules to
+      pick a slave.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      PECL/mysqlnd_qc is loaded after PECL/mysqlnd_ms by PHP. Thus, it will see
+      all query modifications of PECL/mysqlnd_ms and cache the query if instructed
+      to do so.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <para>
+   The algorithm may seem expensive. <literal>SHOW SLAVE STATUS</literal> is a very
+   fast operation. Given a sufficient number of requests and cache hits per second the cost of
+   checking the slaves lag can easily outweight the costs of the cache decision.
+  </para>
+  <para>
+   Suggestions on a better algorithm are always welcome.
+  </para>
+ </section>
+
  <section xml:id="mysqlnd-ms.supportedclusters">
   <title>Supported clusters</title>
   <para>
