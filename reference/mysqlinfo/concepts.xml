@@ -10,21 +10,45 @@
   <title>Buffered and Unbuffered queries</title>
   
   <para>
-   Queries are buffered by default. This means that query results are stored in memory, which
-   allows additional operations like counting the number of rows, and moving (seeking) the
-   current result pointer.
+   Queries are using the buffered mode by default. This means that query results are 
+   immediately transfered from the MySQL Server to PHP in is then kept  in the memory
+   of the PHP process. This allows additional operations like counting the
+   number of rows, and moving (seeking) the current result pointer. It also allows
+   issuing further queries on the same connection while working on the result set.
+   The downside of the buffered mode is that larger result sets might require
+   quite a lot memory. The memory will be kept occupied till all references to the
+   result set are unset or the result set was explicitly freed, which will automatically
+   happen during request end the latest. The terminology "store result" is also used
+   for uffered mode, as the whole result set is stored at once.
   </para>
+
+  <note>
+   <par>
+    When using libmysql as library PHP's memory limit won't count the memory used
+    for result sets unless the data is fetched into PHP variables. With mysqlnd
+    the memory accounted for will include the full result set.
+   </par>
+  </note>
   
   <para>
-   Unbuffered MySQL queries execute the query and then return a <type>resource</type> that
-   points to the result set. This uses less memory, and allows MySQL to continue executing the
-   query as the result set is used. It also increases load on the server.
+   Unbuffered MySQL queries execute the query and then return a <type>resource</type> while
+   the data is still waiting on the MySQL server for being fetched. This uses less memory
+   on the PHP-side, but can increase the load on the server. Unless the full result set was
+   fetched from the server no further queries can be sent over the same connection. Unbuffered
+   queries can alsoe refered to as "fetch result", as the rows are fetched on demand.
+  </para>
+
+  <para>
+   Following these characteristics buffered queries should be used in cases where you expect
+   only a limited result set or need to know the amount of returned rows before reading all
+   rows. Unbuffered mode should be used when you expect larger results.
   </para>
   
   <!-- @TODO
     - Add list of issues people run into with unbuffered queries
     - Add list of specific use cases for when unbuffered queries are useful
     - Question: Unbuffered queries still require all rows to be returned or resource free before executing another? Applies to all extensions?
+    - Show "free_result" functions / unset usage with buffered queries 8double-check with Andrey on mysqlnd optimizations
    -->
   
   <para>
