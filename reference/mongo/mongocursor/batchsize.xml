@@ -4,54 +4,22 @@
 <refentry xml:id="mongocursor.batchsize" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoCursor::batchSize</refname>
-  <refpurpose>Sets the number of results returned per result set</refpurpose>
+  <refpurpose>Limits the number of elements returned in one batch.</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
    <modifier>public</modifier> <type>MongoCursor</type><methodname>MongoCursor::batchSize</methodname>
-   <methodparam><type>int</type><parameter>num</parameter></methodparam>
+   <methodparam><type>int</type><parameter>batchSize</parameter></methodparam>
   </methodsynopsis>
   <para>
-   This cannot override MongoDB's limit on the amount of data it will return to 
-   the client (i.e., if you set batch size to 1,000,000,000, MongoDB will still 
-   only return 4-16MB of results). 
+   A cursor typically fetches a batch of result objects and store them
+   locally. This method sets the batchSize value to configure the amount of
+   documents retrieved from the server in one data packet. However, it will
+   never return more documents than fit in the max batch size limit (usually
+   4MB).  
   </para>
-  <para>
-   To ensure consistent behavior, the rules of batchSize and limit behavior a 
-   little complex but work "as expected".  The rules are: hard limits override 
-   soft limits with preference given to <function>MongoCursor::limit</function>
-   over <function>MongoCursor::batchSize</function>.  After that, whichever is 
-   set and lower than the other will take precedence.  Some examples:
-  </para>
-  <programlisting role="php">
-<![CDATA[
-<?php
-
-// one batch, at most 20 items
-$cursor->limit(-20)->batchSize(10);
-
-// one batch, at most 10 items
-$cursor->limit(20)->batchSize(-10);
-
-// first batch: at most 10 items
-$cursor->limit(10);
-
-// first batch: at most 10 items
-$cursor->limit(10)->batchSize(20);
-
-// first batch: at most 10 items
-$cursor->limit(20)->batchSize(10);
-
-
-$cursor->limit(30)->batchSize(7)
-// if we iterate through 28 items, the next call to getNext() will contact the 
-// database and request a batch of 2 documents
-
-?>
-]]>
-  </programlisting>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -60,11 +28,54 @@ $cursor->limit(30)->batchSize(7)
    <variablelist>
     <varlistentry>
      <term>
-      <parameter>num</parameter>
+      <parameter>batchSize</parameter>
      </term>
      <listitem>
       <para>
-       The number of results to return in the next batch.
+       The number of results to return per batch. Each batch requires a
+       round-trip to the server. 
+      </para>
+      <para>
+       If <parameter>batchSize</parameter> is <emphasis>2 or
+       more</emphasis>, it represents the size of each batch of objects retrieved.
+       It can be adjusted to optimize performance and limit data transfer.
+      </para>
+      <para>
+       If <parameter>batchSize</parameter> is <literal>1</literal> or negative, it
+       will limit of number returned documents to the absolute value of batchSize,
+       and the cursor will be closed. For example if
+       batchSize is <literal>-10</literal>, then the server will return a maximum
+       of 10 documents and as many as can fit in 4MB, then close the cursor.
+      </para>
+      <warning>
+       <para>
+        A <parameter>batchSize</parameter> of <literal>1</literal> is special, and
+        means the same as <literal>-1</literal>, i.e. a value of
+        <literal>1</literal> makes the cursor only capable of returning
+        <emphasis>one</emphasis> document.
+       </para>
+      </warning>
+      <para>
+       Note that this feature is different from
+       <function>MongoCursor::limit</function> in that documents must fit within a
+       maximum size, and it removes the need to send a request to close the cursor
+       server-side. The batch size can be changed even after a cursor is iterated,
+       in which case the setting will apply on the next batch retrieval. 
+      </para>
+      <para>
+       This cannot override MongoDB's limit on the amount of data it will return to 
+       the client (i.e., if you set batch size to 1,000,000,000, MongoDB will still 
+       only return 4-16MB of results per batch). 
+      </para>
+      <para>
+       To ensure consistent behavior, the rules of
+       <function>MongoCursor::batchSize</function> and
+       <function>MongoCursor::limit</function> behave a 
+       little complex but work "as expected".  The rules are: hard limits override 
+       soft limits with preference given to <function>MongoCursor::limit</function>
+       over <function>MongoCursor::batchSize</function>.  After that, whichever is 
+       set and lower than the other will take precedence. See below.
+       section for some examples.
       </para>
      </listitem>
     </varlistentry>   
@@ -83,11 +94,54 @@ $cursor->limit(30)->batchSize(7)
   &reftitle.errors;
   <para>
    Throws <classname>MongoCursorException</classname> if this cursor has 
-   started iterating.  This will change in 1.0.12, as this should be able to be
-   called at any time.
+   started iterating.
   </para>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title><function>Mongo::batchSize</function> and combinations with
+   <function>MongoCursor::limit</function></title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// one batch, at most 10 items. The -10 makes the server to return 10 items,
+// and then remove the cursor.
+$cursor->limit(20)->batchSize(-10);
+
+// first batch: at most 10 items
+$cursor->limit(10);
+
+// first batch: at most 10 items
+$cursor->limit(10)->batchSize(20);
+
+// results are fetched in batches of 10 each, with a maximum of 20 items
+// returned (that means two batches of 10).
+$cursor->limit(20)->batchSize(10);
+
+// results are fetched in batches of 7 each, with a maximum of 30 items
+// returned (that means that the driver requests 4 batches of 7, and one batch
+// of 2).
+$cursor->limit(30)->batchSize(7)
+?>
+]]>
+   </programlisting>
+  </example>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   MongoDB core docs on <link xlink:href="&url.mongodb.dochub.limit;">limit</link>.
+  </para>
+  <para>
+   <simplelist>
+    <member><function>MongoCursor::limit</function></member>
+   </simplelist>
+  </para>
+ </refsect1>
 </refentry>
 <!-- Keep this comment at the end of the file
 Local variables:
