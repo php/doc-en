@@ -1558,6 +1558,113 @@ function pick_server($connected, $query, $masters, $slaves, $last_used_connectio
         </programlisting>
        </example>
       </para>
+      <para>
+       Please, see also <literal>server_charset</literal> to overcome potential
+       problems with string escaping and servers using different default
+       charsets.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.server-charset">
+     <term>
+      <parameter>server_charset</parameter>
+      <type>string</type>
+     </term>
+     <listitem>
+      <para>
+       The setting has been introduced in 1.4.0. It is recommended to set it
+       if using lazy connections.
+      </para>
+<para>
+       The <literal>server_charset</literal> setting serves two purposes. It
+       acts as a fallback charset to be used for string escaping done before
+       a connection has been established and it helps to avoid escaping pitfalls
+       in heteregenous environments which severs using different default charsets.
+      </para>
+      <para>
+       String escaping takes a connections charset into account. String escaping
+       is not possible before a connection has been opened and the connections
+       charset is known. The use of lazy connections delays the actual opening
+       of connections until a statement is send.
+      </para>
+      <para>
+       An application using lazy connections may attempt to escape a string
+       before sending a statement. In fact, this should be a common case as
+       the statement string may contain the string that is to be escaped.
+       However, due to the lazy connection feature no connection has been opened
+       yet and escaping fails. The plugin may report an error of the type
+       <literal>E_WARNING</literal> and a message like <literal>(mysqlnd_ms)
+       string escaping doesn't work without established connection.
+       Possible solution is to add server_charset to your configuration</literal>
+       to inform you of the pitfall.
+      </para>
+      <para>
+       Setting <literal>server_charset</literal> makes the plugin use
+       the given charset for string escaping done on lazy connection handles
+       before establishing a network connection to MySQL. Furthermore, the
+       plugin will enforce the use of the charset when the connection is
+       established.
+      </para>
+      <para>
+       Enforcing the use of the configured charset used for escaping is done
+       to prevent tapping into the pitfall of using a different charset for
+       escaping than used later for the connection. This has the additional
+       benefit of removing the need to align the charset configuration of all
+       servers used. No matter what the default charset on any of the servers is,
+       the plugin will set the configured one as a default.
+      </para>
+      <para>
+       The plugin does not stop the user from changing the charset at any time
+       using the <function>set_charset</function> call or correspoding SQL statements.
+       Please, note that the use of SQL is not recommended as it cannot be monitored
+       by the plugin. The user can, for example, change the charset on a
+       lazy connection handle after escaping a string and before the actual connection
+       is opened. The charset set by the user will be used for any subsequent escaping
+       before the connection is established. The connection will be established
+       using the configured charset, no matter what the server charset is or
+       what the user has set before. Once a connection has been opened,
+       <literal>set_charset</literal> is of no meaning anymore.
+      </para>
+      <para>
+       <example>
+        <title>String escaping on a lazy connection handle</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            }
+        },
+        "lazy_connections": 1,
+        "server_charset" : "utf8"
+    }
+}
+]]>
+        </programlisting>
+        <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+$mysqli->real_escape("this will be escaped using the server_charset setting - utf8");
+$mysqli->set_charset("latin1");
+$mysqli->real_escape("this will be escaped using latin1");
+/* server_charset implicitly set - utf8 connection */
+$mysqli->query("SELECT 'This connection will be set to server_charset upon establishing' AS _msg FROM DUAL");
+/* latin1 used from now on */
+$mysqli->set_charset("latin1");
+?>
+]]>
+         </programlisting>
+       </example>
+      </para>
      </listitem>
     </varlistentry>
     <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.master-on-write">
