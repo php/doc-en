@@ -1611,23 +1611,31 @@ php >
   </para>
 
   <para>
-    URI requests are served from the current working directory where
-    PHP was started, unless the -t option is used to specify an
-    explicit document root.
+    Requests are served sequentially.
   </para>
 
   <para>
-    If a URI request does not specify a file, then either index.php
-    or index.html in the given directory are returned.  If neither file
-    exists, then a 404 response code is returned.
+    URI requests are served from the current working directory where
+    PHP was started, unless the -t option is used to specify an
+    explicit document root.  If a URI request does not specify a file,
+    then either index.php or index.html in the given directory are
+    returned.  If neither file exists, then a 404 response code is
+    returned.
   </para>
 
   <para>
     If a PHP file is given on the command line when the web server is
-    started it is treated as a "router" script for the web server.
-    The script is run at the start of each HTTP request.  If this
-    script returns &false;, then the requested resource is returned
-    as-is.  Otherwise the script's output is returned to the browser.
+    started it is treated as a "router" script.  The script is run at
+    the start of each HTTP request.  If this script returns &false;,
+    then the requested resource is returned as-is.  Otherwise the
+    script's output is returned to the browser.
+  </para>
+
+  <para>
+    Standard MIME types are returned for files with extensions: .css,
+    .gif, .htm, .html, .jpe, .jpeg, .jpg, .js, .png, .svg, and .txt.
+    The .htm and .svg extensions are recognized from PHP 5.4.4
+    onwards.
   </para>
 
   <example>
@@ -1693,15 +1701,15 @@ Press Ctrl-C to quit
   <example>
    <title>Using a Router Script</title> 
 <para>
-  Requests for images will display them, but requests for HTML files will display "Welcome to PHP"
+  In this example, requests for images will display them, but requests for HTML files will display "Welcome to PHP":
 </para>
    <programlisting role="php">
 <![CDATA[
 <?php
 // router.php
-if (preg_match('/\.(?:png|jpg|jpeg|gif)$/', $_SERVER["REQUEST_URI"]))
+if (preg_match('/\.(?:png|jpg|jpeg|gif)$/', $_SERVER["REQUEST_URI"])) {
     return false;    // serve the requested resource as-is.
-else { 
+} else { 
     echo "<p>Welcome to PHP</p>";
 }
 ?>]]>
@@ -1711,20 +1719,66 @@ else {
 $ php -S localhost:8000 router.php
 ]]>
    </programlisting>
-   <para>
-     After several URI requests the terminal will show something similar to:
-   </para>
-   <screen>
+  </example>
+
+  <example>
+   <title>Checking for CLI Web Server Use</title> 
+<para>
+  To reuse a framework router script during development with the CLI web server and later also with a production web server:
+</para>
+   <programlisting role="php">
 <![CDATA[
-PHP 5.4.0 Development Server started at Thu Jul 21 10:53:19 2011
-Listening on localhost:8000
-Document root is /home/me/public_html
-Press Ctrl-C to quit.
-[Thu Jul 21 10:53:45 2011] ::1:55801 GET /mylogo.jpg - Request read
-[Thu Jul 21 10:53:52 2011] ::1:55803 GET /abc.html - Request read
-[Thu Jul 21 10:53:52 2011] ::1:55804 GET /favicon.ico - Request read
+<?php
+// router.php
+if (php_sapi_name() == 'cli-server') {
+    /* route static assets and return false */
+}
+/* go on with normal index.php operations */
+?>]]>
+   </programlisting>
+   <programlisting role="shell">
+<![CDATA[
+$ php -S localhost:8000 router.php
 ]]>
-   </screen>
+   </programlisting>
+  </example>
+
+  <example>
+   <title>Handling Unsupported File Types</title> 
+<para>
+  If you need to serve a static resource whose MIME type is not handled by the CLI web server, use:
+</para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+// router.php
+$path = pathinfo($_SERVER["SCRIPT_FILENAME"]);
+if ($path["extension"] == "ogg") {
+    header("Content-Type: video/ogg");
+    readfile($_SERVER["SCRIPT_FILENAME"]);
+}
+else {
+    return FALSE;
+}
+?>]]>
+   </programlisting>
+   <programlisting role="shell">
+<![CDATA[
+$ php -S localhost:8000 router.php
+]]>
+   </programlisting>
+  </example>
+
+  <example>
+   <title>Accessing the CLI Web Server From Remote Machines</title> 
+<para>
+  You can make the web server accessible on port 8000 to any interface with:
+</para>
+   <programlisting role="shell">
+<![CDATA[
+$ php -S 0.0.0.0:8000
+]]>
+   </programlisting>
   </example>
 
  </section>
