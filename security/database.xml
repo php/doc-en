@@ -120,19 +120,21 @@
 <?php
 
 // storing password hash
+// $random_chars retrieved e.g. using /dev/random
 $query  = sprintf("INSERT INTO users(name,pwd) VALUES('%s','%s');",
-            pg_escape_string($username), crypt($password, '$2a$07$usesomesillystringforsalt$'));
+            pg_escape_string($username),
+            pg_escape_string(crypt($password, '$2a$07$' . $random_chars . '$')));
 $result = pg_query($connection, $query);
 
 // querying if user submitted the right password
-$query = sprintf("SELECT 1 FROM users WHERE name='%s' AND pwd='%s';",
-            pg_escape_string($username), crypt($password, '$2a$07$usesomesillystringforsalt$'));
-$result = pg_query($connection, $query);
+$query = sprintf("SELECT pwd FROM users WHERE name='%s';",
+            pg_escape_string($username));
+$row = pg_fetch_assoc(pg_query($connection, $query));
 
-if (pg_num_rows($result) > 0) {
-    echo 'Welcome, $username!';
+if ($row && crypt($password, $row['pwd']) == $row['pwd']) {
+    echo 'Welcome, ' . htmlspecialchars($username) . '!';
 } else {
-    echo 'Authentication failed for $username.';
+    echo 'Authentication failed for ' . htmlspecialchars($username) . '.';
 }
 
 ?>
@@ -225,8 +227,7 @@ insert into pg_shadow(usename,usesysid,usesuper,usecatupd,passwd)
 <?php
 
 $query  = "SELECT id, name, inserted, size FROM products
-                  WHERE size = '$size'
-                  ORDER BY $order LIMIT $limit, $offset;";
+           WHERE size = '$size'";
 $result = odbc_exec($conn, $query);
 
 ?>
@@ -269,20 +270,20 @@ $query = "UPDATE usertable SET pwd='$pwd' WHERE uid='$uid';";
       </programlisting>
      </example>
      But a malicious user sumbits the value
-     <literal>' or uid like'%admin%'; --</literal> to <varname>$uid</varname> to
+     <literal>' or uid like'%admin%</literal> to <varname>$uid</varname> to
      change the admin's password, or simply sets <varname>$pwd</varname> to
-     <literal>"hehehe', admin='yes', trusted=100 "</literal> (with a trailing
-     space) to gain more privileges. Then, the query will be twisted:
+     <literal>hehehe', trusted=100, admin='yes</literal> to gain more 
+     privileges. Then, the query will be twisted:
      <informalexample>
       <programlisting role="php">
 <![CDATA[
 <?php
 
-// $uid == ' or uid like'%admin%'; --
-$query = "UPDATE usertable SET pwd='...' WHERE uid='' or uid like '%admin%'; --";
+// $uid: ' or uid like '%admin%
+$query = "UPDATE usertable SET pwd='...' WHERE uid='' or uid like '%admin%';";
 
-// $pwd == "hehehe', admin='yes', trusted=100 "
-$query = "UPDATE usertable SET pwd='hehehe', admin='yes', trusted=100 WHERE
+// $pwd: hehehe', trusted=100, admin='yes
+$query = "UPDATE usertable SET pwd='hehehe', trusted=100, admin='yes' WHERE
 ...;";
 
 ?>
@@ -315,8 +316,8 @@ $result = mssql_query($query);
 <?php
 
 $query  = "SELECT * FROM products
-                    WHERE id LIKE '%a%'
-                    exec master..xp_cmdshell 'net user test testpass /ADD'--";
+           WHERE id LIKE '%a%'
+           exec master..xp_cmdshell 'net user test testpass /ADD' --%'";
 $result = mssql_query($query);
 
 ?>
@@ -378,6 +379,14 @@ $result = mssql_query($query);
       </listitem>
       <listitem>
        <simpara>
+        Use prepared statements with bound variables. They are provided 
+        <link linkend="pdo.prepared-statements">by PDO</link>,
+        <link linkend="mysqli.quickstart.prepared-statements">by MySQLi</link>
+        and by other libraries.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
         Check if the given input has the expected data type. <acronym>PHP</acronym> has
         a wide range of input validating functions, from the simplest ones
         found in <link linkend="ref.var">Variable Functions</link> and
@@ -391,7 +400,7 @@ $result = mssql_query($query);
       <listitem>
        <para>
         If the application waits for numerical input, consider verifying data
-        with <function>is_numeric</function>, or silently change its type
+        with <function>ctype_digit</function>, or silently change its type
         using <function>settype</function>, or use its numeric representation
         by <function>sprintf</function>.
         <example>
@@ -415,16 +424,15 @@ $query = sprintf("SELECT id, name FROM products ORDER BY name LIMIT 20 OFFSET %d
       </listitem>
       <listitem>
        <simpara>
-        Quote each non numeric user supplied value that is passed to the
+        If the database layer doesn't support binding variables then
+        quote each non numeric user supplied value that is passed to the
         database with the database-specific string escape function (e.g.
         <function>mysql_real_escape_string</function>,
-        <function>sqlite_escape_string</function>, etc.). If a database-specific
-        string escape mechanism is not available, the
-        <function>addslashes</function> and <function>str_replace</function>
-        functions may be useful (depending on database type).
-        See <link linkend="security.database.storage">the first example</link>.
-        As the example shows, adding quotes to the static part of the query
-        is not enough, making this query easily crackable.
+        <function>sqlite_escape_string</function>, etc.).
+        Generic functions like <function>addslashes</function> are useful only
+        in a very specific environment (e.g. MySQL in a single-byte character
+        set with disabled <varname>NO_BACKSLASH_ESCAPES</varname>) so it is
+        better to avoid them.
        </simpara>
       </listitem>
       <listitem>
