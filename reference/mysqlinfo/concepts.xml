@@ -11,7 +11,7 @@
   
   <para>
    Queries are using the buffered mode by default. This means that query results are 
-   immediately transfered from the MySQL Server to PHP in is then kept  in the memory
+   immediately transferred from the MySQL Server to PHP in is then kept  in the memory
    of the PHP process. This allows additional operations like counting the
    number of rows, and moving (seeking) the current result pointer. It also allows
    issuing further queries on the same connection while working on the result set.
@@ -19,7 +19,7 @@
    quite a lot memory. The memory will be kept occupied till all references to the
    result set are unset or the result set was explicitly freed, which will automatically
    happen during request end the latest. The terminology "store result" is also used
-   for uffered mode, as the whole result set is stored at once.
+   for buffered mode, as the whole result set is stored at once.
   </para>
 
   <note>
@@ -112,6 +112,113 @@ if ($uresult) {
 ]]>
    </programlisting>
   </example>
+ </section>
+
+ <section xml:id="mysqlinfo.concepts.charset">
+  <title>Character sets</title>
+
+  <para>
+   Ideally a proper character set will be set at the server level, and doing this is described
+   within the <link xlink:href="&url.mysql.charsets.config;">Character Set Configuration</link>
+   section of the MySQL Server manual. Alternatively, each MySQL API offers a method to set 
+   the character set at runtime.
+  </para>
+
+  <caution>
+   <title>The character set and character escaping</title>
+   <para>
+    The character set should be understood and defined, as it has an affect on every
+    action, and includes security implications. For example, the escaping mechanism
+    (e.g., <function>mysqli_real_escape_string</function> for mysqli, <function>mysql_real_escape_string</function>
+    for mysql, and <methodname>PDO::quote</methodname> for PDO_MySQL) will adhere to
+    this setting. It is important to realize that these functions will not use the character
+    set that is defined with a query, so for example the following will not have an effect
+    on them:
+   </para>
+  </caution>
+
+  <example>
+   <title>Problems with setting the character set with SQL</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$mysqli = new mysqli("localhost", "my_user", "my_password", "world");
+
+// Will not affect $mysqli->real_escape_string();
+$mysqli->query("SET NAMES utf8");
+
+// Will not affect $mysqli->real_escape_string();
+$mysqli->query("SET CHARACTER SET utf8");
+
+// But, this will affect $mysqli->real_escape_string();
+$mysqli->set_charset('utf8')) {
+
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <para>
+   Below are examples that demonstrate how to properly alter the character set at runtime
+   using each each API.
+  </para>
+
+  <example>
+   <title>Setting the character set example: mysqli</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$mysqli = new mysqli("localhost", "my_user", "my_password", "world");
+
+if (!$mysqli->set_charset('utf8')) {
+    printf("Error loading character set utf8: %s\n", $mysqli->error);
+} else {
+    printf("Current character set: %s\n", $mysqli->character_set_name());
+}
+
+print_r( $mysqli->get_charset() );
+
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <example>
+   <title>Setting the character set example: <link linkend="ref.pdo-mysql.connection">pdo_mysql</link></title>
+   <para>
+    Note: This only works as of PHP 5.3.6.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$pdo = new PDO("mysql:host=localhost;dbname=world;charset=utf8", 'my_user', 'my_pass');
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <example>
+   <title>Setting the character set example: mysql</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$conn = mysql_connect("localhost", "my_user", "my_pass");
+$db   = mysql_select_db("world");
+
+if (!mysql_set_charset('utf8', $conn)) {
+    echo "Error: Unable to set the character set.\n";
+    exit;
+}
+
+echo 'Your current character set is: ' .  mysql_client_encoding($conn);
+
+?>
+]]>
+   </programlisting>
+  </example>  
  </section>
 
 </chapter>
