@@ -1,31 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- $Revision$ -->
-<refentry xml:id="mongocursor.tailable" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- $Revision: 317663 $ -->
+<refentry xml:id="mongocursor.awaitdata" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
-  <refname>MongoCursor::tailable</refname>
-  <refpurpose>Sets whether this cursor will be left open after fetching the last results</refpurpose>
+  <refname>MongoCursor::awaitData</refname>
+  <refpurpose>Sets whether this cursor will wait for a while for a tailable cursor to return more data</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>MongoCursor</type><methodname>MongoCursor::tailable</methodname>
-   <methodparam choice="opt"><type>bool</type><parameter>tail</parameter><initializer>true</initializer></methodparam>
+   <modifier>public</modifier> <type>MongoCursor</type><methodname>MongoCursor::awaitData</methodname>
+   <methodparam choice="opt"><type>bool</type><parameter>wait</parameter><initializer>true</initializer></methodparam>
   </methodsynopsis>
   <para>
-   Mongo has a feature known as tailable cursors which are similar to the Unix 
-   "tail -f" command.
-  </para>
-  <para>
-   Tailable means cursor is not closed when the last data is retrieved.  Rather,
-   the cursor marks the final object's position.  you can resume using the 
-   cursor later, from where it was located, if more data were received.
-  </para>
-  <para>
-   Like any "latent cursor", the cursor may become invalid at some point -- for 
-   example if that final object it references were deleted.  Thus, you should be
-   prepared to requery if the cursor is <function>MongoCursor::dead</function>.
+   This method is to be used with tailable cursors. If we are at the end of
+   the data, block for a while rather than returning no data. After a timeout
+   period, we do return as normal.
   </para>
  </refsect1>
 
@@ -35,11 +26,11 @@
    <variablelist>
     <varlistentry>
      <term>
-      <parameter>tail</parameter>
+      <parameter>wait</parameter>
      </term>
      <listitem>
       <para>
-       If the cursor should be tailable.
+       If the cursor should wait for more data to become available.
       </para>
      </listitem>
     </varlistentry>   
@@ -64,29 +55,32 @@
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><function>MongoCursor::tailable</function> example</title>
+   <title><function>MongoCursor::awaitData</function> example</title>
+   <para>
+    In this example we tail the "oplog" and instead of sleeping during every
+    iteration, we set the <function>MongoCursor::awaitData</function> option.
+    <function>MongoCursor::hasNext</function> will now block until there is
+    more data available.
+   </para>
    <programlisting role="php">
 <![CDATA[
 <?php
+$m = new Mongo( 'mongodb://localhost:13000', array( 'replSet' => 'seta' ) );
+$c = $m->local->selectCollection( 'oplog.rs' );
+$cursor = $c->find( array( 'ns' => 'demo.article', 'op' => 'i' ) );
+$cursor->tailable( true );
+$cursor->awaitData( true );
 
-$cursor = $collection->find()->tailable();
-
-$results = array();
-
-while (1) {
+while (true) {
     if (!$cursor->hasNext()) {
         // we've read all the results, exit
         if ($cursor->dead()) {
             break;
         }
-        // read all results so far, wait for more
-        sleep(10);
-    }
-    else {
-        $results[] = $cursor->getNext();
+    } else {
+        var_dump( $cursor->getNext() );
     }
 }
-
 ?>
 ]]>
    </programlisting>
@@ -100,7 +94,7 @@ while (1) {
   </para>
   <para>
    <simplelist>
-    <member><function>MongoCursor::awaitData</function></member>
+    <member><function>MongoCursor::tailable</function></member>
    </simplelist>
   </para>
  </refsect1>
