@@ -610,16 +610,19 @@ $mysqli->close();
   <title>Transactions</title>
   <para>
    The current version of the plugin is not transaction safe by default,
-   because it is not transaction aware. SQL transactions are
-   units of work to be run on a single server.
-   The plugin does not know when the unit of work starts and when it ends.
-   Therefore, the plugin may decide to switch connections in the middle
-   of a transaction.
+   because it is not aware of running transactions in all cases. SQL transactions are
+   units of work to be run on a single server.  The plugin does not always know
+   when the unit of work starts and when it ends. Therefore, the plugin may
+   decide to switch connections in the middle of a transaction.
+  </para>
+  <para>
+   No kind of MySQL load balancer can detect transaction boundaries without any
+   kind of hint from the application.
   </para>
   <para>
    You can either use SQL hints to work around this limitation. Alternatively,
    you can activate transaction API call monitoring. In the latter case you
-   must use API calls only to control transactins, see below.
+   must use API calls only to control transactions, see below.
   </para>
   <para>
    <example>
@@ -698,7 +701,7 @@ $mysqli->close();
    plugin to monitor the status of the <literal>autocommit</literal> mode, if
    the mode is set by API calls instead of using SQL statements such as
    <literal>SET AUTOCOMMIT=0</literal>. This makes it possible for the plugin to
-   become transaction aware.
+   become transaction aware. In this case, you do not need to use SQL hints.
   </para>
   <para>
     If using PHP 5.4.0 or newer, API calls that enable <literal>autocommit</literal> mode,
@@ -1075,12 +1078,6 @@ PHP Warning:  mysqli::query(): (mysqlnd_ms) No connection selected by the last f
     </screen>
    </example>
   </para>
-  <note>
-   <title>Fail over logic is work in progress</title>
-   <para>
-    The details of the fail over logic may change in future versions.
-   </para>
-  </note>
  </section>
  <section xml:id="mysqlnd-ms.quickstart.gtid">
   <title>Global transaction IDs</title>
@@ -1698,6 +1695,92 @@ var_dump($res->fetch_assoc());
    The quality of service can be changed at any time to avoid further cache usage.
    If needed, you can switch to read your writes (session consistency). In that case,
    the cache will not be used and fresh data is read.
+  </para>
+ </section>
+ <section xml:id="mysqlnd-ms.quickstart.failover">
+  <title>Failover</title>
+  <para>
+   By default, the plugin does not attempt to fail over if connecting to a host
+   fails. This prevents pitfalls related to
+   <link linkend="mysqlnd-ms.quickstart.connectionpooling">connection state</link>.
+   It is recommended to manually handle connection errors in a way similar to a failed
+   transaction. You should catch the error, rebuild the connection state and rerun your
+   query as shown below.
+  </para>
+  <para>
+   If connection state is no issue to you, you can alternatively enable automatic
+   and silent failover. Depending on the configuration, the automatic and silent failover
+   will either attempt to fail over to the master before issuing and error or, try to
+   connect to other slaves, given the query allowes for it, before attempting to connect
+   to a master.
+  </para>
+  <para>
+   <example>
+    <title>Manual failover, automatic optional</title>
+    <programlisting role="ini">
+<![CDATA[
+  {
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "simulate_slave_failure",
+                "port": "0"
+            },
+            "slave_1": {
+                "host": "127.0.0.1",
+                "port": 3311
+            }
+        },
+       "filters": { "roundrobin": [] }
+    }
+ }
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Manual failover</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+$sql = "SELECT 1 FROM DUAL";
+
+/* error handling as it should be done regardless of the plugin */
+if (!($res = $link->query($sql))) {
+  /* plugin specific: check for connection error */
+  switch ($link->errno) {
+    case 2002:
+    case 2003:
+    case 2005:
+      printf("Connection error - trying next slave!\n");
+      /* load balancer will pick next slave */
+      $res = $link->query($sql);
+      break;
+    default:
+      /* no connecion error, failover is unlikely to help */
+      die(sprintf("SQL error: [%d] %s", $link->errno, $link->error));
+      break;
+  }
+}
+if ($res) {
+  var_dump($res->fetch_assoc());
+}
+?>
+]]>
+    </programlisting>
+   </example>
   </para>
  </section>
 </chapter>
