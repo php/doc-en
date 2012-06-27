@@ -1451,12 +1451,14 @@ function pick_server($connected, $query, $masters, $slaves, $last_used_connectio
     <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.failover">
      <term>
       <parameter>failover</parameter>
-      <type>string</type>
+      Upto and including 1.3.x: <type>string</type>.
+      Since 1.4.0: <type>object</type>.
      </term>
      <listitem>
       <para>
        Failover policy. Supported policies:
-       <literal>disabled</literal> (default), <literal>master</literal>.
+       <literal>disabled</literal> (default), <literal>master</literal>,
+       <literal>loop_before_master</literal> (Since 1.4.0).
       </para>
       <para>
        If no failover policy is set, the plugin will not do any
@@ -1467,6 +1469,14 @@ function pick_server($connected, $query, $masters, $slaves, $last_used_connectio
        last statement to trigger the selection of another server.
       </para>
       <para>
+       Please note, the automatic failover logic is applied when opening
+       connections only. Once a connection has been opened no automatic attempts
+       are made to reopen it in case of an error. If, for example, the server
+       a connection is connected to is shut down and the  user attempts to
+       run a statement on the connection, no automatic failover
+       will be tried. Instead, an error will be reported.
+      </para>
+      <para>
        If using <literal>failover=master</literal> the plugin will implicitly
        failover to a master, if available. Please check the
        concepts documentation to learn about potential
@@ -1474,7 +1484,7 @@ function pick_server($connected, $query, $masters, $slaves, $last_used_connectio
       </para>
       <para>
        <example>
-        <title>Optional master failover when failing to connect to slave</title>
+        <title>Optional master failover when failing to connect to slave (PECL/mysqlnd_ms &lt; 1.4.0)</title>
         <programlisting role="ini">
 <![CDATA[
 {
@@ -1498,17 +1508,132 @@ function pick_server($connected, $query, $masters, $slaves, $last_used_connectio
        </example>
       </para>
       <para>
-       Please note, the automatic failover logic is applied when opening
-       connections only. Once a connection has been opened no automatic attempts
-       are made to reopen it in case of an error. If, for example, the server
-       a connection is connected to is shut down and the  user attempts to
-       run a statement on the connection, no automatic failover
-       will be tried. Instead, an error will be reported.
+       Since PECL/mysqlnd_ms 1.4.0 the failover configuration keyword refers to an
+       object.
       </para>
       <para>
+       <example>
+        <title>New syntax since 1.4.0</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            }
+        },
+        "failover": {"strategy": "master" }
+    }
+}
+]]>
+        </programlisting>
+       </example>
+      </para>
+      <informaltable>
+       <tgroup cols="3">
+        <colspec colwidth="1*"/>
+        <colspec colwidth="7*"/>
+        <colspec colwidth="2*"/>
+        <thead>
+         <row>
+          <entry>Keyword</entry>
+          <entry>Description</entry>
+          <entry>Version</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry>
+           <literal>strategy</literal>
+          </entry>
+          <entry>
+           <para>
+            Failover policy. Possible values:
+            <literal>disabled</literal> (default), <literal>master</literal>,
+            <literal>loop_before_master</literal>
+           </para>
+           <para>
+            A value of <literal>disabled</literal> disables automatic failover.
+           </para>
+           <para>
+            Setting <literal>master</literal> instructs the plugin to try
+            to connect to a master in case of a slave connection error. If the
+            master connection attempt fails, the plugin exists the failover
+            loop and returns an error to the user.
+           </para>
+           <para>
+             If using <literal>loop_before_master</literal> and a slave request
+             is made, the plugin tries to connect to other slaves before failing
+             over to a master. If multiple master are given and multi master is enabled,
+             the plugin also loops over the list of masters and attempts to connect
+             before returning an error to the user.
+           </para>
+          </entry>
+          <entry>Since 1.4.0.</entry>
+         </row>
+         <row>
+          <entry>
+           <literal>remember_failed</literal>
+          </entry>
+          <entry>
+           <para>
+            Remember failures for the duration of a web request. Default:
+             <literal>false</literal>.
+            </para>
+            <para>
+             If set to <literal>true</literal> the plugin will remember failed
+             hosts and skip the hosts in all future load balancing made for
+             the duration of the current web request.
+            </para>
+          </entry>
+          <entry>
+           Since 1.4.0. Experimental feature. The feaure is only available together
+           with the <literal>random</literal> and <literal>roundrobin</literal>
+           load balancing filter. The behaviour and syntax is likely to change
+           in the future.
+          </entry>
+         </row>
+         <row>
+           <entry>
+            <literal>max_retries</literal>
+           </entry>
+           <entry>
+            <para>
+             Maximum number of connection attempts before skipping host.
+             Default: <literal>0</literal> (no limit).
+            </para>
+            <para>
+             The setting is used to prevent hosts from being dropped of the
+             host list upon the first failure. If set to <literal>n > 0</literal>,
+             the plugin will keep the node in the node list even after a failed
+             connection attempt. The node will not be removed immediately from the slave respectively
+             master lists after the first connection failure but instead be tried to
+             connect to up to <literal>n</literal> times in future load balancing rounds
+             before being removed.
+            </para>
+          </entry>
+          <entry>
+           Since 1.4.0. Experimental feature. The feaure is only available together
+           with the <literal>random</literal> and <literal>roundrobin</literal>
+           load balancing filter. The behaviour and syntax is likely to change
+           in the future.
+          </entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </informaltable>
+	  <para>
        Setting <literal>failover</literal> to any other value but
-       <literal>disabled</literal> or <literal>master</literal> will not
-       emit any warning or error.
+       <literal>disabled</literal>, <literal>master</literal> or
+       <literal>loop_before_master</literal>
+       will not emit any warning or error.
       </para>
      </listitem>
     </varlistentry>
@@ -1583,7 +1708,7 @@ function pick_server($connected, $query, $masters, $slaves, $last_used_connectio
        The setting has been introduced in 1.4.0. It is recommended to set it
        if using lazy connections.
       </para>
-<para>
+      <para>
        The <literal>server_charset</literal> setting serves two purposes. It
        acts as a fallback charset to be used for string escaping done before
        a connection has been established and it helps to avoid escaping pitfalls
