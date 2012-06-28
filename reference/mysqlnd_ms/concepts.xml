@@ -392,30 +392,34 @@
    unit of work consists of one or more SQL statements.
   </para>
   <para>
-    By default the plugin is not aware of SQL transactions. The plugin may
-    switch connections for load balancing at any point in time. Connection
-    switches may happen in the middle of a transaction. This is against the
-    nature of an SQL transaction. By default, the plugin is not transaction safe.
+   By default the plugin is not aware of SQL transactions. The plugin may
+   switch connections for load balancing at any point in time. Connection
+   switches may happen in the middle of a transaction. This is against the
+   nature of an SQL transaction. By default, the plugin is not transaction safe.
   </para>
   <para>
-    At the time of writing, applications using SQL transactions together with
-    the plugin must use <link linkend="mysqlnd-ms.quickstart.sqlhints">SQL hints</link>
-    to disable connection switches in the middle of a SQL transaction. See also
-    the <link linkend="mysqlnd-ms.quickstart">examples section</link>.
+   Any kind of MySQL load balancer must be hinted about the begin and end of a
+   transaction. Hinting can either be done implicitly by monitoring API calls
+   or using SQL hints. Both options are supported by the plugin, depending on
+   your PHP version. API monitoring requires PHP 5.4.0 or newer. The plugin,
+   like any other MySQL load balancer, cannot detect transaction boundaries based
+   on the MySQL Client Server Protocol. Thus, entirely transparent transaction
+   aware load balancing is not possible. The least intrusive option is API
+   monitoring, which requires little to no application changes, depending
+   on your application.
   </para>
-  <!-- TODO Refactor PHP 5.4.0 references -->
-  <note>
-   <title>Added features as of PHP 5.4.0</title>
-   <para>
-    The <link linkend="book.mysqlnd">mysqlnd</link> library allows this plugin to
-    subclass the library C API call <literal>set_autocommit()</literal>, to
-    detect the status of <literal>autocommit</literal> mode.
-   </para>
-   <para>
-    Added support for
-    <link linkend="ini.mysqlnd-ms-plugin-config-v2.trx-stickiness">trx_stickiness=master</link>
-   </para>
-  </note>
+  <para>
+   Please, find examples of using SQL hints or the API monitoring in the
+   <link linkend="mysqlnd-ms.quickstart">examples section</link>. The
+   details behind the API monitoring, which makes the plugin transaction
+   aware, are described below.
+  </para>
+  <para>
+   Beginning with PHP 5.4.0, the <link linkend="book.mysqlnd">mysqlnd</link>
+   library allows this plugin to subclass the library C API call
+   <literal>set_autocommit()</literal>, to detect the status of
+   <literal>autocommit</literal> mode.
+  </para>
   <para>
    The PHP MySQL extensions either issue a query (such as <literal>SET AUTOCOMMIT=0|1</literal>),
    or use the mysqlnd library call <literal>set_autcommit()</literal> to control
@@ -433,6 +437,12 @@
    can be used to make the plugin transactional aware. In this mode, the plugin stops load
    balancing if autocommit becomes disabled, and directs all statements to the master until
    autocommit gets enabled.
+  </para>
+  <para>
+   An application that does not want to set SQL hints for transactions but wants
+   to use the transparent API monitoring to avoid application changes must make
+   sure that the autocommit settings is changed exclusively through the listed
+   API calls.
   </para>
  </section>
 
@@ -680,16 +690,27 @@ version = 5.6.2-m5-log
    configuration directive.
   </para>
   <para>
+   Automatic and silent failover can be enabled through the
+   <link linkend="ini.mysqlnd-ms-plugin-config-v2.failover">failover</link>
+   configuration directive. Automatic failover can either be configured to
+   try exactly one master after a slave failure or, alternatively, loop
+   over slaves and masters before returning an error to the user. The number
+   of connection attempts can be limited and failed hosts can be excluded
+   from future load balancing attempts. Limiting the number of retries and
+   remembering failed hosts are considered experimental features, albeit being
+   resonable stable. Syntax and semantics may change in future versions.
+  </para>
+  <para>
    A basic manual failover example is provided within the
    <link linkend="mysqlnd-ms.errorhandling">error handling</link> section.
   </para>
   <para>
    Please note, if using a primary copy cluster, such as MySQL Replication, it is
    difficult to do connection failover in case of a master failure.
-   At any there there is only one master in the cluster for a given dataset.
+   At any time there is only one master in the cluster for a given dataset.
    The master is a single point of failure. If the master fails, clients have no
    target to fail over write requests. In case of a master outage the database
-   administrator must take care of the situation and eventually update the client
+   administrator must take care of the situation and update the client
    configurations, if need be.
   </para>
  </section>
@@ -747,6 +768,14 @@ version = 5.6.2-m5-log
    <link linkend="ini.mysqlnd-ms-plugin-config-v2.filter-roundrobin">roundrobin</link>,
    and <link linkend="ini.mysqlnd-ms-plugin-config-v2.filter-user">user</link>
    <link linkend="mysqlnd-ms.filter">filters</link>.
+  </para>
+  <para>
+   Servers can be prioritized assigning a weight. A server that has been given
+   a weight of two will get twice as many requests as a server that has been
+   given the default weight of one. Prioritization can be handy in heterogenous
+   environments. For example, you may want to assign more requests to
+   a powerful machine than to a less powerful. Or, you may have configured
+   servers that are close or far from the client, thus expose different latencies.
   </para>
  </section>
 
@@ -1159,6 +1188,24 @@ version = 5.6.2-m5-log
      <simpara>strong consistency (no options allowed): all masters</simpara>
     </listitem>
    </itemizedlist>
+  </para>
+  <para>
+    <emphasis role="bold">Throttling</emphasis>
+  </para>
+  <para>
+   The quality of service filter can be combied with
+   <link linkend="mysqlnd-ms.gtid">Global transaction IDs</link> to
+   throttle clients. Throttling does reduce the write load on the master
+   by slowing down clients. If session consistency is requested and
+   global transactions idenentifier are used to check the status of
+   a slave, the check can be done in two ways. By default a slave
+   is checked and skipped immediately if it does not match
+   the criteria for session consistency. Alternatively, the
+   plugin can wait for a slave to catch up to the master until
+   session consistency is possible. To enable the throttling,
+   you have to set
+   <link linkend="ini.mysqlnd-ms-plugin-config-v2.gtid">wait_for_gtid_timeout</link>
+   configuration option.
   </para>
  </section>
 
