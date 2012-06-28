@@ -845,16 +845,146 @@ PHP Warning:  mysqli::query(): Couldn't fetch mysqli in filter_warning.php on li
        </example>
       </para>
       <para>
-       Unknown arguments are ignored. No warning or error is given.
+       Both the <literal>random</literal> and <literal>roundrobin</literal>
+       filters support setting a priority, a weight for a server, since
+       PECL/mysqlnd_ms 1.4.0. If the <literal>weight</literal> argument is
+       passed to the filter, it must assign a weight for all servers. Servers
+       must be given an alias name in the <literal>slave</literal> respectively
+       <literal>master</literal> server lists. The alias must be used
+       to reference servers for assigning a priority with <literal>weight</literal>.
       </para>
-
       <para>
-        Expects one or more servers as input. Outputs one server.
+       <example>
+        <title>Referencing error</title>
+        <screen>
+<![CDATA[
+[E_RECOVERABLE_ERROR] mysqli_real_connect(): (mysqlnd_ms) Unknown server 'slave3' in 'random' filter configuration. Stopping in %s on line %d
+]]>
+        </screen>
+       </example>
+      </para>
+      <para>
+       Using a wrong alias name with <literal>weight</literal> may result in
+       an error similar to the shown above.
+      </para>
+      <para>
+       If <literal>weight</literal> is omitted, the default weight of
+       all servers is one.
+      </para>
+      <para>
+       <example>
+        <title>Assigning a <literal>weight</literal> for load balancing</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+   "myapp": {
+       "master": {
+           "master1":{
+               "host":"localhost",
+               "socket":"\/var\/run\/mysql\/mysql.sock"
+           }
+       },
+       "slave": {
+           "slave1": {
+               "host":"192.168.2.28",
+               "port":3306
+           },
+           "slave2": {
+               "host":"192.168.2.29",
+               "port":3306
+           },
+           "slave3": {
+               "host":"192.0.43.10",
+               "port":3306
+           },
+       },
+       "filters": {
+           "random": {
+               "weights": {
+                   "slave1":8,
+                   "slave2":4,
+                   "slave3":1,
+                   "master1":1
+               }
+           }
+       }
+   }
+}
+]]>
+        </programlisting>
+       </example>
+      </para>
+      <para>
+       At the average a server assigned a weight of two will be selected twice
+       as often as a server assigned a weight of one. Different weights can be
+       assigned to reflect differently sized machines, to prefer co-located slaves
+       which have a low network latency or, to configure a standby failover server.
+       In the latter case, you may want to assign the standby server a very low
+       weight in relation to the other servers. For example, given the
+       configuration above <literal>slave3</literal> will get only some eight
+       percent of the requests in the average. As long as <literal>slave1</literal>
+       and <literal>slave2</literal> are running, it will be used sparsely,
+       similar to a standby failover server. Upon failure of <literal>slave1</literal>
+       and <literal>slave2</literal>, the usage of <literal>slave3</literal>
+       increases. Please, check the notes on failover before using
+       <literal>weight</literal> this way.
+      </para>
+      <para>
+       Valid weight values range from 1 to 65535.
+      </para>
+      <para>
+       Unknown arguments are ignored by the filter. No warning or error is given.
+      </para>
+      <para>
+        The filter expects one or more servers as input. Outputs one server.
         A filter sequence such as
         <literal>random</literal>, <literal>roundrobin</literal> may
         cause a warning and an error message to be set on the connection
         handle when executing a statement.
       </para>
+      <para>
+       List of filter arguments.
+      </para>
+      <informaltable>
+       <tgroup cols="3">
+        <colspec colwidth="1*"/>
+        <colspec colwidth="7*"/>
+        <colspec colwidth="2*"/>
+        <thead>
+         <row>
+          <entry>Keyword</entry>
+          <entry>Description</entry>
+          <entry>Version</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry>
+            <literal>sticky</literal>
+          </entry>
+          <entry>
+           <para>
+            Enables or disabled random once load
+            balancing policy. See above.
+           </para>
+          </entry>
+          <entry>Since 1.2.0.</entry>
+         </row>
+         <row>
+          <entry>
+            <literal>weight</literal>
+          </entry>
+          <entry>
+           <para>
+            Assigns a load balancing weight/priority to
+            a server. Please, see above for a description.
+           </para>
+          </entry>
+          <entry>Since 1.4.0.</entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </informaltable>
      </listitem>
     </varlistentry>
     <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.filter-roundrobin">
@@ -904,6 +1034,38 @@ PHP Warning:  mysqli::query(): Couldn't fetch mysqli in filter_warning.php on li
         cause a warning and an error message to be set on the connection
         handle when executing a statement.
       </para>
+      <para>
+       List of filter arguments.
+      </para>
+      <informaltable>
+       <tgroup cols="3">
+        <colspec colwidth="1*"/>
+        <colspec colwidth="7*"/>
+        <colspec colwidth="2*"/>
+        <thead>
+         <row>
+          <entry>Keyword</entry>
+          <entry>Description</entry>
+          <entry>Version</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry>
+            <literal>weight</literal>
+          </entry>
+          <entry>
+           <para>
+            Assigns a load balancing weight/priority to
+            a server. Please, find a description
+            <link linkend="ini.mysqlnd-ms-plugin-config-v2.filter-random">above</link>.
+           </para>
+          </entry>
+          <entry>Since 1.4.0.</entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </informaltable>
      </listitem>
     </varlistentry>
     <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.filter-user">
