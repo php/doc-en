@@ -11,6 +11,7 @@
   <methodsynopsis>
    <type>bool</type><methodname>assert</methodname>
    <methodparam><type>mixed</type><parameter>assertion</parameter></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>description</parameter></methodparam>
   </methodsynopsis>
   <para>
    <function>assert</function> will check the given
@@ -50,8 +51,8 @@
   </para>
   <para>
    The <function>assert_options</function> function and/or
-   ASSERT_CALLBACK configuration directive allow a callback function
-   to be set to handle failed assertions.
+   <constant>ASSERT_CALLBACK</constant> configuration directive allow a
+   callback function to be set to handle failed assertions.
   </para>
   <para>
    <function>assert</function> callbacks are particularly useful for
@@ -66,8 +67,11 @@
    argument will contain the file the assertion failed in. The
    second argument will contain the line the assertion failed on and
    the third argument will contain the expression that failed (if
-   any - literal values such as 1 or "two" will not be passed via
-   this argument)
+   any &#x2014; literal values such as 1 or "two" will not be passed via
+   this argument). Users of PHP 5.4.8 and later may also provide a fourth
+   optional argument, which will contain the
+   <parameter>description</parameter> given to <function>assert</function>, if
+   it was set.
   </para>
  </refsect1>
 
@@ -83,6 +87,15 @@
       </para>
      </listitem>
     </varlistentry>
+    <varlistentry>
+     <term><parameter>description</parameter></term>
+     <listitem>
+      <para>
+       An optional description that will be included in the failure message if
+       the <parameter>assertion</parameter> fails.
+      </para>
+     </listitem>
+    </varlistentry>
    </variablelist>
   </para>
  </refsect1>
@@ -91,6 +104,33 @@
   &reftitle.returnvalues;
   <para>
    &false; if the assertion is false, &true; otherwise.
+  </para>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>5.4.8</entry>
+       <entry>
+        The <parameter>description</parameter> parameter was added. The
+        <parameter>description</parameter> is also now provided to a callback
+        function in <constant>ASSERT_CALLBACK</constant> mode as the fourth
+        argument.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
   </para>
  </refsect1>
 
@@ -124,6 +164,45 @@ assert('mysql_query("")');
 ?>
 ]]>
     </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Using a custom handler to print a description</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// Active assert and make it quiet
+assert_options(ASSERT_ACTIVE, 1);
+assert_options(ASSERT_WARNING, 0);
+assert_options(ASSERT_QUIET_EVAL, 1);
+
+// Create a handler function
+function my_assert_handler($file, $line, $code, $desc = null)
+{
+    echo "Assertion failed at $file:$line: $code";
+    if ($desc) {
+        echo ": $desc";
+    }
+    echo "\n";
+}
+
+// Set up the callback
+assert_options(ASSERT_CALLBACK, 'my_assert_handler');
+
+// Make an assertion that should fail
+assert('2 < 1');
+assert('2 < 1', 'Two is less than one');
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Assertion failed at test.php:21: 2 < 1
+Assertion failed at test.php:22: 2 < 1: Two is less than one
+]]>
+    </screen>
    </example>
   </para>
  </refsect1>
