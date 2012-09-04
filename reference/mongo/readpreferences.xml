@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 317663 $ -->
+
+<section xml:id="mongo.readpreferences" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Read Preferences</title>
+ <para>
+  MongoDB 2.2 and version 1.3.0 of the driver add support for 
+  <link xlink:href="&url.mongodb.docs.readpreferences;">read preferences</link>,
+  which allow control over how queries are directed to mongod instances. Read
+  preferences may be specified on either a per-connection, per-database,
+  per-collection, or per-cursor basis. Preferences defined at a higher level
+  will be inherited by default (e.g. <classname>MongoCollection</classname> will
+  inherit read perferences defined on the corresponding
+  <classname>MongoDB</classname> instance).
+ </para>
+ <para>
+  Read preferences are specified with a combination of modes and tag sets. Modes
+  determine how mongod instances are prioritized, while
+  <link xlink:href="&url.mongodb.docs.tagsets;">tag sets</link> specify criteria
+  for eligible mongod instances.
+ </para>
+ <section>
+  <title>Read Preference Modes</title>
+  <warning>
+   <para>
+    All read preference modes except <literal>Mongo::RP_PRIMARY</literal> may
+    return stale data as secondaries replicate operations from the primary with
+    some delay. Ensure that your application can tolerate stale data if you
+    choose to use a mode other than <literal>Mongo::RP_PRIMARY</literal>.
+   </para>
+  </warning>
+  <itemizedlist>
+   <listitem>
+    <para>
+     <literal>Mongo::RP_PRIMARY</literal>
+    </para>
+    <para>
+     All read operations use only the current replica set primary. This is the
+     default. If the primary is unavailable, read operations will produce an
+     exception.
+    </para>
+    <para>
+     This mode is incompatible with use of tag sets. Specifying a tag set with
+     <literal>Mongo::RP_PRIMARY</literal> will result in an error.
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     <literal>Mongo::RP_PRIMARY_PREFERRED</literal>
+    </para>
+    <para>
+     In most situations, operations read from the primary member of the set.
+     However, if the primary is unavailable, as is the case during failover
+     situations, operations read from secondary members.
+    </para>
+    <para>
+     When the read preference includes a tag set, the client reads first from
+     the primary, if available, and then from secondaries that match the
+     specified tags. If no secondaries have matching tags, the read operation
+     will produce an exception.
+    </para>
+    <warning>
+     <para>
+      Version 2.2 of mongos added full support for read preferences. When
+      connecting to older mongos instances,
+      <literal>Mongo::RP_PRIMARY_PREFERRED</literal> will send queries to
+      secondaries.
+     </para>
+    </warning>
+   </listitem>
+   <listitem>
+    <para>
+     <literal>Mongo::RP_SECONDARY</literal>
+    </para>
+    <para>
+     Operations read only from the secondary members of the set. If no
+     secondaries are available, read operations will produce an exception.
+    </para>
+    <para>
+     Most sets have at least one secondary, but there are situations where
+     there may be no available secondary. For example, a set with a primary, a
+     secondary, and an arbiter may not have any secondaries if a member is in
+     recovering state or unavailable.
+    </para>
+    <para>
+     When the read preference includes a tag set, the client attempts to find
+     secondary members that match the specified tag set and directs reads to a
+     random secondary from among the nearest group. If no secondaries have 
+     matching tags, the read operation will produce an exception.
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     <literal>Mongo::RP_SECONDARY_PREFERRED</literal>
+    </para>
+    <para>
+     In most situations, operations read from secondary members, but in
+     situations where the set consists of a single primary with no other
+     members, the read operation will use the set's primary.
+    </para>
+    <para>
+     When the read preference includes a tag set, the client attempts to find a
+     secondary member that matches the specified tag set and directs reads to a
+     random secondary from among the nearest group. If no secondaries have
+     matching tags, the read operation will produce an exception.
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     <literal>Mongo::RP_NEAREST</literal>
+    </para>
+    <para>
+     The driver reads from the nearest member of the set according to the member
+     selection process. Reads in the <literal>Mongo::RP_NEAREST</literal> mode
+     do not consider the member's type and may read from both primaries and
+     secondaries.
+    </para>
+    <para>
+     Set this mode to minimize the effect of network latency on read operations
+     without preference for current or stale data.
+    </para>
+    <para>
+     If you specify a tag set, the client attempts to find a secondary member
+     that matches the specified tag set and directs reads to a random secondary
+     from among the nearest group.
+    </para>
+    <note>
+     <para>
+      All operations read from the nearest member of the replica set that
+      matches the specified read preference mode. The
+      <literal>Mongo::RP_NEAREST</literal> mode prefers low latency reads over a
+      member's primary or secondary status.
+     </para>
+    </note>
+   </listitem>
+  </itemizedlist>
+ </section>
+ <section>
+  <title>Tag Sets</title>
+  <para>
+   <link xlink:href="&url.mongodb.docs.tagsets;">Tag sets</link> allow you to
+   specify criteria so that your application can target read operations to
+   specific members, based on custom parameters. Tag sets make it possible to
+   ensure that read operations target members in a particular data center or
+   target mongod instances designated for a particular class of operations, such
+   as reporting or analytics.
+  </para>
+  <para>
+   You can specify tag sets with the following read preference modes:
+  </para>
+  <itemizedlist>
+   <listitem>
+    <para>
+     <literal>Mongo::RP_PRIMARY_PREFERRED</literal>
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     <literal>Mongo::RP_SECONDARY</literal>
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     <literal>Mongo::RP_SECONDARY_PREFERRED</literal>
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     <literal>Mongo::RP_NEAREST</literal>
+    </para>
+   </listitem>
+  </itemizedlist>
+  <para>
+   You cannot specify tag sets with the <literal>Mongo::RP_PRIMARY</literal>
+   read preference mode. Tags apply only when selecting a secondary member of a
+   set, except for the when in the nearest mode.
+  </para>
+ </section>
+ <section>
+  <title>Specifying Read Preferences</title>
+  <para>
+   Read preferences may be specified in either the connection URI provided to
+   <function>Mongo::__construct</function>, which uses a query string syntax, or
+   via setter methods on the core classes, which use an array syntax for tag
+   sets.
+  </para>
+  <para>
+   <example>
+    <title>Connection URI read preferences with query string syntax</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+// Prefer the nearest server with no tag preference
+$uri  = 'mongodb://rs1.example.com,rs2.example.com/';
+$uri .= '?readPreference=nearest';
+$m = new Mongo($uri, array('replicaSet' => 'rs'));
+
+// Prefer the nearest server in the "east" data center
+$uri  = 'mongodb://rs1.example.com,rs2.example.com/';
+$uri .= '?readPreference=nearest';
+$uri .= '&readPreferenceTags=dc:east';
+$m = new Mongo($uri, array('replicaSet' => 'rs'));
+
+// Prefer the nearest server in the "east" data center also used for reporting,
+// but fall back to a server in the "west" data center
+$uri  = 'mongodb://rs1.example.com,rs2.example.com/';
+$uri .= '?readPreference=nearest';
+$uri .= '&readPreferenceTags=dc:east,use:reporting';
+$uri .= '&readPreferenceTags=dc:west';
+$m = new Mongo($uri, array('replicaSet' => 'rs'));
+
+// Prefer the nearest server in the "east" data center, then a server in the
+// "west" data center, and finally fall back to no tag set preference
+$uri  = 'mongodb://rs1.example.com,rs2.example.com/';
+$uri .= '?readPreference=nearest';
+$uri .= '&readPreferenceTags=dc:east';
+$uri .= '&readPreferenceTags=dc:west';
+$uri .= '&readPreferenceTags=';
+$m = new Mongo($uri, array('replicaSet' => 'rs'));
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Setting read preferences with array syntax for tag sets</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$m = new Mongo('mongodb://rs1.example.com,rs2.example.com', array(
+    'replicaSet' => 'rs',
+));
+
+// Prefer the nearest server with no tag preference
+$m->setReadPreference(Mongo::RP_NEAREST, array());
+
+// Prefer the nearest server in the "east" data center
+$m->setReadPreference(Mongo::RP_NEAREST, array(
+    array('dc' => 'east'),
+));
+
+// Prefer the nearest server in the "east" data center also used for reporting,
+// but fall back to a server in the "west" data center
+$m->setReadPreference(Mongo::RP_NEAREST, array(
+    array('dc' => 'east', 'use' => 'reporting'),
+    array('dc' => 'west'),
+));
+
+// Prefer the nearest server in the "east" data center, then a server in the
+// "west" data center, and finally fall back to no tag set preference
+$m->setReadPreference(Mongo::RP_NEAREST, array(
+    array('dc' => 'east'),
+    array('dc' => 'west'),
+    array(),
+));
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </section>
+</section>
