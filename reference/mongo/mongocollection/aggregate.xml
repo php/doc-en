@@ -50,7 +50,7 @@
     <term><parameter>..</parameter></term>
     <listitem>
      <para>
-      More pippes...
+      More pipes...
      </para>
     </listitem>
    </varlistentry>
@@ -155,6 +155,137 @@ array(2) {
 ]]>
    </screen>
   </example>
+
+  <para>
+   The following examples use the <link xlink:href="&url.mongodb.examples.zipcode;">zipcode data set</link>.
+   Use mongoimport to load this data set into your mongod instance.
+  </para>
+
+  <example xml:id="mongocollection.aggregate.example.zipcode.population">
+   <title><methodname>MongoCollection::aggregate</methodname> example</title>
+   <para>
+    To return all states with a population greater than 10 million, use the following aggregation operation:
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$m = new Mongo;
+$c = $m->selectDB("test")->selectCollection("zips");
+
+$out = $c->aggregate(array(
+        '$group' => array(
+            '_id' => '$state',
+           'totalPop' => array('$sum' => '$pop')
+        )
+    ),
+    array(
+        '$match' => array('totalPop' => array('$gte' => 10*1000*1000))
+    )
+);
+
+var_dump($out);
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+array(7) {
+  [0]=>
+  array(2) {
+    ["_id"]=>
+    string(2) "TX"
+    ["totalPop"]=>
+    int(16986510)
+  }
+  [1]=>
+  array(2) {
+    ["_id"]=>
+    string(2) "PA"
+    ["totalPop"]=>
+    int(11881643)
+  }
+....
+  [6]=>
+  array(2) {
+    ["_id"]=>
+    string(2) "FL"
+    ["totalPop"]=>
+    int(12937926)
+  }
+}
+]]>
+   </screen>
+  </example>
+
+  <example xml:id="mongocollection.aggregate.example.zipcode.population.average">
+   <title><methodname>MongoCollection::aggregate</methodname> example</title>
+   <para>
+    To return the average populations for cities in each state, use the following aggregation operation:
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$m = new Mongo;
+$c = $m->selectDB("test")->selectCollection("zips");
+
+$out = $c->aggregate(
+    array(
+        '$group' => array(
+            '_id' => array('state' => '$state', 'city' => '$city' ),
+            'pop' => array('$sum' => '$pop' )
+        )
+    ),
+    array(
+        '$group' => array(
+            '_id' => '$_id.state',
+            'avgCityPop' => array('$avg' => '$pop')
+        )
+    )
+);
+
+var_dump($out);
+
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+array(51) {
+  [0]=>
+  array(2) {
+    ["_id"]=>
+    string(2) "DC"
+    ["avgCityPop"]=>
+    float(303450)
+  }
+  [1]=>
+  array(2) {
+    ["_id"]=>
+    string(2) "DE"
+    ["avgCityPop"]=>
+    float(14481.913043478)
+  }
+...
+  [49]=>
+  array(2) {
+    ["_id"]=>
+    string(2) "WI"
+    ["avgCityPop"]=>
+    float(7323.0074850299)
+  }
+  [50]=>
+  array(2) {
+    ["_id"]=>
+    string(2) "WV"
+    ["avgCityPop"]=>
+    float(2759.1953846154)
+  }
+}
+]]>
+   </screen>
+  </example>
+
  </refsect1>
 
  <refsect1 role="seealso">
