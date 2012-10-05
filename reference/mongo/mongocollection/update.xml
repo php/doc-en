@@ -57,8 +57,16 @@
          </para>
          <para>
           If no document matches <parameter>$criteria</parameter>, a new
-          document will be created from <parameter>$criteria</parameter> and
-          <parameter>$new_object</parameter> (see upsert example below).
+          document will be inserted.
+         </para>
+         <para>
+          If a new document would be inserted and
+          <parameter>$new_object</parameter> contains atomic modifiers
+          (i.e. <literal>$</literal> operators), those operations will be
+          applied to the <parameter>$criteria</parameter> parameter to create
+          the new document. If <parameter>$new_object</parameter> does not
+          contain atomic modifiers, it will be used as-is for the inserted
+          document. See the upsert examples below for more information.
          </para>
         </listitem>
         <listitem>
@@ -270,17 +278,28 @@ array(4) {
    </screen>
   </example>
   <example>
-   <title><function>MongoCollection::update</function> upsert example</title>
+   <title><function>MongoCollection::update</function> upsert examples</title>
    <para>
-    Upserts can simplify code, as a single line can create the object if it does
-    not exist yet and update it if it does.
+    Upserts can simplify code, as a single line can create the document if it
+    does not exist (based on <parameter>$criteria</parameter>), or update an
+    existing document if it matches.
+   </para>
+   <para>
+    In the following example, <parameter>$new_object</parameter> contains an
+    atomic modifier. Since the collection is empty and upsert must insert a new
+    document, it will apply those operations to the
+    <parameter>$criteria</parameter> parameter in order to create the document.
    </para>
    <programlisting role="php">
 <![CDATA[
 <?php
 
 $c->drop();
-$c->update(array("uri" => "/summer_pics"), array('$inc' => array("page hits" => 1)), array("upsert" => true));
+$c->update(
+    array("uri" => "/summer_pics"),
+    array('$inc' => array("page hits" => 1)),
+    array("upsert" => true)
+);
 var_dump($c->findOne());
 
 ?>
@@ -301,9 +320,10 @@ array(3) {
 ]]>
    </screen>
    <para>
-    If <parameter>$new_object</parameter> does not contain $-operators, an upsert will 
-    create a new document from the passed fields only.  This matches the
-    behavior of a normal update, where not using $-operators causes the whole
+    If <parameter>$new_object</parameter> does not contain atomic modifiers
+    (i.e. <literal>$</literal> operators), upsert will use
+    <parameter>$new_object</parameter> as-is for the new document. This matches
+    the behavior of a normal update, where not using atomic modifiers causes the
     document to be overwritten.
    </para>
    <programlisting role="php">
