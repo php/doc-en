@@ -102,7 +102,7 @@ function checking($for) // {{{
     
     if ($ac['quiet'] != 'yes') {
         echo "Checking {$for}... ";
-        flush( STDOUT );
+        flush();
     }
 } // }}}
 
@@ -615,7 +615,7 @@ if ($ac['HOWTO'] === 'yes') {
     if ($dom->validate()) {
         echo "INFO: The HOWTO validated, so is ready for commit.\n";
         echo "INFO: Saving $fileout...\n";
-        flush(STDOUT);
+        flush();
         $dom->save($fileout);
 
         echo "INFO: All you have to do now is run 'phd -d {$fileout} -t howto'\n";
@@ -664,7 +664,7 @@ checking('whether to save an invalid .manual.xml');
 checkvalue($ac['FORCE_DOM_SAVE']);
 
 echo "Loading and parsing {$ac["INPUT_FILENAME"]}... ";
-flush(STDOUT);
+flush();
 
 $dom = new DOMDocument();
 
@@ -681,7 +681,7 @@ if ($didLoad === false) {
 
 echo "done.\n";
 echo "Validating {$ac["INPUT_FILENAME"]}... ";
-flush(STDOUT);
+flush();
 
 $dom->xinclude();
 print_xml_errors();
@@ -728,7 +728,7 @@ $mxml = $ac["OUTPUT_FILENAME"];
 if ($dom->validate()) {
     echo "done.\n";
     printf("\nAll good. Saving %s... ", basename($ac["OUTPUT_FILENAME"]));
-    flush(STDOUT);
+    flush();
     if ($ac["SEGFAULT_SPEED"] == "yes") {
         $t = $dom->doctype;
         $dom->removeChild($t);
