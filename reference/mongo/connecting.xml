@@ -5,10 +5,11 @@
  <title>Connecting</title>
 
  <para>
-  Connecting to MongoDB can be as easy as <literal>new Mongo</literal>, but
-  there are many additional options and configurations. The
-  <function>Mongo::__construct</function> page covers all of the API options,
-  but this page gives some more details and advice for practical use cases.
+  Connecting to MongoDB can be as easy as <literal>new MongoClient</literal>,
+  but there are many additional options and configurations. The documentation
+  for <function>MongoClient::__construct</function> covers all of the API
+  options, but this page gives some more details and advice for practical use
+  cases.
  </para>
 
  <section>
@@ -19,16 +20,16 @@
    any operations with the driver. You may authenticate a connection by
    specifying the username and password in either the connection URI or the
    <literal>"username"</literal> and <literal>"password"</literal> options for
-   <function>Mongo::__construct</function>.
+   <function>MongoClient::__construct</function>.
   </para>
   <programlisting role="php">
 <![CDATA[
 <?php
 // Specifying the username and password in the connection URI (preferred)
-$m = new Mongo("mongodb://${username}:${password}@localhost");
+$m = new MongoClient("mongodb://${username}:${password}@localhost");
 
 // Specifying the username and password via the options array (alternative)
-$m = new Mongo("mongodb://localhost", array("username" => $username, "password" => $password));
+$m = new MongoClient("mongodb://localhost", array("username" => $username, "password" => $password));
 ?>
 ]]>
   </programlisting>
@@ -36,16 +37,16 @@ $m = new Mongo("mongodb://localhost", array("username" => $username, "password" 
    By default, the driver will authenticate against the <literal>admin</literal>
    database. You may authenticate against a different database by specifying it
    in either the connection URI or the <literal>"db"</literal> option for
-   <function>Mongo::__construct</function>.
+   <function>MongoClient::__construct</function>.
   </para>
   <programlisting role="php">
 <![CDATA[
 <?php
 // Specifying the authentication database in the connection URI (preferred)
-$m = new Mongo("mongodb://${username}:${password}@localhost/myDatabase");
+$m = new MongoClient("mongodb://${username}:${password}@localhost/myDatabase");
 
 // Specifying the authentication database via the options array (alternative)
-$m = new Mongo("mongodb://${username}:${password}@localhost", array("db" => "myDatabase"));
+$m = new MongoClient("mongodb://${username}:${password}@localhost", array("db" => "myDatabase"));
 ?>
 ]]>
   </programlisting>
@@ -59,45 +60,47 @@ $m = new Mongo("mongodb://${username}:${password}@localhost", array("db" => "myD
   <title>Replica Sets</title>
   <para>
    To connect to a replica set, specify one or more members of the set and use
-   the <literal>replicaSet</literal> option. Multiple servers may be delimited
+   the <literal>"replicaSet"</literal> option. Multiple servers may be delimited
    by a comma.
   </para>
   <programlisting role="php">
 <![CDATA[
 <?php
 // Using multiple servers as the seed list (prefered)
-$m = new Mongo("mongodb://rs1.example.com:27017,rs2.example.com:27017/?replicaSet=myReplSetName"));
+$m = new MongoClient("mongodb://rs1.example.com:27017,rs2.example.com:27017/?replicaSet=myReplSetName"));
 
 // Using one server as the seed list
-$m = new Mongo("mongodb://rs1.example.com:27017", array("replicaSet" => "myReplSetName"));
+$m = new MongoClient("mongodb://rs1.example.com:27017", array("replicaSet" => "myReplSetName"));
 
 // Using multiple servers as the seed list
-$m = new Mongo("mongodb://rs1.example.com:27017,rs2.example.com:27017", array("replicaSet" => "myReplSetName"));
+$m = new MongoClient("mongodb://rs1.example.com:27017,rs2.example.com:27017", array("replicaSet" => "myReplSetName"));
 ?>
 ]]>
   </programlisting>
   <para>
-   Version 1.0.9+ of the driver is required to connect to a replica set
-   (earlier versions of the driver will not autodetect the master or reconnect
-   correctly).
+   Version 1.0.9+ of the driver is required to connect to a replica set. Earlier
+   versions of the driver will not auto-detect the primary or reconnect
+   correctly.
   </para>
   <para>
-   The PHP driver will query the database server(s) listed to figure out who is
-   master. So long as it can connect to at least one host listed and find a
-   master, the connection will succeed. If it cannot make a connection to any
-   servers listed or cannot find a master, a
+   The PHP driver will query the database server(s) listed to determine the
+   primary. So long as it can connect to at least one host listed and find a
+   primary, the connection will succeed. If it cannot make a connection to any
+   servers listed or cannot find a primary, a
    <classname>MongoConnectionException</classname> will be thrown.
   </para>
   <para>
-   If the master becomes unavailable, the slaves will not promote a new master
-   for a few seconds. During that time, this connection will not be able to
-   perform any database operations (connections to slaves will still be able to
-   perform reads). Thus, if you attempt to do any sort of read or write on this
-   connection, it will throw an exception.
+   If the primary becomes unavailable, an election will take place and a
+   secondary will be promoted to the role of primary (unless a majority vote
+   cannot be established). During this time
+   (<link xlink:href="&url.mongodb.replica.failover;">20-60 seconds</link>), the
+   connection will not be able to perform any write operations and attempts to
+   do so will result in an exception. Connections to secondaries will still be
+   able to perform reads.
   </para>
   <para>
-   Once a master is elected, attempting to perform a read or write will allow
-   the driver to detect the new master. The driver will make this its primary
+   Once a primary is elected, attempting to perform a read or write will allow
+   the driver to detect the new primary. The driver will make this its primary
    database connection and continue operating normally.
   </para>
   <para>
@@ -118,10 +121,10 @@ $m = new Mongo("mongodb://rs1.example.com:27017,rs2.example.com:27017", array("r
 <?php
 
 // Using one server as the seed list
-$m = new Mongo("mongodb://mongos1.example.com:27017");
+$m = new MongoClient("mongodb://mongos1.example.com:27017");
 
 // Using multiple servers as the seed list
-$m = new Mongo("mongodb://mongos1.example.com:27017,mongos2.example.com:27017"));
+$m = new MongoClient("mongodb://mongos1.example.com:27017,mongos2.example.com:27017"));
 
 ?>
 ]]>
@@ -142,8 +145,8 @@ $m = new Mongo("mongodb://mongos1.example.com:27017,mongos2.example.com:27017"))
 
   <para>
    If you are running MongoDB locally and using version 1.0.9+ of the driver,
-   you can connect to the database via file. MongoDB automatically opens a
-   socket file on startup: <literal>/tmp/mongodb-&lt;port&gt;.sock.</literal>
+   you can connect to the database via a socket file. MongoDB automatically
+   opens a socket file on startup: <literal>/tmp/mongodb-&lt;port&gt;.sock.</literal>
   </para>
 
   <para>
@@ -154,21 +157,22 @@ $m = new Mongo("mongodb://mongos1.example.com:27017,mongos2.example.com:27017"))
   <programlisting role="php">
 <![CDATA[
 <?php
-$m = new Mongo("mongodb:///tmp/mongo-27017.sock");
+$m = new MongoClient("mongodb:///tmp/mongo-27017.sock");
 ?>
 ]]>
   </programlisting>
 
   <para>
-   If you would like to use authentication on connection (as described above)
-   with a socket file, you must specify a port of 0 so that the connection
-   string parser knows where the end of the connection string is.
+   If you would like to authenticate against a database (as described above)
+   with a socket file, you must specify a port of <literal>0</literal> so that
+   the connection string parser can detect the end of the socket path.
+   Alternatively, you can use the constructor options.
   </para>
 
   <programlisting role="php">
 <![CDATA[
 <?php
-$m = new Mongo("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
+$m = new MongoClient("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
 ?>
 ]]>
   </programlisting>
@@ -180,23 +184,24 @@ $m = new Mongo("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
   <para>
    Creating connections is one of the most heavyweight things that the driver
    does. It can take hundreds of milliseconds to set up a connection correctly,
-   even on a fast network.  Thus, the driver tries to minimize the number of new
+   even on a fast network. Thus, the driver tries to minimize the number of new
    connections created by reusing connections from a pool.
   </para>
   <para>
-   When a user creates a new instance of <classname>Mongo</classname>, all
+   When a user creates a new instance of <classname>MongoClient</classname>, all
    necessary connections will be taken from their pools (replica sets may
-   require multple connections, one for each member of the set). When the
-   <classname>Mongo</classname> instance goes out of scope, the connections will
-   be returned to the pool.  When the PHP process exits, all connections in the
-   pools will be closed.
+   require multiple connections, one for each member of the set). When the
+   <classname>MongoClient</classname> instance goes out of scope, the
+   connections will be returned to the pool. When the PHP process exits, all
+   connections in the pools will be closed.
   </para>
   <section>
    <title>"Why do I have so many open connections?"</title>
    <para>
-    Connection pools can generate a large number of connections. This is expected
-    and, using a little arithmetic, you can figure out how many connections to
-    expect.  There are three factors in the total number of connections:
+    Connection pools can generate a large number of connections. This is
+    expected and, using a little arithmetic, you can figure out how many
+    connections will be created. There are three factors in determining the
+    total number of connections:
    </para>
    <itemizedlist>
     <listitem>
@@ -218,8 +223,8 @@ $m = new Mongo("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
      </para>
      <para>
       You can see how many connections you have in a pool using the
-      <function>MongoPool::info</function> function.  Add up the "in use" and
-      "in pool" fields for a given server.  That is the total number of
+      <function>MongoPool::info</function> function. Add up the "in use" and
+      "in pool" fields for a given server. That is the total number of
       connections for that pool.
      </para>
     </listitem>
@@ -231,9 +236,9 @@ $m = new Mongo("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
      </para>
      <para>
       Each MongoDB server address you're connecting to gets its own connection
-      pool.  For example, if your local hostname is "example.net", connecting
+      pool. For example, if your local hostname is "example.net", connecting
       to "example.net:27017", "localhost:27017", and "/tmp/mongodb-27017.sock"
-      will create three connection pools.  You can see how many connection pools
+      will create three connection pools. You can see how many connection pools
       you have open using <function>MongoPool::info</function>.
      </para>
     </listitem>
@@ -244,31 +249,34 @@ $m = new Mongo("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
       </literal>
      </para>
      <para>
-      Each PHP process has a separate set of pools.  PHP-FPM and Apache
-      generally create between 6 and a couple dozen PHP worker children. Check
-      your settings to see what the max number of PHP processes is that can be
-      spawned.
+      Each PHP process has a separate set of pools. PHP-FPM and Apache
+      generally create between 6 and a couple of dozen PHP worker children.
+      Check your settings to see what the max number of PHP processes is that
+      can be spawned.
      </para>
      <para>
       If you are using PHP-FPM, estimating the number of connections can be
       tricky because it will spawn more PHP-FPM workers under heavy load. To be
-      on the safe side, look at the max_children parameter or add up
-      spare_servers+start_servers (choose whichever number is higher).  That's
-      how many PHP processes (and, thus sets of pools) you should plan for.
+      on the safe side, look at the <literal>max_children</literal> parameter or
+      add up <literal>spare_servers</literal> + <literal>start_servers</literal>
+      (choose whichever number is higher). That will indicate how many PHP
+      processes (i.e. sets of pools) you should plan for.
      </para>
     </listitem>
    </itemizedlist>
    <para>
     The three variables above can be multiplied together to give the max
     number of connections expected:
-    <literal>connections_per_pool*pools_per_process*processes</literal>.  Note
-    that <literal>connections_per_pool</literal> can be different for different
+    <literal>connections_per_pool</literal> *
+    <literal>pools_per_process</literal> *
+    <literal>processes</literal>. Note that
+    <literal>connections_per_pool</literal> can be different for different
     pools, so <literal>connections_per_pool</literal> should be the max.
    </para>
    <para>
     For example, suppose we're getting 30 connections per pool, 10 pools per PHP
-    process, and 128 PHP processes.  Then we can expect 38400 connections from
-    this machine.  Thus, we should set this machine's file descriptor limit to
+    process, and 128 PHP processes. Then we can expect 38400 connections from
+    this machine. Thus, we should set this machine's file descriptor limit to
     be high enough to handle all of these connections or it may run out of file
     descriptors.
    </para>
@@ -291,8 +299,8 @@ $m = new Mongo("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
   </note>
 
   <para>
-   Creating new connection to the database is very slow.  To minimize the number
-   of connections that you need to make, you can use persistent connections.  A
+   Creating new connection to the database is very slow. To minimize the number
+   of connections that you need to make, you can use persistent connections. A
    persistent connection is saved by PHP, so you can use the same connection for
    multiple requests.
   </para>
@@ -306,7 +314,7 @@ $m = new Mongo("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
 <?php
 
 for ($i=0; $i<1000; $i++) {
-  $m = new Mongo();
+  $m = new MongoClient();
 }
 
 ?>
@@ -314,7 +322,7 @@ for ($i=0; $i<1000; $i++) {
   </programlisting>
 
   <para>
-   It takes approximately 18 seconds to execute.  If we change it to use a
+   It takes approximately 18 seconds to execute. If we change it to use a
    persistent connection:
   </para>
 
@@ -323,7 +331,7 @@ for ($i=0; $i<1000; $i++) {
 <?php
 
 for ($i=0; $i<1000; $i++) {
-  $m = new Mongo("localhost:27017", array("persist" => "x"));
+  $m = new MongoClient("localhost:27017", array("persist" => "x"));
 }
 
 ?>
@@ -337,10 +345,11 @@ for ($i=0; $i<1000; $i++) {
 
   <para>
    Persistent connections need an identifier string (which is "x" in the above
-   example) to uniquely identify them.  For a persistent connection to be used,
-   the hostname, port, persist string, and username and password (if given) must
-   match an existing persistent connection.  Otherwise, a new connection will be
-   created with this identifying information.
+   example) to uniquely identify them. For a persistent connection to be used,
+   the hostname, port, persist string, and authentication credentials (username,
+   password and database, if given) must match an existing persistent
+   connection. Otherwise, a new connection will be created with this identifying
+   information.
   </para>
   <para>
    Persistent connections are <emphasis>highly recommended</emphasis> and should

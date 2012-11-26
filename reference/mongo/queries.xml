@@ -4,7 +4,7 @@
  <title>Querying</title>
 
  <section>
-  <title>Distributing queries to slaves</title>
+  <title>Distributing queries to secondaries</title>
 
   <note>
    <title>1.1.0+</title>
@@ -12,15 +12,15 @@
     If you are using a
     <link xlink:href="&url.mongodb.replica;">replica set</link> and version
     1.1.0 or above of the driver, the driver can automatically route reads to
-    slaves.  This behavior does not exist in earlier versions of the driver and
-    <emphasis>cannot</emphasis> be used with "normal" master-slave.
+    secondaries. This behavior does not exist in earlier versions of the driver
+    and <emphasis>cannot</emphasis> be used with legacy master-slave clusters.
    </para>
   </note>
 
   <para>
-   By default, the driver will send all queries to the master.  If you set the
-   "slaveOkay" option, the driver will send all queries to a non-primary server,
-   if possible.  The "slaveOkay" option can be set at every "level":
+   By default, the driver will send all queries to the primary. If you set the
+   "slaveOkay" option, the driver will send read queries to a secondary server,
+   if possible. The "slaveOkay" option can be set at every "level":
    <link linkend="mongo.setslaveokay">connection</link>,
    <link linkend="mongodb.setslaveokay">database</link>,
    <link linkend="mongocollection.setslaveokay">collection</link>, and
@@ -42,19 +42,19 @@ $cursor = $c->find();
   </programlisting>
 
   <para>
-   then the query will be executed against a slave (the collection inherited
+   then the query will be executed against a secondary (the collection inherited
    "slaveOkay" from the database and the cursor inherited it from the
    collection).
   </para>
 
   <section>
-   <title>How slaves are chosen</title>
+   <title>How secondaries are chosen</title>
 
    <para>
-    Each instance of <classname>Mongo</classname> chooses its own slave using
-    the available slave with the lowest ping time.  So, if we had a PHP client
-    in Europe and one in Australia and we had one secondary in each of these
-    data centers, we could do:
+    Each instance of <classname>MongoClient</classname> chooses its own
+    secondary using the available secondary with the lowest ping time. So, if we
+    had a PHP client in Europe and one in Australia and we had one secondary in
+    each of these data centers, we could do:
    </para>
    <programlisting role="php">
 <![CDATA[
@@ -63,14 +63,14 @@ $cursor = $c->find();
 // P is the primary
 
 // on the Australian client
-$m1 = new Mongo("mongodb://P", array("replicaSet" => 'setName'));
+$m1 = new MongoClient("mongodb://P", array("replicaSet" => 'setName'));
 $m1->foo->bar->find()->slaveOkay()->getNext();
-echo "m1's slave is ".$m1->getSlave()."\n";
+echo "m1's secondary is ".$m1->getSlave()."\n";
 
 // on the European client
-$m2 = new Mongo("mongodb://P", array("replicaSet" => 'setName'));
+$m2 = new MongoClient("mongodb://P", array("replicaSet" => 'setName'));
 $m2->foo->bar->find()->slaveOkay()->getNext();
-echo "m2's slave is ".$m2->getSlave()."\n";
+echo "m2's secondary is ".$m2->getSlave()."\n";
 
 ?>
 ]]>
@@ -79,32 +79,32 @@ echo "m2's slave is ".$m2->getSlave()."\n";
     we'd probably end up with something like:
    </para>
    <screen>
-m1's slave is: australianHost
-m2's slave is: europeanHost
+m1's secondary is: australianHost
+m2's secondary is: europeanHost
    </screen>
 
    <para>
-    Note that we have to do a query before a slave is chosen: slaves are chosen
-    lazily by the driver.  <function>Mongo::getSlave</function> will return
-    &null; until a slave is used.
+    Note that we have to do a query before a secondary is chosen: secondaries
+    are chosen lazily by the driver. <function>Mongo::getSlave</function> will
+    return &null; until a secondary is used.
    </para>
 
    <para>
     You can see what the driver thinks is the current status of the set members
-    by running <function>Mongo::getHosts</function>.
+    by running <function>MongoClient::getHosts</function>.
    </para>
 
    <para>
     If no non-primary server is readable, the driver will send
     reads to the primary (even if "slaveOkay" is set).  A server is considered
     readable if its state is 2 (SECONDARY) and its health is 1.  You can check
-    this with <function>Mongo::getHosts</function>.
+    this with <function>MongoClient::getHosts</function>.
    </para>
 
    <para>
     If you enjoy twiddling knobs that you probably shouldn't mess with, you can
-    request the driver to use a different slave by calling
-    <function>Mongo::switchSlave</function>.  This may choose a new slave
+    request the driver to use a different secondary by calling
+    <function>Mongo::switchSlave</function>.  This may choose a new secondary
     (if one is available) and shouldn't be used unless you know what you're
     doing.
    </para>
@@ -119,9 +119,9 @@ m2's slave is: europeanHost
    </para>
 
    <para>
-    The health and state of a slave is checked every 5 seconds or when the next
-    operation occurs after 5 seconds.  It will also recheck the configuration
-    when the driver has a problem reaching a server.
+    The health and state of a secondary is checked every 5 seconds or when the
+    next operation occurs after 5 seconds.  It will also recheck the
+    configuration when the driver has a problem reaching a server.
    </para>
 
    <para>
