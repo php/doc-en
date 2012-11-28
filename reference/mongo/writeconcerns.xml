@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<chapter xml:id="mongo.writeconcerns" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Write Concerns</title>
+
+ <para>
+  MongoDB provides several different ways of selecting how durable a write to
+  the database should be. These ways are called <literal>Write
+  Concerns</literal> and span everything from completely ignoring all errors,
+  to specifically targetting which servers are required to confirm the write
+  before returning the operation.
+ </para>
+ <para>
+  When a write (such as with <methodname>MongoCollection::insert</methodname>,
+  <methodname>MongoCollection::update</methodname>, and
+  <methodname>MongoCollection::remove</methodname>) is given a Write Concern
+  option (<literal>"w"</literal>) the driver will send the query to MongoDB
+  and then followup with a <literal>getLastError</literal> command
+  (<acronym>GLE</acronym>) with the Write Concern option which will be blocked
+  until the Write Concern condition is verified to be fullfilled, or the query
+  times out (controlled with the <literal>"wtimeout"</literal> option, no
+  timeout by default).
+ </para>
+
+ <warning>
+  <para>
+   Even though a <literal>getLastError</literal> command times out the data
+   will most likely have been written to the primary server and will be
+   replicated to all the secondaries once they have cought up.
+  </para>
+  <para>
+   The typical reasons for a timeout to happen is if you specify a Write
+   Concern which requires confirmation from more servers then you currently
+   have available.
+  </para>
+ </warning>
+
+ <para>
+  The default Write Concern for the <classname>MongoClient</classname> is
+  <literal>1</literal>, acknowledge.
+ </para>
+
+ <para>
+  <table xml:id="mongo.writeconcerns.options">
+   <title>Available Write Concerns</title>
+   <tgroup cols="3">
+    <thead>
+     <row>
+      <entry>Write Concern</entry>
+      <entry>Meaning</entry>
+      <entry>Description</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>w=-1</entry>
+      <entry>Errors ignored</entry>
+      <entry>No errors, including network errors, will be checked at all</entry>
+     </row>
+     <row>
+      <entry>w=0</entry>
+      <entry>Unacknowledged</entry>
+      <entry>A write will not be followed up with a <acronym>GLE</acronym> call, and therefore not checked ("fire and forget")</entry>
+     </row>
+     <row>
+      <entry>w=1</entry>
+      <entry>Acknowledged</entry>
+      <entry>The write will be acknowledged by the server (the primary on ReplicaSet configuration)</entry>
+     </row>
+     <row>
+      <entry>w=N</entry>
+      <entry>ReplicaSet Acknowledged</entry>
+      <entry>The write will be acknowledged by the primary server, and
+      replicated to <literal>N-1</literal> secondaries.</entry>
+     </row>
+     <row>
+      <entry>w=majority</entry>
+      <entry>Majority Acknowledged</entry>
+      <entry>The write will be acknowledged by the majority of the ReplicaSet (including the primary). This is a special reserved string.</entry>
+     </row>
+     <row>
+      <entry>w=&lt;tag set&gt;</entry>
+      <entry>ReplicaSet TagSet Acknowledged</entry>
+      <entry>The write will be acknowledged by members of the entire TagSet</entry>
+     </row>
+     <row>
+      <entry>j=true</entry>
+      <entry>Journaled</entry>
+      <entry>The write will be acknowledged by primary and the journal flushed to disk</entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </table>
+ </para>
+
+
+ <simplesect xml:id="mongo.writeconcerns.unacknowledged">
+  <title>Unacknowledged Writes</title>
+  <para>
+   By not requiring the server to acknowledge writes means that writes can be performed
+   extremely quickly, but you don't know whether or not they actually succeeded.
+   Writes can fail for a number of reasons: if there are network problems, if a 
+   database server goes down, or if the write was simply invalid (e.g., writing 
+   to a system collection).
+  </para>
+  <para>
+   While developing, you should always use safe writes (to protect against 
+   inadvertent mistakes, such as syntax errors, invalid operators, duplicate key errors and so on).  In 
+   production, unsafe writes can be used for "unimportant" data.  Unimportant
+   data varies on application, but it's generally automatically (instead of user
+   generated) data, such as click tracking or GPS locations, where you can get
+   thousands of records per second.
+  </para>
+  <para>
+   It is strongly recommended that you do a acknowledged write at the end of
+   series of unacknowledged writes. Doing so will not incurr in too large
+   performance penalty, but still allow you to catch any errors that may have
+   occurred.
+  </para>
+  <example xml:id="mongo.writeconcerns.unacknowledged-example">
+   <title>Unacknowledged WriteConcern, followed with Acknowledged Write</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$collection->insert($someDoc, array("w" => 0));
+$collection->update($criteria, $newObj, array("w" => 0));
+$collection->insert($somethingElse, array("w" => 0));
+try {
+    $collection->remove($something, array("w" => 1));
+} catch(MongoCursorException $e) {
+    /* Handle the exception.. */
+    /* Here we should issue find() queries on the IDs generated for
+    $somethingElse and $someDoc to verify they got written to the database and
+    attempt to figureout where in the chain something happened. */
+}
+?>
+]]>
+   </programlisting>
+   <para>
+    If the last write throws an exception, you know that there's a problem
+    with your database.
+   </para>
+  </example>
+ </simplesect>
+
+ <simplesect xml:id="mongo.writeconcerns.acknowledged">
+  <title>Acknowledged Writes</title>
+  <para>
+   These type of write operations will make sure that the
+   database has the write before returning success. If the write failed, it
+   will throw a <classname>MongoCursorException</classname> with an explanation of 
+   the failure. The <classname>MongoClient</classname> default behaviour is to
+   acknowledge the write (w=1).
+  </para>
+  <para>
+   It is possible to specify how many members of an ReplicaSet have to
+   acknowledge the write (i.e. have it replicated) before the write is deemed
+   acknowledged and the operation returns.
+   <example xml:id="mongo.writeconcerns.acknowledged-example">
+    <title>Acknowledged Writes</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// Force acknowledgement from the primary only
+$collection->insert($doc, array("w" => 1));
+// Force acknowledgement from the primary, and one other member of the ReplicaSet
+$collection->insert($doc, array("w" => 2));
+// Force acknowledgement from the primary, and six other member of the ReplicaSet
+// (You probably never ever want to do this :)
+$collection->insert($doc, array("w" => 7));
+]]>
+    </programlisting>
+    <para>
+     Keep in mind to select your Write Concern carefully. If you have a
+     ReplicaSet with 5 members, and you select WriteConcern of
+     <literal>4</literal> you will risk the write blocking forever when one
+     member of the ReplicaSet goes down for maintenance or a temporary network
+     outage happens.
+    </para>
+   </example>
+  </para>
+  <warning>
+   <para>
+    Passing in a string value for WriteConcern has a specific meaning
+    (ReplicaSet TagSet Acknowledged). Please be careful of
+    <emphasis>NOT</emphasis> using string values for numbers (i.e.
+    <literal>array("w" => "1")</literal>) as it will be treated as a TagSet
+    name.
+   </para>
+  </warning>
+ </simplesect>
+
+ <simplesect xml:id="mongo.writeconcerns.majority.acknowledged">
+  <title>Majority Acknowledged Writes</title>
+  <para>
+   Using the special <literal>majority</literal> Write Concern option is the
+   recommended way for writes that are required to survive the apocalypse, as
+   it will ensure the majority of your ReplicaSet will have the write and will
+   therefore be guaranteed to survive all usual suspect outage scenarios.
+  </para>
+  <example xml:id="mongo.writeconcerns.majority.acknowledged-example">
+   <title>Majority Acknowledged Write</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$collection->insert($someDoc, array("w" => "majority"));
+?>
+]]>
+   </programlisting>
+  </example>
+ </simplesect>
+
+ <!-- FIXME
+ <simplesect xml:id="mongo.writeconcerns.tagset">
+  <title>ReplicaSet TagSet Acknowledged</title>
+ </simplesect>
+ -->
+
+ <simplesect xml:id="mongo.writeconcerns.journal">
+  <title>Journaled Writes</title>
+  <para>
+   When connecting to a ReplicaSet the default WriteConcern is only to have
+   the primary server acknowledge the write, but there is a 100ms window until
+   the write gets journaled and flushed to disk. It is possible to force the
+   write to be journaled before acknowledging the write by setting the
+   <literal>j</literal> option:
+   <example xml:id="mongo.writeconcerns.journalled">
+    <title>Acknowledged and Journaled Write</title>
+    <para>Forcing journal flush</para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$options = array(
+    "w" => 1,
+    "j" => true,
+);
+try {
+    $collection->insert($document, $options);
+} catch(MongoCursorException $e) {
+    /* handle the exception */
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </simplesect>
+
+ <simplesect role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>1.3.0</entry>
+      <entry>
+       <classname>MongoClient</classname> was introduced and defaults to
+       <link linkend="mongo.writeconcerns.acknowledged">acknowledged</link> writes.
+       The deprecated <classname>Mongo</classname> defaults to unacknowledged
+       writes.
+      </entry>
+     </row>
+     <row>
+      <entry>1.3.0</entry>
+      <entry>
+       The <literal>"safe"</literal> write option has been deprecated and not
+       available with the new <classname>MongoClient</classname> class.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
+ </simplesect>
+
+</chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+
