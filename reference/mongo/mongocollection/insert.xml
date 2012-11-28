@@ -43,58 +43,10 @@
       <para>
        Options for the insert.
        <itemizedlist>
-        <listitem>
-         <para>
-          <literal>"safe"</literal>
-         </para>
-         <para>
-          Can be a boolean or integer, defaults to &false;.  If &false;, the
-          program continues executing without waiting for a database response.
-          If &true;, the program will wait for the database response and throw a
-          <classname>MongoCursorException</classname> if the insert did not
-          succeed.
-         </para>
-         <para>
-          If you are using replication and the primary has changed, using "safe"
-          will make the driver disconnect from the primary, throw an exception,
-          and attempt to find a new primary on the next operation (your
-          application must decide whether or not to retry the operation on the
-          new primary).
-         </para>
-         <para>
-          If you <emphasis>do not</emphasis> use "safe" with a replica set and
-          the primary changes, there will be no way for the driver to know about
-          the change so it will continuously and silently fail to write.
-         </para>
-         <para>
-          If <literal>safe</literal> is an integer, will replicate the
-          insert to that many machines before returning success (or throw an
-          exception if the replication times out, see wtimeout).  This overrides
-          the w variable set on the collection.
-         </para>
-        </listitem>
-        <listitem>
-         <para>
-          <literal>"fsync"</literal>
-         </para>
-         <para>
-          Boolean, defaults to &false;.  Forces the insert to be synced to 
-          disk before returning success.  If &true;, a safe insert is implied
-          and will override setting <literal>safe</literal> to &false;.
-         </para>
-        </listitem>
-        <listitem>
-         <para>
-          <literal>"timeout"</literal>
-         </para>
-         <para>
-          Integer, defaults to <literal>MongoCursor::$timeout</literal>.  If 
-          "safe" is set, this sets how long (in milliseconds) for the client to
-          wait for a database response.  If the database does not respond within
-          the timeout period, a <classname>MongoCursorTimeoutException</classname>
-          will be thrown.
-         </para>
-        </listitem>
+        &mongo.writes.parameters.writeconcern;
+        &mongo.writes.parameters.fsync;
+        &mongo.writes.parameters.timeout;
+        &mongo.writes.parameters.safe;
        </itemizedlist>
       </para>
      </listitem>
@@ -107,7 +59,7 @@
   &reftitle.returnvalues;
   <para>
    Returns an array containing the status of the insertion if the
-   <literal>"safe"</literal> option is set. Otherwise, returns &true; if the
+   <literal>"w"</literal> option is set. Otherwise, returns &true; if the
    inserted array is not empty (a <classname>MongoException</classname> will be
    thrown if the inserted array is empty).
   </para>
@@ -239,11 +191,11 @@
   </para>
   <para>
    Throws <classname>MongoCursorException</classname> if the
-   <literal>"safe"</literal> option is set and the operation fails.
+   <literal>"w"</literal> option is set and the operation fails.
   </para>
   <para>
    Throws <classname>MongoCursorTimeoutException</classname> if the
-   <literal>"safe"</literal> option is set and the operation takes longer than 
+   <literal>"w"</literal> option is set and the operation takes longer than 
    <varname>MongoCursor::$timeout</varname> milliseconds to complete. This does
    not kill the operation on the server; it is a client-side timeout.
   </para>
@@ -265,8 +217,9 @@
        <entry>1.3.0</entry>
        <entry>
         The <parameter>options</parameter> parameter no longer accepts a boolean
-        to signify a safe insert. Instead, this now has to be done with
-        <literal>array('safe' => true)</literal>.
+        to signify a acknowledged write. Instead, this now has to be done with
+        <literal>array('w' => 1)</literal> (The default behaviour of
+        <classname>MongoClient</classname>).
        </entry>
       </row>
       <row>
@@ -363,23 +316,23 @@ array(12) {
   </example>
 
   <example>
-   <title><function>MongoCollection::insert</function> safe example</title>
+   <title><function>MongoCollection::insert</function> acknowledged write example</title>
    <para>
     This example shows inserting two elements with the same _id, which causes 
     a <classname>MongoCursorException</classname> to be thrown, as 
-    <parameter>safe</parameter> was set.
+    <parameter>w</parameter> was set.
    </para>
    <programlisting role="php">
 <![CDATA[
 <?php
 
 $person = array("name" => "Joe", "age" => 20);
-$collection->insert($person, true);
+$collection->insert($person);
 
 // now $person has an _id field, so if we save it 
 // again, we will get an exception
 try {
-    $collection->insert($person, true);
+    $collection->insert($person, array("w" => 1));
 } catch(MongoCursorException $e) {
     echo "Can't save the same person twice!\n";
 }
