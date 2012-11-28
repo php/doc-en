@@ -3,78 +3,6 @@
 
 <chapter xml:id="mongo.writes" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <title>Writes</title>
-
- <section>
-  <title>Safe Operations</title>
-  <para>
-   By default, the driver does not wait for a database response to writes
-   (inserts, updates, and deletes).  This means that writes can be performed
-   extremely quickly, but you don't know whether or not they actually succeeded.
-   Writes can fail for a number of reasons: if there are network problems, if a 
-   database server goes down, or if the write was simply invalid (e.g., writing 
-   to a system collection).
-  </para>
-  <para>
-   To get a response from the database, use the <literal>safe</literal> option,
-   available for all types of writes.  This option will make sure that the 
-   database has the write before returning success.  If the write failed, it
-   will throw a <classname>MongoCursorException</classname> with an explanation of 
-   the failure.
-  </para>
-  <para>
-   While developing, you should always use safe writes (to protect against 
-   inadvertent mistakes, such as duplicate key errors and similar).  In 
-   production, unsafe writes can be used for "unimportant" data.  Unimportant
-   data varies on application, but it's generally automatically (instead of user
-   generated) data, such as click tracking or GPS locations, where you can get 
-   thousands of records per second.
-  </para>
-  <para>
-   To safely perform writes without incurring too large a performance penalty, 
-   it is recommended that you do a safe write at the end of a series of writes.
-   For example:
-  </para>
-  <programlisting role="php">
-<![CDATA[
-<?php
-$collection->insert($someDoc);
-$collection->update($criteria, $newObj);
-$collection->insert($somethingElse);
-$collection->remove($something, array("safe" => true));
-?>
-]]>
-  </programlisting>
-  <para>
-   Then, if the last write throws an exception, you know that there's a problem
-   with your database.
-  </para>
-  <para>
-   There are a few other options available to ensure the safety of writes.  You
-   can specify <literal>"fsync" =&gt; true</literal> to force the database to
-   fsync all writes up to this point to disk (by default, MongoDB fsyncs writes
-   once per minute).
-  </para>
-  <para>
-   The safest way of doing a write is to use replication and specify the number
-   of servers that must have this write before returning success.  (You should
-   always use replication in production, see the Connecting section for more 
-   information on replica sets.)
-  </para>
-  <programlisting role="php">
-<![CDATA[
-<?php
-$collection->insert($someDoc, array("safe" => 3));
-?>
-]]>
-  </programlisting>
-  <para>
-   If you specify <literal>"safe" =&gt; N</literal>, the MongoDB server will
-   make sure that at least <literal>N</literal> servers have a copy of the write
-   before returning success. So, if <literal>N</literal> is 3, the primary and
-   two secondaries must acknowledge the write.
-  </para>
- </section>
-
  <section>
   <title>Updating Nested Objects</title>
 
@@ -136,6 +64,7 @@ $blog->update(
 ]]>
   </programlisting>
  </section>
+
 </chapter>
 
 <!-- Keep this comment at the end of the file
