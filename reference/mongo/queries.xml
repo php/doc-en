@@ -3,51 +3,52 @@
 <chapter xml:id="mongo.queries" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <title>Querying</title>
 
- <section>
+ <simplesect xml:id="mongo.queries.secondaries">
   <title>Distributing queries to secondaries</title>
 
-  <note>
-   <title>1.1.0+</title>
-   <para>
-    If you are using a
-    <link xlink:href="&url.mongodb.replica;">replica set</link> and version
-    1.1.0 or above of the driver, the driver can automatically route reads to
-    secondaries. This behavior does not exist in earlier versions of the driver
-    and <emphasis>cannot</emphasis> be used with legacy master-slave clusters.
-   </para>
-  </note>
-
   <para>
-   By default, the driver will send all queries to the primary. If you set the
-   "slaveOkay" option, the driver will send read queries to a secondary server,
-   if possible. The "slaveOkay" option can be set at every "level":
-   <link linkend="mongo.setslaveokay">connection</link>,
-   <link linkend="mongodb.setslaveokay">database</link>,
-   <link linkend="mongocollection.setslaveokay">collection</link>, and
-   <link linkend="mongocursor.slaveokay">cursor</link>.  Each class inherits the
-   "slaveOkay" setting from the class above it, so if you do:
+   All queries (reads and writes) are only sent to the primary member of a
+   ReplicaSet by default. This is however easily configurable by using the
+   <link linkend="mongo.readpreferences">Read Preferences</link> which allow
+   you to set some generic read preferences (such as allowing secondary reads
+   of the nearest server), and also provide ways to specifically target a
+   server in a specific country, datacenter, or even hardware, by the use of
+   <link linkend="mongo.readpreferences.tagsets">ReplicaSet TagSets</link>.
   </para>
-
-  <programlisting role="php">
+  <para>
+   Read Preferences can be configured at "every level"
+   <simplelist>
+    <member>As a query parameter, or option, to <methodname>MongoClient::__construct</methodname></member>
+    <member>Specifically by calling <methodname>MongoClient::setReadPreference</methodname></member>
+    <member>At the Database level with <methodname>MongoDB::setReadPreference</methodname></member>
+    <member>At the Collection level with <methodname>MongoCollection::setReadPreference</methodname></member>
+    <member>At the Cursor level with <methodname>MongoCursor::setReadPreference</methodname></member>
+   </simplelist>
+   Each class inherits the Read Preference setting from the class above it, so if you do:
+  </para>
+  <example xml:id="mongo.queries.secondaries.inheritence-example">
+   <title>Inheriting ReadPreferences from the Database level down to the Cursor</title>
+   <programlisting role="php">
 <![CDATA[
 <?php
 
-$db->setSlaveOkay(true);
+$db->setReadPreference(MongoClient::RP_SECONDARY_PREFERRED);
 $c = $db->myCollection;
 
 $cursor = $c->find();
 
 ?>
 ]]>
-  </programlisting>
-
+   </programlisting>
+  </example>
   <para>
    then the query will be executed against a secondary (the collection inherited
-   "slaveOkay" from the database and the cursor inherited it from the
+   <constant>MongoClient::RP_SECONDARY_PREFERRED</constant> from the database and the cursor inherited it from the
    collection).
   </para>
+ </simplesect>
 
-  <section>
+  <simplesect xml:id="mongo.queries.choosing.secondary">
    <title>How secondaries are chosen</title>
 
    <para>
@@ -56,84 +57,106 @@ $cursor = $c->find();
     had a PHP client in Europe and one in Australia and we had one secondary in
     each of these data centers, we could do:
    </para>
-   <programlisting role="php">
+   <example xml:id="mongo.queries.choosing.secondary-example">
+    <programlisting role="php">
 <![CDATA[
 <?php
+$options = array("replicaSet" => "setName", "readPreference" => MongoClient::RP_SECONDARY_PREFERRED);
 
-// P is the primary
 
 // on the Australian client
-$m1 = new MongoClient("mongodb://P", array("replicaSet" => 'setName'));
-$m1->foo->bar->find()->slaveOkay()->getNext();
-echo "m1's secondary is ".$m1->getSlave()."\n";
+$m = new MongoClient("mongodb://primary,australianhost.secondary,europeanhost.secondary", $options);
+$cursor = $m->foo->bar->find();
+$cursor->getNext();
+echo "Reading from: ", $cursor->info()["server"], "\n";
 
 // on the European client
-$m2 = new MongoClient("mongodb://P", array("replicaSet" => 'setName'));
-$m2->foo->bar->find()->slaveOkay()->getNext();
-echo "m2's secondary is ".$m2->getSlave()."\n";
+$m = new MongoClient("mongodb://primary,australianhost.secondary,europeanhost.secondary", $options);
+$cursor = $m->foo->bar->find();
+$cursor->getNext();
+echo "Reading from: ", $cursor->info()["server"], "\n";
 
 ?>
 ]]>
-   </programlisting>
-   <para>
-    we'd probably end up with something like:
-   </para>
-   <screen>
-m1's secondary is: australianHost
-m2's secondary is: europeanHost
-   </screen>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+Reading from: australianHost
+Reading from: europeanHost
+]]>
+    </screen>
+    <para>
+     Note that we have to do a query before a secondary is chosen: secondaries
+     are chosen lazily by the driver.
+    </para>
+   </example>
 
-   <para>
-    Note that we have to do a query before a secondary is chosen: secondaries
-    are chosen lazily by the driver. <function>Mongo::getSlave</function> will
-    return &null; until a secondary is used.
-   </para>
 
    <para>
     You can see what the driver thinks is the current status of the set members
-    by running <function>MongoClient::getHosts</function>.
+    by running <methodname>MongoClient::getHosts</methodname> or
+    <methodname>MongoClient::getConnections</methodname>.
    </para>
 
    <para>
-    If no non-primary server is readable, the driver will send
-    reads to the primary (even if "slaveOkay" is set).  A server is considered
-    readable if its state is 2 (SECONDARY) and its health is 1.  You can check
-    this with <function>MongoClient::getHosts</function>.
+    If no secondary is readable, the driver will send reads to the
+    primary as we specified
+    <constant>MongoClient::RP_SECONDARY_PREFERRED</constant> which will
+    fallback to execute a query on a primary if no secondaries are available.
+    A server is considered readable if its state is 2 (SECONDARY) and its
+    health is 1.  You can check this with
+    <methodname>MongoClient::getHosts</methodname> and
+    <methodname>MongoClient::getConnections</methodname>.
    </para>
 
-   <para>
-    If you enjoy twiddling knobs that you probably shouldn't mess with, you can
-    request the driver to use a different secondary by calling
-    <function>Mongo::switchSlave</function>.  This may choose a new secondary
-    (if one is available) and shouldn't be used unless you know what you're
-    doing.
-   </para>
-
-  </section>
-  <section>
+  </simplesect>
+  <simplesect xml:id="mongo.queries.notes">
    <title>Random notes</title>
 
    <para>
-    Writes are always sent to the primary.  Database commands, even read-only
-    commands, are also always sent to the primary.
+    Writes are always sent to the primary - and by default all reads are sent
+    to the primary too.
+   </para>
+   <para>
+    The following database commands can be sent to secondaries when using the
+    apropriate Read Preference:
+    <simplelist>
+     <member><methodname>MongoCollection::group</methodname></member>
+     <member><methodname>MongoCollection::aggregate</methodname></member>
+     <member><methodname>MongoCollection::distinct</methodname></member>
+     <member><methodname>MongoCursor::count</methodname></member>
+     <member>collStats</member>
+     <member>dbStats</member>
+     <member>geoNear</member>
+     <member>geoSearch</member>
+     <member>geoWalk</member>
+     <member>inline mapreduce</member>
+    </simplelist>
+    All other commands are always sent to the primary.
    </para>
 
    <para>
-    The health and state of a secondary is checked every 5 seconds or when the
-    next operation occurs after 5 seconds.  It will also recheck the
-    configuration when the driver has a problem reaching a server.
+    The health and state of a secondary is checked every 5 seconds
+    (configurable with
+    <link linkend="ini.mongo.ping-interval">mongo.ping_interval</link>)
+    or when the next operation occurs after 5 seconds.  It will also recheck
+    the configuration when the driver has a problem reaching a server.
+   </para>
+   <para>
+    ReplicaSet failovers are checked every 60seconds (configurable with
+    <link linkend="ini.mongo.is-master-interval">mongo.is_master_interval</link>),
+    and whenever a write operation fails when using acknowledged writes.
    </para>
 
    <para>
-    Note that a non-primary server may be behind the primary in operations, so
-    your application must be okay with getting out-of-date data (or you must use
-    w for all writes).
+    Note that secondaries may be behind the primary in operations, so
+    your application must be okay with getting out-of-date data when using
+    Read Preferences other then <constant>MongoClient::RP_PRIMARY</constant>.
    </para>
-  </section>
+  </simplesect>
 
- </section>
-
- <section>
+ <simplesect xml:id="mongo.queries.querying">
   <title>Querying by _id</title>
   <para>
    Every object inserted is automatically assigned a unique _id field, which is
@@ -143,7 +166,8 @@ m2's secondary is: europeanHost
    Suppose that we wish to find the document we just inserted.  Inserting adds
    and _id field to the document, so we can query by that:
 
-   <programlisting role="php">
+   <example xml:id="mongo.queries.querying-example">
+    <programlisting role="php">
 <![CDATA[
 <?php
 
@@ -156,16 +180,18 @@ $joe = $people->findOne(array("_id" => $person['_id']));
 
 ?>
 ]]>
-   </programlisting>
+    </programlisting>
+   </example>
   </para>
   <para>
    Unless the user has specified otherwise, the _id field is a
-   <classname>MongoId</classname>.  The most common mistake is attepting to use
+   <classname>MongoId</classname>.  The most common mistake is attempting to use
    a string to match a <classname>MongoId</classname>.  Keep in mind that these
    are two different datatypes, and will not match each other in the same way
    that the string "array()" is not the same as an empty array.  For example:
 
-   <programlisting role="php">
+   <example xml:id="mongo.queries.querying.wrong">
+    <programlisting role="php">
 <![CDATA[
 <?php
 
@@ -181,11 +207,12 @@ $joe = $people->findOne(array("_id" => $pid));
 
 ?>
 ]]>
-   </programlisting>
+    </programlisting>
+   </example>
   </para>
- </section>
+ </simplesect>
 
- <section>
+ <simplesect xml:id="mongo.queries.arrays">
   <title>Arrays</title>
 
   <para>
@@ -201,7 +228,8 @@ $joe = $people->findOne(array("_id" => $pid));
    say:
   </para>
 
-  <programlisting role="php">
+  <example xml:id="mongo.queries.arrays-example">
+   <programlisting role="php">
 <![CDATA[
 <?php
 
@@ -209,7 +237,8 @@ $collection->save(array("awards" => array("gold", "silver", "bronze")));
 
 ?>
 ]]>
-  </programlisting>
+   </programlisting>
+  </example>
 
   <para>
    Queries can reach into arrays to search for elements.  Suppose that we wish
@@ -217,18 +246,19 @@ $collection->save(array("awards" => array("gold", "silver", "bronze")));
    documents with a "gold" award, such as:
   </para>
 
-  <programlisting>
+  <screen>
 <![CDATA[
 { "_id" : ObjectId("4b06c282edb87a281e09dad9"), "awards" : ["gold", "silver", "bronze"]}
 ]]>
-  </programlisting>
+  </screen>
 
   <para>
    This can be done with a simple query, ignoring the fact that "awards" is an
    array:
   </para>
 
-  <programlisting role="php">
+   <example xml:id="mongo.queries.arrays-example-2">
+    <programlisting role="php">
 <![CDATA[
 <?php
 
@@ -236,14 +266,15 @@ $collection->save(array("awards" => array("gold", "silver", "bronze")));
 
 ?>
 ]]>
-  </programlisting>
+   </programlisting>
+  </example>
 
   <para>
    Suppose we are querying for a more complex object, if each element of the
    array were an object itself, such as:
   </para>
 
-  <programlisting>
+  <screen>
 <![CDATA[
 {
      "_id" : ObjectId("4b06c282edb87a281e09dad9"),
@@ -261,14 +292,15 @@ $collection->save(array("awards" => array("gold", "silver", "bronze")));
      ]
 }
 ]]>
-  </programlisting>
+  </screen>
 
   <para>
    Still ignoring that this is an array, we can use dot notation to query the
    subobject:
   </para>
 
-  <programlisting role="php">
+   <example xml:id="mongo.queries.querying-arrays-nested">
+    <programlisting role="php">
 <![CDATA[
 <?php
 
@@ -276,7 +308,8 @@ $cursor = $collection->find(array("awards.first place" => "gold"));
 
 ?>
 ]]>
-  </programlisting>
+   </programlisting>
+  </example>
 
   <para>
    Notice that it doesn't matter that there is a space in the field name
@@ -289,7 +322,8 @@ $cursor = $collection->find(array("awards.first place" => "gold"));
    instance, if we were looking for documents "gold" or "copper", we could do:
   </para>
 
-  <programlisting role="php">
+  <example xml:id="mongo.queries.querying-arrays-in">
+   <programlisting role="php">
 <![CDATA[
 <?php
 
@@ -297,9 +331,53 @@ $cursor = $collection->find(array("awards" => array('$in' => array("gold", "copp
 
 ?>
 ]]>
-  </programlisting>
+   </programlisting>
+  </example>
+ </simplesect>
 
- </section>
+ <simplesect role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>1.3.1</entry>
+      <entry>
+       Several database commands can now be executed on secondaries.
+      </entry>
+     </row>
+     <row>
+      <entry>1.3.0</entry>
+      <entry>
+       Introduced the <link linkend="mongo.readpreferences">Read
+       Preferences</link> framework to allow more fine grained controlled over
+       secondary reads.
+      </entry>
+     </row>
+     <row>
+      <entry>1.3.0</entry>
+      <entry>
+       Deprecated <literal>slaveOkay</literal> usage.
+      </entry>
+     </row>
+     <row>
+      <entry>1.1.0</entry>
+      <entry>
+       Introduced the possiblity of routing reads to secondaries of ReplicaSet
+       members using <methodname>Mongo::setSlaveOkay</methodname>
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
+ </simplesect>
+
 </chapter>
 
 <!-- Keep this comment at the end of the file
