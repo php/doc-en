@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 322131 $ -->
+
+<refentry xml:id="function.mysqlnd-memcache-set" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <refnamediv>
+  <refname>mysqlnd_memcache_set</refname>
+  <refpurpose>Associate a MySQL connection with a Memcache connection</refpurpose>
+ </refnamediv>
+
+ <refsect1 role="description">
+  &reftitle.description;
+  <methodsynopsis>
+   <type>bool</type>
+   <methodname>mysqlnd_memcache_set</methodname>
+   <methodparam><type>mixed</type><parameter>mysql_connection</parameter></methodparam>
+   <methodparam choice="opt"><type>Memcached</type><parameter>memcache_connection</parameter></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>pattern</parameter></methodparam>
+   <methodparam choice="opt"><type>callback</type><parameter>callback</parameter></methodparam>
+  </methodsynopsis>
+  <para>
+   Associate <parameter>mysql_connection</parameter> with
+   <parameter>memcache_connection</parameter> using <parameter>pattern</parameter>
+   as decision Regexp and <parameter>callback</parameter> as notification
+   callback or unset the association of <parameter>mysql_connection</parameter>.
+  </para>
+  <para>
+   While associating a MySQL connection with a Memcache connection this function
+   will query the MySQL server for its configuration. It will automatically
+   detect whether the server is configured to use the InnoDB Memcache Daemon
+   Plugin or MySQL Cluster NDB Memcache support. It will also query the server
+   to automatically identify exported tables and other configuration options.
+   The results of this automatic configuration can be retrieved using
+   <function>mysqlnd_memcache_get_config</function>.
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <variablelist>
+   <varlistentry>
+    <term><parameter>mysql_connection</parameter></term>
+    <listitem>
+     <para>
+      A handle to a MySQL server of the type
+      <link linkend="ref.pdo-mysql">PDO_MYSQL</link>, <link linkend="book.mysqli">mysqli</link> or
+      <link linkend="book.mysql">ext/mysql</link> for which the configuration is to
+      be set.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>memcache_connection</parameter></term>
+    <listitem>
+     <para>
+      A <link linkend="book.memcached">Memcached</link> instance with an 
+      connection to the MySQL Memcache Daemon plugin. If this parameter
+      is ommitted <parameter>mysql_connection</parameter> will be unassociated
+      from any memcache connection. If a previous association exists it will be
+      replaced.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>pattern</parameter></term>
+    <listitem>
+     <para>
+      A regular expression in <link linkend="book.pcre">Perl Compatible
+      Regular Expression</link> syntax used to identify potential
+      Memcache-queries. The query should have three sub patterns. The
+      first subpattern contains the requested field list, the second the name
+      of the ID column from the query and the third the requested value. If
+      this parameteris ommitted or set to &null; a default
+      pattern will be used.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>callback</parameter></term>
+    <listitem>
+     <para>
+      A callback which will be used whenever a query is being sent to 
+      MySQL. The callback will receive a single &boolean; parameter
+      telling if a query was sent via Memcache.
+     </para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   If the association or disassociation succeds the function returns &true;. In 
+   case of an error &false; is being returned.
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title>
+     <function>mysqlnd_memcache_set</function> example with
+     <function>var_dump</function> as simple debugging callabck.</title>
+
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("host", "user", "passwd", "database");
+$memc = new Memcached();
+$memc->addServer("host", 11211);
+mysqlnd_memcache_set($mysqli, $memc, NULL, 'var_dump');
+
+/* This query will be intercepted and executed via Memcache protocol */
+echo "Sending query for id via Memcache: ";
+$mysqli->query("SELECT f1, f2, f3 FROM test WHERE id = 1");
+
+/* f1 is not configured as valid key field, this won't be sent via Memcache */
+echo "Sending query for f1 via Memcache: ";
+$mysqli->query("SELECT id FROM test WHERE f1 = 1");
+
+mysqlnd_memcache_set($mysqli);
+
+/* Now the regular MySQL protocol will be used */
+echo "var_dump won't be invoked: ";
+$mysqli->query("SELECT f1, f2, f3 WHERE id = 1");
+
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Sending query for id via Memcache: bool(true)
+Sending query for f1 via Memcache: bool(false)
+var_dump won't be invoked: 
+]]>
+    </screen>
+   </example>
+  </para>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member>
+     <function>mysqlnd_memcache_get_config</function>
+    </member>
+   </simplelist>
+  </para>
+ </refsect1>
+
+</refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

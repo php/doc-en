@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 322131 $ -->
+
+<refentry xml:id="function.mysqlnd-memcache-get-config" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <refnamediv>
+  <refname>mysqlnd_memcache_get_config</refname>
+  <refpurpose>Returns information about the plugin configuration</refpurpose>
+ </refnamediv>
+
+ <refsect1 role="description">
+  &reftitle.description;
+  <methodsynopsis>
+   <type>array</type>
+   <methodname>mysqlnd_memcache_get_config</methodname>
+   <methodparam><type>mixed</type><parameter>connection</parameter></methodparam>
+  </methodsynopsis>
+  <para>
+   This function returns an array containing all the mysqlnd_memcache related
+   configuration attached to a MySQL connection. This includes MySQL the 
+   Memcache object provided via <function>mysqlnd_memcache_set</function>
+   as well as the table mapping configuration which was automatically collected
+   from the MySQL server.
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <variablelist>
+   <varlistentry>
+    <term><parameter>connection</parameter></term>
+    <listitem>
+     <para>
+      A handle to a MySQL server of the type
+      <link linkend="ref.pdo-mysql">PDO_MYSQL</link>, <link linkend="book.mysqli">mysqli</link> or
+      <link linkend="book.mysql">ext/mysql</link> for which the configuration is to
+      be returned.
+     </para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   If the connection is associated with a memcache connection an array will
+   be returned. Otherwise this function will return <literal>false</literal>.
+  </para>
+  <para>
+   The returned array has these elements:
+  </para>
+  <para>
+   <table>
+    <title>mysqlnd_memcache_get_config array structure</title>
+    <tgroup cols="2"> 
+     <thead>
+      <row>
+       <entry>Array Key</entry>
+       <entry>Description</entry>
+      </row>
+     </thead>
+     <tbody> 
+      <row>
+       <entry>memcached</entry>
+       <entry>
+        Instance of Memcached associated to this MySQL connection
+        by <methodname>mysqlnd_memcache_set</methodname>. You can use this to
+        change settings of the memcache connection or directly querying the
+        server onthis connection.
+       </entry>
+      </row>
+      <row>
+       <entry>pattern</entry>
+       <entry>
+        Regular expression used to match an SQL query being sent to the server.
+        Queries matching this pattern will be further analyzed to decide whether
+        the query can be intercepted and sent via the memcache interface or
+        whether the query is sent using the general MySQL protocol to the
+        server. The pattern either is the default pattern,
+        <literal>MYSQLND_MEMCACHE_DEFAULT_REGEXP</literal> or set via
+        <methodname>mysqlnd_memcache_set</methodname>.
+       </entry>
+      </row>
+      <row>
+       <entry>mappings</entry>
+       <entry>
+        An associative array with a list of all configured containers as they
+        were discovered by this plugin. The key for these elements is the name
+        of the container in the MySQL configuration. The value is described
+        below. The contents of this field is created by querying the MySQL
+        server during associting a MySQL and a memcache connection using
+        <methodname>mysqlnd_memcache_set</methodname>.
+       </entry>
+      </row>
+      <row>
+       <entry>mapping_query</entry>
+       <entry>An SQL query used during
+        <methodname>mysqlnd_memcache_set</methodname>
+        to identify the available containers and mappings. The result of that 
+        query is provided in the mappings element.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </table>
+   <table>
+    <title>Mapping entry structure</title>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>Array Key</entry>
+       <entry>Description</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>prefix</entry>
+       <entry>
+        A prefix used while accessing data via memcache. With the MySQL InnoDB 
+        Memcache Deamon plugin this usully begins with @@ and ends with a
+        configurable separator. This prefix is placed in front of the key value
+        while using the memcache protocol.
+       </entry>
+      </row>
+      <row>
+       <entry>schema_name</entry>
+       <entry>
+        Name of the schema (database) which contains the table being accessed.
+       </entry>
+      </row>
+      <row>
+       <entry>table_name</entry>
+       <entry>
+        Name of the table which contins the data accessible via memcache
+        protocol.
+       </entry>
+      </row>
+      <row>
+       <entry>id_field_name</entry>
+       <entry>
+        Name of the database field (column) with the id used as key when
+        accessing the table vi a memcache. Often this is the database field
+        having a primary key.
+       </entry>
+      </row>
+      <row>
+       <entry>separator</entry>
+       <entry>
+        A seprator used to split different field values. This is needed as
+        memcache only provides access to a single value while MySQL can map
+        multiple columns to this value.
+        <note>
+         <para>
+          The separator, which can be set in the MySQL Server configuration
+          should not be part ofany value retrieved via memcache as proper
+          mapping can't be guranteed.
+         </para>
+        </note>
+       </entry>
+      </row>
+      <row>
+       <entry>fields</entry>
+       <entry>
+        An array with the names of all fields availle forthis mapping.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </table>
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>mysqlnd_memcache_get_config</function> example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("host", "user", "passwd", "database");
+$memc = new Memcached();
+$memc->addServer("host", 11211);
+mysqlnd_memcache_set($mysqli, $memc);
+
+var_dump(mysqlnd_memcache_get_config($mysqli));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(4) {
+  ["memcached"]=>
+  object(Memcached)#2 (0) {
+  }
+  ["pattern"]=>
+  string(125) "/^\s*SELECT\s*(.+?)\s*FROM\s*`?([a-z0-9_]+)`?\s*WHERE\s*`?([a-z0-9_]+)`?\s*=\s*(?(?=["'])["']([^"']*)["']|([0-9e\.]*))\s*$/is"
+  ["mappings"]=>
+  array(1) {
+    ["mymem_test"]=>
+    array(6) {
+      ["prefix"]=>
+      string(13) "@@mymem_test."
+      ["schema_name"]=>
+      string(4) "test"
+      ["table_name"]=>
+      string(10) "mymem_test"
+      ["id_field_name"]=>
+      string(2) "id"
+      ["separator"]=>
+      string(1) "|"
+      ["fields"]=>
+      array(3) {
+        [0]=>
+        string(2) "f1"
+        [1]=>
+        string(2) "f2"
+        [2]=>
+        string(2) "f3"
+      }
+    }
+  }
+  ["mapping_query"]=>
+  string(209) "    SELECT c.name,
+                          CONCAT('@@', c.name, (SELECT value FROM innodb_memcache.config_options WHERE name = 'table_map_delimiter')) AS key_prefix, 
+                          c.db_schema, 
+                          c.db_table, 
+                          c.key_columns, 
+                          c.value_columns, 
+                          (SELECT value FROM innodb_memcache.config_options WHERE name = 'separator') AS sep 
+                     FROM innodb_memcache.containers c"
+}
+]]>
+    </screen>
+   </example>
+  </para>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member>
+     <methodname>mysqlnd_memcache_set</methodname>
+    </member>
+   </simplelist>
+  </para>
+ </refsect1>
+
+</refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
