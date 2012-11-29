@@ -23,6 +23,7 @@
    <function>MongoClient::__construct</function>.
   </para>
   <example xml:id="mongo.connecting.auth-example">
+   <title>Authenticating against the "admin" database</title>
    <programlisting role="php">
 <![CDATA[
 <?php
@@ -42,6 +43,7 @@ $m = new MongoClient("mongodb://localhost", array("username" => $username, "pass
    <function>MongoClient::__construct</function>.
   </para>
   <example xml:id="mongo.connecting.auth-db-example">
+   <title>Authenticating against normal databases</title>
    <programlisting role="php">
 <![CDATA[
 <?php
@@ -68,6 +70,7 @@ $m = new MongoClient("mongodb://${username}:${password}@localhost", array("db" =
    by a comma.
   </para>
   <example xml:id="mongo.connecting.rs-example">
+   <title>ReplicaSet seedlist</title>
    <programlisting role="php">
 <![CDATA[
 <?php
@@ -84,17 +87,19 @@ $m = new MongoClient("mongodb://rs1.example.com:27017,rs2.example.com:27017", ar
    </programlisting>
   </example>
   <para>
-   Version 1.0.9+ of the driver is required to connect to a replica set. Earlier
-   versions of the driver will not auto-detect the primary or reconnect
-   correctly.
-  </para>
-  <para>
    The PHP driver will query the database server(s) listed to determine the
    primary. So long as it can connect to at least one host listed and find a
    primary, the connection will succeed. If it cannot make a connection to any
    servers listed or cannot find a primary, a
    <classname>MongoConnectionException</classname> will be thrown.
   </para>
+  <tip>
+   <para>
+    You should always provide a seedlist with more then one member of the
+    ReplicaSet. For highest availability you should seed with at least one
+    server from each of your datacenters.
+   </para>
+  </tip>
   <para>
    If the primary becomes unavailable, an election will take place and a
    secondary will be promoted to the role of primary (unless a majority vote
@@ -104,15 +109,81 @@ $m = new MongoClient("mongodb://rs1.example.com:27017,rs2.example.com:27017", ar
    do so will result in an exception. Connections to secondaries will still be
    able to perform reads.
   </para>
+  <note>
+   <para>
+    The default <link linkend="mongo.readpreferences">Read Preference</link>
+    is to only read from the primary. During the election process there is no
+    primary, and all read will therefore fail.
+   </para>
+   <para>
+    It is recommended to use
+    <constant>MongoClient::RP_PRIMARY_PREFERRED</constant> Read Preference for
+    applications that require high availability for reads, as reads will only
+    be executed on the secondaries when there simply isn't a primary
+    available.
+   </para>
+  </note>
   <para>
    Once a primary is elected, attempting to perform a read or write will allow
    the driver to detect the new primary. The driver will make this its primary
    database connection and continue operating normally.
   </para>
   <para>
+   The health and state of a secondary is checked every 5 seconds
+   (configurable with
+   <link linkend="ini.mongo.ping-interval">mongo.ping_interval</link>)
+   or when the next operation occurs after 5 seconds.  It will also recheck
+   the configuration when the driver has a problem reaching a server.
+  </para>
+  <para>
+   ReplicaSet failovers are checked every 60seconds (configurable with
+   <link linkend="ini.mongo.is-master-interval">mongo.is_master_interval</link>),
+   and whenever a write operation fails when using acknowledged writes.
+  </para>
+
+  <caution>
+   <para>
+    Secondaries may be behind the primary in operations, so
+    your application must be okay with getting out-of-date data when using
+    Read Preferences other then <constant>MongoClient::RP_PRIMARY</constant>.
+   </para>
+  </caution>
+
+  <para>
    For more information on replica sets, see the
    <link xlink:href="&url.mongodb.replica;">core documentation</link>.
   </para>
+
+  <simplesect role="seealso">
+   &reftitle.seealso;
+   <simplelist>
+    <member><xref linkend="mongo.readpreferences" /></member>
+    <member><xref linkend="mongo.writeconcerns" /></member>
+   </simplelist>
+  </simplesect>
+
+  <simplesect role="changelog">
+   &reftitle.changelog;
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>1.0.9</entry>
+       <entry>
+        Added support for connecting to ReplicaSet and automatic failover.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
+  </simplesect>
+
  </section>
 
  <section xml:id="mongo.connecting.mongos">
@@ -152,9 +223,8 @@ $m = new MongoClient("mongodb://mongos1.example.com:27017,mongos2.example.com:27
   <title>Domain Socket Support</title>
 
   <para>
-   If you are running MongoDB locally and using version 1.0.9+ of the driver,
-   you can connect to the database via a socket file. MongoDB automatically
-   opens a socket file on startup: <literal>/tmp/mongodb-&lt;port&gt;.sock.</literal>
+   MongoDB has built-in support for via Unix Domain Sockets and will open the
+   socket on startup, by default located in <filename>/tmp/mongodb-&lt;port&gt;.sock.</filename>.
   </para>
 
   <para>
@@ -187,12 +257,46 @@ $m = new MongoClient("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
 ?>
 ]]>
    </programlisting>
-   </example>
+  </example>
+
+  <simplesect role="changelog">
+   &reftitle.changelog;
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>1.0.9</entry>
+       <entry>
+        Added support for Unix Domain Sockets.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
+  </simplesect>
 
  </section>
 
  <section xml:id="mongo.connecting.pools">
   <title>Connection Pooling (version 1.2.0-1.2.12 *only*)</title>
+  <note>
+   <para>
+    This section is no longer relevant as of the 1.3.0 release of the driver
+    and only serves as a historical information on how the pooling used to
+    work.
+   </para>
+   <para>
+    The latest versions of the driver have no concept of pooling anymore and
+    will maintain only one connection per process, for each connection type
+    (ReplicaSet/standalone/mongos), for each credentials combination.
+    </para>
+   </note>
   <para>
    Creating connections is one of the most heavyweight things that the driver
    does. It can take hundreds of milliseconds to set up a connection correctly,
