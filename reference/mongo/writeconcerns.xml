@@ -37,19 +37,19 @@
  </warning>
 
  <para>
-  When using acknowledged writes and the ReplicaSet has failedover, the driver
+  When using acknowledged writes and the replica set has failed over, the driver
   will automatically disconnect from the primary, throw an exception, and
   attempt to find a new primary on the next operation (your application must
   decide whether or not to retry the operation on the new primary).
  </para>
  <para>
-  When using unacknowledged writes (w=0) and the ReplicaSet has failedover,
+  When using unacknowledged writes (w=0) and the replica set has failed over,
   there will be no way for the driver to know about the change so it will
-  continuously and silently fail to write.
+  continue and silently fail to write.
  </para>
  <para>
   The default Write Concern for the <classname>MongoClient</classname> is
-  <literal>1</literal>, acknowledge.
+  <literal>1</literal>: acknowledge write operations.
  </para>
 
 
@@ -65,11 +65,13 @@
      </row>
     </thead>
     <tbody>
+<!--
      <row>
       <entry>w=-1</entry>
       <entry>Errors ignored</entry>
       <entry>No errors, including network errors, will be checked at all</entry>
      </row>
+-->
      <row>
       <entry>w=0</entry>
       <entry>Unacknowledged</entry>
@@ -78,23 +80,23 @@
      <row>
       <entry>w=1</entry>
       <entry>Acknowledged</entry>
-      <entry>The write will be acknowledged by the server (the primary on ReplicaSet configuration)</entry>
+      <entry>The write will be acknowledged by the server (the primary on replica set configuration)</entry>
      </row>
      <row>
       <entry>w=N</entry>
-      <entry>ReplicaSet Acknowledged</entry>
+      <entry>Replica Set Acknowledged</entry>
       <entry>The write will be acknowledged by the primary server, and
       replicated to <literal>N-1</literal> secondaries.</entry>
      </row>
      <row>
       <entry>w=majority</entry>
       <entry>Majority Acknowledged</entry>
-      <entry>The write will be acknowledged by the majority of the ReplicaSet (including the primary). This is a special reserved string.</entry>
+      <entry>The write will be acknowledged by the majority of the replica set (including the primary). This is a special reserved string.</entry>
      </row>
      <row>
       <entry>w=&lt;tag set&gt;</entry>
-      <entry>ReplicaSet TagSet Acknowledged</entry>
-      <entry>The write will be acknowledged by members of the entire TagSet</entry>
+      <entry>Replica Set Tag Set Acknowledged</entry>
+      <entry>The write will be acknowledged by members of the entire tag set</entry>
      </row>
      <row>
       <entry>j=true</entry>
@@ -110,11 +112,11 @@
  <simplesect xml:id="mongo.writeconcerns.unacknowledged">
   <title>Unacknowledged Writes</title>
   <para>
-   By not requiring the server to acknowledge writes means that writes can be performed
+   By not requiring the server to acknowledge writes the writes can be performed
    extremely quickly, but you don't know whether or not they actually succeeded.
    Writes can fail for a number of reasons: if there are network problems, if a 
    database server goes down, or if the write was simply invalid (e.g., writing 
-   to a system collection).
+   to a system collection; or duplicate key errors).
   </para>
   <para>
    While developing, you should always use acknowledged writes (to protect against 
@@ -125,8 +127,8 @@
    thousands of records per second.
   </para>
   <para>
-   It is strongly recommended that you do a acknowledged write at the end of
-   series of unacknowledged writes. Doing so will not incurr in too large
+   It is strongly recommended that you do an acknowledged write at the end of
+   series of unacknowledged writes. Doing so will not incur in a too large
    performance penalty, but still allow you to catch any errors that may have
    occurred.
   </para>
@@ -159,14 +161,14 @@ try {
  <simplesect xml:id="mongo.writeconcerns.acknowledged">
   <title>Acknowledged Writes</title>
   <para>
-   These type of write operations will make sure that the
-   database has the write before returning success. If the write failed, it
-   will throw a <classname>MongoCursorException</classname> with an explanation of 
-   the failure. The <classname>MongoClient</classname> default behaviour is to
-   acknowledge the write (w=1).
+   These type of write operations will make sure that the database has
+   accepted the write operation before returning success. If the write failed,
+   it will throw a <classname>MongoCursorException</classname> with an
+   explanation of the failure. The <classname>MongoClient</classname> default
+   behaviour is to acknowledge the write (w=1).
   </para>
   <para>
-   It is possible to specify how many members of an ReplicaSet have to
+   It is possible to specify how many members of an replica set have to
    acknowledge the write (i.e. have it replicated) before the write is deemed
    acknowledged and the operation returns.
    <example xml:id="mongo.writeconcerns.acknowledged-example">
@@ -176,28 +178,31 @@ try {
 <?php
 // Force acknowledgement from the primary only
 $collection->insert($doc, array("w" => 1));
-// Force acknowledgement from the primary, and one other member of the ReplicaSet
+
+// Force acknowledgement from the primary, and one other member of the
+// replica set
 $collection->insert($doc, array("w" => 2));
-// Force acknowledgement from the primary, and six other member of the ReplicaSet
-// (You probably never ever want to do this :)
+
+// Force acknowledgement from the primary, and six other members of the
+// replica set (you probably never should do this):
 $collection->insert($doc, array("w" => 7));
 ]]>
     </programlisting>
     <para>
      Keep in mind to select your Write Concern carefully. If you have a
-     ReplicaSet with 5 members, and you select WriteConcern of
+     replica set with 5 members, and you select Write Concern of
      <literal>4</literal> you will risk the write blocking forever when one
-     member of the ReplicaSet goes down for maintenance or a temporary network
+     member of the replica set goes down for maintenance or a temporary network
      outage happens.
     </para>
    </example>
   </para>
   <warning>
    <para>
-    Passing in a string value for WriteConcern has a specific meaning
-    (ReplicaSet TagSet Acknowledged). Please be careful of
+    Passing in a string value for Write Concern has a specific meaning
+    (Replica Set Tag Set Acknowledged). Please be careful of
     <emphasis>NOT</emphasis> using string values for numbers (i.e.
-    <literal>array("w" => "1")</literal>) as it will be treated as a TagSet
+    <literal>array("w" => "1")</literal>) as it will be treated as a tag set
     name.
    </para>
   </warning>
@@ -208,7 +213,7 @@ $collection->insert($doc, array("w" => 7));
   <para>
    Using the special <literal>majority</literal> Write Concern option is the
    recommended way for writes that are required to survive the apocalypse, as
-   it will ensure the majority of your ReplicaSet will have the write and will
+   it will ensure the majority of your replica set will have the write and will
    therefore be guaranteed to survive all usual suspect outage scenarios.
   </para>
   <example xml:id="mongo.writeconcerns.majority.acknowledged-example">
@@ -232,10 +237,10 @@ $collection->insert($someDoc, array("w" => "majority"));
  <simplesect xml:id="mongo.writeconcerns.journal">
   <title>Journaled Writes</title>
   <para>
-   When connecting to a ReplicaSet the default WriteConcern is only to have
-   the primary server acknowledge the write, but there is a 100ms window until
-   the write gets journaled and flushed to disk. It is possible to force the
-   write to be journaled before acknowledging the write by setting the
+   When connecting to a replica set the default Write Concern is only to have
+   the primary server acknowledge the write. There is however a 100ms window
+   until the write gets journaled and flushed to disk. It is possible to force
+   the write to be journaled before acknowledging the write by setting the
    <literal>j</literal> option:
    <example xml:id="mongo.writeconcerns.journalled">
     <title>Acknowledged and Journaled Write</title>
@@ -290,8 +295,9 @@ try {
      <row>
       <entry>1.3.0</entry>
       <entry>
-       The <literal>"safe"</literal> write option has been deprecated and not
-       available with the new <classname>MongoClient</classname> class.
+       The <literal>"safe"</literal> write option has been deprecated and is
+       not available with the new <classname>MongoClient</classname> class.
+       Use the <literal>"w"</literal> option instead.
       </entry>
      </row>
     </tbody>
