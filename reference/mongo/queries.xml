@@ -8,12 +8,12 @@
 
   <para>
    All queries (reads and writes) are only sent to the primary member of a
-   ReplicaSet by default. This is however easily configurable by using the
+   replica set by default. This is however easily configurable by using the
    <link linkend="mongo.readpreferences">Read Preferences</link> which allow
    you to set some generic read preferences (such as allowing secondary reads
    of the nearest server), and also provide ways to specifically target a
    server in a specific country, datacenter, or even hardware, by the use of
-   <link linkend="mongo.readpreferences.tagsets">ReplicaSet TagSets</link>.
+   <link linkend="mongo.readpreferences.tagsets">replica set tag sets</link>.
   </para>
   <para>
    Read Preferences can be configured at "every level"
@@ -22,7 +22,9 @@
     <member>Specifically by calling <methodname>MongoClient::setReadPreference</methodname></member>
     <member>At the Database level with <methodname>MongoDB::setReadPreference</methodname></member>
     <member>At the Collection level with <methodname>MongoCollection::setReadPreference</methodname></member>
+<!--
     <member>At the Cursor level with <methodname>MongoCursor::setReadPreference</methodname></member>
+-->
    </simplelist>
    Each class inherits the Read Preference setting from the class above it, so if you do:
   </para>
@@ -31,20 +33,18 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-
 $db->setReadPreference(MongoClient::RP_SECONDARY_PREFERRED);
 $c = $db->myCollection;
 
 $cursor = $c->find();
-
 ?>
 ]]>
    </programlisting>
   </example>
   <para>
-   then the query will be executed against a secondary (the collection inherited
-   <constant>MongoClient::RP_SECONDARY_PREFERRED</constant> from the database and the cursor inherited it from the
-   collection).
+   then the query will be executed against a secondary (the collection
+   inherited <constant>MongoClient::RP_SECONDARY_PREFERRED</constant> from the
+   database and the cursor inherited it from the collection).
   </para>
  </simplesect>
 
@@ -63,7 +63,6 @@ $cursor = $c->find();
 <?php
 $options = array("replicaSet" => "setName", "readPreference" => MongoClient::RP_SECONDARY_PREFERRED);
 
-
 // on the Australian client
 $m = new MongoClient("mongodb://primary,australianhost.secondary,europeanhost.secondary", $options);
 $cursor = $m->foo->bar->find();
@@ -75,7 +74,6 @@ $m = new MongoClient("mongodb://primary,australianhost.secondary,europeanhost.se
 $cursor = $m->foo->bar->find();
 $cursor->getNext();
 echo "Reading from: ", $cursor->info()["server"], "\n";
-
 ?>
 ]]>
     </programlisting>
@@ -88,14 +86,13 @@ Reading from: europeanHost
     </screen>
     <para>
      Note that we have to do a query before a secondary is chosen: secondaries
-     are chosen lazily by the driver.
+     are chosen lazily by the driver, and for each query separately.
     </para>
    </example>
 
-
    <para>
-    You can see what the driver thinks is the current status of the set members
-    by running <methodname>MongoClient::getHosts</methodname> or
+    You can see what the driver thinks is the current status of the set
+    members by running <methodname>MongoClient::getHosts</methodname> or
     <methodname>MongoClient::getConnections</methodname>.
    </para>
 
@@ -115,9 +112,10 @@ Reading from: europeanHost
    <title>Random notes</title>
 
    <para>
-    Writes are always sent to the primary - and by default all reads are sent
+    Writes are always sent to the primary—and by default all reads are sent
     to the primary too.
    </para>
+<!--
    <para>
     The following database commands can be sent to secondaries when using the
     apropriate Read Preference:
@@ -135,37 +133,38 @@ Reading from: europeanHost
     </simplelist>
     All other commands are always sent to the primary.
    </para>
+-->
   </simplesect>
 
  <simplesect xml:id="mongo.queries.querying">
   <title>Querying by _id</title>
   <para>
-   Every object inserted is automatically assigned a unique _id field, which is
-   often a useful field to use in queries.
+   Every object inserted is automatically assigned a unique
+   <literal>_id</literal> field, which is often a useful field to use in
+   queries. This works similarly to "get last insert ID" functionality, except
+   that the <literal>_id</literal> is chosen by the <emphasis>client</emphasis>.
   </para>
   <para>
    Suppose that we wish to find the document we just inserted.  Inserting adds
-   and _id field to the document, so we can query by that:
+   an <literal>_id</literal> field to the document, so we can query by that:
 
    <example xml:id="mongo.queries.querying-example">
     <programlisting role="php">
 <![CDATA[
 <?php
-
 $person = array("name" => "joe");
 
 $people->insert($person);
 
 // now $joe has an _id field
 $joe = $people->findOne(array("_id" => $person['_id']));
-
 ?>
 ]]>
     </programlisting>
    </example>
   </para>
   <para>
-   Unless the user has specified otherwise, the _id field is a
+   Unless the user has specified otherwise, the <literal>_id</literal> field is a
    <classname>MongoId</classname>.  The most common mistake is attempting to use
    a string to match a <classname>MongoId</classname>.  Keep in mind that these
    are two different datatypes, and will not match each other in the same way
@@ -175,7 +174,6 @@ $joe = $people->findOne(array("_id" => $person['_id']));
     <programlisting role="php">
 <![CDATA[
 <?php
-
 $person = array("name" => "joe");
 
 $people->insert($person);
@@ -185,7 +183,6 @@ $pid = $person['_id'] . "";
 
 // FAILS - $pid is a string, not a MongoId
 $joe = $people->findOne(array("_id" => $pid));
-
 ?>
 ]]>
     </programlisting>
@@ -327,30 +324,33 @@ $cursor = $collection->find(array("awards" => array('$in' => array("gold", "copp
      </row>
     </thead>
     <tbody>
+<!--
      <row>
       <entry>1.3.1</entry>
       <entry>
        Several database commands can now be executed on secondaries.
       </entry>
      </row>
+-->
      <row>
       <entry>1.3.0</entry>
       <entry>
        Introduced the <link linkend="mongo.readpreferences">Read
-       Preferences</link> framework to allow more fine grained controlled over
+       Preferences</link> framework to allow more fine grained control over
        secondary reads.
       </entry>
      </row>
      <row>
       <entry>1.3.0</entry>
       <entry>
-       Deprecated <literal>slaveOkay</literal> usage.
+       Deprecated <literal>slaveOkay</literal> usage, the alternative is <link
+       linkend="mongo.readpreferences">Read Preferences</link>.
       </entry>
      </row>
      <row>
       <entry>1.1.0</entry>
       <entry>
-       Introduced the possiblity of routing reads to secondaries of ReplicaSet
+       Introduced the possiblity of routing reads to secondaries of replica set
        members using <methodname>Mongo::setSlaveOkay</methodname>
       </entry>
      </row>

@@ -63,19 +63,16 @@ XKCD
    <programlisting role="php">
 <![CDATA[
 <?php
-
 $connection = new MongoClient(); // connects to localhost:27017
-$connection = new MongoClient( "example.com" ); // connect to a remote host (default port: 27017)
-$connection = new MongoClient( "example.com:65432" ); // connect to a remote host at a given port
-
+$connection = new MongoClient( "mongodb://example.com" ); // connect to a remote host (default port: 27017)
+$connection = new MongoClient( "mongodb://example.com:65432" ); // connect to a remote host at a given port
 ?>
 ]]>
    </programlisting>
   </example>
   <para>
-   You do not have to explicitly disconnect from the database.  When
-   <literal>$connection</literal> goes out of scope, the connection will be
-   closed automatically and any database resources it was using will be freed.
+   You do not have to explicitly disconnect from the database. The driver uses
+   persistent connections and will re-use already established connections.
   </para>
   <section xml:id="mongo.tutorial.connecting.seealso">
    <title>See Also</title>
@@ -100,9 +97,8 @@ $connection = new MongoClient( "example.com:65432" ); // connect to a remote hos
     <programlisting role="php">
 <![CDATA[
 <?php
-
+$connection = new MongoClient();
 $db = $connection->dbname;
-
 ?>
 ]]>
     </programlisting>
@@ -113,18 +109,20 @@ $db = $connection->dbname;
    </para>
    <para>
     Be careful of typos! You can inadvertently create a new database, which can
-    cause confusing errors:
+    cause confusing errors (here <literal>name</literal> is misspelled as
+    <literal>anme</literal> in the second selection:
 
     <example xml:id="mongo.tutorial.selectdb.typo">
      <programlisting role="php">
 <![CDATA[
 <?php
+$connection = new MongoClient();
 
 $db = $connection->mybiglongdbname;
 // do some stuff
+
 $db = $connection->mybiglongdbanme;
 // now connected to a different database!
-
 ?>
 ]]>
      </programlisting>
@@ -148,13 +146,14 @@ $db = $connection->mybiglongdbanme;
     <programlisting role="php">
 <![CDATA[
 <?php
-
+$connection = new MongoClient();
 $db = $connection->baz;
+
+// select a collection:
 $collection = $db->foobar;
 
-// or, more succinctly
+// or, directly selecting a database and collection:
 $collection = $connection->baz->foobar;
-
 ?>
 ]]>
     </programlisting>
@@ -182,20 +181,23 @@ $collection = $connection->baz->foobar;
     <programlisting role="php">
 <![CDATA[
 <?php
-
-$doc = array( "name" => "MongoDB",
-   "type" => "database",
-   "count" => 1,
-   "info" => (object)array( "x" => 203, "y" => 102),
-   "versions" => array("0.9.7", "0.9.8", "0.9.9")
+$doc = array(
+    "name" => "MongoDB",
+    "type" => "database",
+    "count" => 1,
+    "info" => (object)array( "x" => 203, "y" => 102),
+    "versions" => array("0.9.7", "0.9.8", "0.9.9")
 );
-
 ?>
 ]]>
     </programlisting>
    </example>
    <para>
-    Note that you can have nested arrays and objects.
+    Note that you can have nested arrays and objects. The driver will always
+    store an associative array as an object in the database. A
+    numerically indexed array is stored as an array in case the keys start at
+    0 and are not interrupted, and as an object if the array keys don't start
+    at 0 or have gaps (ie: <literal>0, 1, 4, 5</literal>).
    </para>
    <para>
     To insert this document, use <function>MongoCollection::insert</function>:
@@ -204,9 +206,10 @@ $doc = array( "name" => "MongoDB",
     <programlisting role="php">
 <![CDATA[
 <?php
+$connection = new MongoClient();
+$collection = $connection->database->collectionName;
 
 $collection->insert( $doc );
-
 ?>
 ]]>
     </programlisting>
@@ -225,19 +228,21 @@ $collection->insert( $doc );
     Finding Documents using <function>MongoCollection::findOne</function>
    </title>
    <para>
-    To show that the document we inserted in the previous step is there, we can
-    do a simple <function>MongoCollection::findOne</function> operation to get a
-    single document from the collection. This method is useful when there only is
-    one document matching the query or you are only interested in one result.
+    To show that the document we inserted in the previous step is stored in
+    the database, we can do a simple
+    <function>MongoCollection::findOne</function> operation to get a single
+    document from the collection. This method is useful when there is only one
+    document matching the query or you are only interested in one result.
    </para>
    <example xml:id="mongo.tutorial.findone-example">
     <programlisting role="php">
 <![CDATA[
 <?php
+$connection = new MongoClient();
+$collection = $connection->database->collectionName;
 
 $obj = $collection->findOne();
 var_dump( $obj );
-
 ?>
 ]]>
     </programlisting>
@@ -290,6 +295,8 @@ array(6) {
     <programlisting role="php">
 <![CDATA[
 <?php
+$connection = new MongoClient();
+$db = $connection->database;
 
 $db->foo->insert(array("_id" => 1));
 // this will throw an exception
@@ -297,18 +304,16 @@ $db->foo->insert(array("_id" => 1));
 
 // this is fine, as it is a different collection
 $db->bar->insert(array("_id" => 1));
-
 ?>
 ]]>
     </programlisting>
    </example>
    <para>
-    By default the driver will ensure the servers has acknowledged the write
+    By default the driver will ensure the server has acknowledged the write
     before returning. You can optionally turn this behaviour off by passing
-    <literal>array("w" => 0)</literal> as the second argument -
-    <literal>array("w" => 1)</literal>.  meaning the driver should not wait
-    for the database to acknowledge the writes, so the driver would not throw
-    the duplicate <literal>_id</literal> exception.
+    <literal>array("w" => 0)</literal> as the second argument. This means that
+    the driver should not wait for the database to acknowledge the write and
+    would not throw the duplicate <literal>_id</literal> exception.
    </para>
    <section xml:id="mongo.tutorial.findone.seealso">
     <title>See Also</title>
@@ -339,20 +344,24 @@ $db->bar->insert(array("_id" => 1));
     <programlisting role="php">
 <![CDATA[
 <?php
+$connection = new MongoClient();
+$collection = $connection->database->collectionName;
 
-for($i=0; $i<100; $i++) {
-    $collection->insert( array( "i" => $i ) );
+for ( $i = 0; $i < 100; $i++ )
+{
+    $collection->insert( array( 'i' => $i, "field{$i}" => $i * 2 ) );
 }
-
 ?>
 ]]>
     </programlisting>
    </example>
 
    <para>
-    Notice that we can insert arrays with different key sets into the same
+    Notice that we can insert arrays with different keys into the same
     collection. This aspect is what we mean when we say that MongoDB is
-    "schema-free".
+    "schema-free". In the example above each document has an
+    <literal>i</literal> field, but also a field name in the form of
+    <literal>field</literal> + <literal>$i</literal>.
    </para>
   </section>
 
@@ -366,9 +375,10 @@ for($i=0; $i<100; $i++) {
      <programlisting role="php">
 <![CDATA[
 <?php
+$connection = new MongoClient();
+$collection = $connection->database->collectionName;
 
 echo $collection->count();
-
 ?>
 ]]>
      </programlisting>
@@ -390,13 +400,15 @@ echo $collection->count();
      <programlisting role="php">
 <![CDATA[
 <?php
+$connection = new MongoClient();
+$collection = $connection->database->collectionName;
 
 $cursor = $collection->find();
-foreach ($cursor as $id => $value) {
+foreach ( $cursor as $id => $value )
+{
     echo "$id: ";
     var_dump( $value );
 }
-
 ?>
 ]]>
      </programlisting>
@@ -421,20 +433,23 @@ foreach ($cursor as $id => $value) {
     We can create a query to pass to the
     <function>MongoCollection::find</function> method to get a subset of the
     documents in our collection. For example, if we wanted to find the document
-    for which the value of the "i" field is 71, we would do the following:
+    for which the value of the <literal>"i"</literal> field is
+    <literal>71</literal>, we would do the following:
    </para>
    <example xml:id="mongo.tutorial.criteria-example">
     <programlisting role="php">
 <![CDATA[
 <?php
+$connection = new MongoClient();
+$collection = $connection->database->collectionName;
 
-$query = array( "i" => 71 );
+$query = array( 'i' => 71 );
 $cursor = $collection->find( $query );
 
-while( $cursor->hasNext() ) {
+while ( $cursor->hasNext() )
+{
     var_dump( $cursor->getNext() );
 }
-
 ?>
 ]]>
     </programlisting>
@@ -459,38 +474,44 @@ array(2) {
    <title>Getting A Set of Documents With a Query</title>
    <para>
     We can use the query to get a set of documents from our collection. For
-    example, if we wanted to get all documents where "i" &gt; 50, we could write:
+    example, if we wanted to get all documents where <literal>"i"</literal>
+    &gt; <literal>50</literal>, we could write:
    </para>
    <example xml:id="mongo.tutorial.multi.query-example">
     <programlisting role="php">
 <![CDATA[
 <?php
+$connection = new MongoClient();
+$collection = $connection->database->collectionName;
 
 $query = array( "i" => array( '$gt' => 50 ) ); //note the single quotes around '$gt'
 $cursor = $coll->find( $query );
 
-while( $cursor->hasNext() ) {
+while ( $cursor->hasNext() )
+{
     var_dump( $cursor->getNext() );
 }
-
 ?>
 ]]>
     </programlisting>
     <para>
-     which should print the documents where i &gt; 50. We could also get a range, say
-     20 &lt; i &lt;= 30:
+     which should print the documents where <literal>"i"</literal> &gt;
+     <literal>50</literal>. We could also get a range, say
+     <literal>20 &lt; i &lt;= 30</literal>:
     </para>
     <screen>
 <![CDATA[
 <?php
+$connection = new MongoClient();
+$collection = $connection->database->collectionName;
 
-$query = array( "i" => array( "\$gt" => 20, "\$lte" => 30 ) );
+$query = array( 'i' => array( '$gt' => 20, "\$lte" => 30 ) );
 $cursor = $coll->find( $query );
 
-while( $cursor->hasNext() ) {
+while ( $cursor->hasNext() )
+{
     var_dump( $cursor->getNext() );
 }
-
 ?>
 ]]>
     </screen>
@@ -512,10 +533,11 @@ while( $cursor->hasNext() ) {
     <programlisting role="php">
 <![CDATA[
 <?php
+$connection = new MongoClient();
+$collection = $connection->database->collectionName;
 
 $coll->ensureIndex( array( "i" => 1 ) );  // create index on "i"
 $coll->ensureIndex( array( "i" => -1, "j" => 1 ) );  // index on "i" descending, "j" ascending
-
 ?>
 ]]>
     </programlisting>
