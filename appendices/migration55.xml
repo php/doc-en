@@ -122,6 +122,23 @@
     </listitem>
    </itemizedlist>
   </sect2>
+
+  <sect2 xml:id="migration55.incompatible.execution">
+   <title>Internal execution changes</title>
+
+   <para>
+    Extension authors should note that the <command>zend_execute()</command>
+    function can no longer be overridden, and that numerous changes have been
+    made to the <literal>execute_data</literal> struct and related function
+    and method handling opcodes.
+   </para>
+
+   <para>
+    Most extension authors are unlikely to be affected, but those writing
+    extensions that hook deeply into the Zend Engine should read
+    <link linkend="migration55.internals">the notes on these changes</link>.
+   </para>
+  </sect2>
  </sect1>
 
  <sect1 xml:id="migration55.new-features">
@@ -1040,6 +1057,112 @@ String dereferencing: P
     authentication protocol.
    </para>
   </sect2>
+ </sect1>
+
+ <sect1 xml:id="migration55.internals">
+  <title>Changes to PHP Internals</title>
+
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     Extensions cannot override <command>zend_execute()</command> any more and
+     should override <command>zend_execute_ex()</command> instead.
+     <literal>EG(current_execute_data)</literal> is already initialized in
+     <command>zend_execute_ex()</command>, so for compatibility extensions may
+     need to use
+     <literal>EG(current_execute_data)-&gt;prev_execute_data</literal> instead.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Removed <literal>EG(arg_types_stack)</literal>,
+     <literal>EX(fbc)</literal>, <literal>EX(called_scope)</literal> and
+     <literal>EX(current_object)</literal>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Added <literal>op_array-&gt;nested_calls</literal>, which is calculated
+     at compile time.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Added <literal>EX(call_slots)</literal>, which is an array to store
+     information about syntaticaly nested calls (e.g.
+     <literal>foo(bar())</literal>) and is preallocated together with
+     <literal>execute_data</literal>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Added <literal>EX(call)</literal>, which is a pointer to a current
+     calling function, and is an element of <literal>EX(call_slots)</literal>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Opcodes
+     <link linkend="internals2.opcodes.init-method-call">INIT_METHOD_CALL</link>,
+     <link linkend="internals2.opcodes.init-static-method-call">ZEND_INIT_STATIC_METHOD_CALL</link>,
+     <link linkend="internals2.opcodes.init-fcall-by-name">ZEND_INIT_FCALL_BY_NAME</link>
+     and
+     <link linkend="internals2.opcodes.init-ns-fcall-by-name">ZEND_INIT_NS_FCALL_BY_NAME</link>
+     use <literal>result.num</literal> as an index in
+     <literal>EX(call_slots)</literal>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Opcode <link linkend="internals2.opcodes.new">ZEND_NEW</link> uses
+     <literal>extended_value</literal> as an index in
+     <literal>EX(call_slots)</literal>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Opcodes <link linkend="internals2.opcodes.do-fcall">ZEND_DO_FCALL</link>
+     and
+     <link linkend="internals2.opcodes.do-fcall-by-name">ZEND_DO_FCALL_BY_NAME</link>
+     use <literal>op2.num</literal> as an index in
+     <literal>EX(call_slots)</literal>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Added <literal>op_array-&gt;used_stack</literal>, which is calculated at
+     compile time; the corresponding stack space is preallocated together with
+     <literal>execute_data</literal>. As a result, the ZEND_SEND* and
+     ZEND_DO_FCALL* opcodes no longer need to check for stack overflow.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Removed <literal>execute_data-&gt;Ts</literal> field. The VM temporary
+     variables are always allocated immediately before the
+     <literal>execute_data</literal> structure, and are now accessed by their
+     offset from the <literal>execute_data</literal> base pointer instead of
+     via <literal>execute_data-&gt;Ts</literal>.  The compiler stores new
+     offsets in <literal>op_array-&gt;opcodes[*].op?.num</literal>.  The
+     <command>EX_TMP_VAR()</command> and <command>EX_TMP_VAR_NUM()</command>
+     macros can be used to access temporary variables by offset or number. You
+     can convert the number to an offset using <command>EX_TMP_VAR_NUM(0,
+     num)</command> or offset to number using
+     <command>(EX_TMP_VAR_NUM(0,0)-EX_TMP_VAR(0,offset))</command>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Removed the <literal>execute_data-&gt;CVs</literal> field. The VM
+     compiled variables are always allocated immediately after the
+     <literal>execute_data</literal> structure, and are now accessed by the
+     offset from the <literal>execute_data</literal> base pointer instead of
+     via <literal>execute_data-&gt;CVs</literal>. You can use the
+     <command>EX_CV_NUM()</command> macro to access compiled variables by
+     number.
+    </simpara>
+   </listitem>
+  </itemizedlist>
  </sect1>
 </appendix>
 
