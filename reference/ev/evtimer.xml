@@ -12,9 +12,38 @@
   <section xml:id="evtimer.intro">
    &reftitle.intro;
    <para>
-
+   <classname>EvTimer</classname> watchers are simple relative timers that
+   generate an event after a given time, and optionally repeating in regular
+   intervals after that.
    </para>
-  </section>
+
+   <para>
+   The timers are based on real time, that is, if you register an event that
+   times out after an hour and you reset your system clock to
+   <emphasis>January last year</emphasis>, it will still time out
+   after(roughly) one hour. "Roughly" because detecting time jumps is hard,
+    and some inaccuracies are unavoidable.
+   </para>
+
+   <para>
+   The callback is guaranteed to be invoked only after its timeout has passed
+   (not at, so on systems with very low-resolution clocks this might introduce
+    a small delay). If multiple timers become ready during the same loop
+   iteration then the ones with earlier time-out values are invoked before
+   ones of the same priority with later time-out values (but this is no longer
+     true when a callback calls <methodname>EvLoop::run</methodname>
+     recursively).
+   </para>
+
+   <para>
+   The timer itself will do a best-effort at avoiding drift, that is, if you
+   configure a timer to trigger every <constant>10</constant> seconds, then it
+   will normally trigger at exactly <constant>10</constant> second intervals.
+   If, however, your program cannot keep up with the timer because it takes
+   longer than those <constant>10</constant> seconds to do stuff) the timer
+   will not fire more than once per event loop iteration.
+   </para>
+   </section>
 <!-- }}} -->
 
   <section xml:id="evtimer.synopsis">
@@ -46,6 +75,8 @@
      <varname linkend="evtimer.props.remaining">remaining</varname>
     </fieldsynopsis>
 
+    <classsynopsisinfo role="comment">&InheritedProperties;</classsynopsisinfo>
+    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('evwatcher.synopsis')/descendant::db:fieldsynopsis)" />
     
     <classsynopsisinfo role="comment">&Methods;</classsynopsisinfo>
     <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('class.evtimer')/db:refentry/db:refsect1[@role='description']/descendant::db:methodsynopsis[1])" />
@@ -63,46 +94,40 @@
   <section xml:id="evtimer.props">
    &reftitle.properties;
    <variablelist>
-    <varlistentry xml:id="evtimer.props.is-active">
-     <term><varname>is_active</varname></term>
-     <listitem>
-      <para></para>
-     </listitem>
-    </varlistentry>
-    <varlistentry xml:id="evtimer.props.data">
-     <term><varname>data</varname></term>
-     <listitem>
-      <para></para>
-     </listitem>
-    </varlistentry>
-    <varlistentry xml:id="evtimer.props.is-pending">
-     <term><varname>is_pending</varname></term>
-     <listitem>
-      <para></para>
-     </listitem>
-    </varlistentry>
-    <varlistentry xml:id="evtimer.props.priority">
-     <term><varname>priority</varname></term>
-     <listitem>
-      <para></para>
-     </listitem>
-    </varlistentry>
     <varlistentry xml:id="evtimer.props.repeat">
      <term><varname>repeat</varname></term>
      <listitem>
-      <para></para>
+      <para>
+      If repeat is <constant>0.0</constant>, then it will automatically be stopped once the timeout
+      is reached. If it is positive, then the timer will automatically be
+      configured to trigger again every repeat seconds later, until stopped
+      manually.
+      </para>
      </listitem>
     </varlistentry>
     <varlistentry xml:id="evtimer.props.remaining">
      <term><varname>remaining</varname></term>
      <listitem>
-      <para></para>
+      <para>
+       Returns the remaining time until a timer fires. If the timer is active,
+       then this time is relative to the current event loop time,
+       otherwise it&apos;s the timeout value currently configured.
+      </para>
+      <para>
+      That is, after instanciating an <classname>EvTimer</classname> with an
+      <parameter>after</parameter> value of <constant>5.0</constant> and
+      <parameter>repeat</parameter> value of <constant>7.0</constant>,
+      <varname>remaining</varname> returns <constant>5.0</constant>. When the
+       timer is started and one second passes, <varname>remaining</varname>
+       will return <constant>4.0</constant>. When the timer expires and is
+       restarted, it will return roughly <constant>7.0</constant>(likely
+         slightly less as callback invocation takes some time too), and so on.
+      </para>
      </listitem>
     </varlistentry>
    </variablelist>
   </section>
 <!-- }}} -->
-
 
  </partintro>
 

@@ -4,24 +4,24 @@
 <refentry xml:id="evtimer.construct" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>EvTimer::__construct</refname>
-  <refpurpose>The __construct purpose</refpurpose>
+  <refpurpose>Constructs an EvTimer watcher object</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
    <modifier>public</modifier> <methodname>EvTimer::__construct</methodname>
-   <methodparam><type>string</type><parameter>after</parameter></methodparam>
-   <methodparam><type>string</type><parameter>repeat</parameter></methodparam>
-   <methodparam><type>string</type><parameter>callback</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>data</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>priority</parameter></methodparam>
+   <methodparam><type>double</type><parameter>after</parameter></methodparam>
+   <methodparam><type>double</type><parameter>repeat</parameter></methodparam>
+   <methodparam><type>callable</type><parameter>callback</parameter></methodparam>
+   <methodparam
+   choice="opt"><type>mixed</type><parameter>data</parameter><initializer>&null;</initializer></methodparam>
+   <methodparam
+   choice="opt"><type>int</type><parameter>priority</parameter><initializer>0</initializer></methodparam>
   </methodsynopsis>
   <para>
-
+  Constructs an EvTimer watcher object.
   </para>
-
-  &warn.undocumented.func;
 
  </refsect1>
 
@@ -32,7 +32,7 @@
     <term><parameter>after</parameter></term>
     <listitem>
      <para>
-      
+     Configures the timer to trigger after <parameter>after</parameter> seconds.      
      </para>
     </listitem>
    </varlistentry>
@@ -40,7 +40,10 @@
     <term><parameter>repeat</parameter></term>
     <listitem>
      <para>
-      
+      If repeat is <constant>0.0</constant>, then it will automatically be stopped once the timeout
+      is reached. If it is positive, then the timer will automatically be
+      configured to trigger again every repeat seconds later, until stopped
+      manually.
      </para>
     </listitem>
    </varlistentry>
@@ -48,7 +51,7 @@
     <term><parameter>callback</parameter></term>
     <listitem>
      <para>
-      
+     See <link linkend="ev.watcher-callbacks">Watcher callbacks</link>.
      </para>
     </listitem>
    </varlistentry>
@@ -56,7 +59,7 @@
     <term><parameter>data</parameter></term>
     <listitem>
      <para>
-      
+      Custom data associated with the watcher.
      </para>
     </listitem>
    </varlistentry>
@@ -64,7 +67,7 @@
     <term><parameter>priority</parameter></term>
     <listitem>
      <para>
-      
+      <link linkend="ev.constants.watcher-pri">Watcher priority</link>
      </para>
     </listitem>
    </varlistentry>
@@ -74,37 +77,98 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-
+  Returns EvTimer object on success.
   </para>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
-  <example>
-   <title><function>EvTimer::__construct</function> example</title>
-   <programlisting role="php">
+ <example>
+  <title>Simple timers</title>
+  <programlisting role="php">
 <![CDATA[
 <?php
+// Create and start timer firing after 2 seconds
+$w1 = new EvTimer(2, 0, function () {
+	echo "2 seconds elapsed\n";
+});
 
-/* ... */
+// Create and launch timer firing after 2 seconds repeating each second
+// until we manually stop it
+$w2 = new EvTimer(2, 1, function ($w) {
+	echo "is called every second, is launched after 2 seconds\n";
+	echo "iteration = ", Ev::iteration(), PHP_EOL;
 
+	// Stop the watcher after 5 iterations
+	Ev::iteration() == 5 and $w->stop();
+	// Stop the watcher if further calls cause more than 10 iterations
+	Ev::iteration() >= 10 and $w->stop();
+});
+
+// Create stopped timer. It will be inactive until we start it ourselves
+$w_stopped = EvTimer::createStopped(10, 5, function($w) {
+	echo "Callback of a timer created as stopped\n";
+
+	// Stop the watcher after 2 iterations
+	Ev::iteration() >= 2 and $w->stop();
+});
+
+// Loop until Ev::stop() is called or all of watchers stop
+Ev::run();
+
+// Start and look if it works
+$w_stopped->start();
+echo "Run single iteration\n";
+Ev::run(Ev::RUN_ONCE);
+
+echo "Restart the second watcher and try to handle the same events, but don't block\n";
+$w2->again();
+Ev::run(Ev::RUN_NOWAIT);
+
+$w = new EvTimer(10, 0, function() {});
+echo "Running a blocking loop\n";
+Ev::run();
+echo "END\n";
 ?>
 ]]>
-   </programlisting>
-   &example.outputs.similar;
-   <screen>
+  </programlisting>
+  &example.outputs.similar;
+  <screen>
 <![CDATA[
-...
+2 seconds elapsed
+is called every second, is launched after 2 seconds
+iteration = 1
+is called every second, is launched after 2 seconds
+iteration = 2
+is called every second, is launched after 2 seconds
+iteration = 3
+is called every second, is launched after 2 seconds
+iteration = 4
+is called every second, is launched after 2 seconds
+iteration = 5
+Run single iteration
+Callback of a timer created as stopped
+Restart the second watcher and try to handle the same events, but don't block
+Running a blocking loop
+is called every second, is launched after 2 seconds
+iteration = 8
+is called every second, is launched after 2 seconds
+iteration = 9
+is called every second, is launched after 2 seconds
+iteration = 10
+END
 ]]>
-   </screen>
-  </example>
+  </screen>
+ </example>
  </refsect1>
-
 
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
-   <member></member>
+   <member><methodname>EvTimer::createStopped</methodname></member>
+   <member><classname>EvPeriodic</classname></member>
+   <member><link xlink:href="http://pod.tst.eu/http://cvs.schmorp.de/libev/ev.pod#code_ev_timer_code_relative_and_opti">ev_timer - relative and optionally repeating timeouts</link></member>
+   <member><link xlink:href="http://pod.tst.eu/http://cvs.schmorp.de/libev/ev.pod#Be_smart_about_timeouts">Be smart about timeouts</link></member>
   </simplelist>
  </refsect1>
 
