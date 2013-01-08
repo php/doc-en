@@ -4,14 +4,14 @@
 <refentry xml:id="mongocollection.insert" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoCollection::insert</refname>
-  <refpurpose>Inserts an array into the collection</refpurpose>
+  <refpurpose>Inserts a document into the collection</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
    <modifier>public</modifier> <type>bool|array</type><methodname>MongoCollection::insert</methodname>
-   <methodparam><type>array</type><parameter>a</parameter></methodparam>
+   <methodparam><type>array|object</type><parameter>a</parameter></methodparam>
    <methodparam choice="opt"><type>array</type><parameter>options</parameter><initializer>array()</initializer></methodparam>
   </methodsynopsis>
   <para>
@@ -31,8 +31,17 @@
      </term>
      <listitem>
       <para>
-       An array.
+       An array or object. If an object is used, it may not have protected or
+       private properties.
       </para>
+      <note>
+       <para>
+        If the parameter does not have an <literal>_id</literal> key or
+        property, a new <classname>MongoId</classname> instance will be created
+        and assigned to it. This special behavior does not mean that the
+        parameter is passed by reference.
+       </para>
+      </note>
      </listitem>
     </varlistentry>
     <varlistentry>
@@ -188,7 +197,9 @@
  <refsect1 role="errors">
   &reftitle.errors;
   <para>
-   Throws <classname>MongoException</classname> if the inserted array is empty.
+   Throws <classname>MongoException</classname> if the inserted document is
+   empty or if it contains zero-length keys. Attempting to insert an object with
+   protected and private properties will cause a zero-length key error.
   </para>
   &mongo.errors.exceptions.writeconcern;
  </refsect1>
@@ -265,26 +276,53 @@
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><function>MongoCollection::insert</function> _id example</title>
+   <title><function>MongoCollection::insert</function> <literal>_id</literal> example</title>
    <para>
-    Inserting an object will add an _id field to it, unless it is passed by reference.
+    An <literal>_id</literal> field will be added to the inserted document if
+    not already present. Depending on how the parameter is passed, a generated
+    <literal>_id</literal> may or may not be available to calling code.
    </para>
    <programlisting role="php">
 <![CDATA[
 <?php
 
 $m = new MongoClient();
-$db = $m->selectDB('test');
-$collection = new MongoCollection($db, 'phpmanual');
+$collection = $m->selectCollection('test', 'phpmanual');
 
-$a = array('x' => 12);
+// If an array literal is used, there is no way to access the generated _id
+$collection->insert(array('x' => 1));
+
+// The _id is available on an array passed by value
+$a = array('x' => 2);
 $collection->insert($a);
 var_dump($a);
 
-$b = array('x' => 12);
+// The _id is not available on an array passed by reference
+$b = array('x' => 3);
 $ref = &$b;
 $collection->insert($ref);
 var_dump($ref);
+
+// The _id is available if a wrapping function does not trigger copy-on-write
+function insert_no_cow($collection, $document)
+{
+    $collection->insert($document);
+}
+
+$c = array('x' => 4);
+insert_no_cow($collection, $c);
+var_dump($c);
+
+// The _id is not available if a wrapping function triggers copy-on-write
+function insert_cow($collection, $document)
+{
+    $document['y'] = 1;
+    $collection->insert($document);
+}
+
+$d = array('x' => 5);
+insert_cow($collection, $d);
+var_dump($d);
 
 ?>
 ]]>
@@ -294,14 +332,25 @@ var_dump($ref);
 <![CDATA[
 array(2) {
   ["x"]=>
-  int(12)
+  int(2)
   ["_id"]=>
   object(MongoId)#4 (0) {
   }
 }
-array(12) {
+array(1) {
   ["x"]=>
-  int(1)
+  int(3)
+}
+array(2) {
+  ["x"]=>
+  int(4)
+  ["_id"]=>
+  object(MongoId)#5 (0) {
+  }
+}
+array(1) {
+  ["x"]=>
+  int(5)
 }
 ]]>
    </screen>
