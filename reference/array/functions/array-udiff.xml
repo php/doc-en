@@ -66,28 +66,42 @@
   &reftitle.examples;
   <para>
    <example>
-    <title><function>array_udiff</function> example</title>
+    <title><function>array_udiff</function> example using stdClass Objects</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-class cr {
-    private $priv_member;
-    function cr($val)
-    {
-        $this->priv_member = $val;
-    }
+// Arrays to compare
+$array1 = array(new stdclass, new stdclass,
+                new stdclass, new stdclass,
+               );
 
-    static function comp_func_cr($a, $b)
-    {
-        if ($a->priv_member === $b->priv_member) return 0;
-        return ($a->priv_member > $b->priv_member)? 1:-1;
+$array2 = array(
+                new stdclass, new stdclass,
+               );
+
+// Set some properties for each object
+$array1[0]->width = 11; $array1[0]->height = 3;
+$array1[1]->width = 7;  $array1[1]->height = 1;
+$array1[2]->width = 2;  $array1[2]->height = 9;
+$array1[3]->width = 5;  $array1[3]->height = 7;
+
+$array2[0]->width = 7;  $array2[0]->height = 5;
+$array2[1]->width = 9;  $array2[1]->height = 2;
+
+function compare_by_area($a, $b) {
+    $areaA = $a->width * $a->height;
+    $areaB = $b->width * $b->height;
+    
+    if ($areaA < $areaB) {
+        return -1;
+    } elseif ($areaA > $areaB) {
+        return 1;
+    } else {
+        return 0;
     }
 }
-$a = array("0.1" => new cr(9), "0.5" => new cr(12), 0 => new cr(23), 1=> new cr(4), 2 => new cr(-15),);
-$b = array("0.2" => new cr(9), "0.5" => new cr(22), 0 => new cr(3), 1=> new cr(4), 2 => new cr(-15),);
 
-$result = array_udiff($a, $b, array("cr", "comp_func_cr"));
-print_r($result);
+print_r(array_udiff($array1, $array2, 'compare_by_area'));
 ?>
 ]]>
     </programlisting>
@@ -96,17 +110,102 @@ print_r($result);
 <![CDATA[
 Array
 (
-    [0.5] => cr Object
+    [0] => stdClass Object
         (
-            [priv_member:private] => 12
+            [width] => 11
+            [height] => 3
         )
 
-    [0] => cr Object
+    [1] => stdClass Object
         (
-            [priv_member:private] => 23
+            [width] => 7
+            [height] => 1
         )
 
 )
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>array_udiff</function> example using DateTime Objects</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+Class MyCalendar {
+    public $free = array();
+    public $booked = array();
+
+    public function __construct($week = 'now') {
+        $start = new DateTime($week);
+        $start->modify('Monday this week midnight');
+        $end = clone $start;
+        $end->modify('Friday this week midnight');
+        $interval = new DateInterval('P1D');
+        foreach (new DatePeriod($start, $interval, $end) as $freeTime) {
+            $this->free[] = $freeTime;
+        }
+    }
+
+    public function bookAppointment(DateTime $date, $note) {
+        $this->booked[] = array('date' => $date->modify('midnight'), 'note' => $note);
+    }
+
+    public function checkAvailability() {
+        return array_udiff($this->free, $this->booked, array($this, 'customCompare'));
+    }
+    
+    public function customCompare($free, $booked) {
+        if (is_array($free)) $a = $free['date'];
+        else $a = $free;
+        if (is_array($booked)) $b = $booked['date'];
+        else $b = $booked;
+        if ($a == $b) {
+            return 0;
+        } elseif ($a > $b) {
+            return 1;
+        } else {
+            return -1;
+        }
+    }
+}
+
+// Create a calendar for weekly appointments
+$myCalendar = new MyCalendar;
+
+// Book some appointments for this week
+$myCalendar->bookAppointment(new DateTime('Monday this week'), "Cleaning GoogleGuy's apartment.");
+$myCalendar->bookAppointment(new DateTime('Wednesday this week'), "Going on a snowboarding trip.");
+$myCalendar->bookAppointment(new DateTime('Friday this week'), "Fixing buggy code.");
+
+// Check availability of days by comparing $booked dates against $free dates
+echo "I'm available on the following days this week...\n\n";
+foreach ($myCalendar->checkAvailability() as $free) {
+    echo $free->format('l'), "\n"; 
+}
+echo "\n\n";
+echo "I'm busy on the following days this week...\n\n";
+foreach ($myCalendar->booked as $booked) {
+    echo $booked['date']->format('l'), ": ", $booked['note'], "\n"; 
+}
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+I'm available on the following days this week...
+
+Tuesday
+Thursday
+
+
+I'm busy on the following days this week...
+
+Monday: Cleaning GoogleGuy's apartment.
+Wednesday: Going on a snowboarding trip.
+Friday: Fixing buggy code.
 ]]>
     </screen>
    </example>
