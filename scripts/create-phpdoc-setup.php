@@ -71,7 +71,7 @@ if (!$configs['PATH_SVN'] = get_installed_path('svn', $configs['PATH_SVN'], '--v
 // Required: a valid language selection ('all' works too) (LANG_CODE)
 // Note: We use svn:externals here .... consider sparse checkouts instead
 echo_line('Checking: Language selection: ', FALSE);
-$command = "svn info http://svn.php.net/repository/phpdoc/modules/doc-" . $configs['LANG_CODE'];
+$command = "svn info https://svn.php.net/repository/phpdoc/modules/doc-" . $configs['LANG_CODE'];
 $out     = shell_exec($command);
 if (false !== stripos($out, 'Not a valid URL')) {
 	echo_line('ERROR: Invalid language chosen. Chose: '. $configs['LANG_CODE']);
