@@ -1804,6 +1804,134 @@ if ($res) {
    </example>
   </para>
  </section>
+ <section xml:id="mysqlnd-ms.quickstart.partitioning">
+  <title>Partitioning and Sharding</title>
+  <para>
+   Database clustering is done for various reasons. Cluster can improve availability,
+   fault tolerance but also to increase performance by applying a divide and conquer approach.
+   Work is distributed over many machines. Clustering is sometimes combined with
+   partitioning and sharding to further break up a big, complex task into
+   smaller, managable units.
+  </para>
+  <para>
+   This plugin aims to support all kinds of MySQL database clusters. Some flavours of
+   MySQL database clusters have built-in methods for partitioning and sharding,
+   which may or may not be transparent to use. The plugin supports the two most
+   common approaches explicitly namely MySQL Replication table filtering and
+   application based partitioning or sharding.
+  </para>
+  <para>
+   MySQL Replication supports partitioning in the form of filters that allow you to
+   create slaves replicating all database of the master or only certain databases
+   respectively tables. It is then in the responsibility of the application
+   to choose a slave according to the filter rules. You can either use the
+   plugins node_groups filter to manually support this or use
+   the experimental table filter.
+ </para>
+ <para>
+   Manual partitioning or sharding is supported through
+   node grouping filter and SQL hints since 1.5.0. The node_groups filter
+   lets you assign a symbolic name to a group of master and slave servers.
+   In the example, the master <literal>master_0</literal> and <literal>slave_0</literal>
+   form a group with the name <literal>Partition_A</literal>. It is entirely
+   up to you to decide what makes up a group. For example, you may use node
+   groups for sharding and use the group name to address shards
+   like <literal>Shard_A_Range_0_100</literal>.
+ </para>
+ <para>
+   <example>
+    <title>Cluster node groups</title>
+    <programlisting role="ini">
+<![CDATA[
+ {
+  "myapp": {
+       "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "simulate_slave_failure",
+                "port": "0"
+            },
+            "slave_1": {
+                "host": "127.0.0.1",
+                "port": 3311
+            }
+        },
+        "filters": {
+            "node_groups": {
+                "Partition_A" : {
+                    "master": ["master_0"],
+                    "slave": ["slave_0"]
+                }
+            },
+           "roundrobin": []
+        }
+    }
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Manual partitioning using SQL hints</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function select($mysqli, $msg, $hint = '') {
+  /* Note: weak test, two connections to two servers may have the same thread id */
+  $sql = sprintf("SELECT CONNECTION_ID() AS _thread, '%s' AS _hint FROM DUAL", $msg);
+  if ($hint) {
+    $sql = $hint . $sql;
+  }
+  if (!($res = $mysqli->query($sql))) {
+    printf("[%d] %s", $mysqli->errno, $mysqli->error);
+    return false;
+  }
+  $row =  $res->fetch_assoc();
+  printf("%d - %s - %s\n", $row['_thread'], $row['_hint'], $sql);
+  return true;
+}
+
+$mysqli = new mysqli("myapp", "user", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* All slaves allowed */
+select($mysqli, "slave_0");
+select($mysqli, "slave_1");
+
+/* only servers of node group "Partition_A" allowed */
+select($mysqli, "slave_1", "/*Partition_A*/");
+select($mysqli, "slave_1", "/*Partition_A*/");
+?>
+]]>
+    </programlisting>
+    <screen>
+<![CDATA[
+6804 - slave_0 - SELECT CONNECTION_ID() AS _thread, 'slave1' AS _hint FROM DUAL
+2442 - slave_1 - SELECT CONNECTION_ID() AS _thread, 'slave2' AS _hint FROM DUAL
+6804 - slave_0 - /*Partition_A*/SELECT CONNECTION_ID() AS _thread, 'slave1' AS _hint FROM DUAL
+6804 - slave_0 - /*Partition_A*/SELECT CONNECTION_ID() AS _thread, 'slave1' AS _hint FROM DUAL
+]]>
+    </screen>
+   </example>
+  </para>
+ <para>
+   By default the plugin will use all configured master and slave servers for
+   query execution. However, if a query begins with a SQL hint
+   <literal>/*node_group*/</literal>,the plugin will consider only the servers
+   listed in the <literal>node_group</literal> for query execution. Thus,
+   <literal>SELECT</literal> queries prefixed with <literal>/*Partition_A*/</literal>
+   are executed on <literal>slave_0</literal> only.
+  </para>
+
+ </section>
 </chapter>
 <!-- Keep this comment at the end of the file
 Local variables:
