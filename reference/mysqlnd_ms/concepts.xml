@@ -1596,35 +1596,139 @@ version = 5.6.2-m5-log
    </para>
   </note>
   <para>
-    <emphasis role="bold">Using asynchronous clusters with single master</emphasis>
+    <emphasis role="bold">Primary copy (MySQL Replication)</emphasis>
   </para>
   <para>
-   Primary use case of the plugin. Follow the hints given in the descriptions of each feature.
-  </para>
-  <note>
-   <title>Version requirement</title>
-   <para>
-    The following cluster may require use of settings not available before mysqlnd_ms 1.2.0-alpha.
-   </para>
-  </note>
-  <para>
-    <emphasis role="bold">Using asynchronous clusters with multiple masters</emphasis>
+   This is the primary use case of the plugin. Follow the hints given in the descriptions of each feature.
   </para>
   <para>
-   This setup is currently unsupported.
+   <example>
+    <title>Enabling the plugin (php.ini)</title>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_ms.enable=1
+mysqlnd_ms.config_file=/path/to/mysqlnd_ms_plugin.ini
+]]>
+    </programlisting>
+    </example>
   </para>
   <para>
-   The plugin has no built-in functionality to direct certain writes to certain
-   masters. It is considered to add table filtering to future versions. Table filter
-   would allow restricting both read and writes to certain slaves and masters based
-   on the database/schema and table used by a statement.
+   <example>
+    <title>Basic plugin configuration (mysqlnd_ms_plugin.ini) for MySQL Replication</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+  "myapp": {
+    "master": {
+      "master_1": {
+        "host": "localhost",
+        "socket": "\/tmp\/mysql57.sock"
+      }
+    },
+    "slave": {
+      "slave_0": {
+        "host": "127.0.0.1",
+        "port": 3308
+      },
+      "slave_1": {
+        "host": "192.168.2.28",
+        "port": 3306
+      }
+    },
+    "filters": {
+      "random": {
+        "sticky": "1"
+      }
+    }
+  }
+}
+]]>
+    </programlisting>
+    </example>
   </para>
   <para>
-   A table filtering feature is prepared in the plugins source code. However, it is
-   instable and must not be used. Bug reports on table filtering will be rejected.
+    <emphasis role="bold">Primary copy with multi primaries (MMM - MySQL Multi Master)</emphasis>
   </para>
   <para>
-   <emphasis role="bold">Using synchronous clusters such as MySQL Cluster</emphasis>
+   MySQL Replication allows you to create cluster topologies with multiple masters (primaries).
+   Write-write conflicts are not handled by the replication system. This is no update anywhere setup.
+   Thus, data must be partitioned manually and clients must redirected in accordance
+   to the partitioning rules. The recommended setup is equal to the sharding setup below.
+  </para>
+  <para>
+    <emphasis role="bold">Manual sharding, possibly combined with primary copy and multiple primaries</emphasis>
+  </para>
+  <para>
+   Use SQL hints and the node group filter for clusters that use data partitioning
+   but leave query redirection to the client. The example configuration shows a multi master
+   setup with two shards.
+  </para>
+  <para>
+   <example>
+    <title>Multiple primaries - multi master (php.ini)</title>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_ms.enable=1
+mysqlnd_ms.config_file=/path/to/mysqlnd_ms_plugin.ini
+mysqlnd_ms.multi_master=1
+]]>
+    </programlisting>
+    </example>
+  </para>
+  <para>
+   <example>
+    <title>Primary copy with multiple primaries and paritioning</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+  "myapp": {
+    "master": {
+      "master_1": {
+        "host": "localhost",
+        "socket": "\/tmp\/mysql57.sock"
+      }
+      "master_2": {
+        "host": "192.168.2.27",
+        "socket": "3306"
+      }
+    },
+    "slave": {
+      "slave_1": {
+        "host": "127.0.0.1",
+        "port": 3308
+      },
+      "slave_2": {
+        "host": "192.168.2.28",
+        "port": 3306
+      }
+    },
+    "filters": {
+      "node_groups": {
+        "Partition_A" : {
+          "master": ["master_1"],
+          "slave": ["slave_1"]
+        },
+        "Partition_B" : {
+          "master": ["master_2"],
+          "slave": ["slave_2"]
+        }
+      },
+      "roundrobin": []
+    }
+  }
+}
+]]>
+    </programlisting>
+    </example>
+  </para>
+  <para>
+   The plugin can also be used with a loose collection of unrelated shards. For
+   such a cluster, configure masters only and disable read write splitting. The nodes of
+   such a cluster are called masters in the plugin configuration as they accept
+   both reads and writes for their partition.
+  </para>
+  <para>
+   <emphasis role="bold">Using synchronous update everywhere clusters such as MySQL Cluster</emphasis>
   </para>
   <para>
    MySQL Cluster is a synchronous cluster solution. All cluster nodes accept
@@ -1703,11 +1807,67 @@ version = 5.6.2-m5-log
     <listitem>
      <simpara>
       Set
-      <literal><link linkend="mysqlnd-ms.plugin-ini-json">failover=master</link></literal>
+      <literal><link linkend="mysqlnd-ms.plugin-ini-json">failover=loop_before_master</link></literal>
       in the plugins configuration file to avoid warnings about the empty slave list
+      and to make the failover logic loop over all configured masters before emitting an error.
+     </simpara>
+     <simpara>
+      Please, note the warnings about automatic failover given in the previous sections.
      </simpara>
     </listitem>
    </itemizedlist>
+  </para>
+  <para>
+   <example>
+    <title>Multiple primaries - multi master (php.ini)</title>
+    <programlisting role="ini">
+<![CDATA[
+mysqlnd_ms.enable=1
+mysqlnd_ms.config_file=/path/to/mysqlnd_ms_plugin.ini
+mysqlnd_ms.multi_master=1
+mysqlnd_ms.disable_rw_split=1
+]]>
+    </programlisting>
+    </example>
+  </para>
+  <para>
+   <example>
+    <title>Synchronous update anywhere cluster</title>
+    <programlisting role="ini">
+<![CDATA[
+
+  "myapp": {
+    "master": {
+      "master_1": {
+        "host": "localhost",
+        "socket": "\/tmp\/mysql57.sock"
+      },
+      "master_2": {
+        "host": "192.168.2.28",
+        "port": 3306
+      }
+    },
+    "slave": {
+    },
+    "filters": {
+      "roundrobin": {
+      }
+    },
+    "failover": {
+      "strategy": "loop_before_master",
+      "remember_failed": true
+    }
+  }
+}
+]]>
+    </programlisting>
+    </example>
+  </para>
+  <para>
+   If running an update everywhere cluster that has no built-in partitioning to
+   avoid hot spots and high collision rates, consider using the node groups filter
+   to keep updates on a frequently accessed table on one of the nodes. This may
+   help to reduce collision rates and thus improve performance.
   </para>
  </section>
 </chapter>
