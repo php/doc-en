@@ -1,6 +1,6 @@
 <?php
 define("DEBUG", 0);
-$BUILDDIR = "http://oti1.php.net";
+$BUILDDIR = "http://php.tuxxedo.net/chm";
 $TMPDIR = sys_get_temp_dir();
 $CHMDIR = "/local/mirrors/phpweb/distributions/manual";
 

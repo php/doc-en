@@ -24,6 +24,9 @@
 	/**
 	 * This script is based off the original build.chms.bat 
 	 * in the root of doc-base
+	 *
+	 * This script does not work with Git, meaning enabling PHD_BETA 
+	 * will fetch the old version from SVN (March, Anno 2012)
 	 */
 
 	/**
@@ -33,38 +36,41 @@
 	 * Debug		- If enabled, output directories are not pruned
 	 * PhD Beta		- If enabled, then PhD is treated as an svn checkout rather than a pear package
 	 */
-	define('PATH_PHP', 	'C:\\php\\binaries\\PHP_5_3\\php.exe');
-	define('PATH_PHD', 	'C:\\pear\\phd-trunk\\phd.bat');
-	define('PATH_HHC', 	'C:\\Program Files (x86)\\HTML Help Workshop\\hhc.exe');
-	define('PATH_SCP', 	'C:\\Program Files (x86)\\PuTTY\\pscp.exe');
-	define('PATH_PPK', 	'C:\\php-sdk\\keys\\php-doc-host.ppk');
-	define('PATH_SVN', 	'C:\\Program Files\\SlikSvn\\bin\\svn.exe');
-	define('PATH_PEAR', 	'C:\\pear\\pear.bat');
-	define('PATH_CHM', 	'C:\\doc-all\\chmfiles');
-	define('PATH_LOG', 	'C:\\doc-all\\chmfiles\\logs');
-	define('PATH_DOC', 	'C:\\doc-all');
-	define('PATH_WGET',	'C:\\php\\win32build\\bin\\wget.exe');
+	define('PATH_PHP', 	'E:\software\php\php.exe');
+	define('PATH_WGET',	'E:\servicesfiles\path\wget.exe');
+	define('PATH_CHM', 	'E:\www\hosted\php.tuxxedo.net\www\chm');
+	define('PATH_LOG', 	'E:\www\hosted\php.tuxxedo.net\www\chm\logs');
+	define('PATH_DOC', 	'E:\chm\doc-all');
+	define('PATH_SVN', 	'E:\chm\software\SlikSVN\bin\svn.exe');
+	define('PATH_HHC', 	'E:\chm\software\HTML Help Workshop\hhc.exe');
+	define('PATH_PHD', 	'E:\chm\software\phd\phd.bat');
+
+	/**
+	 * Only if PHD_BETA is set to on (Tuxxedo does not have Pear installed)
+	 */
+	define('PATH_PEAR', 	'');
 
 	define('EXTENDED',	true);
 	define('DEBUG',		true);
-	define('PHD_BETA',	true);
+	define('PHD_BETA',	false);
 
 	/**
 	 * Fallback to a set of known languages in the event of a failure to retrieve online list.
 	 */
 	$ACTIVE_ONLINE_LANGUAGES = Array(
-				'en'    => 'English',
-				'de'    => 'German',
-				'es'    => 'Spanish',
-				'fa'    => 'Persian',
-				'fr'    => 'French',
-				'ja'    => 'Japanese',
-				'pl'    => 'Polish',
-				'pt_BR' => 'Brazilian Portuguese',
-				'ro'    => 'Romanian',
-				'tr'    => 'Turkish',
-				'zh'    => 'Chinese (Simplified)',
-				);
+						'en'    => 'English',
+						'de'    => 'German',
+						'es'    => 'Spanish',
+						'fa'    => 'Persian',
+						'fr'    => 'French',
+						'ja'    => 'Japanese',
+						'pl'    => 'Polish',
+						'pt_BR' => 'Brazilian Portuguese',
+						'ro'    => 'Romanian',
+						'tr'    => 'Turkish',
+						'zh'    => 'Chinese (Simplified)',
+						);
+
 	/**
 	 * The languages to build are retrieved from https://svn.php.net/repository/web/php/trunk/include/languages.inc
 	 */
@@ -72,7 +78,9 @@
 	{
 		unlink(__DIR__ . '\\languages.inc');
 	}
+
 	execute_task('Get list of online languages', PATH_WGET, '--debug --verbose --no-check-certificate https://svn.php.net/repository/web/php/trunk/include/languages.inc --output-document=' . __DIR__ . '\\languages.inc', 'wget_langs');
+
 	if (file_exists(__DIR__ . '\\languages.inc'))
 	{
 		include_once __DIR__ . '\\languages.inc';
@@ -83,6 +91,7 @@
 	 */
 	unset($ACTIVE_ONLINE_LANGUAGES['en']);
 	ksort($ACTIVE_ONLINE_LANGUAGES);
+
 	$ACTIVE_ONLINE_LANGUAGES = array('en' => 'English') + $ACTIVE_ONLINE_LANGUAGES;
 
 	/**
@@ -96,7 +105,7 @@
 	if(PHD_BETA)
 	{
 		chdir(dirname(PATH_PHD));
-		execute_task('Updating PhD from svn', PATH_SVN, 'up', 'pear_svn');
+		execute_task('Updating PhD from svn', PATH_SVN, 'up', 'phd_svn');
 		chdir($cwd);
 	}
 	else
@@ -190,16 +199,18 @@
 		/**
 		 * Copy the CHM file into the archive
 		 */
-		if(!copy(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\php_manual_' . $lang_code . '.chm', $s_CHMFilename = PATH_DOC . '\\chmfiles\\php_manual_' . $lang_code . '.chm'))
+		if(!copy(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\php_manual_' . $lang_code . '.chm', $chm_filename = PATH_CHM . '\\' . 'php_manual_' . $lang_code . '.chm'))
 		{
 			echo(date('r') . ' - Build error: Unable to copy CHM file into archive folder');
 
 			continue;
-		} else {
+		}
+		else
+		{
 			/**
 			 * Add to history
 			 */
-			$build_history[] = array('php_manual_' . $lang_code . '.chm', md5_file($s_CHMFilename), filemtime($s_CHMFilename));
+			$build_history[] = array('php_manual_' . $lang_code . '.chm', md5_file($chm_filename), filemtime($chm_filename));
 		}
 
 		/**
@@ -232,16 +243,18 @@
 			/**
 			 * Copy the CHM file into the archive
 			 */
-			if(!copy(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-enhancedchm\\php_manual_' . $lang_code . '.chm', $s_CHMFilename = PATH_DOC . '\\chmfiles\\php_enhanced_' . $lang_code . '.chm'))
+			if(!copy(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-enhancedchm\\php_manual_' . $lang_code . '.chm', $e_chm_filename = PATH_CHM . '\\' . 'php_enhanced_' . $lang_code . '.chm'))
 			{
 				echo(date('r') . ' - Build error: Enhanced: Unable to copy CHM file into archive folder');
 
 				goto cleanup;
-			} else {
+			}
+			else
+			{
 				/**
 				 * Add to history
 				 */
-				$build_history[] = array('php_enhanced_' . $lang_code . '.chm', md5_file($s_CHMFilename), filemtime($s_CHMFilename));
+				$build_history[] = array('php_enhanced_' . $lang_code . '.chm', md5_file($e_chm_filename), filemtime($e_chm_filename));
 			}
 		}
 
@@ -270,7 +283,10 @@
 	/**
 	 * Save build history
 	 */
-	file_put_contents(PATH_DOC . '\\chmfiles\\LatestCHMBuilds.txt', implode(PHP_EOL, array_map(function($single_build){ return implode("\t", $single_build);}, $build_history)));
+	file_put_contents(PATH_CHM . '\\build.log', implode(PHP_EOL, array_map(function($single_build)
+	{
+		return implode("\t", $single_build);
+	}, $build_history)));
 
 	echo(date('r') . ' Done!');
 
