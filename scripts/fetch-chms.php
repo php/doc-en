@@ -4,7 +4,7 @@ $BUILDDIR = "http://php.tuxxedo.net/chm";
 $TMPDIR = sys_get_temp_dir();
 $CHMDIR = "/local/mirrors/phpweb/distributions/manual";
 
-$chminfo = "$BUILDDIR/LatestCHMBuilds.txt";
+$chminfo = "$BUILDDIR/build.log";
 fetch($chminfo, tempnam(sys_get_temp_dir(), "chm"));
 
 $chms = file($chminfo, FILE_IGNORE_NEW_LINES|FILE_SKIP_EMPTY_LINES);
