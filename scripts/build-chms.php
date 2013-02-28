@@ -3,7 +3,7 @@
 	 * +----------------------------------------------------------------------+
 	 * | PHP Version 5                                                        |
 	 * +----------------------------------------------------------------------+
-	 * | Copyright (c) 1997-2011 The PHP Group                                |
+	 * | Copyright (c) 1997-2013 The PHP Group                                |
 	 * +----------------------------------------------------------------------+
 	 * | This source file is subject to version 3.01 of the PHP license,      |
 	 * | that is bundled with this package in the file LICENSE, and is        |
@@ -31,43 +31,8 @@
 
 	/**
 	 * Configuration
-	 *
-	 * Extended		- Generates the 'enhancedchm' version along the regular ones
-	 * Debug		- If enabled, output directories are not pruned
-	 * PhD Beta		- If enabled, then PhD is treated as an svn checkout rather than a pear package
 	 */
-	define('PATH_PHP', 	'E:\software\php\php.exe');
-	define('PATH_WGET',	'E:\servicesfiles\path\wget.exe');
-	define('PATH_CHM', 	'E:\www\hosted\php.tuxxedo.net\www\chm');
-	define('PATH_LOG', 	'E:\www\hosted\php.tuxxedo.net\www\chm\logs');
-	define('PATH_DOC', 	'E:\chm\doc-all');
-	define('PATH_SVN', 	'E:\chm\software\SlikSVN\bin\svn.exe');
-	define('PATH_HHC', 	'E:\chm\software\HTML Help Workshop\hhc.exe');
-	define('PATH_PHD', 	'E:\chm\software\phd\phd.bat');
-
-	/**
-	 * Only if PHD_BETA is set to on (Tuxxedo does not have Pear installed)
-	 */
-	define('PATH_PEAR', 	'');
-
-	define('EXTENDED',	true);
-	define('DEBUG',		true);
-	define('PHD_BETA',	false);
-
-	/**
-	 * Fallback to a set of known languages in the event of a failure to retrieve online list.
-	 */
-	$ACTIVE_ONLINE_LANGUAGES = Array(
-						'en'    => 'English',
-						'de'    => 'German',
-						'es'    => 'Spanish',
-						'fr'    => 'French',
-						'ja'    => 'Japanese',
-						'pt_BR' => 'Brazilian Portuguese',
-						'ro'    => 'Romanian',
-						'tr'    => 'Turkish',
-						'zh'    => 'Chinese (Simplified)',
-						);
+	include_once __DIR__ .'/build-chms-config.php';
 
 	/**
 	 * The languages to build are retrieved from https://svn.php.net/repository/web/php/trunk/include/languages.inc
@@ -288,28 +253,6 @@
 
 	echo(date('r') . ' Done!');
 
-
-	/**
-	 * Helper function for execution a program
-	 *
-	 * @param	string			Path to the program to execute
-	 * @param	string			(optional) Parameters to pass the this call
-	 * @param	string			(optional) Log output to a specific file defined here
-	 * @return	void			No value is returned
-	 */
-	function execute_task($title, $program, $parameters, $log)
-	{
-		echo(date('r') . ' ' . $title . '...' . PHP_EOL);
-
-		if(empty($program))
-		{
-			return;
-		}
-
-		$cmd = sprintf('"%s"%s%s', $program, (!$parameters ?: ' ' . $parameters), (!$log ? '' : ' > ' . PATH_LOG . '\\' . $log . '.log 2<&1'));
-
-		@popen($cmd, 'r');
-	}
 
 	/**
 	 * Removes all files within a directory and then 
