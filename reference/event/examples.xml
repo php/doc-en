@@ -634,6 +634,202 @@ $base->loop();
 ]]>
   </programlisting>
  </example>
+ <example>
+  <title>Simple HTTP server</title>
+  <programlisting role="php">
+<![CDATA[
+<?php
+/*
+ * Simple HTTP server.
+ *
+ * To test it:
+ * 1) Run it on a port of your choice, e.g.:
+ * $ php examples/http.php 8010
+ * 2) In another terminal connect to some address on this port
+ * and make GET or POST request(others are turned off here), e.g.:
+ * $ nc -t 127.0.0.1 8010
+ * POST /about HTTP/1.0
+ * Content-Type: text/plain
+ * Content-Length: 4
+ * Connection: close
+ * (press Enter)
+ *
+ * It will output
+ * a=12
+ * HTTP/1.0 200 OK
+ * Content-Type: text/html; charset=ISO-8859-1
+ * Connection: close
+ *
+ * $ nc -t 127.0.0.1 8010
+ * GET /dump HTTP/1.0
+ * Content-Type: text/plain
+ * Content-Encoding: UTF-8
+ * Connection: close
+ * (press Enter)
+ *
+ * It will output:
+ * HTTP/1.0 200 OK
+ * Content-Type: text/html; charset=ISO-8859-1
+ * Connection: close
+ * (press Enter)
+ *
+ * $ nc -t 127.0.0.1 8010
+ * GET /unknown HTTP/1.0
+ * Connection: close
+ *
+ * It will output:
+ * HTTP/1.0 200 OK
+ * Content-Type: text/html; charset=ISO-8859-1
+ * Connection: close
+ *
+ * 3) See what the server outputs on the previous terminal window.
+ */
+
+function _http_dump($req, $data) {
+	static $counter      = 0;
+	static $max_requests = 2;
+
+	if (++$counter >= $max_requests)  {
+		echo "Counter reached max requests $max_requests. Exiting\n";
+		exit();
+	}
+
+	echo __METHOD__, " called\n";
+	echo "request:"; var_dump($req);
+	echo "data:"; var_dump($data);
+
+	echo "\n===== DUMP =====\n";
+	echo "Command:", $req->getCommand(), PHP_EOL;
+	echo "URI:", $req->getUri(), PHP_EOL;
+	echo "Input headers:"; var_dump($req->getInputHeaders());
+	echo "Output headers:"; var_dump($req->getOutputHeaders());
+
+	echo "\n >> Sending reply ...";
+	$req->sendReply(200, "OK");
+	echo "OK\n";
+
+	echo "\n >> Reading input buffer ...\n";
+	$buf = $req->getInputBuffer();
+	while ($s = $buf->readLine(EventBuffer::EOL_ANY)) {
+		echo $s, PHP_EOL;
+	}
+	echo "No more data in the buffer\n";
+}
+
+function _http_about($req) {
+	echo __METHOD__, PHP_EOL;
+	echo "URI: ", $req->getUri(), PHP_EOL;
+	echo "\n >> Sending reply ...";
+	$req->sendReply(200, "OK");
+	echo "OK\n";
+}
+
+function _http_default($req, $data) {
+	echo __METHOD__, PHP_EOL;
+	echo "URI: ", $req->getUri(), PHP_EOL;
+	echo "\n >> Sending reply ...";
+	$req->sendReply(200, "OK");
+	echo "OK\n";
+}
+
+$port = 8010;
+if ($argc > 1) {
+	$port = (int) $argv[1];
+}
+if ($port <= 0 || $port > 65535) {
+	exit("Invalid port");
+}
+
+$base = new EventBase();
+$http = new EventHttp($base);
+$http->setAllowedMethods(EventHttpRequest::CMD_GET | EventHttpRequest::CMD_POST);
+
+$http->setCallback("/dump", "_http_dump", array(4, 8));
+$http->setCallback("/about", "_http_about");
+$http->setDefaultCallback("_http_default", "custom data value");
+
+$http->bind("0.0.0.0", 8010);
+$base->loop();
+?>
+]]>
+  </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+a=12
+HTTP/1.0 200 OK
+Content-Type: text/html; charset=ISO-8859-1
+Connection: close
+
+HTTP/1.0 200 OK
+Content-Type: text/html; charset=ISO-8859-1
+Connection: close
+(press Enter)
+
+HTTP/1.0 200 OK
+Content-Type: text/html; charset=ISO-8859-1
+Connection: close
+]]>
+   </screen>
+ </example>
+ <example>
+  <title>
+   <function>EventHttpConnection::makeRequest</function> example</title>
+  <programlisting role="php">
+<![CDATA[
+<?php
+function _request_handler($req, $base) {
+	echo __FUNCTION__, PHP_EOL;
+
+	if (is_null($req)) {
+		echo "Timed out\n";
+	} else {
+		$response_code = $req->getResponseCode();
+
+		if ($response_code == 0) {
+			echo "Connection refused\n";
+		} elseif ($response_code != 200) {
+			echo "Unexpected response: $response_code\n";
+		} else {
+			echo "Success: $response_code\n";
+			$buf = $req->getInputBuffer();
+			echo "Body:\n";
+			while ($s = $buf->readLine(EventBuffer::EOL_ANY)) {
+				echo $s, PHP_EOL;
+			}
+		}
+	}
+	
+	$base->exit(NULL);
+}
+
+$address = "127.0.0.1";
+$port = 80;
+
+$base = new EventBase();
+$conn = new EventHttpConnection($base, NULL, $address, $port);
+$conn->setTimeout(5);
+$req = new EventHttpRequest("_request_handler", $base);
+
+$req->addHeader("Host", $address, EventHttpRequest::OUTPUT_HEADER);
+$req->addHeader("Content-Length", "0", EventHttpRequest::OUTPUT_HEADER);
+$conn->makeRequest($req, EventHttpRequest::CMD_GET, "/index.cphp");
+
+$base->loop();
+?>
+]]>
+  </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+_request_handler
+Success: 200
+Body:
+PHP, date:
+2013-03-13T20:27:52+05:00
+]]>
+   </screen>
+ </example>
 </chapter>
 <!-- Keep this comment at the end of the file
 Local variables:
