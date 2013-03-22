@@ -3,7 +3,8 @@
 <refentry xml:id="eventbufferevent.connect" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>EventBufferEvent::connect</refname>
-  <refpurpose>Connect buffer event's socket to given address</refpurpose>
+  <refpurpose>Connect buffer event&apos;s file descriptor to given address or
+  UNIX socket</refpurpose>
  </refnamediv>
  <refsect1 role="description">
   &reftitle.description;
@@ -15,31 +16,17 @@
     <type>string</type>
     <parameter>addr</parameter>
    </methodparam>
-   <methodparam choice="opt">
-    <type>bool</type>
-    <parameter>sync_resolve</parameter>
-   </methodparam>
   </methodsynopsis>
   <para>
-   Connect buffer event&apos;s socket to given address(optionally with port).
+   Connect buffer event&apos;s file descriptor to given address(optionally
+   with port), or a UNIX domain socket.
   </para>
   <para>
-   This function doesn&apos;t require sockets support. If socket is not
-   assigned to the buffer event, this function allocates a socket and makes it
-   non-blocking internally.
+   If socket is not assigned to the buffer event, this function allocates a
+   new socket and makes it non-blocking internally.
   </para>
   <para>
-   If
-   <parameter>sync_resolve</parameter>
-   parameter is &true;, the function tries to resolve the hostname within
-   <parameter>addr</parameter>
-   <emphasis>syncronously</emphasis>
-   (!). Otherwise
-   <parameter>addr</parameter>
-   parameter expected to be an IP address with optional port number.
-  </para>
-  <para>
-   To resolve DNS names asyncronously, use
+   To resolve DNS names(asyncronously), use
    <methodname>EventBufferEvent::connectHost</methodname>
    method.
   </para>
@@ -53,34 +40,17 @@
     </term>
     <listitem>
      <para>
-      If
-      <parameter>sync_resolve</parameter>
-      is &true;,
-      <parameter>addr</parameter>
-      expected to be a hostname. Otherwise
-      <parameter>addr</parameter>
-      should contain an IP address. Recognized formats are:
+      Should contain an IP address with optional port number, or a path to
+      UNIX domain socket. Recognized formats are:
 <screen><![CDATA[
 [IPv6Address]:port
 [IPv6Address]
 IPv6Address
 IPv4Address:port
 IPv4Address
+unix:path
 ]]></screen>
-     </para>
-    </listitem>
-   </varlistentry>
-   <varlistentry>
-    <term>
-     <parameter>sync_resolve</parameter>
-    </term>
-    <listitem>
-     <para>
-      Whether to syncronously resolve hostname specified by
-      <parameter>addr</parameter>
-      , or use
-      <parameter>addr</parameter>
-      as an IP address with optional port number.
+     Note, <literal>'unix:'</literal> prefix is currently not case sensitive.
      </para>
     </listitem>
    </varlistentry>
@@ -112,35 +82,35 @@ IPv4Address
 
 /* Read callback */
 function readcb($bev, $base) {
-	$input = $bev->getInput();
+    $input = $bev->getInput();
 
-	while (($n = $input->remove($buf, 1024)) > 0) {
-		echo $buf;
-	}
+    while (($n = $input->remove($buf, 1024)) > 0) {
+        echo $buf;
+    }
 }
 
 /* Event callback */
 function eventcb($bev, $events, $base) {
-	if ($events & EventBufferEvent::CONNECTED) {
-		echo "Connected.\n";
-	} elseif ($events & (EventBufferEvent::ERROR | EventBufferEvent::EOF)) {
-		if ($events & EventBufferEvent::ERROR) {
-			echo "DNS error: ", $bev->getDnsErrorString(), PHP_EOL;
-		}
+    if ($events & EventBufferEvent::CONNECTED) {
+        echo "Connected.\n";
+    } elseif ($events & (EventBufferEvent::ERROR | EventBufferEvent::EOF)) {
+        if ($events & EventBufferEvent::ERROR) {
+            echo "DNS error: ", $bev->getDnsErrorString(), PHP_EOL;
+        }
 
-		echo "Closing\n";
-		$base->exit();
-		exit("Done\n");
-	}
+        echo "Closing\n";
+        $base->exit();
+        exit("Done\n");
+    }
 }
 
 $base = new EventBase();
 
 echo "step 1\n";
 $bev = new EventBufferEvent($base, /* use internal socket */ NULL,
-	EventBufferEvent::OPT_CLOSE_ON_FREE | EventBufferEvent::OPT_DEFER_CALLBACKS);
+    EventBufferEvent::OPT_CLOSE_ON_FREE | EventBufferEvent::OPT_DEFER_CALLBACKS);
 if (!$bev) {
-	exit("Failed creating bufferevent socket\n");
+    exit("Failed creating bufferevent socket\n");
 }
 
 echo "step 2\n";
@@ -151,16 +121,16 @@ echo "step 3\n";
 /* Send request */
 $output = $bev->getOutput();
 if (!$output->add(
-	"GET /index.cphp HTTP/1.0\r\n".
-	"Connection: Close\r\n\r\n"
+    "GET /index.cphp HTTP/1.0\r\n".
+    "Connection: Close\r\n\r\n"
 )) {
-	exit("Failed adding request to output buffer\n");
+    exit("Failed adding request to output buffer\n");
 }
 
 /* Connect to the host syncronously.
  * We know the IP, and don't need to resolve DNS. */
 if (!$bev->connect("127.0.0.1:80")) {
-	exit("Can't connect to host\n");
+    exit("Can't connect to host\n");
 }
 
 /* Dispatch pending events */
@@ -184,6 +154,85 @@ X-Powered-By: PHP/5.4.11--pl2-gentoo
 sdfsdfsf
 Closing
 Done
+]]>
+   </screen>
+  </example>
+  <example>
+   <title>Connect to UNIX domain socket which presumably is served by a server, read response from
+   the server and output it to the console</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class MyUnixSocketClient {
+    private $base, $bev;
+
+    function __construct($base, $sock_path) {
+        $this->base = $base;
+        $this->bev = new EventBufferEvent($base, NULL, EventBufferEvent::OPT_CLOSE_ON_FREE,
+            array ($this, "read_cb"), NULL, array ($this, "event_cb"));
+
+        if (!$this->bev->connect("unix:$sock_path")) {
+            trigger_error("Failed to connect to socket `$sock_path'", E_USER_ERROR);
+        }
+
+        $this->bev->enable(Event::READ);
+    }
+
+    function __destruct() {
+        if ($this->bev) {
+            $this->bev->free();
+            $this->bev = NULL;
+        }
+    }
+
+    function dispatch() {
+        $this->base->dispatch();
+    }
+
+    function read_cb($bev, $unused) {
+        $in = $bev->input;
+
+        printf("Received %ld bytes\n", $in->length);
+        printf("----- data ----\n");
+        printf("%ld:\t%s\n", (int) $in->length, $in->pullup(-1));
+
+        $this->bev->free();
+        $this->bev = NULL;
+        $this->base->exit(NULL);
+    }
+
+    function event_cb($bev, $events, $unused) {
+        if ($events & EventBufferEvent::ERROR) {
+            echo "Error from bufferevent\n";
+        }
+
+        if ($events & (EventBufferEvent::EOF | EventBufferEvent::ERROR)) {
+            $bev->free();
+            $bev = NULL;
+        } elseif ($events & EventBufferEvent::CONNECTED) {
+            $bev->output->add("test\n");
+        }
+    }
+}
+
+if ($argc <= 1) {
+    exit("Socket path is not provided\n");
+}
+$sock_path = $argv[1];
+
+$base = new EventBase();
+$cl = new MyUnixSocketClient($base, $sock_path);
+$cl->dispatch();
+?>
+
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+Received 5 bytes
+----- data ----
+5:  test
 ]]>
    </screen>
   </example>
