@@ -4,6 +4,42 @@
   <title>Thread-Safe Resource Manager</title>
   
   <simpara>
+   When PHP is built with Thread Safety enabled, the Zend engine requires a way to isolate contexts from one another, such that the threads of a process may service individual requests without interference. TSRM is omnipitent within PHP, extension authors have to do very little in order to make sure their extensions can function in both a Thread Safe and Non Thread Safe architecture.
   </simpara>
-
+  
+  <example xml:id="internals2.structure.globals.using.accessor">
+    <title>Accessor macros for per-module globals</title>
+    <programlisting role="c">
+<![CDATA[
+#ifdef ZTS
+#define COUNTER_G(v) TSRMG(counter_globals_id, zend_counter_globals *, v)
+#else
+#define COUNTER_G(v) (counter_globals.v)
+#endif
+]]>
+    </programlisting>
+   </example>
+  
+  <simpara>
+   The snippet above shows how an extension author is expected to define their global accessors. The TSRMG macro takes an identifier, type cast and element name. The identifier is assigned by TSRM during initialization of the module. Declaring global accessors in this way ensures that an extension can operate safely in a Thread Safe and Non Thread Safe architecture using the same logic.
+  </simpara>
+  
+  <simpara>
+   TSRM manages the isolation and safety of all global structures within PHP, from executor globals to extension globals, a pointer to the isolated storage is also passed around with most, or many of the API functions in the Zend and PHP layers. The macros TSRMLS_C and TSRMLS_CC translate to "thread safe local storage" and "thread safe local storage prefixed with a comma" respectively.
+  </simpara>
+  
+  <simpara>
+   If a function requires a pointer to TSRM, it is declared with the macro TSRMLS_D or TSRMLS_DC in it's prototype, wihch translates to "thread safe local storage only" and "thread safe local storage prefixed with a comma" respectively. Many macros within Zend reference TSRM, so it is a good idea to declare most things to accept TSRM, such that if they need to call upon the Zend API they do not have to fetch a pointer to TSRM during execution, whenever PHP is built in Thread Safe mode TSRM is available by default.
+  </simpara>
+  
+  <simpara>
+   Because TSRM is thread local, and some functions (for compatibility reasons) are not able to accept TSRM directly, the macro TSRMLS_FETCH exists, which requests that TSRM fetches the pointer to the thread local storage. This should be avoided wherever it can be, as it is not without cost in a Thread Safe setup.
+  </simpara>
+  
+  <note>
+   <simpara>
+    While developing extensions, build errors that contain "tsrm_ls is undefined" or errors to that effect stem from the fact that TSRMLS is undefined in the current scope, to fix this, declare the function to accept TSRMLS with the appropriate macro, if the prototype of the function in question cannot be changed, you must call TSRMLS_FETCH within the function body.
+   </simpara>
+  </note>
+  
  </sect1>
