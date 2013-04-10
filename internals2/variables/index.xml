@@ -1,32 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
- <chapter xml:id="internals2.variables" xmlns="http://docbook.org/ns/docbook">
-  <title>Working with variables</title>
-  <section xml:id="internals2.variables.intro">
-   <title>Intro</title>
-   <para>
-    For working with variables in PHP's core you have to learn about different
-    fundamental concepts used in PHP. Firstly PHP is a dynamic and weak typed
-    language. Secondly PHP uses a copy on write mechanism with reference
-    counting for memory handling. Please check the <xref
-     linkend="features.gc.refcounting-basics"/> chapter for details how
-    reference counting and references work.
-   </para>
-   <para>
-    PHP variables, in general, consist out of two things: The label, which 
-    might, for instance, be an entry in a symbol table, and the actual variable
-    container. For the most parts of this manual we will focus on the variable
-    container.
-   </para>
-   <para>
-    The variable container, in code called <code>zval</code>, is holding all
-    data needed to handle the variable. This includes not only the actual value
-    but also the current type, a counter counting the number of labels pointing
-    to this container and a flag whether these labels should be treated as
-    references or copies. In PHP 5.3 the relevant structures, which you can
-    find in <code>Zend/zend.h</code>, look like this:
-   </para>
-   <screen>
+<chapter xml:id="internals2.variables" xmlns="http://docbook.org/ns/docbook">
+ <title>Working with variables</title>
+ <section xml:id="internals2.variables.intro">
+  <title>Intro</title>
+  <para>
+   For working with variables in PHP's you have to learn about different
+   fundamental concepts used in PHP. Firstly PHP is a dynamic and weak typed
+   language. Secondly PHP uses a copy on write mechanism with reference
+   counting for memory handling. Please check the <xref
+   linkend="features.gc.refcounting-basics"/> chapter for details how
+   reference counting and references work.
+  </para>
+  <para>
+   PHP variables, in general, consist out of two things: The label, which 
+   might, for instance, be an entry in a symbol table, and the actual variable
+   container. For the most parts of this manual we will focus on the variable
+   container.
+  </para>
+  <para>
+   The variable container, in code is called <code>zval</code>, it holds all
+   data needed to handle the variable. This includes not only the actual value
+   but also the current type, a reference counter and a flag to determine if the 
+   zval should be treated as a reference. In PHP 5.3+ the relevant structures, 
+   which you can find in <code>Zend/zend.h</code>, look like this:
+  </para>
+  <screen>
 <![CDATA[
 typedef struct _zval_struct zval;
 
@@ -50,41 +49,261 @@ struct _zval_struct {
 };
 
 ]]>
-   </screen>
-   <para>
-    In the <code>zvalue_value</code> one can find the internal representation
-    for the different types the fields used should be clear from the names and
-    comments - especially if one knows that PHP's arrays are infact hash
-    tables. Nonetheless, knowing PHP's types one might miss a few:
-    <code>NULL</code>, <code>boolean</code> and <code>resources</code>. For
-    <code>NULL</code> we need no value, as <code>NULL</code> is the value of
-    that type. For <code>boolean</code> and <code>resource</code> values PHP
-    re-uses the value field. In the case of a <code>boolean</code> it holds
-    either <code>0</code> for <code>false</code> or <code>1</code> for
-    <code>true</code>. For <code>resource</code>-typed variables it holds the
-    resource id.
-   </para>
-   <para>
-    Now the good message is that you don't have to know these things in detail 
-    as there are - like always in PHP - acces macros. The bad news is that there
-    are many of them: There are macros to access any aspect of the
-    <code>zval</code> and then, as one often deals with pointers to 
-    <code>zval</code>s and even pointers to pointers to <code>zval</code>s, for 
-    most of them there are shortcuts dereferencing these pointers. These macros
-    are spread over <code>Zend/zend.h</code>,
-    <code>Zend/zend_operators.h</code> and <code>Zend/zend_API.h</code>.
-   </para>
-  </section>
-  <section xml:id="internals2.variables.creating">
-   <title>Creating variables and setting values</title>
-   <para>
-    <!-- ... -->
-   </para>
-  </section>
+  </screen>
+  <para>
+   In the <code>zvalue_value</code> one can find the internal representation
+   for the different types the fields used should be clear from the names and
+   comments - especially if one knows that PHP's arrays are infact hash
+   tables. Nonetheless, knowing PHP's types one might miss a few:
+   <code>NULL</code>, <code>boolean</code> and <code>resources</code>. For
+   <code>NULL</code> we need no value, as <code>NULL</code> is the value of
+   that type. For <code>boolean</code> and <code>resource</code> values PHP
+   re-uses the value field. In the case of a <code>boolean</code> it holds
+   either <code>0</code> for <code>false</code> or <code>1</code> for
+   <code>true</code>. For <code>resource</code>-typed variables it holds the
+   resource id.
+  </para>
+  
+  <para>
+   The following table define the macros exposed by the engine for working with zvals.
+  </para>
+  
+  <table xml:id="internals2.variables.zvals.api">
+   <title>Accessor Macros</title>
+   <tgroup cols="3">
+    <thead>
+     <row>
+      <entry>Prototype</entry>
+      <entry>Accesses</entry>
+      <entry>Description</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry><code>zend_uchar Z_TYPE(zval zv)</code></entry>
+      <entry>type</entry>
+      <entry>returns the type of the <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>long Z_LVAL(zval zv)</code></entry>
+      <entry>value.lval</entry>
+      <entry></entry>
+     </row>
+     
+     <row>
+      <entry><code>zend_bool Z_BVAL(zval zv)</code></entry>
+      <entry>value.lval</entry>
+      <entry>cast long <code>value</code> to zend_bool</entry>
+     </row>
+     
+     <row>
+      <entry><code>double Z_DVAL(zval zv)</code></entry>
+      <entry>value.dval</entry>
+      <entry></entry>
+     </row>
+     
+     <row>
+      <entry><code>zend_bool Z_RESVAL(zval zv)</code></entry>
+      <entry>value.lval</entry>
+      <entry>returns the resource list identifier for <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>char* Z_STRVAL(zval zv)</code></entry>
+      <entry>value.str.val</entry>
+      <entry>return the string <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int Z_STRLEN(zval zv)</code></entry>
+      <entry>value.str.len</entry>
+      <entry>return the length of the string <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>HashTable* Z_ARRVAL(zval zv)</code></entry>
+      <entry>value.ht</entry>
+      <entry>return the HashTable (array) <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>zend_object_value Z_OBJVAL(zval zv)</code></entry>
+      <entry>value.obj</entry>
+      <entry>returns object <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>uint Z_OBJ_HANDLE(zval zv)</code></entry>
+      <entry>value.obj.handle</entry>
+      <entry>returns the object handle for object <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>zend_object_handlers* Z_OBJ_HT_P(zval zv)</code></entry>
+      <entry>value.obj.handlers</entry>
+      <entry>returns the handler table for object <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>zend_class_entry* Z_OBJCE(zval zv)</code></entry>
+      <entry>value.obj</entry>
+      <entry>returns the class entry for object <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>HashTable* Z_OBJPROP(zval zv)</code></entry>
+      <entry>value.obj</entry>
+      <entry>returns the properties of object <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>HashTable* Z_OBJPROP(zval zv)</code></entry>
+      <entry>value.obj</entry>
+      <entry>returns the properties of object <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>HashTable* Z_OBJDEBUG(zval zv)</code></entry>
+      <entry>value.obj</entry>
+      <entry>if an object has the get_debug_info handler set, it is called, else Z_OBJPROP is called</entry>
+     </row>
+     
+    </tbody>
+   </tgroup>
+  </table>
+  
+  <table xml:id="internals2.variables.refcounts.api">
+   <title>Reference Count Manipulation</title>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Prototype</entry>
+      <entry>Description</entry>
+     </row>
+    </thead>
+    
+    <tbody>
+     <row>
+      <entry><code>zend_ulong Z_REFCOUNT(zval zv)</code></entry>
+      <entry>returns the reference count of the <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>void Z_SET_REFCOUNT(zval zv)</code></entry>
+      <entry>sets the reference count of the <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>void Z_ADDREF(zval zv)</code></entry>
+      <entry>increments the reference count of <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>void Z_DELREF(zval zv)</code></entry>
+      <entry>decrements the reference count of <code>value</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>zend_bool Z_ISREF(zval zv)</code></entry>
+      <entry>tells if the zval is a reference</entry>
+     </row>
+     
+     <row>
+      <entry><code>void Z_UNSET_ISREF(zval zv)</code></entry>
+      <entry>set is_ref__gc to 0</entry>
+     </row>
+     
+     <row>
+      <entry><code>void Z_SET_ISREF(zval zv)</code></entry>
+      <entry>set is_ref__gc to 1</entry>
+     </row>
+     
+     <row>
+      <entry><code>void Z_SET_ISREF_TO(zval zv, zend_uchar to)</code></entry>
+      <entry>set is_ref__gc to <code>to</code></entry>
+     </row>
+     
+    </tbody>
+   </tgroup>
+  </table>
+  
+  <note>
+   <simpara>The Z_* macros above all take a zval, they are all defined again suffixed with _P to take a pointer to a zval, for example <code>zend_uchar Z_TYPE_P(zval* pzv)</code>, and again suffixed with _PP to take a pointer to a pointer to a zval, for example <code>zend_uchar Z_TYPE_PP(zval** ppzv)</code></simpara>
+  </note>
+  
+  <table xml:id="internals2.variables.general.api">
+   <title>Creation, Destruction, Separation and Copying</title>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Prototype</entry>
+      <entry>Description</entry>
+     </row>
+    </thead>
+    
+    <tbody>
 
- </chapter>
+     <row>
+      <entry><code>ALLOC_INIT_ZVAL(zval* pzval)</code></entry>
+      <entry>emallocs <code>pzval</code>, and points <code>pzval</code> at a null typed zval for sanity</entry>
+     </row>
+     
+     <row>
+      <entry><code>MAKE_STD_ZVAL(zval* pzval)</code></entry>
+      <entry>emallocs <code>pzval</code>, setting the refcount to <code>1</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>ZVAL_COPY_VALUE(zval* dst, zval* src)</code></entry>
+      <entry>sets the value and type of <code>dst</code> from the value and type of <code>src</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>INIT_PZVAL_COPY(zval* dst, zval*dst) </code></entry>
+      <entry>performs ZVAL_COPY_VALUE, setting refcount of <code>dst</code> to 1, and setting is_ref__gc to <code>0</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>SEPARATE_ZVAL(zval** ppzval)</code></entry>
+      <entry>if the refcount of <code>ppzval</code> is >1, redirects <code>*ppzval</code> to a newly emalloc'd, copied, and constructed zval of the same type and value</entry>
+     </row>
+     
+     <row>
+      <entry><code>SEPARATE_ZVAL_IF_NOT_REF(zval** ppzval)</code></entry>
+      <entry>if <code>*ppzval</code> is not a reference, will perform SEPARATE_ZVAL on <code>ppzval</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>SEPARATE_ZVAL_TO_MAKE_IS_REF(zval** ppzval)</code></entry>
+      <entry>if <code>*ppzval</code> is not a reference, performs SEPARATE_ZVAL then Z_SET_ISREF_PP on <code>ppzval</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>COPY_PZVAL_TO_ZVAL(zval dst, zval** src)</code></entry>
+      <entry>results in <code>dst</code> being a copy of <code>src</code> without affecting the refcount of <code>src</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>MAKE_COPY_ZVAL(zval** src, zval* dst)</code></entry>
+      <entry>performs INIT_PZVAL_COPY, then zval_copy_ctor on the new zval</entry>
+     </row>
+     
+    </tbody>
+   </tgroup>
+  </table>
+  
+ </section>
+ <section xml:id="internals2.variables.creating">
+  <title>Creating variables and setting values</title>
+  <para>
+   <!-- ... -->
+  </para>
+ </section>
  
- <!-- Keep this comment at the end of the file
+</chapter>
+
+<!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml
 sgml-omittag:t
