@@ -3,69 +3,102 @@
 <chapter xml:id="internals2.variables" xmlns="http://docbook.org/ns/docbook">
  <title>Working with variables</title>
  <section xml:id="internals2.variables.intro">
-  <title>Intro</title>
+  <title>Introducing the zval</title>
+  <note>
+   <para>PHP is a dyanamic, weakly typed language, that uses copy on write and reference counting.</para>
+  </note>
   <para>
-   For working with variables in PHP's you have to learn about different
-   fundamental concepts used in PHP. Firstly PHP is a dynamic and weak typed
-   language. Secondly PHP uses a copy on write mechanism with reference
-   counting for memory handling. Please check the <xref
-   linkend="features.gc.refcounting-basics"/> chapter for details how
-   reference counting and references work.
-  </para>
-  <para>
-   PHP variables, in general, consist out of two things: The label, which 
-   might, for instance, be an entry in a symbol table, and the actual variable
-   container. For the most parts of this manual we will focus on the variable
-   container.
-  </para>
-  <para>
-   The variable container, in code is called <code>zval</code>, it holds all
-   data needed to handle the variable. This includes not only the actual value
-   but also the current type, a reference counter and a flag to determine if the 
-   zval should be treated as a reference. In PHP 5.3+ the relevant structures, 
-   which you can find in <code>Zend/zend.h</code>, look like this:
+   All variables in PHP are represented by one structure, the <code>zval</code>:
   </para>
   <screen>
 <![CDATA[
-typedef struct _zval_struct zval;
-
+   typedef struct _zval_struct {
+    zvalue_value value;        /* variable value */
+    zend_uint refcount__gc;    /* reference counter */
+    zend_uchar type;           /* value type */
+    zend_uchar is_ref__gc;     /* reference flag */
+} zval;]]>
+  </screen>
+  <para>
+   The zval_value is a union which can represent all types a variable may hold:
+  </para>
+  <screen>
+<![CDATA[
 typedef union _zvalue_value {
     long lval;                 /* long value */
     double dval;               /* double value */
-    struct {                   /* string type */
+    struct {                   
         char *val;
         int len;
-    } str;
-    HashTable *ht;             /* hash table value */
-    zend_object_value obj;
+    } str;                     /* string (always has length) */
+    HashTable *ht;             /* an array */
+    zend_object_value obj;     /* stores an object store handle, and handlers */
 } zvalue_value;
- 
-struct _zval_struct {
-    /* Variable information */
-    zvalue_value value;        /* value */
-    zend_uint refcount__gc;
-    zend_uchar type;           /* active type */
-    zend_uchar is_ref__gc;
-};
-
 ]]>
   </screen>
   <para>
-   In the <code>zvalue_value</code> one can find the internal representation
-   for the different types the fields used should be clear from the names and
-   comments - especially if one knows that PHP's arrays are infact hash
-   tables. Nonetheless, knowing PHP's types one might miss a few:
-   <code>NULL</code>, <code>boolean</code> and <code>resources</code>. For
-   <code>NULL</code> we need no value, as <code>NULL</code> is the value of
-   that type. For <code>boolean</code> and <code>resource</code> values PHP
-   re-uses the value field. In the case of a <code>boolean</code> it holds
-   either <code>0</code> for <code>false</code> or <code>1</code> for
-   <code>true</code>. For <code>resource</code>-typed variables it holds the
-   resource id.
+   The rest of this chapter provides a crash course and cheat sheat for working with the zval in all forms. All of these constants, macros and functions can be looked up in the source code for a full understanding.
   </para>
+  <table xml:id="internals2.variables.types.api">
+   <title>Native Type Constants</title>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Constant</entry>
+      <entry>Mapping</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry><code>IS_NULL</code></entry>
+      <entry>no value is set in this case</entry>
+     </row>
+     
+     <row>
+      <entry><code>IS_LONG</code></entry>
+      <entry>lval</entry>
+     </row>
+     
+     <row>
+      <entry><code>IS_DOUBLE</code></entry>
+      <entry>dval</entry>
+     </row>
+     
+     <row>
+      <entry><code>IS_BOOL</code></entry>
+      <entry>lval</entry>
+     </row>
+     
+     <row>
+      <entry>IS_RESOURCE</entry>
+      <entry>lval</entry>
+     </row>
+     
+     <row>
+      <entry>IS_STRING</entry>
+      <entry>str</entry>
+     </row>
+     
+     <row>
+      <entry><code>IS_ARRAY</code></entry>
+      <entry>ht</entry>
+     </row>
+     
+     <row>
+      <entry><code>IS_OBJECT</code></entry>
+      <entry>obj</entry>
+     </row>
+     
+    </tbody>
+   </tgroup>
+  </table>
+  
+  <note>
+   <para>There are additional constants that help to identify internal types such as constant arrays and callable objects, their usage is outside the scope of this part of the documentation.</para>
+  </note>
   
   <para>
-   The following table define the macros exposed by the engine for working with zvals.
+   The following table defines the macros exposed by the engine for working with zval values:
   </para>
   
   <table xml:id="internals2.variables.zvals.api">
@@ -173,6 +206,8 @@ struct _zval_struct {
    </tgroup>
   </table>
   
+  <para>Please check the <xref linkend="features.gc.refcounting-basics"/> chapter for details how reference counting and references work.</para>
+  
   <table xml:id="internals2.variables.refcounts.api">
    <title>Reference Count Manipulation</title>
    <tgroup cols="2">
@@ -229,7 +264,7 @@ struct _zval_struct {
   </table>
   
   <note>
-   <simpara>The Z_* macros above all take a zval, they are all defined again suffixed with _P to take a pointer to a zval, for example <code>zend_uchar Z_TYPE_P(zval* pzv)</code>, and again suffixed with _PP to take a pointer to a pointer to a zval, for example <code>zend_uchar Z_TYPE_PP(zval** ppzv)</code></simpara>
+   <para>The Z_* macros above all take a zval, they are all defined again suffixed with _P to take a pointer to a zval, for example <code>zend_uchar Z_TYPE_P(zval* pzv)</code>, and again suffixed with _PP to take a pointer to a pointer to a zval, for example <code>zend_uchar Z_TYPE_PP(zval** ppzv)</code></para>
   </note>
   
   <table xml:id="internals2.variables.general.api">
@@ -243,12 +278,11 @@ struct _zval_struct {
     </thead>
     
     <tbody>
-     
      <row>
       <entry><code>ALLOC_ZVAL(zval* pzval)</code></entry>
       <entry>emallocs <code>pzval</code></entry>
      </row>
-
+     
      <row>
       <entry><code>ALLOC_INIT_ZVAL(zval* pzval)</code></entry>
       <entry>emallocs <code>pzval</code>, and points <code>pzval</code> at a null typed zval for sanity</entry>
@@ -296,19 +330,313 @@ struct _zval_struct {
      
      <row>
       <entry><code>void zval_ptr_dtor(zval* pzval)</code></entry>
-      <entry>calls zval destructor routine on <code>pzval</code>, for basic types, this reduces the refcount by one, for arrays this destroys the array</entry>
+      <entry>calls zval destructor routine on <code>pzval</code>, for basic types, this reduces the refcount by one, for arrays this destroys the array, for objects it reduces the refcount</entry>
      </row>
      
      <row>
       <entry><code>FREE_ZVAL(zval* pzval)</code></entry>
       <entry>efrees <code>pzval</code></entry>
      </row>
-
+     
+    </tbody>
+   </tgroup>
+  </table>
+  
+  <para>PHP is weakly typed, as such the engine provides API functions for converting variables from one type to another.</para>
+  
+  <table xml:id="internals2.variables.conversion.api">
+   <title>Type Conversion</title>
+   <tgroup cols="1">
+    <thead>
+     <row>
+      <entry>Prototype</entry>
+     </row>
+    </thead>
+    <tbody>
+     
+     <row>
+      <entry><code>void convert_to_long(zval* pzval)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>void convert_to_double(zval* pzval)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>void convert_to_long_base(zval* pzval, int base)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>void convert_to_null(zval* pzval)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>void convert_to_boolean(zval* pzval)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>void convert_to_array(zval* pzval)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>void convert_to_object(zval* pzval)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>void convert_object_to_type(zval* pzval, convert_func_t converter)</code></entry>
+     </row>
+    
+    </tbody>
+   </tgroup>
+  </table>
+  
+  <note>
+   <para><code>convert_func_t</code> functions should have the prototype <code>(void) (zval* pzval)</code></para>
+  </note>
+  
+  <para>By now you should have a good understanding of: the types that are native to the engine, how to detect types and read zval values, how to manipulate refcounts, and other zval flags</para>
+  
+ </section>
+ 
+ <section xml:id="internals2.variables.arrays">
+  <title>Working with Arrays</title>
+  <para>
+   Arrays are stored in HashTable strucures, and have the zval type IS_ARRAY. The API functions for creating, destroying and manipulating these structures as variables are documented here and can be found in <code>Zend/zend_API.h</code>
+  </para>
+  
+  <table xml:id="internals2.variables.arrays.api">
+   <title>HashTable as Variable API</title>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Prototype</entry>
+      <entry>Description</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry><code>void array_init(zval* pzval)</code></entry>
+      <entry>initializes the variable as a <code>HashTable</code>, setting type and appropriate destructor function for the <code>HashTable</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>void array_init_size(zval* pzval)</code></entry>
+      <entry>initializes the variable as array_init with a minimum of <code>size</code> buckets</entry>
+     </row>
+     
+    </tbody>
+   </tgroup>
+  </table>
+  
+  <note>
+   <para>Do not squint too hard looking for array_destroy: to destroy a variable array you should call <code>zval_ptr_dtor</code> on the variable, if there are no other references to the variable it will result in the array being destroyed.</para>
+  </note>
+  
+  <table xml:id="internals2.variables.iarrays.api">
+   <title>Indexed Arrays API</title>
+   <tgroup cols="1">
+    <thead>
+     <row>
+      <entry>Prototype</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry><code>int add_index_long(zval* pzval, ulong index, long value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_index_null(zval* pzval, ulong index)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_index_bool(zval* pzval, ulong index, zend_bool value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_index_bool(zval* pzval, ulong index, zend_bool value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_index_resource(zval* pzval, ulong index, uint value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_index_double(zval* pzval, ulong index, double value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_index_string(zval* pzval, ulong index, char* string, zend_bool duplicate)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_index_stringl(zval* pzval, ulong index, char* string, uint length, zend_bool duplicate)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_index_zval(zval* pzval, ulong index, zval* value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_next_index_long(zval* pzval, long value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_next_index_null(zval* pzval)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_next_index_bool(zval* pzval, zend_bool value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_next_index_resource(zval* pzval, uint value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_next_index_double(zval* pzval, double value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_next_index_string(zval* pzval, const char* string, zend_bool dulpicate)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_next_index_stringl(zval* pzval, const char* string, uint length, zend_bool duplicate)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_next_index_zval(zval* pzval, zval* value)</code></entry>
+     </row>
+     
+    </tbody>
+   </tgroup>
+  </table>
+  
+  <table xml:id="internals2.variables.aarrays.api">
+   <title>Associative Arrays API</title>
+   <tgroup cols="1">
+    <thead>
+     <row>
+      <entry>Prototype</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry><code>int add_assoc_long(zval* pzval, const char* key, long value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_long_ex(zval* pzval, const char* key, uint klen, long value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_null(zval* pzval, const char* key)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_null_ex(zval* pzval, const char* key, uint klen)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_bool(zval* pzval, const char* key, zend_bool value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_bool(zval* pzval, const char* key, zend_bool value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_bool_ex(zval* pzval, const char* key, uint klen, zend_bool value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_resource(zval* pzval, const char* key, uint value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_resource_ex(zval* pzval, const char* key, uint klen, uint value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_double(zval* pzval, const char* key, double value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_double_ex(zval* pzval, const char* key, uint klen, double value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_string(zval* pzval, const char* key, const char* value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_string_ex(zval* pzval, const char* key, uint klen, const char* value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_stringl(zval* pzval, const char* key, const char* value, uint vlen, zend_bool duplicate)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_stringl_ex(zval* pzval, const char* key, uint klen, const char* value, uint vlen, zend_bool duplicate)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_zval(zval* pzval, const char* key, zval* value)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>int add_assoc_zval_ex(zval* pzval, const char* key, uint klen, zval* value)</code></entry>
+     </row>
+     
+    </tbody>
+   </tgroup>
+  </table>
+  
+  <note>
+   <para>add_*_string functions that accept a parameter named duplicate, will duplicate the string with <code>estrndup</code> when <code>duplicate</code> is true</para>
+  </note>
+  
+  <note>
+   <para>add_*_zval functions do not adjust the refcount of the <code>value</code> parameter</para>
+  </note>
+  
+  <para>
+   To perform more advanced operations on array variables we must use the HashTable API directly.
+  </para>
+ </section>
+ 
+ <section xml:id="internals2.variables.tables">
+  <title>Working with HashTable Directly</title>
+  
+  <para>The HashTable structure serves many purposes in PHP and can be found everywhere, a good understanding of it's functionality is a preqrequisite of being a good developer.</para>
+  
+  <para>The HashTable implemented by the engine is a standard HashTable, that is to say, a key = > value based store, where the keys are always strings, whose hashes are calculated with a built in hashing algorythim <code>zend_inline_hash_func(const char* key, uint length)</code>, which results in good distribution, and reasonable usage.</para>
+  
+  <para>The internal structure and exact operation of HashTables are out of the scope of this document, this document serves to inform you of the API's available and how best to use them. For a more detailed picture of the HashTable see <code>Zend/zend_hash.h</code>.</para>
+  
+  <table xml:id="internals2.variables.advrrays.api">
+   <title>HashTable API</title>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Prototype</entry>
+      <entry>Description</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry><code>void zend_hash_init(HashTable* ht, uint size, hash_func_t hash, dtor_func_t destructor, zend_bool persistent)</code></entry>
+      <entry>Initializes the hash table to hold at least <code>size</code> elements, <code>hash</code> exists for historical reasons and is always ignored, <code>zend_inline_hash_func</code> is always used as the hashing function. <code>destructor</code> may be <code>NULL</code>.</entry>
+     </row>
+     
     </tbody>
    </tgroup>
   </table>
   
  </section>
+ 
  <section xml:id="internals2.variables.creating">
   <title>Creating variables and setting values</title>
   <para>
