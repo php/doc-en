@@ -329,6 +329,11 @@ typedef union _zvalue_value {
      </row>
      
      <row>
+      <entry><code>void zval_copy_ctor(zval** pzval)</code></entry>
+      <entry>performs maintenance of reference counts, used widely throughout the engine</entry>
+     </row>
+     
+     <row>
       <entry><code>void zval_ptr_dtor(zval* pzval)</code></entry>
       <entry>decrements the refcount for the variable, if no refcounts remain the variable is destroyed</entry>
      </row>
@@ -345,6 +350,8 @@ typedef union _zvalue_value {
   <note>
    <para>Objects and Resources have a reference count as part of their respective structures, when zval_ptr_dtor is called on either, their appropriate del_ref method is executed. See Working with Objects and Working with Resources for more information.</para>
   </note>
+  
+  <para>If the <code>Hacker</code> only has room to remember two more functions, they should be <code>zval_copy_ctor</code> and <code>zval_ptr_dtor</code>, these are at the basis of the engines reference counting mechanisms and it is important to note that <code>zval_copy_ctor</code> does not actually result in any copying occuring under normal circumstances, it simply increases the reference count. By the same token, <code>zval_ptr_dtor</code> only really destroys a variable when there are no references remaining to it and the refcount is at 0.</para>
   
   <para>PHP is weakly typed, as such the engine provides API functions for converting variables from one type to another.</para>
   
@@ -626,6 +633,22 @@ typedef union _zvalue_value {
    <para>It is important to remember that ordinarily <code>HashTable</code> API functions expect key lengths to be the length of the null terminated string, including the null termination, in other words they expect <code>strlen(key) + 1</code></para>
   </note>
   
+  <para>Below are some typedefs you should know when interacting with <code>HashTable</code>. They are mostly self explanitory and will allow the <code>Hacker</code> to fully understand the prototypes below properly.</para>
+  
+  <screen>
+<![CDATA[
+typedef ulong (*hash_func_t)(const char *arKey, uint nKeyLength); /* mostly redundant */
+typedef int  (*compare_func_t)(const void *, const void * TSRMLS_DC); /* comparison function */
+typedef void (*sort_func_t)(void *, size_t, register size_t, compare_func_t TSRMLS_DC); /* sorting function */
+typedef void (*dtor_func_t)(void *pDest); /* destructor function */
+typedef void (*copy_ctor_func_t)(void *pElement); /* copy constructor */
+typedef void (*copy_ctor_param_func_t)(void *pElement, void *pParam); /* copy with argument constructor */
+typedef int (*apply_func_t)(void *pDest TSRMLS_DC); /* apply function */
+typedef int (*apply_func_arg_t)(void *pDest, void *argument TSRMLS_DC); /* apply with argument function */
+typedef int (*apply_func_args_t)(void *pDest TSRMLS_DC, int num_args, va_list args, zend_hash_key *hash_key); /* apply with multiple arguments function */
+]]>
+  </screen>
+  
   <table xml:id="internals2.variables.advrrays.api">
    <title>HashTable API</title>
    <tgroup cols="1">
@@ -667,7 +690,7 @@ typedef union _zvalue_value {
      </row>
      
      <row>
-      <entry>returns positively if <code>key</code> is found in the <code>ht</code></entry>
+      <entry>returns positively if <code>key</code> is found in <code>ht</code></entry>
      </row>
      
      <row>
@@ -678,7 +701,45 @@ typedef union _zvalue_value {
       <entry>removes the entry identified by <code>key</code> from the table if found</entry>
      </row>
      
-     <!-- ... zend_hash_index_* here -->
+     <row>
+      <entry><code>int zend_hash_index_update(HashTable* ht, ulong index, void* data, uint dsize, void** dest)</code></entry>
+     </row>
+     
+     <row>
+      updates the entry at <code>index</code> in <code>ht</code>, with the data at <code>data</code>
+     </row>
+     
+     <row>
+      <entry><code>int zend_hash_index_del(HashTable* ht, ulong index)</code></entry>
+     </row>
+     
+     <row>
+      deletes the entry at <code>index</code> from <code>ht</code>
+     </row>
+     
+     <row>
+      <entry><code>int zend_hash_index_find(HashTable* ht, ulong index, void** data)</code></entry>
+     </row>
+     
+     <row>
+      redirects <code>*data</code> to the data identified by <code>index</code> in <code>ht</code>
+     </row>
+     
+     <row>
+      <entry><code>int zend_hash_index_exists(HashTable* ht, ulong index)</code></entry>
+     </row>
+     
+     <row>
+      <entry>returns positively if <code>index</code> is found in <code>ht</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>ulong zend_hash_next_free_element(HashTable* ht)</code></entry>
+     </row>
+     
+     <row>
+      <entry>returns the index of the next free element in <code>ht</code></entry>
+     </row>
      
     </tbody>
    </tgroup>
@@ -687,68 +748,68 @@ typedef union _zvalue_value {
   <caution>
    <para>zend_hash_* functions that accept <code>void* data</code> should normally cast it to <code>(void**)</code> (ie, <code>(void**) &amp;data</code>)</para>
   </caution>
- 
- <para>Traversing the HashTable is often necessary, to do this you provide a pointer to a <code>HashTable</code>, with an optional <code>HashPosition</code> - a structure internal to the HashTable API that allows traversal not to affect the internal position of HashTable. The following traversal functions are provided, and an example usage found below.</para>
- 
- <table xml:id="internals2.variables.trarrays.api">
-  <title>HashTable Traversal API</title>
-  <tgroup cols="1">
-   <tbody>
-    <row>
-     <entry><code>int zend_hash_internal_pointer_reset(HashTable* ht)</code></entry>
-    </row>
-    <row>
-     <entry>resets the internal pointer of <code>ht</code> to the start</entry>
-    </row>
-    <row>
-     <entry><code>int zend_hash_internal_pointer_reset_ex(HashTable* ht, HashPosition position)</code></entry>
-    </row>
-    <row>
-     <entry>sets <code>position</code> the the start of <code>ht</code></entry>
-    </row>
-    <row>
-     <entry><code>int zend_hash_get_current_data(HashTable* ht, void* data)</code></entry>
-    </row>
-    <row>
-     <entry>gets the data at the current position in <code>ht</code>, <code>data</code> should be cast to <code>void**</code>, ie: <code>(void**) &amp;data</code></entry>
-    </row>
-    <row>
-     <entry><code>int zend_hash_get_current_data_ex(HashTable* ht, void* data, HashPosition position)</code></entry>
-    </row>
-    <row>
-     <entry>sets <code>data</code> to the data at <code>position</code> in <code>ht</code></entry>
-    </row>
-    <row>
-     <entry><code>int zend_hash_get_current_key(HashTable* ht, void* data, char**key, uint klen, ulong index, zend_bool duplicate)</code></entry>
-    </row>
-    <row>
-     <entry>sets <code>key</code>, <code>klen</code>, and <code>index</code> from the key information at the current position. The possible return values HASH_KEY_IS_STRING and HASH_KEY_IS_LONG are indicative of the kind of key found at the current posision.</entry>
-    </row>
-    <row>
-     <entry><code>int zend_hash_get_current_key_ex(HashTable* ht, void* data, char**key, uint klen, ulong index, zend_bool duplicate, HashPosition position)</code></entry>
-    </row>
-    <row>
-     <entry>sets <code>key</code>, <code>klen</code>, and <code>index</code> from the key information at <code>position</code>. The possible return values <code>HASH_KEY_IS_STRING</code> and <code>HASH_KEY_IS_LONG</code> are indicative of the kind of key found at <code>position</code>.</entry>
-    </row>
-    <row>
-     <entry><code>int zend_hash_move_forward(HashTable* ht)</code></entry>
-    </row>
-    <row>
-     <entry>moves the internal pointer of <code>ht</code> to the next entry in <code>ht</code></entry>
-    </row>
-    <row>
-     <entry><code>int zend_hash_move_forward_ex(HashTable* ht, HashPosition position)</code></entry>
-    </row>
-    <row>
-     <entry>moves <code>position</code> to the next entry in <code>ht</code> </entry>
-    </row>
-   </tbody>
-  </tgroup>
- </table>
- 
- <para>The functions above allow traversal over a <code>HashTable</code> to be much like a normal loop, which will look something like:</para>
- 
- <screen>
+  
+  <para>Traversing the HashTable is often necessary, to do this you provide a pointer to a <code>HashTable</code>, with an optional <code>HashPosition</code> - a structure internal to the HashTable API that allows traversal not to affect the internal position of HashTable. The following traversal functions are provided, and an example usage found below.</para>
+  
+  <table xml:id="internals2.variables.trarrays.api">
+   <title>HashTable Traversal API</title>
+   <tgroup cols="1">
+    <tbody>
+     <row>
+      <entry><code>int zend_hash_internal_pointer_reset(HashTable* ht)</code></entry>
+     </row>
+     <row>
+      <entry>resets the internal pointer of <code>ht</code> to the start</entry>
+     </row>
+     <row>
+      <entry><code>int zend_hash_internal_pointer_reset_ex(HashTable* ht, HashPosition position)</code></entry>
+     </row>
+     <row>
+      <entry>sets <code>position</code> the the start of <code>ht</code></entry>
+     </row>
+     <row>
+      <entry><code>int zend_hash_get_current_data(HashTable* ht, void* data)</code></entry>
+     </row>
+     <row>
+      <entry>gets the data at the current position in <code>ht</code>, <code>data</code> should be cast to <code>void**</code>, ie: <code>(void**) &amp;data</code></entry>
+     </row>
+     <row>
+      <entry><code>int zend_hash_get_current_data_ex(HashTable* ht, void* data, HashPosition position)</code></entry>
+     </row>
+     <row>
+      <entry>sets <code>data</code> to the data at <code>position</code> in <code>ht</code></entry>
+     </row>
+     <row>
+      <entry><code>int zend_hash_get_current_key(HashTable* ht, void* data, char**key, uint klen, ulong index, zend_bool duplicate)</code></entry>
+     </row>
+     <row>
+      <entry>sets <code>key</code>, <code>klen</code>, and <code>index</code> from the key information at the current position. The possible return values HASH_KEY_IS_STRING and HASH_KEY_IS_LONG are indicative of the kind of key found at the current posision.</entry>
+     </row>
+     <row>
+      <entry><code>int zend_hash_get_current_key_ex(HashTable* ht, void* data, char**key, uint klen, ulong index, zend_bool duplicate, HashPosition position)</code></entry>
+     </row>
+     <row>
+      <entry>sets <code>key</code>, <code>klen</code>, and <code>index</code> from the key information at <code>position</code>. The possible return values <code>HASH_KEY_IS_STRING</code> and <code>HASH_KEY_IS_LONG</code> are indicative of the kind of key found at <code>position</code>.</entry>
+     </row>
+     <row>
+      <entry><code>int zend_hash_move_forward(HashTable* ht)</code></entry>
+     </row>
+     <row>
+      <entry>moves the internal pointer of <code>ht</code> to the next entry in <code>ht</code></entry>
+     </row>
+     <row>
+      <entry><code>int zend_hash_move_forward_ex(HashTable* ht, HashPosition position)</code></entry>
+     </row>
+     <row>
+      <entry>moves <code>position</code> to the next entry in <code>ht</code> </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </table>
+  
+  <para>The functions above allow traversal over a <code>HashTable</code> to be much like a normal loop, which will look something like:</para>
+  
+  <screen>
 <![CDATA[
 HashPosition position;
 zval **data = NULL;
@@ -770,19 +831,57 @@ for (zend_hash_internal_pointer_reset_ex(ht, &position);
      }
 }
 ]]>
- </screen>
- 
- <note>
-  <para>If a <code>HashTable</code> has been passed into the engine, it is a good idea to use the zend_hash_*_ex API to avoid unexpected behaviour in userland.</para>
- </note>
- 
- <note>
-  <para>If a <code>duplicate</code> of the key is requested and <code>HAS_KEY_IS_STRING</code> is returned the caller must <code>efree</code> the duplicated key</para>
- </note>
- 
- <!-- copying/merging/cleaning here -->
- 
+  </screen>
+  
+  <note>
+   <para>If a <code>HashTable</code> has been passed into the engine, it is a good idea to use the zend_hash_*_ex API to avoid unexpected behaviour in userland.</para>
+  </note>
+  
+  <note>
+   <para>If a <code>duplicate</code> of the key is requested and <code>HAS_KEY_IS_STRING</code> is returned the caller must <code>efree</code> the duplicated key</para>
+  </note>
+  
+  <para>In addition to traversal, the engine provides API functions for merging, copying, and comparing HashTables. These are all concepts that the <code>Hacker</code> should be familiar with. A concept possibly not in the repertoire of the <code>Hacker</code> is <code>applying</code>, which is lamens terms is functionality of the <code>HashTable</code> API allowing the <code>Hacker</code> to pass a callback function to be executed on every entry in a <code>HashTable</code>.</para>
+  
+  <table xml:id="internals2.variables.coparrays.api">
+   <title>Copying, Merging and Sorting</title>
+   <tgroup cols="1">
+    <tbody>
+     <row>
+      <entry><code>void zend_hash_copy(HashTable *target, HashTable *source, copy_ctor_func_t pCopyConstructor, void *tmp, uint size)</code></entry>
+     </row>
+     
+     <row>
+      Copies the contents of <code>source</code> to <code>target</code>. <code>tmp</code> should be an unallocated temporary pointer of the appropriate type, used during copying. <code>size</code> is the size of each element.
+     </row>
+     
+     <row>
+      <entry><code>void zend_hash_merge(HashTable *target, HashTable *source, copy_ctor_func_t pCopyConstructor, void *tmp, uint size, zend_bool overwrite)</code></entry>
+     </row>
+     
+     <row>
+      <entry>Merges the contents of <code>source</code> into <code>destination</code>, replacing existing entries only where <code>overwrite</code> is true.</entry>
+     </row>
+     
+     <row>
+      <entry><code>void int zend_hash_sort(HashTable *ht, sort_func_t sort_func, compare_func_t compare_func, int renumber TSRMLS_DC)</code></entry>
+     </row>
+     
+     <row>
+      <entry><code>renumber</code> controls if indexes should be preserved, see the typedefs at the start of this section for more information</entry>
+     </row>
+     
+    </tbody>
+   </tgroup>
+  </table>
+  
+  <note>
+   <para>When a function accepts a <code>copy_ctor_func_t pCopyConstructor</code>, the function passed with be executed upon creation of every new entry in the <code>HashTable</code>. The most common copy constructor used within the engine is a wrapper around <code>zval_copy_ctor</code>, the macro <code>ZVAL_COPY_CTOR</code>.
+   </para>
+  </note>
+  
  </section>
+ 
  <section xml:id="internals2.variables.objects">
   <title>Working with Objects</title>
   <para>
