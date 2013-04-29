@@ -53,6 +53,7 @@
 						'de'    => 'German',
 						'es'    => 'Spanish',
 						'fr'    => 'French',
+						'it'	=> 'Italian', 
 						'ja'    => 'Japanese',
 						'pt_BR' => 'Brazilian Portuguese',
 						'ro'    => 'Romanian',
