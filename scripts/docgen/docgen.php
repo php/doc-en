@@ -338,7 +338,7 @@ function gen_method_markup(ReflectionMethod $method, $content) { /* {{{ */
 
 	/* {RETURN_TYPE} */
 	if (!$method->isConstructor()) {
-		$content = preg_replace('/\{RETURN_TYPE\}/', '<type>void</type>', $content, 1);
+		$content = preg_replace('/\{RETURN_TYPE\}/', '<type>ReturnType</type>', $content, 1);
 	} else {
 		$content = preg_replace('/\{RETURN_TYPE\}/', '', $content, 1);
 	}

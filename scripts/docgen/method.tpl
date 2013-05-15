@@ -4,7 +4,7 @@
 <refentry xml:id="{CLASS_NAME_ID}.{METHOD_NAME_ID}" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>{FULL_METHOD_NAME}</refname>
-  <refpurpose>The {METHOD_NAME} purpose</refpurpose>
+  <refpurpose>Description</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -29,7 +29,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-
+   
   </para>
  </refsect1>
 {DEFAULT_EXAMPLE}
