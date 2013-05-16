@@ -100,15 +100,13 @@ function params_source_to_doc($type_spec)
 		"z" => "mixed",
 		"Z" => "mixed",
 		"t" => "string",
-		"u" => "unicode",
 		"C" => "class",
 		"h" => "array",
 		"H" => "array",
-		"U" => "unicode",
 		"S" => "string",
 		"f" => "callable",
 		"x" => "string",
-		"T" => "unicode",
+		"p" => "string",
 		
 		"|" => "optional"
 	);
