@@ -18,6 +18,8 @@
   +----------------------------------------------------------------------+
 */
 
+error_reporting(E_ALL & ~E_NOTICE);
+
 if (isset($_SERVER["argv"][1])) {
 	$lang = $_SERVER["argv"][1];
 	$doc_dir = dirname(__FILE__) . "/../..";
