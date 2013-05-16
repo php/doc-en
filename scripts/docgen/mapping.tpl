@@ -5,7 +5,7 @@
  <refnamediv>
   <refname>{FULL_METHOD_NAME}</refname>
   <refname>{FUNCTION_NAME}</refname>
-  <refpurpose>The {METHOD_NAME} purpose</refpurpose>
+  <refpurpose>Description</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -36,7 +36,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-
+   
   </para>
  </refsect1>
 {DEFAULT_EXAMPLE}
