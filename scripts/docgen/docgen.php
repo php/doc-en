@@ -414,6 +414,10 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 	/* {CLASS_NAME} */
 	$content = preg_replace('/\{CLASS_NAME\}/', $class->getName(), $content);
 
+	/* {CLASS_TYPE} */
+	$type = ($class->isInterface() ? 'interface' : 'class');
+	$content = preg_replace('/\{CLASS_TYPE\}/', $type, $content);
+
 	/* {CLASS_NAME_ID} */
 	$content = preg_replace('/{CLASS_NAME_ID\}/', $id, $content);
 
