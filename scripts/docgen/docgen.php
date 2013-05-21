@@ -608,17 +608,14 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 
 	switch ($xml_file) {
 		case 'ini.xml':
-			if ($ini = $obj->getINIEntries()) {
+			if ($ini = ini_get_all($obj->name)) {
 				
-				// ReflectionExtension doesn't provide API for INI visibility but it exports this information to a string
-				$visibility = array();
-				if (preg_match('~\n  - INI \{(.*)\n  }~sU', (string) $obj, $match)) {
-					preg_match_all('~\n    Entry \[ (\S+) <(.+)> \]\n~', $match[1], $matches, PREG_SET_ORDER);
-					foreach ($matches as $match) {
-						list(, $config, $visible) = $match;
-						$visibility[$config] = "PHP_INI_" . str_replace(",", "|PHP_INI_", $visible);
-					}
-				}
+				$visibility = array(
+				  INI_USER   => 'PHP_INI_USER',
+				  INI_PERDIR => 'PHP_INI_PERDIR',
+				  INI_SYSTEM => 'PHP_INI_SYSTEM',
+				  INI_ALL    => 'PHP_INI_ALL',
+				);
 				
 				$ident = get_ident_size('INI_ENTRIES', $content);
 
@@ -628,15 +625,15 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 					$id = "ini.". format_config($config);
 					$markup .= str_repeat(' ', $ident + 1) ."<row>". PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 2) ."<entry><link linkend=\"". $id ."\">". $config ."</link></entry>". PHP_EOL;
-					$markup .= str_repeat(' ', $ident + 2) ."<entry>". $value ."</entry>". PHP_EOL;
-					$markup .= str_repeat(' ', $ident + 2) ."<entry>" . (isset($visibility[$config]) ? $visibility[$config] : "its PHP_INI_* value") . "</entry>". PHP_EOL;
+					$markup .= str_repeat(' ', $ident + 2) ."<entry>". $value['global_value'] ."</entry>". PHP_EOL;
+					$markup .= str_repeat(' ', $ident + 2) ."<entry>" . (isset($visibility[$value['access']]) ? $visibility[$value['access']] : $value['access']) . "</entry>". PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 2) ."<entry><!-- leave empty, this will be filled by an automatic script --></entry>". PHP_EOL;
 					$markup .= str_repeat(' ', $ident + 1) ."</row>". PHP_EOL;
 
 					$markup2 .= ($markup2 ? str_repeat(' ', $ident) : '') ."<varlistentry xml:id=\"". $id ."\">". PHP_EOL;
 					$markup2 .= str_repeat(' ', $ident + 1) ."<term>". PHP_EOL;
 					$markup2 .= str_repeat(' ', $ident + 2) ."<parameter>". $config ."</parameter>". PHP_EOL;
-					$markup2 .= str_repeat(' ', $ident + 2) ."<type>". get_type_by_string($value) ."</type>". PHP_EOL;
+					$markup2 .= str_repeat(' ', $ident + 2) ."<type>". get_type_by_string($value['global_value']) ."</type>". PHP_EOL;
 					$markup2 .= str_repeat(' ', $ident + 1) ."</term>". PHP_EOL;
 					$markup2 .= str_repeat(' ', $ident + 1) ."<listitem>". PHP_EOL;
 					$markup2 .= str_repeat(' ', $ident + 2) ."<para>". PHP_EOL;
