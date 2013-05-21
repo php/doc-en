@@ -439,6 +439,13 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 	/* {IMPLEMENTS} */
 	if ($interfaces = $class->getInterfaces()) {
 		$ident = get_ident_size('IMPLEMENTS', $content);
+		
+		// Don't get inherited interfaces, e.g. Traversable if we already have Iterator.
+		foreach ($interfaces as $interface) {
+			foreach (array_keys($interface->getInterfaces()) as $inherited_interface) {
+				unset($interfaces[$inherited_interface]);
+			}
+		}
 
 		$markup = PHP_EOL;
 		foreach ($interfaces as $interface) {
