@@ -502,11 +502,15 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 	/* {PROPERTIES_LIST} */
 	if ($properties = $class->getProperties(ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PROTECTED)) {
 		$ident = get_ident_size('PROPERTIES_LIST', $content);
+		$inherited = array();
 
-		$markup = "<classsynopsisinfo role=\"comment\">&Properties;</classsynopsisinfo>". PHP_EOL;
-		foreach ($properties as $property) {
+		$markup = "";
+		foreach ($properties as $key => $property) {
 			/* Don't get inherited properties */
-			if ($property->getDeclaringClass()->name != $class->name) {
+			$declaring_class = $property->getDeclaringClass()->name;
+			if ($declaring_class != $class->name) {
+				$inherited[$declaring_class] = $declaring_class;
+				unset($properties[$key]);
 				continue;
 			}
 
@@ -519,6 +523,20 @@ function gen_class_markup(ReflectionClass $class, $content) { /* {{{ */
 			$markup .= str_repeat(' ', $ident) ."</fieldsynopsis>". PHP_EOL;
 		}
 
+		if ($markup) {
+			$markup = "<classsynopsisinfo role=\"comment\">&Properties;</classsynopsisinfo>". PHP_EOL . $markup;
+		}
+		
+		if ($inherited) {
+			if ($markup) {
+				$markup .= PHP_EOL . str_repeat(' ', $ident);
+			}
+			$markup .= '<classsynopsisinfo role="comment">&InheritedProperties;</classsynopsisinfo>'. PHP_EOL;
+			foreach ($inherited as $declaring_class) {
+				$markup .= str_repeat(' ', $ident) ."<xi:include xpointer=\"xmlns(db=http://docbook.org/ns/docbook) xpointer(id('" . strtolower($declaring_class) . ".synopsis')/descendant::db:fieldsynopsis)\" />". PHP_EOL;
+			}
+		}
+		
 		$content = preg_replace('/\{PROPERTIES_LIST\}/', $markup, $content, 1);
 	} else {
 		$content = preg_replace('/^\s*\{PROPERTIES_LIST\}.*?\n/m', '', $content, 1);
