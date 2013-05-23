@@ -23,7 +23,7 @@
 /*
  This script updates the appendices/extensions.xml file automatically based
  on the tags placed in the 'reference.xml' files:
-<!-- Membership: core, pecl, bundled, external -->
+<?phpdoc extension-membership="core, bundled, bundledexternal" ?>
 <!-- State: deprecated, experimental -->
 
 		--- NOTE: PHP >= 5.2 needed ---
@@ -38,7 +38,6 @@ $Membership = $State = $Alphabetical = $debug = array();
 foreach ($files as $filename) {
 
 	$file = file_get_contents($filename);
-	$miss = array('Membership'=>1);
 
 	// get the extension's name
 	preg_match('/<(?:reference|book)[^>]+(?:xml:)?id=[\'"]([^\'"]+)[\'"]/S', $file, $match);
@@ -50,45 +49,22 @@ foreach ($files as $filename) {
 	}
 	$Alphabetical['alphabetical'][$ext] = 1;
 	
-	if (preg_match_all('/<!--\s*(\w+):\s*([^-]+)-->/S', $file, $matches, PREG_SET_ORDER)) {
+	$m = 'pecl';
+	if (preg_match('/<\?phpdoc extension-membership="([^"]+)" *\?>/S', $file, $match)) {
+		$m = $match[1];
+	}
 
-		foreach ($matches as $match) {
-			switch($match[1]) {
-				case 'State':
-					${$match[1]}[rtrim($match[2])][$ext] = 1;
-					unset($miss[$match[1]]); // for the debug part below
-					break;
-
-				case 'Membership':
-					foreach (explode(',', $match[2]) as $m) {
-						$m = trim($m);
-						switch($m) {
-							case 'pecl':
-							case 'bundled':
-							case 'external':
-							case 'core':
-								$Membership[$m][$ext] = 1;
-								unset($miss['Membership']); // for the debug part below
-								break;
-							default:
-								$debug['bogus-membership'][] = array($ext, $m);
-						}
-					}
-			} //first switch
-		} //first foreach
-	} // if(regex)
-
-
-	// debug section: let user know which extensions don't have the tags
-
-	// if the extension is deprecated, we don't need any more info
-	if (empty($State['deprecated'][$ext])) {
-
-		// membership not set
-		if (isset($miss['Membership'])) {
-			$debug['membership'][] = $ext;
-		}
-
+	switch($m) {
+		case 'bundledexternal':
+			$Membership['external'][$ext] = 1;
+			break;
+		case 'pecl':
+		case 'bundled':
+		case 'core':
+			$Membership[$m][$ext] = 1;
+			break;
+		default:
+			$debug['bogus-membership'][] = array($ext, $m);
 	}
 
 }
