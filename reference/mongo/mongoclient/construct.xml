@@ -54,7 +54,9 @@ mongodb://[username:password@]host1[:port1][,host2[:port2:],...]/db
   <para>
    An optional query string may be used to specify extra options. The same
    options are supported through the <parameter>options</parameter> array as
-   well, and are therefore redescribed there.
+   well, and are therefore redescribed there. See the <link
+   linkend="mongo.mongoclient.construct.examples">examples below</link> on
+   how to set those options.
   </para>
   <para>
    One part of the options governs how the driver reads from secondary nodes
@@ -64,7 +66,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2:],...]/db
   </para>
  </refsect1>
 
- <refsect1 role="parameters">
+ <refsect1 role="parameters" xml:id="mongo.mongoclient.construct.parameters">
   &reftitle.parameters;
   <para>
    <variablelist>
@@ -314,6 +316,186 @@ mongodb://[username:password@]host1[:port1][,host2[:port2:],...]/db
   </para>
  </refsect1>
 
+ <refsect1 role="examples" xml:id="mongo.mongoclient.construct.examples">
+  &reftitle.examples;
+  <example>
+   <title><function>MongoClient::__construct</function> replica set example</title>
+   <para>
+    This example shows how to connect the driver to a replica set. It assumes
+    that there is a set of three servers: sf1.example.com, sf2.example.com, and
+    ny1.example.com. The primary could be any one of these servers.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// pass a comma-separated list of server names to the constructor
+// Note that we don't need to pass in all the members of the replicaset, the driver 
+// will derive the full list.
+$m1 = new MongoClient("mongodb://sf2.example.com,ny1.example.com", array("replicaSet" => "myReplSet"));
+
+?>
+]]>
+   </programlisting>
+   <para>
+    If the current primary fails, the driver will figure out which secondary
+    server became the new primary and automatically start using that connection.
+    Automatic failover will not work correctly if <literal>replicaSet</literal>
+    is not specified.
+   </para>
+   <para>
+    At least one seed in the seed list must be up for the driver to connect to
+    the replica set.
+   </para>
+   <para>
+    If you include seeds from two separate replica sets, behavior is undefined.
+   </para>
+   <para>See the
+    <link xlink:href="&url.mongodb.dochub.rs;">core documentation</link> on
+    replica sets for more information.
+   </para>
+  </example>
+  <example>
+   <title>Connecting to a domain socket</title>
+   <para>
+    In version 1.0.9+, you can use a UNIX domain socket to connect to an
+    instance of MongoDB running locally.  This should be slightly faster than
+    using a network connection.
+   </para>
+   <para>
+    In version 1.5.0, the MongoDB server automatically opens a socket at
+    /tmp/mongodb-&lt;port&gt;.sock.  You can connect to this by specifying the
+    path in your connection string:
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// MongoDB server running locally on port 20000
+$m = new MongoClient("mongodb:///tmp/mongodb-20000.sock");
+
+?>
+]]>
+   </programlisting>
+   <para>
+    You can combine this with any other connections you'd like:
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// try to connect to the domain socket, fall back to localhost connection
+$m = new MongoClient("mongodb:///tmp/mongodb-27017.sock,localhost:27017");
+
+?>
+]]>
+   </programlisting>
+  </example>
+  <example>
+   <title><function>MongoClient::__construct</function> authentication example</title>
+   <para>
+    A user must exist in the admin database before attempting to use
+    authentication.  You can create one with the Mongo shell by running:
+   </para>
+   <programlisting>
+<![CDATA[
+> use admin
+switched to db admin
+> db.addUser("testUser", "testPass");
+{
+        "_id" : ObjectId("4b21272fd9ab21611d19095c"),
+        "user" : "testUser",
+        "pwd" : "03b9b27e0abf1865e2f6fcbd9845dd59"
+}
+>
+]]>
+   </programlisting>
+   <para>
+    After creating a user with, in this case, username "testUser" and password
+    "testPass", you can create an authenticated connection:
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$m = new MongoClient("mongodb://testUser:testPass@localhost");
+
+?>
+]]>
+   </programlisting>
+  </example>
+  <example>
+   <title><function>MongoClient::__construct</function> read preference example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// Prefer the nearest server in the "east" data center
+$uri  = 'mongodb://rs1.example.com,rs2.example.com/';
+$uri .= '?readPreference=nearest';
+$uri .= '&readPreferenceTags=dc:east';
+$m = new MongoClient($uri, array('replicaSet' => 'rs'));
+]]>
+   </programlisting>
+   <para>
+    See the <link linkend="mongo.readpreferences">read preferences</link>
+    section of this manual for further information.
+   </para>
+  </example>
+
+  <example>
+   <title><function>MongoClient::__construct</function> options example</title>
+   <para>
+    Options can be passed both through the query string in the connection
+    string, or as an array passed as second argument to the constructor.
+   </para>
+   <para>
+    Here we set the journal option to true and readPreference to secondary
+    preferred as default for all write operations:
+   </para>
+   <programlisting>
+<![CDATA[
+<?php
+$m = new MongoClient("mongodb://localhost/?journal=true&readPreference=secondary");
+?>
+]]>
+   </programlisting>
+   <para>
+    And now we do the same, but as an options array:
+   </para>
+   <programlisting>
+<![CDATA[
+<?php
+$options = array(
+    'journal' => true,
+    'readPreference' => 'secondary',
+);
+$m = new MongoClient("mongodb://localhost/", $options);
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <example>
+   <title><function>MongoClient::__construct</function> read preference example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// Prefer the nearest server in the "east" data center
+$uri  = 'mongodb://rs1.example.com,rs2.example.com/';
+$uri .= '?readPreference=nearest';
+$uri .= '&readPreferenceTags=dc:east';
+$m = new MongoClient($uri, array('replicaSet' => 'rs'));
+]]>
+   </programlisting>
+   <para>
+    See the <link linkend="mongo.readpreferences">read preferences</link>
+    section of this manual for further information.
+   </para>
+  </example>
+ </refsect1>
+
  <refsect1 role="changelog">
   &reftitle.changelog;
   <para>
@@ -450,134 +632,6 @@ mongodb://[username:password@]host1[:port1][,host2[:port2:],...]/db
     </tgroup>
    </informaltable>
   </para>
- </refsect1>
-
- <refsect1 role="examples">
-  &reftitle.examples;
-  <example>
-   <title><function>MongoClient::__construct</function> replica set example</title>
-   <para>
-    This example shows how to connect the driver to a replica set. It assumes
-    that there is a set of three servers: sf1.example.com, sf2.example.com, and
-    ny1.example.com. The primary could be any one of these servers.
-   </para>
-   <programlisting role="php">
-<![CDATA[
-<?php
-
-// pass a comma-separated list of server names to the constructor
-// Note that we don't need to pass in all the members of the replicaset, the driver 
-// will derive the full list.
-$m1 = new MongoClient("mongodb://sf2.example.com,ny1.example.com", array("replicaSet" => "myReplSet"));
-
-?>
-]]>
-   </programlisting>
-   <para>
-    If the current primary fails, the driver will figure out which secondary
-    server became the new primary and automatically start using that connection.
-    Automatic failover will not work correctly if <literal>replicaSet</literal>
-    is not specified.
-   </para>
-   <para>
-    At least one seed in the seed list must be up for the driver to connect to
-    the replica set.
-   </para>
-   <para>
-    If you include seeds from two separate replica sets, behavior is undefined.
-   </para>
-   <para>See the
-    <link xlink:href="&url.mongodb.dochub.rs;">core documentation</link> on
-    replica sets for more information.
-   </para>
-  </example>
-  <example>
-   <title>Connecting to a domain socket</title>
-   <para>
-    In version 1.0.9+, you can use a UNIX domain socket to connect to an
-    instance of MongoDB running locally.  This should be slightly faster than
-    using a network connection.
-   </para>
-   <para>
-    In version 1.5.0, the MongoDB server automatically opens a socket at
-    /tmp/mongodb-&lt;port&gt;.sock.  You can connect to this by specifying the
-    path in your connection string:
-   </para>
-   <programlisting role="php">
-<![CDATA[
-<?php
-
-// MongoDB server running locally on port 20000
-$m = new MongoClient("mongodb:///tmp/mongodb-20000.sock");
-
-?>
-]]>
-   </programlisting>
-   <para>
-    You can combine this with any other connections you'd like:
-   </para>
-   <programlisting role="php">
-<![CDATA[
-<?php
-
-// try to connect to the domain socket, fall back to localhost connection
-$m = new MongoClient("mongodb:///tmp/mongodb-27017.sock,localhost:27017");
-
-?>
-]]>
-   </programlisting>
-  </example>
-  <example>
-   <title><function>MongoClient::__construct</function> authentication example</title>
-   <para>
-    A user must exist in the admin database before attempting to use
-    authentication.  You can create one with the Mongo shell by running:
-   </para>
-   <programlisting>
-<![CDATA[
-> use admin
-switched to db admin
-> db.addUser("testUser", "testPass");
-{
-        "_id" : ObjectId("4b21272fd9ab21611d19095c"),
-        "user" : "testUser",
-        "pwd" : "03b9b27e0abf1865e2f6fcbd9845dd59"
-}
->
-]]>
-   </programlisting>
-   <para>
-    After creating a user with, in this case, username "testUser" and password
-    "testPass", you can create an authenticated connection:
-   </para>
-   <programlisting role="php">
-<![CDATA[
-<?php
-
-$m = new MongoClient("mongodb://testUser:testPass@localhost");
-
-?>
-]]>
-   </programlisting>
-  </example>
-  <example>
-   <title><function>MongoClient::__construct</function> read preference example</title>
-   <programlisting role="php">
-<![CDATA[
-<?php
-
-// Prefer the nearest server in the "east" data center
-$uri  = 'mongodb://rs1.example.com,rs2.example.com/';
-$uri .= '?readPreference=nearest';
-$uri .= '&readPreferenceTags=dc:east';
-$m = new MongoClient($uri, array('replicaSet' => 'rs'));
-]]>
-   </programlisting>
-   <para>
-    See the <link linkend="mongo.readpreferences">read preferences</link>
-    section of this manual for further information.
-   </para>
-  </example>
  </refsect1>
 
 </refentry>

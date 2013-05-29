@@ -16,11 +16,12 @@
   <methodname>MongoCollection::update</methodname>, and
   <methodname>MongoCollection::remove</methodname>) is given a Write Concern
   option (<literal>"w"</literal>) the driver will send the query to MongoDB
-  and then followup with a <literal>getLastError</literal> command
-  (<acronym>GLE</acronym>) with the Write Concern option which will be blocked
-  until the Write Concern condition is verified to be fullfilled, or the query
-  times out (controlled with the <literal>"wtimeout"</literal> option,
-  <literal>10000</literal> milliseconds is the default).
+  and piggy back a <literal>getLastError</literal> command
+  (<acronym>GLE</acronym>) with the Write Concern option at the same time.
+  The server only returns when the Write Concern condition is verified to be
+  fullfilled, or the query times out (controlled with the
+  <literal>"wtimeout"</literal> option, <literal>10000</literal> milliseconds
+  is the default).
  </para>
 
  <warning>
@@ -107,7 +108,87 @@
    </tgroup>
   </table>
  </para>
+ 
+ <simplesect xml:id="mongo.writeconcerns.setting">
+  <title>Using WriteConcerns</title>
+  <para>
+   Each of the methods that causes writes
+   (<methodname>MongoCollection::insert</methodname>,
+   <methodname>MongoCollection::update</methodname>, 
+   <methodname>MongoCollection::remove</methodname>, and
+   <methodname>MongoCollection::batchInsert</methodname>) allow an optional
+   argument to send a set of options to the MongoDB server. With this option
+   array you can set the WriteConcern as the following example illustrates:
+  </para>
+  <example>
+   <title>Passing a WriteConcern to a write operation</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+// Setting w=0 for insert:
+$collection->insert($someDoc, array("w" => 0));
 
+// Setting w=majority for update:
+$collection->update($someDoc, $someUpdates, array("w" => "majority"));
+
+// Setting w=5 and j=true for remove:
+$collection->update($someDoc, array("w" => 5, "j" => true));
+
+// Setting w="AllDCs" for batchInsert:
+$collection->update(array($someDoc1, $someDoc2), array("w" => "AllDCs"));
+?>
+]]>
+   </programlisting>
+  </example>
+  <para>
+   Besides setting WriteConcerns per operation as an option argument, it is
+   also possible to set a default WriteConcern in different ways.
+  </para>
+  <para>
+   The first way is through the <link
+   linkend="mongo.mongoclient.construct.parameters">connection
+   string</link>. The connection string accepts the
+   <literal>journal</literal>, <literal>w</literal>, and
+   <literal>wTimeoutMS</literal> options:
+  </para>
+  <example>
+   <title>Connection string WriteConcerns</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$m = new MongoClient("mongodb://localhost/?journal=true&w=majority&wTimeoutMS=20000");
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <para>
+   Since driver version 1.5 it is also possible to call
+   <methodname>MongoDB::setWriteConcern</methodname> and
+   <methodname>MongoCollection::setWriteConcern</methodname> to set a default
+   WriteConcern for all operations created from that specific
+   <classname>MongoDB</classname> or <classname>MongoCollection</classname>
+   object:
+  </para>
+  <example>
+   <title>MongoDB::setWriteConcern and MongoCollection::setWriteConcern</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$m = new MongoClient("mongodb://localhost/");
+$d = $m->demoDb;
+$c = $d->demoCollection;
+
+// Set w=3 on the database object with a timeout of 25000ms
+$d->setWriteConcern(3, 25000);
+
+// Set w=majority on the collection object without changing the timeout
+$c->setWriteConcern("majority");
+?>
+]]>
+   </programlisting>
+  </example>
+ </simplesect>
 
  <simplesect xml:id="mongo.writeconcerns.unacknowledged">
   <title>Unacknowledged Writes</title>
