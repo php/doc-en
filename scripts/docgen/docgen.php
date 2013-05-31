@@ -738,8 +738,10 @@ function gen_extension_markup(ReflectionExtension $obj, $content, $xml_file) { /
 			}
 			/* Method list */
 			if ($classes = $obj->getClasses()) {
-				$markup .= " <!-- Methods -->". PHP_EOL;
+				$markup .= " <!-- Classes and Methods -->". PHP_EOL;
 				foreach ($classes as $class) {
+					$markup .= PHP_EOL;
+					$markup .= " <function name='". strtolower($class->name) ."' from='$version_default'/>". PHP_EOL;
 					foreach ($class->getMethods() as $method) {
 						$markup .= " <function name='". strtolower($class->name .'::'. $method->getName()) ."' from='$version_default'/>". PHP_EOL;
 					}
