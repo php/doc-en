@@ -4,7 +4,7 @@
 <refentry xml:id="function.curl-share-setopt" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>curl_share_setopt</refname>
-  <refpurpose>Set an option for a cURL transfer</refpurpose>
+  <refpurpose>Set an option for a cURL share handle.</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -16,10 +16,8 @@
    <methodparam><type>string</type><parameter>value</parameter></methodparam>
   </methodsynopsis>
   <para>
-
+   Sets an option on the given cURL share handle.
   </para>
-
-  &warn.undocumented.func;
 
  </refsect1>
 
@@ -30,7 +28,7 @@
     <term><parameter>sh</parameter></term>
     <listitem>
      <para>
-      
+      A cURL share handle returned by <function>curl_share_init</function>.
      </para>
     </listitem>
    </varlistentry>
@@ -38,7 +36,30 @@
     <term><parameter>option</parameter></term>
     <listitem>
      <para>
-      
+      <informaltable>
+        <tgroup cols="3">
+         <thead>
+          <row>
+           <entry valign="top">Option</entry>
+           <entry valign="top">Description</entry>
+          </row>
+         </thead>
+         <tbody>
+          <row>
+           <entry valign="top"><constant>CURLSHOPT_SHARE</constant></entry>
+           <entry valign="top">
+               Specifies a type of data that should be shared.
+           </entry>
+          </row>
+          <row>
+           <entry valign="top"><constant>CURLSHOPT_UNSHARE</constant></entry>
+           <entry valign="top">
+               Specifies a type of data that will be no longer shared.
+           </entry>
+          </row>
+         </tbody>
+        </tgroup>
+       </informaltable>
      </para>
     </listitem>
    </varlistentry>
@@ -46,7 +67,40 @@
     <term><parameter>value</parameter></term>
     <listitem>
      <para>
-      
+      <informaltable>
+        <tgroup cols="3">
+         <thead>
+          <row>
+           <entry valign="top">Value</entry>
+           <entry valign="top">Description</entry>
+          </row>
+         </thead>
+         <tbody>
+          <row>
+           <entry valign="top"><constant>CURL_LOCK_DATA_COOKIE</constant></entry>
+           <entry valign="top">
+               Shares cookie data.
+           </entry>
+          </row>
+          <row>
+           <entry valign="top"><constant>CURL_LOCK_DATA_DNS</constant></entry>
+           <entry valign="top">
+               Shares DNS cache. Note that when you use cURL multi handles,
+               all handles added to the same multi handle will share DNS cache
+               by default.
+           </entry>
+          </row>
+          <row>
+           <entry valign="top"><constant>CURL_LOCK_DATA_SSL_SESSION</constant></entry>
+           <entry valign="top">
+               Shares SSL session IDs, reducing the time spent on the SSL
+               handshake when reconnecting to the same server. Note that SSL
+               session IDs are reused withing the same handle by default.
+           </entry>
+          </row>
+         </tbody>
+        </tgroup>
+       </informaltable>
      </para>
     </listitem>
    </varlistentry>
@@ -57,6 +111,50 @@
   &reftitle.returnvalues;
   <para>
    &return.success;
+  </para>
+ </refsect1>
+ 
+<refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>curl_share_setopt</function> example</title>
+    <para>
+     This example will create a cURL share handle, add two cURL handles to it,
+     and then run them with cookie data sharing.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// Create cURL share handle and set it to share cookie data
+$sh = curl_share_init();
+curl_share_setopt($sh, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
+
+// Initialize the first cURL handle and assign the share handle to it
+$ch1 = curl_init("http://example.com/");
+curl_setopt($ch1, CURLOPT_SHARE, $sh);
+
+// Execute the first cURL handle
+curl_exec($ch1);
+
+// Initialize the second cURL handle and assign the share handle to it
+$ch2 = curl_init("http://php.net/");
+curl_setopt($ch2, CURLOPT_SHARE, $sh);
+
+// Execute the second cURL handle
+//  all cookies from $ch1 handle are shared with $ch2 handle
+curl_exec($ch2);
+
+// Close the cURL share handle
+curl_share_close($sh);
+
+// Close the cURL handles
+curl_close($ch1);
+curl_close($ch2);
+?>
+]]>
+    </programlisting>
+   </example>
   </para>
  </refsect1>
 
