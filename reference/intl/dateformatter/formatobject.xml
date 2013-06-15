@@ -16,8 +16,8 @@
   <methodsynopsis>
    <modifier>public</modifier> <modifier>static</modifier> <type>string</type><methodname>IntlDateFormatter::formatObject</methodname>
    <methodparam><type>object</type><parameter>object</parameter></methodparam>
-   <methodparam choice="opt"><type>mixed</type><parameter>format</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>locale</parameter></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>format</parameter><initializer>NULL</initializer></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>locale</parameter><initializer>NULL</initializer></methodparam>
   </methodsynopsis>
   <para>
    &style.procedural;
@@ -26,11 +26,22 @@
    <modifier>public</modifier> <modifier>static</modifier>
    <type>string</type><methodname>datefmt_format_object</methodname>
    <methodparam><type>object</type><parameter>object</parameter></methodparam>
-   <methodparam choice="opt"><type>mixed</type><parameter>format</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>locale</parameter></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>format</parameter><initializer>NULL</initializer></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>locale</parameter><initializer>NULL</initializer></methodparam>
   </methodsynopsis>
 
-  &warn.undocumented.func;
+  <para>
+			This function allows formatting an <classname>IntlCalendar</classname> or
+			<classname>DateTime</classname> object without first explicitly creating a
+			<classname>IntlDateFormatter</classname> object.
+  </para>
+  <para>
+			The temporary <classname>IntlDateFormatter</classname> that will be created
+			will take the timezone from the passed in object. The timezone database
+			bundled with PHP will not be used – ICU's will be used instead. The timezone
+			identifier used in <classname>DateTime</classname> objects must therefore
+			also exist in ICU's database.
+  </para>
 
  </refsect1>
 
@@ -41,7 +52,9 @@
     <term><parameter>object</parameter></term>
     <listitem>
      <para>
-      
+      An object of type <classname>IntlCalendar</classname> or
+						<classname>DateTime</classname>. The timezone information in the object
+						will be used.
      </para>
     </listitem>
    </varlistentry>
@@ -49,7 +62,17 @@
     <term><parameter>format</parameter></term>
     <listitem>
      <para>
-      
+						How to format the date/time. This can either be an <type>array</type> with
+						two elements (first the date style, then the time style, these being one
+						of the constants <constant>IntlDateFormatter::NONE</constant>,
+						<constant>IntlDateFormatter::SHORT</constant>,
+						<constant>IntlDateFormatter::MEDIUM</constant>,
+						<constant>IntlDateFormatter::LONG</constant>,
+						<constant>IntlDateFormatter::FULL</constant>), a <type>long</type> with
+						the value of one of these constants (in which case it will be used both
+						for the time and the date) or a <type>string</type> with the format
+						described in <link xlink:href="&url.icu.dateformat2;">the ICU
+						documentation</link>. If &null;, the default style will be used.
      </para>
     </listitem>
    </varlistentry>
@@ -57,7 +80,8 @@
     <term><parameter>locale</parameter></term>
     <listitem>
      <para>
-      
+						The locale to use, or &null; to use the <link
+						linkend="ini.intl.default-locale">default one</link>.
      </para>
     </listitem>
    </varlistentry>
@@ -67,10 +91,71 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-
+   A string with result&return.falseforfailure;.
   </para>
  </refsect1>
 
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+   <title><function>IntlDateFormatter::formatObject</function> examples</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* default timezone is irrelevant; timezone taken from the object */
+ini_set('date.timezone', 'UTC');
+/* default locale is taken from this ini setting */
+ini_set('intl.default_locale', 'fr_FR');
+
+$cal = IntlCalendar::fromDateTime("2013-06-06 17:05:06 Europe/Dublin");
+echo "default:\n\t",
+        IntlDateFormatter::formatObject($cal),
+        "\n";
+
+echo "long \$format (full):\n\t",
+        IntlDateFormatter::formatObject($cal, IntlDateFormatter::FULL),
+        "\n";
+
+echo "array \$format (none, full):\n\t",
+        IntlDateFormatter::formatObject($cal, array(
+                IntlDateFormatter::NONE,
+                IntlDateFormatter::FULL)),
+        "\n";
+
+echo "string \$format (d 'of' MMMM y):\n\t",
+        IntlDateFormatter::formatObject($cal, "d 'of' MMMM y", 'en_US'),
+        "\n";
+
+echo "with DateTime:\n\t",
+        IntlDateFormatter::formatObject(
+                new DateTime("2013-09-09 09:09:09 Europe/Madrid"),
+                IntlDateFormatter::FULL,
+                'es_ES'),
+        "\n";
+
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+default:
+	6 juin 2013 17:05:06
+long $format (full):
+	jeudi 6 juin 2013 17:05:06 heure d’été irlandaise
+array $format (none, full):
+	17:05:06 heure d’été irlandaise
+string $format (d 'of' MMMM y):
+	6 of June 2013
+with DateTime:
+	lunes, 9 de septiembre de 2013 09:09:09 Hora de verano de Europa central
+
+]]>
+    </screen>
+   </example>
+  </para>
+ </refsect1>
 
 </refentry>
 
