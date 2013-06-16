@@ -18,9 +18,9 @@
    <methodparam><type>string</type><parameter>locale</parameter></methodparam>
    <methodparam><type>int</type><parameter>datetype</parameter></methodparam>
    <methodparam><type>int</type><parameter>timetype</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>timezone</parameter></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>calendar</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>pattern</parameter></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>timezone</parameter><initializer>NULL</initializer></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>calendar</parameter><initializer>NULL</initializer></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>pattern</parameter><initializer>''</initializer></methodparam>
   </methodsynopsis>
   <para>
    &style.oop; (constructor)
@@ -30,9 +30,9 @@
    <methodparam><type>string</type><parameter>locale</parameter></methodparam>
    <methodparam><type>int</type><parameter>datetype</parameter></methodparam>
    <methodparam><type>int</type><parameter>timetype</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>timezone</parameter></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>calendar</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>pattern</parameter></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>timezone</parameter><initializer>NULL</initializer></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>calendar</parameter><initializer>NULL</initializer></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>pattern</parameter><initializer>''</initializer></methodparam>
   </constructorsynopsis>
   <para>
    &style.procedural;
@@ -42,12 +42,12 @@
    <methodparam><type>string</type><parameter>locale</parameter></methodparam>
    <methodparam><type>int</type><parameter>datetype</parameter></methodparam>
    <methodparam><type>int</type><parameter>timetype</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>timezone</parameter></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>calendar</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>pattern</parameter></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>timezone</parameter><initializer>NULL</initializer></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>calendar</parameter><initializer>NULL</initializer></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>pattern</parameter><initializer>''</initializer></methodparam>
   </methodsynopsis>
   <para>
-   Create a date formatter 
+   Create a date formatter.
   </para> 
  </refsect1>
  
@@ -59,7 +59,9 @@
      <term><parameter>locale</parameter></term>
      <listitem>
       <para>
-       Locale to use when formatting or parsing.
+       Locale to use when formatting or parsing or &null; to use the value
+       specified in the ini setting <link
+       linkend="ini.intl.default-locale">intl.default_locale</link>.
       </para>
      </listitem>
     </varlistentry>
@@ -67,11 +69,12 @@
      <term><parameter>datetype</parameter></term>
      <listitem>
       <para>
-       Date type to use (<constant>none</constant>, 
-       <constant>short</constant>, <constant>medium</constant>, 
-       <constant>long</constant>, <constant>full</constant>). 
-       This is one of the 
-       <link linkend="intl.intldateformatter-constants">IntlDateFormatter constants</link>.
+       Date type to use (<constant>none</constant>, <constant>short</constant>,
+       <constant>medium</constant>, <constant>long</constant>,
+       <constant>full</constant>).  This is one of the <link
+       linkend="intl.intldateformatter-constants">IntlDateFormatter
+       constants</link>.  It can also be &null;, in which case ICUʼs default
+       date type will be used.
       </para>
      </listitem>
     </varlistentry>
@@ -79,11 +82,12 @@
      <term><parameter>timetype</parameter></term>
      <listitem>
       <para>
-       Time type to use (<constant>none</constant>, 
-       <constant>short</constant>, <constant>medium</constant>, 
-       <constant>long</constant>, <constant>full</constant>).
-       This is one of the 
-       <link linkend="intl.intldateformatter-constants">IntlDateFormatter constants</link>.
+       Time type to use (<constant>none</constant>, <constant>short</constant>,
+       <constant>medium</constant>, <constant>long</constant>,
+       <constant>full</constant>).  This is one of the <link
+       linkend="intl.intldateformatter-constants">IntlDateFormatter
+       constants</link>.  It can also be &null;, in which case ICUʼs default
+       time type will be used.
       </para>
      </listitem>
     </varlistentry>
@@ -91,7 +95,16 @@
      <term><parameter>timezone</parameter></term>
      <listitem>
       <para>
-       Time zone ID, default is system default.      
+       Time zone ID. The default (and the one used if &null; is given) is the
+       one returned by <function>date_default_timezone_get</function> or, if
+       applicable, that of the <classname>IntlCalendar</classname> object passed
+       for the <parameter>calendar</parameter> parameter. This ID must be a
+       valid identifier on ICUʼs database or an ID representing an
+       explicit offset, such as <literal>GMT-05:30</literal>.
+      </para>
+      <para>
+       This can also be an <classname>IntlTimeZone</classname> or a
+       <classname>DateTimeZone</classname> object.
       </para>
      </listitem>
     </varlistentry>
@@ -99,9 +112,17 @@
      <term><parameter>calendar</parameter></term>
      <listitem>
       <para>
-       Calendar to use for formatting or parsing; default is Gregorian.
-       This is one of the 
-       <link linkend="intl.intldateformatter-constants.calendartypes">IntlDateFormatter calendar constants</link>.
+       Calendar to use for formatting or parsing. The default value is &null;,
+       which corresponds to <constant>IntlDateFormatter::GREGORIAN</constant>.
+       This can either be one of the 
+       <link
+       linkend="intl.intldateformatter-constants.calendartypes">IntlDateFormatter
+       calendar constants</link> or an <classname>IntlCalendar</classname>. Any
+       <classname>IntlCalendar</classname> object passed will be clone; it will
+       not be changed by the <classname>IntlDateFormatter</classname>. This will
+       determine the calendar type used (gregorian, islamic, persian, etc.) and,
+       if &null; is given for the <parameter>timezone</parameter> parameter,
+       also the timezone used.
       </para>
      </listitem>
     </varlistentry>
@@ -123,6 +144,49 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
+   The created <classname>IntlDateFormatter</classname> or &false; in case of
+   failure.
+  </para>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>5.5.0/PECL 3.0.0</entry>
+       <entry>
+        <para>
+         An <classname>IntlCalendar</classname> object is allowed for
+         <parameter>calendar</parameter>.
+        </para>
+        <para>
+         Objects of type <classname>IntlTimeZone</classname> and
+         <classname>DateTimeZone</classname> are allowed for
+         <parameter>timezone</parameter>.
+        </para>
+        <para>
+         Invalid timezone identifiers (including empty strings) are no longer
+         allowed for <parameter>timezone</parameter>.
+        </para>
+        <para>
+         If &null; is given for <parameter>timezone</parameter>, the timezone
+         identifier given by <function>date_default_timezone_get</function> will
+         be used instead of ICUʼs default.
+        </para>
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
   </para>
  </refsect1>
  
