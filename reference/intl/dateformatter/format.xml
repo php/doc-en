@@ -44,10 +44,20 @@
      <term><parameter>value</parameter></term>
      <listitem>
       <para>
-       Value to format. This may be a <classname>DateTime</classname> object,
-       an <type>integer</type> representing a Unix timestamp value (seconds
-       since epoch, UTC) or an <type>array</type> in the format output by
+       Value to format. This may be a <classname>DateTime</classname> object, an
+       <classname>IntlCalendar</classname> object, a <type>numeric</type> type
+       representing a (possibly fractional) number of seconds since epoch or an
+       <type>array</type> in the format output by
        <function>localtime</function>.
+      </para>
+      <para>
+       If a <classname>DateTime</classname> or an
+       <classname>IntlCalendar</classname> object is passed, its timezone is not
+       considered. The object will be formatted using the formaterʼs configured
+       timezone. If one wants to use the timezone of the object to be formatted,
+       <function>IntlDateFormatter::setTimeZone</function> must be called before
+       with the objectʼs timezone. Alternatively, the static function
+       <function>IntlDateFormatter::formatObject</function> may be used instead.
       </para>
      </listitem>
     </varlistentry>
@@ -75,6 +85,13 @@
       </row>
      </thead>
      <tbody>
+      <row>
+       <entry>5.5.0/PECL 3.0.0</entry>
+       <entry>
+        Support for providing <classname>IntlCalendar</classname> objects to the
+        <parameter>value</parameter> parameter was added.
+       </entry>
+      </row>
       <row>
        <entry>5.3.4</entry>
        <entry>
@@ -135,6 +152,51 @@ First Formatted output with pattern is 12/31/1969
 Second Formatted output with pattern is 12/31/1969
 ]]>
      </screen>
+
+   <example>
+   <title>With <classname>IntlCalendar</classname> object</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$tz = reset(iterator_to_array(
+        IntlTimeZone::createEnumeration('FR')));
+$formatter = IntlDateFormatter::create(
+        "fr_FR",
+        IntlDateFormatter::FULL,
+        IntlDateFormatter::FULL,
+        $tz,
+        IntlDateFormatter::GREGORIAN);
+
+$cal = IntlCalendar::createInstance($tz, '@calendar=islamic-civil');
+$cal->set(IntlCalendar::FIELD_MONTH, 8); //9th month, Ramadan
+$cal->set(IntlCalendar::FIELD_DAY_OF_MONTH, 1); //1st day
+$cal->clear(IntlCalendar::FIELD_HOUR_OF_DAY);
+$cal->clear(IntlCalendar::FIELD_MINUTE);
+$cal->clear(IntlCalendar::FIELD_SECOND);
+$cal->clear(IntlCalendar::FIELD_MILLISECOND);
+
+echo "In this islamic year, Ramadan started/will start on:\n\t",
+        $formatter->format($cal), "\n";
+
+//Itʼs the formatterʼs timezone that is used:
+$formatter->setTimeZone('Asia/Tokyo');
+echo "After changing timezone:\n\t",
+        $formatter->format($cal), "\n";
+
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+In this islamic year, Ramadan started/will start on:
+	mardi 9 juillet 2013 19:00:00 heure avancée d’Europe centrale
+After changing timezone:
+	mercredi 10 juillet 2013 02:00:00 heure normale du Japon
+
+]]>
+    </screen>
+   </example>
+
  </refsect1>
 
  <refsect1 role="seealso">
@@ -145,6 +207,7 @@ Second Formatted output with pattern is 12/31/1969
     <member><function>datefmt_parse</function></member>
     <member><function>datefmt_get_error_code</function></member>
     <member><function>datefmt_get_error_message</function></member>
+    <member><function>datefmt_format_object</function></member>
    </simplelist>
   </para>
  </refsect1>
