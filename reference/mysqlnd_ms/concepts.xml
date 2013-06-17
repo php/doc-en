@@ -658,6 +658,166 @@ version = 5.6.2-m5-log
   </para>
  </section>
 
+ <section xml:id="mysqlnd-ms.transient_errors">
+  <title>Transient errors</title>
+  <para>
+   Some distributed database clusters make use of transient errors. A transient
+   error is a temporary error that is likely to disappear soon. By definition
+   it is safe for a client to ignore a transient error and retry the failed
+   operation on the same database server. The retry is free of side effects.
+   Clients are not forced to abort their work or to fail over to another database
+   server immediately. They may enter a retry loop before to wait for the
+   error to disappear before giving up on the database server.
+   Transient errors can be seen, for example, when using MySQL Cluster. But they
+   are not bound to any specific clustering solution per se.
+  </para>
+  <para>
+   <literal>PECL/mysqlnd_ms</literal> can perform an automatic retry loop in
+   case of a transient error. This increases distribution transparency and thus
+   makes it easier to migrate an application running on a single database
+   server to run on a cluster of database servers without having to change
+   the source of the application.
+  </para>
+  <para>
+   The automatic retry loop will repeat the requested operation up to a user
+   configurable number of times and pause between the attempts for a configurable
+   amount of time. If the error disappears during the loop, the application will
+   never see it. If not, the error is forwarded to the application for handling.
+  </para>
+  <para>
+   In the example below a duplicate key error is provoked to make the plugin
+   retry the failing query two times before the error is passed to the application.
+   Between the two attempts the plugin sleeps for 100 milliseconds.
+  </para>
+  <para>
+   <example>
+    <title>Provoking a transient error</title>
+<programlisting role="ini">
+<![CDATA[
+mysqlnd_ms.enable=1
+mysqlnd_ms.collect_statistics=1
+]]>
+    </programlisting>
+    <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            }
+       },
+       "transient_error": {
+          "mysql_error_codes": [
+            1062
+          ],
+          "max_retries": 2,
+          "usleep_retry": 100
+       }
+    }
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Transient error retry loop</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (mysqli_connect_errno())
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
+    !$mysqli->query("CREATE TABLE test(id INT PRIMARY KEY)") ||
+    !$mysqli->query("INSERT INTO test(id) VALUES (1))")) {
+  printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+
+/* Retry loop is completely transparent. Checking statistics is
+ the only way to know about implicit retries */
+$stats = mysqlnd_ms_get_stats();
+printf("Transient error retries before error: %d\n", $stats['transient_error_retries']);
+
+/* Provoking duplicate key error to see statistics change */
+if (!$mysqli->query("INSERT INTO test(id) VALUES (1))")) {
+  printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+
+$stats = mysqlnd_ms_get_stats();
+printf("Transient error retries after error: %d\n", $stats['transient_error_retries']);
+
+$mysqli->close();
+?>
+]]>
+    </programlisting>
+&example.outputs.similar;
+    <screen>
+<![CDATA[
+Transient error retries before error: 0
+[1062] Duplicate entry '1' for key 'PRIMARY'
+Transient error retries before error: 2
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   Because the execution of the retry loop is transparent from a users point of
+   view, the example checks the
+   <link linkend="function.mysqlnd-ms-get-stats">statistics</link>
+   provided by the plugin to learn about it.
+  </para>
+  <para>
+   As the example shows, the plugin can be instructed to consider any error
+   transient regardless of the database servers error semantics. The only error
+   that a stock MySQL server considers temporary has the error code
+   <constant>1297</constant>. When configuring other error codes but
+   <constant>1297</constant> make sure your configuration reflects
+   the semantics of your clusters error codes.
+  </para>
+  <para>
+   The following mysqlnd C API calls are monitored by the plugin to check
+   for transient errors: <literal>query()</literal>,
+   <literal>change_user()</literal>, <literal>select_db()</literal>,
+   <literal>set_charset()</literal>, <literal>set_server_option()</literal>
+   <literal>prepare()</literal>, <literal>execute()</literal>,
+   <literal>set_autocommit()</literal>,
+   <literal>tx_begin()</literal>, <literal>tx_commit()</literal>,
+   <literal>tx_rollback()</literal>, <literal>tx_commit_or_rollback()</literal>.
+   The corresponding user API calls have similar names.
+  </para>
+  <para>
+   The maximum time the plugin may sleep during the retry loop depends on the
+   function in question. The a retry loop for <literal>query()</literal>,
+   <literal>prepare()</literal> or <literal>execute()</literal> will sleep for
+   up to <literal>max_retries * usleep_retry</literal> milliseconds.
+  </para>
+  <para>
+   However, functions that
+   <link linkend="mysqlnd-ms.pooling">control connection state</link>
+   are dispatched to all all connections. The retry loop settings are applied
+   to every  connection on which the command is to be run. Thus, such a function
+   may interrupt program execution for longer than a function that is run
+   on one server only. For example, <literal>set_autocommit()</literal> is
+   dispatched to connections and may sleep up to
+   <literal>(max_retries * usleep_retry) * number_of_open_connections)</literal>
+   milliseconds. Please, keep this in mind when setting long sleep times
+   and large retry numbers. Using the default settings of
+   <literal>max_retries=1</literal>, <literal>usleep_retry=100</literal> and
+   <literal>lazy_connections=1</literal> it is unlikely that you will
+   ever see a delay of more than 1 second.
+  </para>
+ </section>
+
  <section xml:id="mysqlnd-ms.failover">
   <title>Failover</title>
   <para>

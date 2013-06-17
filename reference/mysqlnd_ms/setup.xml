@@ -2399,9 +2399,136 @@ $mysqli->set_charset("latin1");
       </para>
      </listitem>
     </varlistentry>
+
+    <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.transient_error">
+     <term>
+       <parameter>transient_error</parameter>
+       <type>object</type>
+     </term>
+     <listitem>
+      <para>
+       The setting has been introduced in 1.6.0.
+      </para>
+      <para>
+       A database cluster node may reply a transient error to a client. The client
+       can then repeat the operation on the same node, fail over to a different node
+       or abort the operation. Per definition is it safe for a client to
+       retry the same operation on the same node before giving up.
+      </para>
+      <para>
+       <literal>PECL/mysqlnd_ms</literal> can perform the retry
+       loop on behalf of the application.
+       By configuring <literal>transient_error</literal> the plugin can be
+       instructed to repeat operations failing with a certain error code for
+       a certain maximum number of times with a pause between the retries.
+       If the transient error disappears during loop execution, it is
+       hidden from the application. Otherwise, the error is
+       forwarded to the application by the end of the loop.
+      </para>
+      <para>
+       <example>
+        <title>Retry loop for transient errors</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "master": {
+            "master_0": {
+                "host": "localhost"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.78.136",
+                "port": "3306"
+            }
+       },
+       "transient_error": {
+          "mysql_error_codes": [
+            1297
+          ],
+          "max_retries": 2,
+          "usleep_retry": 100
+       }
+    }
+}
+]]>
+        </programlisting>
+      </example>
+     </para>
+      <informaltable>
+       <tgroup cols="3">
+        <colspec colwidth="1*"/>
+        <colspec colwidth="7*"/>
+        <colspec colwidth="2*"/>
+        <thead>
+         <row>
+          <entry>Keyword</entry>
+          <entry>Description</entry>
+          <entry>Version</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry>
+           <literal>mysql_error_codes</literal>
+          </entry>
+          <entry>
+           <para>
+            List of transient error codes. You may add any MySQL error code
+            to the list. It is possible to consider any error as transient
+            not only <literal>1297</literal>
+            (<literal>HY000 (ER_GET_TEMPORARY_ERRMSG),
+            Message: Got temporary error %d '%s' from %s</literal>).
+            Before adding other codes but <literal>1297</literal> to the list,
+            make sure your cluster supports a new attempt without impacting
+            the state of your application.
+           </para>
+          </entry>
+          <entry>Since 1.6.0.</entry>
+         </row>
+         <row>
+          <entry>
+           <literal>max_retries</literal>
+          </entry>
+          <entry>
+           <para>
+            How often to retry an operation which
+            fails with a transient error before forwarding the
+            failure to the user.
+           </para>
+           <para>
+             Default: <literal>1</literal>
+           </para>
+          </entry>
+          <entry>Since 1.6.0.</entry>
+         </row>
+         <row>
+          <entry>
+           <literal>usleep_retry</literal>
+          </entry>
+          <entry>
+           <para>
+            Milliseconds to sleep between transient error retries.
+            The value is passed to the C function <function>usleep</function>,
+            hence the name.
+           </para>
+           <para>
+             Default: <literal>100</literal>
+           </para>
+          </entry>
+          <entry>Since 1.6.0.</entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </informaltable>
+     </listitem>
+    </varlistentry>
+
    </variablelist>
   </para>
- </section>
+
+</section>
 
  <section xml:id="mysqlnd-ms.plugin-ini-v1">
   <title xmlns="http://docbook.org/ns/docbook">Plugin configuration file (&lt;= 1.0.x)</title>
