@@ -128,7 +128,7 @@
 		 */
 		$enhanced = (EXTENDED) ? '-f enhancedchm' : '';
 
-		execute_task('- PhD', PATH_PHD, '-d "' . PATH_DOC . '\\doc-base\\.manual-' . $lang_code . '.xml' . '" -P PHP -f chm ' . $enhanced . ' -o "' . PATH_DOC . '\\tmp\\' . $lang_code . '" --lang=' . $lang_code, 'phd_' . $lang_code);
+		execute_task('- PhD', PATH_PHD, '-d "' . PATH_DOC . '\\doc-base\\.manual-' . $lang_code . '.xml' . '" -P PHP -f chm ' . $enhanced . ' -o "' . PATH_DOC . '\\tmp\\' . $lang_code . '" -L ' . $lang_code, 'phd_' . $lang_code);
 
 		if(!is_file(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\php_manual_' . $lang_code . '.hhp'))
 		{
