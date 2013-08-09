@@ -13,6 +13,10 @@
    <type>int</type><methodname>cubrid_affected_rows</methodname>
    <methodparam choice="opt"><type>resource</type><parameter>conn_identifier</parameter></methodparam>
   </methodsynopsis>
+  <methodsynopsis>
+   <type>int</type><methodname>cubrid_affected_rows</methodname>
+   <methodparam choice="opt"><type>resource</type><parameter>req_identifier</parameter></methodparam>
+  </methodsynopsis>
   <para>
     The <function>cubrid_affected_rows</function> function is used to get the
     number of rows affected by the SQL statement (INSERT, DELETE, UPDATE).
@@ -28,6 +32,10 @@
     <listitem><para>The CUBRID connection. If the connection identifier is not
       specified, the last link opend by <function>cubrid_connect</function> is
     assumed.</para></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>req_identifier</parameter></term>
+    <listitem><para><function>cubrid_prepare</function> identifier.</para></listitem>
    </varlistentry>
   </variablelist>
   </para>
@@ -54,21 +62,25 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$conn = cubrid_connect("localhost", 33000, "demodb");
+$conn = cubrid_connect('localhost', 33000, 'demodb', 'dba', '');
+cubrid_execute($conn, "DROP TABLE IF EXISTS cubrid_test");
+cubrid_execute($conn, "CREATE TABLE cubrid_test (d varchar)");
+$sql_stmt = "INSERT INTO cubrid_test(d) VALUES('php-test')";
+$req = cubrid_prepare($conn, $sql_stmt);
 
-@cubrid_execute($conn, "DROP TABLE cubrid_test");
-cubrid_execute($conn, "CREATE TABLE cubrid_test (t varchar)");
-
-for ($i = 0; $i < 5; $i++) {
-    cubrid_execute($conn, "INSERT INTO cubrid_test(t) VALUES('cubrid_test')");
+for ($i = 0; $i < 10; $i++) {
+    cubrid_execute($req);
 }
+cubrid_commit($conn);
 
-cubrid_execute($conn, "DELETE FROM cubrid_test");
-
-$affected_num = cubrid_affected_rows();
-printf("Rows deleted: %d\n", $affected_num);
+$req = cubrid_execute($conn, "DELETE FROM cubrid_test WHERE d='php-test'", CUBRID_ASYNC);
+var_dump(cubrid_affected_rows());
+var_dump(cubrid_affected_rows($conn));
+var_dump(cubrid_affected_rows($req));
 
 cubrid_disconnect($conn);
+
+print "done!";
 ?>
 ]]>
    </programlisting>
