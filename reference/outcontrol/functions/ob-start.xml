@@ -10,9 +10,9 @@
   &reftitle.description;
   <methodsynopsis>
    <type>bool</type><methodname>ob_start</methodname>
-   <methodparam choice="opt"><type>callable</type><parameter>output_callback</parameter></methodparam>
+   <methodparam choice="opt"><type>callable</type><parameter>output_callback</parameter><initializer>&null;</initializer></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>chunk_size</parameter><initializer>0</initializer></methodparam>
-   <methodparam choice="opt"><type>bool</type><parameter>erase</parameter><initializer>true</initializer></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>flags</parameter><initializer><constant>PHP_OUTPUT_HANDLER_STDFLAGS</constant></initializer></methodparam>
   </methodsynopsis>
   <para>
    This function will turn output buffering on. While output buffering is
@@ -140,13 +140,56 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>erase</parameter></term>
+     <term><parameter>flags</parameter></term>
      <listitem>
       <para>
-       If the optional parameter <parameter>erase</parameter> is set to &false;,
-       the buffer will not be deleted until the script finishes.
-       This causes that flushing and cleaning functions would issue a notice
-       and return &false; if called.
+       The <parameter>flags</parameter> parameter is a bitmask that controls
+       the operations that can be performed on the output buffer. The default
+       is to allow output buffers to be cleaned, flushed and removed, which
+       can be set explicitly via
+       <constant>PHP_OUTPUT_HANDLER_CLEANABLE</constant> |
+       <constant>PHP_OUTPUT_HANDLER_FLUSHABLE</constant> |
+       <constant>PHP_OUTPUT_HANDLER_REMOVABLE</constant>, or
+       <constant>PHP_OUTPUT_HANDLER_STDFLAGS</constant> as shorthand.
+      </para>
+      <para>
+       Each flag controls access to a set of functions, as described below:
+       <informaltable>
+        <tgroup cols="2">
+         <thead>
+          <row>
+           <entry>Constant</entry>
+           <entry>Functions</entry>
+          </row>
+         </thead>
+         <tbody>
+          <row>
+           <entry><constant>PHP_OUTPUT_HANDLER_CLEANABLE</constant></entry>
+           <entry>
+            <function>ob_clean</function>,
+            <function>ob_end_clean</function>, and
+            <function>ob_get_clean</function>.
+           </entry>
+          </row>
+          <row>
+           <entry><constant>PHP_OUTPUT_HANDLER_FLUSHABLE</constant></entry>
+           <entry>
+            <function>ob_end_flush</function>,
+            <function>ob_flush</function>, and
+            <function>ob_get_flush</function>.
+           </entry>
+          </row>
+          <row>
+           <entry><constant>PHP_OUTPUT_HANDLER_REMOVABLE</constant></entry>
+           <entry>
+            <function>ob_end_clean</function>,
+            <function>ob_end_flush</function>, and
+            <function>ob_get_flush</function>.
+           </entry>
+          </row>
+         </tbody>
+        </tgroup>
+       </informaltable>
       </para>
      </listitem>
     </varlistentry>
@@ -173,6 +216,21 @@
       </row>
      </thead>
      <tbody>
+      <row>
+       <entry>5.4.0</entry>
+       <entry>
+        The third parameter of <function>ob_start</function> changed from a
+        <type>boolean</type> parameter called <parameter>erase</parameter>
+        (which, if set to &false;, would prevent the output buffer from being
+        deleted until the script finished executing) to an
+        <type>integer</type> parameter called <parameter>flags</parameter>.
+        Unfortunately, this results in an API compatibility break for code
+        written prior to PHP 5.4.0 that uses the third parameter. See
+        <link linkend="function.ob-start.flags-bc">the flags example</link>
+        for an example of how to handle this with code that needs to be
+        compatible with both.
+       </entry>
+      </row>
       <row>
        <entry>5.4.0</entry>
        <entry>
@@ -239,6 +297,26 @@ ob_end_flush();
 </html>
 ]]>
     </screen>
+   </example>
+  </para>
+
+  <para>
+   <example xml:id="function.ob-start.flags-bc">
+    <title>Creating an uneraseable output buffer in a way compatible with both PHP 5.3 and 5.4</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+if (version_compare(PHP_VERSION, '5.4.0', '>=')) {
+  ob_start(null, 0, PHP_OUTPUT_HANDLER_STDFLAGS ^
+    PHP_OUTPUT_HANDLER_REMOVABLE);
+} else {
+  ob_start(null, 0, false);
+}
+
+?>
+]]>
+    </programlisting>
    </example>
   </para>
  </refsect1>
