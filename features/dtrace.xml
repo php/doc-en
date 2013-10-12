@@ -1,0 +1,544 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+<chapter xml:id="features.dtrace" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>DTrace Dynamic Tracing</title>
+
+ <sect1 xml:id="features.dtrace.introduction">
+  <title>Introduction to PHP and DTrace</title>
+
+  <para>
+   DTrace is an always-available, low overhead, tracing framework
+   available on a number of platforms including Solaris, Mac OS X,
+   Oracle Linux and BSD.  DTrace can trace operating system behavior
+   and user program execution. It can display argument values and be
+   used to infer performance statistics.  Probes are monitored by user
+   created scripts written in the DTrace D scripting language. This
+   allows efficient analysis of data points.
+  </para>
+
+  <para>
+   PHP probes that are not being actively monitored by a user's DTrace
+   D script do not contain instrumented code so there is no
+   performance degradation during normal application execution.
+   Probes that are being monitored incur an overhead low enough to
+   generally allow DTrace monitoring on live production systems.
+  </para>
+
+  <para>
+   PHP incorporates "User-level Statically Defined Tracing" (USDT)
+   probes that are triggered at runtime. For example, when a D script
+   is monitoring PHP's <literal>function-entry</literal> probe, then,
+   every time a PHP script function is called, this probe is fired and
+   the associated D script action code is executed.  This action code
+   could, for example, print probe arguments such as the source file
+   location of the PHP function. Or the action could aggregate data
+   such as the number of times each function is called.
+  </para>
+
+  <para>
+   Only the PHP USDT probes are described here.  Refer to external
+   general and operating system-specific DTrace literature to see how
+   DTrace can be used to trace arbitrary functions, and how it can be
+   used to trace operating system behavior.  Note not all DTrace
+   features are available in all DTrace implementations.
+  </para>
+
+  <para>
+   DTrace static probes are included in PHP 5.4.  Prior to this they
+   were available via a <link xmlns="http://docbook.org/ns/docbook"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xlink:href="&url.pecl;">PECL</link> extension, which is now
+   obsolete.
+  </para>
+
+  <para>
+   The static DTrace probes in PHP can alternatively be used with the
+   SystemTap facility on some Linux distributions.
+  </para>
+ </sect1>
+
+ <sect1 xml:id="features.dtrace.dtrace">
+  <title>Using PHP and DTrace</title>
+  <para>
+   PHP can be configured with DTrace static probes on platforms that
+   support DTrace Dynamic Tracing.
+  </para>
+
+  <sect2 xml:id="features.dtrace.install">
+   <title>Configuring PHP for DTrace Static Probes</title>
+
+   <para>
+    Refer to external platform specific documentation for enabling
+    operating system DTrace support.  For example, on Oracle Linux
+    boot a UEK3 kernel and do:
+
+    <informalexample>
+     <programlisting role="php">
+<![CDATA[
+# modprobe fasttrap
+# chmod 666 /dev/dtrace/helper
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+   <para>
+    Instead of the <literal>chmod</literal>, you could instead use an
+    ACL package rule to limit device access to a specific user.
+   </para>
+
+   <para>
+    Build PHP with the <literal>--enable-dtrace</literal> configuration parameter:
+    <informalexample>
+     <programlisting role="php">
+<![CDATA[
+# ./configure --enable-dtrace ...
+# make
+# make install
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+   <para>
+    This enables the static probes in core PHP.  Any PHP extensions
+    that provide their own probes should be built separately as shared
+    extensions.
+   </para>
+  </sect2>
+
+  <sect2 xml:id="features.dtrace.static-probes">
+  <title>DTrace Static Probes in Core PHP</title>
+  <table>
+   <title>The following static probes are available in PHP</title>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Probe Name</entry>
+      <entry>Probe Description</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry><literal>request-startup</literal></entry>
+      <entry>Fires when a request starts.</entry>
+     </row>
+     <row>
+      <entry><literal>request-shutdown</literal></entry>
+      <entry>Fires when a request shutdown.</entry>
+     </row>
+     <row>
+      <entry><literal>compile-file-entry</literal></entry>
+      <entry>Fires when the compilation of a script starts.</entry>
+     </row>
+     <row>
+      <entry><literal>compile-file-return</literal></entry>
+      <entry>Fires when the compilation of a script finishes.</entry>
+     </row>
+     <row>
+      <entry><literal>execute-entry</literal></entry>
+      <entry>Fires when a new opcode is executed.</entry>
+     </row>
+     <row>
+      <entry><literal>execute-return</literal></entry>
+      <entry>Fires when a execution of an opcode is returns.</entry>
+     </row>
+     <row>
+      <entry><literal>function-entry</literal></entry>
+      <entry>Fires when the PHP engine enters a PHP function or method call.</entry>
+     </row>
+     <row>
+      <entry><literal>function-return</literal></entry>
+      <entry>Fires when the PHP engine returns from a PHP function or method call.</entry>
+     </row>
+     <row>
+      <entry><literal>exception-thrown</literal></entry>
+      <entry>Fires when an exception is thrown.</entry>
+     </row>
+     <row>
+      <entry><literal>exception-caught</literal></entry>
+      <entry>Fires when an exception is caught.</entry>
+     </row>
+     <row>
+      <entry><literal>error</literal></entry>
+      <entry>Fires when an error occurs, regardless of the <link linkend="ini.error-reporting">error_reporting</link> level.</entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </table>
+  <para>
+   PHP extensions may also have additional static probes.
+  </para>
+  </sect2>
+
+  <sect2 xml:id="features.dtrace.list-probes">
+   <title>Listing DTrace Static Probes in PHP</title>
+   <para>
+    To list available probes, start a PHP process and then run:
+    <informalexample>
+     <programlisting>
+<![CDATA[
+# dtrace -l
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+
+   <para>
+    The output will be similar to:
+    <informalexample>
+     <programlisting>
+<![CDATA[
+   ID   PROVIDER            MODULE                          FUNCTION NAME
+   [ . . . ]
+    4   php15271               php               dtrace_compile_file compile-file-entry
+    5   php15271               php               dtrace_compile_file compile-file-return
+    6   php15271               php                        zend_error error
+    7   php15271               php  ZEND_CATCH_SPEC_CONST_CV_HANDLER exception-caught
+    8   php15271               php     zend_throw_exception_internal exception-thrown
+    9   php15271               php                 dtrace_execute_ex execute-entry
+   10   php15271               php           dtrace_execute_internal execute-entry
+   11   php15271               php                 dtrace_execute_ex execute-return
+   12   php15271               php           dtrace_execute_internal execute-return
+   13   php15271               php                 dtrace_execute_ex function-entry
+   14   php15271               php                 dtrace_execute_ex function-return
+   15   php15271               php              php_request_shutdown request-shutdown
+   16   php15271               php               php_request_startup request-startup
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+
+   <para>
+    The Provider column values consist of <literal>php</literal> and
+    the process id of the currently running PHP process.
+   </para>
+
+   <para>
+    If the Apache web server is running, the module name might be, for
+    example, <literal>libphp5.so</literal>, and there would be
+    multiple blocks of listings, one per running Apache process.
+   </para>
+
+   <para>
+    The Function column refers to PHP's internal C implementation
+    function names where each provider is located.
+   </para>
+
+   <para>
+    If a PHP process is not running, then no PHP probes will be shown.
+   </para>
+  </sect2>
+
+  <sect2 xml:id="features.dtrace.examples">
+   <title>DTrace with PHP Example</title>
+   <para>
+    This example shows the basics of the DTrace D scripting language.
+    <example>
+     <title><literal>all_probes.d</literal> for tracing all PHP Static Probes with DTrace</title>
+     <programlisting>
+<![CDATA[
+#!/usr/sbin/dtrace -Zs
+
+#pragma D option quiet
+
+php*:::compile-file-entry
+{
+    printf("PHP compile-file-entry\n");
+    printf("  compile_file              %s\n", copyinstr(arg0));
+    printf("  compile_file_translated   %s\n", copyinstr(arg1));
+}
+
+php*:::compile-file-return
+{
+    printf("PHP compile-file-return\n");
+    printf("  compile_file              %s\n", copyinstr(arg0));
+    printf("  compile_file_translated   %s\n", copyinstr(arg1));
+}
+
+php*:::error
+{
+    printf("PHP error\n");
+    printf("  errormsg                  %s\n", copyinstr(arg0));
+    printf("  request_file              %s\n", copyinstr(arg1));
+    printf("  lineno                    %d\n", (int)arg2);
+}
+
+php*:::exception-caught
+{
+    printf("PHP exception-caught\n");
+    printf("  classname                 %s\n", copyinstr(arg0));
+}
+
+php*:::exception-thrown
+{
+    printf("PHP exception-thrown\n");
+    printf("  classname                 %s\n", copyinstr(arg0));
+}
+
+php*:::execute-entry
+{
+    printf("PHP execute-entry\n");
+    printf("  request_file              %s\n", copyinstr(arg0));
+    printf("  lineno                    %d\n", (int)arg1);
+}
+
+php*:::execute-return
+{
+    printf("PHP execute-return\n");
+    printf("  request_file              %s\n", copyinstr(arg0));
+    printf("  lineno                    %d\n", (int)arg1);
+}
+
+php*:::function-entry
+{
+    printf("PHP function-entry\n");
+    printf("  function_name             %s\n", copyinstr(arg0));
+    printf("  request_file              %s\n", copyinstr(arg1));
+    printf("  lineno                    %d\n", arg2);
+    printf("  classname                 %s\n", copyinstr(arg3));
+    printf("  scope                     %s\n", copyinstr(arg4));
+}
+
+php*:::function-return
+{
+    printf("PHP function-return\n");
+    printf("  function_name             %s\n", copyinstr(arg0));
+    printf("  request_file              %s\n", copyinstr(arg1));
+    printf("  lineno                    %d\n", (int)arg2);
+    printf("  classname                 %s\n", copyinstr(arg3));
+    printf("  scope                     %s\n", copyinstr(arg4));
+}
+
+php*:::request-shutdown
+{
+    printf("PHP request-shutdown\n");
+    printf("  file                      %s\n", copyinstr(arg0));
+    printf("  request_uri               %s\n", copyinstr(arg1));
+    printf("  request_method            %s\n", copyinstr(arg2));
+}
+
+php*:::request-startup
+{
+    printf("PHP request-startup\n");
+    printf("  file                      %s\n", copyinstr(arg0));
+    printf("  request_uri               %s\n", copyinstr(arg1));
+    printf("  request_method            %s\n", copyinstr(arg2));
+}
+]]>
+     </programlisting>
+    </example>
+   </para>
+
+   <para>
+    This script uses the <literal>-Z</literal> option to
+    <literal>dtrace</literal>, allowing it to be run when there is no
+    PHP process executing.  If this option were omitted the script
+    would immediately terminate because it knows none of the probes to
+    be monitored are in existence.
+   </para>
+
+   <para>
+    The script traces all core PHP static probe points throughout the
+    duration of a running PHP script. Run the D script:
+    <informalexample>
+     <programlisting>
+<![CDATA[
+# ./all_probes.d
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+
+   <para>
+    Run a PHP script or application.  The monitoring D script will
+    output each probe's arguments as it fires.
+   </para>
+
+   <para>
+    On multi-CPU machines the probe ordering might not appear to be
+    sequential. This depends on which CPU was processing the probes,
+    and how threads migrate across CPUs.  Displaying probe time stamps
+    will help reduce confusion, for example:
+    <informalexample>
+     <programlisting>
+<![CDATA[
+php*:::oci8-connect-entry
+{
+      printf("%lld: PHP connect-entry ", walltimestamp);
+      [ . . .]
+}
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+  </sect2>
+ </sect1>
+
+ <sect1 xml:id="features.dtrace.systemtap">
+  <title>Using SystemTap with PHP DTrace Static Probes</title>
+  <para>
+   On some Linux distributions, the SystemTap tracing utility can be
+   used to trace PHP's static DTrace probes.  This is available with
+   PHP 5.4.20 and PHP 5.5.
+  </para>
+
+  <sect2 xml:id="features.dtrace.systemtap-install">
+   <title>Installing PHP with SystemTap</title>
+
+   <para>
+    Install the SystemTap SDT development package:
+    <informalexample>
+     <programlisting role="shell">
+<![CDATA[
+# yum install systemtap-sdt-devel
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+
+   <para>
+    Install PHP with the DTrace probes enabled:
+    <informalexample>
+     <programlisting role="shell">
+<![CDATA[
+# ./configure --enable-dtrace ...
+# make
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+  </sect2>
+
+  <sect2 xml:id="features.dtrace.systemtap-list-probes">
+   <title>Listing Static Probes with SystemTap</title>
+
+   <para>
+    The static probes in PHP can be listed using <literal>stap</literal>:
+    <informalexample>
+     <programlisting>
+<![CDATA[
+# stap -l 'process.provider("php").mark("*")' -c 'sapi/cli/php -i'
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+
+   <para>
+    This outputs:
+    <informalexample>
+     <programlisting>
+<![CDATA[
+process("sapi/cli/php").provider("php").mark("compile__file__entry")
+process("sapi/cli/php").provider("php").mark("compile__file__return")
+process("sapi/cli/php").provider("php").mark("error")
+process("sapi/cli/php").provider("php").mark("exception__caught")
+process("sapi/cli/php").provider("php").mark("exception__thrown")
+process("sapi/cli/php").provider("php").mark("execute__entry")
+process("sapi/cli/php").provider("php").mark("execute__return")
+process("sapi/cli/php").provider("php").mark("function__entry")
+process("sapi/cli/php").provider("php").mark("function__return")
+process("sapi/cli/php").provider("php").mark("request__shutdown")
+process("sapi/cli/php").provider("php").mark("request__startup")
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+  </sect2>
+
+  <sect2 xml:id="features.dtrace.systemtap-examples">
+   <title>SystemTap with PHP Example</title>
+
+   <para>
+    <example>
+     <title><literal>all_probes.stp</literal> for tracing all PHP Static Probes with SystemTap</title>
+     <programlisting role="shell">
+<![CDATA[
+probe process("sapi/cli/php").provider("php").mark("compile__file__entry") {
+    printf("Probe compile__file__entry\n");
+    printf("  compile_file %s\n", user_string($arg1));
+    printf("  compile_file_translated %s\n", user_string($arg2));
+}
+probe process("sapi/cli/php").provider("php").mark("compile__file__return") {
+    printf("Probe compile__file__return\n");
+    printf("  compile_file %s\n", user_string($arg1));
+    printf("  compile_file_translated %s\n", user_string($arg2));
+}
+probe process("sapi/cli/php").provider("php").mark("error") {
+    printf("Probe error\n");
+    printf("  errormsg %s\n", user_string($arg1));
+    printf("  request_file %s\n", user_string($arg2));
+    printf("  lineno %d\n", $arg3);
+}
+probe process("sapi/cli/php").provider("php").mark("exception__caught") {
+    printf("Probe exception__caught\n");
+    printf("  classname %s\n", user_string($arg1));
+}
+probe process("sapi/cli/php").provider("php").mark("exception__thrown") {
+    printf("Probe exception__thrown\n");
+    printf("  classname %s\n", user_string($arg1));
+}
+probe process("sapi/cli/php").provider("php").mark("execute__entry") {
+    printf("Probe execute__entry\n");
+    printf("  request_file %s\n", user_string($arg1));
+    printf("  lineno %d\n", $arg2);
+}
+probe process("sapi/cli/php").provider("php").mark("execute__return") {
+    printf("Probe execute__return\n");
+    printf("  request_file %s\n", user_string($arg1));
+    printf("  lineno %d\n", $arg2);
+}
+probe process("sapi/cli/php").provider("php").mark("function__entry") {
+    printf("Probe function__entry\n");
+    printf("  function_name %s\n", user_string($arg1));
+    printf("  request_file %s\n", user_string($arg2));
+    printf("  lineno %d\n", $arg3);
+    printf("  classname %s\n", user_string($arg4));
+    printf("  scope %s\n", user_string($arg5));
+}
+probe process("sapi/cli/php").provider("php").mark("function__return") {
+    printf("Probe function__return: %s\n", user_string($arg1));
+    printf(" function_name %s\n", user_string($arg1));
+    printf("  request_file %s\n", user_string($arg2));
+    printf("  lineno %d\n", $arg3);
+    printf("  classname %s\n", user_string($arg4));
+    printf("  scope %s\n", user_string($arg5));
+}
+probe process("sapi/cli/php").provider("php").mark("request__shutdown") {
+    printf("Probe request__shutdown\n");
+    printf("  file %s\n", user_string($arg1));
+    printf("  request_uri %s\n", user_string($arg2));
+    printf("  request_method %s\n", user_string($arg3));
+}
+probe process("sapi/cli/php").provider("php").mark("request__startup") {
+    printf("Probe request__startup\n");
+    printf("  file %s\n", user_string($arg1));
+    printf("  request_uri %s\n", user_string($arg2));
+    printf("  request_method %s\n", user_string($arg3));
+}
+]]>
+     </programlisting>
+    </example>
+   </para>
+   <para>
+    The above script will trace all core PHP static probe points
+    throughout the duration of a running PHP script:
+    <informalexample>
+     <programlisting>
+<![CDATA[
+# stap -c 'sapi/cli/php test.php' all_probes.stp
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+   <para>
+    When monitoring is complete, the D script can be terminated with a
+    <literal>^C</literal>.
+   </para>
+  </sect2>
+ </sect1>
+</chapter>
+
+<!-- Keep this comment at the end of the file
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
