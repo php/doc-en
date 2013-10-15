@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 331735 $ -->
+<refentry xml:id="function.oci-get-implicit-resultset" xmlns="http://docbook.org/ns/docbook">
+ <refnamediv>
+  <refname>oci_get_implicit_resultset</refname>
+  <refpurpose>Returns the next child statement resource from a parent statement resource that has Oracle Database 12c Implicit Result Sets
+  </refpurpose>
+ </refnamediv>
+ 
+ <refsect1 role="description">
+  &reftitle.description;
+  <methodsynopsis>
+   <type>resource </type><methodname>oci_get_implicit_resultset</methodname>
+   <methodparam><type>resource</type><parameter>statement</parameter></methodparam>
+  </methodsynopsis>
+  <para>
+   Used to fetch consectutive sets of query results after the
+   execution of a stored or anonymous Oracle PL/SQL block where that
+   block returns query results with
+   Oracle's <emphasis>DBMS_SQL.RETURN_RESULT</emphasis> PL/SQL
+   function.  This allows PL/SQL blocks to easily return query
+   results.
+  </para>
+  <para>
+    The child statement can be used with any of the OCI8 fetching
+    functions: <function>oci_fetch</function>, <function>oci_fetch_all</function>,
+    <function>oci_fetch_array</function>, <function>oci_fetch_object</function>,
+    <function>oci_fetch_assoc</function> or <function>oci_fetch_row</function>
+  </para>
+  <para>
+    Child statements inherit their parent statement's prefetch value,
+    or it can be explicitly set with <function>oci_set_prefetch</function>.
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>statement</parameter></term>
+     <listitem>
+       <para>A valid OCI8 statement identifier created
+         by <function>oci_parse</function> and executed
+         by <function>oci_execute</function>.  The statement
+         identifier may or may not be associated with a SQL statement
+         that returns Implicit Result Sets.
+       </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   Returns a statement handle for the next child statement available
+   on <parameter>statement</parameter>.  Returns &false; when child
+   statements do not exist, or all child statements have been returned
+   by previous calls
+   to <function>oci_get_implicit_resultset</function>.
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title>Fetching Implicit Result Sets in a loop</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$conn = oci_connect('hr', 'welcome', 'localhost/pdborcl');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$sql = 'DECLARE
+            c1 SYS_REFCURSOR;
+        BEGIN
+           OPEN c1 FOR SELECT city, postal_code FROM locations WHERE ROWNUM < 4 ORDER BY city;
+           DBMS_SQL.RETURN_RESULT(c1);
+           OPEN c1 FOR SELECT country_id FROM locations WHERE ROWNUM < 4 ORDER BY city;
+           DBMS_SQL.RETURN_RESULT(c1);
+        END;';
+
+$stid = oci_parse($conn, $sql);
+oci_execute($stid);
+
+while (($stid_c = oci_get_implicit_resultset($stid))) {
+    echo "<h2>New Implicit Result Set:</h2>\n";
+    echo "<table>\n";
+    while (($row = oci_fetch_array($stid_c, OCI_ASSOC+OCI_RETURN_NULLS)) != false) {
+        echo "<tr>\n";
+        foreach ($row as $item) {
+            echo "  <td>".($item!==null?htmlentities($item, ENT_QUOTES|ENT_SUBSTITUTE):"&nbsp;")."</td>\n";
+        }
+        echo "</tr>\n";
+    }
+    echo "</table>\n";
+}
+
+// Output is:
+//    New Implicit Result Set:
+//     Beijing 190518
+//     Bern    3095
+//     Bombay  490231
+//    New Implicit Result Set:
+//     CN
+//     CH
+//     IN
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Getting child statement handles individually</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$conn = oci_connect('hr', 'welcome', 'localhost/pdborcl');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$sql = 'DECLARE
+            c1 SYS_REFCURSOR;
+        BEGIN
+           OPEN c1 FOR SELECT city, postal_code FROM locations WHERE ROWNUM < 4 ORDER BY city;
+           DBMS_SQL.RETURN_RESULT(c1);
+           OPEN c1 FOR SELECT country_id FROM locations WHERE ROWNUM < 4 ORDER BY city;
+           DBMS_SQL.RETURN_RESULT(c1);
+        END;';
+
+$stid = oci_parse($conn, $sql);
+oci_execute($stid);
+
+$stid_1 = oci_get_implicit_resultset($stid);
+$stid_2 = oci_get_implicit_resultset($stid);
+
+$row = oci_fetch_array($stid_1, OCI_ASSOC+OCI_RETURN_NULLS);
+var_dump($row);
+$row = oci_fetch_array($stid_2, OCI_ASSOC+OCI_RETURN_NULLS);
+var_dump($row);
+$row = oci_fetch_array($stid_1, OCI_ASSOC+OCI_RETURN_NULLS);
+var_dump($row);
+$row = oci_fetch_array($stid_2, OCI_ASSOC+OCI_RETURN_NULLS);
+var_dump($row);
+
+// Output is:
+//    array(2) {
+//      ["CITY"]=>
+//      string(7) "Beijing"
+//      ["POSTAL_CODE"]=>
+//      string(6) "190518"
+//    }
+//    array(1) {
+//      ["COUNTRY_ID"]=>
+//      string(2) "CN"
+//    }
+//    array(2) {
+//      ["CITY"]=>
+//      string(4) "Bern"
+//      ["POSTAL_CODE"]=>
+//      string(4) "3095"
+//    }
+//    array(1) {
+//      ["COUNTRY_ID"]=>
+//      string(2) "CH"
+//    }
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Explicitly setting the Prefetch Count</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$conn = oci_connect('hr', 'welcome', 'localhost/pdborcl');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$sql = 'DECLARE
+            c1 SYS_REFCURSOR;
+        BEGIN
+           OPEN c1 FOR SELECT city, postal_code FROM locations ORDER BY city;
+           DBMS_SQL.RETURN_RESULT(c1);
+        END;';
+
+$stid = oci_parse($conn, $sql);
+oci_execute($stid);
+
+$stid_c = oci_get_implicit_resultset($stid);
+oci_set_prefetch($stid_c, 200);   // Set the prefetch before fetching from the child statement
+echo "<table>\n";
+while (($row = oci_fetch_array($stid_c, OCI_ASSOC+OCI_RETURN_NULLS)) != false) {
+    echo "<tr>\n";
+    foreach ($row as $item) {
+        echo "  <td>".($item!==null?htmlentities($item, ENT_QUOTES|ENT_SUBSTITUTE):"&nbsp;")."</td>\n";
+    }
+    echo "</tr>\n";
+}
+echo "</table>\n";
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Implicit Result Set example without using <function>oci_get_implicit_resultset</function></title>
+    <para>
+    All results from all queries are returned consecutively.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$conn = oci_connect('hr', 'welcome', 'localhost/pdborcl');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+$sql = 'DECLARE
+            c1 SYS_REFCURSOR;
+        BEGIN
+           OPEN c1 FOR SELECT city, postal_code FROM locations WHERE ROWNUM < 4 ORDER BY city;
+           DBMS_SQL.RETURN_RESULT(c1);
+           OPEN c1 FOR SELECT country_id FROM locations WHERE ROWNUM < 4 ORDER BY city;
+           DBMS_SQL.RETURN_RESULT(c1);
+        END;';
+
+$stid = oci_parse($conn, $sql);
+oci_execute($stid);
+
+// Note: oci_fetch_all and oci_fetch() cannot be used in this manner
+echo "<table>\n";
+while (($row = oci_fetch_array($stid, OCI_ASSOC+OCI_RETURN_NULLS)) != false) {
+    echo "<tr>\n";
+    foreach ($row as $item) {
+        echo "  <td>".($item!==null?htmlentities($item, ENT_QUOTES|ENT_SUBSTITUTE):"&nbsp;")."</td>\n";
+    }
+    echo "</tr>\n";
+}
+echo "</table>\n";
+
+// Output is:
+//    Beijing 190518
+//    Bern 3095
+//    Bombay 490231
+//    CN
+//    CH
+//    IN
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </refsect1>
+
+ <refsect1 role="notes">
+  &reftitle.notes;
+  <note>
+   &oci.use.setprefetch;
+  </note>
+ </refsect1>
+
+</refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+

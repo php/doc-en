@@ -20,6 +20,14 @@
    is typically called in a loop until it returns &false;, indicating
    no more rows exist.
   </para>
+  <para>
+   If <parameter>statement</parameter> corresponds to a PL/SQL block
+   returning Oracle Database 12c Implicit Result Sets, then rows from
+   all sets are consecutively fetched. If
+   <parameter>statement</parameter> is returned
+   by <function>oci_get_implicit_resultset</function>, then only the
+   subset of rows for one child query are returned.
+  </para>
   &oci.datatypes;
  </refsect1>
 
@@ -31,6 +39,9 @@
      <term><parameter>statement</parameter></term>
      <listitem>
        &oci.arg.statement.id;
+       <para>
+        Can also be a statement identifier returned by <function>oci_get_implicit_resultset</function>.
+       </para>
      </listitem>
     </varlistentry>
     <varlistentry>
@@ -519,36 +530,99 @@ if (!$conn) {
     trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
 }
 
+// Find the version of the database
+preg_match('/Release ([0-9]+)\./', oci_server_version($conn), $matches);
+$oracleversion = $matches[1];
+
 // This is the query you want to execute
 $sql = 'SELECT city, postal_code FROM locations ORDER BY city';
 
-// This nested query selects a subset of rows from $sql.
+// Construct a nested query selecting a subset of rows from $sql.
 // In production environments, be careful to avoid SQL Injection
 // issues with concatenated SQL statements
-$limit_sql = 
-   'select *
-    from ( select a.*, rownum as rnum
-        from (' . $sql . ') a
-        where rownum < :FIRST_ROW + :NUM_ROWS )
-    where rnum >= :FIRST_ROW';
+if ($oracleversion >= 12) {
+    // Make use of Oracle 12c OFFSET / FETCH NEXT syntax
+    $sql = $sql . ' OFFSET :offset ROWS FETCH NEXT :numrows ROWS ONLY';
+} else {
+    // Older versions required query syntax like this or the 
+    // base query needed to be rewritten to use a row_number() function
+    $sql = "SELECT * FROM (SELECT A.*, ROWNUM AS MY_RNUM
+                           FROM ($sql) A
+                           WHERE ROWNUM <= :offset + :numrows)
+            WHERE MY_RNUM > :offset";
+}
 
-$first = 1;  // start with the first row
-$num   = 5;  // return 5 rows
-$stid = oci_parse($conn, $limit_sql);
-oci_bind_by_name($stid, ':FIRST_ROW', $first);
-oci_bind_by_name($stid, ':NUM_ROWS', $num);
+$offset  = 0;  // skip this many rows
+$numrows = 5;  // return 5 rows
+$stid = oci_parse($conn, $sql);
+oci_bind_by_name($stid, ':numrows', $numrows);
+oci_bind_by_name($stid, ':offset', $offset);
 oci_execute($stid);
 
-while (($row = oci_fetch_array($stid, OCI_ASSOC))) {
+while (($row = oci_fetch_array($stid, OCI_ASSOC + OCI_RETURN_NULLS))) {
     echo $row['CITY'] . " " . $row['POSTAL_CODE'] . "<br>\n";
 }
 
 // Output is:
-//    Beijing 190518x
-//    Bern 3095x
-//    Bombay 490231x
-//    Geneva 1730x
-//    Hiroshima 6823x
+//    Beijing 190518
+//    Bern 3095
+//    Bombay 490231
+//    Geneva 1730
+//    Hiroshima 6823
+
+oci_free_statement($stid);
+oci_close($conn);
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>oci_fetch_array</function> with Oracle Database 12<emphasis>c</emphasis> Implicit Result Sets</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$conn = oci_connect('hr', 'welcome', 'localhost/pdborcl');
+if (!$conn) {
+    $e = oci_error();
+    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+}
+
+// Requires OCI8 2.0 and Oracle Database 12c
+// Also see oci_get_implicit_resultset()
+$sql = 'DECLARE
+            c1 SYS_REFCURSOR;
+        BEGIN
+           OPEN c1 FOR SELECT city, postal_code FROM locations WHERE ROWNUM < 4 ORDER BY city;
+           DBMS_SQL.RETURN_RESULT(c1);
+           OPEN c1 FOR SELECT country_id FROM locations WHERE ROWNUM < 4 ORDER BY city;
+           DBMS_SQL.RETURN_RESULT(c1);
+        END;';
+
+$stid = oci_parse($conn, $sql);
+oci_execute($stid);
+
+// Note: oci_fetch_all and oci_fetch() cannot be used in this manner
+echo "<table>\n";
+while (($row = oci_fetch_array($stid, OCI_ASSOC+OCI_RETURN_NULLS)) != false) {
+    echo "<tr>\n";
+    foreach ($row as $item) {
+        echo "  <td>".($item!==null?htmlentities($item, ENT_QUOTES|ENT_SUBSTITUTE):"&nbsp;")."</td>\n";
+    }
+    echo "</tr>\n";
+}
+echo "</table>\n";
+
+// Output is:
+//    Beijing 190518
+//    Bern    3095
+//    Bombay  490231
+//    CN
+//    CH
+//    IN
 
 oci_free_statement($stid);
 oci_close($conn);
