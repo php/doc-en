@@ -42,7 +42,7 @@
 		unlink(__DIR__ . '\\languages.inc');
 	}
 
-	execute_task('Get list of online languages', PATH_WGET, '--debug --verbose --no-check-certificate https://svn.php.net/repository/web/php/trunk/include/languages.inc --output-document=' . __DIR__ . '\\languages.inc', 'wget_langs');
+	execute_task('Get list of online languages', PATH_WGET, '--debug --verbose --no-check-certificate "http://git.php.net/?p=web/php.git;a=blob_plain;f=include/languages.inc;hb=HEAD" --output-document=' . __DIR__ . '\\languages.inc', 'wget_langs');
 
 	if (file_exists(__DIR__ . '\\languages.inc'))
 	{
