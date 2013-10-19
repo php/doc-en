@@ -1,6 +1,6 @@
 <?php
 define("DEBUG", 0);
-$BUILDDIR = "http://php.tuxxedo.net/chm";
+$BUILDDIR = "https://dl.dropboxusercontent.com/u/15537366/chm/";
 $TMPDIR = sys_get_temp_dir();
 $CHMDIR = "/local/mirrors/phpweb/distributions/manual";
 
