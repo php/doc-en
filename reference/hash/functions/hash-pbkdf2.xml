@@ -46,7 +46,7 @@
      <term><parameter>salt</parameter></term>
      <listitem>
       <para>
-       The salt to use for the derivation.
+       The salt to use for the derivation. This value should be generated randomly.
       </para>
      </listitem>
     </varlistentry>
@@ -62,8 +62,15 @@
      <term><parameter>length</parameter></term>
      <listitem>
       <para>
-       The length of the derived key to output. If <literal>0</literal>, the
-       length of the supplied algorithm is used.
+       The length of the output string. If <parameter>raw_output</parameter>
+       is &true; this corresponds to the byte-length of the derived key, if
+       <parameter>raw_output</parameter> is &false; this corresponds to twice the
+       byte-length of the derived key (as every byte of the key is returned as
+       two hexits).
+      </para>
+      <para>
+       If <literal>0</literal> is passed, the entire output of the supplied
+       algorithm is used.
       </para>
      </listitem>
     </varlistentry>
@@ -84,7 +91,7 @@
   &reftitle.returnvalues;
   <para>
    Returns a string containing the derived key as lowercase hexits unless
-   <parameter>raw_output</parameter> is set to true in which case the raw
+   <parameter>raw_output</parameter> is set to &true; in which case the raw
    binary representation of the derived key is returned.
   </para>
  </refsect1><!-- }}} -->
@@ -109,13 +116,18 @@
 <![CDATA[
 <?php
 $password = "password";
-$salt = "salt";
-$hash = hash_pbkdf2("sha256", $password, $salt, 1, 20);
+$iterations = 1000;
+
+// Generate a random IV using mcrypt_create_iv(),
+// openssl_random_pseudo_bytes() or another suitable source of randomness
+$salt = mcrypt_create_iv(16, MCRYPT_DEV_URANDOM);
+
+$hash = hash_pbkdf2("sha256", $password, $salt, $iterations, 20);
 echo $hash;
 ?>
 ]]>
     </programlisting>
-    &example.outputs;
+    &example.outputs.similar;
     <screen>
 <![CDATA[
 120fb6cffcf8b32c43e7
@@ -129,10 +141,10 @@ echo $hash;
   &reftitle.notes;
   <caution>
    <para>
-    The PBKDF2 method can be used for hashing passwords for storage (it is
-    NIST approved for that use). However, it should be noted that
-    <constant>CRYPT_BLOWFISH</constant> is better suited for password storage
-    and should be used instead via <function>crypt</function>.
+    The PBKDF2 method can be used for hashing passwords for storage. However, it
+    should be noted that <function>password_hash</function> or
+    <function>crypt</function> with <constant>CRYPT_BLOWFISH</constant> are
+    better suited for password storage.
    </para>
   </caution>
  </refsect1>
@@ -142,6 +154,7 @@ echo $hash;
   <para>
    <simplelist>
     <member><function>crypt</function></member>
+    <member><function>password_hash</function></member>
     <member><function>hash</function></member>
     <member><function>hash_algos</function></member>
     <member><function>hash_init</function></member>
