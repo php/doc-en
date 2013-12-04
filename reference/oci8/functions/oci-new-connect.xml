@@ -86,95 +86,52 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-echo "<html><pre>";
-$db = "";
 
-$c1 = oci_connect("scott", "tiger", $db);
-$c2 = oci_new_connect("scott", "tiger", $db);
+// create table mytab (mycol number);
 
-function create_table($conn)
+function query($name, $c)
 {
-  $stmt = oci_parse($conn, "create table scott.hallo (test
-varchar2(64))");
-  oci_execute($stmt);
-  echo $conn . " created table\n\n";
+    echo "Querying $name\n";
+    $s = oci_parse($c, "select * from mytab");
+    oci_execute($s, OCI_NO_AUTO_COMMIT);
+    $row = oci_fetch_array($s, OCI_ASSOC);
+    if (!$row) {
+        echo "No rows\n";
+    } else {
+        do {
+            foreach ($row as $item)
+                echo $item . " ";
+            echo "\n";
+        } while (($row = oci_fetch_array($s, OCI_ASSOC)) != false);
+    }
 }
 
-function drop_table($conn)
-{
-  $stmt = oci_parse($conn, "drop table scott.hallo");
-  oci_execute($stmt);
-  echo $conn . " dropped table\n\n";
-}
+$c1 = oci_connect("hr", "welcome", "localhost/orcl");
+$c2 = oci_new_connect("hr", "welcome", "localhost/orcl");
 
-function insert_data($conn)
-{
-  $stmt = oci_parse($conn, "insert into scott.hallo
-            values('$conn' || ' ' || to_char(sysdate,'DD-MON-YY HH24:MI:SS'))");
-  oci_execute($stmt, OCI_DEFAULT);
-  echo $conn . " inserted hallo\n\n";
-}
+$s = oci_parse($c1, "insert into mytab values(1234)");
+oci_execute($s, OCI_NO_AUTO_COMMIT);
 
-function delete_data($conn)
-{
-  $stmt = oci_parse($conn, "delete from scott.hallo");
-  oci_execute($stmt, OCI_DEFAULT);
-  echo $conn . " deleted hallo\n\n";
-}
+query("basic connection", $c1);
+query("new connection", $c2);
+oci_commit($c1);
+query("new connection after commit", $c2);
 
-function commit($conn)
-{
-  oci_commit($conn);
-  echo $conn . " committed\n\n";
-}
+// Output is:
+//   Querying basic connection
+//   1234 
+//   Querying new connection
+//   No rows
+//   Querying new connection after commit
+//   1234 
 
-function rollback($conn)
-{
-  oci_rollback($conn);
-  echo $conn . " rollback\n\n";
-}
-
-function select_data($conn)
-{
-  $stmt = oci_parse($conn, "select * from scott.hallo");
-  oci_execute($stmt, OCI_DEFAULT);
-  echo $conn . "----selecting\n\n";
-  while (oci_fetch($stmt)) {
-    echo $conn . " <" . oci_result($stmt, "TEST") . ">\n\n";
-  }
-  echo $conn . "----done\n\n";
-}
-
-create_table($c1);
-insert_data($c1);
-
-select_data($c1);
-select_data($c2);
-
-rollback($c1);
-
-select_data($c1);
-select_data($c2);
-
-insert_data($c2);
-commit($c2);
-
-select_data($c1);
-
-delete_data($c1);
-select_data($c1);
-select_data($c2);
-commit($c1);
-
-select_data($c1);
-select_data($c2);
-
-drop_table($c1);
-echo "</pre></html>";
 ?>
 ]]>
     </programlisting>
    </example>
+  </para>
+  <para>
+    See <function>oci_connect</function> for further examples of parameter usage.
   </para>
  </refsect1>
 
