@@ -13,12 +13,12 @@
    <methodparam><type>string</type><parameter>data</parameter></methodparam>
    <methodparam><type>string</type><parameter role="reference">signature</parameter></methodparam>
    <methodparam><type>mixed</type><parameter>priv_key_id</parameter></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>signature_alg</parameter><initializer>OPENSSL_ALGO_SHA1</initializer></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>signature_alg</parameter><initializer>OPENSSL_ALGO_SHA1</initializer></methodparam>
   </methodsynopsis>
   <para>
    <function>openssl_sign</function> computes a signature for the
-   specified <parameter>data</parameter> by using SHA1 for hashing
-   followed by encryption using the private key associated with
+   specified <parameter>data</parameter> by generating a cryptographic
+   digital signature using the private key associated with
    <parameter>priv_key_id</parameter>. Note that the data itself is
    not encrypted.
   </para>
@@ -32,6 +32,7 @@
      <term><parameter>data</parameter></term>
      <listitem>
       <para>
+       The string of data you wish to sign
       </para>
      </listitem>
     </varlistentry>
@@ -48,6 +49,10 @@
      <term><parameter>priv_key_id</parameter></term>
      <listitem>
       <para>
+       <type>resource</type> - a key, returned by <function>openssl_get_privatekey</function>
+      </para>
+      <para>
+       <type>string</type> - a PEM formatted key
       </para>
      </listitem>
     </varlistentry>
@@ -55,8 +60,10 @@
      <term><parameter>signature_alg</parameter></term>
      <listitem>
       <para>
-       For more information see the list of <link
-       linkend="openssl.signature-algos">Signature Algorithms</link>.
+       <type>int</type> - one of these <link linkend="openssl.signature-algos">Signature Algorithms</link>.
+      </para>
+      <para>
+       <type>string</type> - a valid string returned by <function>openssl_get_md_methods</function> example, "sha256WithRSAEncryption" or "sha384".
       </para>
      </listitem>
     </varlistentry>
@@ -106,10 +113,7 @@
 // $data is assumed to contain the data to be signed
 
 // fetch private key from file and ready it
-$fp = fopen("/src/openssl-0.9.6/demos/sign/key.pem", "r");
-$priv_key = fread($fp, 8192);
-fclose($fp);
-$pkeyid = openssl_get_privatekey($priv_key);
+$pkeyid = openssl_pkey_get_private("file://src/openssl-0.9.6/demos/sign/key.pem");
 
 // compute signature
 openssl_sign($data, $signature, $pkeyid);
@@ -120,6 +124,40 @@ openssl_free_key($pkeyid);
 ]]>
     </programlisting>
    </example>
+   <example>
+    <title><function>openssl_sign</function> example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+//data you want to sign
+$data = 'my data';
+
+//create new private and public key
+$new_key_pair = openssl_pkey_new(array(
+    "private_key_bits" => 2048,
+    "private_key_type" => OPENSSL_KEYTYPE_RSA,
+));
+openssl_pkey_export($new_key_pair, $private_key_pem);
+
+$details = openssl_pkey_get_details($new_key_pair);
+$public_key_pem = $details['key'];
+
+//create signature
+openssl_sign($data, $signature, $private_key_pem, OPENSSL_ALGO_SHA256);
+
+//save for later
+file_put_contents('private_key.pem', $private_key_pem);
+file_put_contents('public_key.pem', $public_key_pem);
+file_put_contents('signature.dat', $signature);
+
+//verify signature
+$r = openssl_verify($data, $signature, $public_key_pem, "sha256WithRSAEncryption");
+var_dump($r);
+?>
+]]>
+    </programlisting>
+   </example>
+ 
   </para>
  </refsect1>
 
