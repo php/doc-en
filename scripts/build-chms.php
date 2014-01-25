@@ -137,10 +137,36 @@
 			continue;
 		}
 
+
+		/**
+		 * Run DBCSFix.exe to convert Unicode to ASCII.
+		 */
+                $lcid = NULL;
+                $multibyte_search_enabled = (MULTIBYTE_SEARCH && array_key_exists($lang_code, $CHM_FULLTEXT_SEARCH_LCID));
+                if ($multibyte_search_enabled) {
+                    $lcid = $CHM_FULLTEXT_SEARCH_LCID[$lang_code];
+                    $dbcsfix_log = 'dbcsfix_' . $lang_code;
+                    execute_task(
+                        '- Convert to ASCII for Fulltext Search...',
+                        PATH_DBCSFIX,
+                        '/d:' . PATH_DOC . '\\tmp\\' . $lang_code
+                      . ' ' . '/l:' . $lcid,
+                        $dbcsfix_log);
+                }
+
 		/**
 		 * Run the HTML Help Compiler to generate the actual CHM file
 		 */
-		execute_task('- HHC', PATH_HHC, '"' . PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\php_manual_' . $lang_code . '.hhp"', 'hhc_' . $lang_code);
+                if ($multibyte_search_enabled) {
+                        execute_task('- HHC (with Fulltext Search)',
+                            PATH_APPLOCALE,
+                            $lcid . 
+                            ' "' . PATH_HHC . '" "' .
+                            PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\php_manual_' . $lang_code . '.hhp"',
+                           'hhc_' . $lang_code);
+                } else {
+			execute_task('- HHC', PATH_HHC, '"' . PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\php_manual_' . $lang_code . '.hhp"', 'hhc_' . $lang_code);
+                }
 
 		if(!is_file(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-chm\\php_manual_' . $lang_code . '.chm'))
 		{
@@ -184,7 +210,16 @@
 			/**
 			 * Run the HTML Help Compiler to generate the actual CHM file
 			 */
-			execute_task('- [Enhanced] HHC', PATH_HHC, '"' . PATH_DOC . '\\tmp\\' . $lang_code . '\\php-enhancedchm\\php_manual_' . $lang_code . '.hhp"', 'hhc_enhanced_' . $lang_code);
+	                if ($multibyte_search_enabled) {
+	                        execute_task('- [Enhanced] HHC (with Fulltext Search)',
+	                            PATH_APPLOCALE,
+	                            $lcid .
+	                            ' "' . PATH_HHC . '" "' .
+	                            PATH_DOC . '\\tmp\\' . $lang_code . '\\php-enhancedchm\\php_manual_' . $lang_code . '.hhp"',
+	                           'hhc_enhanced_' . $lang_code);
+			} else {
+				execute_task('- [Enhanced] HHC', PATH_HHC, '"' . PATH_DOC . '\\tmp\\' . $lang_code . '\\php-enhancedchm\\php_manual_' . $lang_code . '.hhp"', 'hhc_enhanced_' . $lang_code);
+			}
 
 			if(!is_file(PATH_DOC . '\\tmp\\' . $lang_code . '\\php-enhancedchm\\php_manual_' . $lang_code . '.chm'))
 			{

@@ -35,6 +35,9 @@
 	define('PATH_SVN', 	'E:\chm\software\SlikSVN\bin\svn.exe');
 	define('PATH_HHC', 	'E:\chm\software\HTML Help Workshop\hhc.exe');
 	define('PATH_PHD', 	'E:\chm\software\phd\phd.bat');
+ 	//  Tools to build multibyte search enabled chm
+ 	define('PATH_DBCSFIX', 	'C:\Program Files (x86)\Sandcastle\ProductionTools\DBCSFix.exe');
+ 	define('PATH_APPLOCALE','C:\Program Files (x86)\Sandcastle\ProductionTools\SBAppLocale.exe');
 
 	/**
 	 * Only if PHD_BETA is set to on (Tuxxedo does not have Pear installed)
@@ -44,6 +47,7 @@
 	define('EXTENDED',	true);
 	define('DEBUG',		true);
 	define('PHD_BETA',	false);
+ 	define('MULTIBYTE_SEARCH',	false);
 
 	/**
 	 * Fallback to a set of known languages in the event of a failure to retrieve online list.
@@ -61,6 +65,50 @@
 						'zh'    => 'Chinese (Simplified)',
 						);
 
+
+ 	/**
+  	 * CHM full text search does not work without compiling
+  	 * with Windows Language Code Identifier(LCID).
+   	 *
+   	 * http://msdn.microsoft.com/en-us/library/cc233965.aspx
+   	 * http://msdn.microsoft.com/ja-jp/library/cc392381.aspx
+   	 */
+	$CHM_FULLTEXT_SEARCH_LCID = array(
+	    'en'    => 1033,
+	    'ar'    => 14337,
+	    'bg'    => 1026,
+	    'pt_BR' => 1046,
+	    'zh'    => 2052,
+	    'hk'    => 3076,
+	    'tw'    => 1028,
+	    'ca'    => 1027,
+	    'cs'    => 1029,
+	    'da'    => 1030,
+	    'nl'    => 1043,
+	    'fi'    => 1035,
+	    'fr'    => 1036,
+	    'de'    => 1031,
+	    'el'    => 1032,
+	    'he'    => 1037,
+	    'hu'    => 1038,
+	    'id'    => 1057,
+	    'it'    => 1040,
+	    'ja'    => 1041,
+	    'kr'    => 1042,
+	    'lt'    => 1063,
+	    'no'    => 1044,
+	    'pl'    => 1045,
+	    'pt'    => 2070,
+	    'ro'    => 1048,
+	    'ru'    => 1049,
+	    'fa'    => 1065,
+	    'sr'    => 3098,
+	    'sk'    => 1051,
+	    'sl'    => 1060,
+	    'es'    => 1034,
+	    'sv'    => 1053,
+	    'tr'    => 1055,
+	);
 
 	/**
 	 * Helper function for execution a program (used by build-chm-history.php too)
