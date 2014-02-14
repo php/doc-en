@@ -1437,6 +1437,11 @@ Transient error retries before error: 2
     later. Neither are client-side transaction boundary monitoring nor any setup
     activities required if using the server feature.
    </para>
+   <para>
+     Please note, all MySQL 5.6 production versions do not provide
+     clients with enough information to use GTIDs for enforcing session consistency.
+     In the worst case, the plugin will choose the master only.
+   </para>
   </note>
   <para>
    <emphasis role="bold">Idea and client-side emulation</emphasis>
@@ -1545,6 +1550,28 @@ Transient error retries before error: 2
       and a sequence number as a global transaction identifier. Comparison cannot
       use numeric algebra. Instead a SQL function must be used. Please,
       see the MySQL Reference Manual for details.
+     </simpara>
+     <simpara>
+      Server-side built-in feature of MySQL 5.6 cannot be used to ensure session consistency
+      under all circumstances. Do not use it for the quality-of-service feature. Here is a simple
+      example why it will not give reliable results. There are more edge cases that cannot
+      be covered with limited functionality exported by the server. Currently, clients can
+      ask a MySQL replication master for a list of all executed global transaction IDs only.
+      If a slave is configured not to replicate all transactions, for example, because replication
+      filters are set, then the slave will never show the same set of executed global transaction
+      IDs. Albeit the slave may have replicated a clients writes and it may be a candidate
+      for a consistent read, it will never be considered by the plugin. Upon write the plugin
+      learns from the master that the servers complete transaction history consists of GTID=1..3.
+      There is no way for the plugin to ask for the GTID of the write transaction itself, say GTID=3.
+      Assume that a slave does not replicate the transactions GTID=1..2 but only GTID=3 because of
+      a replication feature. Then, the slaves transaction history is GTID=3. However, the plugin tries
+      to find a node which has a transaction history of GITD=1...3. Albeit the slave has replicated
+      the clients write and session consistency may be achieved when reading from the slave, it
+      will not be considered by the plugin. This is not a fault of the plugin implementation but
+      a feature gap on the server side. Please note, this is a trivial case to illustrate the
+      issue there are other issues. In sum you are asked not to attempt  using MySQL 5.6 built-in GTIDs
+      for enforcing session consistency. Sooner or later the load balancing will stop working properly
+      and the plugin will direct all session consistency requests to the master.
      </simpara>
     </listitem>
     <listitem>
