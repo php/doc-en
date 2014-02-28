@@ -12,7 +12,7 @@
   <methodsynopsis>
    <modifier>public</modifier> <type>void</type><methodname>SolrClient::addDocuments</methodname>
    <methodparam><type>array</type><parameter>docs</parameter></methodparam>
-   <methodparam choice="opt"><type>bool</type><parameter>allowDups</parameter><initializer>false</initializer></methodparam>
+   <methodparam choice="opt"><type>bool</type><parameter>overwrite</parameter><initializer>true</initializer></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>commitWithin</parameter><initializer>0</initializer></methodparam>
   </methodsynopsis>
   <para>
@@ -34,19 +34,35 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>allowDups</parameter></term>
+     <term><parameter>overwrite</parameter></term>
      <listitem>
       <para>
-       If &false; duplicates will be overwritten.
+       Whether to overwrite existing documents or not. If &false; there will be duplicates (several documents with the same ID).
+        
       </para>
+        <warning>
+            <para>
+              PECL Solr &lt; 2.0 $allowDups was used instead of $overwrite, which does the same functionality with exact opposite bool flag.
+            </para>
+            <para>
+              $allowDups = false is the same as $overwrite = true
+            </para>
+        </warning>
      </listitem>
     </varlistentry>
     <varlistentry>
      <term><parameter>commitWithin</parameter></term>
      <listitem>
       <para>
-       Number of milliseconds within which to commit the documents to the index. This was only available since Solr 1.4
+        Number of milliseconds within which to auto commit this document. Available since Solr 1.4 . Default (0) means disabled.
       </para>
+      <para>
+        When this value specified, it leaves the control of when to do the commit
+        to Solr itself, optimizing number of commits to a minimum while still
+        fulfilling
+        the update latency requirements, and Solr will automatically do a commit
+        when the oldest add in the buffer is due.
+       </para>
      </listitem>
     </varlistentry>
    </variablelist>
@@ -56,7 +72,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-  Returns a SolrUpdateResponse object on success and throws a SolrClientException on failure.
+    Returns a <type>SolrUpdateResponse</type> object or throws a <type>SolrClientException</type> on failure.
   </para>
  </refsect1>
 
@@ -94,6 +110,8 @@ $docs = array($doc, $doc2);
 
 $updateResponse = $client->addDocuments($docs);
 
+// no changes will be written to disk unless $commitWithin is passed or SolrClient::commit is called
+
 print_r($updateResponse->getResponse());
 
 ?>
@@ -123,6 +141,7 @@ SolrObject Object
   <para>
    <simplelist>
     <member><methodname>SolrClient::addDocument</methodname></member>
+    <member><methodname>SolrClient::commit</methodname></member>
    </simplelist>
   </para>
  </refsect1>
