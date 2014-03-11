@@ -767,6 +767,205 @@ Warning: mysqli::mysqli(): (mysqlnd_ms) Exclusive usage of configuration enforce
        </informaltable>
      </listitem>
     </varlistentry>
+    <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.fabric">
+     <term>
+      <parameter>fabric</parameter>
+      <type>object</type>
+     </term>
+     <listitem>
+      <para>
+        MySQL Fabric related settings. If the plugin is used together with MySQL
+        Fabric, then the plugins configuration file no longer contains lists of MySQL servers.
+        Instead, the plugin will ask MySQL Fabric which list of servers to use to
+        perform a certain task.
+      </para>
+      <para>
+        A minimum plugin configuration for use with MySQL Fabric contains a list
+        of one or more MySQL Fabric hosts that the plugin can query. If more
+        than one MySQL Fabric host is  configured, the plugin will use a roundrobin
+        strategy to choose among them. Other strategies are currently not available.
+      </para>
+      <para>
+       <example>
+        <title>Minimum pluging configuration for use with MySQL Fabric</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "fabric": {
+            "hosts": [
+                {
+                    "host" : "127.0.0.1",
+                    "port" : 8080
+                }
+            ]
+        }
+    }
+}
+]]>
+        </programlisting>
+       </example>
+      </para>
+      <para>
+       Each MySQL Fabric host is described using a JSON object with the following
+       members.
+      </para>
+      <informaltable>
+       <tgroup cols="3">
+        <colspec colwidth="1*"/>
+        <colspec colwidth="7*"/>
+        <colspec colwidth="2*"/>
+        <thead>
+         <row>
+          <entry>Keyword</entry>
+          <entry>Description</entry>
+          <entry>Version</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry>
+            <literal>host</literal>
+          </entry>
+          <entry>
+           <para>
+            Host name of the MySQL Fabric host.
+           </para>
+          </entry>
+          <entry>Since 1.6.0.</entry>
+         </row>
+         <row>
+          <entry>
+            <literal>port</literal>
+          </entry>
+          <entry>
+           <para>
+            The TCP/IP port on which the MySQL Fabric host listens
+            for remote procedure calls sent by clients such as
+            the plugin.
+           </para>
+          </entry>
+          <entry>Since 1.6.0.</entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </informaltable>
+      <para>
+       The plugin is using PHP streams to communicate with MySQL Fabric
+       through XML RPC over HTTP. By default no timeouts are set
+       for the network communication. Thus, the plugin defaults to PHP
+       stream default timeouts. Those defaults are out of control of
+       the plugin itself.
+      </para>
+      <para>
+        An optional timeout value can be set to overrule the PHP streams
+        default timeout setting. Setting the timeout in the plugins
+        configuration file has the same effect as
+        setting a timeout for a PHP user space HTTP connection established
+        through PHP streams.
+      </para>
+      <para>
+       The plugins Fabric timeout value unit is seconds. The allowed value
+       range is from 0 to 65535. The setting exists since version 1.6.
+      </para>
+      <para>
+       <example>
+        <title>Optional timeout for communication with Fabric</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "fabric": {
+            "hosts": [
+                {
+                    "host" : "127.0.0.1",
+                    "port" : 8080
+                }
+            ],
+            "timeout": 2
+        }
+    }
+}
+]]>
+        </programlisting>
+       </example>
+      </para>
+      <para>
+       <link linkend="ini.mysqlnd-ms-plugin-config-v2.trx-stickiness">Transaction stickiness</link>
+       and MySQL Fabric logic can collide. The stickiness option disables switching
+       between servers for the duration of a transaction. When using Fabric and
+       sharding the user may (erroneously) start a local transaction on one share and
+       then attempt to switch to a different shard using either
+       <link linkend="function.mysqlnd-ms-fabric-select-shard">
+       <function>mysqlnd_ms_fabric_select_shard</function></link> or
+       <link linkend="function.mysqlnd-ms-fabric-select-global">
+       <function>mysqlnd_ms_fabric_select_global</function></link>. In this case, the
+       plugin will not reject the request to switch servers in the middle of a transaction
+       but allow the user to switch to another server regardless of the transaction
+       stickiness setting used. It is clearly a user error to write such code.
+      </para>
+      <para>
+       If transaction stickiness is enabled and you would like to get an error of type
+       warning when calling  <link linkend="function.mysqlnd-ms-fabric-select-shard">
+       <function>mysqlnd_ms_fabric_select_shard</function></link> or
+       <link linkend="function.mysqlnd-ms-fabric-select-global">
+       <function>mysqlnd_ms_fabric_select_global</function></link>,
+       set the boolean flag <literal>trx_warn_server_list_changes</literal>.
+      </para>
+<para>
+       <example>
+        <title>Warnings about the violation of transaction boundaries</title>
+        <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "fabric": {
+            "hosts": [
+                {
+                    "host" : "127.0.0.1",
+                    "port" : 8080
+                }
+            ],
+            "trx_warn_serverlist_changes": 1
+        },
+        "trx_stickiness": "on"
+    }
+}
+]]>
+        </programlisting>
+        <programlisting role="php">
+<![CDATA[
+<?php
+$link = new mysqli("myapp", "root", "", "test");
+/*
+  For the demo the call may fail.
+  Failed or not we get into the state
+  needed for the example.
+*/
+@mysqlnd_ms_fabric_select_global($link, 1);
+$link->begin_transaction();
+@$link->query("DROP TABLE IF EXISTS test");
+/*
+  Switching servers/shards is a mistake due to open
+  local transaction!
+*/
+mysqlnd_ms_select_global($link, 1);
+?>
+]]>
+         </programlisting>
+         &example.outputs;
+        <screen>
+<![CDATA[
+PHP Warning: mysqlnd_ms_fabric_select_global(): (mysqlnd_ms) Fabric server exchange in the middle of a transaction in %s on line %d
+]]>
+        </screen>
+       </example>
+      </para>
+      <para>
+       Please, consider the feature experimental. Changes to syntax and semantics may  happen.
+      </para>
+     </listitem>
+    </varlistentry>
     <varlistentry xml:id="ini.mysqlnd-ms-plugin-config-v2.filters">
      <term>
       <parameter>filters</parameter>
