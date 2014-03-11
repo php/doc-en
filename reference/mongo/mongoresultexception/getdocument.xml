@@ -32,6 +32,84 @@
   </para>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example xml:id="mongoresultexception.getdocument.example.basic">
+   <title><methodname>MongoResultException::getDocument</methodname> example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$mc = new MongoClient("localhost");
+$c = $mc->selectCollection("test", "test");
+
+$c->insert(array(
+     "name" => "Next promo",
+     "inprogress" => false,
+     "priority" => 0,
+     "tasks" => array( "select product", "add inventory", "do placement"),
+) );
+
+$c->insert(array(
+     "name" => "Biz report",
+     "inprogress" => false,
+     "priority" => 1,
+     "tasks" => array( "run sales report", "email report" )
+) );
+
+$c->insert(array(
+     "name" => "Biz report",
+     "inprogress" => false,
+     "priority" => 2,
+     "tasks" => array( "run marketing report", "email report" )
+    ),
+    array("w" => true)
+);
+
+try {
+    $retval = $c->findAndModify(
+         array("inprogress" => false, "name" => "Biz report"),
+         array('$set' => array('$set' => array('inprogress' => true, "started" => new MongoDate()))),
+         null,
+         array(
+            "sort" => array("priority" => -1),
+            "new" => true,
+        )
+    );
+} catch(MongoResultException $e) {
+    echo $e->getMessage(), "\n";
+    $res = $e->getDocument();
+    var_dump($res);
+}
+?>
+]]>
+   </programlisting>
+   &examples.outputs.similar;
+   <screen>
+<![CDATA[
+$set is not valid for storage.
+array(3) {
+  ["lastErrorObject"]=>
+  array(5) {
+    ["connectionId"]=>
+    int(6)
+    ["err"]=>
+    string(30) "$set is not valid for storage."
+    ["code"]=>
+    int(52)
+    ["n"]=>
+    int(0)
+    ["ok"]=>
+    float(1)
+  }
+  ["ok"]=>
+  float(0)
+  ["errmsg"]=>
+  string(30) "$set is not valid for storage."
+}
+]]>
+   </screen>
+  </example>
+ </refsect1>
 </refentry>
 
 <!-- Keep this comment at the end of the file
