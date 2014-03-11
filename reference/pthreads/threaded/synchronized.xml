@@ -1,31 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision$ -->
+<!-- $Revision: 328988 $ -->
 
-<refentry xml:id="thread.start" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="threaded.synchronized" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
-  <refname>Thread::start</refname>
-  <refpurpose>Execution</refpurpose>
+  <refname>Threaded::synchronized</refname>
+  <refpurpose>Synchronization</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>boolean</type><methodname>Thread::start</methodname>
-   <methodparam choice="opt"><type>integer</type><parameter>options</parameter></methodparam>
+   <modifier>public</modifier> <type>mixed</type><methodname>Threaded::synchronized</methodname>
+   <methodparam><type>Closure</type><parameter>block</parameter></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>...</parameter></methodparam>
   </methodsynopsis>
   <para>
-  Will start a new Thread to execute the implemented run method
+  Executes the block while retaining the referenced objects synchronization lock for the calling context
   </para>
  </refsect1>
 
  <refsect1 role="parameters">
   &reftitle.parameters;
-  <variablelist>
+   <variablelist>
    <varlistentry>
-    <term><parameter>options</parameter></term>
+    <term><parameter>block</parameter></term>
     <listitem>
      <para>
-  An optional mask of inheritance constants, by default PTHREADS_INHERIT_ALL
+  The block of code to execute
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>...</parameter></term>
+    <listitem>
+     <para>
+  Variable length list of arguments to use as function arguments to the block
      </para>
     </listitem>
    </varlistentry>
@@ -35,7 +44,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-  A boolean indication of success
+  The return value from the block
   </para>
  </refsect1>
 
@@ -43,17 +52,25 @@
   &reftitle.examples;
   <para>
    <example>
-    <title>Starting Threads</title>
+    <title>Synchronizing</title>
     <programlisting role="php">
 <![CDATA[
 <?php
 class My extends Thread {
     public function run() {
-        /** ... **/
+        $this->synchronized(function($thread){
+            if (!$thread->done)
+                $thread->wait();
+        }, $this);
     }
 }
 $my = new My();
-var_dump($my->start());
+$my->start();
+$my->synchronized(function($thread){
+    $thread->done = true;
+    $thread->notify();
+}, $my);
+var_dump($my->join());
 ?>
 ]]>
     </programlisting>
@@ -66,7 +83,6 @@ bool(true)
    </example>
   </para>
  </refsect1>
-
 </refentry>
 
 <!-- Keep this comment at the end of the file
