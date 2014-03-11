@@ -1,26 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision$ -->
+<!-- $Revision: 328967 $ -->
 
-<refentry xml:id="thread.kill" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="threaded.notify" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
-  <refname>Thread::kill</refname>
-  <refpurpose>Execution</refpurpose>
+  <refname>Threaded::notify</refname>
+  <refpurpose>Synchronization</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>void</type><methodname>Thread::kill</methodname>
+   <modifier>public</modifier> <type>boolean</type><methodname>Threaded::notify</methodname>
    <void />
   </methodsynopsis>
   <para>
-  Forces the referenced Thread to terminate
+  Send notification to the referenced object
   </para>
-  <warning>
-   <para>
-  The programmer should not ordinarily kill Threads by force
-   </para>
-  </warning>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -31,31 +26,35 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   A boolean indication of success
+  A boolean indication of success
   </para>
  </refsect1>
- 
+
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
    <example>
-    <title>Kill the referenced Thread</title>
+    <title>Notifications and Waiting</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-class T extends Thread {
+class My extends Thread {
     public function run() {
-        $stdin = fopen("php://stdin", "r");
-        while(($line = fgets($stdin))) {
-            echo $line;
-        }
+        /** cause this thread to wait **/
+        $this->synchronized(function($thread){
+            if (!$thread->done)
+                $thread->wait();
+        }, $this);
     }
 }
-
-$t = new T();
-$t->start();
-
-var_dump($t->kill());
+$my = new My();
+$my->start();
+/** send notification to the waiting thread **/
+$my->synchronized(function($thread){
+    $thread->done = true;
+    $thread->notify();
+}, $my);
+var_dump($my->join());
 ?>
 ]]>
     </programlisting>
@@ -68,8 +67,6 @@ bool(true)
    </example>
   </para>
  </refsect1>
-
-
 </refentry>
 
 <!-- Keep this comment at the end of the file
