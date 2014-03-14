@@ -10,7 +10,7 @@
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>final</modifier> <modifier>public</modifier> <type>ReturnType</type><methodname>MongoWriteBatch::execute</methodname>
+   <modifier>final</modifier> <modifier>public</modifier> <type>array</type><methodname>MongoWriteBatch::execute</methodname>
    <methodparam><type>array</type><parameter>write_options</parameter></methodparam>
   </methodsynopsis>
   <para>
@@ -26,7 +26,7 @@
     <term><parameter>write_options</parameter></term>
     <listitem>
      <para>
-      See <methodname>MongoWriteBatch::__construct</methodname>.
+      See <link linkend="mongowritebatch.construct.write_options">MongoWriteBatch::__construct</link>.
      </para>
     </listitem>
    </varlistentry>
@@ -96,6 +96,146 @@
   </para>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example xml:id="mongowritebatch.execute.example.insert">
+   <title><methodname>MongoWriteBatch::add</methodname> example</title>
+   <para>
+    Batching up multiple insert operations
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$mc = new MongoClient("localhost");
+$collection = $mc->selectCollection("test", "test");
+
+
+$docs = array();
+$docs[] = array("my" => "demo");
+$docs[] = array("is" => "working");
+$docs[] = array("pretty" => "well");
+
+$batch = new MongoInsertBatch($collection);
+foreach($docs as $document) {
+    $batch->add($document);
+}
+$retval = $batch->execute(array("w" => 1));
+var_dump($retval);
+?>
+]]>
+   </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(2) {
+  ["nInserted"]=>
+  int(3)
+  ["ok"]=>
+  bool(true)
+}
+]]>
+    </screen>
+  </example>
+
+  <example xml:id="mongowritebatch.execute.example.update">
+   <title><methodname>MongoWriteBatch::add</methodname> example</title>
+   <para>
+    Batching up multiple update operations
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$mc = new MongoClient("localhost");
+$collection = $mc->selectCollection("test", "test");
+
+
+$item1 = array(
+    "q" => array("my" => "demo"),
+    "u" => array('$set' => array("try" => 1)),
+    "multi"  => false, /* default value */
+    "upsert" => false, /* default value */
+);
+$item2 = array(
+    "q" => array("is" => "working"),
+    "u" => array('$set' => array("try" => 2)),
+    "multi" => true,
+);
+$item3 = array(
+    "q" => array("created" => "new-document"),
+    "u" => array('$set' => array("try" => 3)),
+    "upsert" => true,
+);
+
+$batch = new MongoUpdateBatch($collection);
+$batch->add($item1);
+$batch->add($item2);
+$batch->add($item3);
+$retval = $batch->execute(array("w" => 1));
+var_dump($retval);
+
+?>
+]]>
+   </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(4) {
+  ["nMatched"]=>
+  int(18)
+  ["nModified"]=>
+  int(2)
+  ["nUpserted"]=>
+  int(0)
+  ["ok"]=>
+  bool(true)
+}
+]]>
+    </screen>
+  </example>
+
+  <example xml:id="mongowritebatch.execute.example.delete">
+   <title><methodname>MongoWriteBatch::add</methodname> example</title>
+   <para>
+    Batching up multiple delete operations
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$mc = new MongoClient("localhost");
+$collection = $mc->selectCollection("test", "test");
+
+
+$item1 = array(
+    "q" => array("my" => "demo"),
+    "limit" => 1,
+);
+$item2 = array(
+    "q" => array("try" => 3),
+    "limit" => 1,
+);
+
+
+$batch = new MongoDeleteBatch($collection);
+$batch->add($item1);
+$batch->add($item2);
+$retval = $batch->execute(array("w" => 1));
+var_dump($retval);
+?>
+]]>
+   </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(2) {
+  ["nRemoved"]=>
+  int(1)
+  ["ok"]=>
+  bool(true)
+}
+]]>
+    </screen>
+  </example>
+ </refsect1>
 
 </refentry>
 
