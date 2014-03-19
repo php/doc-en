@@ -366,16 +366,21 @@ if (!$conn) {
     trigger_error(htmlentities($m['message']), E_USER_ERROR);
 }
 
-$sql = 'SELECT last_name FROM employees WHERE employee_id = :eidbv';
+$sql = 'SELECT last_name FROM employees WHERE department_id = :didbv ORDER BY last_name';
 $stid = oci_parse($conn, $sql);
-$myeid = 101;
-oci_bind_by_name($stid, ':eidbv', $myeid);
+$didbv = 60;
+oci_bind_by_name($stid, ':didbv', $didbv);
 oci_execute($stid);
-$row = oci_fetch_array($stid, OCI_ASSOC);
-echo $row['LAST_NAME'] ."<br>\n";
+while (($row = oci_fetch_array($stid, OCI_ASSOC)) != false) {
+    echo $row['LAST_NAME'] ."<br>\n";
+}
 
 // Output is
-//    Kochhar
+//    Austin
+//    Ernst
+//    Hunold
+//    Lorentz
+//    Pataballa
 
 oci_free_statement($stid);
 oci_close($conn);
@@ -746,9 +751,10 @@ oci_bind_by_name($stid, ":mykey", $mykey, 5);
 oci_execute($stid);
 
 print '<table border="1">';
-while ($row = oci_fetch_array($stid, OCI_ASSOC)) {
-  $result = $row['MYCLOB']->load();
-  print '<tr><td>'.$result.'</td></tr>';
+while ($row = oci_fetch_array($stid, OCI_ASSOC+OCI_RETURN_LOBS)) {
+    print '<tr><td>'.$row['MYCLOB'].'</td></tr>';
+    // In a loop, freeing the large variable before the 2nd fetch reduces PHP's peak memory usage
+    unset($row);  
 }
 print '</table>';
 
