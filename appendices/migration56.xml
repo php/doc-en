@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
 <!--
- Based on UPGRADING from PHP-5.6 circa alpha 1. Work in progress!
+ Based on UPGRADING from PHP 5.6.0 beta 1. Work in progress!
 
  As we're still in alpha at the moment, I've only included relatively minimal
  information here, and haven't updated the rest of the manual for 5.6 features
@@ -78,7 +78,7 @@
  </sect1>
 
  <sect1 xml:id="migration56.incompatible">
-  <title>Backward Incompatible Changes</title>
+  <title>Backward incompatible changes</title>
   <simpara>
    Although most existing PHP 5 code should work without changes, please take
    note of some backward incompatible changes:
@@ -103,6 +103,12 @@
    </para>
   </sect2>
 
+  <sect2 xml:id="migration56.incompatible.peer-verification">
+   <title>Stream wrappers now verify peer certificates and host names by default when using SSL/TLS</title>
+
+   &migration56.openssl.peer-verification;
+  </sect2>
+
   <sect2 xml:id="migration56.incompatible.gmp">
    <title><link linkend="book.gmp">GMP</link> resources are now objects</title>
 
@@ -111,6 +117,19 @@
     functional API implemented in the GMP extension has not changed, and code
     should run modified unless it checks explicitly for a resource using
     <function>is_resource</function> or similar.
+   </para>
+  </sect2>
+
+  <sect2 xml:id="migration56.incompatible.mcrypt">
+   <title><link linkend="book.mcrypt">Mcrypt</link> functions now require valid keys and IVs</title>
+
+   <para>
+    <function>mcrypt_encrypt</function>, <function>mcrypt_decrypt</function>,
+    <function>mcrypt_cbc</function>, <function>mcrypt_cfb</function>,
+    <function>mcrypt_ecb</function>, <function>mcrypt_generic</function> and
+    <function>mcrypt_ofb</function> will no longer accept keys or IVs with
+    incorrect sizes, and block cipher modes that require IVs will now fail if
+    an IV isn't provided.
    </para>
   </sect2>
  </sect1>
@@ -233,6 +252,39 @@ echo add(1, ...$operators);
    </informalexample>
   </sect2>
 
+  <sect2 xml:id="migration56.new-features.exponentiation">
+   <title>Exponentiation via <literal>**</literal></title>
+
+   <para>
+    A right associative <literal>**</literal> operator has been added to
+    support exponentiation, along with a <literal>**=</literal> shorthand
+    assignment operator.
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+printf("2 ** 3 ==      %d\n", 2 ** 3);
+printf("2 ** 3 ** 2 == %d\n", 2 ** 3 ** 2);
+
+$a = 2;
+$a **= 3;
+printf("a ==           %d\n", $a);
+?>
+]]>
+    </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+2 ** 3 ==      8
+2 ** 3 ** 2 == 512
+a ==           8
+]]>
+   </screen>
+   </informalexample>
+  </sect2>
+
   <sect2 xml:id="migration56.new-features.use">
    <title><literal>use function</literal> and <literal>use const</literal></title>
 
@@ -288,14 +340,15 @@ Name\Space\f
    <title>Default character encoding</title>
 
    <para>
-    <link linkend="ini.default-charset">default_charset</link> is used
-    as default character encoding of PHP. Default value is changed to
-    "UTF-8" from empty. mbstring and iconv module uses default_charset
-    setting if its own settings are not specified. Functions
-    like <function>htmlspecialchars</function> that accepts encoding
-    parameter
-    uses <link linkend="ini.default-charset">default_charset</link> as
-    default encoding.
+    <link linkend="ini.default-charset">default_charset</link> is now used as
+    the default character set for functions that are encoding-specific, such
+    as <function>htmlspecialchars</function>. Note that if the (now
+    deprecated) iconv and mbstring encoding settings are set, they will take
+    precedence over default_charset.
+   </para>
+
+   <para>
+    The default value for this setting is <literal>UTF-8</literal>.
    </para>
   </sect2>
 
@@ -349,6 +402,44 @@ var_dump(42 + $b);
    </informalexample>
   </sect2>
 
+  <sect2 xml:id="migration56.new-features.hash-equals">
+   <title><function>hash_equals</function> for timing attack safe string comparison</title>
+
+   <para>
+    The <function>hash_equals</function> function has been added to compare
+    two strings in constant time. This should be used to mitigate timing
+    attacks; for instance, when testing <function>crypt</function> password
+    hashes (assuming that you are unable to use
+    <function>password_hash</function> and
+    <function>password_verify</function>, which aren't susceptible to timing
+    attacks).
+   </para>
+
+   <!-- TODO: update crypt() examples -->
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$expected  = crypt('12345', '$2a$07$usesomesillystringforsalt$');
+$correct   = crypt('12345', '$2a$07$usesomesillystringforsalt$');
+$incorrect = crypt('1234',  '$2a$07$usesomesillystringforsalt$');
+
+var_dump(hash_equals($expected, $correct));
+var_dump(hash_equals($expected, $incorrect));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+bool(true)
+bool(false)
+]]>
+    </screen>
+   </informalexample>
+  </sect2>
+
   <sect2 xml:id="migration56.new-features.gost">
    <title>gost-crypto hash algorithm</title>
 
@@ -364,26 +455,24 @@ var_dump(42 + $b);
    <title>SSL/TLS improvements</title>
 
    <para>
-    The <link linkend="book.openssl">OpenSSL</link> extension has been
-    extended to include support for extracting and verifying certificate
-    fingerprints. <function>openssl_x509_fingerprint</function> has been added
-    to extract a fingerprint from an X.509 certificate, and two
-    <link linkend="context.ssl">SSL stream context</link> options have been
-    added: <literal>capture_peer_cert</literal> to capture the peer's X.509
-    certificate, and <literal>peer_fingerprint</literal> to assert that the
-    peer's certificate should match the given fingerprint.
+    A wide range of improvements have been made to the SSL/TLS support in PHP
+    5.6. These include
+    <link linkend="migration56.incompatible.peer-verification">enabling peer verification by default</link>,
+    supporting certificate fingerprint matching, mitigating against TLS
+    renegotiation attacks, and many new
+    <link linkend="context.ssl">SSL context options</link> to allow more fine
+    grained control over protocol and verification settings when using
+    encrypted streams.
    </para>
 
    <para>
-    Additionally, a specific crypto method such as SSLv3 or TLS may now be
-    selected by setting the <literal>crypto_method</literal>
-    <link linkend="context.ssl">SSL stream context</link> option. Possible
-    options include <constant>STREAM_CRYPTO_METHOD_SSLv2_CLIENT</constant>,
-    <constant>STREAM_CRYPTO_METHOD_SSLv3_CLIENT</constant>,
-    <constant>STREAM_CRYPTO_METHOD_SSLv23_CLIENT</constant> (the default), or
-    <constant>STREAM_CRYPTO_METHOD_TLS_CLIENT</constant>.
+    These changes are described in more detail in the
+    <link linkend="migration56.openssl">OpenSSL changes in PHP 5.6.x</link>
+    section of this migration guide.
    </para>
   </sect2>
+
+  <!-- TODO: async PostgreSQL, PCRE marks -->
  </sect1>
 
  <sect1 xml:id="migration56.deprecated">
@@ -444,10 +533,12 @@ B
     to <literal>-1</literal>.
    </para>
   </sect2>
+
+  <!-- TODO: anything since alpha 1 -->
  </sect1>
 
  <sect1 xml:id="migration56.changed-functions">
-  <title>Changed Functions</title>
+  <title>Changed functions</title>
 
   <sect2 xml:id="migration56.changed-functions.core">
    <title>PHP Core</title>
@@ -491,10 +582,12 @@ B
     </listitem>
    </itemizedlist>
   </sect2>
+
+  <!-- TODO: anything since alpha 1 -->
  </sect1>
 
  <sect1 xml:id="migration56.new-functions">
-  <title>New Functions</title>
+  <title>New functions</title>
 
   <sect2 xml:id="migration56.new-functions.gmp">
    <title><link linkend="book.gmp">GMP</link></title>
@@ -560,6 +653,312 @@ B
     </listitem>
    </itemizedlist>
   </sect2>
+
+  <!-- TODO: anything since alpha 1 -->
+ </sect1>
+
+ <sect1 xml:id="migration56.openssl">
+  <title>OpenSSL changes in PHP 5.6.x</title>
+
+  <sect2 xml:id="migration56.openssl.peer-verification">
+   <title>Stream wrappers now verify peer certificates and host names by default when using SSL/TLS</title>
+
+   &migration56.openssl.peer-verification;
+  </sect2>
+
+  <sect2 xml:id="migration56.openssl.fingerprint">
+   <title>Certificate fingerprints</title>
+
+   <para>
+    Support has been added for extracting and verifying certificate
+    fingerprints. <function>openssl_x509_fingerprint</function> has been added
+    to extract a fingerprint from an X.509 certificate, and two
+    <link linkend="context.ssl">SSL stream context</link> options have been
+    added: <literal>capture_peer_cert</literal> to capture the peer's X.509
+    certificate, and <literal>peer_fingerprint</literal> to assert that the
+    peer's certificate should match the given fingerprint.
+   </para>
+  </sect2>
+
+  <sect2 xml:id="migration56.openssl.ciphers">
+   <title>Default ciphers updated</title>
+
+   <para>
+    The default ciphers used by PHP have been updated to a more secure list
+    based on the
+    <link xlink:href="&url.openssl.ciphers.mozilla;">Mozilla cipher recommendations</link>,
+    with two additional exclusions: anonymous Diffie-Hellman ciphers, and RC4.
+   </para>
+
+   <para>
+    This list can be accessed via the new
+    <constant>OPENSSL_DEFAULT_STREAM_CIPHERS</constant> constant, and can be
+    overridden (as in previous PHP versions) by setting the
+    <link linkend="context.ssl.ciphers"><parameter>ciphers</parameter></link>
+    context option.
+   </para>
+  </sect2>
+
+  <sect2 xml:id="migration56.openssl.tls-compression">
+   <title>Compression disabled by default</title>
+
+   <para>
+    SSL/TLS compression has been disabled by default to mitigate the CRIME
+    attack. PHP 5.4.13 added a
+    <link linkend="context.ssl.disable-compression"><parameter>disable_compression</parameter></link>
+    context option to allow compression to be disabled: this is now set to
+    &true; (that is, compression is disabled) by default.
+   </para>
+  </sect2>
+
+  <sect2 xml:id="migration56.openssl.honor-cipher-order">
+   <title>Allow servers to prefer their cipher order</title>
+
+   <para>
+    The <parameter>honor_cipher_order</parameter> SSL context option has been
+    added to allow encrypted stream servers to mitigate BEAST vulnerabilities
+    by preferring the server's ciphers to the client's.
+   </para>
+  </sect2>
+
+  <sect2 xml:id="migration56.openssl.metadata">
+   <title>Access the negotiated protocol and cipher</title>
+
+   <para>
+    The protocol and cipher that were negotiated for an encrypted stream can
+    now be accessed via <function>stream_get_meta_data</function> or
+    <function>stream_context_get_options</function> when the
+    <parameter>capture_session_meta</parameter> SSL context option is set to
+    &true;.
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$ctx = stream_context_create(['ssl' => [
+    'capture_session_meta' => TRUE
+]]);
+ 
+$html = file_get_contents('https://google.com/', FALSE, $ctx);
+$meta = stream_context_get_options($ctx)['ssl']['session_meta'];
+var_dump($meta);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(4) {
+  ["protocol"]=>
+  string(5) "TLSv1"
+  ["cipher_name"]=>
+  string(20) "ECDHE-RSA-AES128-SHA"
+  ["cipher_bits"]=>
+  int(128)
+  ["cipher_version"]=>
+  string(11) "TLSv1/SSLv3"
+}
+]]>
+    </screen>
+   </informalexample>
+  </sect2>
+
+  <sect2 xml:id="migration56.openssl.forward-secrecy">
+   <title>New options for perfect forward secrecy in encrypted stream servers</title>
+
+   <para>
+    Encrypted client streams already support perfect forward secrecy, as it is
+    generally controlled by the server. PHP encrypted server streams using
+    certificates capable of perfect forward secrecy do not need to take any
+    additional action to enable PFS; however a number of new SSL context options
+    have been added to allow more control over PFS and deal with any
+    compatibility issues that may arise. 
+   </para>
+
+   <variablelist>
+    <varlistentry>
+     <term><parameter>ecdh_curve</parameter></term>
+     <listitem>
+      <para>
+       This option allows the selection of a specific curve for use with ECDH
+       ciphers. If not specified, <literal>prime256v1</literal> will be used.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>dh_param</parameter></term>
+     <listitem>
+      <para>
+       A path to a file containing parametrs for Diffie-Hellman key exchange,
+       such as that created by the following command:
+      </para>
+      <programlisting role="shell">
+<![CDATA[
+       openssl dhparam -out /path/to/my/certs/dh-2048.pem 2048
+]]>
+      </programlisting>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>single_dh_use</parameter></term>
+     <listitem>
+      <para>
+       If set to &true;, a new key pair will be created when using
+       Diffie-Hellman parameters, thereby improving forward secrecy.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>single_ecdh_use</parameter></term>
+     <listitem>
+      <para>
+       If set to &true;, a new key pair will always be generated when ECDH
+       cipher suites are negotiated. This improves forward secrecy.
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </sect2>
+
+  <sect2 xml:id="migration56.openssl.crypto-method">
+   <title>SSL/TLS version selection</title>
+
+   <para>
+    It is now possible to select specific versions of SSL and TLS via the
+    <parameter>crypto_method</parameter> SSL context option or by specifying a
+    specific transport when creating a stream wrapper (for example, by calling
+    <function>stream_socket_client</function> or
+    <function>stream_socket_server</function>).
+   </para>
+
+   <para>
+    The <parameter>crypto_method</parameter> SSL context option accepts a
+    bitmask enumerating the protocols that are permitted, as does the
+    <parameter>crypto_type</parameter> of
+    <function>stream_socket_enable_crypto</function>.
+    <!-- TODO: link to full list, which is too big for this page but should be
+               in the crypto_method and stream_socket_enable_crypto()
+               documentation. -->
+   </para>
+
+   <segmentedlist>
+    <title>Selected protocol versions and corresponding options</title>
+    <segtitle>Protocol(s)</segtitle>
+    <segtitle>Client flag</segtitle>
+    <segtitle>Server flag</segtitle>
+    <segtitle>Transport</segtitle>
+    <seglistitem>
+     <seg>Any TLS or SSL version</seg>
+     <seg><constant>STREAM_CRYPTO_METHOD_ANY_CLIENT</constant></seg>
+     <seg><constant>STREAM_CRYPTO_METHOD_ANY_SERVER</constant></seg>
+     <seg><literal>ssl://</literal></seg>
+    </seglistitem>
+    <seglistitem>
+     <seg>Any TLS version</seg>
+     <seg><constant>STREAM_CRYPTO_METHOD_TLS_CLIENT</constant></seg>
+     <seg><constant>STREAM_CRYPTO_METHOD_TLS_SERVER</constant></seg>
+     <seg><literal>tls://</literal></seg>
+    </seglistitem>
+    <seglistitem>
+     <seg>TLS 1.0</seg>
+     <seg><constant>STREAM_CRYPTO_METHOD_TLSv_1_0_CLIENT</constant></seg>
+     <seg><constant>STREAM_CRYPTO_METHOD_TLSv_1_0_SERVER</constant></seg>
+     <seg><literal>tlsv1.0://</literal></seg>
+    </seglistitem>
+    <seglistitem>
+     <seg>TLS 1.1</seg>
+     <seg><constant>STREAM_CRYPTO_METHOD_TLSv_1_1_CLIENT</constant></seg>
+     <seg><constant>STREAM_CRYPTO_METHOD_TLSv_1_1_SERVER</constant></seg>
+     <seg><literal>tlsv1.1://</literal></seg>
+    </seglistitem>
+    <seglistitem>
+     <seg>TLS 1.2</seg>
+     <seg><constant>STREAM_CRYPTO_METHOD_TLSv_1_2_CLIENT</constant></seg>
+     <seg><constant>STREAM_CRYPTO_METHOD_TLSv_1_2_SERVER</constant></seg>
+     <seg><literal>tlsv1.2://</literal></seg>
+    </seglistitem>
+    <seglistitem>
+     <seg>SSL 3</seg>
+     <seg><constant>STREAM_CRYPTO_METHOD_SSLv3_CLIENT</constant></seg>
+     <seg><constant>STREAM_CRYPTO_METHOD_SSLv3_SERVER</constant></seg>
+     <seg><literal>sslv3://</literal></seg>
+    </seglistitem>
+   </segmentedlist>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+// Requiring TLS 1.0 or better when using file_get_contents():
+$ctx = stream_context_create([
+  'ssl' => [
+    'crypto_method' => STREAM_CRYPTO_METHOD_TLS_CLIENT,
+  ],
+]);
+$html = file_get_contents('https://google.com/', false, $ctx);
+
+// Requiring TLS 1.1 or 1.2:
+$ctx = stream_context_create([
+  'ssl' => [
+    'crypto_method' => STREAM_CRYPTO_METHOD_TLSv_1_1_CLIENT |
+                       STREAM_CRYPTO_METHOD_TLSv_1_2_CLIENT,
+  ],
+]);
+$html = file_get_contents('https://google.com/', false, $ctx);
+
+// Connecting using the tlsv1.2:// stream socket transport.
+$sock = stream_socket_client('tlsv1.2://google.com:443/');
+
+?>
+]]>
+    </programlisting>
+   </informalexample>
+  </sect2>
+
+  <sect2 xml:id="migration56.openssl.default-certificate-paths">
+   <title><function>openssl_get_cert_locations</function> added</title>
+
+   <para>
+    The <function>openssl_get_cert_locations</function> function has been
+    added: it returns the default locations PHP will search when looking for
+    CA bundles.
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+var_dump(openssl_get_cert_locations());
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(8) {
+  ["default_cert_file"]=>
+  string(21) "/etc/pki/tls/cert.pem"
+  ["default_cert_file_env"]=>
+  string(13) "SSL_CERT_FILE"
+  ["default_cert_dir"]=>
+  string(18) "/etc/pki/tls/certs"
+  ["default_cert_dir_env"]=>
+  string(12) "SSL_CERT_DIR"
+  ["default_private_dir"]=>
+  string(20) "/etc/pki/tls/private"
+  ["default_default_cert_area"]=>
+  string(12) "/etc/pki/tls"
+  ["ini_cafile"]=>
+  string(0) ""
+  ["ini_capath"]=>
+  string(0) ""
+}
+]]>
+    </screen>
+   </informalexample>
+  </sect2>
  </sect1>
 
  <sect1 xml:id="migration56.extensions-other">
@@ -610,10 +1009,12 @@ B
     or later recommended.
    </para>
   </sect2>
+
+  <!-- TODO: anything since alpha 1 -->
  </sect1>
 
  <sect1 xml:id="migration56.global-constants">
-  <title>New Global Constants</title>
+  <title>New global constants</title>
 
   <sect2 xml:id="migration56.global-constants.ldap">
    <title><link linkend="book.ldap">LDAP</link></title>
@@ -631,6 +1032,8 @@ B
     </listitem>
    </itemizedlist>
   </sect2>
+
+  <!-- TODO: anything since alpha 1 -->
  </sect1>
 </appendix>
 
