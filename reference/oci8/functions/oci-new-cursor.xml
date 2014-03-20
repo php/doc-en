@@ -45,69 +45,37 @@
   &reftitle.examples;
   <para>
    <example>
-    <title>Using REF CURSOR in an Oracle's stored procedure</title>
+    <title>Binding a REF CURSOR in an Oracle stored procedure call</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-// suppose your stored procedure info.output returns a ref cursor in :data
 
-$conn = oci_connect("scott", "tiger");
-$curs = oci_new_cursor($conn);
-$stmt = oci_parse($conn, "begin info.output(:data); end;");
+// Precreate:
+//   create or replace procedure myproc(myrc out sys_refcursor) as
+//   begin
+//     open myrc for select first_name from employees;
+//   end;
 
-oci_bind_by_name($stmt, "data", $curs, -1, OCI_B_CURSOR);
-oci_execute($stmt);
-oci_execute($curs);
-
-while ($data = oci_fetch_row($curs)) {
-    var_dump($data);
+$conn = oci_connect("hr", "hrpwd", "localhost/XE");
+if (!$conn) {
+    $m = oci_error();
+    trigger_error(htmlentities($m['message']), E_USER_ERROR);
 }
 
-oci_free_statement($stmt);
+$curs = oci_new_cursor($conn);
+$stid = oci_parse($conn, "begin myproc(:cursbv); end;");
+oci_bind_by_name($stid, ":cursbv", $curs, -1, OCI_B_CURSOR);
+oci_execute($stid);
+
+oci_execute($curs);  // Execute the REF CURSOR like a normal statement id
+while (($row = oci_fetch_array($curs, OCI_ASSOC+OCI_RETURN_NULLS)) != false) {
+    echo $row['FIRST_NAME'] . "<br />\n";
+}
+
+oci_free_statement($stid);
 oci_free_statement($curs);
 oci_close($conn);
-?>
-]]>
-    </programlisting>
-   </example>
-  </para>
-  <para>
-   <example>
-    <title>Using REF CURSOR in an Oracle's select statement</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-echo "<html><body>";
-$conn = oci_connect("scott", "tiger");
-$count_cursor = "CURSOR(select count(empno) num_emps from emp " .
-                "where emp.deptno = dept.deptno) as EMPCNT from dept";
-$stmt = oci_parse($conn, "select deptno,dname,$count_cursor");
 
-oci_execute($stmt);
-echo "<table border=\"1\">";
-echo "<tr>";
-echo "<th>DEPT NAME</th>";
-echo "<th>DEPT #</th>";
-echo "<th># EMPLOYEES</th>";
-echo "</tr>";
-
-while ($data = oci_fetch_assoc($stmt)) {
-    echo "<tr>";
-    $dname  = $data["DNAME"];
-    $deptno = $data["DEPTNO"];
-    echo "<td>$dname</td>";
-    echo "<td>$deptno</td>";
-    oci_execute($data["EMPCNT"]);
-    while ($subdata = oci_fetch_assoc($data["EMPCNT"])) {
-        $num_emps = $subdata["NUM_EMPS"];
-        echo  "<td>$num_emps</td>";
-    }
-    echo "</tr>";
-}
-echo "</table>";
-echo "</body></html>";
-oci_free_statement($stmt);
-oci_close($conn);
 ?>
 ]]>
     </programlisting>
