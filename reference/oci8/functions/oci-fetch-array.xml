@@ -521,7 +521,7 @@ oci_close($conn);
   </para>
   <para>
    <example>
-    <title><function>oci_fetch_array</function> with a <literal>LIMIT</literal>-like query</title>
+    <title>Pagination with <function>oci_fetch_array</function> using a <literal>LIMIT</literal>-like query</title>
     <programlisting role="php">
 <![CDATA[
 <?php
@@ -536,22 +536,22 @@ if (!$conn) {
 preg_match('/Release ([0-9]+)\./', oci_server_version($conn), $matches);
 $oracleversion = $matches[1];
 
-// This is the query you want to execute
+// This is the query you want to "page" through
 $sql = 'SELECT city, postal_code FROM locations ORDER BY city';
 
-// Construct a nested query selecting a subset of rows from $sql.
-// In production environments, be careful to avoid SQL Injection
-// issues with concatenated SQL statements
 if ($oracleversion >= 12) {
     // Make use of Oracle 12c OFFSET / FETCH NEXT syntax
     $sql = $sql . ' OFFSET :offset ROWS FETCH NEXT :numrows ROWS ONLY';
 } else {
-    // Older versions required query syntax like this or the 
-    // base query needed to be rewritten to use a row_number() function
-    $sql = "SELECT * FROM (SELECT A.*, ROWNUM AS MY_RNUM
-                           FROM ($sql) A
+    // Older Oracle versions need a nested query selecting a subset
+    // from $sql.  Or, if the SQL statement is known at development
+    // time, consider using a row_number() function instead of this
+    // nested solution.  In production environments, be careful to
+    // avoid SQL Injection issues with concatenation.
+    $sql = "SELECT * FROM (SELECT a.*, ROWNUM AS my_rnum
+                           FROM ($sql) a
                            WHERE ROWNUM <= :offset + :numrows)
-            WHERE MY_RNUM > :offset";
+            WHERE my_rnum > :offset";
 }
 
 $offset  = 0;  // skip this many rows
