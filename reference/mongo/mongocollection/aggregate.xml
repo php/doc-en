@@ -12,6 +12,11 @@
   <methodsynopsis>
    <modifier>public</modifier> <type>array</type><methodname>MongoCollection::aggregate</methodname>
    <methodparam><type>array</type><parameter>pipeline</parameter></methodparam>
+   <methodparam choice="opt"><type>array</type><parameter>options</parameter></methodparam>
+  </methodsynopsis>
+  <methodsynopsis>
+   <modifier>public</modifier> <type>array</type><methodname>MongoCollection::aggregate</methodname>
+   <methodparam><type>array</type><parameter>op</parameter></methodparam>
    <methodparam choice="opt"><type>array</type><parameter>op</parameter></methodparam>
    <methodparam choice="opt"><type>array</type><parameter>...</parameter></methodparam>
   </methodsynopsis>
@@ -36,7 +41,26 @@
     <term><parameter>pipeline</parameter></term>
     <listitem>
      <para>
-      An array of pipeline operators, or just the first operator.
+      An array of pipeline operators.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>options</parameter></term>
+    <listitem>
+     <para>
+      Array of command arguments, such as <literal>allowDiskUse</literal>, <literal>explain</literal> or <literal>cursor</literal>.
+     </para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+  <para>Or</para>
+  <variablelist>
+   <varlistentry>
+    <term><parameter>op</parameter></term>
+    <listitem>
+     <para>
+      First pipeline operator.
      </para>
     </listitem>
    </varlistentry>
@@ -91,6 +115,28 @@
   </para>
  </refsect1>
 
+ <refsect1 role="changelog"><!-- {{{ -->
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>1.5.0</entry>
+      <entry>
+       Added optional <parameter>options</parameter> argument
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
+ </refsect1><!-- }}} -->
+
  <refsect1 role="examples">
   &reftitle.examples;
   <example xml:id="mongocollection.aggregate.example.basic">
@@ -103,7 +149,7 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$m = new Mongo;
+$m = new MongoClient("localhost");
 $c = $m->selectDB("examples")->selectCollection("article");
 $data = array (
     'title' => 'this is my title',
@@ -200,20 +246,24 @@ array(2) {
    <programlisting role="php">
 <![CDATA[
 <?php
-$m = new Mongo;
+$m = new MongoClient("localhost");
 $c = $m->selectDB("test")->selectCollection("zips");
 
-$out = $c->aggregate(array(
+$pipeline = array(
+    array(
         '$group' => array(
-            '_id' => '$state',
-           'totalPop' => array('$sum' => '$pop')
+            '_id' => array('state' => '$state', 'city' => '$city' ),
+            'pop' => array('$sum' => '$pop' )
         )
     ),
     array(
-        '$match' => array('totalPop' => array('$gte' => 10*1000*1000))
+        '$group' => array(
+            '_id' => '$_id.state',
+            'avgCityPop' => array('$avg' => '$pop')
+        )
     )
 );
-
+$out = $c->aggregate($pipeline);
 var_dump($out);
 ?>
 ]]>
@@ -289,7 +339,7 @@ array(2) {
    <programlisting role="php">
 <![CDATA[
 <?php
-$m = new Mongo;
+$m = new MongoClient;
 $c = $m->selectDB("test")->selectCollection("zips");
 
 $out = $c->aggregate(
@@ -331,56 +381,7 @@ array(2) {
       ["avgCityPop"]=>
       float(14481.913043478)
     }
-    [2]=>
-    array(2) {
-      ["_id"]=>
-      string(2) "RI"
-      ["avgCityPop"]=>
-      float(18933.283018868)
-    }
-    [3]=>
-    array(2) {
-      ["_id"]=>
-      string(2) "AL"
-      ["avgCityPop"]=>
-      float(7907.2152641879)
-    }
-    [4]=>
-    array(2) {
-      ["_id"]=>
-      string(2) "NH"
-      ["avgCityPop"]=>
-      float(5232.320754717)
-    }
 ...
-    [45]=>
-    array(2) {
-      ["_id"]=>
-      string(2) "WY"
-      ["avgCityPop"]=>
-      float(3359.9111111111)
-    }
-    [46]=>
-    array(2) {
-      ["_id"]=>
-      string(2) "MN"
-      ["avgCityPop"]=>
-      float(5335.4865853659)
-    }
-    [47]=>
-    array(2) {
-      ["_id"]=>
-      string(2) "OK"
-      ["avgCityPop"]=>
-      float(6155.7436399217)
-    }
-    [48]=>
-    array(2) {
-      ["_id"]=>
-      string(2) "IL"
-      ["avgCityPop"]=>
-      float(9931.0182450043)
-    }
     [49]=>
     array(2) {
       ["_id"]=>
@@ -394,6 +395,125 @@ array(2) {
       string(2) "WV"
       ["avgCityPop"]=>
       float(2759.1953846154)
+    }
+  }
+  ["ok"]=>
+  float(1)
+}
+]]>
+   </screen>
+  </example>
+
+  <example xml:id="mongocollection.aggregate.example.zipcode.explain">
+   <title><methodname>MongoCollection::aggregate</methodname> with command options</title>
+   <para>
+    To return information on how the pipeline will be processed we use the <literal>explain</literal> comman option
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$m = new MongoClient;
+$c = $m->selectDB("test")->selectCollection("zips");
+
+$pipeline = array(array(
+        '$group' => array(
+            '_id' => '$state',
+           'totalPop' => array('$sum' => '$pop'),
+        ),
+    ),
+    array(
+        '$match' => array('totalPop' => array('$gte' => 10*1000*1000)),
+    ),
+    array(
+        '$sort' => array("totalPop" => -1),
+    ),
+);
+
+$options = array("explain" => true);
+$out = $c->aggregate($pipeline, $options);
+var_dump($out);
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+array(2) {
+  ["stages"]=>
+  array(4) {
+    [0]=>
+    array(1) {
+      ["$cursor"]=>
+      array(3) {
+        ["query"]=>
+        array(0) {
+        }
+        ["fields"]=>
+        array(3) {
+          ["pop"]=>
+          int(1)
+          ["state"]=>
+          int(1)
+          ["_id"]=>
+          int(0)
+        }
+        ["plan"]=>
+        array(4) {
+          ["cursor"]=>
+          string(11) "BasicCursor"
+          ["isMultiKey"]=>
+          bool(false)
+          ["scanAndOrder"]=>
+          bool(false)
+          ["allPlans"]=>
+          array(1) {
+            [0]=>
+            array(3) {
+              ["cursor"]=>
+              string(11) "BasicCursor"
+              ["isMultiKey"]=>
+              bool(false)
+              ["scanAndOrder"]=>
+              bool(false)
+            }
+          }
+        }
+      }
+    }
+    [1]=>
+    array(1) {
+      ["$group"]=>
+      array(2) {
+        ["_id"]=>
+        string(6) "$state"
+        ["totalPop"]=>
+        array(1) {
+          ["$sum"]=>
+          string(4) "$pop"
+        }
+      }
+    }
+    [2]=>
+    array(1) {
+      ["$match"]=>
+      array(1) {
+        ["totalPop"]=>
+        array(1) {
+          ["$gte"]=>
+          int(10000000)
+        }
+      }
+    }
+    [3]=>
+    array(1) {
+      ["$sort"]=>
+      array(1) {
+        ["sortKey"]=>
+        array(1) {
+          ["totalPop"]=>
+          int(-1)
+        }
+      }
     }
   }
   ["ok"]=>
