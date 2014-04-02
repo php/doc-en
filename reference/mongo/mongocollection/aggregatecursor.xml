@@ -1,25 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!-- $Revision: 332247 $ -->
-<refentry xml:id="mongocollection.commandcursor" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="mongocollection.aggregatecursor" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
-  <refname>MongoCollection::commandCursor</refname>
-  <refpurpose>Execute a database command and retrieve results through a cursor</refpurpose>
+  <refname>MongoCollection::aggregateCursor</refname>
+  <refpurpose>Execute an aggregation pipeline command and retrieve results through a cursor</refpurpose>
  </refnamediv>
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>MongoCommandCursor</type><methodname>MongoCollection::commandCursor</methodname>
+   <modifier>public</modifier> <type>MongoCommandCursor</type><methodname>MongoCollection::aggregateCursor</methodname>
    <methodparam><type>array</type><parameter>command</parameter></methodparam>
+   <methodparam choice="opt"><type>array</type><parameter>options</parameter></methodparam>
   </methodsynopsis>
   <para>
-   With this method you can execute commands and retrieve the results through
-   a cursor, instead of getting just one document back as you would with
-   <methodname>MongoDB::command</methodname>. This method returns a
-   <classname>MongoCommandCursor</classname> object. This cursor object
-   implements the <classname>Iterator</classname> interface just like the
-   <classname>MongoCursor</classname> objects that are returned by the
-   <methodname>MongoCollection::find</methodname> method.
+   With this method you can execute Aggregation Framework pipelines and
+   retrieve the results through a cursor, instead of getting just one document
+   back as you would with <methodname>MongoCollection::aggregate</methodname>.
+   This method returns a <classname>MongoCommandCursor</classname> object.
+   This cursor object implements the <classname>Iterator</classname> interface
+   just like the <classname>MongoCursor</classname> objects that are returned
+   by the <methodname>MongoCollection::find</methodname> method.
   </para>
  </refsect1>
 
@@ -29,41 +30,49 @@
    <variablelist>
     <varlistentry>
      <term>
-      <parameter>command</parameter>
+      <parameter>pipeline</parameter>
      </term>
      <listitem>
       <para>
-       The command query to send.
+       The Aggregation Framework pipeline to execute.
       </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term>
+      <parameter>options</parameter>
+     </term>
+     <listitem>
       <para>
-       It is possible to configure how many initial documents the server
-       should return with the first result set. This configuration is made as
-       part of the command query. The default initial batch size is
-       <literal>101</literal>. You can change it by adding the
-       <literal>cursor</literal> key in the following way to the command:
-      </para>
-      <programlisting role="php">
+       Options for the aggregation commant.
+       <itemizedlist>
+        <listitem>
+         <para>
+          <literal>"cursor"</literal>
+         </para>
+         <para>
+          It is possible to configure how many initial documents the server
+          should return with the first result set. The default initial batch size
+          is <literal>101</literal>. You can change it by adding the
+          <literal>cursor</literal> option:
+         </para>
+         <programlisting role="php">
 <![CDATA[
 <?php
-$collection->commandCursor( [
-    "aggregate" => "collectionName",
-    "pipeline" => [
-        ...
-    ],
-    "cursor" => [ "batchSize" => 4 ],
-] );
+$collection->aggregateCursor( 
+    $pipeline,
+    [ "cursor" => [ "batchSize" => 4 ] ]
+);
 ]]>
-      </programlisting>
-      <para>
-       If you do <emphasis>not</emphasis> set the initial
-       <literal>batchSize</literal> option, then the PHP driver will implicitly
-       add this for you with a value of <literal>101</literal>
-      </para>
-      <para>
-       This setting does only configure the first batch size. To configure the
-       size of future batches, please use the
-       <methodname>MongoCommandCursor::batchSize</methodname> method on the
-       returned <classname>MongoCommandCursor</classname> object.
+         </programlisting>
+         <para>
+          This option does only configure the first batch size. To configure the
+          size of future batches, please use the
+          <methodname>MongoCommandCursor::batchSize</methodname> method on the
+          returned <classname>MongoCommandCursor</classname> object.
+         </para>
+        </listitem>
+       </itemizedlist>
       </para>
      </listitem>
     </varlistentry>   
@@ -88,7 +97,7 @@ $collection->commandCursor( [
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><function>MongoCollection::cursorCommand</function> "aggregate" example</title>
+   <title><function>MongoCollection::aggregateCursor</function> example</title>
    <para>
     Finding all of the distinct values for a key.
    </para>
@@ -106,12 +115,9 @@ $people->insert(array("name" => "Sally", "points" => 22));
 $people->insert(array("name" => "Joe", "points" => 22));
 $people->insert(array("name" => "Molly", "points" => 87));
 
-$ages = $people->commandCursor( [
-    "aggregate" => "people",
-    "pipeline" => [
+$ages = $people->aggregateCursor( [
         [ '$group' => [ '_id' => '$name', 'points' => [ '$sum' => '$points' ] ] ],
         [ '$sort' => [ 'points' => -1 ] ],
-    ]
 ] );
 
 foreach ($ages as $person) {
@@ -130,7 +136,7 @@ Sally: 22
   </example>
 
   <example>
-   <title><function>MongoCollection::cursorCommand</function> "aggregate"
+   <title><function>MongoCollection::aggregateCursor</function>
    example with different initial batch size</title>
    <para>
     Finding all of the distinct values for a key.
@@ -151,14 +157,13 @@ $people->insert(array("name" => "Joe", "points" => 22));
 $people->insert(array("name" => "Molly", "points" => 87));
 
 /* Run the command cursor */
-$ages = $people->commandCursor( [
-    "aggregate" => "people",
-    "pipeline" => [
+$ages = $people->aggregateCursor(
+    [
         [ '$group' => [ '_id' => '$name', 'points' => [ '$sum' => '$points' ] ] ],
         [ '$sort' => [ 'points' => -1 ] ],
     ],
-    "cursor" => [ "batchSize" => 4 ],
-] );
+    [ "cursor" => [ "batchSize" => 4 ] ]
+);
 
 foreach ($ages as $person) {
     echo "{$person['_id']}: {$person['points']}\n";
