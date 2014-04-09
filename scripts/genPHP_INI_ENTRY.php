@@ -367,7 +367,6 @@ $map = array (
 	'en/reference/dbx' => '',
 	'en/reference/dio' => '',
 	'en/reference/dir' => '',
-	'en/reference/domxml' => '',
 	'en/reference/dotnet' => '',
 	'en/reference/errorfunc' => '',
 	'en/reference/exec' => '',
