@@ -12,6 +12,140 @@
   cases.
  </para>
 
+ <section xml:id="mongo.connecting.ssl">
+  <title>Connecting over SSL</title>
+  <para>
+   The driver supports connecting to <link xlink:href="&url.mongodb.docs.configure-ssl;">MongoDB over SSL</link>
+   and can optionally use <link linkend="context.ssl">SSL Stream Context</link> options to provide more details,
+   such as verifying certificates against specific certificate chain, or authenticate to
+   <link xlink:href="&url.mongodb.docs.configure-x509;">MongoDB using X509 certificates</link>.
+  </para>
+
+  <example xml:id="mongo.connecting.context.ssl">
+   <title>Connect to MongoDB Instance with SSL Encryption</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$mc = new MongoClient("mongodb://server1", array("ssl" => true));
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <example xml:id="mongo.connecting.context.ssl.verify">
+   <title>Connect to MongoDB Instance with SSL Encryption, verifying it is who we think it is</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$ctx = stream_context_create(array(
+    "ssl" => array(
+        /* Optionally verify the server is who he says he is, and has been certified by CA we trust */
+        "verify_peer"       => true,
+        "allow_self_signed" => false,
+        "cafile"            => "/vagrant/certs/ca.pem",
+    ),
+));
+
+$mc = new MongoClient(
+    "mongodb://server1", 
+    array("ssl" => true), 
+    array("context" => $ctx)
+);
+?>
+]]>
+   </programlisting>
+  </example>
+
+
+  <example xml:id="mongo.connecting.context.ssl.certificate">
+   <title>Connect to MongoDB Instance that Requires Client Certificates</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$ctx = stream_context_create(array(
+    "ssl" => array(
+        "local_cert" => "/vagrant/certs/client.pem",
+        /* If the certificate we are providing was passphrase encoded, we need to set it here */
+        "passphrase" => "My Passphrase for the local_cert",
+
+        /* Optionally verify the server is who he says he is */
+        "verify_peer" => true,
+        "cafile"      => "/vagrant/certs/ca.pem",
+    ),
+));
+
+$mc = new MongoClient(
+    "mongodb://server1/?ssl=true", 
+    array(), 
+    array("context" => $ctx)
+);
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <example xml:id="mongo.connecting.authenticate.ssl.x509">
+   <title>Authenticating with X.509 certificates</title>
+   <para>
+    The username is the <literal>certificate subject</literal> from the X509, which can be extracted like this:
+   </para>
+   <programlisting role="shell">
+<![CDATA[
+openssl x509 -in /vagrant/certs/ca-signed-client.pem -inform PEM -subject -nameopt RFC2253
+]]>
+   </programlisting>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$ctx = stream_context_create( array(
+    "ssl" => array(
+        "local_cert" => "/vagrant/certs/ca-signed-client.pem",
+    )
+) );
+
+$mc = new MongoClient(
+    'mongodb://username@server1/?authSource=$external&authMechanism=MONGODB-X509&ssl=true', 
+    array(), 
+    array("context" => $ctx)
+);
+?>
+]]>
+   </programlisting>
+   <para>
+    Where <literal>username</literal> is the certificate subject.
+   </para>
+  </example>
+
+  <simplesect role="changelog">
+   &reftitle.changelog;
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>1.5.0</entry>
+       <entry>
+        Added support for X509 authentication.
+       </entry>
+      </row>
+      <row>
+       <entry>1.4.0</entry>
+       <entry>
+        Added support for connecting to SSL enabled MongoDB.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
+  </simplesect>
+
+ </section>
+
  <section xml:id="mongo.connecting.auth">
   <title>Authentication</title>
   <para>
