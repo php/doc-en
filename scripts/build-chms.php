@@ -73,7 +73,7 @@
 	}
 	else
 	{
-		execute_task('Updating PhD', PATH_PEAR, 'upgrade doc.php.net/phd', 'pear');
+		execute_task('Updating PhD', PATH_PEAR, 'upgrade --alldeps doc.php.net/phd', 'pear');
 	}
 
 	/**
