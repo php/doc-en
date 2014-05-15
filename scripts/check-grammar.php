@@ -25,7 +25,7 @@ $weasels = 'many|various|very|fairly|several|extremely|exceedingly|quite|remarka
 
 $irregulars = 'awoken|been|born|beat|become|begun|bent|beset|bet|bid|bidden|bound|bitten|bled|blown|broken|bred|brought|broadcast|built|burnt|burst|bought|cast|caught|chosen|clung|come|cost|crept|cut|dealt|dug|dived|done|drawn|dreamt|driven|drunk|eaten|fallen|fed|felt|fought|found|fit|fled|flung|flown|forbidden|forgotten|foregone|forgiven|forsaken|frozen|gotten|given|gone|ground|grown|hung|heard|hidden|hit|held|hurt|kept|knelt|knit|known|laid|led|leapt|learnt|left|lent|let|lain|lighted|lost|made|meant|met|misspelt|mistaken|mown|overcome|overdone|overtaken|overthrown|paid|pled|proven|put|quit|read|rid|ridden|rung|risen|run|sawn|said|seen|sought|sold|sent|set|sewn|shaken|shaven|shorn|shed|shone|shod|shot|shown|shrunk|shut|sung|sunk|sat|slept|slain|slid|slung|slit|smitten|sown|spoken|sped|spent|spilt|spun|spit|split|spread|sprung|stood|stolen|stuck|stung|stunk|stridden|struck|strung|striven|sworn|swept|swollen|swum|swung|taken|taught|torn|told|thought|thrived|thrown|thrust|trodden|understood|upheld|upset|woken|worn|woven|wed|wept|wound|won|withheld|withstood|wrung|written';
 
-$opts = getopt('p:oh');
+$opts = getopt('p:t:oh');
 
 if (isset($opts['h'])) {
 	usage();
@@ -37,6 +37,15 @@ if (empty($opts['p'])) {
 if (!is_dir($opts['p'])) {
 	echo 'ERROR: - Please pass in a real directory, unlike this mysterious (', $opts['p'], ')', PHP_EOL;
 	usage();
+}
+$type = 'a';
+if (!empty($opts['t'])) {
+	if (in_array($opts['t'], array('d','w','p'))) {
+		$type = $opts['t'];
+	} else {
+		echo "ERROR: Passed in type (-t) must be either d, t, or w\n";
+		usage();
+	}
 }
 
 $found       = array('duplicate' => array(), 'weasel' => array(), 'passive' => array());
@@ -55,47 +64,61 @@ foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($opts['p']
 	$lines = file($pathname, FILE_IGNORE_NEW_LINES);
 	
 	/*** Duplicate words ******************************************/
-	// @todo make output nicer
-	if (preg_match_all('/\b(\w+)\s+\1\b/', implode($lines, "\n"), $matches)) {
-		$dups = array();
-		// @todo Added hack to skip 'sgml', fix this later (see todo)
-		foreach ($matches as $match) {
-			foreach ($match as $mat) {
-				if (false !== strpos($mat, 'sgml')) {
-					continue;
+	// @todo improve output
+	if (in_array($type, array('a', 'd'))) {
+		if (preg_match_all('/\b(\w+)\s+\1\b/i', implode($lines, "\n"), $matches)) {
+			if ($matches) {
+				$dups = array();
+				foreach ($matches[1] as $key => $match) {
+					// @todo Added hack to skip 'sgml', fix this later (see todo)
+					if (false !== strpos($match, 'sgml')) {
+						continue;
+					}
+					if (is_numeric($match)) {
+						continue;
+					}
+					$skips = array('tag', 'index', 'html', 'array', 'orange', 'function');
+					if (in_array(strtolower($match), $skips)) {
+						continue;
+					}
+					
+					$dups[] = $matches[0][$key];
 				}
-				$dups[] = $mat;
+				if (count($dups) > 0) {
+					$found['duplicate'][] = array(
+						'filename'   => $pathname,
+						'duplicates' => $dups,
+					);
+				}
 			}
-		}
-		if ($dups) {
-			$found['duplicate'][] = array(
-				'filename'   => $pathname,
-				'duplicates' => $dups,
-			);
 		}
 	}
 
 	/*** Passive voice ******************************************/
 	// @todo get matched passive voice string
-	if ($finds = preg_grep("/(am|are|were|being|is|been|was|be) ($irregulars)/i", $lines)) {
-		$found['passive'][] = array(
-			'filename' => $pathname,
-			'lines'    => $finds,
-		);
+	if (in_array($type, array('a', 'w'))) {
+		if ($finds = preg_grep("/(am|are|were|being|is|been|was|be) ($irregulars)/i", $lines)) {
+			$found['passive'][] = array(
+				'filename' => $pathname,
+				'lines'    => $finds,
+			);
+		}
 	}
 
 	/*** Weasels ******************************************/
 	/*** We want additional info (i.e., the exact weasel) for these */
-	foreach ($lines as $line) {
-		foreach ($weasels_arr as $weasel) {
-			$position = stripos($line, " $weasel ");
-			if ($position) {
-				$found['weasel'][] = array(
-					'position' => $position,
-					'weasel'   => $weasel,
-					'line'     => $line,
-					'filename' => $pathname,
-				);
+	if (in_array($type, array('a', 'w'))) {
+		foreach ($lines as $line) {
+			foreach ($weasels_arr as $weasel) {
+				$position = stripos($line, " $weasel ");
+				if ($position) {
+					$found['weasel'][] = array(
+						'position' => $position,
+						'weasel'   => $weasel,
+						'line'     => $line,
+						'filename' => $pathname,
+					);
+				}
 			}
 		}
 	}
@@ -111,5 +134,8 @@ function usage() {
 	echo PHP_EOL, 'USAGE:', PHP_EOL;
 	echo '$ php ', $_SERVER['SCRIPT_FILENAME'], ' -p /path/to/phpdoc/docs/dir/to/check', PHP_EOL;
 	echo '  Optional: Add -o to output the results.', PHP_EOL;
+	echo '  Optional: Add -t to specify a type, as either d (duplicate), w (weasel), or p (passive). Defaults to a (all)', PHP_EOL;
+	echo 'Example:', PHP_EOL;
+	echo '$ php ', $_SERVER['SCRIPT_FILENAME'], ' -p ../../en/reference/ -t d -o', PHP_EOL;
 	exit;
 }
