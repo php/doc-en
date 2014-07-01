@@ -215,7 +215,7 @@ mysqlnd_ms.config_file=/path/to/mysqlnd_ms_plugin.ini
    <link linkend="ref.mysql">mysql</link>, and
    <link linkend="ref.pdo-mysql">PDO_MYSQL</link>) that is
    compiled to use the <link linkend="book.mysqlnd">mysqlnd</link> library.
-   PECL/mysqlnd_ms plugs into the <link linkend="book.mysqlnd">mysqlnd</link> library.
+   <literal>PECL/mysqlnd_ms</literal> plugs into the <link linkend="book.mysqlnd">mysqlnd</link> library.
    It does not change the API or behavior of those extensions.
   </para>
   <para>
@@ -285,7 +285,7 @@ $mysql = mysql_connect("myapp", "username", "password");
    The username, password and schema name are taken from the connect
    API calls and used for all servers. In other words: you must use the same
    username and password for every MySQL server listed in a plugin configuration
-   file section. The is not a general limitation. As of PECL/mysqlnd_ms 1.1.0,
+   file section. The is not a general limitation. As of <literal>PECL/mysqlnd_ms</literal> 1.1.0,
    it is possible to set the
    <link linkend="mysqlnd-ms.plugin-ini-json.server-config-keywords">username</link> and
    <link linkend="mysqlnd-ms.plugin-ini-json.server-config-keywords">password</link> for any server in the
@@ -622,7 +622,7 @@ $mysqli->close();
  </section>
 
  <section xml:id="mysqlnd-ms.quickstart.transactions">
-  <title>Transactions</title>
+  <title>Local transactions</title>
   <para>
    The current version of the plugin is not transaction safe by default,
    because it is not aware of running transactions in all cases. SQL transactions are
@@ -731,7 +731,7 @@ $mysqli->close();
   </para>
    <para>
    API based transaction boundary detection has been improved with PHP 5.5.0 and
-   PECL/mysqlnd_ms 1.5.0 to cover not only calls to <function>mysqli_autocommit</function>
+   <literal>PECL/mysqlnd_ms</literal> 1.5.0 to cover not only calls to <function>mysqli_autocommit</function>
    but also <function>mysqli_begin</function>,
    <function>mysqli_commit</function> and <function>mysqli_rollback</function>.
   </para>
@@ -819,6 +819,236 @@ $mysqli->close();
    section.
   </para>
  </section>
+
+ <section xml:id="mysqlnd-ms.quickstart.xa_transactions">
+  <title>XA/Distributed Transactions</title>
+  <note>
+   <title>Version requirement</title>
+   <para>
+    XA related functions have  been introduced in PECL mysqlnd_ms version 1.6.0-alpha.
+   </para>
+  </note>
+  <note>
+   <title>Experimental</title>
+   <para>
+    The feature is currently under development. There may be issues and/or
+    feature limitations. Do not use in production environments.
+   </para>
+  </note>
+  <para>
+   XA transactions are a standardized method for executing transactions across
+   multiple resources. Those resources can be databases or other transactional
+   systems. The MySQL server supports XA SQL statements which allows users
+   to carry out a distributed SQL transaction that spawns multiple database servers
+   or any kind as long as they support the SQL statements too. In such a scenario
+   it is in the responsibility of the user to coordinate the participating
+   servers.
+  </para>
+  <para>
+   <literal>PECL/mysqlnd_ms</literal> can act as a transaction coordinator for a global (distributed, XA)
+   transaction carried out on MySQL servers only. As a transaction coordinator, the plugin
+   tracks all servers involved in a global transaction and transparently issues
+   appropriate SQL statements on the participants. The global transactions are controlled with
+   <function>mysqlnd_ms_xa_begin</function>, <function>mysqlnd_ms_xa_commit</function>
+   and <function>mysqlnd_ms_xa_rollback</function>. SQL details are mostly hidden from
+   the application as is the need to track and coordinate participants.
+  </para>
+  <para>
+   <example>
+    <title>General pattern for XA transactions</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* start a global transaction */
+$gtrid_id = "12345";
+if (!mysqlnd_ms_xa_begin($mysqli, $gtrid_id)) {
+  die(sprintf("[%d] %s\n", $mysqli->errno, $mysqli->error));
+}
+
+/* run queries as usual: XA BEGIN will be injected upon running a query */
+if (!$mysqli->query("INSERT INTO orders(order_id, item) VALUES (1, 'christmas tree, 1.8m')")) {
+   /* Either INSERT failed or the injected XA BEGIN failed */
+  if ('XA' == substr($mysqli->sqlstate, 0, 2)) {
+    printf("Global transaction/XA related failure, [%d] %s\n", $mysqli->errno, $mysqli->error);
+  } else {
+    printf("INSERT failed, [%d] %s\n", $mysqli->errno, $mysqli->error);
+  }
+  /* rollback global transaction */
+  mysqlnd_ms_xa_rollback($mysqli, $xid);
+  die("Stopping.");
+}
+
+/* continue carrying out queries on other servers, e.g. other shards */
+
+/* commit the global transaction */
+if (!mysqlnd_ms_xa_commit($mysqli, $xa_id)) {
+  printf("[%d] %s\n", $mysqli->errno, $mysqli->error);
+}
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Unlike with local transactions, which are carried out on a single server,
+   XA transactions have an identifier (xid) associated with them.
+   The XA transaction identifier is  composed of a global transaction
+   identifier (gtrid), a branch qualifier (bqual)
+   a format identifier (formatID). Only the global transaction identifier can
+   and must be given when calling any of the plugins XA functions.
+  </para>
+  <para>
+   Once a global transaction has been started, the plugin begins tracking servers
+   until the global transaction ends. When a server is picked for query execution,
+   the plugin injects the SQL statement <literal>XA BEGIN</literal> prior to
+   executing the actual SQL statement on the server. <literal>XA BEGIN</literal>
+   makes the server participate in the global transaction. If the injected
+   SQL statement fails, the plugin will report the issue in reply to the query
+   execution function that was used. In the above example,
+   <literal>$mysqli->query("INSERT INTO orders(order_id, item) VALUES (1, 'christmas tree, 1.8m')")</literal>
+   would indicate such an error. You may want to check the errors SQL state code to
+   determine whether the actual query (here: <literal>INSERT</literal>) has failed
+   or the error is related to the global transaction. It is up to you to ignore the
+   failure to start the global transaction on a server and continue execution
+   without having the server participate in the global transaction.
+  </para>
+  <para>
+   <example>
+    <title>Local and global transactions are mutually exclusive</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$mysqli = new mysqli("myapp", "username", "password", "database");
+if (!$mysqli)
+  /* Of course, your error handling is nicer... */
+  die(sprintf("[%d] %s\n", mysqli_connect_errno(), mysqli_connect_error()));
+
+/* start a local transaction */
+if (!$mysqli->begin_transaction())
+  die(sprintf("[%d/%s] %s\n", $mysqli->errno, $mysqli->sqlstate, $mysqli->error));
+
+/* cannot start global transaction now - must end local transaction first */
+$gtrid_id = "12345";
+if (!mysqlnd_ms_xa_begin($mysqli, $gtrid_id)) {
+  die(sprintf("[%d/%s] %s\n", $mysqli->errno, $mysqli->sqlstate, $mysqli->error));
+}
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+
+Warning: mysqlnd_ms_xa_begin(): (mysqlnd_ms) Some work is done outside global transaction. You must end the active local transaction first in ... on line ...
+[1400/XAE09] (mysqlnd_ms) Some work is done outside global transaction. You must end the active local transaction first
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   A global transaction cannot be started when a local transaction is active.
+   The plugin tries to detect this situation as early as possible, that is when
+   <function>mysqlnd_ms_xa_begin</function> is called. If using API calls only to
+   control transactions, the plugin will know that a local transaction is open and
+   return an error for <function>mysqlnd_ms_xa_begin</function>. However, note the
+   plugins <link linkend="mysqlnd-ms.transaction">limitations on detecting
+   transaction boundaries.</link>. In the worst case, if using direct SQL
+   for local transactions (<literal>BEGIN</literal>,
+   <literal>COMMIT</literal>, ...), it may happen that an error is delayed
+   until some SQL is executed on a server.
+  </para>
+  <para>
+   To end a global transaction invoke <function>mysqlnd_ms_xa_commit</function> or
+   <function>mysqlnd_ms_xa_rollback</function>. When a global transaction is ended
+   all participants must be informed of the end. Therefore, PECL/mysqlnd_ms
+   transparently issues appropriate XA related SQL statements
+   on some or all of them. Any failure during this phase will cause an implicit
+   rollback. The XA related API is intentionally kept simple here. A more
+   complex API that gave more control would bare few, if any, advantages over
+   a user implementation that issues all lower level XA SQL statements itself.
+  </para>
+  <para>
+   XA transactions use the two-phase commit protocol. The two-phase commit
+   protocol is a blocking protocol. There are cases when no progress can
+   be made, not even when using timeouts. Transaction coordinators
+   should survive their own failure, be able to detect blockades and break ties.
+   <literal>PECL/mysqlnd_ms</literal> takes the role of a transaction coordinator and can be
+   configured to survive its own crash to avoid issues with blocked MySQL servers.
+   Therefore, the plugin can and should be configured to use a persistent and crash-safe state
+   to allow garbage collection of unfinished, aborted global transactions.
+   A global transaction can be aborted in an open state if either the plugin fails (crashes)
+   or a connection from the plugin to a global transaction participant fails.
+  </para>
+  <para>
+   <example>
+    <title>Transaction coordinator state store</title>
+    <programlisting role="ini">
+<![CDATA[
+{
+    "myapp": {
+        "xa": {
+            "state_store": {
+                "participant_localhost_ip": "192.168.2.12",
+                "mysql": {
+                    "host": "192.168.2.13",
+                    "user": "root",
+                    "password": "",
+                    "db": "test",
+                    "port": "3312",
+                    "socket": null
+                }
+            }
+        },
+        "master": {
+            "master_0": {
+                "host": "localhost",
+                "socket": "\/tmp\/mysql.sock"
+            }
+        },
+        "slave": {
+            "slave_0": {
+                "host": "192.168.2.14",
+                "port": "3306"
+            }
+        }
+    }
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Currently, <literal>PECL/mysqlnd_ms</literal> supports only using MySQL database tables
+   as a state store. The SQL definitions of the tables are given in the
+   <link linkend="ini.mysqlnd-ms-plugin-config-v2.xa">plugin configuration section.</link>
+   Please, make sure to use a transactional and crash-safe
+   storage engine for the tables, such as InnoDB. InnoDB is the default
+   table engine in recent versions of the MySQL server. Make also sure
+   the database server itself is higly available.
+  </para>
+  <para>
+   If a state store has been configured, the plugin can perform a garbage collection.
+   During garbage collection it may be necessary to connect to a participant
+   of a failed global transaction. Thus, the state store holds a list of participants
+   and, among others, their host names. If the garbage collection is run
+   on another host but the one that has written a participant entry with the
+   host name <literal>localhost</literal>, then <literal>localhost</literal>
+   resolves to different machines. There are two solutions to the problem.
+   Either you do not configure any servers with the host name <literal>localhost</literal> but
+   configure an IP address (and port) or, you hint the garbage collection.
+   In the above example, <literal>localhost</literal> is used for
+   <literal>master_0</literal>, hence it may not resolve to the correct
+   host during garbage collection. However, <literal>participant_localhost_ip</literal>
+   is also set to hint the garbage collection that <literal>localhost</literal>
+   stands for the IP <literal>192.168.2.12</literal>.
+  </para>
+ </section>
+
  <section xml:id="mysqlnd-ms.quickstart.qos-consistency">
   <title>Service level and consistency</title>
   <note>
@@ -1116,14 +1346,14 @@ PHP Warning:  mysqli::query(): (mysqlnd_ms) No connection selected by the last f
    </para>
    <para>
     As of MySQL 5.6.5-m8 release candidate the MySQL server features built-in global transaction identifiers.
-    The MySQL built-in global transaction ID feature is supported by PECL/mysqlnd_ms 1.3.0-alpha or
+    The MySQL built-in global transaction ID feature is supported by <literal>PECL/mysqlnd_ms</literal> 1.3.0-alpha or
     later. However, the final feature set found in MySQL 5.6 production releases to date is not
     sufficient to support the ideas discussed below in all cases. Please, see also the
     <link linkend="mysqlnd-ms.gtid">concepts section</link>.
    </para>
   </note>
   <para>
-   PECL/mysqlnd_ms can either use its own global transaction ID emulation or the
+   <literal>PECL/mysqlnd_ms</literal> can either use its own global transaction ID emulation or the
    global transaction ID feature built-in to MySQL 5.6.5-m8 or later. From a developer
    perspective the client-side and server-side approach offer the same features with
    regards to service levels provided by PECL/mysqlnd_ms. Their differences
@@ -1131,7 +1361,7 @@ PHP Warning:  mysqli::query(): (mysqlnd_ms) No connection selected by the last f
   </para>
   <para>
    The quickstart first demonstrates the use of the client-side global transaction ID emulation
-   built-in to PECL/mysqlnd_ms before its show how to use the server-side counterpart.
+   built-in to <literal>PECL/mysqlnd_ms</literal> before its show how to use the server-side counterpart.
    The order ensures that the underlying idea is discussed first.
   </para>
   <para>
@@ -1148,7 +1378,7 @@ PHP Warning:  mysqli::query(): (mysqlnd_ms) No connection selected by the last f
    already.
   </para>
   <para>
-   PECL/mysqlnd_ms can inject SQL for every committed transaction to increment a GTID counter.
+   <literal>PECL/mysqlnd_ms</literal> can inject SQL for every committed transaction to increment a GTID counter.
    The so created GTID is accessible by the application to identify an applications
    write operation. This enables the plugin to deliver session consistency (read your writes)
    service level by not only querying masters but also slaves which have replicated
@@ -1545,7 +1775,7 @@ var_dump($res->fetch_assoc());
   </note>
   <para>
    Databases clusters can deliver different levels of consistency. As of
-   PECL/mysqlnd_ms 1.2.0 it is possible to advice the plugin to consider only
+   <literal>PECL/mysqlnd_ms</literal> 1.2.0 it is possible to advice the plugin to consider only
    cluster nodes that can deliver the consistency level requested. For example,
    if using asynchronous MySQL Replication with its cluster-wide eventual
    consistency, it is possible to request session consistency (read your writes)
