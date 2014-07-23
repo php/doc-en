@@ -28,18 +28,18 @@
 
  <section xml:id="mysqlnd-ms.plugin-ini-json">
   <title xmlns="http://docbook.org/ns/docbook">Plugin configuration file (&gt;=1.1.x)</title>
-  
+
   <para>
    The following documentation applies to PECL/mysqlnd_ms &gt;= 1.1.0-beta.
    It is not valid for prior versions. For documentation covering earlier
-   versions, see the configuration documentation 
+   versions, see the configuration documentation
    for <link linkend="mysqlnd-ms.plugin-ini-v1">mysqlnd_ms 1.0.x and below</link>.
   </para>
-  
+
   <section xml:id="mysqlnd-ms.plugin-ini-json-introduction">
    <title>Introduction</title>
-   
-   
+
+
    <note>
     <title>Changelog: Feature was added in PECL/mysqlnd_ms 1.1.0-beta</title>
     <para>
@@ -486,7 +486,7 @@ Warning: mysqli::mysqli(): (mysqlnd_ms) Exclusive usage of configuration enforce
 
   <section xml:id="mysqlnd-ms.plugin-ini-json-reference">
    <title>Configuration Directives</title>
-   
+
   <para>
    Here is a short explanation of the configuration directives that can be used.
   </para>
@@ -2829,7 +2829,7 @@ $mysqli->set_charset("latin1");
                  </para>
                  <para>
                   Default: <literal>mysqlnd_ms_xa_trx</literal>
-                 </para>                                  
+                 </para>
                  <para>
                   <example>
                    <title>SQL definition for the MySQL state store transaction table</title>
@@ -2993,8 +2993,22 @@ CREATE TABLE mysqlnd_ms_xa_gc (
                </varlistentry>
               </variablelist>
              </listitem>
-            </varlistentry> 
+            </varlistentry>
            </variablelist>
+          </listitem>
+         </varlistentry>
+         <varlistentry>
+          <term>rollback_on_close</term>
+          <listitem>
+           <para>
+            Whether to automatically rollback an open global transaction when
+            a connection is closed. If enabled, it mimics the default behaviour
+            of local transactions. Should a client disconnect, the server rolls
+            back any open and unfinished transactions.
+           </para>
+           <para>
+            Default: <literal>true</literal>
+           </para>
           </listitem>
          </varlistentry>
          <varlistentry>
@@ -3021,8 +3035,29 @@ CREATE TABLE mysqlnd_ms_xa_gc (
              <term>probability</term>
              <listitem>
               <para>
-               Garbage collection probability. Setting the value has not effect.
-               The feature is under development. Available since 1.6.0.
+               Garbage collection probability.
+               Allowed values are from <literal>0</literal> to <literal>1000</literal>.
+               A setting of <literal>0</literal> disables automatic background
+               garbage collection. Despite a setting of <literal>0</literal> it is
+               still possible to trigger garbage collection by calling
+               <function>mysqlnd_ms_gc</function>.
+               Available since 1.6.0.
+              </para>
+              <para>
+               The automatic garbage collection of stalled XA transaction is only
+               available if a state store have been configured. The state store
+               is responsible to keep track of XA transactions. Based on its recordings
+               it can find blocked XA transactions where the client has crashed,
+               connect to the participants and rollback the unfinished transactions.
+              </para>
+              <para>
+               The garbage collection is triggered as part of PHP's request shutdown
+               procedure at the end of a web request. That is after your PHP script
+               has finished working. Do decide whether to run the garbage collection
+               a random value between <literal>0</literal> and <literal>1000</literal>
+               is computed. If the <literal>probability</literal> value is higher
+               or equal to the random value, the state stores garbage collection routines
+               are invoked.
               </para>
               <para>
                Default: <literal>5</literal>
@@ -3030,14 +3065,23 @@ CREATE TABLE mysqlnd_ms_xa_gc (
              </listitem>
             </varlistentry>
             <varlistentry>
-             <term>rollback_on_close</term>
+             <term>max_transactions_per_run</term>
              <listitem>
               <para>
-               Whether to automatically rollback an open global transaction is
-               a connection is closed.
+               Maximum number of unfinished XA transactions considered
+               by the garbage collection during one run.
+               Allowed values are from <literal>1</literal> to <literal>32768</literal>.
+               Available since 1.6.0.
               </para>
               <para>
-               Default: <literal>true</literal>
+               Cleaning up an unfinished XA transaction takes considerable
+               amounts of time and resources. The garbage collection routine
+               may have to connect to several participants of a failed global
+               transaction to issue the SQL commands for rolling back
+               the unfinished tranaction.
+              </para>
+              <para>
+               Default: <literal>100</literal>
               </para>
              </listitem>
             </varlistentry>
