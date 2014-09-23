@@ -5,7 +5,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2011 The PHP Group                                |
+  | Copyright (c) 1997-2014 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.0 of the PHP license,       |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -55,8 +55,6 @@ Package-specific:
                                  even if it fails validation [{$acd['FORCE_DOM_SAVE']}]
   --enable-chm                   Enable Windows HTML Help Edition pages [{$acd['CHMENABLED']}]
   --enable-xml-details           Enable detailed XML error messages [{$acd['DETAILED_ERRORMSG']}]
-  --enable-howto                 Configure the phpdoc howto, not the phpdoc
-                                 docs [{$acd['HOWTO']}]
   --disable-segfault-error       LIBXML may segfault with broken XML, use this
                                  if it does [{$acd['SEGFAULT_ERROR']}]
   --disable-segfault-speed       PHP (<5.3.7) will segfault during shutdown.
@@ -280,7 +278,6 @@ $acd = array( // {{{
     'SEGFAULT_SPEED' => 'yes',
     'VERSION_FILES'  => 'yes',
     'LIBXML_CHECK' => 'yes',
-    'HOWTO' => 'no',
     'USE_BROKEN_TRANSLATION_FILENAME' => 'yes',
     'OUTPUT_FILENAME' => $srcdir . '/.manual.xml',
     'GENERATE' => 'no',
@@ -393,10 +390,6 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
 
         case 'libxml-check':
             $ac['LIBXML_CHECK'] = $v;
-            break;
-
-        case 'howto':
-            $ac['HOWTO']  =$v;
             break;
 
         case 'rootdir':
@@ -592,47 +585,6 @@ if ($ac['VERSION_FILES'] === 'yes') {
         echo "OK\n";
     } else {
         echo "FAIL!\n";
-    }
-}
-
-if ($ac['HOWTO'] === 'yes') {
-    $filein = $ac['srcdir'] . '/howto/howto.xml';
-    $fileout = $ac['srcdir'] . '/howto/.howto.xml';
-
-    $dom = new DOMDocument('1.0', 'UTF-8');
-    $retval = $dom->load(realpath($filein), $LIBXML_OPTS);
-
-    if (!$retval) {
-        print_xml_errors();
-        errors_are_bad(1);
-    }
-
-    $dom->xinclude($LIBXML_OPTS);
-    echo "Validating $filein...\n";
-    if ($dom->validate()) {
-        echo "INFO: The HOWTO validated, so is ready for commit.\n";
-        echo "INFO: Saving $fileout...\n";
-        flush();
-        $dom->save($fileout);
-
-        echo "INFO: All you have to do now is run 'phd -d {$fileout} -t howto'\n";
-        exit(0);
-    }
-    
-    echo "INFO: I am trying to figure out what went wrong...\n";
-    echo "INFO: Here are the errors I found:\n";
-    if ($ac['DETAILED_ERRORMSG'] == 'yes') {
-        libxml_clear_errors();
-
-        echo "INFO: Running in detailed error mode\n";
-        $dom->load(realpath($filein), $LIBXML_OPTS | LIBXML_DTDVALID);
-        print_xml_errors();
-        errors_are_bad(1);
-    } else {
-        echo "INFO: If this isn't enough information, try again with --enable-xml-details)\n";
-        echo "INFO: Or if --enable-xml-details seems too slow (it will), instead try with --disable-segfault-error\n";
-        print_xml_errors(false);
-        errors_are_bad(1);
     }
 }
 
