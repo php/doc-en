@@ -414,6 +414,9 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
         case 'stderr-to-stdout':
             $ac['STDERR_TO_STDOUT'] = $v;
             break;
+            
+        case '':
+            break;
 
         default:
             echo "WARNING: Unknown option '{$o}'!\n";
