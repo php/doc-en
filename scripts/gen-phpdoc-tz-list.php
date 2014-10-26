@@ -80,6 +80,26 @@
   <warning>
    &date.timezone.bc;
   </warning>
+  <warning>
+   <simpara>
+    If you disregard the above warning, please also note that the IANA
+    timezone database that provides PHP's timezone support uses POSIX style
+    signs, which results in the <literal>Etc/GMT+n</literal> and
+    <literal>Etc/GMT-n</literal> time zones being reversed from common usage.
+   </simpara>
+   <simpara>
+    For example, the time zone 8 hours ahead of GMT that is used in China and
+    Western Australia (among other places) is actually
+    <literal>Etc/GMT-8</literal> in this database, not
+    <literal>Etc/GMT+8</literal> as you would normally expect.
+   </simpara>
+   <simpara>
+    Once again, it is strongly recommended that you use the correct time zone
+    for your location, such as <literal>Asia/Shanghai</literal> or
+    <literal>Australia/Perth</literal> for the above examples.
+   </simpara>
+  </warning>
+
 <?php } ?>
  </sect1>
 <?php } ?>
