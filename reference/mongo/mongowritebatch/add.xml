@@ -4,7 +4,7 @@
 <refentry xml:id="mongowritebatch.add" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoWriteBatch::add</refname>
-  <refpurpose>Adds an CRUD operation to a batch</refpurpose>
+  <refpurpose>Adds a write operation to a batch</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -14,14 +14,15 @@
    <methodparam><type>array</type><parameter>item</parameter></methodparam>
   </methodsynopsis>
   <para>
-   The operation to add to the batch.
+   Adds a write operation to the batch.
   </para>
   <para>
-   If <parameter>$item</parameter> causes the batch to hit the <link xlink:href="url.mongodb.dochub.maxWriteBatchSize">maxWriteBatchSize</link>
-   or <link xlink:href="url.mongodb.dochub.maxBsonObjectSize">maxBsonObjectSize</link> limits, a new batch will be created internally and
-   the batches batched up and sent one at a time upon calling <methodname>MongoWriteBatch::execute</methodname>.
+   If <parameter>$item</parameter> causes the batch to exceed the
+   <link xlink:href="url.mongodb.dochub.maxWriteBatchSize">maxWriteBatchSize</link>
+   or <link xlink:href="url.mongodb.dochub.maxBsonObjectSize">maxBsonObjectSize</link>
+   limits, the driver will internally split the batches into multiple write
+   commands upon calling <methodname>MongoWriteBatch::execute</methodname>.
   </para>
-
  </refsect1>
 
  <refsect1 role="parameters">
@@ -31,30 +32,36 @@
     <term><parameter>item</parameter></term>
     <listitem>
      <para>
+      An array that describes a write operation. The structure of this value
+      depends on the batch's operation type.
       <informaltable>
        <thead>
         <row>
-         <entry>When current batch is</entry>
+         <entry>Batch type</entry>
          <entry>Argument expectation</entry>
         </row>
        </thead>
        <tbody>
         <row>
-         <entry>MongoWriteBatch::COMMAND_INSERT</entry>
-         <entry>The document to add</entry>
-        </row>
-        <row>
-         <entry>MongoWriteBatch::COMMAND_UPDATE</entry>
+         <entry><constant>MongoWriteBatch::COMMAND_INSERT</constant></entry>
          <entry>
-          <para>Raw update operation. Required keys are: array("q" => <link linkend="mongocollection.update.criteria">array("criteria")</link>, "u" => array("new data"))</para>
-          <para>Optionally with the "multi" and "upsert" keys as boolean values</para>
-          <para>"upsert": If set to true, creates a new document when no document matches the query criteria. The default value is false, which does not insert a new document when no match is found.</para>
+          <simpara>The document to add.</simpara>
          </entry>
         </row>
         <row>
-         <entry>MongoWriteBatch::COMMAND_DELETE</entry>
+         <entry><constant>MongoWriteBatch::COMMAND_UPDATE</constant></entry>
          <entry>
-          <simpara>Raw delete operation. Required keys are: array("q" => <link linkend="mongocollection.delete.criteria">array("criteria")</link>, "limit" => 1)</simpara>
+          <para>Raw update operation.</para>
+          <para>Required keys are <literal>"q"</literal> and <literal>"u"</literal>, which correspond to the <link linkend="mongocollection.update.criteria"><parameter>$criteria</parameter></link> and <link linkend="mongocollection.update.new_object"><parameter>$new_object</parameter></link> parameters of <function>MongoCollection::update</function>, respectively.</para>
+          <para>Optional keys are <literal>"multi"</literal> and <literal>"upsert"</literal>, which correspond to the <link linkend="mongocollection.update.multiple"><literal>"multiple"</literal></link> and <link linkend="mongocollection.update.upsert"><literal>"upsert"</literal></link> options for <function>MongoCollection::update</function>, respectively. If unspecified, both options default to &false;.</para>
+         </entry>
+        </row>
+        <row>
+         <entry><constant>MongoWriteBatch::COMMAND_DELETE</constant></entry>
+         <entry>
+          <para>Raw delete operation.</para>
+          <para>Required keys are: <literal>"q"</literal> and <literal>"limit"</literal>, which correspond to the <link linkend="mongocollection.remove.criteria"><parameter>$criteria</parameter></link> parameter and <link linkend="mongocollection.remove.justone"><literal>"justOne"</literal></link> option of <function>MongoCollection::remove</function>, respectively.</para>
+          <para>The <literal>"limit"</literal> option is an <type>integer</type>; however, MongoDB only supports <literal>0</literal> (i.e. remove all matching documents) and <literal>1</literal> (i.e. remove at most one matching document) at this time.</para>
          </entry>
         </row>
        </tbody>
@@ -68,7 +75,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns &true; on success, throws exception on failure.
+   Returns &true; on success and throws an exception on failure.
   </para>
  </refsect1>
 
