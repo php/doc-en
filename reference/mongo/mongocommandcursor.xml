@@ -12,28 +12,24 @@
   <section xml:id="mongocommandcursor.intro">
    &reftitle.intro;
    <para>
-    A command cursor is used to iterate through the results of a database
-    command. A command cursor is similar to a normal
-    <classname>MongoCursor</classname> except that you use it for iterating
-    through the result of a server command instead of a the result of a query.
+    A command cursor is similar to a <classname>MongoCursor</classname> except
+    that you use it for iterating through the results of a database command
+    instead of a normal query. Command cursors are useful for iterating over
+    large result sets that might exceed the document size limit (currently 16MB)
+    of a single <function>MongoDB::command</function> response.
    </para>
    <para>
-    You don't generally create cursors using the 
-    <classname>MongoCommandCursor</classname> constructor, you get a new cursor by
-    calling <function>MongoCollection::commandCursor</function>.
+    While you can create command cursors using
+    <function>MongoCommandCursor::__construct</function> or the
+    <function>MongoCommandCursor::createFromDocument</function> factory method,
+    you will generally want to use command-specific helpers such as
+    <function>MongoCollection::aggregateCursor</function>.
    </para>
    <para>
-    Using a command cursor instead of
-    <methodname>MongoDB::command</methodname> means that you can iterate over
-    a much larger resultset as the return of
-    <methodname>MongoDB::command</methodname> is limited to the maximum
-    document size (currently 16MB).
-   </para>
-   <para>
-    Note that the cursor does not "contain" the database command results, it
-    just manages them.  Thus, if you print a cursor (with, say,
-    <function>var_dump</function> or <function>print_r</function>), you'll
-    just get the cursor object, not your documents.
+    Note that the cursor does not "contain" the database command's results; it
+    just manages iteration through them. Thus, if you print a cursor (f.e. with
+    <function>var_dump</function> or <function>print_r</function>), you will see
+    the cursor object but not the result documents.
    </para>
   </section>
 
@@ -41,17 +37,14 @@
    <title>Cursor Stages</title>
    <para>
     A <classname>MongoCommandCursor</classname> has two "life stages": pre-
-    and post- query. When a cursor is created, it has not yet contacted the
-    database, so it is in its pre-query state.  In this state, the client can
-    further specify what they want the query to do, including configuring the
-    batch size.
+    and post- command. When a cursor is created, it has not yet contacted the
+    database, so it is in its pre-command state. When the client first attempts
+    to get a result (by calling <function>MongoCommandCursor::rewind</function>,
+    directly or indirectly), the cursor moves into the post-command state.
    </para>
    <para>
-    When the client attempts to get a result (by calling
-    <function>MongoCommandCursor::next</function>, directly or indirectly),
-    the cursor moves into the post-command stage.  At this point, the command
-    has been executed by the database and only its batch size can be
-    configured.
+    The command cursor's batch size and socket timeout may be configured in both
+    the pre- and post- command states.
    </para>
    <para>
     <example xml:id="mongocommandcursor.stages.adding-options">
@@ -62,11 +55,11 @@
 
 $cursor = new MongoCommandCursor(...);
 
-// database has not yet been queried, so more options can be added
 $cursor = $cursor->batchSize( 4 );
 
-var_dump($cursor->getNext());
-// now database has been queried and more options cannot be added
+foreach ($cursor as $result) {
+    var_dump($result);
+}
 ?>
 ]]>
      </programlisting>
@@ -107,7 +100,7 @@ var_dump($cursor->getNext());
    &reftitle.seealso;
    <simplelist>
     <member><methodname>MongoDb::command</methodname></member>
-    <member><methodname>MongoCollection::commandCursor</methodname></member>
+    <member><methodname>MongoCollection::aggregateCursor</methodname></member>
    </simplelist>
   </section>
 
