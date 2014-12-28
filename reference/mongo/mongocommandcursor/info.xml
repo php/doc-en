@@ -4,7 +4,7 @@
 <refentry xml:id="mongocommandcursor.info" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoCommandCursor::info</refname>
-  <refpurpose>Gets the query, fields, limit, and skip for this cursor</refpurpose>
+  <refpurpose>Gets information about the cursor's creation and iteration</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -14,7 +14,7 @@
    <void/>
   </methodsynopsis>
   <para>
-   This can be called before or after the query.
+   This can be called before or after the cursor has started iterating.
   </para>
  </refsect1>
 
@@ -24,10 +24,11 @@
  </refsect1>
 
  <refsect1 role="returnvalues">
-  &reftitle.returnvalues;  
+  &reftitle.returnvalues;
   <para>
-   Returns the namespace, limit, skip, query, fields, connection and iteration
-   information for this cursor.  
+   Returns the namespace, batch size, limit, skip, flags, query, and projected
+   fields for this cursor. If the cursor has started iterating, additional
+   information about iteration and the connection will be included.
   </para>
  </refsect1>
 
@@ -39,18 +40,21 @@
 <![CDATA[
 <?php
 $m = new MongoClient();
-$c = $m->test->test;
-$cursor = $c->commandCursor( [
-    'aggregate' => 'test', 
-    'pipeline' => [ 
-        [ '$match' => [ '_id' => [ '$exists' => true ] ] ],
+
+$cursor = new MongoCommandCursor(
+    $m, // MongoClient object
+    'demo.cities', // namespace
+    [
+        'aggregate' => 'cities',
+        'pipeline' => [ [ '$match' => [ '_id' => [ '$exists' => true ] ] ] ],
+        'cursor' => [ 'batchSize' => 1 ],
     ]
-] );
+);
 
 echo "Before iteration started:\n";
 var_dump($cursor->info());
 
-echo "Aftere iteration started:\n";
+echo "\nAfter iteration started:\n";
 $cursor->rewind();
 var_dump($cursor->info());
 
@@ -62,97 +66,103 @@ var_dump($cursor->info());
 <![CDATA[
 Before iteration started:
 array(8) {
-  'ns' =>
-  string(9) "test.test"
-  'limit' =>
+  ["ns"]=>
+  string(11) "demo.cities"
+  ["limit"]=>
   int(0)
-  'batchSize' =>
+  ["batchSize"]=>
   int(0)
-  'skip' =>
+  ["skip"]=>
   int(0)
-  'flags' =>
+  ["flags"]=>
   int(0)
-  'query' =>
-  array(2) {
-    'aggregate' =>
-    string(4) "test"
-    'pipeline' =>
+  ["query"]=>
+  array(3) {
+    ["aggregate"]=>
+    string(6) "cities"
+    ["pipeline"]=>
     array(1) {
-      [0] =>
+      [0]=>
       array(1) {
-        '$match' =>
+        ["$match"]=>
         array(1) {
-          '_id' =>
+          ["_id"]=>
           array(1) {
-            '$exists' =>
+            ["$exists"]=>
             bool(true)
           }
         }
       }
     }
+    ["cursor"]=>
+    array(1) {
+      ["batchSize"]=>
+      int(1)
+    }
   }
-  'fields' =>
+  ["fields"]=>
   NULL
-  'started_iterating' =>
+  ["started_iterating"]=>
   bool(false)
 }
-Aftere iteration started:
+
+After iteration started:
 array(17) {
-  'ns' =>
-  string(9) "test.test"
-  'limit' =>
+  ["ns"]=>
+  string(11) "demo.cities"
+  ["limit"]=>
   int(0)
-  'batchSize' =>
-  int(101)
-  'skip' =>
+  ["batchSize"]=>
   int(0)
-  'flags' =>
+  ["skip"]=>
   int(0)
-  'query' =>
+  ["flags"]=>
+  int(0)
+  ["query"]=>
   array(3) {
-    'aggregate' =>
-    string(4) "test"
-    'pipeline' =>
+    ["aggregate"]=>
+    string(6) "cities"
+    ["pipeline"]=>
     array(1) {
-      [0] =>
+      [0]=>
       array(1) {
-        '$match' =>
+        ["$match"]=>
         array(1) {
-          '_id' =>
+          ["_id"]=>
           array(1) {
-            '$exists' =>
+            ["$exists"]=>
             bool(true)
           }
         }
       }
     }
-    'cursor' =>
+    ["cursor"]=>
     array(1) {
-      'batchSize' =>
-      int(101)
+      ["batchSize"]=>
+      int(1)
     }
   }
-  'fields' =>
+  ["fields"]=>
   NULL
-  'started_iterating' =>
+  ["started_iterating"]=>
   bool(true)
-  'id' =>
+  ["id"]=>
+  int(185840310129)
+  ["at"]=>
   int(0)
-  'at' =>
+  ["numReturned"]=>
   int(0)
-  'numReturned' =>
-  int(0)
-  'server' =>
-  string(24) "localhost:27017;-;.;2316"
-  'host' =>
+  ["server"]=>
+  string(25) "localhost:27017;-;.;23991"
+  ["host"]=>
   string(9) "localhost"
-  'port' =>
+  ["port"]=>
   int(27017)
-  'connection_type_desc' =>
+  ["connection_type_desc"]=>
   string(10) "STANDALONE"
-  'firstBatchAt' =>
+  ["firstBatchAt"]=>
   int(0)
-  'firstBatchNumReturned' =>
+  ["firstBatchNumReturned"]=>
   int(1)
 }
 ]]>
