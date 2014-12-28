@@ -13,18 +13,17 @@
    <modifier>public</modifier> <methodname>MongoCommandCursor::__construct</methodname>
    <methodparam><type>MongoClient</type><parameter>connection</parameter></methodparam>
    <methodparam><type>string</type><parameter>ns</parameter></methodparam>
-   <methodparam choice="opt"><type>array</type><parameter>command</parameter><initializer>array()</initializer></methodparam>
+   <methodparam><type>array</type><parameter>command</parameter><initializer>array()</initializer></methodparam>
   </methodsynopsis>
   <para>
-   In many instances, you do not have to create a
-   <classname>MongoCommandCursor</classname> manually, but instead one of the
-   helper functions such as
-   <methodname>MongoCollection::aggregateCursor</methodname> and
-   <methodname>MongoCollection::parallelCollectionScan</methodname>. However,
-   if the server adds new commands that can return cursors, then manually
-   creating <classname>MongoCommandCursor</classname> objects is required.
-   However, it might be easier to use the
-   <methodname>MongoCommandCursor::createFromDocument</methodname> instead.
+   Generally, you should not have to construct a
+   <classname>MongoCommandCursor</classname> manually, as there are helper
+   functions such as <methodname>MongoCollection::aggregateCursor</methodname>
+   and <methodname>MongoCollection::parallelCollectionScan</methodname>;
+   however, if the server introduces new commands that can return cursors, this
+   constructor will be useful in the absence of specific helper methods. You may
+   also consider using
+   <methodname>MongoCommandCursor::createFromDocument</methodname>.
   </para>
  </refsect1>
 
@@ -41,17 +40,18 @@
        Database connection.
       </para>
      </listitem>
-    </varlistentry>   
+    </varlistentry>
     <varlistentry>
      <term>
       <parameter>ns</parameter>
      </term>
      <listitem>
       <para>
-       Full name of database and collection.
+       Full name of the database and collection (e.g.
+       <literal>"test.foo"</literal>)
       </para>
      </listitem>
-    </varlistentry>   
+    </varlistentry>
     <varlistentry>
      <term>
       <parameter>command</parameter>
@@ -61,7 +61,7 @@
        Database command.
       </para>
      </listitem>
-    </varlistentry>   
+    </varlistentry>
    </variablelist>
   </para>
  </refsect1>
@@ -81,9 +81,8 @@
 <![CDATA[
 <?php
 $m = new MongoClient;
-$d = $m->demo;
 
-// setup the pipeline
+// Define the aggregation pipeline
 $pipeline = [
     [ '$group' => [
         '_id' => '$country_code',
@@ -92,17 +91,18 @@ $pipeline = [
     [ '$sort' => [ '_id' => 1 ] ],
 ];
 
-// run the command, and return a MongoCommandCursor object
-$r = $d->commandCursor(
+// Construct a MongoCommandCursor object
+$cursor = new MongoCommandCursor(
     $m, // MongoClient object
     'demo.cities', // namespace
     [
         'aggregate' => 'cities',
         'pipeline' => $pipeline,
+        'cursor' => [ 'batchSize' => 0 ],
     ]
 );
 
-foreach($r as $document) {
+foreach($cursor as $result) {
    …
 }
 ?>
