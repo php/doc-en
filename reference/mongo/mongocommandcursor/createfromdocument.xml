@@ -4,7 +4,7 @@
 <refentry xml:id="mongocommandcursor.createfromdocument" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoCommandCursor::createFromDocument</refname>
-  <refpurpose>Create a new command cursor from an existing cursor document</refpurpose>
+  <refpurpose>Create a new command cursor from an existing command response document</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -17,7 +17,8 @@
   </methodsynopsis>
   <para>
    Use this method if you have a raw command result with cursor information in
-   it.
+   it. Note that cursors created with this method cannot be iterated multiple
+   times, as they will lack the original command necessary for re-execution.
   </para>
  </refsect1>
 
@@ -34,7 +35,7 @@
        Database connection.
       </para>
      </listitem>
-    </varlistentry>   
+    </varlistentry>
     <varlistentry>
      <term>
       <parameter>hash</parameter>
@@ -45,7 +46,7 @@
        to <methodname>MongoDB:command</methodname>.
       </para>
      </listitem>
-    </varlistentry>   
+    </varlistentry>
     <varlistentry>
      <term>
       <parameter>document</parameter>
@@ -56,11 +57,11 @@
        the <literal>id</literal>, <literal>ns</literal> and
        <literal>firstBatch</literal> fields. Such a document is obtained by
        calling the <methodname>MongoDB:command</methodname> with appropriate
-       arguments to return a cursor, and not just a result. See the example
-       below.
+       arguments to return a cursor, and not just an inline result. See the
+       example below.
       </para>
      </listitem>
-    </varlistentry>   
+    </varlistentry>
    </variablelist>
   </para>
  </refsect1>
@@ -82,7 +83,7 @@
 $m = new MongoClient;
 $d = $m->demo;
 
-// setup the pipeline
+// Define the aggregation pipeline
 $pipeline = [
     [ '$group' => [
         '_id' => '$country_code',
@@ -91,7 +92,8 @@ $pipeline = [
     [ '$sort' => [ '_id' => 1 ] ],
 ];
 
-// run the command. The "cursor" option below instructs the server to return a cursor information document instead of results
+// Execute the command. The "cursor" option instructs the server to return
+// cursor information in the response instead of inline results.
 $r = $d->command(
     [
         'aggregate' => 'cities',
@@ -105,7 +107,7 @@ $r = $d->command(
 // Show result and hash
 var_dump( $r, $hash );
 
-// construct the command cursor
+// Construct the command cursor
 $cursor = MongoCommandCursor::createFromDocument( $m, $hash, $r );
 ?>
 ]]>
