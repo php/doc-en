@@ -65,7 +65,7 @@ Package-specific:
   --disable-libxml-check         Disable the libxml 2.7.4+ requirement check
   --with-php=PATH                Path to php CLI executable [detect]
   --with-lang=LANG               Language to build [{$acd['LANG']}]
-  --with-partial=ID              Root ID to build [{$acd['PARTIAL']}]
+  --with-partial=my-xml-id       Root ID to build (e.g. <book xml:id="MY-ID">) [{$acd['PARTIAL']}]
   --disable-broken-file-listing  Do not ignore translated files in 
                                  broken-files.txt
   --redirect-stderr-to-stdout    Redirect STDERR to STDOUT. Use STDOUT as the
