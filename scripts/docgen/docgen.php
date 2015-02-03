@@ -177,7 +177,7 @@ function get_ident_size($placeholder, $content) { /* {{{ */
 function save_file($filename, $content) { /* {{{ */
 	global $OPTION;
 
-	$filename = str_replace("\\", DIRECTORY_SEPARATOR, realpath($filename));
+	$filename = str_replace("\\", DIRECTORY_SEPARATOR, $filename);
 	file_put_contents($filename, $content);
 	if ($OPTION['verbose']) {
 		printf("%s\n", $filename);
@@ -203,7 +203,7 @@ function get_type_by_string($str) { /* {{{ */
 function create_dir($path) { /* {{{ */
 	global $OPTION;
 
-	$path = str_replace("\\", DIRECTORY_SEPARATOR, realpath($path));
+	$path = str_replace("\\", DIRECTORY_SEPARATOR, $path);
 	if (!file_exists($path)) {
 		if ($OPTION['verbose']) {
 			printf("- Creating directory `%s'\n", $path);
