@@ -177,6 +177,7 @@ function get_ident_size($placeholder, $content) { /* {{{ */
 function save_file($filename, $content) { /* {{{ */
 	global $OPTION;
 
+	$filename = str_replace("\\", DIRECTORY_SEPARATOR, realpath($filename));
 	file_put_contents($filename, $content);
 	if ($OPTION['verbose']) {
 		printf("%s\n", $filename);
@@ -202,11 +203,12 @@ function get_type_by_string($str) { /* {{{ */
 function create_dir($path) { /* {{{ */
 	global $OPTION;
 
+	$path = str_replace("\\", DIRECTORY_SEPARATOR, realpath($path));
 	if (!file_exists($path)) {
 		if ($OPTION['verbose']) {
 			printf("- Creating directory `%s'\n", $path);
 		}
-		if (!mkdir($path, 0777)) {
+		if (!mkdir($path, 0777, true)) {
 			add_warning("chmod: Permission denied `{$path}'");
 			return;
 		}
@@ -1238,7 +1240,7 @@ if (!empty($OPTION['copy']) && !empty($OPTION['phpdoc'])) {
 			$dir = str_replace($filename, '', $OPTION['phpdoc'] . $fileid);
 			if (!is_dir($dir)) {
 				echo "INFO: Created directory $dir\n";
-				mkdir($dir);
+				create_dir($dir);
 			}
 			// Do the copy
 			copy($OPTION['output'] . $fileid, $OPTION['phpdoc'] . $fileid);
