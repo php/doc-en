@@ -784,7 +784,7 @@ function write_doc(Reflector $obj, $type) { /* {{{ */
 
 		/* Methods */
 		case DOC_METHOD:
-    case DOC_CONSTRUCTOR:
+		case DOC_CONSTRUCTOR:
 			$path = $OPTION['output'] .'/'. strtolower($obj->class);
 			$filename = $path .'/'. format_filename($obj->name) .'.xml';
 
@@ -1269,3 +1269,5 @@ if (!empty($WARNING) && !$OPTION['quiet']) {
 		}
 	}
 }
+
+// vim: set noet ts=4 sw=4:
