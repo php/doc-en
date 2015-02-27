@@ -26,17 +26,19 @@ if (!(extension_loaded('reflection') && extension_loaded('pcre'))) {
 
 /* Constants */
 define('DOC_METHOD', 	1<<0);
-define('DOC_PROPERTY', 	1<<1);
-define('DOC_CLASS', 	1<<2);
-define('DOC_EXTENSION',	1<<3);
-define('DOC_FUNCTION',	1<<4);
+define('DOC_CONSTRUCTOR', 1<<1);
+define('DOC_PROPERTY', 	1<<2);
+define('DOC_CLASS', 	1<<3);
+define('DOC_EXTENSION',	1<<4);
+define('DOC_FUNCTION',	1<<5);
 
 /* Templates */
 $TEMPLATE = array(
-	DOC_METHOD 	 => 'method.tpl',
-	DOC_PROPERTY => 'property.tpl',
-	DOC_CLASS 	 => 'class.tpl',
-	DOC_FUNCTION => 'function.tpl'
+	DOC_METHOD 	    => 'method.tpl',
+	DOC_CONSTRUCTOR => 'constructor.tpl',
+	DOC_PROPERTY    => 'property.tpl',
+	DOC_CLASS 	    => 'class.tpl',
+	DOC_FUNCTION    => 'function.tpl'
 );
 
 /* Default files for extensions */
@@ -782,6 +784,7 @@ function write_doc(Reflector $obj, $type) { /* {{{ */
 
 		/* Methods */
 		case DOC_METHOD:
+    case DOC_CONSTRUCTOR:
 			$path = $OPTION['output'] .'/'. strtolower($obj->class);
 			$filename = $path .'/'. format_filename($obj->name) .'.xml';
 
@@ -910,7 +913,7 @@ function gen_docs($name, $type) {	/* {{{ */
 				if ($method->getDeclaringClass()->name == $class->name &&
 					((is_array($OPTION['method']) && in_array(strtolower($method->getName()), $OPTION['method']))
 					|| $OPTION['method'] == strtolower($method->getName()))) {
-					write_doc($method, DOC_METHOD);
+					write_doc($method, $method->isConstructor() ? DOC_CONSTRUCTOR : DOC_METHOD);
 				}
 			}
 		} catch (Exception $e) {
@@ -932,7 +935,7 @@ function gen_docs($name, $type) {	/* {{{ */
 			foreach ($class->getMethods() as $method) {
 				/* Don't get the inherited methods */
 				if ($method->getDeclaringClass()->name == $class->name) {
-					write_doc($method, DOC_METHOD);
+					write_doc($method, $method->isConstructor() ? DOC_CONSTRUCTOR : DOC_METHOD);
 				}
 			}
 		} catch (Exception $e) {
