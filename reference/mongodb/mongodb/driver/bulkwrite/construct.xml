@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<refentry xml:id="mongodb-driver-writebulk.construct" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <refnamediv>
+  <refname>MongoDB\Driver\BulkWrite::__construct</refname>
+  <refpurpose>Create new BulkWrite</refpurpose>
+ </refnamediv>
+
+ <refsect1 role="description">
+  &reftitle.description;
+  <methodsynopsis>
+   <modifier>public</modifier> <methodname>MongoDB\Driver\BulkWrite::__construct</methodname>
+   <methodparam choice="opt"><type>boolean</type><parameter>ordered</parameter><initializer>true</initializer></methodparam>
+  </methodsynopsis>
+  <para>
+   Constructs a new ordered, or unordered <classname>MongoDB\Driver\BulkWrite</classname>.
+  </para>
+
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <variablelist>
+   <varlistentry>
+    <term><parameter>ordered</parameter></term>
+    <listitem>
+     <para>
+      Ordered bulkes (&true;) are executed serially on the MongoDB server,
+      while unorderd bulkes (&false;) are sent to the server in arbitrary order
+      and may be executed in parallel.
+     </para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+ </refsect1>
+
+ <refsect1 role="errors">
+  &reftitle.errors;
+  <simplelist>
+   &mongodb.throws.argumentparsing;
+  </simplelist>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title><function>MongoDB\Driver\BulkWrite::__construct</function> example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$bulk = new MongoDB\Driver\BulkWrite(true);
+$bulk->insert($a);
+$bulk->insert($b);
+$bulk->update($c, $obj);
+$bulk->update($d, $obj);
+$bulk->delete($e);
+$bulk->delete($f);
+$bulk->update($g, $obj);
+$bulk->delete($h);
+
+$manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
+$writeConcern = new MongoDB\Driver\WriteConcern(MongoDB\Driver\WriteConcern::MAJORITY, 1000);
+try {
+    $result = $manager->executeBulkWrite("databaseName.collectionName", $bulk, $writeConcern);
+} catch(MongoDB\Driver\DuplicateKeyException $ex) {
+    $result = $ex->getWriteResult();
+    /* If the WriteConcern could not be fullfilled */
+    if ($writeConcernError = $result->getWriteConcernError()) {
+        printf("%s (%d): %s\n",
+            $writeConcernError->getMessage(),
+            $writeConcernError->getCode(),
+            var_export($writeConcernError->getInfo(), true)
+        );
+    }
+
+    /* If the write could not happen at all */
+    foreach ($result->getWriteErrors() as $writeError) {
+        printf("Operation#%d: %s (%d)\n",
+            $writeError->getIndex(),
+            $writeError->getMessage(),
+            $writeError->getCode()
+        );
+    }
+} catch(MongoDB\Driver\AuthenticationException $ex) {
+    printf("Cannot authenticate: %s\n", $ex->getMessage());
+    exit(1);
+} catch(MongoDB\Driver\ConnectionException $ex) {
+    printf("Cannot connect to MongoDB server: %s\n", $ex->getMessage());
+    exit(2);
+} catch(MongoDB\Driver\RuntimeException $ex) {
+    printf("Unknown error: %s\n", $ex->getMessage());
+    exit(3);
+}
+
+printf("Inserted %d document(s)\n", $result->getInsertedCount());
+printf("Updated  %d document(s)\n", $result->getModifiedCount());
+printf("Deleted  %d document(s)\n", $result->getDeletedCount());
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+Inserted 2 document(s)
+Updated  3 document(s)
+Deleted  9 document(s)
+]]>
+   </screen>
+  </example>
+ </refsect1>
+
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <simplelist>
+   <member><methodname>MongoDB\Driver\Manager::executeBulkWrite</methodname></member>
+   <member><classname>MongoDB\Driver\WriteResult</classname></member>
+  </simplelist>
+ </refsect1>
+
+</refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
