@@ -129,6 +129,8 @@
 
 		$cmd = sprintf('"%s"%s%s', $program, (!$parameters ?: ' ' . $parameters), (!$log ? '' : ' > ' . PATH_LOG . '\\' . $log . '.log 2<&1'));
 
+		echo $cmd;
+
 		@popen($cmd, 'r');
 	}
 ?>
