@@ -47,7 +47,7 @@
 	define('EXTENDED',	true);
 	define('DEBUG',		true);
 	define('PHD_BETA',	false);
- 	define('MULTIBYTE_SEARCH',	false);
+ 	define('MULTIBYTE_SEARCH',	true);
 
 	/**
 	 * Fallback to a set of known languages in the event of a failure to retrieve online list.
