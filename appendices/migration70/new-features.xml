@@ -1,0 +1,975 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<sect1 xml:id="migration70.new-features" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>New features</title>
+
+ <sect2 xml:id="migration70.new-features.null-coalesce-op">
+  <title>Null Coalesce Operator</title>
+
+  <para>
+   New operator has been added, which returns the result of its first operand
+   if it exists and is not &null;, or else returns its second operand. This
+   operator is similiar to the regular ternary operator (<literal>?</literal>),
+   but it is safe to use with variables that can be &null;
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+// Fetches the value of $_GET['user'] and returns 'nobody' if it does not exist.
+$username = $_GET['user'] ?? 'nobody';
+// ...it means that it is equivalent to:
+$username = isset($_GET['user']) ? $_GET['user'] : 'nobody';
+
+
+// Hypothetical function fetching page from the database. If function fails, some
+// default page is returned.
+$page = Page::get($id) ?? $default_page;
+// equivalent to:
+if (($page = Page::get($id)) === NULL) {
+    $page = $default_page;
+}
+// or written even more verbosely:
+if (Page::get($id) !== NULL) {
+    $page = Page::get($id);
+}
+else {
+    $page = $default_page;
+}
+
+// Parses image metadata, and if the width is missing, assumes 100
+$image = get_image_metadata(); // just a hypothetical function
+
+$width = $image['width'] ?? 100;
+// which is an equivalent to:
+$width = isset($image['width']) ? $image['width'] : 100;
+
+?>
+]]>
+   </programlisting>
+  </informalexample>
+  
+  <!-- TODO: describe chaining and precedence -->
+  
+ </sect2>
+
+ <sect2 xml:id="migration70.new-features.spaceship-op">
+  <title>Spaceship Operator</title>
+  <para>
+   An <type>integer</type> less than, equal to, or greater than zero when
+   <varname>$a</varname> is respectively less than, equal to, or greater
+   than <varname>$b</varname>.Available as of PHP 7.
+  </para>
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+<?php
+
+// Integers
+echo 1 <=> 1; // 0
+echo 1 <=> 2; // -1
+echo 2 <=> 1; // 1
+
+// Floats
+echo 1.5 <=> 1.5; // 0
+echo 1.5 <=> 2.5; // -1
+echo 2.5 <=> 1.5; // 1
+ 
+// Strings
+echo "a" <=> "a"; // 0
+echo "a" <=> "b"; // -1
+echo "b" <=> "a"; // 1
+ 
+echo "a" <=> "aa"; // -1
+echo "zz" <=> "aa"; // 1
+
+// Arrays
+echo [] <=> []; // 0
+echo [1, 2, 3] <=> [1, 2, 3]; // 0
+echo [1, 2, 3] <=> []; // 3
+echo [1, 2, 3] <=> [1, 2, 1]; // 1
+echo [1, 2, 3] <=> [1, 2, 4]; // -1
+]]>
+   </programlisting>
+  </informalexample>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.define-array">
+  <title>Constant arrays using <function>define</function></title>
+
+  <para>
+   As of PHP 7.0.0 it is possible to define <type>array</type> constant using
+   <function>define</function>. Defining <type>array</type> constant was possible
+   as of PHP 5.6, but only using <literal>const</literal> keyword.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+define('ANIMALS', array(
+    'dog',
+    'cat',
+    'bird'
+));
+
+echo ANIMALS[1]; // outputs "cat"
+?>
+]]>
+   </programlisting>
+  </informalexample>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.scalar-type-declarations">
+  <title>Scalar Type Declarations</title>
+
+  <para>
+   Scalar type declarations come in two flavours: coercive (default) and
+   strict. The following types for parameters can now be enforced (either
+   coercively or strictly): strings (<type>string</type>), integers
+   (<literal>int</literal>), floating-point numbers (<type>float</type>),
+   and booleans (<literal>bool</literal>). They augment the other types
+   introduced in the PHP 5.x versions: class names, interfaces,
+   <type>array</type> and <type>callable</type>.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+// Coercive mode
+function sumOfInts(int ...$ints)
+{
+    return array_sum($ints);
+}
+
+var_dump(sumOfInts(2, '3', 4.1));
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+int(9)
+]]>
+   </screen>
+  </informalexample>
+
+  <para>
+   To enable strict mode, a single <function>declare</function> directive must
+   be placed at the top of the file. This means that the strictness of typing
+   for scalars is configured on a per-file basis. This directive not only affects
+   the type declarations of parameters, but also a function's return type (see
+   Return Type Declarations), built-in PHP functions, and functions from loaded
+   extensions.
+  </para>
+
+  <para>
+   If the type-check fails, then a `TypeError` exception is thrown. The only
+   leniency present in strict typing is the automatic conversion of integers to
+   floats (but not vice-versa) when an integer is provided in a float context.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+declare(strict_types=1);
+
+function multiply(float $x, float $y)
+{
+    return $x * $y;
+}
+
+function add(int $x, int $y)
+{
+    return $x + $y;
+}
+
+var_dump(multiply(2, 3.5));
+var_dump(add('2', 3));
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+float(7)
+Fatal error: Uncaught TypeError: Argument 1 passed to add() must be of the type integer, string given...
+]]>
+   </screen>
+  </informalexample>
+
+  <para>
+   Note that only the invocation context applies when the type-checking is
+   performed. This means that the strict typing applies only to function or method
+   calls, and not to the function or method definitions. In the above example, the
+   two functions could have been declared in either a strict or coercive file, but
+   so long as they're being called in a strict file, then the strict typing rules
+   will apply.
+  </para>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.return-type-declarations">
+  <title>Return Type Declarations</title>
+
+  <para>
+   Return type declarations enable for the return type of a function, method, or
+   closure to be specified. The following return types are supported:
+   <type>string</type>, <literal>int</literal>, <type>float</type>,
+   <literal>bool</literal>, <type>array</type>, <type>callable</type>,
+   <literal>self</literal> (methods only), <literal>parent</literal> (methods
+   only), <literal>Closure</literal>, the name of a class, and the name of an
+   interface.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+function arraysSum(array ...$arrays): array
+{
+    return array_map(function(array $array): int {
+        return array_sum($array);
+    }, $arrays);
+}
+
+print_r(arraysSum([1,2,3], [4,5,6], [7,8,9]));
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+Array
+(
+    [0] => 6
+    [1] => 15
+    [2] => 24
+)
+]]>
+   </screen>
+  </informalexample>
+
+  <para>
+   With respect to subtyping, invariance has been chosen for return types.
+   This simply means that when a method is either overridden in a subtyped class
+   or implemented as defined in a contract, its return type must match exactly
+   the method it is (re)implementing.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+class A {}
+class B extends A {}
+
+class C
+{
+    public function test() : A
+    {
+        return new A;
+    }
+}
+
+class D extends C
+{
+    // overriding method C::test() : A
+    public function test() : B // Fatal error due to variance mismatch
+    {
+        return new B;
+    }
+}
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+PHP Fatal error:  Declaration of D::test() must be compatible with C::test(): A
+]]>
+   </screen>
+  </informalexample>
+
+  <para>
+   The overriding method D::test() causes an E_COMPILE_ERROR because covariance
+   is not allowed. In order for this to work, D::test() method must have a
+   return type of class A.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+class A {}
+
+interface SomeInterface
+{
+    public function test() : A;
+}
+
+class B implements SomeInterface
+{
+    public function test() : A // all good!
+    {
+        return null; // incorrect return type
+    }
+}
+
+(new B)->test();
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+Fatal error: Uncaught TypeError: Return value of B::test() must be an instance of A, null returned...
+]]>
+   </screen>
+  </informalexample>
+
+  <para>
+   This time, the implemented method causes a <literal>TypeError</literal>
+   exception to be thrown when executed. This is because <type>null</type> is
+   not a valid return type - only an instance of the class A can be returned.
+  </para>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.anonymous-classes">
+  <title>Anonymous Classes</title>
+
+  <para>
+   Anonymous classes are useful when simple, one-off objects need to be created.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// Pre PHP 7 code
+class Logger
+{
+    public function log($msg)
+    {
+        echo $msg;
+    }
+}
+
+$util->setLogger(new Logger());
+
+// PHP 7+ code
+$util->setLogger(new class {
+    public function log($msg)
+    {
+        echo $msg;
+    }
+});
+]]>
+   </programlisting>
+  </informalexample>
+
+  <para>
+   They can pass arguments through to their constructors, extend other classes,
+   implement interfaces, and use traits just like a normal class can:
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+class SomeClass {}
+interface SomeInterface {}
+trait SomeTrait {}
+
+var_dump(new class(10) extends SomeClass implements SomeInterface {
+    private $num;
+
+    public function __construct($num)
+    {
+        $this->num = $num;
+    }
+
+    use SomeTrait;
+});
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+object(class@anonymous)#1 (1) {
+  ["Command line code0x104c5b612":"class@anonymous":private]=>
+  int(10)
+}
+]]>
+   </screen>
+  </informalexample>
+
+  <para>
+   Nesting an anonymous class within another class does not give it access to any
+   private or protected methods or properties of that outer class. In order to use
+   the outer class' protected properties or methods, the anonymous class can
+   extend the outer class. To use the private or protected properties of the outer
+   class in the anonymous class, they must be passed through its constructor:
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+class Outer
+{
+    private $prop = 1;
+    protected $prop2 = 2;
+
+    protected function func1()
+    {
+        return 3;
+    }
+
+    public function func2()
+    {
+        return new class($this->prop) extends Outer {
+            private $prop3;
+
+            public function __construct($prop)
+            {
+                $this->prop3 = $prop;
+            }
+
+            public function func3()
+            {
+                return $this->prop2 + $this->prop3 + $this->func1();
+            }
+        };
+    }
+}
+
+echo (new Outer)->func2()->func3();
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+6
+]]>
+   </screen>
+  </informalexample>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.unicode-codepoint-escape-syntax">
+  <title>Unicode Codepoint Escape Syntax</title>
+
+  <para>
+   This enables a UTF-8 encoded unicode codepoint to be output in either a
+   double-quoted string or a heredoc. Any valid codepoint is accepted, with
+   leading 0's being optional.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+echo "\u{aa}";
+echo "\u{0000aa}";
+echo "\u{9999}";
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+ª
+ª (same as before but with optional leading 0's)
+香
+]]>
+   </screen>
+  </informalexample>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.closure-call-method">
+  <title>Closure::call() Method</title>
+
+  <para>
+   The new <function>call</function> method for closures is used as a shorthand
+   way of invoking a closure whilst binding an object scope to it. This creates
+   more perfomant and compact code by removing the need to create an
+   intermediate closure before invoking it.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+class A {private $x = 1;}
+
+// Pre PHP 7 code
+$getXCB = function() {return $this->x;};
+$getX = $getXCB->bindTo(new A, 'A'); // intermediate closure
+echo $getX();
+
+// PHP 7+ code
+$getX = function() {return $this->x;};
+echo $getX->call(new A);
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+1
+1
+]]>
+   </screen>
+  </informalexample>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.filtered-unserialize">
+  <title>Filtered <function>unserialize</function></title>
+
+  <para>
+   This feature seeks to provide better security when unserializing objects on
+   untrusted data. It prevents possible code injections by enabling the
+   developer to whitelist classes that can be unserialized.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// converts all objects into __PHP_Incomplete_Class object
+$data = unserialize($foo, ["allowed_classes" => false]);
+
+// converts all objects into __PHP_Incomplete_Class object except those of MyClass and MyClass2
+$data = unserialize($foo, ["allowed_classes" => ["MyClass", "MyClass2"]);
+
+// default behaviour (same as omitting the second argument) that accepts all classes
+$data = unserialize($foo, ["allowed_classes" => true]);
+]]>
+   </programlisting>
+  </informalexample>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.intlchar-class">
+  <title><classname>IntlChar</classname> Class</title>
+
+  <para>
+   The new <classname>IntlChar</classname> class seeks to expose additional ICU
+   functionality. The class itself defines a number of static methods and
+   constants that can be used to manipulate unicode characters.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+printf('%x', IntlChar::CODEPOINT_MAX);
+echo IntlChar::charName('@');
+var_dump(IntlChar::ispunct('!'));
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+10ffff
+COMMERCIAL AT
+bool(true)
+]]>
+   </screen>
+  </informalexample>
+
+  <para>
+   In order to use this class, the <link linkend="book.intl">Intl</link> extension must be installed.
+  </para>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.expectations">
+  <title>Expectations</title>
+
+  <para>
+   Expectations are backwards compatible enhancement to the older
+   <function>assert</function> function. They enable for zero-cost assertions
+   in production code, and provide the ability to throw custom exceptions on
+   error.
+  </para>
+
+  <para>
+   <function>assert</function> has the following prototype:
+  </para>
+
+  <informalexample>
+   <programlisting>
+<![CDATA[
+void assert (mixed $expression [, mixed $message]);
+]]>
+   </programlisting>
+  </informalexample>
+
+  <para>
+   As with the old API, if <varname>$expression</varname> is a string, then it will be
+   evaluated. If the first argument is falsy, then the assertion fails. The
+   second argument can either be a plain string (causing an AssertionException
+   to be triggered), or a custom exception object containing an error message.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+ini_set('assert.exception', 1);
+
+class CustomError extends AssertionError {}
+
+assert(false, new CustomError('Some error message'));
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+Fatal error: Uncaught CustomError: Some error message
+]]>
+   </screen>
+  </informalexample>
+
+  <para>
+   With this feature comes two PHP.ini settings (along with their default values):
+    - zend.assertions = 1
+    - assert.exception = 0
+  </para>
+
+  <para>
+   zend.assertions has three values:
+    - 1 = generate and execute code (development mode)
+    - 0 = generate code and jump around at it at runtime
+    - -1 = don't generate any code (zero-cost, production mode)
+  </para>
+
+  <para>
+   assert.exception means that an exception is thrown when an assertion fails.
+   This is switched off by default to remain compatible with the old
+   <function>assert</function> function.
+  </para>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.group-use-declarations">
+  <title>Group <literal>use</literal> Declarations</title>
+
+  <para>
+   This gives the ability to group multiple <literal>use</literal> declarations
+   according to the parent namespace. This seeks to remove code verbosity when
+   importing multiple classes, functions, or constants that come under the same
+   namespace.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// Pre PHP 7 code
+use some\namespace\ClassA;
+use some\namespace\ClassB;
+use some\namespace\ClassC as C;
+
+use function some\namespace\fn_a;
+use function some\namespace\fn_b;
+use function some\namespace\fn_c;
+
+use const some\namespace\ConstA;
+use const some\namespace\ConstB;
+use const some\namespace\ConstC;
+
+// PHP 7+ code
+use some\namespace\{ClassA, ClassB, ClassC as C};
+use function some\namespace\{fn_a, fn_b, fn_c};
+use const some\namespace\{ConstA, ConstB, ConstC};
+]]>
+   </programlisting>
+  </informalexample>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.generator-return-expressions">
+  <title>Generator Return Expressions</title>
+
+  <para>
+   This feature builds upon the generator functionality introduced into PHP 5.5.
+   It enables for a <literal>return</literal> statement to be used within a
+   generator to enable for a final expression to be returned (return by
+   reference is not allowed). This value can be fetched using the new 
+   <literal>Generator::getReturn()</literal> method, which may only be used
+   once the generator has finishing yielding values.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$gen = (function() {
+    yield 1;
+    yield 2;
+
+    return 3;
+})();
+
+foreach ($gen as $val) {
+    echo $val, PHP_EOL;
+}
+
+echo $gen->getReturn(), PHP_EOL;
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+1
+2
+3
+]]>
+   </screen>
+  </informalexample>
+
+  <para>
+   Being able to explicitly return a final value from a generator is a handy
+   ability to have. This is because it enables for a final value to be returned
+   by a generator (from perhaps some form of coroutine computation) that can be
+   specifically handled by the client code executing the generator. This is far
+   simpler than forcing the client code to firstly check whether the final
+   value has been yielded, and then if so, to handle that value specifically.
+  </para>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.generator-delegation">
+  <title>Generator Delegation</title>
+
+  <para>
+   Generator delegation builds upon the ability of being able to return
+   expressions from generators. It does this by using an new syntax of
+   <literal>yield from &lt;expr&gt;</literal>, where &lt;expr&gt; can be any
+   <literal>Traversable</literal> <type>object</type> or <type>array</type>.
+   This &lt;expr&gt; will be advanced until no longer valid, and then execution
+   will continue in the calling generator. This feature enables
+   <literal>yield</literal> statements to be broken down into smaller
+   operations, thereby promoting cleaner code that has greater reusability.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+function gen()
+{
+    yield 1;
+    yield 2;
+
+    return yield from gen2();
+}
+
+function gen2()
+{
+    yield 3;
+
+    return 4;
+}
+
+$gen = gen();
+
+foreach ($gen as $val)
+{
+    echo $val, PHP_EOL;
+}
+
+echo $gen->getReturn();
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+1
+2
+3
+4
+]]>
+   </screen>
+  </informalexample>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.intdiv">
+  <title>Integer Division with <function>intdiv</function></title>
+
+  <para>
+   The <function>intdiv</function> function has been introduced to handle
+   division where an integer is to be returned.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+var_dump(intdiv(10, 3));
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+int(3)
+]]>
+   </screen>
+  </informalexample>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.session-start-options">
+  <title><function>session_start</function> Options</title>
+
+  <para>
+   This feature gives the ability to pass in an array of options to the
+   <function>session_start</function> function. This is used to set
+   session-based php.ini options:
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+session_start(['cache_limiter' => 'private']); // sets the session.cache_limiter option to private
+]]>
+   </programlisting>
+  </informalexample>
+
+  <para>
+   This feature also introduces a new php.ini setting (session.lazy_write)
+   that is, by default, set to true and means that session data is only
+   rewritten if it changes.
+  </para>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.preg-repace-callback-array-function">
+  <title><function>preg_replace_callback_array</function> Function</title>
+
+  <para>
+   This new function enables code to be written more cleanly when using the
+   <function>preg_replace_callback</function> function. Prior to PHP 7,
+   callbacks that needed to be executed per regular expression required the
+   callback function (second parameter of
+   <function>preg_replace_callback</function>) to be polluted with lots of
+   branching (a hacky method at best).
+  </para>
+
+  <para>
+   Now, callbacks can be registered to each regular expression using an
+   associative array, where the key is a regular expression and the value is a
+   callback.
+  </para>
+
+  <para>
+   Function Signature:
+  </para>
+
+  <programlisting>
+<![CDATA[
+string preg_replace_callback_array(array $regexesAndCallbacks, string $input);
+]]>
+  </programlisting>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$tokenStream = []; // [tokenName, lexeme] pairs
+
+$input = <<<'end'
+$a = 3; // variable initialisation
+end;
+
+// Pre PHP 7 code
+preg_replace_callback(
+    [
+        '~\$[a-z_][a-z\d_]*~i',
+        '~=~',
+        '~[\d]+~',
+        '~;~',
+        '~//.*~'
+    ],
+    function ($match) use (&$tokenStream) {
+        if (strpos($match[0], '$') === 0) {
+            $tokenStream[] = ['T_VARIABLE', $match[0]];
+        } elseif (strpos($match[0], '=') === 0) {
+            $tokenStream[] = ['T_ASSIGN', $match[0]];
+        } elseif (ctype_digit($match[0])) {
+            $tokenStream[] = ['T_NUM', $match[0]];
+        } elseif (strpos($match[0], ';') === 0) {
+            $tokenStream[] = ['T_TERMINATE_STMT', $match[0]];
+        } elseif (strpos($match[0], '//') === 0) {
+            $tokenStream[] = ['T_COMMENT', $match[0]];
+        }
+    },
+    $input
+);
+
+// PHP 7+ code
+preg_replace_callback_array(
+    [
+        '~\$[a-z_][a-z\d_]*~i' => function ($match) use (&$tokenStream) {
+            $tokenStream[] = ['T_VARIABLE', $match[0]];
+        },
+        '~=~' => function ($match) use (&$tokenStream) {
+            $tokenStream[] = ['T_ASSIGN', $match[0]];
+        },
+        '~[\d]+~' => function ($match) use (&$tokenStream) {
+            $tokenStream[] = ['T_NUM', $match[0]];
+        },
+        '~;~' => function ($match) use (&$tokenStream) {
+            $tokenStream[] = ['T_TERMINATE_STMT', $match[0]];
+        },
+        '~//.*~' => function ($match) use (&$tokenStream) {
+            $tokenStream[] = ['T_COMMENT', $match[0]];
+        }
+    ],
+    $input
+);
+]]>
+   </programlisting>
+  </informalexample>
+ </sect2>
+ <sect2 xml:id="migration70.new-features.csprng-functions">
+  <title><link linkend="book.csprng">CSPRNG</link> Functions</title>
+
+  <para>
+   This feature introduces two new functions for generating cryptographically
+   secure integers and strings. They expose simple APIs and are
+   platform-independent.
+  </para>
+
+  <para>
+   Function Signatures:
+  </para>
+
+  <programlisting>
+<![CDATA[
+string random_bytes(int length);
+int random_int(int min, int max);
+]]>
+  </programlisting>
+
+  <para>
+   Both functions will emit an E_WARNING and return <literal>false</literal> if
+   a source of sufficient randomness cannot be found.
+  </para>
+ </sect2>
+</sect1>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
