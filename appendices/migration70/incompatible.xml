@@ -8,40 +8,452 @@
   note of some backward incompatible changes:
  </simpara>
 
- <sect2 xml:id="migration70.incompatible.var">
-  <title>Changes to the Evaluation Order for Variable Operators</title>
+ <sect2 xml:id="migration70.incompatible.variable-handling">
+  <title>Changes to variable handling</title>
 
   <para>
-   The evaluation order for variable operators has been changed to enable them
-   to be arbitrarily combined. The new behaviour is that all operators will be
-   evailuated from left-to-right:
+   PHP 7 now uses an abstract syntax tree when parsing source files. This has
+   permitted many improvements to the language which were previously
+   impossible due to limitations in the parser used in earlier versions of
+   PHP, but has resulted in the removal of a few special cases for consistency
+   reasons, which has resulted in backward compatibility breaks. These cases
+   are detailed in this section.
   </para>
 
+  <sect3 xml:id="migration70.incompatible.variable-handling.indirect">
+   <title>
+    Changes to the handling of indirect variables, properties, and methods
+   </title>
+
+   <para>
+    Indirect access to variables, properties, and methods will now be
+    evaluated strictly in left-to-right order, as opposed to the previous mix
+    of special cases. The table below shows how the order of evaluaiton has
+    changed.
+   </para>
+
+   <para>
+    <table>
+     <title>Old and new evaluation of indirect expressions</title>
+     <tgroup cols="3">
+      <thead>
+       <row>
+        <entry>Expression</entry>
+        <entry>PHP 5 interpretation</entry>
+        <entry>PHP 7 interpretation</entry>
+       </row>
+      </thead>
+      <tbody>
+       <row>
+        <entry>
+         <code>$$foo['bar']['baz']</code>
+        </entry>
+        <entry>
+         <code>${$foo['bar']['baz']}</code>
+        </entry>
+        <entry>
+         <code>($$foo)['bar']['baz']</code>
+        </entry>
+       </row>
+       <row>
+        <entry>
+         <code>$foo-&gt;$bar['baz']</code>
+        </entry>
+        <entry>
+         <code>$foo-&gt;{$bar['baz']}</code>
+        </entry>
+        <entry>
+         <code>($foo-&gt;$bar)['baz']</code>
+        </entry>
+       </row>
+       <row>
+        <entry>
+         <code>$foo-&gt;$bar['baz']()</code>
+        </entry>
+        <entry>
+         <code>$foo-&gt;{$bar['baz']}()</code>
+        </entry>
+        <entry>
+         <code>($foo-&gt;$bar)['baz']()</code>
+        </entry>
+       </row>
+       <row>
+        <entry>
+         <code>Foo::$bar['baz']()</code>
+        </entry>
+        <entry>
+         <code>Foo::{$bar['baz']}()</code>
+        </entry>
+        <entry>
+         <code>(Foo::$bar)['baz']()</code>
+        </entry>
+       </row>
+      </tbody>
+     </tgroup>
+    </table>
+   </para>
+
+   <para>
+    Code that used the old right-to-left evaluation order must be rewritten to
+    explicitly use that evaluation order with curly braces (see the above
+    middle column). This will make the code both forwards compatible with PHP
+    7.x and backwards compatible with PHP 5.x.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration70.incompatible.variable-handling.list">
+   <title>Changes to <function>list</function> handling</title>
+
+   <sect4 xml:id="migration70.incompatible.variable-handling.list.order">
+    <title>
+     <function>list</function> no longer assigns variables in reverse order
+    </title>
+
+    <para>
+     <function>list</function> will now assign values to variables in the
+     order they are defined, rather than reverse order. In general, this only
+     affects the case where <function>list</function> is being used in
+     conjunction with the array <code>[]</code> operator, as shown below:
+    </para>
+
+    <informalexample>
+     <programlisting role="php">
+<![CDATA[
+<?php
+list($a[], $a[], $a[]) = [1, 2, 3];
+var_dump($a);
+?>
+]]>
+     </programlisting>
+     &example.outputs.5;
+     <screen>
+<![CDATA[
+array(3) {
+  [0]=>
+  int(3)
+  [1]=>
+  int(2)
+  [2]=>
+  int(1)
+}
+]]>
+     </screen>
+     &example.outputs.7;
+     <screen>
+<![CDATA[
+array(3) {
+  [0]=>
+  int(1)
+  [1]=>
+  int(2)
+  [2]=>
+  int(3)
+}
+]]>
+     </screen>
+    </informalexample>
+
+    <para>
+     In general, it is recommended not to rely on the order in which
+     <function>list</function> assignments occur, as this is an implementation
+     detail that may change again in the future.
+    </para>
+   </sect4>
+
+   <sect4 xml:id="migration70.incompatible.variable-handling.list.empty">
+    <title>Empty <function>list</function> assignments have been removed</title>
+
+    <para>
+     <function>list</function> constructs can no longer be empty, or contain
+     empty variables. The following are no longer allowed:
+    </para>
+
+    <informalexample>
+     <programlisting role="php">
+<![CDATA[
+<?php
+list() = $a;
+list(,,) = $a;
+list($x, list(), $y) = $a;
+?>
+]]>
+     </programlisting>
+    </informalexample>
+   </sect4>
+
+   <sect4 xml:id="migration70.incompatible.variable-handling.list.string">
+    <title><function>list</function> cannot unpack <type>string</type>s</title>
+
+    <para>
+     <function>list</function> can no longer unpack <type>string</type>
+     variables. <function>str_split</function> should be used instead.
+    </para>
+   </sect4>
+  </sect3>
+
+  <sect3 xml:id="migration70.incompatible.variable-handling.array-order">
+   <title>
+    Array ordering when elements are automatically created during by reference
+    assignments has changed
+   </title>
+
+   <para>
+    The order of the elements in an array has changed when those elements have
+    been automatically created by referencing them in a by reference
+    assignment. For example:
+   </para>
+
    <informalexample>
-    <programlisting>
-                        // old meaning            // new meaning
-$$foo['bar']['baz']     ${$foo['bar']['baz']}     ($$foo)['bar']['baz']
-$foo->$bar['baz']       $foo->{$bar['baz']}       ($foo->$bar)['baz']
-$foo->$bar['baz']()     $foo->{$bar['baz']}()     ($foo->$bar)['baz']()
-Foo::$bar['baz']()      Foo::{$bar['baz']}()      (Foo::$bar)['baz']()
+    <programlisting role="php">
+<![CDATA[
+<?php
+$array = [];
+$array["a"] =& $array["b"];
+$array["b"] = 1;
+var_dump($array);
+?>
+]]>
+    </programlisting>
+    &example.outputs.5;
+    <screen>
+<![CDATA[
+array(2) {
+  ["b"]=>
+  &int(1)
+  ["a"]=>
+  &int(1)
+}
+]]>
+    </screen>
+    &example.outputs.7;
+    <screen>
+<![CDATA[
+array(2) {
+  ["a"]=>
+  &int(1)
+  ["b"]=>
+  &int(1)
+}
+]]>
+    </screen>
+   </informalexample>
+  </sect3>
+
+  <sect3 xml:id="migration70.incompatible.variable-handling.global">
+   <title>&global; only accepts simple variables</title>
+
+   <para>
+    <link linkend="language.variables.variable">Variable variables</link> can
+    no longer be used with the &global; keyword. The curly brace syntax can be
+    used to emulate the previous behaviour if required:
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+ <![CDATA[
+ <?php
+ function f() {
+     // Valid in PHP 5 only.
+     global $$foo->bar;
+
+     // Valid in PHP 5 and 7.
+     global ${$foo->bar};
+ }
+ ?>
+ ]]>
     </programlisting>
    </informalexample>
 
+   <para>
+    As a general principle, using anything other than a bare variable with
+    &global; is discouraged.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration70.incompatible.variable-handling.parentheses">
+   <title>
+    Parentheses around function parameters no longer affect behaviour
+   </title>
+
+   <para>
+    In PHP 5, using redundant parentheses around a function parameter could
+    quiet strict standards warnings when the function parameter was passed by
+    reference. The warning will now always be issued.
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+ <![CDATA[
+ <?php
+ function getArray() {
+     return [1, 2, 3];
+ }
+
+ function squareArray(array &$a) {
+     foreach ($a as &$v) {
+         $v **= 2;
+     }
+ }
+
+ // Generates a warning in PHP 7.
+ squareArray((getArray()));
+ ?>
+ ]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+ <![CDATA[
+ Notice: Only variables should be passed by reference in /tmp/test.php on line 13
+ ]]>
+    </screen>
+   </informalexample>
+  </sect3>
+ </sect2>
+
+ <sect2 xml:id="migration70.incompatible.foreach">
+  <title>Changes to &foreach;</title>
+
   <para>
-   Code that used the old right-to-left evaluation order must be rewritten to
-   explicitly use that evaluation order with curly braces (see the above middle
-   column). This will make the code both forwards compatible with PHP 7.x and
-   backwards compatible with PHP 5.x.
+   Minor changes have been made to the behaviour of the &foreach; control
+   structure, primarily around the handling of the internal array pointer and
+   modification of the array being iterated over.
   </para>
+
+  <sect3 xml:id="migration70.incompatible.foreach.array-pointer">
+   <title>&foreach; no longer changes the internal array pointer</title>
+
+   <para>
+    Prior to PHP 7, the internal array pointer was modified while an array was
+    being iterated over with &foreach;. This is no longer the case, as shown
+    in the following example:
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$array = [0, 1, 2];
+foreach ($array as &$val) {
+    var_dump(current($array));
+}
+?>
+]]>
+    </programlisting>
+    &example.outputs.5;
+    <screen>
+<![CDATA[
+int(1)
+int(2)
+bool(false)
+]]>
+    </screen>
+    &example.outputs.7;
+    <screen>
+<![CDATA[
+int(0)
+int(0)
+int(0)
+]]>
+    </screen>
+   </informalexample>
+  </sect3>
+
+  <sect3 xml:id="migration70.incompatible.foreach.by-value">
+   <title>&foreach; by-value operates on a copy of the array</title>
+
+   <para>
+    When used in the default by-value mode, &foreach; will now operate on a
+    copy of the array being iterated rather than the array itself. This means
+    that changes to the array made during iteration will not affect the values
+    that are iterated.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration70.incompatible.foreach.by-ref">
+   <title>&foreach; by-reference has improved iteration behaviour</title>
+
+   <para>
+    When iterating by-reference, &foreach; will now do a better job of
+    tracking changes to the array made during iteration. For example,
+    appending to an array while iterating will now result in the appended
+    values being iterated over as well:
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$array = [0];
+foreach ($array as &$val) {
+    var_dump($val);
+    $array[1] = 1;
+}
+?>
+]]>
+    </programlisting>
+    &example.outputs.5;
+    <screen>
+<![CDATA[
+int(0)
+]]>
+    </screen>
+    &example.outputs.7;
+    <screen>
+<![CDATA[
+int(0)
+int(1)
+]]>
+    </screen>
+   </informalexample>
+  </sect3>
+
+  <sect3 xml:id="migration70.incompatible.foreach.object">
+   <title>Iteration of non-<classname>Traversable</classname> objects</title>
+
+   <para>
+    Iterating over a non-<classname>Traversable</classname> object will now
+    have the same behaviour as iterating over by-reference arrays. This
+    results in the
+    <link linkend="migration70.incompatible.foreach.by-ref">improved behaviour when modifying an array during iteration</link>
+    also being applied when properties are added to or removed from the
+    object.
+   </para>
+  </sect3>
  </sect2>
 
  <sect2 xml:id="migration70.incompatible.php-tags">
-  <title>ASP and script PHP tags removal</title>
+  <title>ASP and script PHP tags removed</title>
 
   <para>
-   ASP tags &lt;% , %&gt; , &lt;%= , and script tag &lt;script language=php&gt;
-   are removed from PHP.
+   Support for using ASP and script tags to delimit PHP code has been removed.
+   The affected tags are:
   </para>
+
+  <table>
+   <title>Removed ASP and script tags</title>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Opening tag</entry>
+      <entry>Closing tag</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry><code>&lt;%</code></entry>
+      <entry><code>%&gt;</code></entry>
+     </row>
+     <row>
+      <entry><code>&lt;%=</code></entry>
+      <entry><code>%&gt;</code></entry>
+     </row>
+     <row>
+      <entry><code>&lt;script language="php"&gt;</code></entry>
+      <entry><code>&lt;/script&gt;</code></entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </table>
  </sect2>
 
  <sect2 xml:id="migration70.incompatible.func-parameters">
