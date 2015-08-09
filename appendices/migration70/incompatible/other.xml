@@ -4,6 +4,91 @@
 <sect2 xml:id="migration70.incompatible.other">
  <title>Other backward incompatible changes</title>
 
+ <sect3 xml:id="migration70.incompatible.other.new-by-ref">
+  <title>New objects cannot be assigned by reference</title>
+
+  <para>
+   The result of the &new; statement can no longer be assigned to a variable
+   by reference:
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class C {}
+$c =& new C;
+?>
+]]>
+   </programlisting>
+   &example.outputs.5;
+   <screen>
+<![CDATA[
+Deprecated: Assigning the return value of new by reference is deprecated in /tmp/test.php on line 3
+]]>
+   </screen>
+   &example.outputs.7;
+   <screen>
+<![CDATA[
+Parse error: syntax error, unexpected 'new' (T_NEW) in /tmp/test.php on line 3
+]]>
+   </screen>
+  </informalexample>
+ </sect3>
+
+ <sect3 xml:id="migration70.incompatible.other.classes">
+  <title>Invalid class, interface and trait names</title>
+
+  <para>
+   The following names cannot be used to name classes, interfaces or traits:
+  </para>
+
+  <itemizedlist>
+   <listitem>
+    <simpara><type>bool</type></simpara>
+   </listitem>
+   <listitem>
+    <simpara><type>int</type></simpara>
+   </listitem>
+   <listitem>
+    <simpara><type>float</type></simpara>
+   </listitem>
+   <listitem>
+    <simpara><type>string</type></simpara>
+   </listitem>
+   <listitem>
+    <simpara>&null;</simpara>
+   </listitem>
+   <listitem>
+    <simpara>&true;</simpara>
+   </listitem>
+   <listitem>
+    <simpara>&false;</simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para>
+   Furthermore, the following names should not be used. Although they will not
+   generate an error in PHP 7.0, they are reserved for future use and should
+   be considered deprecated.
+  </para>
+
+  <itemizedlist>
+   <listitem>
+    <simpara><type>resource</type></simpara>
+   </listitem>
+   <listitem>
+    <simpara><type>object</type></simpara>
+   </listitem>
+   <listitem>
+    <simpara><type>mixed</type></simpara>
+   </listitem>
+   <listitem>
+    <simpara><type>numeric</type></simpara>
+   </listitem>
+  </itemizedlist>
+ </sect3>
+
  <sect3 xml:id="migration70.incompatible.other.php-tags">
   <title>ASP and script PHP tags removed</title>
 
@@ -37,6 +122,88 @@
     </tbody>
    </tgroup>
   </table>
+ </sect3>
+
+ <sect3 xml:id="migration70.incompatible.other.incompatible-this">
+  <title>Calls from incompatible context removed</title>
+
+  <para>
+   <link linkend="migration56.deprecated.incompatible-context">Previously deprecated in PHP 5.6</link>,
+   static calls made to a non-static method with an incompatible context will
+   now result in the called method having an undefined
+   <literal>$this</literal> variable and a deprecation warning being issued.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class A {
+    public function test() { var_dump($this); }
+}
+
+// Note: Does NOT extend A
+class B {
+    public function callNonStaticMethodOfA() { A::test(); }
+}
+
+(new B)->callNonStaticMethodOfA();
+?>
+]]>
+   </programlisting>
+   &example.outputs.5;
+   <screen>
+<![CDATA[
+Deprecated: Non-static method A::test() should not be called statically, assuming $this from incompatible context in /tmp/test.php on line 8
+object(B)#1 (0) {
+}
+]]>
+   </screen>
+   &example.outputs.7;
+   <screen>
+<![CDATA[
+Deprecated: Non-static method A::test() should not be called statically in /tmp/test.php on line 8
+
+Notice: Undefined variable: this in /tmp/test.php on line 3
+NULL
+]]>
+   </screen>
+  </informalexample>
+ </sect3>
+
+ <sect3 xml:id="migration70.incompatible.other.yield">
+  <title>&yield; is now a right associative operator</title>
+
+  <para>
+   The &yield; construct no longer requires parentheses, and has been changed
+   to a right associative operator with precedence between
+   <literal>print</literal> and <literal>=&gt;</literal>. This can result in
+   changed behaviour:
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+echo yield -1;
+// Was previously interpreted as
+echo (yield) - 1;
+// And is now interpreted as
+echo yield (-1);
+
+yield $foo or die;
+// Was previously interpreted as
+yield ($foo or die);
+// And is now interpreted as
+(yield $foo) or die;
+?>
+]]>
+   </programlisting>
+  </informalexample>
+
+  <para>
+   Parentheses can be used to disambiguate those cases.
+  </para>
  </sect3>
 
  <sect3 xml:id="migration70.incompatible.other.func-parameters">
