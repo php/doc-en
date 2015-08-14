@@ -426,11 +426,11 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
 
 // Reject 'old' LibXML installations, due to LibXML feature #502960 {{{
 if (version_compare(LIBXML_DOTTED_VERSION, '2.7.4', '<') && $ac['LIBXML_CHECK'] === 'yes') {
-	echo "LibXML 2.7.4+ added a 'feature' to break things, typically namespace related, and unfortunately we must require it.\n";
-	echo "For a few related details, see: http://www.mail-archive.com/debian-bugs-dist@lists.debian.org/msg777646.html\n";
-	echo "Please recompile PHP with a LibXML version 2.7.4 or greater. Version detected: " . LIBXML_DOTTED_VERSION . "\n";
-	echo "Or, pass in --disable-libxml-check if doing so feels safe.\n\n";
-	#exit(100);
+    echo "LibXML 2.7.4+ added a 'feature' to break things, typically namespace related, and unfortunately we must require it.\n";
+    echo "For a few related details, see: http://www.mail-archive.com/debian-bugs-dist@lists.debian.org/msg777646.html\n";
+    echo "Please recompile PHP with a LibXML version 2.7.4 or greater. Version detected: " . LIBXML_DOTTED_VERSION . "\n";
+    echo "Or, pass in --disable-libxml-check if doing so feels safe.\n\n";
+    #exit(100);
 } // }}}
 
 checking('for source directory');
@@ -691,17 +691,17 @@ if ($dom->validate()) {
     echo "All you have to do now is run 'phd -d {$mxml}'\n";
     echo "If the script hangs here, you can abort with ^C.\n";
     echo <<<CAT
-		 _ _..._ __
-		\)`    (` /
-		 /      `\
-		|  d  b   |
-		=\  Y    =/--..-="````"-.
-		  '.=__.-'               `\
-		     o/                 /\ \
-		      |                 | \ \   / )
-		       \    .--""`\    <   \ '-' /
-		      //   |      ||    \   '---'
-		 jgs ((,,_/      ((,,___/
+         _ _..._ __
+        \)`    (` /
+         /      `\
+        |  d  b   |
+        =\  Y    =/--..-="````"-.
+          '.=__.-'               `\
+             o/                 /\ \
+              |                 | \ \   / )
+               \    .--""`\    <   \ '-' /
+              //   |      ||    \   '---'
+         jgs ((,,_/      ((,,___/
 
 
 CAT;
