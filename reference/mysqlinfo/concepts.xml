@@ -145,14 +145,17 @@ if ($uresult) {
 
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-// Will not affect $mysqli->real_escape_string();
+// Will NOT affect $mysqli->real_escape_string();
 $mysqli->query("SET NAMES utf8");
 
-// Will not affect $mysqli->real_escape_string();
+// Will NOT affect $mysqli->real_escape_string();
 $mysqli->query("SET CHARACTER SET utf8");
 
 // But, this will affect $mysqli->real_escape_string();
 $mysqli->set_charset('utf8');
+
+// But, this will NOT affect it (utf-8 vs utf8) -- don't use dashes here
+$mysqli->set_charset('utf-8');
 
 ?>
 ]]>
@@ -163,21 +166,32 @@ $mysqli->set_charset('utf8');
    Below are examples that demonstrate how to properly alter the character set at runtime
    using each API.
   </para>
+  
+  <note>
+   <title>Possible UTF-8 confusion</title>
+   <para>
+    Because character set names in MySQL do not contain dashes, the string 
+    "utf8" is valid in MySQL to set the character set to UTF-8. The string 
+    "utf-8" is not valid, as using "utf-8" will fail to change the
+    character set.
+   </para>
+  </note>
 
   <example>
    <title>Setting the character set example: mysqli</title>
    <programlisting role="php">
 <![CDATA[
 <?php
-
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
+
+printf("Initial character set: %s\n", $mysqli->character_set_name());
 
 if (!$mysqli->set_charset('utf8')) {
     printf("Error loading character set utf8: %s\n", $mysqli->error);
-} else {
-    printf("Current character set: %s\n", $mysqli->character_set_name());
+    exit;
 }
 
+echo "New character set information:\n";
 print_r( $mysqli->get_charset() );
 
 ?>
@@ -204,9 +218,10 @@ $pdo = new PDO("mysql:host=localhost;dbname=world;charset=utf8", 'my_user', 'my_
    <programlisting role="php">
 <![CDATA[
 <?php
-
 $conn = mysql_connect("localhost", "my_user", "my_pass");
 $db   = mysql_select_db("world");
+
+echo 'Initial character set: ' .  mysql_client_encoding($conn) . "\n";
 
 if (!mysql_set_charset('utf8', $conn)) {
     echo "Error: Unable to set the character set.\n";
@@ -214,7 +229,6 @@ if (!mysql_set_charset('utf8', $conn)) {
 }
 
 echo 'Your current character set is: ' .  mysql_client_encoding($conn);
-
 ?>
 ]]>
    </programlisting>
