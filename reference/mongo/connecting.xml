@@ -493,6 +493,67 @@ $m = new MongoClient("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
 
  </section>
 
+ <section xml:id="mongo.connecting.persistent">
+  <title>Persistent Connections (version 1.3.0+)</title>
+
+  <para>
+   All versions of the driver since 1.3.0 utilize persistent connections to
+   minimize the number of connections made to each database server. These
+   connections are saved by the PHP worker process and may be reused between
+   multiple requests.
+  </para>
+
+  <para>
+   Before connecting to a database server, the driver will create a hash for the
+   connection based on its host, port, replica set name (if any), any
+   authentication credentials (e.g. username, password, database), and the
+   process ID. If a connection already exists for that hash, it will be used in
+   lieu of creating a new connection associated with that hash.
+   <function>MongoClient::getConnections</function> may be used to retrieve info
+   about each persistent connection. Consider the following program:
+  </para>
+
+  <example xml:id="mongo.connecting.persistent-example">
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$m1 = new MongoClient('mongodb://localhost');
+$m2 = new MongoClient('mongodb://localhost');
+$m3 = new MongoClient('mongodb://user:pw@localhost');
+$m4 = new MongoClient('mongodb://127.0.0.1');
+$m5 = new MongoClient('mongodb://rs1.local:30017,rs2.local:30018/?replicaSet=rs');
+$m6 = new MongoClient('mongodb://sharding.local:40017');
+
+foreach (MongoClient::getConnections() as $conn) {
+    echo $conn['hash'], "\n";
+}
+
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+localhost:27017;-;X;15487
+localhost:27017;-;admin/user/c56c…8bbc;15487
+127.0.0.1:27017;-;X;15487
+rs1.local:30017;rs;X;15487
+rs2.local:30018;rs;X;15487
+sharding.local:40017;-;X;15487
+]]>
+   </screen>
+  </example>
+
+  <para>
+   In this example <literal>$m1</literal> and <literal>$m2</literal> have the
+   same hash and share a persistent connection. Connections for each other
+   MongoClient instance hash to unique values and use their own sockets. Note
+   that "localhost" and "127.0.0.1" do not share the same hash; DNS resolution
+   is not taken into account.
+  </para>
+ </section>
+
  <section xml:id="mongo.connecting.pools">
   <title>Connection Pooling (version 1.2.0-1.2.12 *only*)</title>
   <note>
@@ -613,8 +674,8 @@ $m = new MongoClient("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
   </section>
  </section>
 
- <section xml:id="mongo.connecting.persistent">
-  <title>Persistent Connections (version up to 1.1.4 *only*)</title>
+ <section xml:id="mongo.connecting.persistent.manual">
+  <title>Manually Persistent Connections (version up to 1.1.4 *only*)</title>
   <note>
    <para>
     This section is not relevant for 1.2.0+. In 1.2.0+, connections are always
@@ -635,7 +696,7 @@ $m = new MongoClient("mongodb://username:password@/tmp/mongo-27017.sock:0/foo");
    For example, this simple program connects to the database 1000 times:
   </para>
 
-  <example xml:id="mongo.connecting.no-persistent-example">
+  <example xml:id="mongo.connecting.no-manual-persist-example">
    <programlisting role="php">
 <![CDATA[
 <?php
@@ -654,7 +715,7 @@ for ($i=0; $i<1000; $i++) {
    persistent connection:
   </para>
 
-  <example xml:id="mongo.connecting.persistent-example">
+  <example xml:id="mongo.connecting.manual-persist-example">
    <programlisting role="php">
 <![CDATA[
 <?php
