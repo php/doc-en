@@ -76,11 +76,16 @@
      </row>
      <row>
       <entry>length</entry>
-      <entry>The width of the field, as specified in the table definition.</entry>
+      <entry>
+       The width of the field, in bytes, as specified in the table definition. Note that 
+       this number (bytes) might differ from your table definition value (characters), depending on
+       the character set you use. For example, the character set utf8 has 3 bytes per character, 
+       so varchar(10) will return a length of 30 for utf8 (10*3), but return 10 for latin1 (10*1).
+      </entry>
      </row>
      <row>
       <entry>charsetnr</entry>
-      <entry>The character set number for the field.</entry>
+      <entry>The character set number (id) for the field.</entry>
      </row>
      <row>
       <entry>flags</entry>
@@ -107,32 +112,42 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$mysqli = new mysqli("localhost", "my_user", "my_password", "world");
+$mysqli = new mysqli("127.0.0.1", "root", "foofoo", "sakila");
 
 /* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
+if ($mysqli->connect_errno) {
+    printf("Connect failed: %s\n", $mysqli->connect_error);
     exit();
 }
 
-$query = "SELECT Name, SurfaceArea from Country ORDER BY Code LIMIT 5";
+foreach (array('latin1', 'utf8') as $charset) {
 
-if ($result = $mysqli->query($query)) {
+    // Set character set, to show its impact on some values (e.g., length in bytes)
+    $mysqli->set_charset($charset);
 
-    /* Get field information for all columns */
-    $finfo = $result->fetch_fields();
+    $query = "SELECT actor_id, last_name from actor ORDER BY actor_id";
 
-    foreach ($finfo as $val) {
-        printf("Name:     %s\n", $val->name);
-        printf("Table:    %s\n", $val->table);
-        printf("max. Len: %d\n", $val->max_length);
-        printf("Flags:    %d\n", $val->flags);
-        printf("Type:     %d\n\n", $val->type);
+    echo "======================\n";
+    echo "Character Set: $charset\n";
+    echo "======================\n";
+    
+    if ($result = $mysqli->query($query)) {
+
+        /* Get field information for all columns */
+        $finfo = $result->fetch_fields();
+
+        foreach ($finfo as $val) {
+            printf("Name:      %s\n",   $val->name);
+            printf("Table:     %s\n",   $val->table);
+            printf("Max. Len:  %d\n",   $val->max_length);
+            printf("Length:    %d\n",   $val->length);
+            printf("charsetnr: %d\n",   $val->charsetnr);
+            printf("Flags:     %d\n",   $val->flags);
+            printf("Type:      %d\n\n", $val->type);
+        }
+        $result->free();
     }
-    $result->close();
 }
-
-/* close connection */
 $mysqli->close();
 ?>
 ]]>
@@ -143,7 +158,7 @@ $mysqli->close();
    <programlisting role="php">
 <![CDATA[
 <?php
-$link = mysqli_connect("localhost", "my_user", "my_password", "world");
+$link = mysqli_connect("127.0.0.1", "my_user", "my_password", "sakila");
 
 /* check connection */
 if (mysqli_connect_errno()) {
@@ -151,24 +166,35 @@ if (mysqli_connect_errno()) {
     exit();
 }
 
-$query = "SELECT Name, SurfaceArea from Country ORDER BY Code LIMIT 5";
+foreach (array('latin1', 'utf8') as $charset) {
 
-if ($result = mysqli_query($link, $query)) {
+    // Set character set, to show its impact on some values (e.g., length in bytes)
+    mysqli_set_charset($link, $charset);
 
-    /* Get field information for all columns */
-    $finfo = mysqli_fetch_fields($result);
+    $query = "SELECT actor_id, last_name from actor ORDER BY actor_id";
 
-    foreach ($finfo as $val) {
-        printf("Name:     %s\n", $val->name);
-        printf("Table:    %s\n", $val->table);
-        printf("max. Len: %d\n", $val->max_length);
-        printf("Flags:    %d\n", $val->flags);
-        printf("Type:     %d\n\n", $val->type);
+    echo "======================\n";
+    echo "Character Set: $charset\n";
+    echo "======================\n";
+
+    if ($result = mysqli_query($link, $query)) {
+
+        /* Get field information for all columns */
+        $finfo = mysqli_fetch_fields($result);
+
+        foreach ($finfo as $val) {
+            printf("Name:      %s\n",   $val->name);
+            printf("Table:     %s\n",   $val->table);
+            printf("Max. Len:  %d\n",   $val->max_length);
+            printf("Length:    %d\n",   $val->length);
+            printf("charsetnr: %d\n",   $val->charsetnr);
+            printf("Flags:     %d\n",   $val->flags);
+            printf("Type:      %d\n\n", $val->type);
+        }
+        mysqli_free_result($result);
     }
-    mysqli_free_result($result);
 }
 
-/* close connection */
 mysqli_close($link);
 ?>
 ]]>
@@ -176,18 +202,42 @@ mysqli_close($link);
    &examples.outputs;
    <screen>
 <![CDATA[
-Name:     Name
-Table:    Country
-max. Len: 11
-Flags:    1
-Type:     254
+======================
+Character Set: latin1
+======================
+Name:      actor_id
+Table:     actor
+Max. Len:  3
+Length:    5
+charsetnr: 63
+Flags:     49699
+Type:      2
 
-Name:     SurfaceArea
-Table:    Country
-max. Len: 10
-Flags:    32769
-Type:     4
+Name:      last_name
+Table:     actor
+Max. Len:  12
+Length:    45
+charsetnr: 8
+Flags:     20489
+Type:      253
 
+======================
+Character Set: utf8
+======================
+Name:      actor_id
+Table:     actor
+Max. Len:  3
+Length:    5
+charsetnr: 63
+Flags:     49699
+Type:      2
+
+Name:      last_name
+Table:     actor
+Max. Len:  12
+Length:    135
+charsetnr: 33
+Flags:     20489
 ]]>
    </screen>
   </example>
