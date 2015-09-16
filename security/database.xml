@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-<!-- splitted from ./index.xml, last change in rev 1.66 -->
   <chapter xml:id="security.database" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
    <title>Database Security</title>
 
@@ -106,16 +105,60 @@
      it when retrieving. See the references for further examples of how
      encryption works.
     </simpara>
-    <simpara>
-     In the case of truly hidden data, if its raw representation is not needed
-     (i.e. will not be displayed), hashing may also be taken into consideration.
-     The well-known example for hashing is storing the cryptographic hash of a
-     password in a database, instead of the password itself. See also
-     <function>crypt</function>.
-    </simpara>
-    <example>
-     <title>Using hashed password field</title>
-     <programlisting role="php">
+
+    <sect2 xml:id="security.database.storage.hashing">
+    <title>Hashing</title>
+     <simpara>
+      In the case of truly hidden data, if its raw representation is not needed
+      (i.e. will not be displayed), hashing should be taken into consideration.
+      The well-known example for hashing is storing the cryptographic hash of a
+      password in a database, instead of the password itself.
+     </simpara>
+     <simpara>
+      In PHP 5.5 or newer <link linkend="ref.password">password</link> functions
+      provide convinient way to hash sensitive data and work with these hashes.
+      In PHP 5.3.7+ <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&url.password.compat;">
+      password_compat</link> library can also be used.
+     </simpara>
+     <simpara>
+      <function>password_hash</function> is used to hash given string using
+      strongest algorithm currently available and <function>password_verify</function>
+      checks whether given password matches the hash stored in database.
+     </simpara>
+     <example>
+      <title>Hashing password field</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+// storing password hash
+$query  = sprintf("INSERT INTO users(name,pwd) VALUES('%s','%s');",
+            pg_escape_string($username),
+            password_hash($password, PASSWORD_DEFAULT));
+$result = pg_query($connection, $query);
+
+// querying if user submitted the right password
+$query = sprintf("SELECT pwd FROM users WHERE name='%s';",
+            pg_escape_string($username));
+$row = pg_fetch_assoc(pg_query($connection, $query));
+
+if ($row && password_verify($password, $row['pwd'])) {
+    echo 'Welcome, ' . htmlspecialchars($username) . '!';
+} else {
+    echo 'Authentication failed for ' . htmlspecialchars($username) . '.';
+}
+
+?>
+]]>
+      </programlisting>
+     </example>
+     <simpara>
+      In older versions of PHP this can be achieved using <function>crypt</function>
+      function.
+     </simpara>
+     <example>
+      <title>Hashing password using <function>crypt</function>s</title>
+      <programlisting role="php">
 <![CDATA[
 <?php
 
@@ -139,8 +182,9 @@ if ($row && crypt($password, $row['pwd']) == $row['pwd']) {
 
 ?>
 ]]>
-     </programlisting>
-    </example>
+      </programlisting>
+     </example>
+    </sect2>
    </sect1>
 
    <sect1 xml:id="security.database.sql-injection">
