@@ -6,7 +6,7 @@
 
  <para>
   In this section you will learn how to set-up NGINX with HHVM and MongoDB.
-  However, this tutorial is not meant to be an all inclusive guide on how ito
+  However, this tutorial is not meant to be an all inclusive guide on how to
   run NGINX and HHVM in a production environment.
  </para>
 
@@ -14,28 +14,30 @@
   In this tutorial, we will be using a Debian system, with NGINX installed
   through <code>apt-get</code> and HHVM installed from
   <emphasis>source</emphasis> into <code>/usr/local/hhvm/3.9.1</code>
-  (with the binary being at
-  <code>/usr/local/hhvm/3.9.1/bin/hhvm</code>). 
+  (with the binary located at <code>/usr/local/hhvm/3.9.1/bin/hhvm</code>).
  </para>
 
  <section xml:id="mongodb.tutorial.install.hhvm.nginx">
   <title>NGINX</title>
 
   <para>
-   We simply install NGINX by running <code>apt-get install nginx-full</code>. If this
-   fails to start, it is likely that you already have Apache running on the
-   same port. If that happens, you will see the following lines in
-   <code>/var/log/nginx/error.log</code>:
+   We simply install NGINX by running <code>apt-get install nginx-full</code>.
+   If NGINX fails to start after installation, it is likely that you already
+   have another web server (e.g. Apache) running on the same port. In that case,
+   you will see the following lines in <code>/var/log/nginx/error.log</code>:
   </para>
 
   <programlisting role="shell">
+<![CDATA[
 2015/09/29 10:19:27 [emerg] 22445#22445: bind() to 0.0.0.0:80 failed (98:Address already in use)
 2015/09/29 10:19:27 [emerg] 22445#22445: bind() to [::]:80 failed (98: Address already in use)
+]]>
   </programlisting>
 
   <para>
-   If this happens, simple remove Apache by running <code>apt-get remove
-   apache2</code>.
+   To resolve this, you can either change the default port for NGINX or Apache,
+   stop the Apache process with <code>service apache2 stop</code>, or remove
+   Apache entirely with <code>apt-get remove apache2</code>.
   </para>
  </section>
 
@@ -43,24 +45,27 @@
   <title>HHVM</title>
 
   <para>
-   I have installed HHVM from a source build, mostly because I needed one with
-   some of my own patches and debug symbols. The folks at Facebook also provide
-   pre-built packages, which is probably what you *want* to use in production and
-   development. You can find them at the
+   This tutorial is written from the perspective of an extension developer, so
+   we've installed HHVM from source to faciliate patch development and ensure
+   that debug symbols are available. That said, the folks at Facebook also
+   provide pre-built packages, which is probably what <emphasis>you</emphasis>
+   to use in production and development. You can find installation instructions
+   for these packages on the
    <link xlink:href="&url.facebook.hhvm.prebuild;">HHVM Wiki</link>.
   </para>
 
   <para>
-   You need to install the <code>hhvm</code> <emphasis>and</emphasis>
-   <code>hhvm-dev</code> packages. The latter is needed so that we can
-   compile the MongoDB HHVM extension later on.
+   You will need to install both the the <code>hhvm</code>
+   <emphasis>and</emphasis> <code>hhvm-dev</code> packages. The latter is needed
+   so that we can compile the MongoDB HHVM extension later on.
   </para>
 
   <para>
-   Because I installed from source, I had to do some extra work. I had to create
+   If you are compiling HHVM from source, you will need to create 
    <code>/var/run/hhvm</code>:
+  </para>
 
-   <programlisting role="shell">
+  <programlisting role="shell">
 <![CDATA[
 sudo mkdir -p /var/run/hhvm
 sudo chown www-data.www-data /var/run/hhvm
@@ -71,20 +76,21 @@ sudo chown derick /etc/hhvm/php.ini
 # To see whether it actually works
 echo "date.timezone=Europe/London" >> /etc/hhvm/php.ini
 ]]>
-   </programlisting>
-  </para>
+  </programlisting>
 
   <para>
-   I also had to start HHVM as <code>www-data</code> user. For now, I am
-   running it in the foreground in <emphasis>server</emphasis> mode as
-   follows:
+   HHVM should be started as the <code>www-data</code> user. For the purposes of
+   this tutorial, we can run it in the foreground in <emphasis>server</emphasis>
+   mode as follows:
   </para>
 
   <programlisting role="shell">
+<![CDATA[
 sudo -u www-data -s /usr/local/hhvm/3.9.1/bin/hhvm \
  --mode server \
  -vServer.Type=fastcgi \
  -vServer.FileSocket=/var/run/hhvm/sock
+]]>
   </programlisting>
  </section>
 
@@ -92,9 +98,9 @@ sudo -u www-data -s /usr/local/hhvm/3.9.1/bin/hhvm \
   <title>Making NGINX talk to HHVM</title>
 
   <para>
-   Once HHVM runs, we need to tell NGINX how to talk to HHVM for
-   <code>.php</code> files. Although this is perhaps not the most clean way
-   of doing this, you can add the following snippet to
+   Once HHVM runs, we need to tell NGINX how to talk to HHVM for executing
+   <code>.php</code> files. Although this is perhaps not the cleanest approach,
+   you can add the following snippet to
    <code>/etc/nginx/sites-enabled/default</code>, just after the
    <code>location / { … }</code> section:
   </para>
@@ -111,29 +117,33 @@ location ~ \.php$ {
   </programlisting>
 
   <para>
-   After adding the snippet, you should restart NGINX:
+   After adding that snippet, you should restart NGINX:
   </para>
 
-  <programlisting role="php">
+  <programlisting role="shell">
 <![CDATA[
 sudo service nginx restart
 ]]>
   </programlisting>
 
   <para>
-   Just to see that it all works now, we will create a project directory and
-   in there, we place a ``index.php`` file with a ``phpinfo()`` file:
+   To confirm that everything works so far, we will create a project directory
+   with an <code>index.php</code> file that calls <code>phpinfo()</code>:
   </para>
 
   <para>
    <itemizedlist>
     <listitem>
-     <para>Create the project directory: <code>sudo mkdir -p
-     /var/www/html/my-first-project</code></para>
+     <para>
+      Create the project directory:
+      <code>sudo mkdir -p /var/www/html/my-first-project</code>
+     </para>
     </listitem>
     <listitem>
-     <para>Change permissions to your user: <code>sudo chown derick.www-data
-     /var/www/html/my-first-project</code></para>
+     <para>
+      Change permissions to your user and the <code>www-data</code> group:
+      <code>sudo chown derick.www-data /var/www/html/my-first-project</code>
+     </para>
     </listitem>
     <listitem>
      <para>
@@ -141,21 +151,21 @@ sudo service nginx restart
       From now on, I will <emphasis>not</emphasis> include the full path
       <code>/var/www/html/my-first-project/</code> when I mention file names.
       Put the following content in this file:
+     </para>
 
-      <programlisting role="php">
+     <programlisting role="php">
 <![CDATA[
 <?php
 phpinfo();
 ?>
 ]]>
-      </programlisting>
-     </para>
+     </programlisting>
     </listitem>
    </itemizedlist>
   </para>
 
   <para>
-  Now in your browser, request the page
+  Now, in your browser, request the page
   <code>http://gargleblaster/my-first-project/index.php</code> (but adjust the
   hostname). This should then show a page starting with "HHVM Version 3.9.1"
   followed by several tables with information.
@@ -166,41 +176,42 @@ phpinfo();
   <title>MongoDB Driver for HHVM</title>
 
   <para>
-   The MongoDB driver is the part that links up the PHP in HHVM with the database
-   server. To install and register the driver with HHVM, you need to take the
-   following steps:
+   The MongoDB driver is the part that links up the PHP in HHVM with the
+   database server. To install and register the driver with HHVM, you need to
+   take the following steps:
    <itemizedlist>
     <listitem>
      <para>
       Download the latest driver from
-      <code>https://github.com/mongodb-labs/mongo-hhvm-driver-prototype/releases</code>.
-      At the moment, there is only <link
-      xlink:href="&url.mongodb.hhvm.release;">hhvm-mongodb-1.0beta1.tgz</link>
-      so we will be using this one in the examples.
+      <link xlink:href="&url.mongodb.hhvm.releases;">GitHub</link> (at the time
+      of this writing, HHVM does not have a package manager for extensions). In
+      the examples below, we will use "x.y.z" as a version placeholder.
      </para>
     </listitem>
     <listitem>
      <para>
-      Unpack the archive: <code>tar -xvzf hhvm-mongodb-1.0beta1.tgz</code>
+      Unpack the archive: <code>tar -xvzf hhvm-mongodb-x.y.z.tgz</code>
      </para>
     </listitem>
     <listitem>
      <para>
-      <code>cd</code> into the newly created directory: <code>cd hhvm-mongodb-1.0beta1</code>
+      Change to the newly created directory: <code>cd hhvm-mongodb-x.y.z</code>
      </para>
     </listitem>
     <listitem>
      <para>
-      Generate the configure files for the bundled libraries. For this to work,
-      you need to have the <code>automake</code>, <code>autoconf</code> and <code>libtool</code> packages
-      installed (through <code>apt-get</code>).
-      <programlisting>
+      Generate the <code>configure</code> files for the bundled libraries. For
+      this to work, you need to have the <code>automake</code>,
+      <code>autoconf</code>, and <code>libtool</code> packages installed
+      (through <code>apt-get</code>).
+     </para>
+
+     <programlisting>
 <![CDATA[
 cd libbson; ./autogen.sh; cd ..
 cd libmongoc; ./autogen.sh; cd ..
 ]]>
-      </programlisting>
-     </para>
+     </programlisting>
     </listitem>
     <listitem>
      <para>
@@ -209,14 +220,14 @@ cd libmongoc; ./autogen.sh; cd ..
     </listitem>
     <listitem>
      <para>
-      Build the driver: <code>make</code>
+      Build the driver: <code>make -j 5</code>
      </para>
     </listitem>
     <listitem>
      <para>
-      Install the driver: <code>sudo make install</code>. This last step tells
-      you were it has installed the binary file <code>mongodb.so</code>. In my
-      case, it showed: <code>Installing:
+      Install the driver: <code>sudo make install</code>. This last step will
+      report where the binary file <code>mongodb.so</code> has been installed.
+      It should show somthing similar to: <code>Installing:
       /usr/local/hhvm/3.9.1/lib/hhvm/extensions/20150212/mongodb.so</code>
      </para>
     </listitem>
@@ -224,58 +235,61 @@ cd libmongoc; ./autogen.sh; cd ..
   </para>
 
   <para>
-   Now that the driver is installed, you need to enable it in HHVM. In order
-   to do this, you need to add the following lines to
-   <code>/etc/hhvm/php.ini</code>, swapping out my directory name for the
-   that showed when running <code>make install</code>:
+   Now that the driver is installed, you need to enable it in HHVM. Add the
+   following lines to <code>/etc/hhvm/php.ini</code>, swapping out the directory
+   in this example for the path shown after running <code>make install</code>:
+  </para>
 
-   <programlisting role="shell">
+  <programlisting role="shell">
 <![CDATA[
 hhvm.dynamic_extension_path=/usr/local/hhvm/3.9.1/lib/hhvm/extensions/20150212
 hhvm.dynamic_extensions[mongodb]=mongodb.so
 ]]>
-   </programlisting>
+  </programlisting>
 
-   After you have done that, you need to stop HHVM by pressing Ctrl-C in the
-   shell running HHVM, and then start it again as above:
+  <para>
+   After you have done this, HHVM will need to be restarted. If you have HHVM
+   running in the shell from earlier, stop it with Ctrl-C and restart it again
+   as above:
+  </para>
 
-   <programlisting role="shell">
+  <programlisting role="shell">
 <![CDATA[
 sudo -u www-data -s /usr/local/hhvm/3.9.1/bin/hhvm \
    --mode server \
    -vServer.Type=fastcgi \
    -vServer.FileSocket=/var/run/hhvm/sock
 ]]>
-   </programlisting>
-  </para>
+  </programlisting>
 
   <para>
-   In order to test that it works, we edit our <code>index.php</code> file,
-   and replace its contents with:
-   <programlisting role="php">
+   In order to test that the driver is loaded, edit the <code>index.php</code>
+   file and replace its contents with:
+  </para>
+
+  <programlisting role="php">
 <![CDATA[
 <?php
 var_dump(phpversion("mongodb"));
 ?>
 ]]>
-   </programlisting>
-  </para>
+  </programlisting>
 
-  <para>
-This should output something like:
+  <para>This should output something similar to:</para>
 
-   <programlisting>
-string(9) "1.0beta1"
-   </programlisting>
-  </para>
+  <programlisting>
+<![CDATA[
+string(5) "x.y.z"
+]]>
+  </programlisting>
  </section>
 
  <section>
-  <title>Further reading</title>
+  <title>Further Reading</title>
 
   <para>
-   Continue this tutorial by jumping to <xref
-   linkend="mongodb.tutorial.library"/>
+   Continue this tutorial by jumping to
+   <xref linkend="mongodb.tutorial.library"/>
   </para>
  </section>
 </section>
