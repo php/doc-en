@@ -4,19 +4,27 @@
 <refentry xml:id="mongodb-bson-serializable.bsonserialize" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoDB\BSON\Serializable::bsonSerialize</refname>
-  <refpurpose>Description</refpurpose>
+  <refpurpose>Provides an array or document to serialize as BSON</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>abstract</modifier> <modifier>public</modifier> <type>ReturnType</type><methodname>MongoDB\BSON\Serializable::bsonSerialize</methodname>
+   <modifier>abstract</modifier> <modifier>public</modifier> <type>array|object</type><methodname>MongoDB\BSON\Serializable::bsonSerialize</methodname>
    <void />
   </methodsynopsis>
   <para>
-
+   Called during serialization of the object to BSON. The method must return an
+   <type>array</type> or <classname>stdClass</classname>.
   </para>
-
+  <para>
+   Root documents (e.g. a <classname>MongoDB\BSON\Serializable</classname>
+   passed to <function>MongoDB\BSON\fromPHP</function>) will always be
+   serialized as a BSON document. For field values, associative arrays and
+   <classname>stdClass</classname> instances will be serialized as a BSON
+   document and sequential arrays (i.e. sequential, numeric indexes starting at
+   <literal>0</literal>) will be serialized as a BSON array.
+  </para>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -27,14 +35,8 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   
-  </para>
- </refsect1>
-
- <refsect1 role="errors">
-  &reftitle.errors;
-  <para>
-   
+   An <type>array</type> or <classname>stdClass</classname> to be serialized as
+   a BSON array or document.
   </para>
  </refsect1>
 
@@ -42,20 +44,115 @@
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><function>MongoDB\BSON\Serializable::bsonSerialize</function> example</title>
+   <title><function>MongoDB\BSON\Serializable::bsonSerialize</function> returning an associative array for root document</title>
    <programlisting role="php">
 <![CDATA[
 <?php
 
-/* ... */
+class MyDocument implements MongoDB\BSON\Serializable
+{
+    function bsonSerialize()
+    {
+        return ['foo' => 'bar'];
+    }
+}
+
+$bson = MongoDB\BSON\fromPHP(new MyDocument);
+echo MongoDB\BSON\toJSON($bson), "\n";
 
 ?>
 ]]>
    </programlisting>
-   &example.outputs.similar;
+   &example.outputs;
    <screen>
 <![CDATA[
-...
+{ "foo" : "bar" }
+]]>
+   </screen>
+  </example>
+
+  <example>
+   <title><function>MongoDB\BSON\Serializable::bsonSerialize</function> returning a sequential array for root document</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+class MyArray implements MongoDB\BSON\Serializable
+{
+    function bsonSerialize()
+    {
+        return [1, 2, 3];
+    }
+}
+
+$bson = MongoDB\BSON\fromPHP(new MyArray);
+echo MongoDB\BSON\toJSON($bson), "\n";
+
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+{ "0" : 1, "1" : 2, "2" : 3 }
+]]>
+   </screen>
+  </example>
+
+  <example>
+   <title><function>MongoDB\BSON\Serializable::bsonSerialize</function> returning an associative array for document field</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+class MyDocument implements MongoDB\BSON\Serializable
+{
+    function bsonSerialize()
+    {
+        return ['foo' => 'bar'];
+    }
+}
+
+$value = ['document' => new MyDocument];
+$bson = MongoDB\BSON\fromPHP($value);
+echo MongoDB\BSON\toJSON($bson), "\n";
+
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+{ "document" : { "foo" : "bar" } }
+]]>
+   </screen>
+  </example>
+
+  <example>
+   <title><function>MongoDB\BSON\Serializable::bsonSerialize</function> returning a sequential array for document field</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+class MyArray implements MongoDB\BSON\Serializable
+{
+    function bsonSerialize()
+    {
+        return [1, 2, 3];
+    }
+}
+
+$value = ['array' => new MyArray];
+$bson = MongoDB\BSON\fromPHP($value);
+echo MongoDB\BSON\toJSON($bson), "\n";
+
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+{ "array" : [ 1, 2, 3 ] }
 ]]>
    </screen>
   </example>
@@ -65,7 +162,9 @@
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
-   <member></member>
+   <member><function>MongoDB\BSON\Unzerializable::bsonUnserialize</function></member>
+   <member><classname>MongoDB\BSON\Persistable</classname></member>
+   <member><xref linkend="mongodb.persistence"/></member>
   </simplelist>
  </refsect1>
 
