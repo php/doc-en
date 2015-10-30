@@ -12,29 +12,17 @@
   <section xml:id="mongodb-driver-bulkwrite.intro">
    &reftitle.intro;
    <para>
-    The <classname>MongoDB\Driver\BulkWrite</classname> collects one ore more write
-    operations that should be sent to the server in writees.
+    The <classname>MongoDB\Driver\BulkWrite</classname> collects one or more
+    write operations that should be sent to the server. After adding any
+    number of insert, update, and delete operations, the collection may be
+    executed via
+    <methodname>MongoDB\Driver\Manager::executeBulkWrite</methodname>.
    </para>
    <para>
-    The <classname>MongoDB\Driver\Manager</classname> has 3 wrapper methods for single-item writees for simplicity:
-    <simplelist>
-     <member><methodname>MongoDB\Driver\Manager::executeInsert</methodname></member>
-     <member><methodname>MongoDB\Driver\Manager::executeDelete</methodname></member>
-     <member><methodname>MongoDB\Driver\Manager::executeUpdate</methodname></member>
-    </simplelist>
-    along with the main method to execute a write: <methodname>MongoDB\Driver\Manager::executeBulkWrite</methodname>
-   </para>
-   <para>
-    When constructing a write, you must define if the write should be executed
-    in order (default), or if it can be reordered by the server.
-   </para>
-   <para>
-    Ordered write write operations are sent to the server, in the order
-    provided, for serial execution. If a write fails, any remaining operations
-    will be aborted.
-   </para>
-   <para>
-    Unordered operations are sent to the server in arbitrary order
+    Write operations may either be ordered (default) or unordered. Ordered write
+    operations are sent to the server, in the order provided, for serial
+    execution. If a write fails, any remaining operations will be aborted.
+    Unordered operations are sent to the server in an arbitrary order
     where they may be executed in parallel. Any errors that occur are reported
     after all operations have been attempted.
    </para>
@@ -72,57 +60,58 @@
    &reftitle.examples;
 
    <example>
-    <title>Mixed write operations sent in groupped writees</title>
+    <title>Mixed write operations are grouped by type</title>
     <para>
-     Mixing write operations (insert/update/delete) will create internal sub-writees and will be sent sequentially to the server.
+     Mixed write operations (i.e. inserts, updates, and deletes) will be
+     assembled into typed write commands to be sent sequentially to the server.
     </para>
     <programlisting role="php">
 <![CDATA[
 <?php
-$write = new MongoDB\Driver\BulkWrite(true);
-$write->insert($a);
-$write->update($b, $obj);
-$write->update($c, $obj);
-$write->insert($d);
-$write->insert($e);
-$write->delete($f);
+
+$bulk = new MongoDB\Driver\BulkWrite(['ordered' => true]);
+$bulk->insert(['_id' => 1, 'x' => 1]);
+$bulk->insert(['_id' => 2, 'x' => 2]);
+$bulk->update(['x' => 2], ['$set' => ['x' => 1]]);
+$bulk->insert(['_id' => 3, 'x' => 3]);
+$bulk->delete(['x' => 1]);
+
 ?>
 ]]>
     </programlisting>
     <para>
-     Will result in 4 writes (round-trips) being executed.
+     Will result in four write commands (i.e. roundtrips) being executed. Since
+     the operations are ordered, the third insertion cannot be sent until the
+     preceding update is executed.
     </para>
    </example>
    <example>
-    <title>Ordered BulkWrite causing error</title>
+    <title>Ordered write operations causing an error</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-$write = new MongoDB\Driver\BulkWrite(false);
-$write->delete([]);
-$write->insert(["_id" => 1]);
-$write->insert(["_id" => 2]);
 
-$write->insert(["_id" => 3, "hello" => "world"]);
-$write->update(["_id" => 3], ['$set' => ["hello" => "earth"]]);
+$bulk = new MongoDB\Driver\BulkWrite(['ordered' => true]);
+$bulk->delete([]);
+$bulk->insert(['_id' => 1]);
+$bulk->insert(['_id' => 2]);
+$bulk->insert(['_id' => 3, 'hello' => 'world']);
+$bulk->update(['_id' => 3], ['$set' => ['hello' => 'earth']]);
+$bulk->insert(['_id' => 4, 'hello' => 'pluto']);
+$bulk->update(['_id' => 4], ['$set' => ['hello' => 'moon']]);
+$bulk->insert(['_id' => 3]);
+$bulk->insert(['_id' => 4]);
+$bulk->insert(['_id' => 5]);
 
-$write->insert(["_id" => 4, "hello" => "pluto"]);
-$write->update(["_id" => 4], ['$set' => ["hello" => "moon"]]);
-
-$write->insert(["_id" => 3]);
-$write->insert(["_id" => 4]);
-$write->insert(["_id" => 5]);
-
-$manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
+$manager = new MongoDB\Driver\Manager('mongodb://localhost:27017');
 $writeConcern = new MongoDB\Driver\WriteConcern(MongoDB\Driver\WriteConcern::MAJORITY, 1000);
-try {
-    $result = $manager->executeBulkWrite("databaseName.collectionName", $write, $writeConcern);
-} catch(MongoDB\Driver\DuplicateKeyException $ex) {
-    $result = $ex->getWriteResult();
-    printf("Inserted %d document(s)\n", $result->getInsertedCount());
-    printf("Updated  %d document(s)\n", $result->getModifiedCount());
 
-    /* If the WriteConcern could not be fullfilled */
+try {
+    $result = $manager->executeBulkWrite('db.collection', $bulk, $writeConcern);
+} catch (MongoDB\Driver\Exception\BulkWriteException $e) {
+    $result = $e->getWriteResult();
+
+    // Check if the write concern could not be fulfilled
     if ($writeConcernError = $result->getWriteConcernError()) {
         printf("%s (%d): %s\n",
             $writeConcernError->getMessage(),
@@ -131,7 +120,7 @@ try {
         );
     }
 
-    /* If the write could not happen at all */
+    // Check if any write operations did not complete at all
     foreach ($result->getWriteErrors() as $writeError) {
         printf("Operation#%d: %s (%d)\n",
             $writeError->getIndex(),
@@ -139,10 +128,13 @@ try {
             $writeError->getCode()
         );
     }
-} catch(MongoDB\Driver\AuthenticationException $ex) {
-} catch(MongoDB\Driver\ConnectionException $ex) {
-} catch(MongoDB\Driver\RuntimeException $ex) {
+} catch (MongoDB\Driver\Exception\Exception $e) {
+    printf("Other error: %s\n", $e->getMessage());
+    exit;
 }
+
+printf("Inserted %d document(s)\n", $result->getInsertedCount());
+printf("Updated  %d document(s)\n", $result->getModifiedCount());
 
 ?>
 ]]>
@@ -151,43 +143,45 @@ try {
    &example.outputs;
    <screen>
 <![CDATA[
+Operation#7: E11000 duplicate key error index: db.collection.$_id_ dup key: { : 3 } (11000)
 Inserted 4 document(s)
 Updated  2 document(s)
-Operation#7: E11000 duplicate key error index: databaseName.collectionName.$_id_ dup key: { : 3 } (11000)
 ]]>
    </screen>
    <para>
-    If the WriteConcern could not be fullfilled, the example above would output something like:
+    If the write concern could not be fullfilled, the example above would output
+    something like:
    </para>
    <screen>
 <![CDATA[
-Inserted 4 document(s)
-Updated  2 document(s)
 waiting for replication timed out (64): array (
   'wtimeout' => true,
 )
 Operation#7: E11000 duplicate key error index: databaseName.collectionName.$_id_ dup key: { : 3 } (11000)
+Inserted 4 document(s)
+Updated  2 document(s)
 ]]>
    </screen>
    <para>
-    Executing the same example, changing the order to false:
+    If we execute the example above, but allow for unordered writes:
    </para>
    <programlisting role="php">
 <![CDATA[
 <?php
-$write = new MongoDB\Driver\BulkWrite(false);
+
+$bulk = new MongoDB\Driver\BulkWrite(['ordered' => false]);
 /* ... */
+
 ?>
 ]]>
    </programlisting>
    &example.outputs;
    <screen>
 <![CDATA[
+Operation#7: E11000 duplicate key error index: db.collection.$_id_ dup key: { : 3 } (11000)
+Operation#8: E11000 duplicate key error index: db.collection.$_id_ dup key: { : 4 } (11000)
 Inserted 5 document(s)
 Updated  2 document(s)
-Operation#7: E11000 duplicate key error index: databaseName.collectionName.$_id_ dup key: { : 3 } (11000)
-Operation#8: E11000 duplicate key error index: databaseName.collectionName.$_id_ dup key: { : 4 } (11000)
-
 ]]>
    </screen>
   </section>
