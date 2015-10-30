@@ -11,24 +11,46 @@
   &reftitle.description;
   <methodsynopsis>
    <modifier>public</modifier> <methodname>MongoDB\Driver\BulkWrite::__construct</methodname>
-   <methodparam choice="opt"><type>boolean</type><parameter>ordered</parameter><initializer>true</initializer></methodparam>
+   <methodparam choice="opt"><type>array</type><parameter>options</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Constructs a new ordered, or unordered <classname>MongoDB\Driver\BulkWrite</classname>.
+   Constructs a new ordered (default) or unordered
+   <classname>MongoDB\Driver\BulkWrite</classname>.
   </para>
-
  </refsect1>
 
  <refsect1 role="parameters">
   &reftitle.parameters;
   <variablelist>
    <varlistentry>
-    <term><parameter>ordered</parameter></term>
+    <term><parameter>options</parameter> (<type>array</type>)</term>
     <listitem>
      <para>
-      Ordered bulkes (&true;) are executed serially on the MongoDB server,
-      while unorderd bulkes (&false;) are sent to the server in arbitrary order
-      and may be executed in parallel.
+      <table>
+       <title>options</title>
+       <tgroup cols="4">
+        <thead>
+         <row>
+          <entry>Option</entry>
+          <entry>Type</entry>
+          <entry>Description</entry>
+          <entry>Default</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry>ordered</entry>
+          <entry><type>bool</type></entry>
+          <entry>
+           Ordered operations (&true;) are executed serially on the MongoDB
+           server, while unordered operations (&false;) are sent to the server
+           in an arbitrary order and may be executed in parallel.
+          </entry>
+          <entry>&true;</entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </table>
      </para>
     </listitem>
    </varlistentry>
@@ -50,23 +72,31 @@
 <![CDATA[
 <?php
 
-$bulk = new MongoDB\Driver\BulkWrite(true);
-$bulk->insert($a);
-$bulk->insert($b);
-$bulk->update($c, $obj);
-$bulk->update($d, $obj);
-$bulk->delete($e);
-$bulk->delete($f);
-$bulk->update($g, $obj);
-$bulk->delete($h);
+$bulk = new MongoDB\Driver\BulkWrite(['ordered' => true]);
+$bulk->delete([]);
+$bulk->insert(['_id' => 1, 'x' => 1]);
+$bulk->insert(['_id' => 2, 'x' => 2]);
+$bulk->update(
+    ['x' => 2],
+    ['$set' => ['x' => 1]],
+    ['limit' => 1, 'upsert' => false]
+);
+$bulk->delete(['x' => 1], ['limit' => 1]);
+$bulk->update(
+    ['_id' => 3],
+    ['$set' => ['x' => 3]],
+    ['limit' => 1, 'upsert' => true]
+);
 
-$manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
+$manager = new MongoDB\Driver\Manager('mongodb://localhost:27017');
 $writeConcern = new MongoDB\Driver\WriteConcern(MongoDB\Driver\WriteConcern::MAJORITY, 1000);
+
 try {
-    $result = $manager->executeBulkWrite("databaseName.collectionName", $bulk, $writeConcern);
-} catch(MongoDB\Driver\DuplicateKeyException $ex) {
-    $result = $ex->getWriteResult();
-    /* If the WriteConcern could not be fullfilled */
+    $result = $manager->executeBulkWrite('db.collection', $bulk, $writeConcern);
+} catch (MongoDB\Driver\Exception\BulkWriteException $e) {
+    $result = $e->getWriteResult();
+
+    // Check if the write concern could not be fulfilled
     if ($writeConcernError = $result->getWriteConcernError()) {
         printf("%s (%d): %s\n",
             $writeConcernError->getMessage(),
@@ -75,7 +105,7 @@ try {
         );
     }
 
-    /* If the write could not happen at all */
+    // Check if any write operations did not complete at all
     foreach ($result->getWriteErrors() as $writeError) {
         printf("Operation#%d: %s (%d)\n",
             $writeError->getIndex(),
@@ -83,20 +113,16 @@ try {
             $writeError->getCode()
         );
     }
-} catch(MongoDB\Driver\AuthenticationException $ex) {
-    printf("Cannot authenticate: %s\n", $ex->getMessage());
-    exit(1);
-} catch(MongoDB\Driver\ConnectionException $ex) {
-    printf("Cannot connect to MongoDB server: %s\n", $ex->getMessage());
-    exit(2);
-} catch(MongoDB\Driver\RuntimeException $ex) {
-    printf("Unknown error: %s\n", $ex->getMessage());
-    exit(3);
+} catch (MongoDB\Driver\Exception\Exception $e) {
+    printf("Other error: %s\n", $e->getMessage());
+    exit;
 }
 
 printf("Inserted %d document(s)\n", $result->getInsertedCount());
 printf("Updated  %d document(s)\n", $result->getModifiedCount());
+printf("Upserted %d document(s)\n", $result->getUpsertedCount());
 printf("Deleted  %d document(s)\n", $result->getDeletedCount());
+
 ?>
 ]]>
    </programlisting>
@@ -104,8 +130,9 @@ printf("Deleted  %d document(s)\n", $result->getDeletedCount());
    <screen>
 <![CDATA[
 Inserted 2 document(s)
-Updated  3 document(s)
-Deleted  9 document(s)
+Updated  1 document(s)
+Upserted 1 document(s)
+Deleted  1 document(s)
 ]]>
    </screen>
   </example>
