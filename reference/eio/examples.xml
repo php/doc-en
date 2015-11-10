@@ -190,7 +190,7 @@ bool(true)
 
 <para>
   <example>
-   <title>Using eio with libevent</title>
+   <title>Using eio with libevent extension</title>
    <programlisting role="php"><![CDATA[
 <?php
 function my_eio_poll($fd, $events, $arg) {
@@ -240,6 +240,51 @@ int(0)
 string(8) "nop data"
 int(0)
 string(10) "mkdir data"
+ ]]>
+ </screen>
+</example>
+</para>
+
+<para>
+  <example>
+   <title>Using eio with event extension</title>
+   <programlisting role="php"><![CDATA[
+<?php
+$base = new EventBase();
+
+// Retrieve eio polling stream.
+// Note, this variable should be alive as long as the event loop is running.
+$eio_stream = eio_get_event_stream();
+
+// Bind eio polling stream to the event loop.
+$poll_event = new Event($base, $eio_stream, Event::READ, function () {
+  if (eio_nreqs()) {
+    eio_poll();
+  }
+});
+$poll_event->add();
+
+// Add eio jobs
+eio_nop(EIO_PRI_DEFAULT, function () {
+  echo "eio_nop\n";
+});
+
+// Add events
+$timer = Event::timer($base, function () {
+  echo "2 seconds elapsed\n";
+});
+$timer->add(2);
+
+// Dispatch events.
+$base->dispatch();
+?>
+]]></programlisting>
+
+&example.outputs.similar;
+<screen>
+ <![CDATA[
+eio_nop
+2 seconds elapsed
  ]]>
  </screen>
 </example>
