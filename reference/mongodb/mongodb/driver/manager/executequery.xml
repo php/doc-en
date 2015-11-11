@@ -4,7 +4,7 @@
 <refentry xml:id="mongodb-driver-manager.executequery" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoDB\Driver\Manager::executeQuery</refname>
-  <refpurpose>Execute a MongoDB query</refpurpose>
+  <refpurpose>Execute a database query</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -16,39 +16,31 @@
    <methodparam choice="opt"><type>MongoDB\Driver\ReadPreference</type><parameter>readPreference</parameter></methodparam>
   </methodsynopsis>
   <para>
-
+   Executes <parameter>query</parameter> on a server. If
+   <parameter>readPreference</parameter> is provided, it will be used for server
+   selection; otherwise, the default read preference will be used.
   </para>
-
  </refsect1>
 
  <refsect1 role="parameters">
   &reftitle.parameters;
   <variablelist>
    &mongodb.parameter.namespace;
-   <varlistentry>
-    <term><parameter>query</parameter></term>
-    <listitem>
-     <para>
-      A <classname>MongoDB\Driver\Query</classname> to execute.
-     </para>
-    </listitem>
-   </varlistentry>
+   &mongodb.parameter.query;
    &mongodb.parameter.readPreference;
   </variablelist>
  </refsect1>
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-   Returns <classname>MongoDB\Driver\Cursor</classname> on success, &mongodb.throws.onfailure;.
-  </para>
+  &mongodb.returns.cursor;
  </refsect1>
 
  <refsect1 role="errors">
   &reftitle.errors;
   <simplelist>
    &mongodb.throws.std;
-   <member>Throws <classname>MongoDB\Driver\RuntimeException</classname> on other errors, such as invalid queries</member>
+   <member>Throws <classname>MongoDB\Driver\Exception\RuntimeException</classname> on other errors (e.g. invalid query operators).</member>
   </simplelist>
  </refsect1>
 
@@ -59,32 +51,44 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-$filter = array(
-    "tag" => "mongodb",
-    "views" => array('$gt' => 5),
-);
-$options = array(
-    "projection" => array(
-        "title" => 1,
-        "article" => 1,
-    ),
-    "sort" => array(
-        "views" => -1,
-    ),
-);
-$readPreference = new MongoDB\Driver\ReadPreference(MongoDB\Driver\ReadPreference::RP_PRIMARY);
-$query = new MongoDB\Driver\Query($filter, $options);
 
 $manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
-$cursor = $manager->executeQuery("databaseName.collectionName", $query, $readPreference);
 
-foreach($cursor as $document) {
-    echo $document["title"], "\n";
+$bulk = new MongoDB\Driver\BulkWrite;
+$bulk->insert(['x' => 1]);
+$bulk->insert(['x' => 2]);
+$bulk->insert(['x' => 3]);
+$manager->executeBulkWrite('db.collection', $bulk);
+
+$filter = ['x' => ['$gt' => 1]];
+$options = [
+    'projection' => ['_id' => 0],
+    'sort' => ['x' => -1],
+];
+
+$query = new MongoDB\Driver\Query($filter, $options);
+$cursor = $manager->executeQuery('db.collection', $query);
+
+foreach ($cursor as $document) {
+    var_dump($document);
 }
 
 ?>
 ]]>
    </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+object(stdClass)#6 (1) {
+  ["x"]=>
+  int(3)
+}
+object(stdClass)#7 (1) {
+  ["x"]=>
+  int(2)
+}
+]]>
+   </screen>
   </example>
  </refsect1>
 
@@ -94,6 +98,7 @@ foreach($cursor as $document) {
    <member><classname>MongoDB\Driver\Cursor</classname></member>
    <member><classname>MongoDB\Driver\Query</classname></member>
    <member><classname>MongoDB\Driver\ReadPreference</classname></member>
+   <member><function>MongoDB\Driver\Server::executeQuery</function></member>
   </simplelist>
  </refsect1>
 

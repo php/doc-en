@@ -4,7 +4,7 @@
 <refentry xml:id="mongodb-driver-manager.executecommand" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoDB\Driver\Manager::executeCommand</refname>
-  <refpurpose>Execute a MongoDB database command</refpurpose>
+  <refpurpose>Execute a database command</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -16,82 +16,119 @@
    <methodparam choice="opt"><type>MongoDB\Driver\ReadPreference</type><parameter>readPreference</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Executes <parameter>command</parameter> on a MongoDB server matching <parameter>readPreference</parameter>.
+   Executes <parameter>command</parameter> on a server If
+   <parameter>readPreference</parameter> is provided, it will be used for server
+   selection; otherwise, the default read preference will be used.
   </para>
-
  </refsect1>
 
  <refsect1 role="parameters">
   &reftitle.parameters;
   <variablelist>
-   <varlistentry>
-    <term><parameter>db</parameter></term>
-    <listitem>
-     <para>
-      The name of the database on which to execute the command.
-     </para>
-    </listitem>
-   </varlistentry>
-   <varlistentry>
-    <term><parameter>command</parameter></term>
-    <listitem>
-     <para>
-      The command document.
-     </para>
-    </listitem>
-   </varlistentry>
+   &mongodb.parameter.db;
+   &mongodb.parameter.command;
    &mongodb.parameter.readPreference;
   </variablelist>
  </refsect1>
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-   Returns <classname>MongoDB\Driver\Cursor</classname> on success, &mongodb.throws.onfailure;.
-  </para>
+  &mongodb.returns.cursor;
  </refsect1>
 
  <refsect1 role="errors">
   &reftitle.errors;
   <simplelist>
    &mongodb.throws.std;
-   &mongodb.throws.executesingle;
-   <member>Throws <classname>MongoDB\Driver\RuntimeException</classname> on other errors (invalid command, command arguments, ...)</member>
+   <member>Throws <classname>MongoDB\Driver\Exception\RuntimeException</classname> on other errors (e.g. invalid command, issuing a write command to a secondary).</member>
   </simplelist>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><function>MongoDB\Driver\Manager::executeCommand</function> example</title>
+   <title><function>MongoDB\Driver\Manager::executeCommand</function> with a command returning a single result document</title>
    <programlisting role="php">
 <![CDATA[
 <?php
 
-$manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
-$command = new MongoDB\Driver\Command(array("ping" => 1));
+$manager = new MongoDB\Driver\Manager('mongodb://localhost:27017');
+$command = new MongoDB\Driver\Command(['ping' => 1]);
 
 try {
-    $cursor = $manager->executeCommand("admin", $command);
-    $response = $cursor->toArray()[0];
+    $cursor = $manager->executeCommand('admin', $command);
 } catch(MongoDB\Driver\Exception $e) {
     echo $e->getMessage(), "\n";
     exit;
 }
+
+/* The ping command returns a single result document, so we need to access the
+ * first result in the cursor. */
+$response = $cursor->toArray()[0];
+
 var_dump($response);
 
 ?>
 ]]>
    </programlisting>
-   &example.outputs.similar;
+   &example.outputs;
    <screen>
 <![CDATA[
-
 array(1) {
   ["ok"]=>
   float(1)
 }
+]]>
+   </screen>
+  </example>
+  <example>
+   <title><function>MongoDB\Driver\Manager::executeCommand</function> with a command returning a cursor</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
 
+$manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
+
+$bulk = new MongoDB\Driver\BulkWrite;
+$bulk->insert(['x' => 1, 'y' => 'foo']);
+$bulk->insert(['x' => 2, 'y' => 'bar']);
+$bulk->insert(['x' => 3, 'y' => 'bar']);
+$manager->executeBulkWrite('db.collection', $bulk);
+
+$command = new MongoDB\Driver\Command([
+    'aggregate' => 'collection',
+    'pipeline' => [
+        ['$group' => ['_id' => '$y', 'sum' => ['$sum' => '$x']]],
+    ],
+    'cursor' => new stdClass,
+]);
+$cursor = $manager->executeCommand('db', $command);
+
+/* The aggregate command can optionally return its results in a cursor instead
+ * of a single result document. In this case, we can iterate on the cursor
+ * directly to access those results. */
+foreach ($cursor as $document) {
+    var_dump($document);
+}
+
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+object(stdClass)#6 (2) {
+  ["_id"]=>
+  string(3) "bar"
+  ["sum"]=>
+  int(10)
+}
+object(stdClass)#7 (2) {
+  ["_id"]=>
+  string(3) "foo"
+  ["sum"]=>
+  int(2)
+}
 ]]>
    </screen>
   </example>
@@ -101,15 +138,18 @@ array(1) {
   &reftitle.notes;
   <note>
    <para>
-    For write commands, <classname>MongoDB\Driver\WriteConcern</classname> is
-    included in the <parameter>command</parameter> document itself.
+    This method does not take a
+    <classname>MongoDB\Driver\WriteConcern</classname> parameter. For write
+    commands (e.g.
+    <link xlink:href="&url.mongodb.docs;reference/command/findAndModify/">findAndModify</link>
+    in MongoDB 3.2+), the write concern should be included in the
+    <parameter>command</parameter> document itself.
    </para>
-  </note>
-  <note>
    <para>
     If a secondary <parameter>readPreference</parameter> is used, it is the
-    caller's responsibility to ensure that the <parameter>command</parameter>
-    can be executed on a secondary. No validation is done by the driver.
+    caller&apos;s responsibility to ensure that the
+    <parameter>command</parameter> can be executed on a secondary. No validation
+    is done by the driver.
    </para>
   </note>
  </refsect1>
@@ -120,6 +160,7 @@ array(1) {
    <member><classname>MongoDB\Driver\Command</classname></member>
    <member><classname>MongoDB\Driver\Cursor</classname></member>
    <member><classname>MongoDB\Driver\ReadPreference</classname></member>
+   <member><function>MongoDB\Driver\Server::executeCommand</function></member>
   </simplelist>
  </refsect1>
 
