@@ -1,4 +1,5 @@
 <?php
+	$columns = 4;
 	$groupedList = array();
 	$aliasList = array(
 		'Brazil' => 'Others',
@@ -46,7 +47,7 @@
     }
 
     foreach ($groupedList as $group => $zones) { 
-        $m = count($zones) > 4 ? 5 : count($zones); ?>
+        $m = count($zones) > ($columns-1) ? $columns : count($zones); ?>
 
  <sect1 xml:id="timezones.<?php echo strtolower($group); ?>">
   <title><?php echo '&date.timezone.' . strtolower($group) . ';'; ?></title>
