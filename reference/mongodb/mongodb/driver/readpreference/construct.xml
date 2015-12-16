@@ -4,30 +4,85 @@
 <refentry xml:id="mongodb-driver-readpreference.construct" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoDB\Driver\ReadPreference::__construct</refname>
-  <refpurpose>Description</refpurpose>
+  <refpurpose>Construct immutable ReadPreference</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
    <modifier>final</modifier> <modifier>public</modifier> <methodname>MongoDB\Driver\ReadPreference::__construct</methodname>
-   <methodparam><type>string</type><parameter>readPreference</parameter></methodparam>
+   <methodparam><type>string</type><parameter>mode</parameter></methodparam>
    <methodparam choice="opt"><type>array</type><parameter>tagSets</parameter></methodparam>
   </methodsynopsis>
   <para>
-
+   Creates a new ReadPreference.
   </para>
-
  </refsect1>
 
  <refsect1 role="parameters">
   &reftitle.parameters;
   <variablelist>
    <varlistentry>
-    <term><parameter>readPreference</parameter></term>
+    <term><parameter>mode</parameter></term>
     <listitem>
      <para>
-      
+      <table>
+       <title>Read preference mode</title>
+       <tgroup cols="2">
+        <thead>
+         <row>
+          <entry>Value</entry>
+          <entry>Description</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry><constant>MongoDB\Driver\ReadPreference::RP_PRIMARY</constant></entry>
+          <entry>
+           <para>
+            All operations read from the current replica set primary. This is
+            the default read preference for MongoDB.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry><constant>MongoDB\Driver\ReadPreference::RP_PRIMARY_PREFERRED</constant></entry>
+          <entry>
+           <para>
+            In most situations, operations read from the primary but if it is
+            unavailable, operations read from secondary members.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry><constant>MongoDB\Driver\ReadPreference::RP_SECONDARY</constant></entry>
+          <entry>
+           <para>
+            All operations read from the secondary members of the replica set.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry><constant>MongoDB\Driver\ReadPreference::RP_SECONDARY_PREFERRED</constant></entry>
+          <entry>
+           <para>
+            In most situations, operations read from secondary members but if no
+            secondary members are available, operations read from the primary.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry><constant>MongoDB\Driver\ReadPreference::RP_NEAREST</constant></entry>
+          <entry>
+           <para>
+            Operations read from member of the replica set with the least
+            network latency, irrespective of the member&apos;s type.
+           </para>
+          </entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </table>
      </para>
     </listitem>
    </varlistentry>
@@ -35,25 +90,35 @@
     <term><parameter>tagSets</parameter></term>
     <listitem>
      <para>
-      
+      Tag sets allow you to target read operations to specific members of a
+      replica set. This parameter should be an array of associative arrays, each
+      of which contain zero or more key/value pairs. When selecting a server for
+      a read operation, the driver attempt to select a node having all tags in a
+      set (i.e. the associative array of key/value pairs). If selection fails,
+      the driver will attempt subsequent sets. An empty tag set
+      (<literal>array()</literal>) will match any node and may be used as a
+      fallback.
+     </para>
+     <para>
+      Tags are not compatible with the
+      <constant>MongoDB\Driver\ReadPreference::RP_PRIMARY</constant> mode and,
+      in general, only apply when selecting a secondary member of a set for a
+      read operation. However, the
+      <constant>MongoDB\Driver\ReadPreference::RP_NEAREST</constant> mode, when
+      combined with a tag set, selects the matching member with the lowest
+      network latency. This member may be a primary or secondary.
      </para>
     </listitem>
    </varlistentry>
   </variablelist>
  </refsect1>
 
- <refsect1 role="returnvalues">
-  &reftitle.returnvalues;
-  <para>
-   
-  </para>
- </refsect1>
-
  <refsect1 role="errors">
   &reftitle.errors;
-  <para>
-   
-  </para>
+  <simplelist>
+   &mongodb.throws.argumentparsing;
+   <member>Throws <classname>MongoDB\Driver\Exception\InvalidArgumentException</classname> if <parameter>mode</parameter> is invalid or if <parameter>tagSets</parameter> is provided for a primary read preference.</member>
+  </simplelist>
  </refsect1>
 
 
@@ -65,17 +130,15 @@
 <![CDATA[
 <?php
 
-/* ... */
+/* Prefer a secondary node but fall back to a primary. */
+$rp = new MongoDB\Driver\ReadPreference(MongoDB\Driver\ReadPreference::RP_SECONDARY_PREFERRED);
+
+/* Prefer a node in the New York data center with lowest latency. */
+$rp = new MongoDB\Driver\ReadPreference(MongoDB\Driver\ReadPreference::RP_NEAREST, [['dc' => 'ny']]);
 
 ?>
 ]]>
    </programlisting>
-   &example.outputs.similar;
-   <screen>
-<![CDATA[
-...
-]]>
-   </screen>
   </example>
  </refsect1>
 
@@ -83,7 +146,7 @@
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
-   <member></member>
+   <member><link xlink:href="&url.mongodb.docs.readpreference;">Read Preference reference</link></member>
   </simplelist>
  </refsect1>
 

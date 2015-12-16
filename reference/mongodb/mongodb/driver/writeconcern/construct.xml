@@ -11,27 +11,25 @@
   &reftitle.description;
   <methodsynopsis>
    <modifier>final</modifier> <modifier>public</modifier> <methodname>MongoDB\Driver\WriteConcern::__construct</methodname>
-   <methodparam><type>string</type><parameter>wstring</parameter></methodparam>
+   <methodparam><type>string</type><parameter>w</parameter></methodparam>
    <methodparam choice="opt"><type>integer</type><parameter>wtimeout</parameter></methodparam>
    <methodparam choice="opt"><type>boolean</type><parameter>journal</parameter></methodparam>
-   <methodparam choice="opt"><type>boolean</type><parameter>fsync</parameter></methodparam>
   </methodsynopsis>
   <para>
    Creates a new WriteConcern.
   </para>
-
  </refsect1>
 
  <refsect1 role="parameters">
   &reftitle.parameters;
   <variablelist>
    <varlistentry>
-    <term><parameter>wstring</parameter></term>
+    <term><parameter>w</parameter></term>
     <listitem>
      <para>
       <table>
-       <title>Write Concern</title>
-       <tgroup cols="4">
+       <title>Write concern</title>
+       <tgroup cols="2">
         <thead>
          <row>
           <entry>Value</entry>
@@ -41,45 +39,48 @@
         <tbody>
          <row>
           <entry>1</entry>
-          <entry><type>integer</type></entry>
           <entry>
-           <para>
-            Provides acknowledgment of write operations on a standalone mongod
-            or the primary in a Replica Set.
-           </para>
-           <para>
-            This is the default value when no Write Concern is provided.
-           </para>
+            Requests acknowledgement that the write operation has propagated to
+            the standalone <literal>mongod</literal> or the primary in a replica
+            set. This is the default write concern for MongoDB.
           </entry>
          </row>
          <row>
           <entry>0</entry>
           <entry>
-           Disables basic acknowledgment of write operations, but returns
-           information about socket exceptions and networking errors to the
-           application.
+           Requests no acknowledgment of the write operation. However, this may
+           return information about socket exceptions and networking errors to
+           the application.
           </entry>
          </row>
          <row>
-          <entry>&lt;Number greater than 1&gt;</entry>
+          <entry>&lt;integer greater than 1&gt;</entry>
           <entry>
-           Guarantees that write operations have propagated successfully to
-           the specified number of Replica Set members, including the primary.
+           Numbers greater than 1 are valid only for replica sets to request
+           acknowledgement from specified number of members, including the
+           primary.
           </entry>
          </row>
          <row>
-          <entry>MongoDB\Driver\WriteConcern::MAJORITY</entry>
+          <entry><constant>MongoDB\Driver\WriteConcern::MAJORITY</constant></entry>
           <entry>
-           Confirms that write operations have propagated to the majority of
-           configured replica set: a majority of the set’s configured members
-           must acknowledge the write operation before it succeeds.
+           <para>
+            Requests acknowledgment that write operations have propagated to the
+            majority of voting nodes, including the primary, and have been
+            written to the on-disk journal for these nodes.
+           </para>
+           <para>
+            Prior to MongoDB 3.0, this refers to the majority of replica set
+            members (not just voting nodes).
+           </para>
           </entry>
          </row>
          <row>
           <entry>string</entry>
           <entry>
-           A string value as WriteConcern is interpereted as a TagSet value.
-           At least one node in the TagSet must acknowledge the write.
+           A string value is interpereted as a tag set. Requests acknowledgement
+           that the write operations have propagated to a replica set member
+           with the specified tag.
           </entry>
          </row>
         </tbody>
@@ -95,15 +96,17 @@
       How long to wait (in milliseconds) for secondaries before failing.
      </para>
      <para>
-      wtimeout causes write operations to return with an error
-      (<classname>WriteConcernError</classname>) after the
-      specified limit, even if the required write concern will eventually
-      succeed. When these write operations return, MongoDB does not undo
-      successful data modifications performed before the write concern
-      exceeded the wtimeout time limit.
+      <literal>wtimeout</literal> causes write operations to return with an
+      error (<classname>WriteConcernError</classname>) after the specified
+      limit, even if the required write concern will eventually succeed. When
+      these write operations return, MongoDB does not undo successful data
+      modifications performed before the write concern exceeded the
+      <literal>wtimeout</literal> time limit.
+     </para>
+     <para>
       <table>
-       <title>Write Concern timeout</title>
-       <tgroup cols="4">
+       <title>Write concern timeout</title>
+       <tgroup cols="2">
         <thead>
          <row>
           <entry>Value</entry>
@@ -116,7 +119,7 @@
           <entry>Block indefinitely. This is the default.</entry>
          </row>
          <row>
-          <entry>&lt;Greater than 0&gt;</entry>
+          <entry>&lt;integer greater than 0&gt;</entry>
           <entry>
            Milliseconds to wait until returning.
           </entry>
@@ -135,24 +138,6 @@
      </para>
     </listitem>
    </varlistentry>
-   <varlistentry>
-    <term><parameter>fsync</parameter></term>
-    <listitem>
-     <para>
-      Wait until the write has been flushed to disk.
-     </para>
-     <note>
-      <para>
-       Cannot be used with <parameter>journal</parameter>.
-      </para>
-     </note>
-     <note>
-      <para>
-       This option should be discouraged.
-      </para>
-     </note>
-    </listitem>
-   </varlistentry>
   </variablelist>
  </refsect1>
 
@@ -160,6 +145,7 @@
   &reftitle.errors;
   <simplelist>
    &mongodb.throws.argumentparsing;
+   <member>Throws <classname>MongoDB\Driver\Exception\InvalidArgumentException</classname> if <parameter>w</parameter> is invalid or <parameter>wtimeout</parameter> is negative.</member>
   </simplelist>
  </refsect1>
 
@@ -171,19 +157,16 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-/* Request Write Confirmation from majority of the Replica Set nodes */
+
+/* Request write acknowledgement from the majority of the replica set nodes */
 $wc = new MongoDB\Driver\WriteConcern(MongoDB\Driver\WriteConcern::MAJORITY, 500);
 
-/* Request Write Confirmation configured by the "MultipleDC" tag */
+/* Request write acknowledgement from a node configured with the "MultipleDC" tag */
 $wc = new MongoDB\Driver\WriteConcern("MultipleDC", 500);
+
 ?>
 ]]>
    </programlisting>
-   &example.outputs.similar;
-   <screen>
-<![CDATA[
-]]>
-   </screen>
   </example>
  </refsect1>
 
@@ -191,7 +174,7 @@ $wc = new MongoDB\Driver\WriteConcern("MultipleDC", 500);
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
-   <member></member>
+   <member><link xlink:href="&url.mongodb.docs.writeconcern;">Write Concern reference</link></member>
   </simplelist>
  </refsect1>
 
