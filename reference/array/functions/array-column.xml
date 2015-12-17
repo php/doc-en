@@ -9,17 +9,17 @@
   &reftitle.description;
   <methodsynopsis>
    <type>array</type><methodname>array_column</methodname>
-   <methodparam><type>array</type><parameter>array</parameter></methodparam>
+   <methodparam><type>array</type><parameter>input</parameter></methodparam>
    <methodparam><type>mixed</type><parameter>column_key</parameter></methodparam>
    <methodparam choice="opt"><type>mixed</type><parameter>index_key</parameter><initializer>null</initializer></methodparam>
   </methodsynopsis>
   <para>
    <function>array_column</function> returns the values from a single column of
-   the <parameter>array</parameter>, identified by the
-   <parameter>column_key</parameter>. Optionally, you may provide an
-   <parameter>index_key</parameter> to index the values in the returned array by
-   the values from the <parameter>index_key</parameter> column in the input
-   array.
+   the <parameter>input</parameter>, identified by the
+   <parameter>column_key</parameter>. Optionally, an
+   <parameter>index_key</parameter> may be provided to index the values in the
+   returned array by the values from the <parameter>index_key</parameter>
+   column of the input array.
   </para>
  </refsect1>
  <refsect1 role="parameters">
@@ -27,11 +27,15 @@
   <para>
    <variablelist>
     <varlistentry>
-     <term><parameter>array</parameter></term>
+     <term><parameter>input</parameter></term>
      <listitem>
       <para>
-       A multi-dimensional array (record set) from which to pull a column of
-       values.
+       A multi-dimensional array or an array of objects from which to pull a
+       column of values from. If an array of objects is provided, then public
+       properties can be directly pulled. In order for protected or private
+       properties to be pulled, the class must implement both the
+       <function>__get</function> and <function>__isset</function> magic
+       methods.
       </para>
      </listitem>
     </varlistentry>
@@ -39,11 +43,11 @@
      <term><parameter>column_key</parameter></term>
      <listitem>
       <para>
-       The column of values to return. This value may be the integer key of the
-       column you wish to retrieve, or it may be the string key name for an
-       associative array. It may also be &null; to return complete arrays
-       (useful together with <parameter>index_key</parameter> to reindex the
-       array).
+       The column of values to return. This value may be an integer key of the
+       column you wish to retrieve, or it may be a string key name for an
+       associative array or property name. It may also be &null; to return
+       complete arrays or objects (this is useful together with
+       <parameter>index_key</parameter> to reindex the array).
       </para>
      </listitem>
     </varlistentry>
@@ -65,11 +69,35 @@
    Returns an array of values representing a single column from the input array.
   </para>
  </refsect1>
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>7.0.0</entry>
+       <entry>
+        Added the ability for the <parameter>input</parameter> parameter to be
+        an array of objects.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
+  </para>
+ </refsect1>
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
    <example>
-    <title>Get column of first names from recordset</title>
+    <title>Get the column of first names from a recordset</title>
     <programlisting role="php">
 <![CDATA[
 <?php
@@ -119,7 +147,7 @@ Array
   <para>
    <example>
     <title>
-     Get column of last names from recordset, indexed by the "id" column
+     Get the column of last names from a recordset, indexed by the "id" column
     </title>
     <programlisting role="php">
 <![CDATA[
@@ -143,6 +171,104 @@ Array
 ]]>
     </screen>
    </example>
+  </para>
+  <para>
+   <example>
+    <title>
+     Get the column of usernames from the public "username" property of an
+     object
+    </title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+class User
+{
+    public $username;
+
+    public function __construct(string $username)
+    {
+        $this->username = $username;
+    }
+}
+
+$users = [
+    new User('user 1'),
+    new User('user 2'),
+    new User('user 3'),
+];
+
+print_r(array_column($users, 'username'));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen role="php">
+<![CDATA[
+Array
+(
+    [0] => user 1
+    [1] => user 2
+    [2] => user 3
+)
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>
+     Get the column of names from the private "name" property of an object
+     using the magic <function>__get</function> method.
+    </title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+class Person
+{
+    private $name;
+
+    public function __construct(string $name)
+    {
+        $this->name = $name;
+    }
+
+    public function __get($prop)
+    {
+        return $this->$prop;
+    }
+
+    public function __isset($prop) : bool
+    {
+        return isset($this->$prop);
+    }
+}
+
+$people = [
+    new Person('Fred'),
+    new Person('Jane'),
+    new Person('John'),
+];
+
+print_r(array_column($people, 'name'));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen role="php">
+<![CDATA[
+Array
+(
+    [0] => Fred
+    [1] => Jane
+    [2] => John
+)
+]]>
+    </screen>
+   </example>
+   If <function>__isset</function> is not provided, then an empty array will be
+   returned.
   </para>
  </refsect1>
 
