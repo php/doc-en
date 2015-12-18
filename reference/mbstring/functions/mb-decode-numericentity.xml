@@ -79,6 +79,75 @@ $convmap = array (
     </programlisting>
    </example>
   </para>
+
+  <para>
+   <example>
+    <title><parameter>convmap</parameter> example escapes JavaScript string</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function escape_javascript_string($str) {
+  $map = [
+          1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,0,0, // 49
+          0,0,0,0,0,0,0,0,1,1,
+          1,1,1,1,1,0,0,0,0,0,
+          0,0,0,0,0,0,0,0,0,0,
+          0,0,0,0,0,0,0,0,0,0,
+          0,1,1,1,1,1,1,0,0,0, // 99
+          0,0,0,0,0,0,0,0,0,0,
+          0,0,0,0,0,0,0,0,0,0,
+          0,0,0,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,1,1, // 149
+          1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,1,1, // 199
+          1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,1,1,
+          1,1,1,1,1,1,1,1,1,1, // 249
+          1,1,1,1,1,1,1, // 255
+          ];
+  // Char encoding is UTF-8
+  $mblen = mb_strlen($str, 'UTF-8');
+  $utf32 = bin2hex(mb_convert_encoding($str, 'UTF-32', 'UTF-8'));
+  for ($i=0, $encoded=''; $i < $mblen; $i++) {
+      $u = substr($utf32, $i*8, 8);
+      $v = base_convert($u, 16, 10);
+      if ($v < 256 && $map[$v]) {
+        $encoded .= '\\x'.substr($u, 6,2);
+      } else if ($v == 2028) {
+        $encoded .= '\\u2028';
+      } else if ($v == 2029) {
+        $encoded .= '\\u2029';
+      } else {
+        $encoded .= mb_convert_encoding(hex2bin($u), 'UTF-8', 'UTF-32');
+      }
+   }
+   return $encoded;
+}
+ 
+// Test data
+$convmap = [ 0x0, 0xffff, 0, 0xffff ];
+$msg = '';
+for ($i=0; $i < 1000; $i++) {
+  // chr() cannot generate correct UTF-8 data larger value than 128, use mb_decode_numericentity().
+  $msg .= mb_decode_numericentity('&#'.$i.';', $convmap, 'UTF-8');
+}
+ 
+// var_dump($msg);
+var_dump(escape_javascript_string($msg));
+]]>
+    </programlisting>
+   </example>
+  </para>
  </refsect1>
 
  <refsect1 role="seealso">
