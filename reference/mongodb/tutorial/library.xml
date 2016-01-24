@@ -2,97 +2,98 @@
 <!-- $Revision: 336263 $ -->
 
 <chapter xml:id="mongodb.tutorial.library" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
- <title>Using the library</title>
+ <title>Using the PHP Library (PHPLIB)</title>
 
  <para>
-  After the initial set-up, we continue explaining how to get started with the
-  MongoDB driver and library for HHVM to write our first project.
+  After the initial driver set-up, we will continue explaining how to get
+  started with the MongoDB driver and corresponding userland library to write
+  our first project.
  </para>
 
-  <section>
-   <title>PHP Library (PHPLIB)</title>
+ <section>
+  <title>Installing the PHP Library with Composer</title>
 
-   <para>
-			The last thing we still need to install to get started on the application
-			itself, is the PHP library.
+  <para>
+   The last thing we still need to install to get started on the application
+   itself, is the PHP library.
+  </para>
+
+  <para>
+   The library needs to be installed with
+   <link xlink:href="&url.mongodb.composer;">Composer</link>, a package manager
+   for PHP. Instructions for installing Composer on various platforms may be
+   found on its website.
    </para>
 
    <para>
-    The library needs to be installed with Composer. In your project directory
-    (<code>/var/www/html/my-first-project</code>) type:
-
+    Install the library by running:
     <programlisting role="shell">
-curl -sS https://getcomposer.org/installer -o installer.php
-hhvm installer.php
-rm installer.php
-    </programlisting>
-   </para>
-
-   <para>
-    This downloads and installs Composer. Wherever it says "Use it: php
-    composer.phar", it of course means <literal>hhvm composer.phar</literal>.
-   </para>
-
-   <para>
-With Composer installed, we can now install the library:
-
-    <programlisting role="shell">
-hhvm composer.phar require mongodb/mongodb
-    </programlisting>
-   </para>
-
-   <para>
-It outputs something akin to:
-
-    <programlisting role="shell">
-Using version ^0.2.0 for mongodb/mongodb
-./composer.json has been created
-Loading composer repositories with package information
-Updating dependencies (including require-dev)
-  - Installing mongodb/mongodb (0.2.0)
- Downloading: 100%         
-
-Writing lock file
-Generating autoload files
-    </programlisting>
-   </para>
-
-   <para>
-    And it has created several files (<code>composer.json</code>,
-    <code>composer.lock</code>) as well as the <code>vendor</code> directory
-    that contains the library.
-   </para>
-  </section>
-
-  <section>
-   <title>Using the Library</title>
-
-   <para>
-    Composer manages your dependencies, and will provide you with a loader that
-    you include with the following at the start of your script:
-
-    <programlisting role="php">
 <![CDATA[
-	<?php
-	require 'vendor/autoload.php';
+$ composer require "mongodb/mongodb=^1.0.0"
 ]]>
     </programlisting>
    </para>
 
    <para>
-    With this done, you can now use any of the functionality as described in
-    the <link xlink:href="&url.mongodb.library.apidocs;">documentation</link>.
+It will output something akin to:
+
+    <programlisting role="text">
+<![CDATA[
+./composer.json has been created
+Loading composer repositories with package information
+Updating dependencies (including require-dev)
+  - Installing mongodb/mongodb (1.0.0)
+    Downloading: 100%         
+
+Writing lock file
+Generating autoload files
+]]>
+    </programlisting>
    </para>
 
    <para>
-    If you are familiar with the old driver, it should look too much out of
-    place. The only big difference is that the
+    Composer will create several files: <code>composer.json</code>,
+    <code>composer.lock</code>, and a <code>vendor</code> directory that will
+    contain the library and any other dependencies your project might require.
+   </para>
+  </section>
+
+  <section>
+   <title>Using the PHP Library</title>
+
+   <para>
+    In addition to managing your dependencies, Composer will also provide you
+    with an autoloader (for those dependencies' classes). Ensure that it is
+    included at the start of your script or in your application's bootstrap
+    code:
+    <programlisting role="php">
+<![CDATA[
+<?php
+// This path should point to Composer's autoloader
+require 'vendor/autoload.php';
+]]>
+    </programlisting>
+   </para>
+
+   <para>
+    With this done, you can now use any of the functionality as described in the
+    <link xlink:href="&url.mongodb.library.docs;">library documentation</link>
+    and its <link xlink:href="&url.mongodb.library.apidocs;">API</link>.
+   </para>
+
+   <para>
+    If you have previously used the old driver (i.e. <code>mongo</code>
+    extension), the library's API should look familiar. It contains a
+    <link xlink:href="&url.mongodb.library.apidocs;/class-MongoDB.Client.html">Client</link>
+    class for connecting to MongoDB, and
     <link xlink:href="&url.mongodb.library.apidocs;/class-MongoDB.Database.html">Database</link>
-    class is only used for Database specific operations. The
-    <link xlink:href="&url.wiki.crud;">CRUD</link> operations on the
+    class for database-level operations (e.g. commands, collection management)
+    and a
     <link xlink:href="&url.mongodb.library.apidocs;/class-MongoDB.Collection.html">Collection</link>
-    class are also renamed for clarity, and to be in accordance with a new
-    language-agnostic
+    class for collection-level operations (e.g.
+    <link xlink:href="&url.wiki.crud;">CRUD</link> methods, index management).
+    Various Collection methods have been renamed for clarity, and to be in
+    accordance with a new language-agnostic
     <link xlink:href="&url.mongodb.crud;">specification</link>.
    </para>
 
@@ -100,60 +101,60 @@ Generating autoload files
     As an example, this is how you insert a document into the
     <emphasis>beers</emphasis> collection of the <emphasis>demo</emphasis>
     database:
-
     <programlisting role="php">
 <![CDATA[
-	<?php
-	require 'vendor/autoload.php'; // include Composer goodies
+<?php
+require 'vendor/autoload.php'; // include Composer goodies
 
-	$manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
-	$collection = new MongoDB\Collection($manager, "demo.beers");
+$client = new MongoDB\Driver\Client("mongodb://localhost:27017");
+$collection = $client->demo->beers;
 
-	$result = $collection->insertOne( [ 'name' => 'Hinterland', 'brewery' => 'BrewDog' ] );
+$result = $collection->insertOne( [ 'name' => 'Hinterland', 'brewery' => 'BrewDog' ] );
 
-	echo "Inserted with Object ID '{$result->getInsertedId()}'";
-	?>
+echo "Inserted with Object ID '{$result->getInsertedId()}'";
+?>
 ]]>
     </programlisting>
    </para>
 
    <para>
-    Instead of the original document being modified to add the newly generated
-    <code>_id</code> field, this is now part of the result that comes back
-    from the <code>insertOne</code> method.
+    Instead of injecting the generated <code>_id</code> field into the input
+    document (as was done in the old driver), it is now made available through
+    the result object returned by the <code>insertOne</code> method.
    </para>
 
    <para>
     After insertion, you can of course also query the data that you have just
-    inserted. For that, you use the <code>find</code> method which returns a
-    cursor that you can iterate over:
-
+    inserted. For that, you use the <code>find</code> method, which returns an
+    iterable cursor:
     <programlisting role="php">
 <![CDATA[
-	<?php
-	require 'vendor/autoload.php'; // include Composer goodies
+<?php
+require 'vendor/autoload.php'; // include Composer goodies
 
-	$manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
-	$collection = new MongoDB\Collection($manager, "demo.beers");
+$client = new MongoDB\Driver\Client("mongodb://localhost:27017");
+$collection = $client->demo->beers;
 
-	$result = $collection->find( [ 'name' => 'Hinterland', 'brewery' => 'BrewDog' ] );
+$result = $collection->find( [ 'name' => 'Hinterland', 'brewery' => 'BrewDog' ] );
 
-	foreach ($result as $entry)
-	{
-		echo $entry->_id, ': ', $entry->name, "\n";
-	}
-	?>
+foreach ($result as $entry) {
+    echo $entry['_id'], ': ', $entry['name'], "\n";
+}
+?>
 ]]>
     </programlisting>
    </para>
 
    <para>
-    You might have noticed that instead of accessing the <code>_id</code> and
-    <code>name</code> fields is no longer done through an array access
-    operator. Instead, they are now properties of a <code>stdClass</code>
-    object. You can find more information on how serialisation and
-    deserialisation between PHP variables and the BSON stored in MongoDB in
-    the <xref linkend="mongodb.persistence"/> specification. 
+    While it may not be apparent in the examples, BSON documents and arrays are
+    unserialized as type classes in the library by default. These classes ensure
+    that values preserve their type when being serialized back into BSON, which
+    avoids a caveat in the old driver where arrays might turn into documents,
+    and vice versa. Additionally, the classes extend
+    <classname>ArrayObject</classname> for enhanced usability. You can find more
+    information on how serialization and deserialization between PHP variables
+    and BSON is handled by the driver and library by reading the
+    <xref linkend="mongodb.persistence"/> specification.
    </para>
   </section>
 </chapter>
