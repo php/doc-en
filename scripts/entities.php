@@ -20,7 +20,7 @@
   $Id$
 */
 
-if ($argc > 3 || in_array($argv[1], array('--help', '-help', '-h', '-?'))) {
+if ($argc > 3 || (isset($argv[1]) && in_array($argv[1], array('--help', '-help', '-h', '-?')))) {
 ?>
 
 Find entity usage in phpdoc xml files and
@@ -31,7 +31,7 @@ list used and unused entities.
 
   <entity-file> must be a file name (with relative
   path from the phpdoc root) to a file containing
-  <!ENTITY...> definitions. Defaults to entities/global.ent.
+  <!ENTITY...> definitions. Defaults to doc-base/entities/global.ent.
 
   <language-code> must be a valid language code used in the repository, or
   'all' for all languages. Defaults to en.
@@ -45,8 +45,8 @@ list used and unused entities.
 }
 
 // CONFIG SECTION
-// Main directory of the PHP documentation (one dir up in cvs)
-$docdir = dirname(realpath(__FILE__)) ."/../";
+// Main directory of the PHP documentation (two directories up in the structure)
+$docdir = realpath(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..') . DIRECTORY_SEPARATOR;
 
 /*********************************************************************/
 /* Nothing to modify below this line                                 */
@@ -60,7 +60,7 @@ $defined_entities = array();
 
 // Default values
 $langcodes = array("en");
-$filename = "entities/global.ent";
+$filename = "doc-base/entities/global.ent";
 
 // Parameter value copying
 if ($argc == 3) { 
@@ -111,19 +111,12 @@ function check_dir($dir, &$defined_entities, $entity_regexp)
     $directories = array();
     $files = array();
     
-    // Skip old and unused functions directories (theoretically
-    // it should only be in the English tree, but we are smart
-    // and check for other language trees too...)
-    if (preg_match("!/([a-z]{2}|pt_BR)/functions!", $dir)) {
-        return;
-    }
-    
     // Open and traverse the directory
     $handle = @opendir($dir);
     while ($file = @readdir($handle)) {
       
       // Collect directories and XML files
-      if ($file != 'CVS' && $file != '.' &&
+      if ($file != '.svn' && $file != '.' &&
           $file != '..' && is_dir($dir.$file)) {
         $directories[] = $file;
       }
@@ -223,5 +216,3 @@ foreach ($defined_entities as $entity_name => $files) {
 fclose($fp);
 
 echo "Done!\n";
-
-?>
