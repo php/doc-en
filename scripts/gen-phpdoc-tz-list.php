@@ -9,6 +9,7 @@
 		'Mexico' => 'Others',
 		'US' => 'Others',
 	);
+	$nonBcList = timezone_identifiers_list();
 	$list = timezone_identifiers_list(DateTimeZone::ALL_WITH_BC);
 
 	foreach ($list as $element) {
@@ -20,12 +21,15 @@
 		if (isset($aliasList[$group])) {
 			$group = $aliasList[$group];
 		}
+		if ( !in_array($element, $nonBcList)) {
+			$group = 'Others';
+		}
 		$groupedList[$group][] = $element;
 	}
-    ksort($groupedList);
-    $others = $groupedList['Others'];
-    unset($groupedList['Others']);
-    $groupedList['Others'] = $others;
+	ksort($groupedList);
+	$others = $groupedList['Others'];
+	unset($groupedList['Others']);
+	$groupedList['Others'] = $others;
 ?>
 <?php echo '<?'; ?>xml version="1.0" encoding="UTF-8"?>
 <!-- $Revision$ -->
