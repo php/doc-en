@@ -1,5 +1,6 @@
 <?php
 	$columns = 4;
+	$abbrevColumns = 8;
 	$groupedList = array();
 	$aliasList = array(
 		'Brazil' => 'Others',
@@ -30,6 +31,7 @@
 	$others = $groupedList['Others'];
 	unset($groupedList['Others']);
 	$groupedList['Others'] = $others;
+	$groupedList['Abbreviations'] = array_keys(timezone_abbreviations_list());
 ?>
 <?php echo '<?'; ?>xml version="1.0" encoding="UTF-8"?>
 <!-- $Revision$ -->
@@ -51,7 +53,8 @@
     }
 
     foreach ($groupedList as $group => $zones) { 
-        $m = count($zones) > ($columns-1) ? $columns : count($zones); ?>
+        $groupColumns = ($group == 'Abbreviations') ? $abbrevColumns : $columns;
+        $m = count($zones) > ($groupColumns-1) ? $groupColumns : count($zones); ?>
 
  <sect1 xml:id="timezones.<?php echo strtolower($group); ?>">
   <title><?php echo '&date.timezone.' . strtolower($group) . ';'; ?></title>
