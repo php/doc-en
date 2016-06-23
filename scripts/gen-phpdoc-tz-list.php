@@ -92,6 +92,10 @@
    &date.timezone.posix-signs;
   </warning>
 
+<?php } elseif ( $group == 'Abbreviations' ) { ?>
+  <warning>
+	&date.timezone.abbrev-volatile;
+  </warning>
 <?php } ?>
  </sect1>
 <?php } ?>
