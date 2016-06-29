@@ -54,7 +54,9 @@
         <listitem><para>
          <literal>PDO::FETCH_CLASS</literal>: returns a new instance of the
          requested class, mapping the columns of the result set to named
-         properties in the class. If <parameter>fetch_style</parameter>
+         properties in the class, and calling the constructor afterwards, unless
+         <literal>PDO::FETCH_PROPS_LATE</literal> is also given.
+         If <parameter>fetch_style</parameter>
          includes PDO::FETCH_CLASSTYPE (e.g. <literal>PDO::FETCH_CLASS |
          PDO::FETCH_CLASSTYPE</literal>) then the name of the class is
          determined from a value of the first column.
@@ -84,6 +86,12 @@
          <literal>PDO::FETCH_OBJ</literal>: returns an anonymous object with
          property names that correspond to the column names returned in your
          result set
+        </para></listitem>
+        <listitem><para>
+         <literal>PDO::FETCH_PROPS_LATE</literal>: when used with
+         <literal>PDO::FETCH_CLASS</literal>, the constructor of the class is
+         called before the properties are assigned from the respective column
+         values.
         </para></listitem>
        </itemizedlist>
       </para>
@@ -262,6 +270,56 @@ Reading backwards:
     </screen>
    </example>
 
+   <example><title>Construction order</title>
+    <simpara>
+     When objects are fetched via <literal>PDO::FETCH_CLASS</literal> the object
+     properties are assigned first, and then the constructor of the class is
+     invoked. If <literal>PDO::FETCH_PROPS_LATE</literal> is also given, this
+     order is reversed, i.e. first the constructor is called, and afterwards the
+     properties are assigned.
+    </simpara>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class Person
+{
+    private $name;
+
+    public function __construct()
+    {
+        $this->tell();
+    }
+
+    public function tell()
+    {
+        if (isset($this->name)) {
+            echo "I am {$this->name}.\n";
+        } else {
+            echo "I don't have a name yet.\n";
+        }
+    }
+}
+
+$sth = $dbh->query("SELECT * FROM people");
+$sth->setFetchMode(PDO::FETCH_CLASS, 'Person');
+$person = $sth->fetch();
+$person->tell();
+$sth->setFetchMode(PDO::FETCH_CLASS|PDO::FETCH_PROPS_LATE, 'Person');
+$person = $sth->fetch();
+$person->tell();
+?>
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+I am Alice.
+I am Alice.
+I don't have a name yet.
+I am Bob.
+]]>
+    </screen>
+   </example>
   </para>
  </refsect1>
 
