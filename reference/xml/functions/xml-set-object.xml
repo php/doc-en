@@ -19,6 +19,13 @@
    <function>xml_set_element_handler</function> etc and assumed to be
    methods of <parameter>object</parameter>.
   </para>
+  <caution>
+   <para>
+    In addition to calling <function>xml_parser_free</function> when the parsing
+    is finished, as of PHP 7.0.0 it is necessary to also explicitly unset the
+    reference to <parameter>parser</parameter> to avoid memory leaks.
+   </para>
+  </caution>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -60,16 +67,23 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-class xml  {
-    var $parser;
+class XMLParser
+{
+    private $parser;
 
-    function xml() 
+    function __construct() 
     {
         $this->parser = xml_parser_create();
 
         xml_set_object($this->parser, $this);
         xml_set_element_handler($this->parser, "tag_open", "tag_close");
         xml_set_character_data_handler($this->parser, "cdata");
+    }
+
+    function __destruct()
+    {
+        xml_parser_free($this->parser);
+        unset($this->parser);
     }
 
     function parse($data) 
@@ -79,26 +93,37 @@ class xml  {
 
     function tag_open($parser, $tag, $attributes) 
     {
-        var_dump($parser, $tag, $attributes); 
+        var_dump($tag, $attributes); 
     }
 
     function cdata($parser, $cdata) 
     {
-        var_dump($parser, $cdata);
+        var_dump($cdata);
     }
 
     function tag_close($parser, $tag) 
     {
-        var_dump($parser, $tag);
+        var_dump($tag);
     }
+}
 
-} // end of class xml
-
-$xml_parser = new xml();
+$xml_parser = new XMLParser();
 $xml_parser->parse("<A ID='hallo'>PHP</A>");
 ?>
 ]]>
     </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+string(1) "A"
+array(1) {
+  ["ID"]=>
+  string(5) "hallo"
+}
+string(3) "PHP"
+string(1) "A"
+]]>
+    </screen>
    </example>
   </para>
  </refsect1>
