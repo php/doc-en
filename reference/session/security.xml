@@ -9,307 +9,463 @@
  <para>
   HTTP session management is core of web security. All of mitigation
   should be adopted to make sure session security. Developer should
-  enable/use applicable settings appropriately.
+  enable/use applicable security measures.
  </para>
 
- <itemizedlist>
-  <listitem>
-   <simpara>
-    <link linkend="ini.session.cookie-lifetime">session.cookie_lifetime</link>=0.
-    0 have special meaning. It tells browsers not to store cookie to
-    permanent storage. Therefore, when browser is terminated, session
-    ID cookie is deleted immediately. If developer set other than 0, it may
-    allow other users to use the session ID. Most applications should
-    use "0" for this. If auto login feature is required, implement
-    your own secure auto login feature. Do not use session ID for it.
-   </simpara>
-  </listitem>
+ <sect1 xml:id="session.security.ini">
+  <title>Securing session INI settings</title>
 
-  <listitem>
-   <simpara>
-    <link linkend="ini.session.use-cookies">session.use_cookies</link>=On and
-    <link linkend="ini.session.use-only-cookies">session.use_only_cookies</link>=On.
-    Although HTTP cookie has some problems, cookie is preferred way to
-    manage session ID. Use only cookies for session ID management when
-    it is possible. Most applications should use cookie for session
-    ID.
-   </simpara>
-  </listitem>
+  <itemizedlist>
+    <listitem>
+     <simpara>
+      <link linkend="ini.session.cookie-lifetime">session.cookie_lifetime</link>=0
+     </simpara>
+     <simpara>
+      0 have special meaning. It tells browsers not to store cookie to
+      permanent storage. Therefore, when browser is terminated, session
+      ID cookie is deleted immediately. If developer set other than 0, it may
+      allow other users to use the session ID. Most applications should
+      use "0" for this.
+     </simpara>
+     <simpara>
+      If auto login feature is required, implement your own secure auto login
+      feature. Do not use long life session ID for it.
+     </simpara>
+    </listitem>
 
-  <listitem>
-   <simpara>
-    <link linkend="ini.session.use-strict-mode">session.use_strict_mode</link>=On.
-    This prevents session module to use uninitialized session ID. In
-    other word, session module only accepts valid session ID generated
-    by session module. It rejects session ID supplied by
-    users. Session ID injection could be done by cookie injection via
-    JavaScript permanently or temporarily. When transparent session is
-    enabled, session ID could be injected via query string or form
-    parameter. There is no reason to accept user supplied session ID,
-    most applications must not accept user supplied uninitialized
-    session ID.
-   </simpara>
-  </listitem>
+    <listitem>
+     <simpara>
+      <link linkend="ini.session.use-cookies">session.use_cookies</link>=On
+     </simpara>
+     <simpara>
+      <link linkend="ini.session.use-only-cookies">session.use_only_cookies</link>=On
+     </simpara>
+     <simpara>
+      Although HTTP cookie has some problems, cookie is preferred way to
+      manage session ID. Use only cookies for session ID management when
+      it is possible. Most applications should use cookie for session
+      ID.
+     </simpara>
+     <simpara>
+      If <literal>session.use_only_cookies</literal>=Off,
+      session module will use session ID values set by GET/POST/URL is used when
+      session ID cookie is not initialized already.
+     </simpara>
+    </listitem>
 
-  <listitem>
-   <simpara>
-    <link linkend="ini.session.cookie-httponly">session.cookie_httponly</link>=On.
-    Disallow access to session cookie by JavaScript. This setting
-    prevents cookies stolen by JavaScript injection.  It is possible
-    to use session ID as CSRF protection key, but this is not
-    recommended. For example, HTML source may be saved and sent to
-    other users. Developer should not write session ID in web pages for
-    better security. Almost all applications must use httponly attribute for
-    session ID cookie.
-   </simpara>
-  </listitem>
+    <listitem>
+     <simpara>
+      <link linkend="ini.session.use-strict-mode">session.use_strict_mode</link>=On
+     </simpara>
+     <simpara>
+      Although, enabling <literal>session.use_strict_mode</literal> is
+      mandatory. It is not enabled by default.
+     </simpara>
+     <simpara>
+      This prevents session module to use uninitialized session ID. In
+      other word, session module only accepts valid session ID generated
+      by session module. It rejects session ID supplied by
+      users. Session ID injection could be done by cookie injection via
+      JavaScript permanently or temporarily. When transparent session is
+      enabled, session ID could be injected via query string or form
+      parameter. There is no reason to accept user supplied session ID,
+      most applications must not accept user supplied uninitialized
+      session ID.
+     </simpara>
+     <simpara>
+      Because of cookie spec, attackers are able to set undeletable session ID
+      cookies via locally setting cookie database, JavaScript injections,
+      trans sid feature. <literal>session.use_strict_mode</literal> can
+      prevent attacker initialized session ID being used.
+     </simpara>
+     <note>
+      <simpara>
+       Attackers may initialize session ID by their device and may set the
+       session ID to victim. They must keep the session ID active to abuse.
+       Attackers require additional steps to perform attack with this attack
+       scenario. Therefore, <literal>session.use_strict_mode</literal> works
+       as the mitigation.
+      </simpara>
+     </note>
+    </listitem>
 
-  <listitem>
-   <simpara>
-    <link linkend="ini.session.cookie-secure">session.cookie_secure</link>=On.
-    Allows access to session ID cookie only when protocol is HTTPS. If
-    your web site is HTTPS only web site, you must enable this
-    setting. Use of HSTS should be considered for HTTPS only web site.
-   </simpara>
-  </listitem>
+    <listitem>
+     <simpara>
+      <link linkend="ini.session.cookie-httponly">session.cookie_httponly</link>=On
+     </simpara>
+     <simpara>
+      Disallow access to session cookie by JavaScript. This setting
+      prevents cookies stolen by JavaScript injection.
+     </simpara>
+     <simpara>
+      It is possible to use session ID as CSRF protection key, but this is not
+      recommended. For example, HTML source may be saved and sent to
+      other users. Developer should not write session ID in web pages for
+      better security. Almost all applications must use httponly attribute for
+      session ID cookie.
+     </simpara>
+     <note>
+      <simpara>
+       CSRF protection token should be renewed periodically just like
+       session ID
+      </simpara>
+     </note>
+    </listitem>
 
-  <listitem>
-   <simpara>
-    <link linkend="ini.session.gc-maxlifetime">session.gc_maxlifetime</link>=[choose smallest possible].
-    GC is performed by probability. This setting does not guarantee old
-    session deletion. Some session save handler modules do not use
-    this setting. Refer to session save handler documentation for
-    details. Although developer cannot rely on this setting, setting this
-    to smallest possible value is recommended. Adjust <link
-    linkend="ini.session.gc-probability">session.gc_probability</link>
-    and <link
-    linkend="ini.session.gc-divisor">session.gc_divisor</link> so that
-    obsolete sessions are deleted by appropriate frequency. If auto login
-    feature is required, implement your own secure auto login feature.
-    Do not use long life session ID for it.
-   </simpara>
-  </listitem>
+    <listitem>
+     <simpara>
+      <link linkend="ini.session.cookie-secure">session.cookie_secure</link>=On
+     </simpara>
+     <simpara>
+      Allows access to session ID cookie only when protocol is HTTPS. If
+      your web site is HTTPS only web site, you must enable this
+      setting.
+     </simpara>
+     <simpara>
+      HSTS should be considered for HTTPS only web site.
+     </simpara>
+    </listitem>
 
-  <listitem>
-   <simpara>
-    <link linkend="ini.session.use-trans-sid">session.use_trans_sid</link>=Off.
-    Use of transparent session ID management is not prohibited. You
-    may use it when it is needed. However, disabling transparent
-    session ID management would improve general session ID security by
-    removing possibility of session ID injection and session ID leak.
-   </simpara>
-  </listitem>
+    <listitem>
+     <simpara>
+      <link linkend="ini.session.gc-maxlifetime">session.gc_maxlifetime</link>=[choose smallest possible]
+     </simpara>
+     <simpara>
+      <literal>session.gc_maxlifetime</literal>
+      is setting for deleting obsolete session ID. Reliance on this setting
+      is NOT recommend. You should manage session life time by time-stamp
+      by yourself.
+     </simpara>
+     <simpara>
+      Session GC is better to be performed by <function>session_gc</function>
+      for production systems. <function>session_gc</function> function is
+      better to be executed by task managers. e.g. cron on UNIX like systems.
+     </simpara>
+     <simpara>
+      GC is performed by probability by default. This setting does not
+      guarantee old session deletion.  Although developer cannot rely
+      on this setting, setting this to smallest possible value is
+      recommended. Adjust <link
+      linkend="ini.session.gc-probability">session.gc_probability</link>
+      and <link
+      linkend="ini.session.gc-divisor">session.gc_divisor</link> so
+      that obsolete sessions are deleted by appropriate frequency. If
+      auto login feature is required, implement your own secure auto
+      login feature.  Do not use long life session ID for it.
+     </simpara>
+     <note>
+      <simpara>
+       Some session save handler modules do not use this setting for
+       probability based expiration . e.g. memcached, memcache.
+       Refer to session save handler documentation for details.
+      </simpara>
+     </note>
+    </listitem>
 
-  <listitem>
-   <simpara>
-    <link linkend="ini.session.referer-check">session.referer_check</link>=[your originating URL]
-    When <link
-    linkend="ini.session.use-trans-sid">session.use_trans_sid</link>
-    is enabled, use of this setting is recommended if it is
-    possible. It reduces risk of session ID injection. If your site is
-    http://example.com/, set http://example.com/ to it. Note that when
-    HTTPS is used, browser will not send referrer header. Browser may
-    not send referrer header by configuration. Therefore, this setting
-    is not reliable security measure. 
-   </simpara>
-  </listitem>
+    <listitem>
+     <simpara>
+      <link linkend="ini.session.use-trans-sid">session.use_trans_sid</link>=Off.
+      Use of transparent session ID management is not prohibited. You
+      may use it when it is needed. However, disabling transparent
+      session ID management would improve general session ID security by
+      removing possibility of session ID injection and session ID leak.
+     </simpara>
+    </listitem>
 
-  <listitem>
-   <simpara>
-    <link linkend="ini.session.cache-limiter">session.cache_limiter</link>=nocache.
-    Make sure HTTP contents are not cached for authenticated
-    session. Allow caching only when contents is not
-    private. Otherwise, contents may be exposed. "private" may be used
-    if HTTP content does not include security sensitive data. Note
-    that "private" may leave private data cached by shared
-    clients. "public" may be used only when HTTP content does not
-    contain any private data at all.
-   </simpara>
-  </listitem>
+    <listitem>
+     <simpara>
+      <link linkend="ini.session.referer-check">session.referer_check</link>=[your originating URL]
+     </simpara>
+     <simpara>
+      When <link
+      linkend="ini.session.use-trans-sid">session.use_trans_sid</link>
+      is enabled, use of this setting is recommended if it is
+      possible. It reduces risk of session ID injection. If your site is
+      http://example.com/, set http://example.com/ to it. Note that when
+      HTTPS is used, browser will not send referrer header. Browser may
+      not send referrer header by configuration. Therefore, this setting
+      is not reliable security measure.
+     </simpara>
+    </listitem>
 
-  <listitem>
-   <simpara>
-    <link linkend="ini.session.sid-length">session.sid_length</link>="48".
-     (PHP 7.1.0 &gt;=) Longer session ID will generates stronger session
-    ID. Developer should consider session ID length 32 chars or more. At
-    least 26 chars is required when
-    <link linkend="ini.session.sid-bits-per-character">session.sid_bits_per_character</link>="5".
-    
-   </simpara>
-  </listitem>
+    <listitem>
+     <simpara>
+      <link linkend="ini.session.cache-limiter">session.cache_limiter</link>=nocache
+     </simpara>
+     <simpara>
+      Make sure HTTP contents are not cached for authenticated
+      session. Allow caching only when contents is not
+      private. Otherwise, contents may be exposed. "private" may be used
+      if HTTP content does not include security sensitive data. Note
+      that "private" may leave private data cached by shared
+      clients. "public" may be used only when HTTP content does not
+      contain any private data at all.
+     </simpara>
+    </listitem>
 
-  <listitem>
-   <simpara>
-    <link linkend="ini.session.sid-bits-per-character">session.sid_bits_per_character</link>="6".
-     (PHP 7.1.0 &gt;=) The more bits in a session ID char will generates 
-     stronger session ID for the same session ID length.
-   </simpara>
-  </listitem>
+    <listitem>
+     <simpara>
+      <link linkend="ini.session.sid-length">session.sid_length</link>="48"
+     </simpara>
+     <simpara>
+      (PHP 7.1.0 &gt;=) Longer session ID will generates stronger session
+      ID. Developer should consider session ID length 32 chars or more. At
+      least 26 chars is required when
+      <link linkend="ini.session.sid-bits-per-character">session.sid_bits_per_character</link>="5".
+     </simpara>
+    </listitem>
 
-  <listitem>
-   <simpara>
-    <link linkend="ini.session.hash-function">session.hash_function</link>="sha256".
-     (PHP 7.1.0 &lt;) Stronger hash function will generates stronger session
-    ID. Although hash collision is unlikely even with MD5 hash, developers
-    should use SHA-2 or later hash functions for the task. Developers may
+    <listitem>
+     <simpara>
+      <link linkend="ini.session.sid-bits-per-character">session.sid_bits_per_character</link>="6"
+     </simpara>
+     <simpara>
+      (PHP 7.1.0 &gt;=) The more bits in a session ID char will generates 
+      stronger session ID for the same session ID length.
+     </simpara>
+    </listitem>
+
+    <listitem>
+     <simpara>
+      <link linkend="ini.session.hash-function">session.hash_function</link>="sha256"
+     </simpara>
+     <simpara>
+      (PHP 7.1.0 &lt;) Stronger hash function will generates stronger session
+      ID. Although hash collision is unlikely even with MD5 hash, developers
+      should use SHA-2 or later hash functions for the task. Developers may
     use stronger hashes like sha384 and sha512.
-   </simpara>
-  </listitem>
+     </simpara>
+    </listitem>
 
-  <listitem>
-   <simpara>
-    <link linkend="ini.session.hash-function">session.hash_function</link>="sha256".
-     (PHP 7.1.0 &lt;) Stronger hash function will generates stronger session
-    ID. Although hash collision is unlikely even with MD5 hash, developers
-    should use SHA-2 or later hash functions for the task. Developers may
-    use stronger hashes like sha384 and sha512.
-   </simpara>
-  </listitem>
+    <listitem>
+     <simpara>
+      <link linkend="ini.session.hash-function">session.hash_function</link>="sha256"
+     </simpara>
+     <simpara>
+      (PHP 7.1.0 &lt;) Stronger hash function will generates stronger session
+      ID. Although hash collision is unlikely even with MD5 hash, developers
+      should use SHA-2 or later hash functions for the task. Developers may
+      use stronger hashes like sha384 and sha512.
+     </simpara>
+    </listitem>
 
- </itemizedlist>
- 
- <para>
-  The session module cannot guarantee that the information you store
-  in a session is only viewed by the user who created the session. You
-  need to take additional measures to actively protect the confidentiality
-  of the session, depending on the value associated with it.
- </para>
+  </itemizedlist>
+  </sect1>
 
- <para>
-  Assess the importance of the data carried by your sessions and
-  deploy additional protections -- this usually comes at a price,
-  reduced convenience for the user.  For example, if you want to
-  protect users from simple social engineering tactics, you need to
-  enable <literal>session.use_only_cookies</literal>.  In that case,
-  cookies must be enabled unconditionally on the user side, or
-  sessions will not work.
- </para>
+  <sect1 xml:id="features.session.security.management">
+   <title>Session Management Basics</title>
 
- <para>
-  There are several ways to leak an existing session ID to third
-  parties. A leaked session ID enables the third party to access all
-  resources which are associated with a specific ID.  First, URLs
-  carrying session IDs. If you link to an external site, the URL
-  including the session id might be stored in the external site's
-  referrer logs. Second, a more active attacker might listen to your
-  network traffic. If it is not encrypted, session IDs will flow in
-  plain text over the network. The solution here is to implement SSL
-  on your server and make it mandatory for users.  HSTS should be used
-  for this.
- </para>
+   <sect2 xml:id="features.session.security.management.basic">
+    <title>Session Security</title>
 
- <para>
-  Since PHP 5.5.2, <link
-  linkend="ini.session.use-strict-mode">session.use_strict_mode</link>
-  is available. When it is enabled and save handler module supports
-  it, uninitialized session ID is rejected and new session ID is
-  created. This protects attack that force users to use known session
-  ID. Attacker may paste links or send mail that contains session
-  ID. e.g. http://example.com/page.php?PHPSESSID=123456789 If <link
-  linkend="ini.session.use-trans-sid">session.use_trans_sid</link> is
-  enabled, victim will start session using attacker provided session
-  ID.  <link
-  linkend="ini.session.use-strict-mode">session.use_strict_mode</link>
-  mitigates the risk.
- </para>
+    <para>
+     The session module cannot guarantee that the information you store
+     in a session is only viewed by the user who created the session. You
+     need to take additional measures to protect the confidentiality
+     of the session, depending on the value associated with it.
+    </para>
 
- <para>
-  Even though <link
-  linkend="ini.session.use-strict-mode">session.use_strict_mode</link>
-  mitigates risk of adoptive session management, attacker can force
-  users to use initialized session ID which is created by
-  attacker. All attacker has to do is initialize session ID prior to
-  attack and keep it alive.
- </para>
+    <para>
+     Assess the importance of the data carried by your sessions and
+     deploy additional protections -- this usually comes at a price,
+     reduced convenience for the user.  For example, if you want to
+     protect users from simple social engineering tactics, you need to
+     enable <literal>session.use_only_cookies</literal>. In that case,
+     cookies must be enabled unconditionally on the user side, or
+     sessions will not work.
+    </para>
 
- <para>
-  Session ID cookie could be set with domain, path, httponly, secure
-  attributes. There is precedence defined by browsers. By using the
-  precedence, attacker can set session ID that could be used
-  permanently. Use of <link
-  linkend="ini.session.use-only-cookies">session.use_only_cookies</link>
-  will not solve this issue. <link
-  linkend="ini.session.use-strict-mode">session.use_strict_mode</link>
-  mitigates this risk. With <link
-  linkend="ini.session.use-strict-mode">session.use_strict_mode</link>=On,
-  uninitialized session ID will not be accepted. Session module
-  creates new session ID always when session ID is not initialized by
-  session module. This could result in DoS to victim, but DoS is
-  better than compromised account.
- </para>
+    <para>
+     There are several ways to leak an existing session ID to third
+     parties. e.g. JavaScript injections, session ID in URLs, packet
+     sniffing. A leaked session ID enables the third party to access all
+     resources which are associated with a specific ID. First, URLs
+     carrying session IDs. If you link to an external site, the URL
+     including the session ID might be stored in the external site's
+     referrer logs. Second, a more active attacker might listen to your
+     network traffic. If it is not encrypted, session IDs will flow in
+     plain text over the network. The solution here is to implement SSL/TLS
+     on your server and make it mandatory for users. HSTS should be used
+     for better security.
+   </para>
 
- <para>
-  <link
-  linkend="ini.session.use-strict-mode">session.use_strict_mode</link>
-  is good mitigation, but it is not enough mitigation for
-  authenticated session. Developer must use
-  <function>session_regenerate_id</function> for authentication.
-  <function>session_regenerate_id</function> must be called prior to
-  set authentication information to
-  $_SESSION. <function>session_regenerate_id</function> makes sure new
-  session contains authenticated information stored only in new
-  session. i.e. Errors during authentication process may save
-  authenticated flag in old session.
- </para>
+   <note>
+    <simpara>
+     Even HTTPS cannot protect confidential data in contents. e.g. CRIME, Beast.
+    </simpara>
+   </note>
 
- <para>
-  Calling <function>session_regenerate_id</function> function could
-  result in personal DoS when use_strict_mode=On. However, DoS is
-  better than compromised account. Session ID should be regenerated
-  when user is authenticated at least. Session ID regeneration reduces
-  risk of stolen session ID, thus is should be called periodically.
-  Developer should not rely on session ID expiration. Attackers may
-  access victim's session ID periodically to prevent expiration.
-  Developers must implement their own expiration feature for old sessions.
- </para>
+  </sect2>
 
- <para>
-  Note that <function>session_regenerate_id</function> does not delete
-  old session by default. Old authenticated session may be available
-  for use. If developer would like to prevent old authenticated session to
-  be used by anyone, developer must destroy session by setting
-  <parameter>delete_old_session</parameter> to &true;. However,
-  immediate old session deletion has unwanted side effect. Session
-  could be vanished when there are concurrent connections to web
-  application and/or network is unstable. Instead of deleting old
-  session immediately, you should set short term expiration time in
-  $_SESSION by yourselves. If user accesses to obsolete
-  session(expired session), deny access to it.
- </para>
+  <sect2 xml:id="features.session.security.management.non-adaptive-session">
+   <title>Use non-adaptive session management</title>
 
- <note>
-  <simpara>
-   <literal>use_strict_mode=On</literal> is mandatory for general
-   session ID security! All production sites are advised to enable
-   <literal>use_strict_mode</literal>.
-  </simpara>
- </note>
+   <para>
+    PHP's session manager is adaptive by default currently. Adaptive session manger
+    has additional risks.
+   </para>
 
- <para>
-  <link
-  linkend="ini.session.use-only-cookies">session.use_only_cookies</link>
-  and proper use of <function>session_regenerate_id</function> could
-  cause personal DoS. When this is the case, you may ask users to
-  remove cookies and warn users that there could be possible security
-  issues. Attackers may set malicious cookies via vulnerable web
-  application (i.e. JavaScript injection), vulnerable/malicious
-  browser plugins, etc.
- </para>
+   <para>
+    Since PHP 5.5.2, <link linkend="ini.session.use-strict-mode">session.use_strict_mode</link>
+    is available. When it is enabled and session save handler supports
+    it, uninitialized session ID is rejected and new session ID is
+    created. This protects attack that forces users to use known session
+    ID. Attacker may paste links or send mail that contains session
+    ID. e.g. http://example.com/page.php?PHPSESSID=123456789 If <link
+    linkend="ini.session.use-trans-sid">session.use_trans_sid</link> is
+    enabled, victim will start session using attacker provided session
+    ID.  <link linkend="ini.session.use-strict-mode">session.use_strict_mode</link>
+    mitigates the risk.
+   </para>
 
- <para>
-  Developers must not use long life session ID for auto login as it
-  increases risk of stolen session. Auto login should be implemented
-  by developer. Use secure one time hash key as auto login key using
-  cookie. Use secure hash stronger than SHA-2. e.g. SHA-256 or greater
-  with random data from /dev/urandom or like. If user is not
-  authenticated, check the one time auto login key is valid or not. If
-  key is valid, authenticate user and set new secure one time hash
-  key. Auto login key is long lived authentication key, this key should
-  be protected as much as possible. Use path/httponly/secure
-  attributes of cookie to protect. Developer must implement feature that
-  disables auto login and removes unneeded auto login key cookie for
-  users.
- </para>
+   <note>
+    <simpara>
+     Even though <link
+     linkend="ini.session.use-strict-mode">session.use_strict_mode</link>
+     mitigates risk of adoptive session management, attacker can force
+     users to use initialized session ID which is created by
+     attacker. All attacker has to do is initialize session ID prior to
+     attack and keep it alive.
+    </simpara>
+   </note>
+
+   <para>
+    Session ID cookie could be set with domain, path, httponly, secure
+    attributes. There is precedence defined by browsers. By using the
+    precedence, attacker can set session ID that could be used
+    permanently. Use of <link
+    linkend="ini.session.use-only-cookies">session.use_only_cookies</link>
+    will not solve this issue. <link
+    linkend="ini.session.use-strict-mode">session.use_strict_mode</link>
+    mitigates this risk. With <link
+    linkend="ini.session.use-strict-mode">session.use_strict_mode</link>=On,
+    uninitialized session ID will not be accepted. Session module
+    creates new session ID always when session ID is not initialized by
+    session module.
+   </para>
+
+   <para>
+    Since PHP 7.1.0, <function>session_create_id</function> is added. This
+    function could be used to prefix session ID by user ID to count active
+    sessions for a user efficiently. Enabling <link linkend="ini.session.use-strict-mode">session.use_strict_mode</link>
+    is more important with this setup. Otherwise, malicious users can set
+    session ID for other users.
+   </para>
+
+  </sect2>
+
+  <sect2 xml:id="features.session.security.management.session-id-regeneration">
+   <title>Session ID regeneration</title>
+
+   <para>
+    <link linkend="ini.session.use-strict-mode">session.use_strict_mode</link>
+    is good mitigation, but it is not enough mitigation for
+    authenticated session. Developer must use
+    <function>session_regenerate_id</function> for authentication.
+    <function>session_regenerate_id</function> must be called prior to
+    set authentication information to
+    $_SESSION. <function>session_regenerate_id</function> makes sure new
+    session contains authenticated information stored only in new
+    session. i.e. Errors during authentication process may save
+    authenticated flag in old session.
+   </para>
+
+   <para>
+    Session ID must be regenerated when user is authenticated at least.
+    Session ID regeneration reduces risk of stolen session ID, thus
+    <function>session_regenerate_id</function> must be called periodically.
+    e.g. Regenerate session ID for every 15 minutes for security
+    sensitive content.
+   </para>
+
+   <para>
+    Developer should not rely on session ID expiration by <link
+    linkend="ini.session.gc-maxlifetime">session.gc_maxlifetime</link>.
+    Attackers may access victim's session ID periodically to prevent expiration.
+    Developers must implement their own expiration feature for old sessions.
+   </para>
+
+   <note>
+    <simpara>
+     PHP session manager does not manage session data by time-stamp.
+     Old session data is kept alive until GC. Developers must make
+     sure old session data is removed. However, developers must NOT
+     remove active session data immediately also. i.e. Must not call
+     <literal>session_regenerate_id(true);</literal> and <function>
+     session_destroy</function> for active session.
+    </simpara>
+   </note>
+
+   <para>
+    <function>session_regenerate_id</function> does not delete
+    old session by default. Old authenticated session may be available
+    for use. Developer must prevent old authenticated session to
+    be used by anyone, developer must destroy session data.
+    However, immediate old session deletion has unwanted side effect.
+    Session could be vanished when there are concurrent connections
+    to web application and/or network is unstable. Instead of deleting
+    old session immediately, you must set short term expiration time
+    (time-stamp) in $_SESSION, and prohibit access to the session data
+    by yourselves. If user accesses to obsolete session(expired session),
+    deny access to it.
+   </para>
+
+   <para>
+    <link linkend="ini.session.use-only-cookies">session.use_only_cookies</link>
+    and proper use of <function>session_regenerate_id</function> could
+    cause personal DoS. When this is the case, you may ask users to
+    remove cookies and warn users that there could be possible security
+    issues. Attackers may set malicious cookies via vulnerable web
+    application (i.e. JavaScript injection), vulnerable/malicious
+    browser plugins, etc.
+   </para>
+
+   <note>
+    <simpara>
+     <literal>use_strict_mode=On</literal> is mandatory for general
+     session ID security! All production sites are advised to enable
+     <literal>use_strict_mode</literal>.
+    </simpara>
+    <simpara>
+     Calling <function>session_regenerate_id</function> function could
+     result in personal DoS when use_strict_mode=On. However, DoS is
+     better than compromised account.
+    </simpara>
+   </note>
+
+   <para>
+    Developers must not use long life session ID for auto login as it
+    increases risk of stolen session. Auto login should be implemented
+    by developer. Use secure one time hash key as auto login key using
+    cookie. Use secure hash stronger than SHA-2. e.g. SHA-256 or greater
+    with random data from /dev/urandom or like. If user is not
+    authenticated, check the one time auto login key is valid or not. If
+    key is valid, authenticate user and set new secure one time hash
+    key. Auto login key is long lived authentication key, this key should
+    be protected as much as possible. Use path/httponly/secure
+    attributes of cookie to protect. Developer must implement feature that
+    disables auto login and removes unneeded auto login key cookie for
+    users.
+   </para>
+  </sect2>
+
+  <sect2 xml:id="features.session.security.management.session-locking">
+   <title>Session and Locking</title>
+
+   <para>
+    Session data is locked to avoid races by default. Locking is mandatory
+    to keep session data consistent across requests.
+   </para>
+
+   <para>
+    However, locking can be abused by attacker to perform DoS attacks. To
+    mitigate risks of DoS by session lock, use read only sessions when
+    session data update is not required.
+    e.g. <literal>session_start(['readonly'=>1]);</literal>
+   </para>
+  </sect2>
+ </sect1>
+
 </chapter>
 
 <!-- Keep this comment at the end of the file
