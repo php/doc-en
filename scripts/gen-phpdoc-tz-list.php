@@ -31,7 +31,6 @@
 	$others = $groupedList['Others'];
 	unset($groupedList['Others']);
 	$groupedList['Others'] = $others;
-	$groupedList['Abbreviations'] = array_keys(timezone_abbreviations_list());
 ?>
 <?php echo '<?'; ?>xml version="1.0" encoding="UTF-8"?>
 <!-- $Revision$ -->
@@ -53,11 +52,19 @@
     }
 
     foreach ($groupedList as $group => $zones) { 
-        $groupColumns = ($group == 'Abbreviations') ? $abbrevColumns : $columns;
+        $groupColumns = $columns;
         $m = count($zones) > ($groupColumns-1) ? $groupColumns : count($zones); ?>
 
  <sect1 xml:id="timezones.<?php echo strtolower($group); ?>">
   <title><?php echo '&date.timezone.' . strtolower($group) . ';'; ?></title>
+<?php if ( $group == 'Others' ) { ?>
+  <warning>
+   &date.timezone.bc;
+  </warning>
+  <warning>
+   &date.timezone.posix-signs;
+  </warning>
+<?php } ?>
   <table>
    <title><?php echo '&date.timezone.' . strtolower($group) . ';'; ?></title>
    <tgroup cols="<?php echo $m; ?>">
@@ -84,19 +91,6 @@
     </tbody>
    </tgroup>
   </table>
-<?php if ( $group == 'Others' ) { ?>
-  <warning>
-   &date.timezone.bc;
-  </warning>
-  <warning>
-   &date.timezone.posix-signs;
-  </warning>
-
-<?php } elseif ( $group == 'Abbreviations' ) { ?>
-  <warning>
-	&date.timezone.abbrev-volatile;
-  </warning>
-<?php } ?>
  </sect1>
 <?php } ?>
 </appendix>
