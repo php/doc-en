@@ -905,6 +905,15 @@ if (is_array('hi')) { // prints "is not array"
       </para>
      </listitem>
     </varlistentry>
+    <varlistentry>
+     <term>Relative name</term>
+     <listitem>
+      <para>
+       This is an identifier starting with <literal>namespace</literal>, such as
+       <literal>namespace\Foo\Bar</literal>.
+      </para>
+     </listitem>
+    </varlistentry>
    </variablelist>
   </para>
   <para>
@@ -912,40 +921,58 @@ if (is_array('hi')) { // prints "is not array"
    <orderedlist>
     <listitem>
      <simpara>
-      Calls to fully qualified functions, classes or constants are resolved at compile-time.
-      For instance <literal>new \A\B</literal> resolves to class <literal>A\B</literal>.
+      Fully qualified names always resolve to the name without leading namespace separator.
+      For instance <literal>\A\B</literal> resolves to <literal>A\B</literal>.
      </simpara>
     </listitem>
     <listitem>
      <simpara>
-      All unqualified and qualified names (not fully qualified names) are translated during
-      compilation according to current
-      import rules. For example, if the namespace <literal>A\B\C</literal> is imported as
-      <literal>C</literal>, a call to 
-      <literal>C\D\e()</literal> is translated to <literal>A\B\C\D\e()</literal>.
+      Relative names always resolve to the name with <literal>namespace</literal> replaced by
+      the current namespace. If the name occurs in the global namespace, the
+      <literal>namespace\</literal> prefix is stripped. For example <literal>namespace\A</literal>
+      inside namespace <literal>X\Y</literal> resolves to <literal>X\Y\A</literal>. The same name
+      inside the global namespace resolves to <literal>A</literal>.
      </simpara>
     </listitem>
     <listitem>
      <simpara>
-      Inside a namespace, all qualified names not translated according to import
-      rules have the current namespace prepended.  For example, if a call
-      to <literal>C\D\e()</literal> is performed within namespace <literal>A\B</literal>,
-      it is translated to <literal>A\B\C\D\e()</literal>.
+      For qualified names the first segment of the name is translated according to the current
+      class/namespace import table. For example, if the namespace <literal>A\B\C</literal> is
+      imported as <literal>C</literal>, the name <literal>C\D\E</literal> is translated to
+      <literal>A\B\C\D\E</literal>.
      </simpara>
     </listitem>
     <listitem>
      <simpara>
-      Unqualified class names are translated during compilation according to current
-      import rules (full name substituted for short imported name). In example, if 
-      the namespace <literal>A\B\C</literal> is imported as C, <literal>new C()</literal> is 
-      translated to <literal>new A\B\C()</literal>.
+      For qualified names, if no import rule applies, the current namespace is prepended to the
+      name. For example, the name <literal>C\D\E</literal> inside namespace <literal>A\B</literal>,
+      resolves to <literal>A\B\C\D\E</literal>.
      </simpara>
     </listitem>
     <listitem>
      <simpara>
-      Inside namespace (say A\B), calls to unqualified functions are resolved at run-time.
-      Here is how a 
-      call to function <literal>foo()</literal> is resolved:
+      For unqualified names, the name is translated according to the current import table for the
+      respective symbol type. This means that class-like names are translated according to the
+      class/namespace import table, function names according to the function import table and
+      constants according to the constant import table. For example, after
+      <literal>use A\B\C;</literal> a usage such as <literal>new C()</literal> resolves to the name
+      <literal>A\B\C()</literal>. Similarly, after <literal>use function A\B\fn;</literal> a usage
+      such as <literal>fn()</literal> resolves to the name <literal>A\B\fn</literal>.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      For unqualified names, if no import rule applies and the name refers to a class-like symbol,
+      the current namespace is prepended. For example <literal>new C()</literal> inside namespace
+      <literal>A\B</literal> resolves to name <literal>A\B\C</literal>.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      For unqualified names, if no import rule applies and the name refers to a function or constant
+      and the code is outside the global namespace, the name is resolved at runtime.
+      Assuming the code is in namespace <literal>A\B</literal>, here is how a call to function
+      <literal>foo()</literal> is resolved:
      </simpara>
       <orderedlist>
        <listitem>
@@ -961,48 +988,6 @@ if (is_array('hi')) { // prints "is not array"
         </simpara>
        </listitem>
       </orderedlist>
-    </listitem>
-    <listitem>
-     <simpara>
-      Inside namespace (say <literal>A\B</literal>), calls to unqualified or qualified
-      class names (not fully qualified class names)
-      are resolved at run-time. Here is how a call to 
-      <literal>new C()</literal> or <literal>new D\E()</literal> is resolved.
-      For <literal> new C()</literal>:
-     </simpara>
-     <orderedlist>
-      <listitem>
-       <simpara>
-        It looks for a class from the current namespace:
-        <literal>A\B\C</literal>.
-       </simpara>
-      </listitem>
-      <listitem>
-       <simpara>
-        It attempts to autoload <literal>A\B\C</literal>.
-       </simpara>
-      </listitem>
-     </orderedlist>
-     <simpara>
-      For <literal> new D\E()</literal>:
-     </simpara>
-     <orderedlist>
-      <listitem>
-       <simpara>
-        It looks for a class by prepending the current namespace:
-        <literal>A\B\D\E</literal>.
-       </simpara>
-      </listitem>
-      <listitem>
-       <simpara>
-        It attempts to autoload <literal>A\B\D\E</literal>.
-       </simpara>
-      </listitem>
-     </orderedlist>
-     <simpara>
-      To reference any global class in the global namespace, 
-      its fully qualified name <literal>new \C()</literal> must be used.
-     </simpara>
     </listitem>
    </orderedlist>
   </para>
