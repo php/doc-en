@@ -4,19 +4,21 @@
 <refentry xml:id="mongodb-driver-writeresult.getmodifiedcount" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoDB\Driver\WriteResult::getModifiedCount</refname>
-  <refpurpose>Description</refpurpose>
+  <refpurpose>Returns the number of existing documents updated</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>final</modifier> <modifier>public</modifier> <type>ReturnType</type><methodname>MongoDB\Driver\WriteResult::getModifiedCount</methodname>
+   <modifier>final</modifier> <modifier>public</modifier> <type>int|null</type><methodname>MongoDB\Driver\WriteResult::getModifiedCount</methodname>
    <void />
   </methodsynopsis>
   <para>
-
+   If the update operation results in no change to the document (e.g. setting
+   the value of a field to its current value), the modified count may be less
+   than the value returned by
+   <methodname>MongoDB\Driver\WriteResult::getMatchedCount</methodname>.
   </para>
-
  </refsect1>
 
  <refsect1 role="parameters">
@@ -27,15 +29,21 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   
+   Returns the number of existing documents updated, or &null; if the write was
+   not acknowledged.
+  </para>
+  <para>
+   The modified count is not available on versions of MongoDB before 2.4, which
+   used the legacy wire protocol version (i.e. OP_UPDATE). If this is the case,
+   the modified count will also be &null;.
   </para>
  </refsect1>
 
  <refsect1 role="errors">
   &reftitle.errors;
-  <para>
-   
-  </para>
+  <simplelist>
+   &mongodb.throws.argumentparsing;
+  </simplelist>
  </refsect1>
 
 
@@ -47,15 +55,26 @@
 <![CDATA[
 <?php
 
-/* ... */
+$manager = new MongoDB\Driver\Manager;
+
+$bulk = new MongoDB\Driver\BulkWrite;
+$bulk->insert(['x' => 1]);
+$bulk->update(['x' => 1], ['$set' => ['y' => 3]]);
+$bulk->update(['x' => 2], ['$set' => ['y' => 1]], ['upsert' => true]);
+$bulk->update(['x' => 3], ['$set' => ['y' => 2]], ['upsert' => true]);
+$bulk->delete(['x' => 1]);
+
+$result = $manager->executeBulkWrite('db.collection', $bulk);
+
+var_dump($result->getModifiedCount());
 
 ?>
 ]]>
    </programlisting>
-   &example.outputs.similar;
+   &example.outputs;
    <screen>
 <![CDATA[
-...
+int(1)
 ]]>
    </screen>
   </example>
@@ -65,7 +84,8 @@
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
-   <member></member>
+   <member><methodname>MongoDB\Driver\WriteResult::getMatchedCount</methodname></member>
+   <member><methodname>MongoDB\Driver\WriteResult::isAcknowledged</methodname></member>
   </simplelist>
  </refsect1>
 

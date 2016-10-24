@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision$ -->
+<!-- $Revision: 336263 $ -->
 
-<refentry xml:id="mongodb-driver-writeresult.getwriteconcernerror" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="mongodb-driver-writeresult.isacknowledged" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
-  <refname>MongoDB\Driver\WriteResult::getWriteConcernError</refname>
-  <refpurpose>Returns any write concern error that occurred</refpurpose>
+  <refname>MongoDB\Driver\WriteResult::isAcknowledged</refname>
+  <refpurpose>Returns whether the write was acknowledged</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>final</modifier> <modifier>public</modifier> <type>MongoDB\Driver\WriteConcernError|null</type><methodname>MongoDB\Driver\WriteResult::getWriteConcernError</methodname>
+   <modifier>final</modifier> <modifier>public</modifier> <type>bool</type><methodname>MongoDB\Driver\WriteResult::isAcknowledged</methodname>
    <void />
   </methodsynopsis>
   <para>
-
+   If the write is acknowledged, other count fields will be available on the
+   <classname>MongoDB\Driver\WriteResult</classname> object.
   </para>
 
  </refsect1>
@@ -27,9 +28,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns a <classname>MongoDB\Driver\WriteConcernError</classname> if a write
-   concern error was encountered during the write operation, and &null;
-   otherwise.
+   Returns &true; if the write was acknowledged, and &false; otherwise.
   </para>
  </refsect1>
 
@@ -44,41 +43,52 @@
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><function>MongoDB\Driver\WriteResult::getWriteConcernError</function> example</title>
+   <title><function>MongoDB\Driver\WriteResult::isAcknowledged</function> with acknowledged write concern</title>
    <programlisting role="php">
 <![CDATA[
 <?php
 
-$manager = new MongoDB\Driver\Manager("mongodb://rs1.example.com,rs2.example.com/?replicaSet=myReplicaSet");
+$manager = new MongoDB\Driver\Manager;
 
 $bulk = new MongoDB\Driver\BulkWrite;
 $bulk->insert(['x' => 1]);
 
-$writeConcern = new MongoDB\Driver\WriteConcern(2, 1);
+$result = $manager->executeBulkWrite('db.collection', $bulk);
 
-try {
-    $manager->executeBulkWrite('db.collection', $bulk, $writeConcern);
-} catch(MongoDB\Driver\Exception\BulkWriteException $e) {
-    var_dump($e->getWriteResult()->getWriteConcernError());
-}
+var_dump($result->isAcknowledged());
 
 ?>
 ]]>
    </programlisting>
-   &example.outputs.similar;
+   &example.outputs;
    <screen>
 <![CDATA[
-object(MongoDB\Driver\WriteConcernError)#6 (3) {
-  ["message"]=>
-  string(33) "waiting for replication timed out"
-  ["code"]=>
-  int(64)
-  ["info"]=>
-  object(stdClass)#7 (1) {
-    ["wtimeout"]=>
-    bool(true)
-  }
-}
+bool(true)
+]]>
+   </screen>
+  </example>
+  <example>
+   <title><function>MongoDB\Driver\WriteResult::isAcknowledged</function> with unacknowledged write concern</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$manager = new MongoDB\Driver\Manager;
+
+$bulk = new MongoDB\Driver\BulkWrite;
+$bulk->insert(['x' => 1]);
+
+$result = $manager->executeBulkWrite('db.collection', $bulk, new MongoDB\Driver\WriteConcern(0));
+
+var_dump($result->isAcknowledged());
+
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+bool(false)
 ]]>
    </screen>
   </example>
