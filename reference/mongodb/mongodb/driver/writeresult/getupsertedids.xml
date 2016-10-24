@@ -4,13 +4,13 @@
 <refentry xml:id="mongodb-driver-writeresult.getupsertedids" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoDB\Driver\WriteResult::getUpsertedIds</refname>
-  <refpurpose>Description</refpurpose>
+  <refpurpose>Returns an array of identifiers for upserted documents</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>final</modifier> <modifier>public</modifier> <type>ReturnType</type><methodname>MongoDB\Driver\WriteResult::getUpsertedIds</methodname>
+   <modifier>final</modifier> <modifier>public</modifier> <type>array</type><methodname>MongoDB\Driver\WriteResult::getUpsertedIds</methodname>
    <void />
   </methodsynopsis>
   <para>
@@ -27,15 +27,18 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   
+   Returns an array of identifiers (i.e. <literal>"_id"</literal> field values)
+   for upserted documents. The array keys will correspond to the index of the
+   write operation (from <classname>MongoDB\Driver\BulkWrite</classname>)
+   responsible for the upsert.
   </para>
  </refsect1>
 
  <refsect1 role="errors">
   &reftitle.errors;
-  <para>
-   
-  </para>
+  <simplelist>
+   &mongodb.throws.argumentparsing;
+  </simplelist>
  </refsect1>
 
 
@@ -47,7 +50,18 @@
 <![CDATA[
 <?php
 
-/* ... */
+$manager = new MongoDB\Driver\Manager;
+
+$bulk = new MongoDB\Driver\BulkWrite;
+$bulk->insert(['x' => 1]);
+$bulk->update(['x' => 1], ['$set' => ['y' => 3]]);
+$bulk->update(['x' => 2], ['$set' => ['y' => 1]], ['upsert' => true]);
+$bulk->update(['x' => 3], ['$set' => ['y' => 2]], ['upsert' => true]);
+$bulk->delete(['x' => 1]);
+
+$result = $manager->executeBulkWrite('db.collection', $bulk);
+
+var_dump($result->getUpsertedIds());
 
 ?>
 ]]>
@@ -55,7 +69,18 @@
    &example.outputs.similar;
    <screen>
 <![CDATA[
-...
+array(2) {
+  [2]=>
+  object(MongoDB\BSON\ObjectID)#4 (1) {
+    ["oid"]=>
+    string(24) "580e62a224f2302f191b880b"
+  }
+  [3]=>
+  object(MongoDB\BSON\ObjectID)#5 (1) {
+    ["oid"]=>
+    string(24) "580e62a224f2302f191b880c"
+  }
+}
 ]]>
    </screen>
   </example>
@@ -65,7 +90,8 @@
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
-   <member></member>
+   <member><methodname>MongoDB\Driver\WriteResult::getUpsertedCount</methodname></member>
+   <member><methodname>MongoDB\Driver\WriteResult::isAcknowledged</methodname></member>
   </simplelist>
  </refsect1>
 

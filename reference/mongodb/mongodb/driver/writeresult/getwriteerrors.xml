@@ -4,13 +4,13 @@
 <refentry xml:id="mongodb-driver-writeresult.getwriteerrors" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoDB\Driver\WriteResult::getWriteErrors</refname>
-  <refpurpose>Description</refpurpose>
+  <refpurpose>Returns any write errors that occurred</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>final</modifier> <modifier>public</modifier> <type>ReturnType</type><methodname>MongoDB\Driver\WriteResult::getWriteErrors</methodname>
+   <modifier>final</modifier> <modifier>public</modifier> <type>array</type><methodname>MongoDB\Driver\WriteResult::getWriteErrors</methodname>
    <void />
   </methodsynopsis>
   <para>
@@ -27,27 +27,46 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   
+   Returns an array of <classname>MongoDB\Driver\WriteError</classname> objects
+   for any write errors encountered during the write operation. The array will
+   be empty if no write errors occurred.
   </para>
  </refsect1>
 
  <refsect1 role="errors">
   &reftitle.errors;
-  <para>
-   
-  </para>
+  <simplelist>
+   &mongodb.throws.argumentparsing;
+  </simplelist>
  </refsect1>
 
 
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><function>MongoDB\Driver\WriteResult::getWriteErrors</function> example</title>
+   <title><function>MongoDB\Driver\WriteResult::getWriteErrors</function> with a single error</title>
    <programlisting role="php">
 <![CDATA[
 <?php
 
-/* ... */
+$manager = new MongoDB\Driver\Manager;
+
+/* By default, bulk write operations are executed serially in order and
+ * execution will stop after the first error.
+ */
+$bulk = new MongoDB\Driver\BulkWrite;
+$bulk->insert(['_id' => 1]);
+$bulk->insert(['_id' => 2]);
+$bulk->insert(['_id' => 2]);
+$bulk->insert(['_id' => 3]);
+$bulk->insert(['_id' => 4]);
+$bulk->insert(['_id' => 4]);
+
+try {
+    $result = $manager->executeBulkWrite('db.collection', $bulk);
+} catch (MongoDB\Driver\Exception\BulkWriteException $e) {
+    var_dump($e->getWriteResult()->getWriteErrors());
+}
 
 ?>
 ]]>
@@ -55,7 +74,77 @@
    &example.outputs.similar;
    <screen>
 <![CDATA[
-...
+array(1) {
+  [0]=>
+  object(MongoDB\Driver\WriteError)#5 (4) {
+    ["message"]=>
+    string(81) "E11000 duplicate key error collection: db.collection index: _id_ dup key: { : 2 }"
+    ["code"]=>
+    int(11000)
+    ["index"]=>
+    int(2)
+    ["info"]=>
+    NULL
+  }
+}
+]]>
+   </screen>
+  </example>
+  <example>
+   <title><function>MongoDB\Driver\WriteResult::getWriteErrors</function> with multiple errors</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$manager = new MongoDB\Driver\Manager;
+
+/* The "ordered" option may be used to allow bulk write operations to continue
+ * executing after the first error is encountered.
+ */
+$bulk = new MongoDB\Driver\BulkWrite(['ordered' => false]);
+$bulk->insert(['_id' => 1]);
+$bulk->insert(['_id' => 2]);
+$bulk->insert(['_id' => 2]);
+$bulk->insert(['_id' => 3]);
+$bulk->insert(['_id' => 4]);
+$bulk->insert(['_id' => 4]);
+
+try {
+    $result = $manager->executeBulkWrite('db.collection', $bulk);
+} catch (MongoDB\Driver\Exception\BulkWriteException $e) {
+    var_dump($e->getWriteResult()->getWriteErrors());
+}
+
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+array(2) {
+  [0]=>
+  object(MongoDB\Driver\WriteError)#5 (4) {
+    ["message"]=>
+    string(81) "E11000 duplicate key error collection: db.collection index: _id_ dup key: { : 2 }"
+    ["code"]=>
+    int(11000)
+    ["index"]=>
+    int(2)
+    ["info"]=>
+    NULL
+  }
+  [1]=>
+  object(MongoDB\Driver\WriteError)#6 (4) {
+    ["message"]=>
+    string(81) "E11000 duplicate key error collection: db.collection index: _id_ dup key: { : 4 }"
+    ["code"]=>
+    int(11000)
+    ["index"]=>
+    int(5)
+    ["info"]=>
+    NULL
+  }
+}
 ]]>
    </screen>
   </example>
@@ -65,7 +154,7 @@
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
-   <member></member>
+   <member><classname>MongoDB\Driver\WriteError</classname></member>
   </simplelist>
  </refsect1>
 
