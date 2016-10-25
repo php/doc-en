@@ -131,7 +131,135 @@
    our next-generation drivers.
   </para>
  </article>
-  
+
+ <article xml:id="mongodb.connection-handling">
+  <titleabbrev>Connections</titleabbrev>
+  <title>Connection handling and persistence</title>
+
+  <section>
+   <title>Connection and topology persistence (PHP and HHVM versions since 1.2.0)</title>
+
+   <para>
+    All versions of the driver since 1.2.0 persist the
+    <link xlink:href="&url.mongodb.libbson;">libmongoc</link> client object in
+    the PHP worker process, which allows it to re-use database connections,
+    authentication states, <emphasis>and</emphasis> topology information across
+    multiple requests.
+   </para>
+
+   <para>
+    When <methodname>MongoDB\Driver\Manager::__construct</methodname> is
+    invoked, a hash is created from its arguments (i.e. URI string and array
+    options). The driver will attempt to find a previously persisted
+    <link xlink:href="&url.mongodb.libbson;">libmongoc</link> client object for
+    that hash. If an existing client cannot be found for the hash, a new client
+    will be created (and persisted for future use).
+   </para>
+
+   <para>
+    Each client contains its own database connections and a view of the server
+    topology (e.g. standalone, replica set, shard cluster). By persisting the
+    client between PHP requests, the driver is able to re-use established
+    database connections and remove the need for
+    <link xlink:href="&url.mongodb.sdam;">discovering the server topology</link>
+    on each request.
+   </para>
+
+   <para>
+    Consider the following example:
+   </para>
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$managers = [
+    new MongoDB\Driver\Manager('mongodb://127.0.0.1'),
+    new MongoDB\Driver\Manager('mongodb://127.0.0.1'),
+    new MongoDB\Driver\Manager('mongodb://127.0.0.1:27017'),
+    new MongoDB\Driver\Manager('mongodb://rs1.example.com,rs2.example.com/', ['replicaSet' => 'myReplicaSet']),
+];
+
+foreach ($managers as $manager) {
+    $manager->executeCommand('test', new MongoDB\Driver\Command(['ping' => 1]));
+}
+
+?>
+]]>
+   </programlisting>
+
+   <para>
+    The first two Manager objects will share the same
+    <link xlink:href="&url.mongodb.libbson;">libmongoc</link> client since
+    their constructor arguments are identical. The third and fourth objects will
+    each use their own client. In total, three clients will be created and the
+    PHP worker executing this script will open two connections to
+    <literal>127.0.0.1</literal> and one connection to each of
+    <literal>rs1.example.com</literal> and <literal>rs2.example.com</literal>.
+    If the driver discovers additional members of the replica set after issuing
+    <literal>isMaster</literal> commands, it will open additional connections to
+    those servers as well.
+   </para>
+
+   <para>
+    If the same worker executes the script again in a second request, the three
+    clients will be re-used and no new connections should be made. Depending on
+    how long ago the previous request was served, the driver may need to issue
+    additional <literal>isMaster</literal> commands to update its view of the
+    topologies.
+   </para>
+  </section>
+
+  <section>
+   <title>Socket persistence (PHP versions before 1.2.0)</title>
+
+   <para>
+    Versions of the PHP driver before 1.2.0 utilize PHP&apos;s Streams API for
+    database connections, using an API within
+    <link xlink:href="&url.mongodb.libbson;">libmongoc</link> to designate
+    custom handlers for socket communication; however, a new libmongoc client is
+    created for each <classname>MongoDB\Driver\Manager</classname>. As a result,
+    the driver persists individual database connections but not authentication
+    state or topology information. This means that the driver needs to issue
+    commands at the start of each request to authenticate and
+    <link xlink:href="&url.mongodb.sdam;">discover the server topology</link>.
+   </para>
+
+   <para>
+    Database connections are persisted by a hash derived from the server&apos;s
+    host, port, and the URI string used to construct the
+    <classname>MongoDB\Driver\Manager</classname>. The constructor&apos;s array
+    options are not included in this hash.
+   </para>
+
+   <note>
+    <simpara>
+     Versions of the driver &gt;= 1.1.8 and &lt; 1.2.0 do not persist sockets
+     for SSL connections. See
+     <link xlink:href="&url.mongodb.jira.phpc;-720">PHPC-720</link> for
+     additional information.
+    </simpara>
+   </note>
+
+   <para>
+    Despite its shortcomings with persisting SSL connections when and topology
+    information, this version of the driver supports all
+    <link linkend="context.ssl">SSL context options</link> since it uses
+    PHP&apos;s Streams API.
+   </para>
+  </section>
+
+  <section>
+   <title>No persistence (HHVM versions before 1.2.0)</title>
+
+   <para>
+    Versions of the HHVM driver before 1.2.0 do not persist sockets,
+    authentication state, or topology information. Socket communication uses
+    <link xlink:href="&url.mongodb.libbson;">libmongoc</link> entirely.
+   </para>
+  </section>
+ </article>
+
  <article xml:id="mongodb.persistence">
   <titleabbrev>Persisting Data</titleabbrev>
   <title>Serialization and deserialization of PHP variables into MongoDB</title>
