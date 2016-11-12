@@ -1,1 +1,0 @@
-<?php echo phpversion() . " " . php_sapi_name(); ?>
