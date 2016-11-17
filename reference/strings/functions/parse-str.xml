@@ -10,30 +10,14 @@
   &reftitle.description;
   <methodsynopsis>
    <type>void</type><methodname>parse_str</methodname>
-   <methodparam><type>string</type><parameter>str</parameter></methodparam>
-   <methodparam choice="opt"><type>array</type><parameter role="reference">arr</parameter></methodparam>
+   <methodparam><type>string</type><parameter>encoded_string</parameter></methodparam>
+   <methodparam choice="opt"><type>array</type><parameter role="reference">result</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Parses <parameter>str</parameter> as if it were the query string
-   passed via a URL and sets variables in the current scope. 
+   Parses <parameter>encoded_string</parameter> as if it were the query string
+   passed via a URL and sets variables in the current scope (or in the array
+   if <parameter>result</parameter> is provided).
   </para>
-  <note>
-   <para>
-    To get the current <literal>QUERY_STRING</literal>, you may use the variable
-    <varname>$_SERVER['QUERY_STRING']</varname>.
-    Also, you may want to read the section on
-    <link linkend="language.variables.external">variables from external
-    sources</link>.
-   </para>
-  </note>
-  <note>
-   <para>
-    The <link linkend="ini.magic-quotes-gpc">magic_quotes_gpc</link> setting
-    affects the output of this function, as <function>parse_str</function> uses
-    the same mechanism that PHP uses to populate the <varname>$_GET</varname>,
-    <varname>$_POST</varname>, etc. variables.
-   </para>
-  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -41,7 +25,7 @@
   <para>
    <variablelist>
     <varlistentry>
-     <term><parameter>str</parameter></term>
+     <term><parameter>encoded_string</parameter></term>
      <listitem>
       <para>
        The input string.
@@ -49,12 +33,24 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>arr</parameter></term>
+     <term><parameter>result</parameter></term>
      <listitem>
       <para>
-       If the second parameter <parameter>arr</parameter> is present,
+       If the second parameter <parameter>result</parameter> is present,
        variables are stored in this variable as array elements instead.
       </para>
+
+      <warning>
+       <para>
+        Using this function without second parameter is <emphasis>DISCOURAGED</emphasis>.
+        Dynamically setting variables in function's scope suffers from exactly same problems
+        as <link linkend="ini.magic-quotes-gpc">register_globals</link>.
+       </para>
+       <para>
+        Read section on security of <link linkend="security.globals">Using Register Globals</link>
+        explaining why it is dangerous.
+       </para>
+      </warning>
      </listitem>
     </varlistentry>
    </variablelist>
@@ -76,22 +72,70 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-$str = "first=value&arr[]=foo+bar&arr[]=baz";
-parse_str($str);
-echo $first;  // value
-echo $arr[0]; // foo bar
-echo $arr[1]; // baz
-
+// Recommended
 parse_str($str, $output);
 echo $output['first'];  // value
 echo $output['arr'][0]; // foo bar
 echo $output['arr'][1]; // baz
 
+$str = "first=value&arr[]=foo+bar&arr[]=baz";
+parse_str($str);
+echo $first;  // value
+echo $arr[0]; // foo bar
+echo $arr[1]; // baz
 ?>
 ]]>
     </programlisting>
    </example>
   </para>
+  <para>
+   Because variables in PHP can't have dots and spaces in their names,
+   those are converted to underscores. Same applies to naming of
+   respective key names in case of using this function with
+   <parameter>result</parameter> parameter.   
+   <example>
+    <title><function>parse_str</function> name mangling</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+parse_str($"My Value=Something");
+echo $My_Value; // Something
+
+parse_str($"My Value=Something", $output);
+echo $output['My_Value']; // Something
+?>
+]]>
+    </programlisting>
+   </example>
+  </para> 
+ </refsect1>
+ 
+ <refsect1 role="notes">
+  &reftitle.notes;
+
+  <note>
+   <para>
+    All variables created (or values returned into array if second parameter is set)
+    are already <function>urldecode</function>d.
+   </para>
+  </note>
+  <note>
+   <para>
+    To get the current <literal>QUERY_STRING</literal>, you may use the variable
+    <varname>$_SERVER['QUERY_STRING']</varname>.
+    Also, you may want to read the section on
+    <link linkend="language.variables.external">variables from external
+    sources</link>.
+   </para>
+  </note>
+  <note>
+   <para>
+    The <link linkend="ini.magic-quotes-gpc">magic_quotes_gpc</link> setting
+    affects the output of this function, as <function>parse_str</function> uses
+    the same mechanism that PHP uses to populate the <varname>$_GET</varname>,
+    <varname>$_POST</varname>, etc. variables.
+   </para>
+  </note>
  </refsect1>
 
  <refsect1 role="seealso">
@@ -101,7 +145,6 @@ echo $output['arr'][1]; // baz
     <member><function>parse_url</function></member>
     <member><function>pathinfo</function></member>
     <member><function>http_build_query</function></member>
-    <member><function>get_magic_quotes_gpc</function></member>
     <member><function>urldecode</function></member>
    </simplelist>
   </para>
