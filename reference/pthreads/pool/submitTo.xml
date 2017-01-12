@@ -4,18 +4,20 @@
 <refentry xml:id="pool.submitTo" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Pool::submitTo</refname>
-  <refpurpose>Submits an object for execution</refpurpose>
+  <refpurpose>Submits a task to a specific worker for execution</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>integer</type><methodname>Pool::submitTo</methodname>
-   <methodparam><type>integer</type><parameter>worker</parameter></methodparam>
+   <modifier>public</modifier> <type>int</type><methodname>Pool::submitTo</methodname>
+   <methodparam><type>int</type><parameter>worker</parameter></methodparam>
    <methodparam><type>Threaded</type><parameter>task</parameter></methodparam>
   </methodsynopsis>
   <para>
-  Submit the object to the specified Worker in the Pool
+   Submit a task to the specified worker in the pool. The workers are indexed
+   from 0, and will only exist if the pool has needed to create them (since
+   threads are lazily spawned).
   </para>
  </refsect1>
 
@@ -26,7 +28,7 @@
     <term><parameter>worker</parameter></term>
     <listitem>
      <para>
-  The worker for execution
+      The worker to stack the task onto, indexed from <literal>0</literal>.
      </para>
     </listitem>
    </varlistentry>
@@ -34,7 +36,7 @@
     <term><parameter>task</parameter></term>
     <listitem>
      <para>
-  The task for execution
+      The task for execution.
      </para>
     </listitem>
    </varlistentry>
@@ -44,7 +46,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
- the identifier of the Worker that accepted the object
+   The identifier of the worker that accepted the task.
   </para>
  </refsect1>
 
@@ -52,72 +54,40 @@
   &reftitle.examples;
   <para>
    <example>
-    <title>Submitting Tasks</title>
+    <title>Submitting tasks to a specific worker</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-class MyWork extends Threaded {
-    
+class Task extends Threaded {
     public function run() {
-        /* ... */
+        var_dump(Thread::getCurrentThreadID());
     }
 }
 
-class MyWorker extends Worker {
-    
-    public function __construct(Something $something) {
-        $this->something = $something;
-    }
-    
-    public function run() {
-        /** ... **/
-    }
+$pool = new Pool(2);
+
+$pool->submit(new Task());
+
+for ($i = 0; $i < 5; ++$i) {
+    $pool->submitTo(0, new Task()); // stack all tasks onto the first worker
 }
 
-$pool = new Pool(8, \MyWorker::class, [new Something()]);
-$pool->submit(new MyWork());
-var_dump($pool);
-?>
+$pool->submitTo(1, new Task()); // cannot stack the task onto the second worker due to it not existing yet
+
+$pool->shutdown();
 ]]>
     </programlisting>
     &example.outputs;
     <screen>
 <![CDATA[
-object(Pool)#1 (6) {
-  ["size":protected]=>
-  int(8)
-  ["class":protected]=>
-  string(8) "MyWorker"
-  ["workers":protected]=>
-  array(1) {
-    [0]=>
-    object(MyWorker)#4 (1) {
-      ["something"]=>
-      object(Something)#5 (0) {
-      }
-    }
-  }
-  ["work":protected]=>
-  array(1) {
-    [0]=>
-    object(MyWork)#3 (1) {
-      ["worker"]=>
-      object(MyWorker)#5 (1) {
-        ["something"]=>
-        object(Something)#6 (0) {
-        }
-      }
-    }
-  }
-  ["ctor":protected]=>
-  array(1) {
-    [0]=>
-    object(Something)#2 (0) {
-    }
-  }
-  ["last":protected]=>
-  int(1)
-}
+int(4475011072)
+int(4475011072)
+int(4475011072)
+int(4475011072)
+int(4475011072)
+int(4475011072)
+
+Fatal error: Uncaught Exception: The selected worker (1) does not exist in %s:%d
 ]]>
     </screen>
    </example>
