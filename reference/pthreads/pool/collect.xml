@@ -10,11 +10,12 @@
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>void</type><methodname>Pool::collect</methodname>
-   <methodparam><type>Callable</type><parameter>collector</parameter></methodparam>
+   <modifier>public</modifier> <type>int</type><methodname>Pool::collect</methodname>
+   <methodparam choice="opt"><type>Callable</type><parameter>collector</parameter></methodparam>
   </methodsynopsis>
   <para>
-  Allows the Pool to collect references determined to be garbage by the given collector
+   Allows the pool to collect references determined to be garbage by the
+   optionally given collector.
   </para>
  </refsect1>
 
@@ -25,7 +26,9 @@
     <term><parameter>collector</parameter></term>
     <listitem>
      <para>
-  A Callable collector
+      A Callable collector that returns a boolean on whether the task can be
+      collected or not. Only in rare cases should a custom collector need to
+      be used.
      </para>
     </listitem>
    </varlistentry>
@@ -35,7 +38,32 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
- void
+   The number of remaining tasks in the pool to be collected.
+  </para>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>v3</entry>
+       <entry>
+        An integer is now returned, and the <parameter>collector</parameter>
+        parameter is now optional.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
   </para>
  </refsect1>
 
@@ -47,80 +75,17 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-class MyWork extends Threaded {
-    public function __construct() {
-        $this->complete = false;
-    }
+$pool = new Pool(4);
 
-    public function run() {
-        printf(
-            "Hello from %s in Thread #%lu\n", 
-            __CLASS__, $this->worker->getThreadId());
-        $this->complete = true;
-    }
-
-    public function isComplete() { 
-        return $this->complete; 
-    }
-
-    protected $complete;
+for ($i = 0; $i < 15; ++$i) {
+    $pool->submit(new class extends Threaded {});
 }
 
-class MyWorker extends Worker {
-    
-    public function __construct(Something $something) {
-        $this->something = $something;
-    }
-    
-    public function run() {
-        /** ... **/
-    }
-}
+while ($pool->collect()); // blocks until all tasks have finished executing
 
-$pool = new Pool(8, \MyWorker::class, [new Something()]);
-$pool->submit(new MyWork());
-
-usleep(1000);
-
-$pool->collect(function($work){
-    return $work->isComplete();
-});
-var_dump($pool);
-?>
+$pool->shutdown();
 ]]>
     </programlisting>
-    &example.outputs;
-    <screen>
-<![CDATA[
-Hello from MyWork in Thread #140222468777728
-object(Pool)#1 (6) {
-  ["size":protected]=>
-  int(8)
-  ["class":protected]=>
-  string(8) "MyWorker"
-  ["workers":protected]=>
-  array(1) {
-    [0]=>
-    object(MyWorker)#4 (1) {
-      ["something"]=>
-      object(Something)#5 (0) {
-      }
-    }
-  }
-  ["work":protected]=>
-  array(0) {
-  }
-  ["ctor":protected]=>
-  array(1) {
-    [0]=>
-    object(Something)#2 (0) {
-    }
-  }
-  ["last":protected]=>
-  int(1)
-}
-]]>
-    </screen>
    </example>
   </para>
  </refsect1>
