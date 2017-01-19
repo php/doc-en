@@ -12,7 +12,8 @@
   <methodsynopsis>
    <modifier>final</modifier> <modifier>public</modifier> <methodname>MongoDB\Driver\ReadPreference::__construct</methodname>
    <methodparam><type>int</type><parameter>mode</parameter></methodparam>
-   <methodparam choice="opt"><type>array</type><parameter>tagSets</parameter></methodparam>
+   <methodparam choice="opt"><type>array</type><parameter>tagSets</parameter><initializer>&null;</initializer></methodparam>
+   <methodparam choice="opt"><type>array</type><parameter>options</parameter><initializer>[]</initializer></methodparam>
   </methodsynopsis>
   <para>
    Creates a new ReadPreference.
@@ -110,6 +111,57 @@
      </para>
     </listitem>
    </varlistentry>
+   <varlistentry>
+    <term><parameter>options</parameter></term>
+    <listitem>
+     <para>
+      <table>
+       <title>options</title>
+       <tgroup cols="3">
+        <thead>
+         <row>
+          <entry>Option</entry>
+          <entry>Type</entry>
+          <entry>Description</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry>maxStalenessSeconds</entry>
+          <entry><type>integer</type></entry>
+          <entry>
+           <para>
+            Specifies a maximum replication lag, or "staleness", for reads from
+            secondaries. When a secondary&apos;s estimated staleness exceeds
+            this value, the driver stops using it for read operations.
+           </para>
+           <para>
+            If specified, the max staleness must be a signed 32-bit integer
+            greater than or equal to
+            <constant>MongoDB\Driver\ReadPreference::SMALLEST_MAX_STALENESS_SECONDS</constant>.
+           </para>
+           <para>
+            Defaults to
+            <constant>MongoDB\Driver\ReadPreference::NO_MAX_STALENESS</constant>,
+            which means that the driver will not consider a secondary&apos;s lag
+            when choosing where to direct a read operation.
+           </para>
+           <para>
+            This option is not compatible with the
+            <constant>MongoDB\Driver\ReadPreference::RP_PRIMARY</constant> mode.
+            Specifying a max staleness also requires all MongoDB instances in
+            the deployment to be using MongoDB 3.4+. An exception will be thrown
+            at execution time if any MongoDB instances in the deployment are of
+            an older server version.
+           </para>
+          </entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </table>
+     </para>
+    </listitem>
+   </varlistentry>
   </variablelist>
  </refsect1>
 
@@ -117,10 +169,38 @@
   &reftitle.errors;
   <simplelist>
    &mongodb.throws.argumentparsing;
-   <member>Throws <classname>MongoDB\Driver\Exception\InvalidArgumentException</classname> if <parameter>mode</parameter> is invalid or if <parameter>tagSets</parameter> is provided for a primary read preference.</member>
+   <member>Throws <classname>MongoDB\Driver\Exception\InvalidArgumentException</classname> if <parameter>mode</parameter> is invalid.</member>
+   <member>Throws <classname>MongoDB\Driver\Exception\InvalidArgumentException</classname> if <parameter>tagSets</parameter> is provided for a primary read preference or is malformed (i.e. not an array of zero or more documents).</member>
+   <member>Throws <classname>MongoDB\Driver\Exception\InvalidArgumentException</classname> if the <literal>"maxStalenessSeconds"</literal> option is provided for a primary read preference or is out of range.</member>
   </simplelist>
  </refsect1>
 
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>1.2.0</entry>
+       <entry>
+        <para>
+         Added a third <parameter>options</parameter> argument, which supports
+         the <literal>"maxStalenessSeconds"</literal> option.
+        </para>
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
+  </para>
+ </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
@@ -131,14 +211,44 @@
 <?php
 
 /* Prefer a secondary node but fall back to a primary. */
-$rp = new MongoDB\Driver\ReadPreference(MongoDB\Driver\ReadPreference::RP_SECONDARY_PREFERRED);
+var_dump(new MongoDB\Driver\ReadPreference(MongoDB\Driver\ReadPreference::RP_SECONDARY_PREFERRED));
 
 /* Prefer a node in the New York data center with lowest latency. */
-$rp = new MongoDB\Driver\ReadPreference(MongoDB\Driver\ReadPreference::RP_NEAREST, [['dc' => 'ny']]);
+var_dump(new MongoDB\Driver\ReadPreference(MongoDB\Driver\ReadPreference::RP_NEAREST, [['dc' => 'ny']]));
+
+/* Require a secondary node whose replication lag is within two minutes of the primary */
+var_dump(new MongoDB\Driver\ReadPreference(MongoDB\Driver\ReadPreference::RP_SECONDARY, null, ['maxStalenessSeconds' => 120]));
 
 ?>
 ]]>
    </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+object(MongoDB\Driver\ReadPreference)#1 (1) {
+  ["mode"]=>
+  string(18) "secondaryPreferred"
+}
+object(MongoDB\Driver\ReadPreference)#1 (2) {
+  ["mode"]=>
+  string(7) "nearest"
+  ["tags"]=>
+  array(1) {
+    [0]=>
+    object(stdClass)#2 (1) {
+      ["dc"]=>
+      string(2) "ny"
+    }
+  }
+}
+object(MongoDB\Driver\ReadPreference)#1 (2) {
+  ["mode"]=>
+  string(9) "secondary"
+  ["maxStalenessSeconds"]=>
+  int(120)
+}
+]]>
+   </screen>
   </example>
  </refsect1>
 
