@@ -12,7 +12,7 @@
   <methodsynopsis>
    <modifier>final</modifier> <modifier>public</modifier> <methodname>MongoDB\Driver\Manager::__construct</methodname>
    <methodparam choice="opt"><type>string</type><parameter>uri</parameter><initializer>"mongodb://127.0.0.1/</initializer></methodparam>
-   <methodparam choice="opt"><type>array</type><parameter>options</parameter><initializer>[]</initializer></methodparam>
+   <methodparam choice="opt"><type>array</type><parameter>uriOptions</parameter><initializer>[]</initializer></methodparam>
    <methodparam choice="opt"><type>array</type><parameter>driverOptions</parameter><initializer>[]</initializer></methodparam>
   </methodsynopsis>
   <para>
@@ -43,6 +43,13 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
       </programlisting>
      </para>
      <para>
+      For details on supported options, see
+      <link xlink:href="&url.mongodb.docs;reference/connection-string/#connections-connection-options">Connection String Options</link>
+      in the MongoDB manual.
+      <link xlink:href="&url.mongodb.docs;reference/connection-string/#connection-pool-options">Connection pool options</link>
+      are not supported, as the PHP driver does not implement connection pools.
+     </para>
+     <para>
       The <parameter>uri</parameter> is a URL, hence any special characters in
       its components need to be URL encoded according to
       <link xlink:href="&url.rfc;3986">RFC 3986</link>. This is particularly
@@ -56,18 +63,251 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
     </listitem>
    </varlistentry>
    <varlistentry xml:id="mongodb-driver-manager.construct-options">
-    <term><parameter>options</parameter></term>
+    <term><parameter>uriOptions</parameter></term>
     <listitem>
      <para>
-      <link xlink:href="&url.mongodb.docs;reference/connection-string/#connections-connection-options">Connection string options</link>.
+      Additional
+      <link xlink:href="&url.mongodb.docs;reference/connection-string/#connections-connection-options">connection string options</link>,
+      which will overwrite any options with the same name in the
+      <parameter>uri</parameter> parameter.
      </para>
-     <note>
-      <para>
-       Specifying options via the <parameter>options</parameter> argument will
-       overwrite any options with the same name in the
-       <parameter>uri</parameter> argument.
-      </para>
-     </note>
+     <para>
+      <table>
+       <title>uriOptions</title>
+       <tgroup cols="3">
+        <thead>
+         <row>
+          <entry>Option</entry>
+          <entry>Type</entry>
+          <entry>Description</entry>
+         </row>
+        </thead>
+        <tbody>
+         <row>
+          <entry>authMechanism</entry>
+          <entry><type>string</type></entry>
+          <entry>
+           <para>
+            The authentication mechanism that MongoDB will use to authenticate
+            the connection. For details, see
+            <link xlink:href="&url.mongodb.docs;reference/connection-string/#urioption.authMechanism">Authentication Options</link>
+            in the MongoDB manual.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>authSource</entry>
+          <entry><type>string</type></entry>
+          <entry>
+           <para>
+            The database name associated with the user's credentials. Defaults
+            to the database component of the connection URI.
+           </para>
+           <para>
+            For authentication mechanisms that delegate credential storage to
+            other services (e.g. GSSAPI), this should be
+            <literal>"$external"</literal>.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>connectTimeoutMS</entry>
+          <entry><type>integer</type></entry>
+          <entry>
+           <para>
+            The time in milliseconds to attempt a connection before timing out.
+            Defaults to 10 seconds.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>gssapiServiceName</entry>
+          <entry><type>string</type></entry>
+          <entry>
+           <para>
+            Set the Kerberos service name when connecting to Kerberized MongoDB
+            instances. This value must match the service name set on MongoDB
+            instances (i.e.
+            <link xlink:href="&url.mongodb.docs;reference/parameters/#param.saslServiceName">saslServiceName</link>
+            server parameter). Defaults to <literal>"mongodb"</literal>.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>journal</entry>
+          <entry><type>boolean</type></entry>
+          <entry>
+           <para>
+            Corresponds to the write concern's <parameter>journal</parameter>
+            parameter. If &true;, writes will require acknowledgement from
+            MongoDB that the operation has been written to the journal. For
+            details, see <classname>MongoDB\Driver\WriteConcern</classname>.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>maxStalenessSeconds</entry>
+          <entry><type>integer</type></entry>
+          <entry>
+           Corresponds to the read preference's
+           <literal>"maxStalenessSeconds"</literal>. Specifies, in seconds, how
+           stale a secondary can be before the client stops using it for read
+           operations. By default, there is no maximum staleness and clients
+           will not consider a secondary’s lag when choosing where to direct a
+           read operation. For details, see
+           <classname>MongoDB\Driver\ReadPreference</classname>.
+          </entry>
+         </row>
+         <row>
+          <entry>password</entry>
+          <entry><type>string</type></entry>
+          <entry>
+           The password for the user being authenticated. This option is useful
+           if the password contains special characters, which would otherwise
+           need to be URL encoded for the connection URI.
+          </entry>
+         </row>
+         <row>
+          <entry>readConcernLevel</entry>
+          <entry><type>string</type></entry>
+          <entry>
+           Corresponds to the read concern's <parameter>level</parameter>
+           parameter. Specifies the level of read isolation. For details, see
+           <classname>MongoDB\Driver\ReadConcern</classname>.
+          </entry>
+         </row>
+         <row>
+          <entry>readPreference</entry>
+          <entry><type>string</type></entry>
+          <entry>
+           <para>
+            Corresponds to the read preferences's <parameter>mode</parameter>
+            parameter. Defaults to <literal>"primary"</literal>. For
+            details, see <classname>MongoDB\Driver\ReadPreference</classname>.
+           </para>
+           <note>
+            <simpara>
+             This accepts a string value (e.g. <literal>"primary"</literal>,
+             <literal>"secondaryPreferred"</literal>), unlike
+             <function>MongoDB\Driver\ReadPreference::__construct</function>,
+             which takes an integer.
+            </simpara>
+           </note>
+          </entry>
+         </row>
+         <row>
+          <entry>readPreferenceTags</entry>
+          <entry><type>array</type></entry>
+          <entry>
+           <para>
+            Corresponds to the read preferences's <parameter>tagSets</parameter>
+            parameter. Tag sets allow you to target read operations to specific
+            members of a replica set. For details, see
+            <classname>MongoDB\Driver\ReadPreference</classname>.
+           </para>
+           <note>
+            <simpara>
+             When not specified in the URI string, this option is expressed as
+             an array consistent with the format expected by
+             <function>MongoDB\Driver\ReadPreference::__construct</function>.
+            </simpara>
+           </note>
+          </entry>
+         </row>
+         <row>
+          <entry>replicaSet</entry>
+          <entry><type>string</type></entry>
+          <entry>
+           <para>
+            Specifies the name of the replica set.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>safe</entry>
+          <entry><type>boolean</type></entry>
+          <entry>
+           <para>
+            Specifies <literal>1</literal> for the write concern if &true;, or
+            <literal>0</literal> if &false; For details, see
+            <classname>MongoDB\Driver\WriteConcern</classname>.
+           </para>
+           <para>
+            This option is deprecated and should not be used.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>slaveOk</entry>
+          <entry><type>boolean</type></entry>
+          <entry>
+           <para>
+            Specifies <literal>"secondaryPreferred"</literal> for the read
+            preference mode if &true;. For details, see
+            <classname>MongoDB\Driver\ReadPreference</classname>.
+           </para>
+           <para>
+            This option is deprecated and should not be used.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>socketTimeoutMS</entry>
+          <entry><type>integer</type></entry>
+          <entry>
+           <para>
+            The time in milliseconds to attempt a send or receive on a socket
+            before the attempt times out. Defaults to 300 seconds (i.e. five
+            minutes).
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>ssl</entry>
+          <entry><type>boolean</type></entry>
+          <entry>
+           <para>
+            Initiates the connection with TLS/SSL if &true;. Defaults to
+            &false;.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>username</entry>
+          <entry><type>string</type></entry>
+          <entry>
+           The username for the user being authenticated. This option is useful
+           if the username contains special characters, which would otherwise
+           need to be URL encoded for the connection URI.
+          </entry>
+         </row>
+         <row>
+          <entry>w</entry>
+          <entry><type>integer|string</type></entry>
+          <entry>
+           <para>
+            Corresponds to the write concern's <parameter>w</parameter>
+            parameter. For details, see
+            <classname>MongoDB\Driver\WriteConcern</classname>.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>wTimeoutMS</entry>
+          <entry><type>integer|string</type></entry>
+          <entry>
+           <para>
+            Corresponds to the write concern's <parameter>wtimeout</parameter>
+            parameter. Specifies a time limit, in milliseconds, for the write
+            concern. For details, see
+            <classname>MongoDB\Driver\WriteConcern</classname>.
+           </para>
+          </entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </table>
+     </para>
     </listitem>
    </varlistentry>
    <varlistentry xml:id="mongodb-driver-manager.construct-driveroptions">
@@ -351,6 +591,7 @@ $manager = new MongoDB\Driver\Manager(
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
+   <member><link linkend="mongodb.connection-handling">Connection handling and persistence</link></member>
    <member><link xlink:href="&url.mongodb.docs;reference/connection-string/">MongoDB Connection String Format</link></member>
   </simplelist>
  </refsect1>
