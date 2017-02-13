@@ -1,6 +1,6 @@
 <?php
 define("DEBUG", 0);
-$BUILDDIR = "https://dl.dropboxusercontent.com/u/15537366/chm/";
+$BUILDDIR = "http://phpmanualchm.s3-website-ap-northeast-1.amazonaws.com";
 $TMPDIR = sys_get_temp_dir();
 $CHMDIR = "/local/mirrors/phpweb/distributions/manual";
 
