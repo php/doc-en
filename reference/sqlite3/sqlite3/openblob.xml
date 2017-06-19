@@ -15,13 +15,21 @@
    <methodparam><type>string</type><parameter>column</parameter></methodparam>
    <methodparam><type>int</type><parameter>rowid</parameter></methodparam>
    <methodparam choice="opt"><type>string</type><parameter>dbname</parameter><initializer>"main"</initializer></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>flags</parameter><initializer>SQLITE_OPEN_READONLY</initializer></methodparam>
   </methodsynopsis>
   <para>
-   Opens a stream resource to read a BLOB, which would be selected by:
+   Opens a stream resource to read or write a BLOB, which would be selected by:
   </para>
   <para>
    SELECT <parameter>column</parameter> FROM <parameter>dbname</parameter>.<parameter>table</parameter> WHERE rowid = <parameter>rowid</parameter>
   </para>
+  <note>
+   <simpara>
+    It is not possible to change the size of a BLOB by writing to the stream.
+    Instead, an UPDATE statement has to be executed, possibly using SQLite's
+    zeroblob() function to set the desired BLOB size.
+   </simpara>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -60,6 +68,15 @@
       </para>
      </listitem>
     </varlistentry>
+    <varlistentry>
+     <term><parameter>flags</parameter></term>
+     <listitem>
+      <para>
+       Either SQLITE_OPEN_READONLY or SQLITE_OPEN_READWRITE to open the stream
+       for reading only, or for reading and writing, respectively.
+      </para>
+     </listitem>
+    </varlistentry>
    </variablelist>
   </para>
 
@@ -70,6 +87,29 @@
   <para>
    Returns a stream resource, &return.falseforfailure;.
   </para>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>7.2.0</entry>
+      <entry>
+       The <parameter>flags</parameter> parameter has been added, allowing to
+       write BLOBs; formerly only reading was supported.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
  </refsect1>
 
  <refsect1 role="examples">
@@ -93,6 +133,35 @@ $conn->close();
     &example.outputs;
     <screen>
 <![CDATA[
+Lorem ipsum
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Incrementally writing a BLOB</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$conn = new SQLite3(':memory:');
+$conn->exec('CREATE TABLE test (text text)');
+$conn->exec("INSERT INTO test VALUES (zeroblob(36))");
+$stream = $conn->openBlob('test', 'text', 1, 'main', SQLITE3_OPEN_READWRITE);
+for ($i = 0; $i < 3; $i++) {
+    fwrite($stream,  "Lorem ipsum\n");
+}
+fclose($stream);
+echo $conn->querySingle("SELECT text FROM test");
+$conn->close();
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Lorem ipsum
+Lorem ipsum
 Lorem ipsum
 ]]>
     </screen>
