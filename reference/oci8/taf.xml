@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 334955 $ -->
+<chapter xml:id="oci8.taf" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>OCI8 Transparent Application Failover (TAF) Support</title>
+ <section>
+  <para>
+   TAF is an Oracle Database feature that provides high availability.
+   It enables PHP OCI8 applications to automatically reconnect to a
+   preconfigured database when database connectivity fails due to
+   instance or network failure.
+  </para>
+  <para>
+   In a configured Oracle Database system, TAF occurs when the PHP
+   application detects that the database instance is down or
+   unreachable. It establishes a connection to another node in an
+   Oracle <link xlink:href="&url.oracle.taf.rac;">RAC</link>
+   configuration, a hot standby database, or the same database
+   instance
+   itself. See <link xlink:href="&url.oracle.taf.ociguide;">Oracle
+   Call Interface Programmer's Guide</link> for more information about
+   OCI TAF.
+  </para>
+  <para>
+   An application callback can be registered. During failover, normal
+   application processing stops and the registered callback is invoked.
+   The callback notifies the application of the failover events. If the failover
+   succeeds, normal processing will be resumed. If the failover
+   aborts, any following database operations in the application will fail
+   due to no connection being available. See more details about TAF
+   callbacks in Using TAF Callbacks in OCI8 section.  
+  </para>
+  <para>
+   When a connection fails over to another database, the callback can
+   reset any necessary connection state, for example replaying any
+   necessary ALTER SESSION commands if the database service did not have
+   -failover_restore enabled.
+  </para>
+ </section>
+ <section>
+  <title>Configuring Transparent Application Failover</title>
+  <para>
+   TAF can be configured on the PHP OCI8 side or in the database
+   configuration. If both are configured, database-side settings
+   take precedence.
+  </para>
+  <para>
+   Configure TAF in PHP OCI8 (the client side) by including the
+   FAILOVER_MODE parameter in the CONNECT_DATA portion of a
+   connect descriptor. See Configuring Transparent Application
+   Failover in <link xlink:href="&url.oracle.taf.clientconfig;">
+   Oracle Database Net Services Administrator's Guide</link> for
+   more information about client side configuration of TAF.
+  </para>
+  <para>
+   An example tnsnames.ora to configure TAF reconnecting to the
+   same database instance:
+  </para>
+  <para>
+    <informalexample>
+     <screen>
+<![CDATA[
+    ORCL =
+      (DESCRIPTION =
+        (ADDRESS = (PROTOCOL = TCP)(HOST = 127.0.0.1)(PORT = 1521))
+        (CONNECT_DATA =
+          (SERVICE_NAME = orcl)
+          (FAILOVER_MODE =
+            (TYPE = SELECT)
+            (METHOD = BASIC)
+            (RETRIES = 20)
+            (DELAY = 15))))
+ ]]>
+     </screen>
+   </informalexample>
+  </para>
+  <para>
+   Alternatively configure TAF on the database side by
+   modifying the target service with
+   <link xlink:href="&url.oracle.taf.srvctl;">srvctl</link>
+   (for RAC) or the
+   <link xlink:href="&url.oracle.taf.dbmsservice;">
+   DBMS_SERVICE.MODIFY_SERVICE</link> packaged procedure
+   (for single instance databases).
+  </para>
+ </section>
+ <section>
+  <title>Using TAF Callbacks in OCI8</title>
+  <para>
+   A TAF callback is an application function that can be
+   registered to be called during failover. It is called
+   several times while re-establishing the application's connection.
+  </para>
+  <para>
+   Callback first occurs when a loss of connection is detected.
+   This allows the application to act accordingly for the
+   upcoming delay of the failover. If the failover is successful,
+   the callback is invoked after connection is re-established
+   and usable. At this time, the application can resynchronize
+   session settings and take actions such as informing the user
+   that failover occurred. If failover is unsuccessful, a
+   callback occurs to inform the application that a failover did
+   not take place and the connection is unusable.
+  </para>
+  <para>
+   The interface of a TAF user-defined callback function is as
+   follows:
+  </para>
+  <methodsynopsis>
+   <type>int</type><methodname>userCallbackFn</methodname>
+   <methodparam><type>resource</type><parameter>connection</parameter></methodparam>
+   <methodparam><type>int</type><parameter>event</parameter></methodparam>
+   <methodparam><type>int</type><parameter>type</parameter></methodparam>
+  </methodsynopsis>
+  <para>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>connection</parameter></term>
+     <listitem>
+      <para>
+       The Oracle connection on which the TAF callback was 
+       registered via <function>oci_register_taf_callback</function>.
+       The connection is not valid until the
+       failover completes successfully.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>event</parameter></term>
+     <listitem>
+      <para>
+       The failover event indicates the current status of
+       the failover. 
+      </para>
+      <para>
+       <itemizedlist>
+        <listitem>
+         <para>
+          <constant>OCI_FO_BEGIN</constant> indicates that
+          failover has detected a lost connection and failover
+          is starting.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          <constant>OCI_FO_END</constant> indicates successful
+          completion of failover.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          <constant>OCI_FO_ABORT</constant> indicates that
+          failover was unsuccessful, and there is no option
+          of retrying.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          <constant>OCI_FO_ERROR</constant> also indicates
+          that failover was unsuccessful, but it gives the
+          application the opportunity to handle the error
+          and return OCI_FO_RETRY to retry failover.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+           <constant>OCI_FO_REAUTH</constant> indicates
+           that an Oracle user has been re-authenticated.
+         </para>
+        </listitem>
+       </itemizedlist>
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>type</parameter></term>
+     <listitem>
+      <para>
+       The failover type. This lets the callback know what
+       type of failover the application has requested. The
+       usual values are as follows:
+      </para>
+      <para>
+       <itemizedlist>
+        <listitem>
+         <para>
+          <constant>OCI_FO_SESSION</constant> indicates that
+          the user has requested only session failover. For
+          example, if a user's connection is lost, then a
+          new session is automatically created for the user
+          on the backup. This type of failover does not
+          attempt to recover SELECTs.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          <constant>OCI_FO_SELECT</constant> indicates that
+          the user has requested SELECT failover as well.
+          It allows users with open cursors to continue
+          fetching from them after failure.
+         </para>
+        </listitem>
+       </itemizedlist>
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>return value</parameter></term>
+     <listitem>
+      <para>
+       <itemizedlist>
+        <listitem>
+         <para>
+          <constant>0</constant> indicates the failover
+          steps should continue normally.
+         </para>
+        </listitem>
+        <listitem>
+         <para>
+          <constant>OCI_FO_RETRY</constant> indicates that
+          the failover should be attempted again by Oracle.
+          In case of an error while failing over to a new
+          connection, TAF is able to retry the failover.
+          Typically, the application code should sleep for
+          a while before returning OCI_FO_RETRY.
+         </para>
+        </listitem>
+       </itemizedlist>
+      </para>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+  <example>
+   <para>
+    The following example registers a TAF callback
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// Define userspace callback
+class MyClass {
+    public static $retry_count;
+    public static function TAFCallback($conn, $event, $type)
+    {
+        switch ($event) {
+            case OCI_FO_BEGIN:
+                printf(" Failing Over ... Please stand by");
+                printf(" Failover type was found to be %s \n",
+                       (($type==OCI_FO_SESSION) ? "SESSION"
+                        :($type==OCI_FO_SELECT) ? "SELECT"
+                        : "UNKNOWN!"));
+                self::$retry_count = 0;
+                break;
+            case OCI_FO_ABORT:
+                // The application cannot continue using the database
+                printf(" Failover aborted. Failover will not take place.\n");
+                break;
+            case OCI_FO_END:
+                // Failover completes successfully. Inform users a failover occurs.
+                printf(" Failover ended ... resuming services\n");
+                break;
+            case OCI_FO_REAUTH:
+                printf(" Failed over user ... resuming services\n");
+                // Replay any ALTER SESSION commands associated with this connection
+                // eg. oci_parse($conn, ‘ALTER SESSION …’) ;
+                break;
+            case OCI_FO_ERROR:
+                // Stop retrying if we have already attempted for 20 times.
+                if (self::$retry_count >= 20)
+                    return 0;
+                printf(" Failover error received. Sleeping...\n");
+                sleep(10);
+                self::$retry_count++;
+                return OCI_FO_RETRY; // retry failover
+                break;
+            default:
+                printf("Bad Failover Event: %d.\n", $event);
+                break;
+        }
+        return 0;
+    }
+}
+
+$conn = oci_connect('hr', 'welcome', 'localhost/XE');
+$fn_name = 'MyClass::TAFCallback';
+
+oci_register_taf_callback($conn, $fn_name); // Register TAFCallback to Oracle TAF 
+
+$sql = "SELECT col1 FROM mytab";
+$stmt = oci_parse($conn, $sql);
+oci_define_by_name($stmt, 'COL1', $col1);
+
+// For example, if a connection loss occurs at this point, oci_execute() will
+// detect the loss and failover begins. During failover, oci_execute() will
+// invoke the TAF callback function several times. If the failover is successful,
+// a new connection is transparently created and oci_execute() will continue as
+// usual. The connection session settings can be reset in the TAF callback
+// function. If the failover is aborted, oci_execute() will return an error 
+// because a valid connection is not available.
+
+$e = oci_execute($stmt);
+if ($e == false)
+{
+    // do error handling, if oci_execute() fails
+    // var_dump(oci_error($stmt));
+}
+while (oci_fetch($stmt))
+{
+    echo "COL1 value is $col1<br>\n";
+}
+
+// do other SQL statements with the new connection, if it is valid
+// $stmt = oci_parse($conn,  . . .); 
+
+?>
+]]>
+   </programlisting>
+  </example>
+  <para>
+   Also see the usage of <function>oci_register_taf_callback</function>
+   and <function>oci_disable_taf_callback</function>.
+  </para>
+ </section>
+</chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
+
