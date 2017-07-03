@@ -12,32 +12,30 @@
   <methodsynopsis>
    <modifier>public</modifier> <type>mixed</type><methodname>Memcached::getMulti</methodname>
    <methodparam><type>array</type><parameter>keys</parameter></methodparam>
-   <methodparam choice="opt"><type>array</type><parameter role="reference">cas_tokens</parameter></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>flags</parameter></methodparam>
   </methodsynopsis>
   <para>
    <function>Memcached::getMulti</function> is similar to
    <methodname>Memcached::get</methodname>, but instead of a single key
    item, it retrieves multiple items the keys of which are specified in the
-   <parameter>keys</parameter> array. If <parameter>cas_tokens</parameter>
-   variable is provided, it is filled with the CAS token values for the found
-   items.
+   <parameter>keys</parameter> array.
    <note>
     <para>
-     Unlike <methodname>Memcached::get</methodname> it is not possible to
-     specify a read-through cache callback for
-     <function>Memcached::getMulti</function>, because the memcache protocol
-     does not provide information on which keys were not found in the multi-key
-     request.
+     Before v3.0 a second argument <parameter role="reference">cas_tokens</parameter> was in use.
+     It was filled with the CAS token values for the found items.
+     The <parameter role="reference">cas_tokens</parameter> parameter was removed in v3.0 of the extension.
+     It was replaced with a new flag <constant>Memcached::GET_EXTENDED</constant>
+     that needs is to be used as the value for <parameter>flags</parameter>.
     </para>
    </note>
   </para>
   <para>
    The <parameter>flags</parameter> parameter can be used to specify
-   additional options for <function>Memcached::getMulti</function>. Currently,
-   the only available option is
-   <constant>Memcached::GET_PRESERVE_ORDER</constant> that ensures that the
+   additional options for <function>Memcached::getMulti</function>.
+   <constant>Memcached::GET_PRESERVE_ORDER</constant> ensures that the
    keys are returned in the same order as they were requested in.
+   <constant>Memcached::GET_EXTENDED</constant> ensures that the
+   CAS tokens will be fetched too.
   </para>
  </refsect1>
 
@@ -50,14 +48,6 @@
      <listitem>
       <para>
        Array of keys to retrieve.
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry>
-     <term><parameter>cas_tokens</parameter></term>
-     <listitem>
-      <para>
-       The variable to store the CAS tokens for the found items.
       </para>
      </listitem>
     </varlistentry>
@@ -85,10 +75,48 @@
   &reftitle.examples;
   <para>
    <example>
-    <title><function>Memcached::getMulti</function> example</title>
+    <title><function>Memcached::getMulti</function> example for Memcached v3</title>
     <programlisting role="php">
 <![CDATA[
 <?php
+// Valid for v3 of the extension
+
+$m = new Memcached();
+$m->addServer('localhost', 11211);
+
+$items = array(
+    'key1' => 'value1',
+    'key2' => 'value2',
+    'key3' => 'value3'
+);
+$m->setMulti($items);
+$result = $m->getMulti(array('key1', 'key3', 'badkey'));
+var_dump($result);
+?>
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+array(2) {
+  ["key1"]=>
+  string(6) "value1"
+  ["key3"]=>
+  string(6) "value3"
+}
+]]>
+    </screen>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title><function>Memcached::getMulti</function> example for Memcached v1 and v2</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// Valid for v1 and v2 of the extension
+
 $m = new Memcached();
 $m->addServer('localhost', 11211);
 
@@ -122,12 +150,60 @@ array(2) {
     </screen>
    </example>
   </para>
+
   <para>
    <example>
-    <title><constant>Memcached::GET_PRESERVE_ORDER</constant> example</title>
+    <title><constant>Memcached::GET_PRESERVE_ORDER</constant> example for Memcached v3</title>
     <programlisting role="php">
 <![CDATA[
 <?php
+// Valid for v3 of the extension
+
+$m = new Memcached();
+$m->addServer('localhost', 11211);
+
+$data = array(
+    'foo' => 'foo-data',
+    'bar' => 'bar-data',
+    'baz' => 'baz-data',
+    'lol' => 'lol-data',
+    'kek' => 'kek-data',
+);
+
+$m->setMulti($data, 3600);
+
+$keys = array_keys($data);
+$keys[] = 'zoo';
+$got = $m->getMulti($keys, Memcached::GET_PRESERVE_ORDER);
+
+foreach ($got as $k => $v) {
+    echo "$k $v\n";
+}
+?>
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+foo foo-data
+bar bar-data
+baz baz-data
+lol lol-data
+kek kek-data
+zoo 
+]]>
+    </screen>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title><constant>Memcached::GET_PRESERVE_ORDER</constant> example for Memcached v1 and v2</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// Valid for v1 and v2 of the extension
+
 $m = new Memcached();
 $m->addServer('localhost', 11211);
 
@@ -165,6 +241,29 @@ zoo
     </screen>
    </example>
   </para>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>3.0.0</entry>
+      <entry>
+       The <parameter role="reference">cas_tokens</parameter> parameter was removed.
+       The <constant>Memcached::GET_EXTENDED</constant> was added and when passed as a flag it ensures the CAS tokens to be fetched.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
  </refsect1>
 
  <refsect1 role="seealso">
