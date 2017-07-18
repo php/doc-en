@@ -23,6 +23,116 @@
    Those will share the same TCP socket.
   </para>
  </sect2>
+ <sect2 xml:id="migration71.windows-support.long-and-utf8-path">
+  <title>Support for long and UTF-8 path</title>
+  <para>
+    If a web application is UTF-8 conform, no further action is required. For
+    applications depending on paths in non UTF-8 encodings for I/O, an explicit
+    INI directive has to be set. The encoding INI settings check relies on the
+    order in the core:
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     internal_encoding
+    </simpara>
+   </listitem>
+    <listitem>
+    <simpara>
+     default_charset
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     zend.multibyte
+    </simpara>
+   </listitem>
+  </itemizedlist>
+  <para>
+    Several functions for codepage handling were itroduced:
+  </para>
+      <itemizedlist>
+       <listitem>
+        <simpara>
+         sapi_windows_cp_set() to set the default codepage
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         sapi_windows_cp_get() to retrieve the current codepage
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         sapi_windows_cp_is_utf8()
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         sapi_windows_cp_conv() to convert between codepages, using iconv() compatible signature
+        </simpara>
+       </listitem>
+      </itemizedlist>
+  <para>
+   These functions are thread safe.
+  </para>
+  <para>
+    The console output codepage is adjusted depending on the encoding used in
+    PHP. Depending on the concrete system OEM codepage, the visible output
+    might or might be not correct. For example, in the default cmd.exe and on
+    a system with the OEM codepage 437, outputs in codepages 1251, 1252, 1253
+    and some others can be shown correctly when using UTF-8. On the same system,
+    chars in codepage like 20932 probably won't be shown correctly. This refers
+    to the particular system rules for codepage, font compatibility and the
+    particular console program used. PHP automatically sets the console codepage
+    according to the encoding rules from php.ini. Using alternative consoles
+    instead of cmd.exe directly might bring better experience in some cases.
+  </para>
+  <para>
+    Nevertheless be aware, runtime codepage switch after the request start
+    might bring unexpected side effects on CLI. The preferrable way is php.ini,
+    When PHP CLI is used in a console emulator, that doesn't support Unicode,
+    it might possibly be required, to avoid changing the console codepage. The
+    best way to achieve it is by setting the default or internal encoding to
+    correspond the ANSI codepage. Another method is to set the INI directives
+    output_encoding and input_encoding to the required codepage, in which case
+    however the difference between internal and I/O codepage is likely to cause
+    mojibake. In rare cases, if PHP happens to crash gracefully, the original
+    console codepage might be not restored. In this case, the chcp command
+    can be used, to restore it manually.
+  </para>
+  <para>
+    Special awareness for the DBCS systems - the codepage switch on runtime
+    using <function>ini_set</function> is likely to cause display issues. The difference to the
+    non DBCS systems is, that the extended characters require two console cells
+    to be displayed. In certain case, only the mapping of the characters into
+    the glyph set of the font could happen, no actual font change. This is the
+    nature of DBCS systems, the most simple way to prevent display issues is
+    to avoid usage of <function>ini_set</function> for the codepage change.
+  </para>
+  <para>
+    As a result of UTF-8 support in the streams, PHP scripts are not limited
+    to ASCII or ANSI filenames anymore. This is supported out of the box on
+    CLI. For other SAPI, the documentation for the corresponding server
+    is useful.
+  </para>
+  <para>
+    Long paths support is transparent. Paths longer than 260 bytes get
+    automatically prefixed with <literal>\\?\</literal>. The max path length is limited to
+    2048 bytes. Be aware, that the path segment limit (basename length) still
+    persists.
+  </para>
+  <para>
+    For the best portability, it is strongely recommended to handle filenames,
+    I/O and other related topics UTF-8. Additionally, for the console applications,
+    the usage of a TrueType font is preferrable and the usage of ini_set() for
+    the codepage change is discouraged.
+  </para>
+  <para>
+  </para>
+  <para>
+  </para>
+ </sect2>
 </sect1>
 
 <!-- Keep this comment at the end of the file
