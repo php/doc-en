@@ -91,7 +91,7 @@ function errors_are_bad($status) {
 }
 
 function is_windows() {
-    return strncmp(strtoupper(PHP_OS), "WIN", 3) === 0;
+    return PHP_OS === 'WINNT';
 }
 
 function checking($for) // {{{
@@ -706,7 +706,7 @@ if ($dom->validate()) {
 
 CAT;
 
-    if (function_exists('proc_nice')) {
+    if (function_exists('proc_nice') && !is_windows()) {
         echo " (Run `nice php configure.php` next time!)\n";
     }
     if ($ac["SEGFAULT_SPEED"] == "yes" && version_compare(PHP_VERSION, "5.3.7-dev", "lt")) {
