@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 341425 $ -->
+
+<chapter xml:id="mongodb.tutorial.apm" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Application Performance Monitoring (APM)</title>
+
+ <para>
+  Since version 1.3, the MongoDB driver contains an API for performance
+  monitoring. This API allows you to find out how long specific operations
+  take by setting up subscribers. Each subscriber is required to implement one
+  or more interfaces under the <literal>MongoDB\Driver\Monitoring</literal>
+  namespace. Currently, only the
+  <classname>MongoDB\Driver\Monitoring\CommandSubscriber</classname> interface
+  is available.
+ </para>
+
+ <para>
+  The <classname>MongoDB\Driver\Monitoring\CommandSubscriber</classname>
+  interface defines three methods: <literal>commandStarted</literal>,
+  <literal>commandSucceeded</literal>, and <literal>commandFailed</literal>.
+  Each of these three methods accept a single <parameter>event</parameter>
+  argument of a specific class for the respective event. For example, the
+  <literal>commandSucceeded</literal>'s <parameter>$event</parameter> argument
+  is a <classname>MongoDB\Driver\Monitoring\CommandSucceededEvent</classname>
+  object.
+ </para>
+
+ <para>
+  In this tutorial we will implement a subscriber that creates a list of all
+  the query profiles and the average time they took.
+ </para>
+
+ <section>
+  <title>Subscriber Class Scaffolding</title>
+
+  <para>
+   We start with the framework for our subscriber:
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+class QueryTimeCollector implements \MongoDB\Driver\Monitoring\CommandSubscriber
+{
+    public function commandStarted( \MongoDB\Driver\Monitoring\CommandStartedEvent $event )
+    {
+    }
+
+    public function commandSucceeded( \MongoDB\Driver\Monitoring\CommandSucceededEvent $event )
+    {
+    }
+
+    public function commandFailed( \MongoDB\Driver\Monitoring\CommandFailedEvent $event )
+    {
+    }
+}
+
+?>
+]]>
+  </programlisting>
+ </section>
+
+ <section>
+  <title>Registering the Subscriber</title>
+
+  <para>
+   Once a subscriber object is instantiated, it needs to be registered with the
+   driver's monitoring system. This is done by calling
+   <methodname>MongoDB\Driver\Monitoring\addSubscriber</methodname>.
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+\MongoDB\Driver\Monitoring\addSubscriber( new QueryTimeCollector() );
+
+?>
+]]>
+  </programlisting>
+ </section>
+
+ <section>
+  <title>Implementing the Logic</title>
+
+  <para>
+   With the object registered, the only thing left is to implement the logic
+   in the subscriber class. To correlate the two events that make up a
+   successfully executed command (commandStarted and commandSucceeded), each
+   event object exposes a <literal>requestId</literal> field.
+  </para>
+  <para>
+   To record the average time per query shape, we will start by checking for a
+   <literal>find</literal> command in the commandStarted event. We will then add
+   an item to the <literal>pendingCommands</literal> property indexed by its
+   <literal>requestId</literal> and with its value representing the query shape.
+  </para>
+  <para>
+   If we receive a corresponding commandSucceeded event with the same
+   <literal>requestId</literal>, we add the duration of the event (from
+   <literal>durationMicros</literal>) to the total time and increment the
+   operation count.
+  </para>
+  <para>
+   If a corresponding commandFailed event is encountered, we just remove the
+   entry from the <literal>pendingCommands</literal> property.
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+class QueryTimeCollector implements \MongoDB\Driver\Monitoring\CommandSubscriber
+{
+    private $pendingCommands = [];
+    private $queryShapeStats = [];
+
+    /* Creates a query shape out of the filter argument. Right now it only
+     * takes the top level fields into account */
+    private function createQueryShape( array $filter )
+    {
+        return json_encode( array_keys( $filter ) );
+    }
+
+    public function commandStarted( \MongoDB\Driver\Monitoring\CommandStartedEvent $event )
+    {
+        if ( array_key_exists( 'find', (array) $event->getCommand() ) )
+        {
+            $queryShape = $this->createQueryShape( (array) $event->getCommand()->filter );
+            $this->pendingCommands[$event->getRequestId()] = $queryShape;
+        }
+    }
+
+    public function commandSucceeded( \MongoDB\Driver\Monitoring\CommandSucceededEvent $event )
+    {
+        $requestId = $event->getRequestId();
+        if ( array_key_exists( $requestId, $this->pendingCommands ) )
+        {
+            $this->queryShapeStats[$this->pendingCommands[$requestId]]['count']++;
+            $this->queryShapeStats[$this->pendingCommands[$requestId]]['duration'] += $event->getDurationMicros();
+            unset( $this->pendingCommands[$requestId] );
+        }
+    }
+
+    public function commandFailed( \MongoDB\Driver\Monitoring\CommandFailedEvent $event )
+    {
+        if ( array_key_exists( $event->getRequestId(), $this->pendingCommands ) )
+        {
+            unset( $this->pendingCommands[$event->getRequestId()] );
+        }
+    }
+
+    public function __destruct()
+    {
+        foreach( $this->queryShapeStats as $shape => $stats )
+        {
+            echo "Shape: ", $shape, " (", $stats['count'], ")\n  ",
+                $stats['duration'] / $stats['count'], "µs\n\n";
+        }
+    }
+}
+
+$m = new \MongoDB\Driver\Manager( 'mongodb://localhost:27016' );
+
+/* Add the subscriber */
+\MongoDB\Driver\Monitoring\addSubscriber( new QueryTimeCollector() );
+
+/* Do a bunch of queries */
+$query = new \MongoDB\Driver\Query( [
+    'region_slug' => 'scotland-highlands', 'age' => [ '$gte' => 20 ]
+] );
+$cursor = $m->executeQuery( 'dramio.whisky', $query );
+
+$query = new \MongoDB\Driver\Query( [
+    'region_slug' => 'scotland-lowlands', 'age' => [ '$gte' => 15 ]
+] );
+$cursor = $m->executeQuery( 'dramio.whisky', $query );
+
+$query = new \MongoDB\Driver\Query( [ 'region_slug' => 'scotland-lowlands' ] );
+$cursor = $m->executeQuery( 'dramio.whisky', $query );
+
+?>
+]]>
+  </programlisting>
+ </section>
+
+</chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
