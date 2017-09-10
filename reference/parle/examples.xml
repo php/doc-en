@@ -12,9 +12,7 @@
 <![CDATA[
 <?php
 
-use Parle\Token;
-use Parle\Lexer;
-use Parle\LexerException;
+use Parle\{Token, Lexer, LexerException};
 
 /* name => id */
 $token = array(
@@ -80,6 +78,99 @@ do {
  </section>
  <section xml:id="parle.examples.parser">
   <title>Parser examples</title>
+  <example>
+   <title>Simple calculator</title>
+   <programlisting role="php">
+<![CDATA[
+<?php 
+
+use Parle\{Parser, ParserException, Lexer, Token};
+
+$p = new Parser;
+$p->token("INTEGER");
+$p->left("'+' '-' '*' '/'");
+
+$p->push("start", "exp");
+$add_idx = $p->push("exp", "exp '+' exp");
+$sub_idx = $p->push("exp", "exp '-' exp");
+$mul_idx = $p->push("exp", "exp '*' exp");
+$div_idx = $p->push("exp", "exp '/' exp");
+$int_idx = $p->push("exp", "INTEGER");
+
+$p->build();
+
+$lex = new Lexer;
+$lex->push("[+]", $p->tokenId("'+'"));
+$lex->push("[-]", $p->tokenId("'-'"));
+$lex->push("[*]", $p->tokenId("'*'"));
+$lex->push("[/]", $p->tokenId("'/'"));
+$lex->push("\\d+", $p->tokenId("INTEGER"));
+$lex->push("\\s+", Token::SKIP);
+
+$lex->build();
+
+$exp = array(
+	"1 + 1",
+	"33 / 10",
+	"100 * 45",
+	"17 - 45",
+);
+
+foreach ($exp as $in) {
+	if (!$p->validate($in, $lex)) {
+		throw new ParserException("Failed to validate input");
+	}
+
+	$p->consume($in, $lex);
+
+	$act = $p->action();
+
+	while (Parser::ACTION_ERROR != $act && Parser::ACTION_ACCEPT != $act) {
+		switch ($act) {
+			case Parser::ACTION_ERROR:
+				throw new ParserException("Parser error");
+				break;
+			case Parser::ACTION_SHIFT:
+			case Parser::ACTION_GOTO:
+			case Parser::ACTION_ACCEPT:
+				break;
+			case Parser::ACTION_REDUCE:
+				$rid = $p->reduceId();
+
+				/*$l = $p->sigil(0);
+				$r = $p->sigil(2);*/
+
+				switch ($rid) {
+					case $add_idx:
+						$l = $p->sigil(0);
+						$r = $p->sigil(2);
+						echo "$l + $r = " . ($l + $r) . "\n";
+						break;
+					case $sub_idx:
+						$l = $p->sigil(0);
+						$r = $p->sigil(2);
+						echo "$l - $r = " . ($l - $r) . "\n";
+						break;
+					case $mul_idx:
+						$l = $p->sigil(0);
+						$r = $p->sigil(2);
+						echo "$l * $r = " . ($l * $r) . "\n";
+						break;
+					case $div_idx:
+						$l = $p->sigil(0);
+						$r = $p->sigil(2);
+						echo "$l / $r = " . ($l / $r) . "\n";
+						break;
+				}
+			break;
+		}
+		$p->advance();
+		$act = $p->action();
+	}
+}
+]]>
+   </programlisting>
+  </example>
   <example>
    <title>Parse words out from a sentense</title>
    <programlisting role="php">
