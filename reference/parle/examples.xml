@@ -4,7 +4,7 @@
 <chapter xml:id="parle.examples" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  &reftitle.examples;
 
- <section xml:id="parle.examples.varstatement">
+ <section xml:id="parle.examples.lexer">
   <title>Lexer examples</title>
   <example>
    <title>Tokenize comma separated integer list</title>
@@ -74,6 +74,57 @@ do {
 	$tok = $lex->getToken();
 	var_dump($tok);
 } while (Token::EOI != $tok->id);
+]]>
+   </programlisting>
+  </example>
+ </section>
+ <section xml:id="parle.examples.parser">
+  <title>Parser examples</title>
+  <example>
+   <title>Tokenize assign statement</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+use Parle\{Lexer, Token, Parser, ParserException};
+
+$p = new Parser;
+$p->token("WORD");
+$p->push("START", "SENTENCE");
+$p->push("SENTENCE", "WORDS");
+$words_idx = $p->push("WORDS", "WORDS WORD");
+$word_idx = $p->push("WORDS", "WORD");
+$p->build();
+
+$lex = new Lexer;
+$lex->push("[^\s]{-}[\.,\:\;\?]+", $p->tokenId("WORD"));
+$lex->push("[\s\.,\:\;\?]+", Token::SKIP);
+$lex->build();
+
+$in = "Dis-moi où est ton papa?";
+$p->consume($in, $lex);
+do {
+	$act = $p->action();
+	switch ($act) {
+	case Parser::ACTION_ERROR:
+		throw new ParserException("Error");
+		break;
+	case Parser::ACTION_SHIFT:
+	case Parser::ACTION_GOTO:
+	case Parser::ACTION_ACCEPT:
+		/* var_dump($p->trace());*/
+		break;
+	case Parser::ACTION_REDUCE:
+		$rid = $p->reduceId();
+		if ($rid == $word_idx) {
+			var_dump($p->sigil(0));
+		} if ($rid == $words_idx) {
+			var_dump($p->sigil(1));
+		}
+		break;
+	}
+	$p->advance();
+} while (Parser::ACTION_ERROR != $act && Parser::ACTION_ACCEPT != $act);
 ]]>
    </programlisting>
   </example>
