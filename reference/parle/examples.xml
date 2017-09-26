@@ -12,17 +12,18 @@
 <![CDATA[
 <?php
 
-use Parle\{Token, Lexer, LexerException};
+use Parle\Token;
+use Parle\Lexer;
+use Parle\LexerException;
 
 /* name => id */
 $token = array(
-        "EOI" => 0,
         "COMMA" => 1,
         "CRLF" => 2,
         "DECIMAL" => 3,
 );
 /* id => name */
-$token_rev = array_flip($token);
+$tokenIdToName = array_flip($token);
 
 $lex = new Lexer;
 $lex->push("[\x2c]", $token["COMMA"]);
@@ -42,7 +43,7 @@ do {
                 throw new LexerException("Unknown token '{$tok->value}' at offset {$lex->marker}.");
         }
 
-        echo "TOKEN: ", $token_rev[$tok->id], PHP_EOL;
+        echo "TOKEN: ", $tokenIdToName[$tok->id], PHP_EOL;
 } while (Token::EOI != $tok->id);
 ]]>
    </programlisting>
@@ -91,11 +92,11 @@ $p->token("INTEGER");
 $p->left("'+' '-' '*' '/'");
 
 $p->push("start", "exp");
-$add_idx = $p->push("exp", "exp '+' exp");
-$sub_idx = $p->push("exp", "exp '-' exp");
-$mul_idx = $p->push("exp", "exp '*' exp");
-$div_idx = $p->push("exp", "exp '/' exp");
-$int_idx = $p->push("exp", "INTEGER");
+$prod_add = $p->push("exp", "exp '+' exp");
+$prod_sub = $p->push("exp", "exp '-' exp");
+$prod_mul = $p->push("exp", "exp '*' exp");
+$prod_div = $p->push("exp", "exp '/' exp");
+$p->push("exp", "INTEGER"); /* Production index unused. */
 
 $p->build();
 
@@ -134,22 +135,22 @@ foreach ($exp as $in) {
 				break;
 			case Parser::ACTION_REDUCE:
 				switch ($p->reduceId) {
-					case $add_idx:
+					case $prod_add:
 						$l = $p->sigil(0);
 						$r = $p->sigil(2);
 						echo "$l + $r = " . ($l + $r) . "\n";
 						break;
-					case $sub_idx:
+					case $prod_sub:
 						$l = $p->sigil(0);
 						$r = $p->sigil(2);
 						echo "$l - $r = " . ($l - $r) . "\n";
 						break;
-					case $mul_idx:
+					case $prod_mul:
 						$l = $p->sigil(0);
 						$r = $p->sigil(2);
 						echo "$l * $r = " . ($l * $r) . "\n";
 						break;
-					case $div_idx:
+					case $prod_div:
 						$l = $p->sigil(0);
 						$r = $p->sigil(2);
 						echo "$l / $r = " . ($l / $r) . "\n";
@@ -175,8 +176,8 @@ $p = new Parser;
 $p->token("WORD");
 $p->push("START", "SENTENCE");
 $p->push("SENTENCE", "WORDS");
-$words_idx = $p->push("WORDS", "WORDS WORD");
-$word_idx = $p->push("WORDS", "WORD");
+$prod_word_0 = $p->push("WORDS", "WORDS WORD");
+$prod_word_1 = $p->push("WORDS", "WORD");
 $p->build();
 
 $lex = new Lexer;
@@ -193,20 +194,19 @@ do {
 		break;
 	case Parser::ACTION_SHIFT:
 	case Parser::ACTION_GOTO:
-	case Parser::ACTION_ACCEPT:
 		/* var_dump($p->trace());*/
 		break;
 	case Parser::ACTION_REDUCE:
 		$rid = $p->reduceId();
-		if ($rid == $word_idx) {
+		if ($rid == $prod_word_1) {
 			var_dump($p->sigil(0));
-		} if ($rid == $words_idx) {
+		} if ($rid == $prod_word_0) {
 			var_dump($p->sigil(1));
 		}
 		break;
 	}
 	$p->advance();
-} while (Parser::ACTION_ERROR != $p->action && Parser::ACTION_ACCEPT != $p->action);
+} while (Parser::ACTION_ACCEPT != $p->action);
 ]]>
    </programlisting>
   </example>
