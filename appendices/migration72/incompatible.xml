@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<sect1 xml:id="migration72.incompatible">
+ <title>Backward incompatible changes</title>
+
+ <sect2 xml:id="migration72.incompatible.number_format-no-neg-zero">
+  <title>Prevent <function>number_format</function> from returning negative zero</title>
+
+  <para>
+   Previously, it was possible for the <function>number_format</function>
+   function to return <literal>-0</literal>. Whilst this is perfectly valid
+   according to the IEEE 754 floating point specification, this oddity was not
+   desirable for displaying formatted numbers in a human-readable form.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+var_dump(number_format(-0.01)); // now outputs string(1) "0" instead of string(2) "-0"
+]]>
+   </programlisting>
+  </informalexample>
+ </sect2>
+
+ <sect2 xml:id="migration72.incompatible.object-array-casts">
+  <title>Convert numeric keys in object and array casts</title>
+
+  <para>
+   Numeric keys are now better handled when casting arrays to object and
+   objects to arrays (either from explicit casting or by
+   <function>settype</function>).
+  </para>
+
+  <para>
+   This means that integer (or stringy integer) keys from arrays being casted
+   to objects are now accessible:
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// array to object
+$arr = [0 => 1];
+$obj = (object)$arr;
+var_dump(
+    $obj,
+    $obj->{'0'}, // now accessible
+    $obj->{0} // now accessible
+);
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+object(stdClass)#1 (1) {
+  ["0"]=>    // string key now, rather than integer key
+  int(1)
+}
+int(1)
+int(1)
+]]>
+   </screen>
+  </informalexample>
+
+  <para>
+   And integer (or stringy integer) keys from objects being casted to arrays
+   are now accessible:
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// object to array
+$obj = new class {
+    public function __construct()
+    {
+        $this->{0} = 1;
+    }
+};
+$arr = (array)$obj;
+var_dump(
+    $arr,
+    $arr[0], // now accessible
+    $arr['0'] // now accessible
+);
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+array(1) {
+  [0]=>    // integer key now, rather than string key
+  int(1)
+}
+int(1)
+int(1)
+]]>
+   </screen>
+  </informalexample>
+ </sect2>
+
+ <sect2 xml:id="migration72.incompatible.no-null-to-get_class">
+  <title>Disallow Passing &null; to <function>get_class</function></title>
+
+  <para>
+   Previously, passing &null; to the <function>get_class</function> function
+   would output the name of the enclosing class. This behaviour has now been
+   removed, where an <constant>E_WARNING</constant> will be output instead. To
+   achieve the same behaviour as before, the argument should simply be omitted
+   instead.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="migration72.incompatible.warn-on-non-countable-types">
+  <title>Warn when counting non-countable types</title>
+
+  <para>
+   An <constant>E_WARNING</constant> will now be emitted when attempting to
+   <function>count</function> non-countable types (this includes the
+   <function>sizeof</function> alias function).
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+var_dump(
+    count(1), // integers are not countable
+    count('abc'), // strings are not countable
+    count(new stdclass), // objects not implementing the Countable interface are not countable
+    count([1,2]) // arrays are countable
+);
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+Warning: count(): Parameter must be an array or an object that implements Countable in %s on line %d
+
+Warning: count(): Parameter must be an array or an object that implements Countable in %s on line %d
+
+Warning: count(): Parameter must be an array or an object that implements Countable in %s on line %d
+int(1)
+int(1)
+int(1)
+int(2)
+]]>
+   </screen>
+  </informalexample>
+ </sect2>
+
+ <sect2 xml:id="migration72.incompatible.hash-ext-to-objects">
+  <title>Move ext/hash from resources to objects</title>
+
+  <para>
+   As part of the long-term migration away from resources, the Hash extension
+   has been updated to use objects instead of resources. The change should be
+   seamless for PHP developers, except for where
+   <function>is_resource</function> checks have been made (which will need
+   updating to <function>is_object</function> instead).
+  </para>
+ </sect2>
+
+ <sect2 xml:id="migration72.incompatible.ssl-tls-defaults">
+  <title>Improve SSL/TLS Defaults</title>
+
+  <para>
+   The following changes to the defaults have been made:
+  </para>
+
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <literal>tls://</literal> now defaults to TLSv1.0 or TLSv1.1 or TLSv1.2
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <literal>ssl://</literal> an alias of <literal>tls://</literal>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <literal>STREAM_CRYPTO_METHOD_TLS_*</literal> constants default to TLSv1.0
+     or TLSv1.1 + TLSv1.2, instead of TLSv1.0 only
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </sect2>
+</sect1>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
