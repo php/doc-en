@@ -17,9 +17,6 @@
     <methodname>MongoDB\Driver\Manager::executeCommand</methodname> or
     <methodname>MongoDB\Driver\Manager::executeQuery</methodname>, respectively.
    </para>
-   <para>
-
-   </para>
   </section>
 <!-- }}} -->
 
@@ -47,6 +44,214 @@
    </classsynopsis>
 <!-- }}} -->
 
+  </section>
+
+  <section xml:id="mongodb-driver-cursor.examples">
+   &reftitle.examples;
+
+   <example xml:id="mongodb-driver-cursor.examples.foreach">
+    <title>Reading a result set</title>
+    <para>
+     <methodname>MongoDB\Driver\Manager::executeCommand</methodname> and
+     <methodname>MongoDB\Driver\Manager::executeQuery</methodname> both return
+     their results as a <classname>MongoDB\Driver\Cursor</classname> object.
+     This object can be used to iterator over the result set that the command
+     or cursor returned.
+    </para>
+    <para>
+     Because this class implements the
+     <interfacename>Traversable</interfacename> interface, you can simply
+     iterator over the result set by using <function>foreach</function>.
+    </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$manager = new MongoDB\Driver\Manager();
+
+/* Insert some documents so that our query returns information */
+$bulkWrite = new MongoDB\Driver\BulkWrite;
+$bulkWrite->insert(['name' => 'Ceres', 'size' => 946, 'distance' => 2.766]);
+$bulkWrite->insert(['name' => 'Vesta', 'size' => 525, 'distance' => 2.362]);
+$manager->executeBulkWrite("test.asteroids", $bulkWrite);
+
+/* Query for all the items in the collection */
+$query = new MongoDB\Driver\Query( [] );
+
+/* Query the "asteroids" collection of the "test" database */
+$cursor = $manager->executeQuery("test.asteroids", $query);
+
+/* $cursor now contains an object that wraps around the result set. Use
+ * foreach() to iterate over all the result */
+foreach($cursor as $document) {
+    print_r($document);
+}
+
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+stdClass Object
+(
+    [_id] => MongoDB\BSON\ObjectId Object
+        (
+            [oid] => 5a4cff2f122d3321565d8cc2
+        )
+
+    [name] => Ceres
+    [size] => 946
+    [distance] => 2.766
+)
+stdClass Object
+(
+    [_id] => MongoDB\BSON\ObjectId Object
+        (
+            [oid] => 5a4cff2f122d3321565d8cc3
+        )
+
+    [name] => Vesta
+    [size] => 525
+    [distance] => 2.362
+}
+]]>
+    </screen>
+   </example>
+
+   <example xml:id="mongodb-driver-cursor.examples.tailable">
+    <title>Reading from a tailable cursors</title>
+    <para>
+     Tailable cursors are special cursors in MongoDB that allow you to read
+     results from a cursor, and then wait until more documents become
+     available in the collection that match the query. This functionality only
+     works with Capped Collections and <link
+     xlink:href="&url.mongodb.docs;changeStreams/index.html">Change
+     Streams</link>, and requires a different way of iteration.
+    </para>
+    <para>
+     Where normal cursors can be iterated over with
+     <function>foreach</function>, the same does not work with tailable
+     cursors as you can not call <function>foreach</function> twice. In order
+     to continuously read from a <link
+     xlink:href="&url.mongodb.docs;core/tailable-cursors/">Tailable
+     Cursor</link>, you will need to wrap the
+     <classname>MongoDB\Driver\Cursor</classname> object with an
+     <classname>IteratorIterator</classname>.
+    </para>
+    <para>
+     In the example below, we set up a <link
+     xlink:href="&url.mongodb.docs;core/capped-collections/">Capped
+     Collection</link>, into which we insert a few documents. We then run the
+     query with the special cursor options <literal>tailable</literal>,
+     <literal>awaitData</literal> and <literal>maxAwaitTimeMS</literal>. These
+     options instruct the server to: keep the cursor open after the initial
+     result set has been returned (<literal>tailable</literal>), and to block
+     the read (<literal>awaitData</literal>) for at most
+     <literal>maxAwaitTimeMS</literal> milliseconds. We then wrap the cursor
+     in <classname>IteratorIterator</classname> and use
+     <methodname>IteratorIterator::valid</methodname> and
+     <methodname>IteratorIterator::next</methodname> to iterate over the
+     result set.
+    </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$manager = new MongoDB\Driver\Manager();
+
+/* Create capped collection "asteroids" on "test" database */
+$manager->executeCommand("test", new MongoDB\Driver\Command([
+    'create' => "asteroids",
+    'capped' => true,
+    'size' => 1048576,
+]));
+
+/* Insert some documents so that our query returns information */
+$bulkWrite = new MongoDB\Driver\BulkWrite;
+$bulkWrite->insert(['name' => 'Ceres', 'size' => 946, 'distance' => 2.766]);
+$bulkWrite->insert(['name' => 'Vesta', 'size' => 525, 'distance' => 2.362]);
+$manager->executeBulkWrite("test.asteroids", $bulkWrite);
+
+/* Query for all the items in the collection, and make it tailable with a
+ * maximum wait time of 10 seconds */
+$query = new MongoDB\Driver\Query(
+    [],
+    [
+        'tailable' => true,
+        'awaitData' => true,
+        'maxAwaitTimeMS' => 10000,
+    ]
+);
+
+/* Query the "asteroids" collection of the "test" database */
+$cursor = $manager->executeQuery("test.asteroids", $query);
+
+/* Wrap cursor and rewind */
+$iterator = new IteratorIterator($cursor);
+$iterator->rewind();
+
+/* Loop over the result set with valid() and next() */
+while ($iterator->valid()) {
+    $document = $iterator->current();
+    echo date(DateTime::ISO8601), "\n";
+    print_r($document);
+
+    $iterator->next();
+}
+
+?>
+]]>
+   </programlisting>
+   <para>
+    During the second "Waiting", we insert another document into the
+    collection. You can see on the date/time stamps that there are several
+    seconds between the second and third result being returned.
+   </para>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+2018-01-03T16:59:21+0000
+stdClass Object
+(
+    [_id] => MongoDB\BSON\ObjectId Object
+        (
+            [oid] => 5a4d0be9122d3324914394e2
+        )
+
+    [name] => Ceres
+    [size] => 946
+    [distance] => 2.766
+)
+
+2018-01-03T16:59:21+0000
+stdClass Object
+(
+    [_id] => MongoDB\BSON\ObjectId Object
+        (
+            [oid] => 5a4d0be9122d3324914394e3
+        )
+
+    [name] => Vesta
+    [size] => 525
+    [distance] => 2.362
+)
+
+2018-01-03T16:59:24+0000
+stdClass Object
+(
+    [_id] => MongoDB\BSON\ObjectId Object
+        (
+            [oid] => 5a4d0becca67a2be8d10550c
+        )
+
+    [name] => Pallas
+    [size] => 512
+    [distance] => 2.773
+)
+]]>
+    </screen>
+   </example>
   </section>
 
   <section role="errors">
