@@ -14,7 +14,7 @@
    <para>
     <classname>MongoDB\Driver\ReadConcern</classname> controls the level of
     isolation for read operations for replica sets and replica set shards. This
-    option requires the WiredTiger storage engine and MongoDB 3.2 or later.
+    option requires MongoDB 3.2 or later.
    </para>
   </section>
 <!-- }}} -->
@@ -39,6 +39,12 @@
     </classsynopsisinfo>
 <!-- }}} -->
     <classsynopsisinfo role="comment">Constants</classsynopsisinfo>
+    <fieldsynopsis>
+     <modifier>const</modifier>
+     <type>string</type>
+     <varname linkend="mongodb-driver-readconcern.constants.linearizable">MongoDB\Driver\ReadConcern::AVAILABLE</varname>
+     <initializer>"available"</initializer>
+    </fieldsynopsis>
     <fieldsynopsis>
      <modifier>const</modifier>
      <type>string</type>
@@ -70,17 +76,75 @@
    &reftitle.constants;
    <variablelist>
 
+    <varlistentry xml:id="mongodb-driver-readconcern.constants.available">
+     <term><constant>MongoDB\Driver\ReadConcern::AVAILABLE</constant></term>
+     <listitem>
+      <para>
+       Default for reads against secondaries when
+       <literal>afterClusterTime</literal>and <literal>level</literal> are
+       unspecified.
+      </para>
+      <para>
+       The query returns the instance&apos;s most recent data. Provides no
+       guarantee that the data has been written to a majority of the replica set
+       members (i.e. may be rolled back).
+      </para>
+      <para>
+       For unsharded collections (including collections in a standalone
+       deployment or a replica set deployment), <literal>"local"</literal> and
+       <literal>"available"</literal> read concerns behave identically.
+      </para>
+      <para>
+       For a sharded cluster, <literal>"available"</literal> read concern
+       provides greater tolerance for partitions since it does not wait to
+       ensure consistency guarantees. However, a query with
+       <literal>"available"</literal> read concern may return orphan documents
+       if the shard is undergoing chunk migrations since the
+       <literal>"available"</literal> read concern, unlike
+       <literal>"local"</literal> read concern, does not contact the
+       shard&apos;s primary nor the config servers for updated metadata.
+      </para>
+     </listitem>
+    </varlistentry>
+
     <varlistentry xml:id="mongodb-driver-readconcern.constants.linearizable">
      <term><constant>MongoDB\Driver\ReadConcern::LINEARIZABLE</constant></term>
      <listitem>
       <para>
-       A linearizable read avoids returning reads from a
-       <emphasis>stale</emphasis> primary (one that has already been superseded
-       by a new primary but doesn&apos;t know it yet). It is important to note
-       that this read concern level does not by itself produce linearizable
-       reads; they must be issued in conjunction with
-       <constant>MongoDB\Driver\WriteConcern::MAJORITY</constant> writes to the
-       same document(s) in order to be linearizable.
+       The query returns data that reflects all successful writes issued with a
+       write concern of <literal>"majority"</literal> <emphasis>and</emphasis>
+       acknowledged prior to the start of the read operation. For replica sets
+       that run with <literal>writeConcernMajorityJournalDefault</literal> set
+       to &true;, linearizable read concern returns data that will never be
+       rolled back.
+      </para>
+      <para>
+       With <literal>writeConcernMajorityJournalDefault</literal> set to
+       &false;, MongoDB will not wait for <literal>w: "majority"</literal>
+       writes to be durable before acknowledging the writes. As such,
+       <literal>"majority"</literal> write operations could possibly roll back
+       in the event of a loss of a replica set member.
+      </para>
+      <para>
+       You can specify linearizable read concern for read operations on the
+       primary only.
+      </para>
+      <para>
+       Linearizable read concern guarantees only apply if read
+       operations specify a query filter that uniquely identifies a single
+       document.
+      </para>
+      <tip>
+       <simpara>
+        Always use <literal>maxTimeMS</literal> with linearizable read concern
+        in case a majority of data bearing members are unavailable.
+        <literal>maxTimeMS</literal> ensures that the operation does not block
+        indefinitely and instead ensures that the operation returns an error if
+        the read concern cannot be fulfilled.
+       </simpara>
+      </tip>
+      <para>
+       Linearizable read concern requires MongoDB 3.4.
       </para>
      </listitem>
     </varlistentry>
@@ -89,10 +153,14 @@
      <term><constant>MongoDB\Driver\ReadConcern::LOCAL</constant></term>
      <listitem>
       <para>
-       Queries using this read concern will return the node&apos;s most recent
-       copy of the data. This provides no guarantee that the data has been
-       written to a majority of the nodes (i.e. it may be rolled back). This is
-       the default read concern for MongoDB.
+       Default for reads against primary if <literal>level</literal> is
+       unspecified and for reads against secondaries if <literal>level</literal>
+       is unspecified but <literal>afterClusterTime</literal> is specified.
+      </para>
+      <para>
+       The query returns the instance&apos;s most recent data. Provides no
+       guarantee that the data has been written to a majority of the replica set
+       members (i.e. may be rolled back).
       </para>
      </listitem>
     </varlistentry>
@@ -101,9 +169,12 @@
      <term><constant>MongoDB\Driver\ReadConcern::MAJORITY</constant></term>
      <listitem>
       <para>
-       Queries using this read concern will return the node&apos;s most recent
-       copy of the data confirmed as having been written to a majority of the
-       nodes (i.e. the data cannot be rolled back).
+       The query returns the instance&apos;s most recent data acknowledged as
+       having been written to a majority of members in the replica set.
+      </para>
+      <para>
+       To use read concern level of <literal>"majority"</literal>, replica sets
+       must use WiredTiger storage engine and election protocol version 1.
       </para>
      </listitem>
     </varlistentry>
@@ -125,6 +196,15 @@
       </thead>
       <tbody>
        <row>
+        <entry>1.4.0</entry>
+        <entry>
+         <para>
+          Added the <constant>MongoDB\Driver\ReadConcern::AVAILABLE</constant>
+          constant.
+         </para>
+        </entry>
+       </row>
+       <row>
         <entry>1.2.0</entry>
         <entry>
          <para>
@@ -141,6 +221,13 @@
      </tgroup>
     </informaltable>
    </para>
+  </section>
+
+  <section xml:id="mongodb-driver-readconcern.seealso">
+   &reftitle.seealso;
+  <simplelist>
+   <member><link xlink:href="&url.mongodb.docs.readconcern;">Read Concern reference</link></member>
+  </simplelist>
   </section>
 
  </partintro>
