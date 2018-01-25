@@ -73,7 +73,7 @@ $retval_mapping = array(
 	"TRUE" => "bool", "BOOL" => "bool",
 	"LONG" => "int",
 	"DOUBLE" => "float",
-	"STRING" => "string", "STRINGL" => "string", "STR" => "string", "TEXT" => "string", "TEXTL" => "string",
+	"STRING" => "string", "STRINGL" => "string", "STR" => "string", "NEW_STR" => "string", "TEXT" => "string", "TEXTL" => "string",
 	"UNICODE" => "unicode", "UNICODEL" => "unicode", "ASCII_STRING" => "unicode", "ASCII_STRINGL" => "unicode", "U_STRING" => "unicode", "U_STRINGL" => "unicode", "UTF8_STRING" => "unicode", "UTF8_STRINGL" => "unicode",
 	"ARRAY" => "array",
 	"OBJECT" => "object",
