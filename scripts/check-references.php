@@ -77,7 +77,7 @@ $retval_mapping = array(
 	"UNICODE" => "unicode", "UNICODEL" => "unicode", "ASCII_STRING" => "unicode", "ASCII_STRINGL" => "unicode", "U_STRING" => "unicode", "U_STRINGL" => "unicode", "UTF8_STRING" => "unicode", "UTF8_STRINGL" => "unicode",
 	"ARRAY" => "array",
 	"OBJECT" => "object",
-	"RESOURCE" => "resource",
+	"RES" => "resource", "RESOURCE" => "resource",
 	"ZVAL" => "mixed"
 ); // FALSE and NULL omitted because they are used for errors
 $retval_types = implode('|', array_keys($retval_mapping));
