@@ -311,7 +311,7 @@ foreach ($_SERVER['argv'] as $k => $opt) { // {{{
         $v = isset($parts[1]) ? $parts[1] : 'yes';
     } else if ($opt[0] == '-') {
         $o = $opt[1];
-        $v = substr($opt, 2);
+        $v = strlen($opt) > 2 ? substr($opt, 2) : 'yes';
     } else {
         continue;
     }
