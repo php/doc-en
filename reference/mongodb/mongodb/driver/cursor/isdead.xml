@@ -4,7 +4,7 @@
 <refentry xml:id="mongodb-driver-cursor.isdead" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoDB\Driver\Cursor::isDead</refname>
-  <refpurpose>Checks if the cursor is still open on the server</refpurpose>
+  <refpurpose>Checks if the cursor may have additional results</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -14,14 +14,16 @@
    <void />
   </methodsynopsis>
   <para>
-   Returns whether the cursor is still open on the server (i.e. the server has
-   more results that have yet to be sent to the client).
-  </para>
-  <para>
-   A cursor being "dead" does not mean that it cannot be iterated further. The
-   database sends responses in batches of documents (up to 4MB of documents per
-   response). The client&apos;s cursor may still have results to be iterated
-   even if the server has no more batches to send.
+   Checks whether the cursor may have additional results available to read. A
+   cursor is initially "alive" but may become "dead" for any of the following
+   reasons:
+   <simplelist>
+    <member>Advancing a non-tailable cursor did not return a document</member>
+    <member>The cursor encountered an error</member>
+    <member>The cursor read its last batch to completion</member>
+    <member>The cursor reached its configured limit</member>
+   </simplelist>
+   This is primarily useful with tailable cursors.
   </para>
  </refsect1>
 
@@ -33,8 +35,8 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns &true; if there are more results that have not yet been sent to the
-   client, and &false; otherwise.
+   Returns &true; if additional results are not available, and &false;
+   otherwise.
   </para>
  </refsect1>
 
@@ -54,11 +56,8 @@
 <![CDATA[
 <?php
 
-/* In this example, we insert several documents into the collection and specify
- * a smaller batchSize to ensure that the first batch contains only a subset of
- * our results and the cursor remains open on the server. */
 $manager = new MongoDB\Driver\Manager("mongodb://localhost:27017");
-$query = new MongoDB\Driver\Query([], ['batchSize' => 2]);
+$query = new MongoDB\Driver\Query([]);
 
 $bulk = new MongoDB\Driver\BulkWrite;
 $bulk->insert(['x' => 1]);
@@ -68,8 +67,18 @@ $manager->executeBulkWrite('db.collection', $bulk);
 
 $cursor = $manager->executeQuery('db.collection', $query);
 
+$iterator = new IteratorIterator($cursor);
+
+$iterator->rewind();
 var_dump($cursor->isDead());
-$cursor->toArray();
+
+$iterator->next();
+var_dump($cursor->isDead());
+
+$iterator->next();
+var_dump($cursor->isDead());
+
+$iterator->next();
 var_dump($cursor->isDead());
 
 ?>
@@ -78,6 +87,8 @@ var_dump($cursor->isDead());
    &example.outputs;
    <screen>
 <![CDATA[
+bool(false)
+bool(false)
 bool(false)
 bool(true)
 ]]>
