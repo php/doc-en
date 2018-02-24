@@ -133,6 +133,7 @@ function params_parse_to_doc($parsed)
 		"PATH" => "string",
 		"PATH_STR" => "string",
 		"STR" => "string",
+		"ARRAY_OR_OBJECT" => "array",
 		"ZVAL" => "mixed",
 	);
 	$return = array();
