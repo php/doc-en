@@ -124,6 +124,41 @@ function params_source_to_doc($type_spec)
 	return $return;
 }
 
+function params_parse_to_doc($parsed)
+{
+	static $parse_params = array(
+		"LONG" => "int",
+		"DOUBLE" => "float",
+		"FUNC" => "callable",
+		"PATH" => "string",
+		"PATH_STR" => "string",
+		"STR" => "string",
+		"ZVAL" => "mixed",
+	);
+	$return = array();
+	foreach ($parsed as $val) {
+		$val = preg_replace('~^STRICT_|(_HT)?(_EX2?)?$~', '', $val);
+		if ($val == "VARIADIC") {
+			$return[] = "optional";
+			$return[] = "mixed";
+		} else {
+			$return[] = (isset($parse_params[$val]) ? $parse_params[$val] : strtolower($val));
+		}
+	}
+	return $return;
+}
+
+function source_inits($variables, $function_body)
+{
+	$return = array();
+	foreach ($variables as $val) {
+		if (preg_match('(\\b' . preg_quote($val) . '\\b(?:\\s*=\\s*([^,;]+))?)', $function_body, $match)) {
+			$return[] = preg_replace('~^(\\d+)L$~', '\\1', $match[1]);
+		}
+	}
+	return $return;
+}
+
 // expand macros defined in $GLOBALS['macros'] (callback for preg_replace_callback)
 function expand_macros($matches)
 {
@@ -282,6 +317,7 @@ foreach ((isset($extension) ? glob($extension) : array_merge(array($zend_dir), g
 				$function_name = (isset($classes[$match[1]]) ? $classes[$match[1]] : $match[1]) . "::$match[2]";
 			}
 			$function_name = strtolower($function_name);
+			$function_name = str_replace('\\\\', '\\', $function_name);
 			$function_body = $val[3][0];
 			$lineno = substr_count(substr($file, 0, $val[3][1]), "\n") + 1;
 			
@@ -330,13 +366,13 @@ foreach ((isset($extension) ? glob($extension) : array_merge(array($zend_dir), g
 			&& strpos($function_body, 'zend_parse_parameters_ex') === false // indicate difficulty
 			&& preg_match('~.*zend_parse(_method)?_parameters(?:_throw)?\\([^,]*,(?:\\s*getThis\\(\\)\\s*,)?\\s*"([^"]*)"([^)]*)~s', $function_body, $matches2) // .* to catch last occurrence
 			) {
-				$source_types[$function_name] = array(($matches2[1] ? substr($matches2[2], 1) : $matches2[2]), $filename, $lineno);
+				$source_types[$function_name] = array(params_source_to_doc(($matches2[1] ? substr($matches2[2], 1) : $matches2[2])), $filename, $lineno);
 				preg_match_all('~,\\s*&([^,]+)~', $matches2[3], $matches3);
-				foreach ($matches3[1] as $val) {
-					if (preg_match('(\\b' . preg_quote($val) . '\\b(?:\\s*=\\s*([^,;]+))?)', $function_body, $match)) {
-						$source_inits[$function_name][] = preg_replace('~^(\\d+)L$~', '\\1', $match[1]);
-					}
-				}
+				$source_inits[$function_name] = source_inits($matches3[1], $function_body);
+			} elseif (preg_match('~ZEND_PARSE_PARAMETERS_START.*ZEND_PARSE_PARAMETERS_END~sU', $function_body, $matches2)) {
+				preg_match_all('~Z_PARAM_(\w+)(?:\(([^)]+)\))?~', $matches2[0], $matches3);
+				$source_types[$function_name] = array(params_parse_to_doc($matches3[1]), $filename, $lineno);
+				$source_inits[$function_name] = source_inits(array_filter($matches3[2]), $function_body);
 			} elseif (!in_array($function_name, $difficult_arg_count)) {
 			
 				// arguments count
@@ -451,7 +487,7 @@ foreach (array_merge(glob("$reference_path/*/*.xml", GLOB_BRACE), glob("$referen
 			$i = 0;
 			$strings = 0;
 			$error = "";
-			foreach (params_source_to_doc($source_type[0]) as $param) {
+			foreach ($source_type[0] as $param) {
 				if ($param == "optional") {
 					$optional_source = true;
 					continue;
