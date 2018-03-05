@@ -54,14 +54,15 @@
     <para>
      <methodname>MongoDB\Driver\Manager::executeCommand</methodname> and
      <methodname>MongoDB\Driver\Manager::executeQuery</methodname> both return
-     their results as a <classname>MongoDB\Driver\Cursor</classname> object.
-     This object can be used to iterator over the result set that the command
-     or cursor returned.
+     their result(s) as a <classname>MongoDB\Driver\Cursor</classname> object.
+     This object can be used to iterate over the result set of the command or
+     query.
     </para>
     <para>
-     Because this class implements the
+     Because <classname>MongoDB\Driver\Cursor</classname> implements the
      <interfacename>Traversable</interfacename> interface, you can simply
-     iterator over the result set by using <function>foreach</function>.
+     iterate over the result set with
+     <link linkend="control-structures.foreach"><literal>foreach</literal></link>.
     </para>
    <programlisting role="php">
 <![CDATA[
@@ -120,137 +121,119 @@ stdClass Object
    </example>
 
    <example xml:id="mongodb-driver-cursor.examples.tailable">
-    <title>Reading from a tailable cursors</title>
+    <title>Reading a result set for a tailable cursor</title>
     <para>
-     Tailable cursors are special cursors in MongoDB that allow you to read
-     results from a cursor, and then wait until more documents become
-     available in the collection that match the query. This functionality only
-     works with Capped Collections and <link
-     xlink:href="&url.mongodb.docs;changeStreams/">Change Streams</link>, and
-     requires a different way of iteration.
+     <link xlink:href="&url.mongodb.docs;core/tailable-cursors">Tailable cursors</link>
+     are a special type of MongoDB cursor that allows the client to read some
+     results and then wait until more documents become available. These cursors
+     are primarily used with
+     <link xlink:href="&url.mongodb.docs;core/capped-collections">Capped Collections</link>
+     and <link xlink:href="&url.mongodb.docs;changeStreams">Change Streams</link>.
     </para>
     <para>
-     Where normal cursors can be iterated over with
-     <function>foreach</function>, the same does not work with tailable
-     cursors as you can not call <function>foreach</function> twice. In order
-     to continuously read from a <link
-     xlink:href="&url.mongodb.docs;core/tailable-cursors/">Tailable
-     Cursor</link>, you will need to wrap the
-     <classname>MongoDB\Driver\Cursor</classname> object with an
-     <classname>IteratorIterator</classname>.
+     While normal cursors can be iterated once with <literal>foreach</literal>,
+     that approach will not work with tailable cursors. When
+     <literal>foreach</literal> is used with a tailable cursor, the loop will
+     stop upon reaching the end of the initial result set. Attempting to
+     continue iteration on the cursor with a second
+     <literal>foreach</literal> would throw an exception, since PHP attempts to
+     rewind the cursor. Similar to result objects in other database drivers,
+     cursors in MongoDB only support forward iteration, which means they cannot
+     be rewound.
     </para>
     <para>
-     In the example below, we set up a <link
-     xlink:href="&url.mongodb.docs;core/capped-collections/">Capped
-     Collection</link>, into which we insert a few documents. We then run the
-     query with the special cursor options <literal>tailable</literal>,
-     <literal>awaitData</literal> and <literal>maxAwaitTimeMS</literal>. These
-     options instruct the server to: keep the cursor open after the initial
-     result set has been returned (<literal>tailable</literal>), and to block
-     the read (<literal>awaitData</literal>) for at most
-     <literal>maxAwaitTimeMS</literal> milliseconds. We then wrap the cursor
-     in <classname>IteratorIterator</classname> and use
-     <methodname>IteratorIterator::valid</methodname> and
-     <methodname>IteratorIterator::next</methodname> to iterate over the
-     result set.
+     In order to continuously read from a tailable cursor, the Cursor object
+     must be wrapped with an <classname>IteratorIterator</classname>. This
+     allows the application to directly control the cursor's iteration, avoid
+     inadvertently rewinding the cursor, and decide when to wait for new results
+     or stop iteration entirely.
     </para>
-   <programlisting role="php">
+    <para>
+     In order to demonstrate a tailable cursor in action, two scripts will be
+     used: a "producer" and a "consumer". The producer script will create a new
+     capped collection using the
+     <link xlink:href="&url.mongodb.docs.command;create">create</link> command
+     and proceed to insert a new document into that collection each second.
+    </para>
+    <programlisting role="php">
 <![CDATA[
 <?php
 
-$manager = new MongoDB\Driver\Manager();
+$manager = new MongoDB\Driver\Manager;
 
-/* Create capped collection "asteroids" on "test" database */
-$manager->executeCommand("test", new MongoDB\Driver\Command([
-    'create' => "asteroids",
+$manager->executeCommand('test', new MongoDB\Driver\Command([
+    'create' => 'asteroids',
     'capped' => true,
     'size' => 1048576,
 ]));
 
-/* Insert some documents so that our query returns information */
-$bulkWrite = new MongoDB\Driver\BulkWrite;
-$bulkWrite->insert(['name' => 'Ceres', 'size' => 946, 'distance' => 2.766]);
-$bulkWrite->insert(['name' => 'Vesta', 'size' => 525, 'distance' => 2.362]);
-$manager->executeBulkWrite("test.asteroids", $bulkWrite);
+while (true) {
+    $bulkWrite = new MongoDB\Driver\BulkWrite;
+    $bulkWrite->insert(['createdAt' => new MongoDB\BSON\UTCDateTime]);
+    $manager->executeBulkWrite('test.asteroids', $bulkWrite);
 
-/* Query for all the items in the collection, and make it tailable with a
- * maximum wait time of 10 seconds */
-$query = new MongoDB\Driver\Query(
-    [],
-    [
-        'tailable' => true,
-        'awaitData' => true,
-        'maxAwaitTimeMS' => 10000,
-    ]
-);
+    sleep(1);
+}
 
-/* Query the "asteroids" collection of the "test" database */
-$cursor = $manager->executeQuery("test.asteroids", $query);
+?>
+]]>
+    </programlisting>
+    <para>
+     With the producer script still running, a second consumer script may be
+     executed to read the inserted documents using a tailable cursor, indicated
+     by the <literal>tailable</literal> and <literal>awaitData</literal> options
+     to <function>MongoDB\Driver\Query::__construct</function>.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
 
-/* Wrap cursor and rewind */
+$manager = new MongoDB\Driver\Manager;
+
+$query = new MongoDB\Driver\Query([], [
+    'tailable' => true,
+    'awaitData' => true,
+]);
+
+$cursor = $manager->executeQuery('test.asteroids', $query);
+
 $iterator = new IteratorIterator($cursor);
+
 $iterator->rewind();
 
-/* Loop over the result set with valid() and next() */
-while ($iterator->valid()) {
-    $document = $iterator->current();
-    echo date(DateTime::ISO8601), "\n";
-    print_r($document);
+while (true) {
+    if ($iterator->valid()) {
+        $document = $iterator->current();
+        printf("Consumed document created at: %s\n", $document->createdAt);
+    }
 
     $iterator->next();
 }
 
 ?>
 ]]>
-   </programlisting>
-   <para>
-    During the second "Waiting", we insert another document into the
-    collection. You can see on the date/time stamps that there are several
-    seconds between the second and third result being returned.
-   </para>
-   &example.outputs.similar;
-   <screen>
-<![CDATA[
-2018-01-03T16:59:21+0000
-stdClass Object
-(
-    [_id] => MongoDB\BSON\ObjectId Object
-        (
-            [oid] => 5a4d0be9122d3324914394e2
-        )
-
-    [name] => Ceres
-    [size] => 946
-    [distance] => 2.766
-)
-
-2018-01-03T16:59:21+0000
-stdClass Object
-(
-    [_id] => MongoDB\BSON\ObjectId Object
-        (
-            [oid] => 5a4d0be9122d3324914394e3
-        )
-
-    [name] => Vesta
-    [size] => 525
-    [distance] => 2.362
-)
-
-2018-01-03T16:59:24+0000
-stdClass Object
-(
-    [_id] => MongoDB\BSON\ObjectId Object
-        (
-            [oid] => 5a4d0becca67a2be8d10550c
-        )
-
-    [name] => Pallas
-    [size] => 512
-    [distance] => 2.773
-)
-]]>
-    </screen>
+    </programlisting>
+    <para>
+     The consumer script will start by quickly printing all available documents
+     in the capped collection (as if <literal>foreach</literal> had been used);
+     however, it will not terminate upon reaching the end of the initial result
+     set. Since the cursor is tailable, calling
+     <function>IteratorIterator::next</function> will block and wait for
+     additional results. <function>IteratorIterator::valid</function> is also
+     used to check if there is actually data available to read at each step.
+    </para>
+    <note>
+     <simpara>
+      This example uses the <literal>awaitData</literal> query option to
+      instruct the server to block for a short period (e.g. one second) at the
+      end of the result set before returning a response to the driver. This is
+      used to prevent the driver from aggressively polling the server when there
+      are no results available. The <literal>maxAwaitTimeMS</literal> option may
+      be used in conjunction with <literal>tailable</literal> and
+      <literal>awaitData</literal> to specify the amount of time that the server
+      should block when it reaches the end of the result set.
+     </simpara>
+    </note>
    </example>
   </section>
 
