@@ -61,6 +61,7 @@
 						'ja'    => 'Japanese',
 						'pt_BR' => 'Brazilian Portuguese',
 						'ro'    => 'Romanian',
+						'ru'    => 'Russian',
 						'tr'    => 'Turkish',
 						'zh'    => 'Chinese (Simplified)',
 						);
