@@ -14,7 +14,8 @@
    <void />
   </constructorsynopsis>
   <para>
-
+   An object returned by the select() method; use execute() to 
+   execute the query.
   </para>
 
  </refsect1>
@@ -24,18 +25,6 @@
   &no.function.parameters;
  </refsect1>
 
- <!-- Return values commented out, as constructors generally don't return a
-      value. Uncomment this if you do need a return values section (for
-      example, because there's also a procedural version of the method).
- <refsect1 role="returnvalues">
-  &reftitle.returnvalues;
-  <para>
-   
-  </para>
- </refsect1>
- -->
-
-
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
@@ -43,15 +32,43 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+$session = mysql_xdevapi\getSession("mysqlx://user:password@localhost");
 
-/* ... */
+$session->sql("DROP DATABASE IF EXISTS addressbook")->execute();
+$session->sql("CREATE DATABASE addressbook")->execute();
+$session->sql("CREATE TABLE addressbook.names(name text, age int)")->execute();
+$session->sql("INSERT INTO addressbook.names values ('John', 42), ('Sam', 33)")->execute();
+
+$schema = $session->getSchema("addressbook");
+$table  = $schema->getTable("names");
+
+$result = $table->select('name','age')
+  ->where('name like :name and age > :age')
+  ->bind(['name' => 'John', 'age' => 42])
+  ->orderBy('age desc')
+  ->execute();
+
+$row = $result->fetchAll();
+print_r($row);
 
 ?>
 ]]>
    </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+Array
+(
+    [0] => Array
+        (
+            [name] => John
+            [age] => 42
+        )
+)
+]]>
+   </screen>
   </example>
  </refsect1>
-
 
 </refentry>
 

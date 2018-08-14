@@ -14,9 +14,8 @@
    <methodparam><type>string</type><parameter>sort_expr</parameter></methodparam>
   </methodsynopsis>
   <para>
-	Sets a condition for records to consider in agregate function operations.
+	 Sets a condition for records to consider in aggregate function operations.
   </para>
-
  </refsect1>
 
  <refsect1 role="parameters">
@@ -26,7 +25,7 @@
     <term><parameter>sort_expr</parameter></term>
     <listitem>
      <para>
-		A condition on the agregate functions used on the grouping criteria.
+		  A condition on the aggregate functions used on the grouping criteria.
      </para>
     </listitem>
    </varlistentry>
@@ -47,19 +46,42 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+$session = mysql_xdevapi\getSession("mysqlx://user:password@localhost");
 
-$sel = $table->select(['age as age_group', 'count(name) as cnt'])->groupBy('age_group');
-$sel = $sel->where("age > 11 and 1 < 2 and 40 between 30 and 900");
-$sel = $sel->having('cnt > 1');
-$sel = $sel->orderBy('age_group desc');
-$res = $sel->limit(2)->offset(1)->execute();
+$session->sql("DROP DATABASE IF EXISTS addressbook")->execute();
+$session->sql("CREATE DATABASE addressbook")->execute();
+$session->sql("CREATE TABLE addressbook.names(name text, age int)")->execute();
+$session->sql("INSERT INTO addressbook.names values ('John', 42), ('Sam', 42)")->execute();
+$session->sql("INSERT INTO addressbook.names values ('Suki', 31)")->execute();
 
+$schema = $session->getSchema("addressbook");
+$table  = $schema->getTable("names");
+
+$result = $table->select('count(*) as count', 'age')
+  ->groupBy('age')->orderBy('age asc')
+  ->having('count > 1')
+  ->execute();
+
+$row = $result->fetchAll();
+print_r($row);
 ?>
 ]]>
    </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+Array
+(
+    [0] => Array
+        (
+            [count] => 2
+            [age] => 42
+        )
+)
+]]>
+   </screen>
   </example>
  </refsect1>
-
 
 </refentry>
 
