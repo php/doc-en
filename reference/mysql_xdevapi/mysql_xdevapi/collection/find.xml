@@ -14,11 +14,10 @@
    <methodparam choice="opt"><type>string</type><parameter>search_condition</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Search a database collection for a document or set of documents. The returned
-   documents are contained in the CollectionFind object that can be used further 
-   to fetch one or all the documents.
+   Search a database collection for a document or set of documents. The
+   found documents are returned as a CollectionFind object is to
+   further modify or fetch results from.
   </para>
-
  </refsect1>
 
  <refsect1 role="parameters">
@@ -44,8 +43,8 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   A CollectionFind object that can use used to verify the operation
-   or fetch found documents.
+   A CollectionFind object to verify the operation,
+   or fetch the found documents.
   </para>
  </refsect1>
 
@@ -56,42 +55,53 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+$session = mysql_xdevapi\getSession("mysqlx://user:password@localhost");
 
-// Assuming $coll is a valid Collection object
+$session->sql("DROP DATABASE IF EXISTS addressbook")->execute();
+$session->sql("CREATE DATABASE addressbook")->execute();
 
-$coll->add('{"name": "Marco",      "age": 19, "job": "Programmatore"}')->execute();
-$coll->add('{"name": "Lonardo",    "age": 59, "job": "Paninaro"}')->execute();
-$coll->add('{"name": "Riccardo",   "age": 27, "job": "Cantante"}')->execute();
-$coll->add('{"name": "Carlotta",   "age": 23, "job": "Programmatrice"}')->execute();
-$coll->add('{"name": "Carlo",      "age": 25, "job": "Programmatore"}')->execute();
-$coll->add('{"name": "Mariangela", "age": 41, "job": "Programmatrice"}')->execute();
-$coll->add('{"name": "Alfredo",    "age": 27, "job": "Programmatore"}')->execute();
-$coll->add('{"name": "Antonella",  "age": 42, "job": "Studente"}')->execute();
-$coll->add('{"name": "Monica",     "age": 35, "job": "Ballerino"}')->execute();
-$coll->add('{"name": "Giulio",     "age": 29, "job": "Disoccupato"}')->execute();
-$coll->add('{"name": "Lucia",      "age": 47, "job": "Barista"}')->execute();
-$coll->add('{"name": "Filippo",    "age": 31, "job": "Spazzino"}')->execute();
-$coll->add('{"name": "Alessandra", "age": 15, "job": "Barista"}')->execute();
-$coll->add('{"name": "Massimo",    "age": 22, "job": "Programmatore"}')->execute();
-$coll->add('{"name": "Carlo",      "age": 37, "job": "Calciatore"}')->execute();
+$schema     = $session->getSchema("addressbook");
+$collection = $schema->createCollection("people");
 
-/*
-   This query will look for up to 2 documents in the Collection sorted by age (descending),
-   the documents must have the job 'Programmatore' and the age field higher or equal to 20
+$collection->add('{"name": "Alfred",     "age": 18, "job": "Butler"}')->execute();
+$collection->add('{"name": "Bob",        "age": 19, "job": "Swimmer"}')->execute();
+$collection->add('{"name": "Fred",       "age": 20, "job": "Construction"}')->execute();
+$collection->add('{"name": "Wilma",      "age": 21, "job": "Teacher"}')->execute();
+$collection->add('{"name": "Suki",       "age": 22, "job": "Teacher"}')->execute();
 
-   The actual resulting documents are 'Carlo' and 'Alfredo'
-*/
+$find   = $collection->find('job LIKE :job AND age > :age');
+$result = $find
+  ->bind(['job' => 'Teacher', 'age' => 20])
+  ->sort('age DESC')
+  ->limit(2)            
+  ->execute();
 
-$obj  = $coll->find('job like :job and age > :age')->fields('age');
-$res  = $obj->bind(['job' => 'Programmatore', 'age' => 20])->sort('age desc')->limit(2);
-$data = $res->execute()->fetchAll();
-
-// The search condition mighe also be very complex and use multiple functions
-$res  = $coll->find('(1>5) IN (true,false) && {"title":"Spavatore"} NOT IN jobs && CAST(_id AS SIGNED) > 2')->execute();
-
+print_r($result->fetchAll());
 ?>
 ]]>
    </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+Array
+(
+    [0] => Array
+        (
+            [_id] => 00005b6b536100000000000000a8
+            [age] => 22
+            [job] => Teacher
+            [name] => Suki
+        )
+    [1] => Array
+        (
+            [_id] => 00005b6b536100000000000000a7
+            [age] => 21
+            [job] => Teacher
+            [name] => Wilma
+        )
+)
+]]>
+   </screen>
   </example>
  </refsect1>
 
