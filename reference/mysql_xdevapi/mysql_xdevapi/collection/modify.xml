@@ -60,26 +60,34 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-// Assuming $coll is a valid Collection object
+$session = mysql_xdevapi\getSession("mysqlx://user:password@localhost");
 
-// To all the documents with the 'job' field like 'Programmatore' or 'Cantante' append two new jobs: Volontario and Tassinaro
-$coll->modify("job in ('Programmatore', 'Cantante')")->arrayAppend('job', 'Volontario')->arrayAppend('job', 'Tassinaro')->execute();
+$session->sql("DROP DATABASE IF EXISTS addressbook")->execute();
+$session->sql("CREATE DATABASE addressbook")->execute();
 
-// Remove the 'age' field from all the docs with 'ordinal' between 1 and 9
-$coll->modify('ordinal >= 1 and ordinal <= 9')->unset(['age'])->execute();
+$schema     = $session->getSchema("addressbook");
+$collection = $schema->createCollection("people");
 
-/*
- The modify operation is split in two lines, the object returned by a not executed 'modify'
- holds the state of the current modify (it might be executed later)
-*/
-$obj = $coll->modify('age > :age1 and age < :age2')->bind(['age1' => 25, 'age2' => 40]);
-$data = $obj->sort(['_id desc'])->limit(2)->replace('job', 'Disoccupato')->execute();
+$collection->add('{"name": "Alfred", "age": 18, "job": "Butler"}')->execute();
+$collection->add('{"name": "Bob",    "age": 19, "job": "Painter"}')->execute();
+
+// Add two new jobs for all Painters: Artist and Crafter
+$collection
+  ->modify("job in ('Butler', 'Painter')")
+  ->arrayAppend('job', 'Artist')
+  ->arrayAppend('job', 'Crafter')
+  ->execute();
+
+// Remove the 'beer' field from all documents with the age 21
+$collection
+  ->modify('age < 21')
+  ->unset(['beer'])
+  ->execute();
 ?>
 ]]>
    </programlisting>
   </example>
  </refsect1>
-
 
 </refentry>
 

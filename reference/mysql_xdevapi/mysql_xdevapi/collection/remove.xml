@@ -53,27 +53,48 @@
   </para>
  </refsect1>
 
- <refsect1 role="examples">
+<refsect1 role="examples">
   &reftitle.examples;
   <example>
    <title><function>mysql_xdevapi\Collection::remove</function> example</title>
    <programlisting role="php">
 <![CDATA[
 <?php
-// Assuming $coll is a valid Collection object
+$session = mysql_xdevapi\getSession("mysqlx://user:password@localhost");
 
-// Remove all the documents for which the 'age' field is between 20 and 50
-$coll->remove('age > :age_from and age < :age_to')->bind(['age_from' => 20, 'age_to' => 50])->limit(7)->execute();
+$session->sql("DROP DATABASE IF EXISTS addressbook")->execute();
+$session->sql("CREATE DATABASE addressbook")->execute();
 
-// Select for removal all the documents, sort them by age (descending) and remove only the first 2
-$coll->remove('true')->sort('age desc')->limit(2)->execute();
+$schema     = $session->getSchema("addressbook");
+$collection = $schema->createCollection("people");
+
+$collection->add('{"name": "Alfred", "age": 18, "job": "Butler"}')->execute();
+$collection->add('{"name": "Bob",    "age": 19, "job": "Painter"}')->execute();
+
+// Remove all painters
+$collection
+  ->remove("job in ('Painter')")
+  ->execute();
+
+// Remove the oldest butler
+$collection
+  ->remove("job in ('Butler')")
+  ->sort('age desc')
+  ->limit(1)
+  ->execute();
+
+// Remove record with lowest age
+$collection
+  ->remove('true')
+  ->sort('age desc')
+  ->limit(1)
+  ->execute();
 ?>
 ]]>
    </programlisting>
   </example>
  </refsect1>
-
-
+ 
 </refentry>
 
 <!-- Keep this comment at the end of the file
