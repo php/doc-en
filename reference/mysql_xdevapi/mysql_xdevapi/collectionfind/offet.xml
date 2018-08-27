@@ -14,10 +14,12 @@
    <methodparam><type>integer</type><parameter>position</parameter></methodparam>
   </methodsynopsis>
   <para>
-   For the result set of a find operation, skip the first N elements that would be returned by the find operation.
-   If the amount of element skipped is bigger than the size of the result set then the find operation will return an empty set.
+   Skip (offset) these number of elements that otherwise would be returned
+   by the find operation. Use with the limit() method.
   </para>
-
+  <para>
+   Defining an offset larger than the result set size results in an empty set.
+  </para>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -27,7 +29,7 @@
     <term><parameter>position</parameter></term>
     <listitem>
      <para>
-      Number of elements to skip.
+      Number of elements to skip for the limit() operation.
      </para>
     </listitem>
    </varlistentry>
@@ -37,7 +39,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   CollectionFind object that can be used for further processing.
+   A CollectionFind object that can be used for additional processing.
   </para>
  </refsect1>
 
@@ -48,18 +50,54 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+$session = mysql_xdevapi\getSession("mysqlx://user:password@localhost");
+$session->sql("DROP DATABASE IF EXISTS addressbook")->execute();
+$session->sql("CREATE DATABASE addressbook")->execute();
 
-//Assuming $coll is a valid Collection object
+$schema = $session->getSchema("addressbook");
+$create = $schema->createCollection("people");
+$create
+  ->add('{"name": "Alfred", "age": 18, "job": "Butler"}')
+  ->execute();
+$create
+  ->add('{"name": "Reginald", "age": 42, "job": "Butler"}')
+  ->execute();
 
-//Find all the documents for which the 'job' field is equal to 'Programmatore', skip the first 3
-$res = $coll->find('job like \'Programmatore\'')->offset(3)->execute();
+// ...
 
+$collection = $schema->getCollection("people");
+
+$result = $collection
+  ->find()
+  ->sort('age asc')
+  ->offset(1)
+  ->limit(1)
+  ->execute();
+
+var_dump($result->fetchAll());
 ?>
 ]]>
    </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+array(1) {
+  [0]=>
+  array(4) {
+    ["_id"]=>
+    string(28) "00005b6b536100000000000000f3"
+    ["age"]=>
+    int(42)
+    ["job"]=>
+    string(6) "Butler"
+    ["name"]=>
+    string(8) "Reginald"
+  }
+}
+]]>
+   </screen>
   </example>
  </refsect1>
-
 
 </refentry>
 

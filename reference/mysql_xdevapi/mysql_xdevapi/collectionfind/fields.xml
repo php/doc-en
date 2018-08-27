@@ -14,7 +14,8 @@
    <methodparam><type>string</type><parameter>projection</parameter></methodparam>
   </methodsynopsis>
   <para>
-   This is the equivalent of the SQL projection, which allows to select which columns the query shall return.
+   Defined the columns for the query to return. If not defined then
+   all columns are used.
   </para>
 
  </refsect1>
@@ -37,7 +38,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   A CollectionFind object that can be used for further processing
+   A CollectionFind object that can be used for further processing.
   </para>
  </refsect1>
 
@@ -48,26 +49,46 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+$session = mysql_xdevapi\getSession("mysqlx://user:password@localhost");
 
-//Assuming $coll is a valid collection object
+$session->sql("DROP DATABASE IF EXISTS addressbook")->execute();
+$session->sql("CREATE DATABASE addressbook")->execute();
 
-/*
-   The following find call will search for all the documents
-   with a 'job' like 'tassinaro' and will return only the column
-   'age' from each document
-*/
-$res = $coll->find('job like \'tassinaro\'')->fields('age')->execute();
+$schema = $session->getSchema("addressbook");
+$create = $schema->createCollection("people");
 
-//Example which make use of the COUNT function
-	$res = $coll->find()->fields(['COUNT(name) as cn', 'MAX(age) as ma', 'job as j'])->execute();
-	
+$create
+  ->add('{"name": "Alfred", "age": 18, "job": "Butler"}')
+  ->execute();
 
+// ...
+
+$collection = $schema->getCollection("people");
+
+$result = $collection
+  ->find('job like :job and age > :age')
+  ->bind(['job' => 'Butler', 'age' => 16])
+  ->fields('name')
+  ->execute();
+
+var_dump($result->fetchAll());
 ?>
 ]]>
    </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+array(1) {
+  [0]=>
+  array(1) {
+    ["name"]=>
+    string(6) "Alfred"
+  }
+}
+]]>
+   </screen>
   </example>
  </refsect1>
-
 
 </refentry>
 

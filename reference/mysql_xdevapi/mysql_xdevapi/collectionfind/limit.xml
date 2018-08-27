@@ -14,9 +14,8 @@
    <methodparam><type>integer</type><parameter>rows</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Limit the amount of documents returned by the 'find' option by the amount provided as argument
+   Set the maximum number of documents to return.
   </para>
-
  </refsect1>
 
  <refsect1 role="parameters">
@@ -26,7 +25,7 @@
     <term><parameter>rows</parameter></term>
     <listitem>
      <para>
-      This is the maximum amount of documents that have to be returned by the find operation
+      Maximum number of documents.
      </para>
     </listitem>
    </varlistentry>
@@ -36,7 +35,8 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   CollectionFind object that can be used for further processing
+   A CollectionFind object that can be used for additional processing;
+   chain with the execute() method to return a DocResult object.
   </para>
  </refsect1>
 
@@ -47,22 +47,55 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+$session = mysql_xdevapi\getSession("mysqlx://user:password@localhost");
+$session->sql("DROP DATABASE IF EXISTS addressbook")->execute();
+$session->sql("CREATE DATABASE addressbook")->execute();
 
-//Assuming $coll is a valid Collection object
+$schema = $session->getSchema("addressbook");
+$create = $schema->createCollection("people");
+$create
+  ->add('{"name": "Alfred", "age": 18, "job": "Butler"}')
+  ->execute();
+$create
+  ->add('{"name": "Reginald", "age": 42, "job": "Butler"}')
+  ->execute();
 
-//Extract only the first 10 documents from the collection
-$res = $coll->find()->limit(10)->execute();
 
-//Sort the documents on the base of the 'age' field
-//and return the first two "oldest" person in the collection
-$res = $coll->find()->sort('age desc')->limit(2)->execute();
+// ...
 
+$collection = $schema->getCollection("people");
+
+$result = $collection
+  ->find('job like :job and age > :age')
+  ->bind(['job' => 'Butler', 'age' => 16])
+  ->sort('age desc')
+  ->limit(1)
+  ->execute();
+
+var_dump($result->fetchAll());
 ?>
 ]]>
    </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+array(1) {
+  [0]=>
+  array(4) {
+    ["_id"]=>
+    string(28) "00005b6b536100000000000000f3"
+    ["age"]=>
+    int(42)
+    ["job"]=>
+    string(6) "Butler"
+    ["name"]=>
+    string(8) "Reginald"
+  }
+}
+]]>
+   </screen>
   </example>
  </refsect1>
-
 
 </refentry>
 
