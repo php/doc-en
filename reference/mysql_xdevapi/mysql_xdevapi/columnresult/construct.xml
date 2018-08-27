@@ -14,29 +14,15 @@
    <void />
   </constructorsynopsis>
   <para>
-
+   Retrieve column metadata, such as its character set;
+   this is instantiated by the RowResult::getColumns() method.
   </para>
-
-  &warn.undocumented.func;
-
  </refsect1>
 
  <refsect1 role="parameters">
   &reftitle.parameters;
   &no.function.parameters;
  </refsect1>
-
- <!-- Return values commented out, as constructors generally don't return a
-      value. Uncomment this if you do need a return values section (for
-      example, because there's also a procedural version of the method).
- <refsect1 role="returnvalues">
-  &reftitle.returnvalues;
-  <para>
-   
-  </para>
- </refsect1>
- -->
-
 
  <refsect1 role="examples">
   &reftitle.examples;
@@ -45,15 +31,80 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+$session = mysql_xdevapi\getSession("mysqlx://user:password@localhost");
 
-/* ... */
+$session->sql("DROP DATABASE IF EXISTS nonsense")->execute();
+$session->sql("CREATE DATABASE nonsense")->execute();
+$session->sql("CREATE TABLE nonsense.numbers (hello int, world float unsigned)")->execute();
+$session->sql("INSERT INTO  nonsense.numbers values (42, 42)")->execute();
 
-?>
+$schema = $session->getSchema("nonsense");
+$table  = $schema->getTable("numbers");
+
+$result1 = $table->select('hello','world')->execute();
+
+// Returns an array of ColumnResult objects
+$columns = $result1->getColumns(); 
+
+foreach ($columns as $column) {
+    echo "\nColumn label " , $column->getColumnLabel();
+    echo " is type "       , $column->getType();
+    echo " and is ", ($column->isNumberSigned() === 0) ? "Unsigned." : "Signed.";
+}
+
+// Alternatively
+$result2 = $session->sql("SELECT * FROM nonsense.numbers")->execute();
+
+// Returns an array of FieldMetadata objects
+print_r($result2->getColumns()); 
 ]]>
    </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+
+Column label hello is type 19 and is Signed.
+Column label world is type 4  and is Unsigned.
+
+Array
+(
+    [0] => mysql_xdevapi\FieldMetadata Object
+        (
+            [type] => 1
+            [type_name] => SINT
+            [name] => hello
+            [original_name] => hello
+            [table] => numbers
+            [original_table] => numbers
+            [schema] => nonsense
+            [catalog] => def
+            [collation] => 0
+            [fractional_digits] => 0
+            [length] => 11
+            [flags] => 0
+            [content_type] => 0
+        )
+    [1] => mysql_xdevapi\FieldMetadata Object
+        (
+            [type] => 6
+            [type_name] => FLOAT
+            [name] => world
+            [original_name] => world
+            [table] => numbers
+            [original_table] => numbers
+            [schema] => nonsense
+            [catalog] => def
+            [collation] => 0
+            [fractional_digits] => 31
+            [length] => 12
+            [flags] => 1
+            [content_type] => 0
+        )
+)
+]]>
+   </screen>
   </example>
  </refsect1>
-
 
 </refentry>
 

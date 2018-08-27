@@ -30,8 +30,8 @@
     <term><parameter>placeholder_values</parameter></term>
     <listitem>
      <para>
-      The values of the placeholder to substitute in the search condition, multiple values are allowed
-      and have to be passed as an array of mappings PLACEHOLDER_NAME->PLACEHOLDER_VALUE, for more details see the examples.
+      Values to substitute in the search condition; multiple values are allowed
+      and are passed as an array where "PLACEHOLDER_NAME => PLACEHOLDER_VALUE".
      </para>
     </listitem>
    </varlistentry>
@@ -41,7 +41,8 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   A CollectionFind that can be used for further processing.
+   A CollectionFind object, 
+   or chain with execute() to return a Result object.
   </para>
  </refsect1>
 
@@ -52,20 +53,49 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+$session = mysql_xdevapi\getSession("mysqlx://user:password@localhost");
+$session->sql("DROP DATABASE IF EXISTS addressbook")->execute();
+$session->sql("CREATE DATABASE addressbook")->execute();
 
-//Assuming $coll is a valid collection
+$schema = $session->getSchema("addressbook");
+$create = $schema->createCollection("people");
+$result = $create
+  ->add('{"name": "Alfred", "age": 18, "job": "Butler"}')
+  ->execute();
 
-//In this example we're binding :job and :age to 'Programmatore' and 20.
-$res = $coll->find('job like :job and age > :age');
-$res = $res->bind(['job' => 'Programmatore', 'age' => 20])->execute();
-//At this point $res will contain the Result object
+// ...
 
+$collection = $schema->getCollection("people");
+
+$result = $collection
+  ->find('job like :job and age > :age')
+  ->bind(['job' => 'Butler', 'age' => 16])
+  ->execute();
+
+var_dump($result->fetchAll());
 ?>
 ]]>
    </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+array(1) {
+  [0]=>
+  array(4) {
+    ["_id"]=>
+    string(28) "00005b6b536100000000000000cf"
+    ["age"]=>
+    int(18)
+    ["job"]=>
+    string(6) "Butler"
+    ["name"]=>
+    string(6) "Alfred"
+  }
+}
+]]>
+   </screen>
   </example>
  </refsect1>
-
 
 </refentry>
 

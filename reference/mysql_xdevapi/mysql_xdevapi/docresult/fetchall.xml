@@ -14,11 +14,8 @@
    <void />
   </methodsynopsis>
   <para>
-
+   Fetch all results from a result set.
   </para>
-
-  &warn.undocumented.func;
-
  </refsect1>
 
  <refsect1 role="parameters">
@@ -29,7 +26,8 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   An array of Result objects from the last operation on the collection.
+   An array with all results from the query; each result is
+   an associative array.
   </para>
  </refsect1>
 
@@ -40,15 +38,65 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+$session = mysql_xdevapi\getSession("mysqlx://user:password@localhost");
+$session->sql("DROP DATABASE IF EXISTS addressbook")->execute();
+$session->sql("CREATE DATABASE addressbook")->execute();
 
-/* ... */
+$schema = $session->getSchema("addressbook");
+$create = $schema->createCollection("people");
 
+$create->add('{"name": "Alfred", "age": 18, "job": "Butler"}')->execute();
+$create->add('{"name": "Reginald", "age": 42, "job": "Butler"}')->execute();
+
+// ...
+
+$collection = $schema->getCollection("people");
+
+// Yields a DocResult object
+$result = $collection
+  ->find('job like :job and age > :age')
+  ->bind(['job' => 'Butler', 'age' => 16])
+  ->sort('age desc')
+  ->execute();
+
+var_dump($result->fetchAll());
 ?>
 ]]>
    </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+array(2) {
+
+  [0]=>
+  array(4) {
+    ["_id"]=>
+    string(28) "00005b6b53610000000000000123"
+    ["age"]=>
+    int(42)
+    ["job"]=>
+    string(6) "Butler"
+    ["name"]=>
+    string(8) "Reginald"
+  }
+
+  [1]=>
+  array(4) {
+    ["_id"]=>
+    string(28) "00005b6b53610000000000000122"
+    ["age"]=>
+    int(18)
+    ["job"]=>
+    string(6) "Butler"
+    ["name"]=>
+    string(6) "Alfred"
+  }
+
+}
+]]>
+   </screen>
   </example>
  </refsect1>
-
 
 </refentry>
 

@@ -15,6 +15,7 @@
   </methodsynopsis>
   <para>
    Limit the number of documents modified by this operation.
+   Optionally combine with skip() to define an offset value.
   </para>
  </refsect1>
 
@@ -25,8 +26,8 @@
     <term><parameter>rows</parameter></term>
     <listitem>
      <para>
-		 The maximum number of modified documents.
-	 </para>
+		  The maximum number of documents to modify.
+	   </para>
     </listitem>
    </varlistentry>
   </variablelist>
@@ -35,7 +36,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-	  A CollectionModify object.
+	 A CollectionModify object.
   </para>
  </refsect1>
 
@@ -46,15 +47,63 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+$session = mysql_xdevapi\getSession("mysqlx://user:password@localhost");
+$session->sql("DROP DATABASE IF EXISTS addressbook")->execute();
+$session->sql("CREATE DATABASE addressbook")->execute();
 
-$res = $coll->modify(2)->sort('name desc', 'age asc')->limit(4)->set('Married', 'NO')->execute();
+$schema     = $session->getSchema("addressbook");
+$collection = $schema->createCollection("people");
 
+$collection->add('{"name": "Fred",  "age": 21, "job": "Construction"}')->execute();
+$collection->add('{"name": "Wilma", "age": 23, "job": "Teacher"}')->execute();
+$collection->add('{"name": "Betty", "age": 24, "job": "Teacher"}')->execute();
+
+$collection
+  ->modify("job = :job")
+  ->bind(['job' => 'Teacher'])
+  ->set('job', 'Principal')
+  ->limit(1)
+  ->execute();
+
+$result = $collection
+  ->find()
+  ->execute();
+
+print_r($result->fetchAll());
 ?>
 ]]>
    </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+Array
+(
+    [0] => Array
+        (
+            [_id] => 00005b6b53610000000000000118
+            [age] => 21
+            [job] => Construction
+            [name] => Fred
+        )
+    [1] => Array
+        (
+            [_id] => 00005b6b53610000000000000119
+            [age] => 23
+            [job] => Principal
+            [name] => Wilma
+        )
+    [2] => Array
+        (
+            [_id] => 00005b6b5361000000000000011a
+            [age] => 24
+            [job] => Teacher
+            [name] => Betty
+        )
+)
+]]>
+   </screen>
   </example>
  </refsect1>
-
 
 </refentry>
 

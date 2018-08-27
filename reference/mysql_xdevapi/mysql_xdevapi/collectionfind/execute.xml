@@ -14,10 +14,9 @@
    <void />
   </methodsynopsis>
   <para>
-   The execute function needs to be invoked in order to trigger the client to send the CRUD operation request to the server.
-
+   Execute the find operation;
+   this functionality allows for method chaining.
   </para>
-
  </refsect1>
 
  <refsect1 role="parameters">
@@ -28,30 +27,62 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   A DocResult object that can be used to query the status of the operation
+   A DocResult object that to either fetch results from,
+   or to query the status of the operation.
   </para>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><function>mysql_xdevapi\CollectionFind::execute</function> example</title>
+   <title>CollectionFind example</title>
    <programlisting role="php">
 <![CDATA[
 <?php
+$session = mysql_xdevapi\getSession("mysqlx://user:password@localhost");
+$session->sql("DROP DATABASE IF EXISTS addressbook")->execute();
+$session->sql("CREATE DATABASE addressbook")->execute();
 
-//Assuming $coll is a valid Collection object
+$schema = $session->getSchema("addressbook");
+$create = $schema->createCollection("people");
 
-//Search the collection for all the documents for which the field
-//'name' is either "Marco" or "Lucio"
-$res = $coll->find('name IN ("Marco","Lucio")')->execute();
+$create
+  ->add('{"name": "Alfred", "age": 18, "job": "Butler"}')
+  ->execute();
 
+// ...
+
+$collection = $schema->getCollection("people");
+
+$result = $collection
+  ->find('job like :job and age > :age')
+  ->bind(['job' => 'Butler', 'age' => 16])
+  ->execute();
+
+var_dump($result->fetchAll());
 ?>
 ]]>
    </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+array(1) {
+  [0]=>
+  array(4) {
+    ["_id"]=>
+    string(28) "00005b6b536100000000000000cf"
+    ["age"]=>
+    int(18)
+    ["job"]=>
+    string(6) "Butler"
+    ["name"]=>
+    string(6) "Alfred"
+  }
+}
+]]>
+   </screen>
   </example>
  </refsect1>
-
 
 </refentry>
 
