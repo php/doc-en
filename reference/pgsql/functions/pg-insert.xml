@@ -19,11 +19,27 @@
    <methodparam choice="opt"><type>int</type><parameter>options</parameter><initializer>PGSQL_DML_EXEC</initializer></methodparam>
   </methodsynopsis>
   <para>
-   <function>pg_insert</function> inserts the values of <parameter>assoc_array</parameter> 
-   into the table specified by <parameter>table_name</parameter>.
-   If <parameter>options</parameter> is
-   specified, <function>pg_convert</function> is applied
+   <function>pg_insert</function> inserts the values
+   of <parameter>assoc_array</parameter> into the table specified
+   by <parameter>table_name</parameter>. If <parameter>options</parameter>
+   is specified, <function>pg_convert</function> is applied
    to <parameter>assoc_array</parameter> with the specified options.
+  </para>
+  <para>If <literal>options</literal> is specified,
+   <function>pg_convert</function> is applied to
+   <literal>assoc_array</literal> with the specified flags.
+  </para>
+  <para>
+   By default <function>pg_insert</function> passes raw values. Values
+   must be escaped or PGSQL_DML_ESCAPE option must be
+   specified. PGSQL_DML_ESCAPE quotes and escapes
+   paramters/identifiers. Therefore, table/column names became case
+   sensitive.
+  </para>
+  <para>
+   Note that neither escape nor prepared query can protect LIKE query,
+   JSON, Array, Regex, etc. These parameters should be handled
+   according to their contexts. i.e. Escape/validate values.
   </para>
  </refsect1>
 
@@ -43,7 +59,7 @@
      <term><parameter>table_name</parameter></term>
      <listitem>
       <para>
-       Name of the table into which to insert rows.  The table <parameter>table_name</parameter> must at least 
+       Name of the table into which to insert rows.  The table <parameter>table_name</parameter> must at least
        have as many columns as <parameter>assoc_array</parameter> has elements.
       </para>
      </listitem>
@@ -93,8 +109,10 @@
 <![CDATA[
 <?php 
   $dbconn = pg_connect('dbname=foo');
-  // This is safe, since $_POST is converted automatically
-  $res = pg_insert($dbconn, 'post_log', $_POST);
+  // This is safe somewhat, since all values are escaped.
+  // However PostgreSQL supports JSON/Array. These are not
+  // safe by nither escape nor prepared query.
+  $res = pg_insert($dbconn, 'post_log', $_POST, PG_DML_ESCAPE);
   if ($res) {
       echo "POST data is successfully logged\n";
   } else {
