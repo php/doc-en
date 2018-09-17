@@ -56,22 +56,37 @@
       </listitem>
       <listitem>
         <para>
-          <literal>?attribute=value</literal>: this element is optional and specifies a data dictionary that contains options, 
-          e.g. for encrypted connections or 'auth'. For additional information, see
-          <link xlink:href="&url.mysql.docs.connect.encryption;">Command Options for Encrypted Connections</link>.
-        </para>
-        <para>
-          
-        </para>
-        <para>
-          The following values for 'auth' attribute are supported (authentication mechanism):
+          <literal>?attribute=value</literal>: this element is optional and specifies a data dictionary 
+          that contains different options, including:
         </para>
         <itemizedlist>
-          <listitem><para>plain</para></listitem>
-          <listitem><para>mysql41</para></listitem>
-          <listitem><para>external</para></listitem>
-          <listitem><para>sha256_mem</para></listitem>
-         </itemizedlist>
+          <listitem>
+          <para>
+            The <literal>auth</literal> (authentication mechanism) attribute as it relates to encrypted connections.
+            For additional information, see <link xlink:href="&url.mysql.docs.connect.encryption;">Command
+            Options for Encrypted Connections</link>.
+            The following 'auth' values are supported: <literal>plain</literal>,
+            <literal>mysql41</literal>, <literal>external</literal>, and <literal>sha256_mem</literal>.
+          </para>
+          </listitem>
+          <listitem>
+          <para>
+           The <literal>connect-timeout</literal> attribute affects the connection
+           and not subsequent operations. It is set per connection whether on
+           a single or multiple hosts.
+          </para>
+          <para>
+           Pass in a positive integer to define the connection timeout in seconds,
+           or pass in 0 (zero) to disable the timeout (infinite). Not defining
+           connect-timeout uses the default value of 10.
+          </para>
+          <para>
+            Related, the MYSQLX_CONNECTION_TIMEOUT (timeout in seconds) and MYSQLX_TEST_CONNECTION_TIMEOUT (used while running tests)
+            environment variables can be set and used instead of connect-timeout in the URI. The
+            connect-timeout URI option has precedence over these environment variables.
+          </para>
+          </listitem>
+        </itemizedlist>
        </listitem>
       </itemizedlist>
 
@@ -89,6 +104,8 @@ mysqlx://foo:bar@(/path/to/socket)?auth=sha256_mem
 mysqlx://foo:bar@[localhost:33060, 127.0.0.1:33061]
 mysqlx://foobar?ssl-ca=(/path/to/ca.pem)&amp;ssl-crl=(/path/to/crl.pem)
 mysqlx://foo:bar@[localhost:33060, 127.0.0.1:33061]?ssl-mode=disabled
+mysqlx://foo:bar@localhost:33160/?connect-timeout=0
+mysqlx://foo:bar@localhost:33160/?connect-timeout=10
   </programlisting>
 </example>
 
@@ -105,7 +122,14 @@ mysqlx://foo:bar@[localhost:33060, 127.0.0.1:33061]?ssl-mode=disabled
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   A <classname>mysql_xdevap\Session</classname> object.
+   A <classname>Session</classname> object.
+  </para>
+ </refsect1>
+
+ <refsect1 role="errors">
+  &reftitle.errors;
+  <para>
+   A connection failure throws an <classname>Exception</classname>.
   </para>
  </refsect1>
 
@@ -116,9 +140,10 @@ mysqlx://foo:bar@[localhost:33060, 127.0.0.1:33061]?ssl-mode=disabled
    <programlisting role="php">
 <![CDATA[
 <?php
-$session = mysql_xdevapi\getSession("mysqlx://user:password@host");
-if ($session === NULL) {
-    die("Connection could not be established");
+try {
+    $session = mysql_xdevapi\getSession("mysqlx://user:password@host");
+} catch(Exception $e) {
+    die("Connection could not be established: " . $e->getMessage());
 }
 
 $schemas = $session->getSchemas();
