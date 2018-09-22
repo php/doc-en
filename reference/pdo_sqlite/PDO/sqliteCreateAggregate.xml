@@ -57,20 +57,44 @@
         <methodparam><type>mixed</type><parameter>context</parameter></methodparam>
         <methodparam><type>int</type><parameter>rownumber</parameter></methodparam>
         <methodparam><type>mixed</type><parameter>value1</parameter></methodparam>
-        <methodparam choice="opt"><type>mixed</type><parameter>value2</parameter></methodparam>
-        <methodparam choice="opt"><type>mixed</type><parameter>..</parameter></methodparam>
+        <methodparam choice="opt"><type>mixed</type><parameter>...</parameter></methodparam>
        </methodsynopsis>
-      </para>
-      <para>
-       <varname>context</varname> will be &null; for the first row; on
-       subsequent rows it will have the value that was previously returned
-       from the step function; you should use this to maintain the aggregate
-       state.
-      </para>
-      <para>
-       <varname>rownumber</varname> will hold the current row number.
-      </para>
-      <para>
+       <variablelist>
+        <varlistentry>
+         <term><parameter>context</parameter></term>
+         <listitem>
+          <para>
+           &null; for the first row; on subsequent rows it will have the value
+           that was previously returned from the step function; you should use
+           this to maintain the aggregate state.
+          </para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+         <term><parameter>rownumber</parameter></term>
+         <listitem>
+          <para>
+           The current row number.
+          </para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+         <term><parameter>value1</parameter></term>
+         <listitem>
+          <para>
+           The first argument passed to the aggregate.
+          </para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+         <term><parameter>...</parameter></term>
+         <listitem>
+          <para>
+           Further arguments passed to the aggregate.
+          </para>
+         </listitem>
+        </varlistentry>
+       </variablelist>
        The return value of this function will be used as the
        <parameter>context</parameter> argument in the next call of the step or
        finalize functions.
@@ -84,7 +108,7 @@
        Callback function to aggregate the "stepped" data from each row. 
        Once all the rows have been processed, this function will be called
        and it should then take the data from the aggregation context and
-       return the result. Callback functions should return a type understood
+       return the result. This callback function should return a type understood
        by SQLite (i.e. <link 
        linkend="language.types.intro">scalar type</link>).
       </para>
@@ -93,18 +117,26 @@
        <methodsynopsis>
         <type>mixed</type><methodname><replaceable>fini</replaceable></methodname>
         <methodparam><type>mixed</type><parameter>context</parameter></methodparam>
-        <methodparam><type>int</type><parameter>rownumber</parameter></methodparam>
+        <methodparam><type>int</type><parameter>rowcount</parameter></methodparam>
        </methodsynopsis>
-      </para>
-      <para>
-       <varname>context</varname> will hold the return value from the very
-       last call to the step function.
-      </para>
-      <para>
-       <varname>rownumber</varname> will hold the number of rows over which
-       the aggregate was performed.
-      </para>
-      <para>
+       <variablelist>
+        <varlistentry>
+         <term><parameter>context</parameter></term>
+         <listitem>
+          <para>
+           Holds the return value from the very last call to the step function.
+          </para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+         <term><parameter>rowcount</parameter></term>
+         <listitem>
+          <para>
+           Holds the number of rows over which the aggregate was performed.
+          </para>
+         </listitem>
+        </varlistentry>
+       </variablelist>
        The return value of this function will be used as the return value for
        the aggregate.
       </para>
@@ -158,7 +190,7 @@ foreach ($data as $str) {
 }
 $insert = null;
 
-function max_len_step(&$context, $rownumber, $string) 
+function max_len_step($context, $rownumber, $string) 
 {
     if (strlen($string) > $context) {
         $context = strlen($string);
@@ -166,7 +198,7 @@ function max_len_step(&$context, $rownumber, $string)
     return $context;
 }
 
-function max_len_finalize(&$context, $rownumber) 
+function max_len_finalize($context, $rowcount) 
 {
     return $context === null ? 0 : $context;
 }
@@ -184,18 +216,18 @@ var_dump($db->query('SELECT max_len(a) from strings')->fetchAll());
    In this example, we are creating an aggregating function that will
    calculate the length of the longest string in one of the columns of the
    table.  For each row, the <literal>max_len_step</literal> function is
-   called and passed a <parameter>context</parameter> parameter.  The context
+   called and passed a <literal>context</literal> parameter.  The context
    parameter is just like any other PHP variable and be set to hold an array
    or even an object value.  In this example, we are simply using it to hold
    the maximum length we have seen so far; if the
-   <parameter>string</parameter> has a length longer than the current
+   <literal>string</literal> has a length longer than the current
    maximum, we update the context to hold this new maximum length.
   </para>
   <para>
    After all of the rows have been processed, SQLite calls the
    <literal>max_len_finalize</literal> function to determine the aggregate
    result.  Here, we could perform some kind of calculation based on the
-   data found in the <parameter>context</parameter>.  In our simple example
+   data found in the <literal>context</literal>.  In our simple example
    though, we have been calculating the result as the query progressed, so we
    simply need to return the context value.
   </para>
