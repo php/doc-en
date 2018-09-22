@@ -38,17 +38,99 @@
      <term><parameter>step_callback</parameter></term>
      <listitem>
       <para>
-       The name of a PHP function or user-defined function to apply as a
-       callback for every item in the aggregate.
+       Callback function called for each row of the result set. Your PHP
+       function should accumulate the result and store it in the aggregation
+       context.
       </para>
+      <para>
+       This function need to be defined as:
+       <methodsynopsis>
+        <type>mixed</type><methodname><replaceable>step</replaceable></methodname>
+        <methodparam><type>mixed</type><parameter>context</parameter></methodparam>
+        <methodparam><type>int</type><parameter>rownumber</parameter></methodparam>
+        <methodparam><type>mixed</type><parameter>value1</parameter></methodparam>
+        <methodparam choice="opt"><type>mixed</type><parameter>...</parameter></methodparam>
+       </methodsynopsis>
+       <variablelist>
+        <varlistentry>
+         <term><parameter>context</parameter></term>
+         <listitem>
+          <para>
+           &null; for the first row; on subsequent rows it will have the value
+           that was previously returned from the step function; you should use
+           this to maintain the aggregate state.
+          </para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+         <term><parameter>rownumber</parameter></term>
+         <listitem>
+          <para>
+           The current row number.
+          </para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+         <term><parameter>value1</parameter></term>
+         <listitem>
+          <para>
+           The first argument passed to the aggregate.
+          </para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+         <term><parameter>...</parameter></term>
+         <listitem>
+          <para>
+           Further arguments passed to the aggregate.
+          </para>
+         </listitem>
+        </varlistentry>
+       </variablelist>
+       The return value of this function will be used as the
+       <parameter>context</parameter> argument in the next call of the step or
+       finalize functions.
+      </para> 
      </listitem>
     </varlistentry>
     <varlistentry>
      <term><parameter>final_callback</parameter></term>
      <listitem>
       <para>
-       The name of a PHP function or user-defined function to apply as a
-       callback at the end of the aggregate data.
+       Callback function to aggregate the "stepped" data from each row. 
+       Once all the rows have been processed, this function will be called
+       and it should then take the data from the aggregation context and
+       return the result. This callback function should return a type understood
+       by SQLite (i.e. <link 
+       linkend="language.types.intro">scalar type</link>).
+      </para>
+      <para>
+       This function need to be defined as:
+       <methodsynopsis>
+        <type>mixed</type><methodname><replaceable>fini</replaceable></methodname>
+        <methodparam><type>mixed</type><parameter>context</parameter></methodparam>
+        <methodparam><type>int</type><parameter>rownumber</parameter></methodparam>
+       </methodsynopsis>
+       <variablelist>
+        <varlistentry>
+         <term><parameter>context</parameter></term>
+         <listitem>
+          <para>
+           Holds the return value from the very last call to the step function.
+          </para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+         <term><parameter>rownumber</parameter></term>
+         <listitem>
+          <para>
+           Always <literal>0</literal>.
+          </para>
+         </listitem>
+        </varlistentry>
+       </variablelist>
+       The return value of this function will be used as the return value for
+       the aggregate.
       </para>
      </listitem>
     </varlistentry>
@@ -64,7 +146,6 @@
     </varlistentry>
    </variablelist>
   </para>
-
  </refsect1>
 
  <refsect1 role="returnvalues">
@@ -73,6 +154,98 @@
    Returns &true; upon successful creation of the aggregate, &false; on
    failure.
   </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title>max_length aggregation function example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$data = array(
+   'one',
+   'two',
+   'three',
+   'four',
+   'five',
+   'six',
+   'seven',
+   'eight',
+   'nine',
+   'ten',
+   );
+$db = new SQLite3(':memory:');
+$db->exec("CREATE TABLE strings(a)");
+$insert = $db->prepare('INSERT INTO strings VALUES (?)');
+foreach ($data as $str) {
+    $insert->bindValue(1, $str);
+    $insert->execute();
+}
+$insert = null;
+
+function max_len_step($context, $rownumber, $string)
+{
+    if (strlen($string) > $context) {
+        $context = strlen($string);
+    }
+    return $context;
+}
+
+function max_len_finalize($context, $rownumber)
+{
+    return $context === null ? 0 : $context;
+}
+
+$db->createAggregate('max_len', 'max_len_step', 'max_len_finalize');
+
+var_dump($db->querySingle('SELECT max_len(a) from strings'));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen role="php">
+<![CDATA[
+int(5)
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   In this example, we are creating an aggregating function that will
+   calculate the length of the longest string in one of the columns of the
+   table.  For each row, the <literal>max_len_step</literal> function is
+   called and passed a <literal>context</literal> parameter.  The context
+   parameter is just like any other PHP variable and be set to hold an array
+   or even an object value.  In this example, we are simply using it to hold
+   the maximum length we have seen so far; if the
+   <literal>string</literal> has a length longer than the current
+   maximum, we update the context to hold this new maximum length.
+  </para>
+  <para>
+   After all of the rows have been processed, SQLite calls the
+   <literal>max_len_finalize</literal> function to determine the aggregate
+   result.  Here, we could perform some kind of calculation based on the
+   data found in the <literal>context</literal>.  In our simple example
+   though, we have been calculating the result as the query progressed, so we
+   simply need to return the context value.
+  </para>
+  <tip>
+   <para>
+    It is NOT recommended for you to store a copy of the values in the context
+    and then process them at the end, as you would cause SQLite to use a lot of
+    memory to process the query - just think of how much memory you would need
+    if a million rows were stored in memory, each containing a string 32 bytes
+    in length.
+   </para>
+  </tip>
+  <tip>
+   <para>
+    You can use <methodname>SQLite3::createAggregate</methodname> to override SQLite
+    native SQL functions.
+   </para>
+  </tip>
  </refsect1>
 
 </refentry>
