@@ -24,15 +24,15 @@ echo "Connecting ...";
 $ds=ldap_connect("localhost");  // must be a valid LDAP server!
 echo "connect result is " . $ds . "<br />";
 
-if ($ds) { 
-    echo "Binding ..."; 
+if ($ds) {
+    echo "Binding ...";
     $r=ldap_bind($ds);     // this is an "anonymous" bind, typically
                            // read-only access
     echo "Bind result is " . $r . "<br />";
 
     echo "Searching for (sn=S*) ...";
     // Search surname entry
-    $sr=ldap_search($ds, "o=My Company, c=US", "sn=S*");  
+    $sr=ldap_search($ds, "o=My Company, c=US", "sn=S*");
     echo "Search result is " . $sr . "<br />";
 
     echo "Number of entries returned is " . ldap_count_entries($ds, $sr) . "<br />";
@@ -53,6 +53,152 @@ if ($ds) {
 } else {
     echo "<h4>Unable to connect to LDAP server</h4>";
 }
+?>
+]]>
+   </programlisting>
+  </example>
+ </section>
+ <section xml:id="ldap.examples-controls">
+  <title>LDAP Controls</title>
+  <para>
+   Here are some examples of using LDAP Controls with PHP &gt;= 7.3.0.
+  </para>
+
+  <example>
+   <title>Bind with ppolicy information</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+$user   = 'cn=admin,dc=example,dc=com';
+$passwd = 'adminpassword';
+
+$ds = ldap_connect('ldap://localhost');
+
+if ($ds) {
+  $r = ldap_bind_ext($ds, $user, $passwd, [['oid' => LDAP_CONTROL_PASSWORDPOLICYREQUEST]]);
+
+  if (ldap_parse_result($ds, $r, $errcode, $matcheddn, $errmsg, $referrals, $ctrls)) {
+    if ($errcode != 0) {
+      die("Error: $errmsg ($errcode)");
+    }
+    if (isset($ctrls[LDAP_CONTROL_PASSWORDPOLICYRESPONSE])) {
+      $value = $ctrls[LDAP_CONTROL_PASSWORDPOLICYRESPONSE]['value'];
+      echo "Expires in: ".$value['expire']." seconds\n";
+      echo "Number of auth left: ".$value['grace']."\n";
+      if (isset($value['error'])) {
+        echo "Ppolicy error code: ".$value['error'];
+      }
+    }
+  }
+} else {
+  die("Unable to connect to LDAP server");
+}
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <example>
+   <title>Modify description only if it's not empty</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+  // $link is an LDAP connection
+
+  $result = ldap_mod_replace_ext(
+    $link,
+    'o=test,dc=example,dc=com',
+    ['description' => 'New description'],
+    [
+      [
+        'oid'         => LDAP_CONTROL_ASSERT,
+        'iscritical'  => TRUE,
+        'value'       => ['filter' => '(!(description=*))']
+      ]
+    ]
+  );
+
+  // Then use ldap_parse_result
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <example>
+   <title>Read some values before deletion</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+  // $link is an LDAP connection
+
+  $result = ldap_delete_ext(
+    $link,
+    'o=test,dc=example,dc=com',
+    [
+      [
+        'oid'         => LDAP_CONTROL_PRE_READ,
+        'iscritical'  => TRUE,
+        'value'       => ['attrs' => ['o', 'description']]
+      ]
+    ]
+  );
+
+  // Then use ldap_parse_result
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <example>
+   <title>Delete a reference</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+  // $link is an LDAP connection
+
+  // Without the control it would delete the referenced node
+  // Make sure to set the control as critical to avoid that
+  $result = ldap_delete_ext(
+    $link,
+    'cn=reference,dc=example,dc=com',
+    [['oid' => LDAP_CONTROL_MANAGEDSAIT, 'iscritical' => TRUE]]
+  );
+
+  // Then use ldap_parse_result
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <example>
+   <title>Use pagination for a search</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+  // $link is an LDAP connection
+
+  $cookie = '';
+
+  do {
+    $result = ldap_search(
+      $link, 'dc=example,dc=base', '(cn=*)', ['cn'], 0, 0, 0, LDAP_DEREF_NEVER,
+      [['oid' => LDAP_CONTROL_PAGEDRESULTS, 'value' => ['size' => 2, 'cookie' => $cookie]]]
+    );
+    ldap_parse_result($link, $result, $errcode , $matcheddn , $errmsg , $referrals, $controls);
+    // To keep the example short errors are not tested
+    $entries = ldap_get_entries($link, $result);
+    foreach ($entries as $entry) {
+      echo "cn: ".$entry['cn'][0]."\n";
+    }
+    if (isset($controls[LDAP_CONTROL_PAGEDRESULTS]['value']['cookie'])) {
+      // You need to pass the cookie from the last call to the next one
+      $cookie = $controls[LDAP_CONTROL_PAGEDRESULTS]['value']['cookie'];
+    } else {
+      $cookie = '';
+    }
+    // Empty cookie means last page
+  } while (!empty($cookie));
 ?>
 ]]>
    </programlisting>
