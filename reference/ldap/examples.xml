@@ -76,23 +76,23 @@ $passwd = 'adminpassword';
 $ds = ldap_connect('ldap://localhost');
 
 if ($ds) {
-  $r = ldap_bind_ext($ds, $user, $passwd, [['oid' => LDAP_CONTROL_PASSWORDPOLICYREQUEST]]);
+    $r = ldap_bind_ext($ds, $user, $passwd, [['oid' => LDAP_CONTROL_PASSWORDPOLICYREQUEST]]);
 
-  if (ldap_parse_result($ds, $r, $errcode, $matcheddn, $errmsg, $referrals, $ctrls)) {
-    if ($errcode != 0) {
-      die("Error: $errmsg ($errcode)");
+    if (ldap_parse_result($ds, $r, $errcode, $matcheddn, $errmsg, $referrals, $ctrls)) {
+        if ($errcode != 0) {
+            die("Error: $errmsg ($errcode)");
+        }
+        if (isset($ctrls[LDAP_CONTROL_PASSWORDPOLICYRESPONSE])) {
+            $value = $ctrls[LDAP_CONTROL_PASSWORDPOLICYRESPONSE]['value'];
+            echo "Expires in: ".$value['expire']." seconds\n";
+            echo "Number of auth left: ".$value['grace']."\n";
+            if (isset($value['error'])) {
+                echo "Ppolicy error code: ".$value['error'];
+            }
+        }
     }
-    if (isset($ctrls[LDAP_CONTROL_PASSWORDPOLICYRESPONSE])) {
-      $value = $ctrls[LDAP_CONTROL_PASSWORDPOLICYRESPONSE]['value'];
-      echo "Expires in: ".$value['expire']." seconds\n";
-      echo "Number of auth left: ".$value['grace']."\n";
-      if (isset($value['error'])) {
-        echo "Ppolicy error code: ".$value['error'];
-      }
-    }
-  }
 } else {
-  die("Unable to connect to LDAP server");
+    die("Unable to connect to LDAP server");
 }
 ?>
 ]]>
@@ -104,22 +104,22 @@ if ($ds) {
    <programlisting role="php">
 <![CDATA[
 <?php
-  // $link is an LDAP connection
+// $link is an LDAP connection
 
-  $result = ldap_mod_replace_ext(
+$result = ldap_mod_replace_ext(
     $link,
     'o=test,dc=example,dc=com',
     ['description' => 'New description'],
     [
-      [
-        'oid'         => LDAP_CONTROL_ASSERT,
-        'iscritical'  => TRUE,
-        'value'       => ['filter' => '(!(description=*))']
-      ]
+        [
+            'oid'         => LDAP_CONTROL_ASSERT,
+            'iscritical'  => TRUE,
+            'value'       => ['filter' => '(!(description=*))']
+        ]
     ]
-  );
+);
 
-  // Then use ldap_parse_result
+// Then use ldap_parse_result
 ?>
 ]]>
    </programlisting>
@@ -130,21 +130,21 @@ if ($ds) {
    <programlisting role="php">
 <![CDATA[
 <?php
-  // $link is an LDAP connection
+// $link is an LDAP connection
 
-  $result = ldap_delete_ext(
+$result = ldap_delete_ext(
     $link,
     'o=test,dc=example,dc=com',
     [
-      [
-        'oid'         => LDAP_CONTROL_PRE_READ,
-        'iscritical'  => TRUE,
-        'value'       => ['attrs' => ['o', 'description']]
-      ]
+        [
+            'oid'         => LDAP_CONTROL_PRE_READ,
+            'iscritical'  => TRUE,
+            'value'       => ['attrs' => ['o', 'description']]
+        ]
     ]
-  );
+);
 
-  // Then use ldap_parse_result
+// Then use ldap_parse_result
 ?>
 ]]>
    </programlisting>
@@ -155,17 +155,17 @@ if ($ds) {
    <programlisting role="php">
 <![CDATA[
 <?php
-  // $link is an LDAP connection
+// $link is an LDAP connection
 
-  // Without the control it would delete the referenced node
-  // Make sure to set the control as critical to avoid that
-  $result = ldap_delete_ext(
+// Without the control it would delete the referenced node
+// Make sure to set the control as critical to avoid that
+$result = ldap_delete_ext(
     $link,
     'cn=reference,dc=example,dc=com',
     [['oid' => LDAP_CONTROL_MANAGEDSAIT, 'iscritical' => TRUE]]
-  );
+);
 
-  // Then use ldap_parse_result
+// Then use ldap_parse_result
 ?>
 ]]>
    </programlisting>
@@ -176,29 +176,29 @@ if ($ds) {
    <programlisting role="php">
 <![CDATA[
 <?php
-  // $link is an LDAP connection
+// $link is an LDAP connection
 
-  $cookie = '';
+$cookie = '';
 
-  do {
+do {
     $result = ldap_search(
-      $link, 'dc=example,dc=base', '(cn=*)', ['cn'], 0, 0, 0, LDAP_DEREF_NEVER,
-      [['oid' => LDAP_CONTROL_PAGEDRESULTS, 'value' => ['size' => 2, 'cookie' => $cookie]]]
+        $link, 'dc=example,dc=base', '(cn=*)', ['cn'], 0, 0, 0, LDAP_DEREF_NEVER,
+        [['oid' => LDAP_CONTROL_PAGEDRESULTS, 'value' => ['size' => 2, 'cookie' => $cookie]]]
     );
     ldap_parse_result($link, $result, $errcode , $matcheddn , $errmsg , $referrals, $controls);
     // To keep the example short errors are not tested
     $entries = ldap_get_entries($link, $result);
     foreach ($entries as $entry) {
-      echo "cn: ".$entry['cn'][0]."\n";
+        echo "cn: ".$entry['cn'][0]."\n";
     }
     if (isset($controls[LDAP_CONTROL_PAGEDRESULTS]['value']['cookie'])) {
-      // You need to pass the cookie from the last call to the next one
-      $cookie = $controls[LDAP_CONTROL_PAGEDRESULTS]['value']['cookie'];
+        // You need to pass the cookie from the last call to the next one
+        $cookie = $controls[LDAP_CONTROL_PAGEDRESULTS]['value']['cookie'];
     } else {
-      $cookie = '';
+        $cookie = '';
     }
     // Empty cookie means last page
-  } while (!empty($cookie));
+} while (!empty($cookie));
 ?>
 ]]>
    </programlisting>
