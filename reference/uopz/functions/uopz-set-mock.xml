@@ -18,6 +18,13 @@
    If <parameter>mock</parameter> is a string containing the name of a class then it will be instantiated instead of
    <parameter>class</parameter>. <parameter>mock</parameter> can also be an object.
   </para>
+  <note>
+   <para>
+    Only dynamic access to properties and methods will use the <parameter>mock</parameter> object.
+    Static access still uses the original <parameter>class</parameter>.
+    See <link linkend="uopz_set_mock.example.static">example</link> below.
+   </para>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -27,7 +34,7 @@
     <term><parameter>class</parameter></term>
     <listitem>
      <para>
- The name of the class to be mocked.
+      The name of the class to be mocked.
      </para>
     </listitem>
    </varlistentry>
@@ -35,13 +42,37 @@
     <term><parameter>mock</parameter></term>
     <listitem>
      <para>
- The mock to use in the form of a string containing the name of the class to use or an object.
+      The mock to use in the form of a string containing the name of the class to use or an object.
       If a string is passed, it has to be the fully qualified class name. It is
       recommended to use the <code>::class</code> magic constant in this case.
      </para>
     </listitem>
    </varlistentry>
   </variablelist>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>uopz 6.0.0</entry>
+      <entry>
+       Mocking static members is no longer supported by this function.
+       <function>uopz_redefine</function> and <function>uopz_set_return</function>,
+       or <link linkend="book.componere">Componere</link> can be used instead.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
  </refsect1>
 
  <refsect1 role="examples">
@@ -52,19 +83,19 @@
 <![CDATA[
 <?php
 class A {
-    public static function who() {
+    public function who() {
         echo "A";
     }
 }
 
 class mockA {
-    public static function who() {
+    public function who() {
         echo "mockA";
     }
 }
 
 uopz_set_mock(A::class, mockA::class);
-A::who();
+(new A)->who();
 ?>
 ]]>
    </programlisting>
@@ -81,16 +112,49 @@ mockA
 <![CDATA[
 <?php
 class A {
+    public function who() {
+        echo "A";
+    }
+}
+
+uopz_set_mock(A::class, new class {
+                            public function who() {
+                                echo "mockA";
+                            }
+                        });
+(new A)->who();
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+mockA
+]]>
+   </screen>
+  </example>
+  <example xml:id="uopz_set_mock.example.static">
+   <title><function>uopz_set_mock</function> and static members</title>
+   <para>
+    As of uopz 6.0.0 mocking static members is no longer supported.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class A {
+    const CON = 'A';
     public static function who() {
         echo "A";
     }
 }
 
 uopz_set_mock(A::class, new class {
+                            const CON = 'mockA';
                             public static function who() {
                                 echo "mockA";
                             }
                         });
+echo A::CON, PHP_EOL;
 A::who();
 ?>
 ]]>
@@ -98,6 +162,16 @@ A::who();
    &example.outputs;
    <screen>
 <![CDATA[
+A
+A
+]]>
+   </screen>
+    <para>
+     Output of the above example in uopz 5:
+    </para>
+   <screen>
+<![CDATA[
+mockA
 mockA
 ]]>
    </screen>
