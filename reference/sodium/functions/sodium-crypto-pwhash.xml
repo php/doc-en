@@ -19,11 +19,8 @@
    <methodparam choice="opt"><type>int</type><parameter>alg</parameter></methodparam>
   </methodsynopsis>
   <para>
-
+   This function provides low-level access to libsodium's crypto_pwhash key derivation function. Unless you have specific reason to use this function, you should use <function>sodium_crypto_pwhash_str</function> or <function>password_hash</function> functions instead.
   </para>
-
-  &warn.undocumented.func;
-
  </refsect1>
 
  <refsect1 role="parameters">
@@ -65,7 +62,7 @@
     <term><parameter>memlimit</parameter></term>
     <listitem>
      <para>
-      The maximum amount of RAM that the function will use, in bytes. There are constants to help you choose an appropriate value, in order of size: <constant>SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE</constant>, <constant>SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE</constant>, and <constant>SODIUM_CRYPTO_PWHASH_MEMLIMIT_SENSITIVE</constant>. Typically these should be paired with the matching opslimit values.
+      The maximum amount of RAM that the function will use, in bytes. There are constants to help you choose an appropriate value, in order of size: <constant>SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE</constant>, <constant>SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE</constant>, and <constant>SODIUM_CRYPTO_PWHASH_MEMLIMIT_SENSITIVE</constant>. Typically these should be paired with the matching <parameter>opslimit</parameter> values.
      </para>
     </listitem>
    </varlistentry>
@@ -73,7 +70,7 @@
     <term><parameter>alg</parameter></term>
     <listitem>
      <para>
-      <type>integer</type> A number indicating the hash algorithm to use. By default <constant>SODIUM_CRYPTO_PWHASH_ALG_DEFAULT</constant> (the currently recommended algorithm, which can change from one version of libsodium to another), or explicitly using <constant>SODIUM_CRYPTO_PWHASH_ALG_ARGON2I13</constant>, representing the Argon2id algorithm version 1.3.
+      <type>integer</type> A number indicating the hash algorithm to use. By default <constant>SODIUM_CRYPTO_PWHASH_ALG_DEFAULT</constant> (the currently recommended algorithm, which can change from one version of libsodium to another), or explicitly using <constant>SODIUM_CRYPTO_PWHASH_ALG_ARGON2ID13</constant>, representing the Argon2id algorithm version 1.3.
      </para>
     </listitem>
    </varlistentry>
@@ -83,30 +80,41 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns the hashed password, &return.falseforfailure;.
+   Returns the derived key, &return.falseforfailure;. The return value is a binary string of the hash, not an ASCII-encoded representation, and does not contain additional information about the parameters used to create the hash, so you will need to keep that information if you are ever going to verify the password in future. Use <function>sodium_crypto_pwhash_str</function> to avoid needing to do all that.
   </para>
+ </refsect1>
+ <refsect1 role="examples">
+  &reftitle.examples;
   <para>
-   The used algorithm, opslimit, memlimit and salt are embedded within the hash, so
-   all information needed to verify the hash is included. This allows
-   the <function>password_verify</function> function to verify the hash without
-   needing separate storage for the salt or algorithm information.
-  </para>
+   <example>
+    <title><function>password_hash</function> example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+//Need to keep the salt if we're ever going to be able to check this password
+$salt = random_bytes(SODIUM_CRYPTO_PWHASH_SALTBYTES);
+//Using bin2hex to keep output readable
+echo bin2hex(
+    sodium_crypto_pwhash(
+        16, // == 128 bits
+        'password',
+        $salt,
+        SODIUM_CRYPTO_PWHASH_OPSLIMIT_INTERACTIVE,
+        SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE,
+        SODIUM_CRYPTO_PWHASH_ALG_ARGON2ID13
+    )
+);
+?>]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+a18f346ba57992eb7e4ae6abf3fd30ee
+]]>
+    </screen>
+   </example>
+  </para> 
  </refsect1>
-
- <refsect1 role="notes">
-  &reftitle.notes;
-  <note>
-   <para>
-    It is recommended that you test this function on your servers, and adjust the <parameter>opslimit</parameter> and <parameter>memlimit</parameter> parameters 
-    so that execution of the function takes less than 100 milliseconds on interactive systems, and also verify that it fits with your PHP memory_limit setting. 
-    The constants will help you choose good limits for your hardware.
-   </para>
-   <para>
-    In order to produce the same password hash from the same password, the same algorithm, the same salt, and the same values for <parameter>opslimit</parameter> and <parameter>memlimit</parameter> must to be used. Therefore, these parameters must be stored for each user, or be used consistently for your whole application.
-   </para>
-  </note>
- </refsect1>
-
 
 </refentry>
 
