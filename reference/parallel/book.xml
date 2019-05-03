@@ -1,20 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
 
-<book xml:id="book.parallel" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<book xml:id="book.parallel" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:phpdoc="http://php.net/ns/phpdoc" xmlns:xi="http://www.w3.org/2001/XInclude">
  <title>Parallel</title>
  <titleabbrev>Parallel</titleabbrev>
 
  <preface xml:id="intro.parallel">
   &reftitle.intro;
   <para>
-  parallel is a parallel concurrency extension for PHP 7.1+ that exposes a succint API for the programmer.
+  parallel is a parallel concurrency extension for PHP 7.2+.
   </para>
+  <para>
+   A brief description of the concepts core to parallel follows, more detailed information may be found within this section of the manual.
+  </para>
+  <simplesect>
+   <title>Runtime</title>
+   <para>
+     A <classname>parallel\Runtime</classname> represents a PHP interpreter thread. A <classname>parallel\Runtime</classname> is configured with an optional bootstrap file passed to <methodname>parallel\Runtime::__construct</methodname>, this is typically an autoloader, 
+    or some other preloading routine: The bootstrap file will be included before any task is executed.
+   </para>
+   <para>
+    After construction the <classname>parallel\Runtime</classname> remains available until it is closed, killed, or destroyed by the normal scoping rules of PHP objects. 
+    <methodname>parallel\Runtime::run</methodname> allows the programmer to schedule tasks for execution in parallel. 
+    A <classname>parallel\Runtime</classname> has a FIFO schedule, tasks will be executed in the order that they are scheduled.
+   </para>
+  </simplesect>
+  <simplesect>
+   <title>Task</title>
+   <para>
+    A task is simply a <classname>Closure</classname> intended for parallel execution. The <classname>Closure</classname> may contain almost any instruction, including nested closures. 
+    However, there are some instructions that are prohibited in tasks:
+    <itemizedlist>
+     <listitem>
+     <para>yield</para>
+     </listitem>
+     <listitem>
+     <para>use (by-reference)</para>
+     </listitem>
+     <listitem>
+     <para>declare (anonymous) class</para>
+     </listitem>
+    </itemizedlist>
+   </para>
+  </simplesect>
+  <simplesect>
+   <title>Future</title>
+   <para>
+    The <classname>parallel\Future</classname> is used to access the return value from the task, and exposes an API for cancellation of the task.
+   </para>
+  </simplesect>
+  <simplesect>
+   <title>Channel</title>
+   <para>
+    A task may be scheduled with arguments, use lexical scope variables (by-value), and return a value (via a <classname>parallel\Future</classname>), but these only allow uni-directional communication:
+    They allow the programmer to send data into and retrieve data from a task, but do not allow bi-directional communication between tasks.
+    The <classname>parallel\Channel</classname> API allows bi-directional communication between tasks, a <classname>parallel\Channel</classname> is a socket-like link between tasks that the programmer can use to send and recieve data.
+   </para>
+  </simplesect>
+  <simplesect>
+   <title>Events</title>
+   <para>
+    The <classname>parallel\Events</classname> API implements a native feel (<classname>Traversable</classname>) event loop, and <methodname>parallel\Events::poll</methodname> method. 
+    It allows the programmer to work with sets of channels and or futures.
+    The programmer simply adds channels and futures to the event loop, optionally setting the input for writes with <methodname>parallel\Events::setInput</methodname>, 
+    and enters into a foreach: parallel will read from and write to objects as they become available yielding <classname>parallel\Events\Event</classname> objects 
+    describing the operations that have occured.
+   </para>
+  </simplesect>
  </preface>
 
  &reference.parallel.setup;
  &reference.parallel.parallel.runtime;
  &reference.parallel.parallel.future;
+ &reference.parallel.parallel.channel;
+ &reference.parallel.parallel.events;
+ &reference.parallel.parallel.events.input;
+ &reference.parallel.parallel.events.event;
+ &reference.parallel.parallel.events.event.type;
  <!--&reference.parallel.examples;-->
 
 </book>
