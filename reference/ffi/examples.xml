@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<chapter xml:id="ffi.examples" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ &reftitle.examples;
+ <section xml:id="ffi.examples-basic">
+  <title>Basic FFI usage</title>
+  <para>
+   Before diving into the details of the FFI API, lets take a look at a few examples
+   demonstrating the simplicity of the FFI API usage for regular tasks.
+  </para>
+  <note>
+   <para>
+    Some of these examples require <filename>libc.so.6</filename> and as such will
+    not work on systems where it is not available.
+   </para>
+  </note>
+  <para>
+   <example xml:id="ffi.examples.function">
+    <title>Calling a function from shared library</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// create FFI object, loading libc and exporting function printf()
+$ffi = FFI::cdef(
+    "int printf(const char *format, ...);", // this is a regular C declaration
+    "libc.so.6");
+// call C's printf()
+$ffi->printf("Hello %s!\n", "world");
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Hello world!
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   <example xml:id="ffi.examples.structure">
+    <title>Calling a function, returning a structure through an argument</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// create gettimeofday() binding
+$ffi = FFI::cdef("
+    typedef unsigned int time_t;
+    typedef unsigned int suseconds_t;
+ 
+    struct timeval {
+        time_t      tv_sec;
+        suseconds_t tv_usec;
+    };
+ 
+    struct timezone {
+        int tz_minuteswest;
+        int tz_dsttime;
+    };
+ 
+    int gettimeofday(struct timeval *tv, struct timezone *tz);    
+", "libc.so.6");
+// create C data structures
+$tv = $ffi->new("struct timeval");
+$tz = $ffi->new("struct timezone");
+// call C's gettimeofday()
+var_dump($ffi->gettimeofday(FFI::addr($tv), FFI::addr($tz)));
+// access field of C data structure
+var_dump($tv->tv_sec);
+// print the whole C data structure
+var_dump($tz);
+?>
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+int(0)
+int(1555946835)
+object(FFI\CData:struct timezone)#3 (2) {
+  ["tz_minuteswest"]=>
+  int(0)
+  ["tz_dsttime"]=>
+  int(0)
+}
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   <example xml:id="ffi.examples.variable">
+    <title>Accessing C variables</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// create FFI object, loading libc and exporting errno variable
+$ffi = FFI::cdef(
+    "int errno;", // this is a regular C declaration
+    "libc.so.6");
+// print C's errno
+var_dump($ffi->errno);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+int(0)
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   <example xml:id="ffi.examples.array">
+    <title>Working with C arrays</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// create C data structure
+$a = FFI::new("long[1024]");
+// work with it like with a regular PHP array
+for ($i = 0; $i < count($a); $i++) {
+    $a[$i] = $i;
+}
+var_dump($a[25]);
+$sum = 0;
+foreach ($a as $n) {
+    $sum += $n;
+}
+var_dump($sum);
+var_dump(count($a));
+var_dump(FFI::sizeof($a));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+int(25)
+int(523776)
+int(1024)
+int(8192)
+]]>
+    </screen>
+   </example>
+  </para>
+ </section>
+
+ <section xml:id="ffi.examples-callback">
+  <title>PHP Callbacks</title>
+  <para>
+   It is possible to assign a PHP closure to a native variable of function pointer type
+   or to pass it as a function argument:
+   <example>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$zend = FFI::cdef("
+	typedef int (*zend_write_func_t)(const char *str, size_t str_length);
+	extern zend_write_func_t zend_write;
+");
+ 
+echo "Hello World 1!\n";
+ 
+$orig_zend_write = clone $zend->zend_write;
+$zend->zend_write = function($str, $len) {
+	global $orig_zend_write;
+	$orig_zend_write("{\n\t", 3);
+	$ret = $orig_zend_write($str, $len);
+	$orig_zend_write("}\n", 2);
+	return $ret;
+};
+echo "Hello World 2!\n";
+$zend->zend_write = $orig_zend_write;
+echo "Hello World 3!\n";
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Hello World 1!
+{
+        Hello World 2!
+}
+Hello World 3!
+]]>
+    </screen>
+   </example>
+   Although this works, this functionality is not supported on all libffi platforms, is not efficient
+   and leaks resources by the end of request.
+   <tip>
+    <simpara>
+     It is therefore recommended to minimize the usage of PHP callbacks.
+    </simpara>
+   </tip>
+  </para>
+ </section>
+
+ <section xml:id="ffi.examples-complete">
+  <title>A Complete PHP/FFI/preloading Example</title>
+  <example>
+   <simpara><filename>php.ini</filename></simpara>
+   <programlisting role="ini">
+<![CDATA[
+ffi.enable=preload
+opcache.preload=preload.php
+]]>
+   </programlisting>
+   <simpara><filename>preload.php</filename></simpara>
+   <programlisting role="php">
+<![CDATA[
+<?php
+FFI::load(__DIR__ . "/dummy.h");
+opcache_compile_file(__DIR__ . "/dummy.php");
+?>
+]]>
+   </programlisting>
+   <simpara><filename>dummy.h</filename></simpara>
+   <programlisting role="c">
+<![CDATA[
+#define FFI_SCOPE "DUMMY"
+#define FFI_LIB "libc.so.6"
+ 
+int printf(const char *format, ...);
+]]>
+   </programlisting>
+   <simpara><filename>dummy.php</filename></simpara>
+   <programlisting role="php">
+<![CDATA[
+<?php
+final class Dummy {
+    private static $ffi = null;
+    function __construct() {
+        if (is_null(self::$ffi)) {
+            self::$ffi = FFI::scope("DUMMY");
+        }
+    }
+    function printf($format, ...$args) {
+       return (int)self::$ffi->printf($format, ...$args);
+    }
+}
+?>
+]]>
+   </programlisting>
+   <simpara><filename>test.php</filename></simpara>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$d = new Dummy();
+$d->printf("Hello %s!\n", "world");
+?>
+]]>
+   </programlisting>
+  </example>
+ </section>
+</chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
