@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision: 344522 $ -->
+
+<chapter xml:id="philosophy.parallel" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Philosophy</title>
+ <para>
+  This section contains philosohpies important to writing parallel code and some details about the internal implementation of parallel.
+ </para>
+ <simplesect role="sharing">
+   <title>Do not communicate by sharing memory; instead, share memory by communicating.</title>
+   <para>
+    This philosophy which is embraced by parallel has its origins in Go, one of the most widely admired if not used platforms for writing parallel code at the moment. 
+    Go programmers have to work hard to live up to this ideal: PHP and parallel do all the hard work for the programmer, and by default.
+   </para>
+   <para>
+    In conventional threading models found in other languages, generally threads are communicating with one another through nothing more than by virtue of the fact that 
+    they operate in the same address space.
+    The programmer must deploy mutual exclusion, condition variables, and other low level threading or synchronization primitives in order to ensure proper communication 
+    of state and consistency.
+   </para>
+   <para>
+    When the conventional model is inversed, it means that threads only share memory as a result of communication (a variable is passed over a Channel for example).
+   </para>
+   <para>
+    When parallel passes a variable from one thread to another by any means - Task arguments, return via Future, and Channels - it is passed by value. 
+    In all but the case of unbuffered channels, the variable is also buffered so that it may not change (or be destroyed) before it is used in whichever thread the variable 
+    is being passed to. An unbuffered read over a channel is the only instance in which a thread directly reads memory allocated by another thread, it can do so safely because 
+    the thread that owns the memory is waiting for the read to complete before it can continue to manipulate it, and the thread that does not own the memory reads by value. When
+    both threads continue, they are no longer sharing memory.
+   </para>
+   <para>
+    This makes writing and reasoning about parallel code much easier than the conventional model of threading. It means the programmer does not need to consider that threads 
+    may be manipulating data concurrently, because that is not possible.
+   </para>
+   <para>
+    This also makes PHP the perfect platform for implementing a parallel concurrency API based on CSP (message passing over channels), because PHP itself is shared nothing - 
+    PHP threads operate in their own virtual address space by default, and so may only share memory by communicating.
+   </para>
+ </simplesect>
+ <simplesect role="owning">
+  <title>Data should have a definitive single owner</title>
+  <para>
+   When approaching the CSP model for the first time, a programmer versed in the traditional model of threading may find themselves looking for concurrent data structures,
+   because that is what they are used too: they pass around shared objects for manipulation.
+  </para>
+  <para>
+   When it comes to the CSP model, there is no need for data structures to be shared by many tasks, and indeed, it is simpler if they are not. The data should be owned 
+   by a single task, changes to (or operations on) that data structure should be communicated over channels and performed by the owner of the data, the success, failure, 
+   or result (state) of the change (or operation) being communicated back.
+  </para>
+  <para>
+   Once again the share nothing nature of PHP and copy by value nature of parallel helps the programmer to achieve this goal, no data will be shared by accident, 
+   only ever as a result of communication.
+  </para>
+ </simplesect>
+</chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
