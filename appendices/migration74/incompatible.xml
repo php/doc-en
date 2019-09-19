@@ -4,9 +4,314 @@
 <sect1 xml:id="migration74.incompatible" xmlns:xlink="http://www.w3.org/1999/xlink">
  <title>Backward Incompatible Changes</title>
 
- <para>
-  <!-- TODO -->
- </para>
+ <sect2 xml:id="migration74.incompatible.core">
+  <title>PHP Core</title>
+
+  <sect3 xml:id="migration74.incompatible.core.non-array-access">
+   <title>Array-style access of non-arrays</title>
+
+   <para>
+    Trying to use values of type <type>null</type>, <type>bool</type>,
+    <type>int</type>, <type>float</type> or <type>resource</type> as an
+    array (such as <literal>$null["key"]</literal>) will now generate a notice.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration74.incompatible.core.get-declared-classes">
+   <title><function>get_declared_classes</function> function</title>
+
+   <para>
+    The <function>get_declared_classes</function> function no longer
+    returns anonymous classes that have not been instantiated yet.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration74.incompatible.core.fn">
+   <title><literal>fn</literal> keyword</title>
+
+   <para>
+    <literal>fn</literal> is now a reserved keyword. In particular,
+    it can no longer be used as a function or class name.
+    It can still be used as a method or class constant name.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration74.incompatible.core.php-tag">
+   <title><literal>&lt;?php</literal> tag at end of file</title>
+
+   <para>
+    <literal>&lt;?php</literal> at the end of the file (without trailing newline)
+    will now be interpreted as an opening PHP tag. Previously it was interpreted
+    either as a short opening tag followed by literal <literal>php</literal> and
+    resulted in a syntax error (with <literal>short_open_tag=1</literal>)
+    or was interpreted as a literal <literal>&lt;?php</literal> string
+    (with <literal>short_open_tag=0</literal>).
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration74.incompatible.core.stream-wrappers">
+   <title>Stream wrappers</title>
+
+   <para>
+    When using include/require on a stream,
+    <methodname>streamWrapper::stream_set_option</methodname>
+    will be invoked with the <constant>STREAM_OPTION_READ_BUFFER</constant> option.
+    Custom stream wrapper implementations may need to implement the
+    <methodname>streamWrapper::stream_set_option</methodname> method to
+    avoid a warning (always returning &false; is a sufficient implementation).
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration74.incompatible.core.serialization">
+   <title>Serialization</title>
+
+   <para>
+    The <literal>o</literal> serialization format has been removed.
+    As it is never produced by PHP, this may only break unserialization of
+    manually crafted strings.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration74.incompatible.core.password-algorithm-constants">
+   <title>Password algorithm constants</title>
+
+   <para>
+    Password hashing algorithm identifiers are now nullable strings rather
+    than integers.
+   </para>
+
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      <constant>PASSWORD_DEFAULT</constant> was int 1; now is &null;
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      <constant>PASSWORD_BCRYPT</constant> was int 1; now is string '2y'
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      <constant>PASSWORD_ARGON2I</constant> was int 2; now is string 'argon2i'
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      <constant>PASSWORD_ARGON2ID</constant> was int 3; now is string 'argon2id'
+     </simpara>
+    </listitem>
+   </itemizedlist>
+
+   <para>
+    Applications correctly using the constants PASSWORD_DEFAULT,
+    PASSWORD_BCRYPT, PASSWORD_ARGON2I, and PASSWORD_ARGON2ID will continue to
+    function correctly.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration74.incompatible.core.htmlentities">
+   <title><function>htmlentities</function> function</title>
+
+   <para>
+    <function>htmlentities</function> will now raise a notice
+    (instead of a strict standards warning) if it is used with
+    an encoding for which only basic entity substitution is supported,
+    in which case it is equivalent to <function>htmlspecialchars</function>.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration74.incompatible.core.fread-fwrite">
+   <title><function>fread</function> and <function>fwrite</function> function</title>
+
+   <para>
+    <function>fread</function> and <function>fwrite</function> will now
+    return &false; if the operation failed.
+    Previously an empty string or 0 was returned.
+    EAGAIN/EWOULDBLOCK are not considered failures.
+   </para>
+   <para>
+    These functions now also raise a notice on failure,
+    such as when trying to write to a read-only file resource.
+   </para>
+  </sect3>
+
+ </sect2>
+
+ <sect2 xml:id="migration74.incompatible.bcmath">
+  <title>BCMath Arbitrary Precision Mathematics</title>
+
+  <para>
+   BCMath functions will now warn if a non well-formed number is passed, such
+   as <literal>"32foo"</literal>. The argument will be interpreted as zero, as before.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="migration74.incompatible.curl">
+  <title>CURL</title>
+
+  <para>
+   Attempting to serialize a <classname>CURLFile</classname> class will now
+   generate an exception. Previously the exception was only thrown on unserialization.
+  </para>
+  <para>
+   Using <constant>CURLPIPE_HTTP1</constant> is deprecated, and is no longer
+   supported as of cURL 7.62.0.
+  </para>
+  <para>
+   The <literal>$version</literal> parameter of <function>curl_version</function>
+   is deprecated. If any value not equal to the default <constant>CURLVERSION_NOW</constant>
+   is passed, a warning is raised and the parameter is ignored.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="migration74.incompatible.datetime">
+  <title>Date and Time</title>
+
+  <para>
+   Calling <function>var_dump</function> or similar on a
+   <classname>DateTime</classname> or <classname>DateTimeImmutable</classname>
+   instance will no longer leave behind accessible properties on the object.
+  </para>
+  <para>
+   Comparison of <classname>DateInterval</classname> objects
+   (using <literal>==</literal>, <literal>&lt;</literal>, and so on) will now generate
+   a warning and always return &false;. Previously all <classname>DateInterval</classname>
+   objects were considered equal, unless they had properties.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="migration74.incompatible.intl">
+  <title>Intl</title>
+
+  <para>
+   The default parameter value of <function>idn_to_ascii</function> and
+   <function>idn_to_utf8</function> is now <constant>INTL_IDNA_VARIANT_UTS46</constant>
+   instead of the deprecated <constant>INTL_IDNA_VARIANT_2003</constant>.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="migration74.incompatible.mysqli">
+  <title>MySQLi</title>
+
+  <para>
+   The embedded server functionality has been removed. It was broken since
+   at least PHP 7.0.
+  </para>
+  <para>
+   The undocumented <literal>mysqli::$stat</literal> property has been removed
+   in favor of <methodname>mysqli::stat</methodname>.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="migration74.incompatible.openssl">
+  <title>OpenSSL</title>
+
+  <para>
+   The <function>openssl_random_pseudo_bytes</function> function will now
+   throw an exception in error situations, similar to <function>random_bytes</function>.
+   In particular, an <classname>Error</classname> is thrown if the number of
+   requested bytes is less than or equal to zero, and an <classname>Exception</classname>
+   is thrown if sufficient randomness cannot be gathered.
+   The <literal>$crypto_strong output</literal> argument is guaranteed to always
+   be &true; if the function does not throw, so explicitly checking it is not necessary.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="migration74.incompatible.pcre">
+  <title>Regular Expressions (Perl-Compatible)</title>
+
+  <para>
+   When <constant>PREG_UNMATCHED_AS_NULL</constant> mode is used, trailing
+   unmatched capturing groups will now also be set to &null; (or
+   <literal>[null, -1]</literal> if offset capture is enabled).
+   This means that the size of the <literal>$matches</literal> will always be the same.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="migration74.incompatible.pdo">
+  <title>PHP Data Objects</title>
+
+  <para>
+   Attempting to serialize a <classname>PDO</classname> or
+   <classname>PDOStatement</classname> instance will now generate
+   an <classname>Exception</classname> rather than a <classname>PDOException</classname>,
+   consistent with other internal classes which do not support serialization.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="migration74.incompatible.reflection">
+  <title>Reflection</title>
+
+  <para>
+   Reflection objects will now generate an exception if an attempt is made
+   to serialize them. Serialization for reflection objects was never
+   supported and resulted in corrupted reflection objects. It has been
+   explicitly prohibited now.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="migration74.incompatible.spl">
+  <title>Standard PHP Library (SPL)</title>
+
+  <para>
+   Calling <function>get_object_vars</function> on an <classname>ArrayObject</classname>
+   instance will now always return the properties of the <classname>ArrayObject</classname>
+   itself (or a subclass). Previously it returned the values of the wrapped
+   array/object unless the <constant>ArrayObject::STD_PROP_LIST</constant>
+   flag was specified.
+  </para>
+  <para>
+   Other affected operations are:
+  </para>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <methodname>ReflectionObject::getProperties</methodname>
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <function>reset</function>, <function>current</function>, etc.
+     Use <interfacename>Iterator</interfacename> methods instead.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Potentially others working on object properties as a list.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+  <para>
+   <literal>(array)</literal> casts are not affected. They will continue to
+   return either the wrapped array, or the <classname>ArrayObject</classname>
+   properties, depending on whether the <constant>ArrayObject::STD_PROP_LIST</constant>
+   flag is used.
+  </para>
+  <para>
+   <methodname>SplPriorityQueue::setExtractFlags</methodname> will throw
+   an exception if zero is passed. Previously this would generate a recoverable
+   fatal error on the next extraction operation.
+  </para>
+  <para>
+   <classname>ArrayObject</classname>, <classname>ArrayIterator</classname>,
+   <classname>SplDoublyLinkedList</classname> and <classname>SplObjectStorage</classname>
+   now support the <literal>__serialize()</literal> and <literal>__unserialize()</literal>
+   mechanism in addition to the <interfacename>Serializable</interfacename> interface.
+   This means that serialization payloads created on older PHP versions can still be
+   unserialized, but new payloads created by PHP 7.4 will not be understood by older versions.
+  </para>
+ </sect2>
+
+ <sect2 xml:id="migration74.incompatible.tokenizer">
+  <title>Tokenizer</title>
+
+  <para>
+   <function>token_get_all</function> will now emit a
+   <constant>T_BAD_CHARACTER</constant> token for unexpected
+   characters instead of leaving behind holes in the token stream.
+  </para>
+ </sect2>
 
 </sect1>
 
