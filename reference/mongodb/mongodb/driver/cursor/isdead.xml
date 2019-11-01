@@ -4,7 +4,7 @@
 <refentry xml:id="mongodb-driver-cursor.isdead" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MongoDB\Driver\Cursor::isDead</refname>
-  <refpurpose>Checks if the cursor may have additional results</refpurpose>
+  <refpurpose>Checks if the cursor is exhausted or may have additional results</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -14,16 +14,44 @@
    <void />
   </methodsynopsis>
   <para>
-   Checks whether the cursor may have additional results available to read. A
-   cursor is initially "alive" but may become "dead" for any of the following
-   reasons:
+   Checks whether there are definitely no additional results available on the
+   cursor. This method is similar to the
+   <link xlink:href="&url.mongodb.docs;reference/method/cursor.isExhausted/">cursor.isExhausted()</link>
+   method in the MongoDB shell and is primarily useful when iterating
+   <link xlink:href="&url.mongodb.docs;core/tailable-cursors/">tailable cursors</link>.
+  </para>
+  <para>
+   A cursor has no additional results and is considered "dead" when one of the
+   following is true:
    <simplelist>
-    <member>Advancing a non-tailable cursor did not return a document</member>
-    <member>The cursor encountered an error</member>
-    <member>The cursor read its last batch to completion</member>
-    <member>The cursor reached its configured limit</member>
+    <member>
+     The current batch has been fully iterated <emphasis>and</emphasis> the
+     cursor ID is zero (i.e. a 
+     <link xlink:href="&url.mongodb.docs;reference/command/getMore/">getMore</link>
+     cannot be issued).
+    </member>
+    <member>An error was encountered while iterating the cursor.</member>
+    <member>The cursor reached its configured limit.</member>
    </simplelist>
-   This is primarily useful with tailable cursors.
+  </para>
+  <para>
+   By design, it is not possible to always determine whether a cursor has
+   additional results. The cases where a cursor <emphasis>may</emphasis> have
+   more data available is as follows:
+   <simplelist>
+    <member>
+     There are additional documents in the current batch, which are buffered on
+     the client side. Iterating will fetch a document from the local buffer.
+    </member>
+    <member>
+     There are no additional documents in the current batch (i.e. local buffer),
+     but the cursor ID is non-zero. Iterating will request more documents from
+     the server via a
+     <link xlink:href="&url.mongodb.docs;reference/command/getMore/">getMore</link>
+     operation, which may or may not return additional results and/or indicate
+     that the cursor has been closed on the server by returning zero for its ID.
+    </member>
+   </simplelist>
   </para>
  </refsect1>
 
@@ -35,8 +63,8 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns &true; if additional results are not available, and &false;
-   otherwise.
+   Returns &true; if there are definitely no additional results available on the
+   cursor, and &false; otherwise.
   </para>
  </refsect1>
 
@@ -94,6 +122,14 @@ bool(true)
 ]]>
    </screen>
   </example>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <simplelist>
+   <member><link xlink:href="&url.mongodb.docs;core/tailable-cursors/">Tailable Cursors</link> in the MongoDB manual</member>
+   <member><link xlink:href="&url.mongodb.docs;reference/method/cursor.isExhausted/">cursor.isExhausted()</link> in the MongoDB manual</member>
+  </simplelist>
  </refsect1>
 
 </refentry>
