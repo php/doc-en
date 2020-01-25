@@ -252,8 +252,6 @@ function get_file_status($file) {
     $file_sizes_by_mark[REV_NOTAG] += $en_size;
     $missing_tags[] = array(substr($trans_file, strlen($DOCDIR)), $en_size, $trans_size, $size_diff);
     return FALSE;
-  } else {
-    $missing_tags = array();  
   }
 
   // Distribute values in separate vars for further processing
@@ -991,7 +989,11 @@ if (count($translation["files"]) != 0) {
 }
 
 // Files translated, but without a revision comment
-$count = count($missing_tags);
+if (isset($missing_tags)) {
+    $count = count($missing_tags);
+} else {
+    $count = 0;
+}
 
 if ($count > 0) {
   echo  "<a name=\"misstags\"></a>" .
