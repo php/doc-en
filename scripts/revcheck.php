@@ -252,6 +252,8 @@ function get_file_status($file) {
     $file_sizes_by_mark[REV_NOTAG] += $en_size;
     $missing_tags[] = array(substr($trans_file, strlen($DOCDIR)), $en_size, $trans_size, $size_diff);
     return FALSE;
+  } else {
+    $missing_tags = array();  
   }
 
   // Distribute values in separate vars for further processing
