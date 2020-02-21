@@ -49,6 +49,20 @@
       <para>
        The command to execute
       </para>
+      <note>
+       <simpara>
+        On <emphasis>Windows</emphasis>, unless <literal>bypass_shell</literal> is set to &true; in
+        <parameter>other_options</parameter>, the <parameter>cmd</parameter> is
+        passed to <command>cmd.exe</command> (actually, <literal>%ComSpec%</literal>)
+        with the <literal>/c</literal> flag as <emphasis>unquoted</emphasis> string
+        (i.e. exactly as has been given to <function>proc_open</function>).
+        This can cause <command>cmd.exe</command> to remove enclosing quotes from
+        <parameter>cmd</parameter> (for details see the <command>cmd.exe</command> documentation),
+        resulting in unexpected, and potentially even dangerous behavior, because
+        <command>cmd.exe</command> error messages may contain (parts of) the passed
+        <parameter>cmd</parameter> (see example below).
+       </simpara>
+      </note>
      </listitem>
     </varlistentry>
     <varlistentry>
@@ -247,6 +261,43 @@ Array
 command returned 0
 ]]>
     </screen>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title><function>proc_open</function> quirk on Windows</title>
+    <simpara>
+     While one may expect the following program to search the file
+     <filename>filename.txt</filename> for the text <literal>search</literal> and
+     to print the results, it behaves rather differently.
+    </simpara>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$descriptorspec = [STDIN, STDOUT, STDOUT];
+$cmd = '"findstr" "search" "filename.txt"';
+$proc = proc_open($cmd, $descriptorspec, $pipes);
+proc_close($proc);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+'findstr" "search" "filename.txt' is not recognized as an internal or external command,
+operable program or batch file.
+]]>
+    </screen>
+    <simpara>
+     To work around that behavior, it is usually sufficient to enclose the
+     <parameter>cmd</parameter> in additional quotes:
+    </simpara>
+    <programlisting role="php">
+<![CDATA[
+$cmd = '""findstr" "search" "filename.txt""';
+]]>
+    </programlisting>
    </example>
   </para>
 
