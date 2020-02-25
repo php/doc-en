@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+<refentry xmlns="http://docbook.org/ns/docbook" xml:id="function.openssl-x509-verify">
+ <refnamediv>
+  <refname>openssl_x509_verify</refname>
+  <refpurpose>Verifies digital signature of x509 certificate against a public key</refpurpose>
+ </refnamediv>
+ 
+ <refsect1 role="description">
+  &reftitle.description;
+  <methodsynopsis>
+   <type>int</type><methodname>openssl_x509_verify</methodname>
+   <methodparam><type>mixed</type><parameter>x509</parameter></methodparam>
+   <methodparam><type>mixed</type><parameter>pub_key_id</parameter></methodparam>
+  </methodsynopsis>
+  <para>
+   <function>openssl_x509_verify</function> verifies that the 
+   <parameter>x509</parameter> certificate was signed by the private 
+   key corresponding to public key <parameter>pub_key_id</parameter>.  
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <para>
+   <variablelist>
+    &openssl.param.x509;
+    <varlistentry>
+     <term><parameter>pub_key_id</parameter></term>
+     <listitem>
+      <para>
+       <type>resource</type> - a key, returned by <function>openssl_get_publickey</function>
+      </para>
+      <para>
+       <type>string</type> - a PEM formatted key, example, "-----BEGIN PUBLIC KEY-----
+MIIBCgK..."
+      </para>     
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   Returns 1 if the signature is correct, 0 if it is incorrect, and
+   -1 on error.
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>openssl_x509_verify</function> example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$hostname = "news.php.net";
+$ssloptions = array(
+    "capture_peer_cert" => true, 
+    "capture_peer_cert_chain" => true, 
+    "allow_self_signed"=> false, 
+    "CN_match" => $hostname,
+    "verify_peer" => true,
+    "SNI_enabled" => true,
+    "SNI_server_name" => $hostname,
+);
+ 
+$ctx = stream_context_create( array("ssl" => $ssloptions) );
+$result = stream_socket_client("ssl://$hostname:443", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $ctx);
+$cont = stream_context_get_params($result);
+$x509 = $cont["options"]["ssl"]["peer_certificate"];
+$certparsed = openssl_x509_parse($x509);
+
+foreach($cont["options"]["ssl"]["peer_certificate_chain"] as $chaincert)
+{
+    $chainparsed = openssl_x509_parse($chaincert);
+    $chain_public_key = openssl_get_publickey($chaincert);
+    $r = openssl_x509_verify($x509, $chain_public_key);   
+    if ($r==1)
+    {
+        echo $certparsed['subject']['CN'];
+        echo " was digitally signed by ";
+        echo $chainparsed['subject']['CN']."\n";
+    }
+}
+?>
+]]>
+    </programlisting>
+   </example>
+
+  </para>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><function>openssl_verify</function></member>
+    <member><function>openssl_get_publickey</function></member>
+   </simplelist>
+  </para>
+ </refsect1>
+
+</refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
