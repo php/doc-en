@@ -55,9 +55,52 @@ if ($mysqli->connect_errno) {
     exit;
 }
 
-// Perform an SQL query
-$sql = "SELECT actor_id, first_name, last_name FROM actor WHERE actor_id = $aid";
-if (!$result = $mysqli->query($sql)) {
+// Perform a simple SQL query without parameters
+$sql = "SELECT actor_id, first_name, last_name FROM actor ORDER BY rand() LIMIT 5";
+if (false === ($result = $mysqli->query($sql))) {
+    // Oh no! The query failed.
+    echo "Sorry, the website is experiencing problems.";
+
+    // Again, do not do this on a public site, but we'll show you how
+    // to get the error information
+    echo "Error: Our query failed to execute and here is why: \n";
+    echo "Query: " . $sql . "\n";
+    echo "Errno: " . $mysqli->errno . "\n";
+    echo "Error: " . $mysqli->error . "\n";
+    exit;
+}
+
+// Print our 5 random actors in a list, and link to each actor
+echo "<ul>\n";
+while ($actor = $result->fetch_assoc()) {
+    echo "<li><a href='" . $_SERVER['SCRIPT_FILENAME'] . "?aid=" . $actor['actor_id'] . "'>\n";
+    echo $actor['first_name'] . ' ' . $actor['last_name'];
+    echo "</a></li>\n";
+}
+echo "</ul>\n";
+
+// Perform an SQL query with parameters
+// We use a prepared query here to avoid errors caused by unexpected or improperly escaped values
+// These issues can lead to an SQL injection attack that may allow visitors to craft queries that
+// perform unexpected changes or access data they would not otherwise be able to access.
+$stmt = $mysqli->prepare("SELECT actor_id, first_name, last_name FROM actor WHERE actor_id=?")
+if ($stmt === false) {
+    // Oh no! The query failed.
+    echo "Sorry, the website is experiencing problems.";
+
+    // Again, do not do this on a public site, but we'll show you how
+    // to get the error information
+    echo "Error: Our query failed to execute and here is why: \n";
+    echo "Query: " . $sql . "\n";
+    echo "Errno: " . $mysqli->errno . "\n";
+    echo "Error: " . $mysqli->error . "\n";
+    exit;
+}
+/* bind parameters for markers */
+$stmt->bind_param("s", $aid);
+
+/* execute query */
+if (! $stmt->execute()) {
     // Oh no! The query failed. 
     echo "Sorry, the website is experiencing problems.";
 
@@ -72,7 +115,7 @@ if (!$result = $mysqli->query($sql)) {
 
 // Phew, we made it. We know our MySQL connection and query 
 // succeeded, but do we have a result?
-if ($result->num_rows === 0) {
+if ($stmt->num_rows === 0) {
     // Oh, no rows! Sometimes that's expected and okay, sometimes
     // it is not. You decide. In this case, maybe actor_id was too
     // large? 
@@ -83,25 +126,8 @@ if ($result->num_rows === 0) {
 // Now, we know only one result will exist in this example so let's 
 // fetch it into an associated array where the array's keys are the 
 // table's column names
-$actor = $result->fetch_assoc();
+$actor = $stmt->fetch_assoc();
 echo "Sometimes I see " . $actor['first_name'] . " " . $actor['last_name'] . " on TV.";
-
-// Now, let's fetch five random actors and output their names to a list.
-// We'll add less error handling here as you can do that on your own now
-$sql = "SELECT actor_id, first_name, last_name FROM actor ORDER BY rand() LIMIT 5";
-if (!$result = $mysqli->query($sql)) {
-    echo "Sorry, the website is experiencing problems.";
-    exit;
-}
-
-// Print our 5 random actors in a list, and link to each actor
-echo "<ul>\n";
-while ($actor = $result->fetch_assoc()) {
-    echo "<li><a href='" . $_SERVER['SCRIPT_FILENAME'] . "?aid=" . $actor['actor_id'] . "'>\n";
-    echo $actor['first_name'] . ' ' . $actor['last_name'];
-    echo "</a></li>\n";
-}
-echo "</ul>\n";
 
 // The script will automatically free the result and close the MySQL
 // connection when it exits, but let's just do it anyways
