@@ -14,6 +14,8 @@
    <link linkend="object.unset">__unset()</link>,
    <link linkend="object.sleep">__sleep()</link>,
    <link linkend="object.wakeup">__wakeup()</link>,
+   <link linkend="object.serialize">__serialize()</link>,
+   <link linkend="object.unserialize">__unserialize()</link>,
    <link linkend="object.tostring">__toString()</link>,
    <link linkend="object.invoke">__invoke()</link>,
    <link linkend="object.set-state">__set_state()</link>,
@@ -50,12 +52,12 @@
     <void/>
    </methodsynopsis>
    <methodsynopsis xml:id="object.wakeup">
-    <type>void</type><methodname>__wakeup</methodname>
+    <modifier>public</modifier> <type>void</type><methodname>__wakeup</methodname>
     <void/>
    </methodsynopsis>
    
    <para>
-    <function>serialize</function> checks if your class has a function with
+    <function>serialize</function> checks if the class has a function with
     the magic name <link linkend="object.sleep">__sleep()</link>. If so, that function is
     executed prior to any serialization. It can clean up the object
     and is supposed to return an array with the names of all variables
@@ -119,6 +121,107 @@ class Connection
     
     public function __wakeup()
     {
+        $this->connect();
+    }
+}?>
+]]>
+    </programlisting>
+   </example>
+  </sect2>
+
+  <sect2 xml:id="language.oop5.magic.serialize">
+   <title>
+    <link linkend="object.serialize">__serialize()</link> and
+    <link linkend="object.unserialize">__unserialize()</link>
+   </title>
+
+   <methodsynopsis xml:id="object.serialize">
+    <modifier>public</modifier> <type>array</type><methodname>__serialize</methodname>
+    <void/>
+   </methodsynopsis>
+   <methodsynopsis xml:id="object.unserialize">
+    <modifier>public</modifier> <type>void</type><methodname>__unserialize</methodname>
+    <methodparam><type>array</type><parameter>data</parameter></methodparam>
+   </methodsynopsis>
+
+   <para>
+    <function>serialize</function> checks if the class has a function with
+    the magic name <link linkend="object.serialize">__serialize()</link>. If so, that function is
+    executed prior to any serialization. It must construct and return an associative array of key/value pairs
+    that represent the serialized form of the object. If no array is returned a <classname>TypeError</classname>
+    will be thrown.
+   </para>
+   <note>
+    <para>
+     If both <link linkend="object.serialize">__serialize()</link> and <link linkend="object.sleep">__sleep()</link>
+     are defined in the same object, only <link linkend="object.serialize">__serialize()</link> will be called.
+     <link linkend="object.sleep">__sleep()</link> will be ignored. If the object implements the <link linkend="class.serializable">Serializable</link>
+     interface, the interface's <literal>serialize()</literal> method will be ignored and <link linkend="object.serialize">__serialize()</link>
+     used instead.
+    </para>
+   </note>
+   <para>
+    The intended use of <link linkend="object.serialize">__serialize()</link> is to define a serialization-friendly
+    arbitrary representation of the object. Elements of the array may correspond to properties of the object but
+    that is not required.
+   </para>
+   <para>
+    Conversely, <function>unserialize</function> checks for the
+    presence of a function with the magic name
+    <link linkend="object.unserialize">__unserialize()</link>. If present, this function will be passed the
+    restored array that was returned from <link linkend="object.serialize">__serialize()</link>.  It may
+    then restore the properties of the object from that array as appropriate.
+   </para>
+   <note>
+    <para>
+     If both <link linkend="object.unserialize">__unserialize()</link> and <link linkend="object.wakeup">__wakeup()</link>
+     are defined in the same object, only <link linkend="object.unserialize">__unserialize()</link> will be called.
+     <link linkend="object.wakeup">__wakeup()</link> will be ignored.
+    </para>
+   </note>
+   <note>
+    <para>
+     This feature is available since PHP 7.4.0.
+    </para>
+   </note>
+   <example>
+    <title>Serialize and unserialize</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class Connection
+{
+    protected $link;
+    private $dsn, $username, $password;
+
+    public function __construct($dsn, $username, $password)
+    {
+        $this->dsn = $dsn;
+        $this->username = $username;
+        $this->password = $password;
+        $this->connect();
+    }
+
+    private function connect()
+    {
+        $this->link = new PDO($this->dsn, $this->username, $this->password);
+    }
+
+    public function __serialize(): array
+    {
+        return [
+          'dsn' => $this->dsn,
+          'user' => $this->username,
+          'pass' => $this->password,
+        ];
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->dsn = $data['dsn'];
+        $this->username = $data['user'];
+        $this->password = $data['pass'];
+
         $this->connect();
     }
 }?>
