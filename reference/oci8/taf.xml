@@ -67,7 +67,7 @@
       (DESCRIPTION =
         (ADDRESS = (PROTOCOL = TCP)(HOST = 127.0.0.1)(PORT = 1521))
         (CONNECT_DATA =
-          (SERVICE_NAME = orcl)
+          (SERVICE_NAME = orclpdb1)
           (FAILOVER_MODE =
             (TYPE = SELECT)
             (METHOD = BASIC)
@@ -121,7 +121,7 @@
      <term><parameter>connection</parameter></term>
      <listitem>
       <para>
-       The Oracle connection on which the TAF callback was 
+       The Oracle connection on which the TAF callback was
        registered via <function>oci_register_taf_callback</function>.
        The connection is not valid until the
        failover completes successfully.
@@ -133,7 +133,7 @@
      <listitem>
       <para>
        The failover event indicates the current status of
-       the failover. 
+       the failover.
       </para>
       <para>
        <itemizedlist>
@@ -249,11 +249,10 @@ class MyClass {
     {
         switch ($event) {
             case OCI_FO_BEGIN:
-                printf(" Failing Over ... Please stand by");
+                printf(" Failing Over ... Please stand by\n");
                 printf(" Failover type was found to be %s \n",
                        (($type==OCI_FO_SESSION) ? "SESSION"
-                        :($type==OCI_FO_SELECT) ? "SELECT"
-                        : "UNKNOWN!"));
+                        :(($type==OCI_FO_SELECT) ? "SELECT" : "UNKNOWN!")));
                 self::$retry_count = 0;
                 break;
             case OCI_FO_ABORT:
@@ -286,36 +285,53 @@ class MyClass {
     }
 }
 
-$conn = oci_connect('hr', 'welcome', 'localhost/XE');
 $fn_name = 'MyClass::TAFCallback';
 
-oci_register_taf_callback($conn, $fn_name); // Register TAFCallback to Oracle TAF 
+$conn = oci_connect('hr', 'welcome', 'orcl');
+$sysconn = oci_connect('system', 'oracle', 'orcl');
 
-$sql = "SELECT col1 FROM mytab";
+// Use a privileged connection to construct a SQL statement that will initiate failover
+$sql = <<< 'END'
+select unique 'alter system disconnect session '''||sid||','||serial#||''''
+from v$session_connect_info
+where sid = sys_context('USERENV', 'SID')
+END;
+
+$s = oci_parse($conn, $sql);
+oci_execute($s);
+$r = oci_fetch_array($s);
+$disconnectssql = $r[0];
+
+oci_register_taf_callback($conn, $fn_name); // Register TAFCallback to Oracle TAF
+
+print("Parsing user query\n");
+$sql = "select systimestamp from dual";
 $stmt = oci_parse($conn, $sql);
-oci_define_by_name($stmt, 'COL1', $col1);
 
 // For example, if a connection loss occurs at this point, oci_execute() will
 // detect the loss and failover begins. During failover, oci_execute() will
 // invoke the TAF callback function several times. If the failover is successful,
 // a new connection is transparently created and oci_execute() will continue as
 // usual. The connection session settings can be reset in the TAF callback
-// function. If the failover is aborted, oci_execute() will return an error 
+// function. If the failover is aborted, oci_execute() will return an error
 // because a valid connection is not available.
 
+// Disconnect the user, which initiates failover
+print("Disconnecting the user\n");
+$discsql = oci_parse($sysconn, $disconnectssql);
+oci_execute($discsql);
+
+print("Executing user query\n");
 $e = oci_execute($stmt);
-if ($e == false)
-{
-    // do error handling, if oci_execute() fails
-    // var_dump(oci_error($stmt));
+if (!$e) {
+    $m = oci_error($stmt);
+    trigger_error('Could not bind a parameter: '. $m['message'], E_USER_ERROR);
 }
-while (oci_fetch($stmt))
-{
-    echo "COL1 value is $col1<br>\n";
-}
+$row = oci_fetch_array($stmt);
+print($row[0] . "\n");
 
 // do other SQL statements with the new connection, if it is valid
-// $stmt = oci_parse($conn,  . . .); 
+// $stmt = oci_parse($conn,  . . .);
 
 ?>
 ]]>
