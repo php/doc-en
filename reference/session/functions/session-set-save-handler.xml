@@ -46,8 +46,8 @@
      <listitem>
       <para>
        An instance of a class implementing
-       <interfacename>SessionHandlerInterface</interfacename>,
-       <interfacename>SessionIdInterface</interfacename>, and/or
+       <interfacename>SessionHandlerInterface</interfacename>, and optionally
+       <interfacename>SessionIdInterface</interfacename> and/or
        <interfacename>SessionUpdateTimestampHandlerInterface</interfacename>, such as
        <classname>SessionHandler</classname>, to register as the session
        handler. Since PHP 5.4 only.
@@ -69,8 +69,16 @@
 
    <variablelist>
     <varlistentry>
-     <term><parameter>open(string $savePath, string $sessionName)</parameter></term>
+     <term><parameter>open</parameter></term>
      <listitem>
+      <para>
+       A callable with the following signature:
+       <methodsynopsis>
+        <type>bool</type><methodname><replaceable>open</replaceable></methodname>
+        <methodparam><type>string</type><parameter>savePath</parameter></methodparam>
+        <methodparam><type>string</type><parameter>sessionName</parameter></methodparam>
+       </methodsynopsis>
+      </para>
       <para>
        The open callback works like a constructor in classes and is
        executed when the session is being opened.  It is the first callback
@@ -81,8 +89,15 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>close()</parameter></term>
+     <term><parameter>close</parameter></term>
      <listitem>
+      <para>
+       A callable with the following signature:
+       <methodsynopsis>
+        <type>bool</type><methodname><replaceable>close</replaceable></methodname>
+        <void/>
+       </methodsynopsis>
+      </para>
       <para>
        The close callback works like a destructor in classes and is
        executed after the session write callback has been called. It is also invoked when
@@ -92,8 +107,15 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>read(string $sessionId)</parameter></term>
+     <term><parameter>read</parameter></term>
      <listitem>
+      <para>
+       A callable with the following signature:
+       <methodsynopsis>
+        <type>bool</type><methodname><replaceable>read</replaceable></methodname>
+        <methodparam><type>string</type><parameter>sessionId</parameter></methodparam>
+       </methodsynopsis>
+      </para>
       <para>
        The <parameter>read</parameter> callback must always return a session encoded (serialized)
        string, or an empty string if there is no data to read.
@@ -113,8 +135,16 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>write(string $sessionId, string $data)</parameter></term>
+     <term><parameter>write</parameter></term>
      <listitem>
+      <para>
+       A callable with the following signature:
+       <methodsynopsis>
+        <type>bool</type><methodname><replaceable>write</replaceable></methodname>
+        <methodparam><type>string</type><parameter>sessionId</parameter></methodparam>
+        <methodparam><type>string</type><parameter>data</parameter></methodparam>
+       </methodsynopsis>
+      </para>
       <para>
        The <parameter>write</parameter> callback is called when the session needs to be saved and closed. This
        callback receives the current session ID a serialized version the <varname>$_SESSION</varname> superglobal.  The serialization
@@ -141,8 +171,15 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>destroy($sessionId)</parameter></term>
+     <term><parameter>destroy</parameter></term>
      <listitem>
+      <para>
+       A callable with the following signature:
+       <methodsynopsis>
+        <type>bool</type><methodname><replaceable>destroy</replaceable></methodname>
+        <methodparam><type>string</type><parameter>sessionId</parameter></methodparam>
+       </methodsynopsis>
+      </para>
       <para>
        This callback is executed when a session is destroyed with <function>session_destroy</function> or with
        <function>session_regenerate_id</function> with the destroy parameter set to &true;.
@@ -151,8 +188,15 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>gc($lifetime)</parameter></term>
+     <term><parameter>gc</parameter></term>
      <listitem>
+      <para>
+       A callable with the following signature:
+       <methodsynopsis>
+        <type>bool</type><methodname><replaceable>gc</replaceable></methodname>
+        <methodparam><type>int</type><parameter>lifetime</parameter></methodparam>
+       </methodsynopsis>
+      </para>
       <para>
        The garbage collector callback is invoked internally by PHP periodically in order to
        purge old session data.  The frequency is controlled by
@@ -163,12 +207,56 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>create_sid()</parameter></term>
+     <term><parameter>create_sid</parameter></term>
      <listitem>
+      <para>
+       A callable with the following signature:
+       <methodsynopsis>
+        <type>string</type><methodname><replaceable>create_sid</replaceable></methodname>
+        <void/>
+       </methodsynopsis>
+      </para>
       <para>
        This callback is executed when a new session ID is required. No
        parameters are provided, and the return value should be a string that
        is a valid session ID for your handler.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>validate_sid</parameter></term>
+     <listitem>
+      <para>
+       A callable with the following signature:
+       <methodsynopsis>
+        <type>bool</type><methodname><replaceable>validate_sid</replaceable></methodname>
+        <methodparam><type>string</type><parameter>key</parameter></methodparam>
+       </methodsynopsis>
+      </para>
+      <para>
+       This callback is executed when a session is to be started, a session ID is supplied
+       and <link linkend="ini.session.use-strict-mode">session.use_strict_mode</link> is enabled.
+       The <parameter>key</parameter> is the session ID to validate.
+       A session ID is valid, if a session with that ID already exists.
+       The return value should be &true; for success, &false; for failure.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>update_timestamp</parameter></term>
+     <listitem>
+      <para>
+       A callable with the following signature:
+       <methodsynopsis>
+        <type>string</type><methodname><replaceable>update_timestamp</replaceable></methodname>
+        <methodparam><type>string</type><parameter>key</parameter></methodparam>
+        <methodparam><type>string</type><parameter>val</parameter></methodparam>
+       </methodsynopsis>
+      </para>
+      <para>
+       This callback is executed when a session is updated.
+       <parameter>key</parameter> is the session ID, <parameter>val</parameter> is the session data.
+       The return value should be &true; for success, &false; for failure.
       </para>
      </listitem>
     </varlistentry>
