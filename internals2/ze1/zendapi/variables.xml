@@ -1,35 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
  <!-- $Revision$ -->
- <sect2 xml:id="internals2.ze1.zendapi.variables" xmlns="http://docbook.org/ns/docbook"> 
+ <sect2 xml:id="internals2.ze1.zendapi.variables" xmlns="http://docbook.org/ns/docbook">
   <title>Creating Variables</title>
   <para>
    When exchanging data from your own extensions with PHP scripts, one
    of the most important issues is the creation of variables. This
    section shows you how to deal with the variable types that PHP
    supports.
-  </para> 
-  <sect3 xml:id="internals2.ze1.zendapi.variables.overview"> 
-   <title>Overview</title> 
+  </para>
+  <sect3 xml:id="internals2.ze1.zendapi.variables.overview">
+   <title>Overview</title>
    <para>
     To create new variables that can be seen "from the outside" by the
     executing script, you need to allocate a new <envar>zval</envar>
     container, fill this container with meaningful values, and then
     introduce it to Zend's internal symbol table. This basic process
-    is common to all variable creations: 
+    is common to all variable creations:
    </para>
    <programlisting role="c">
 <![CDATA[
-zval *new_variable; 
+zval *new_variable;
 
 /* allocate and initialize new container */
-MAKE_STD_ZVAL(new_variable); 
+MAKE_STD_ZVAL(new_variable);
 
-/* set type and variable contents here, see the following sections */ 
+/* set type and variable contents here, see the following sections */
 
 /* introduce this variable by the name "new_variable_name" into the symbol table */
-ZEND_SET_SYMBOL(EG(active_symbol_table), "new_variable_name", new_variable); 
+ZEND_SET_SYMBOL(EG(active_symbol_table), "new_variable_name", new_variable);
 
-/* the variable is now accessible to the script by using $new_variable_name */ 
+/* the variable is now accessible to the script by using $new_variable_name */
 ]]>
    </programlisting>
    <para>
@@ -47,7 +47,7 @@ ZEND_SET_SYMBOL(EG(active_symbol_table), "new_variable_name", new_variable);
     <envar>zval</envar> container here), you can use
     <literal>ALLOC_ZVAL</literal>, but this isn't recommended because
     it doesn't ensure data integrity.
-   </para> 
+   </para>
    <para>
     <literal>ZEND_SET_SYMBOL</literal> takes care of introducing the
     new variable to Zend's symbol table. This macro checks whether the
@@ -56,7 +56,7 @@ ZEND_SET_SYMBOL(EG(active_symbol_table), "new_variable_name", new_variable);
     old <envar>zval</envar> container). This is the preferred method
     if speed is not a crucial issue and you'd like to keep memory
     usage low.
-   </para> 
+   </para>
    <para>
     Note that <literal>ZEND_SET_SYMBOL</literal> makes use of the Zend
     executor globals via the macro <literal>EG</literal>. By
@@ -64,12 +64,12 @@ ZEND_SET_SYMBOL(EG(active_symbol_table), "new_variable_name", new_variable);
     currently active symbol table, dealing with the active, local scope. The local
     scope may differ depending on whether the function was invoked from
     within a function.
-   </para> 
+   </para>
    <para>
     If you need to optimize for speed and don't care about optimal memory
     usage, you can omit the check for an existing variable with the same value and instead
     force insertion into the symbol table by using
-    <function>zend_hash_update</function>: 
+    <function>zend_hash_update</function>:
     <programlisting role="c">
 <![CDATA[
 zval *new_variable;
@@ -91,16 +91,16 @@ zend_hash_update(
 ]]>
     </programlisting>
     This is actually the standard method used in most modules.
-   </para> 
+   </para>
    <para>
     The variables generated with the snippet above will always be of local
     scope, so they reside in the context in which the function has been called. To
     create new variables in the global scope, use the same method
-    but refer to another symbol table: 
+    but refer to another symbol table:
     <programlisting role="c">
 <![CDATA[
 zval *new_variable;
-     
+
 // allocate and initialize new container
 MAKE_STD_ZVAL(new_variable);
 
@@ -123,10 +123,10 @@ ZEND_SET_SYMBOL(&EG(symbol_table), "new_variable_name", new_variable);
     <literal>EG(active_symbol_table)</literal> and
     <literal>&amp;EG(symbol_table)</literal> as parameters to
     <literal>ZEND_SET_SYMBOL</literal> - it requires a pointer.
-   </para> 
+   </para>
    <para>
     Similarly, to get a more efficient version, you can hardcode the
-    symbol table update: 
+    symbol table update:
     <programlisting role="c">
 <![CDATA[
 zval *new_variable;
@@ -151,16 +151,16 @@ zend_hash_update(
     </programlisting>
     <xref linkend="internals2.ze1.zendapi.example.variable-scopes"/> shows a sample source that
     creates two variables - <envar>local_variable</envar> with a local scope
-    and <envar>global_variable</envar> with a global scope (see Figure 9.7). 
+    and <envar>global_variable</envar> with a global scope (see Figure 9.7).
     The full example can be found on the CD-ROM.
    </para>
    <para>
     Note: You can see that the global variable is actually not accessible from
     within the function. This is because it's not imported into the local scope
-    using <literal>global $global_variable;</literal> in the PHP source. 
-   </para> 
+    using <literal>global $global_variable;</literal> in the PHP source.
+   </para>
    <example xml:id="internals2.ze1.zendapi.example.variable-scopes">
-    <title>Creating variables with different scopes.</title> 
+    <title>Creating variables with different scopes.</title>
     <programlisting role="c">
 <![CDATA[
 ZEND_FUNCTION(variable_creation)
@@ -187,20 +187,20 @@ ZEND_FUNCTION(variable_creation)
       <imagedata fileref="en/internals2/ze1/zendapi/figures/zend.06-variable-creation.png"/>
      </imageobject>
     </mediaobject>
-   </example> 
-  </sect3> 
+   </example>
+  </sect3>
 
-  <sect3 xml:id="internals2.ze1.zendapi.variables.long"> 
-   <title>Longs (Integers)</title> 
+  <sect3 xml:id="internals2.ze1.zendapi.variables.long">
+   <title>Longs (Integers)</title>
    <para>Now let's get to the assignment of data to variables, starting with
     longs. Longs are PHP's integers and are very simple to store. Looking at
     the <envar>zval.value</envar> container structure discussed earlier in this
     chapter, you can see that the long data type is directly contained in the union,
-    namely in the <envar>lval</envar> field. The corresponding 
-    <envar>type</envar> value for longs is <literal>IS_LONG</literal> 
-    (see <xref linkend="internals2.ze1.zendapi.example.create-long"/>). 
-    <example xml:id="internals2.ze1.zendapi.example.create-long"> 
-     <title>Creation of a long.</title> 
+    namely in the <envar>lval</envar> field. The corresponding
+    <envar>type</envar> value for longs is <literal>IS_LONG</literal>
+    (see <xref linkend="internals2.ze1.zendapi.example.create-long"/>).
+    <example xml:id="internals2.ze1.zendapi.example.create-long">
+     <title>Creation of a long.</title>
      <programlisting role="c">
 <![CDATA[
 zval *new_long;
@@ -210,7 +210,7 @@ MAKE_STD_ZVAL(new_long);
 new_long-&gt;type = IS_LONG;
 new_long-&gt;value.lval = 10;
 ]]>
-     </programlisting> 
+     </programlisting>
     </example>
     Alternatively, you can use the macro <literal>ZVAL_LONG</literal>:
     <programlisting role="c">
@@ -221,16 +221,16 @@ MAKE_STD_ZVAL(new_long);
 ZVAL_LONG(new_long, 10);
 ]]>
     </programlisting>
-   </para> 
-  </sect3> 
+   </para>
+  </sect3>
 
-  <sect3 xml:id="internals2.ze1.zendapi.variables.float"> 
-   <title>Doubles (Floats)</title> 
+  <sect3 xml:id="internals2.ze1.zendapi.variables.float">
+   <title>Doubles (Floats)</title>
    <para>
     Doubles are PHP's floats and are as easy to assign as longs, because their value
-    is also contained directly in the union. The member in the 
-    <envar>zval.value</envar> container is <envar>dval</envar>; 
-    the corresponding type is <literal>IS_DOUBLE</literal>. 
+    is also contained directly in the union. The member in the
+    <envar>zval.value</envar> container is <envar>dval</envar>;
+    the corresponding type is <literal>IS_DOUBLE</literal>.
     <programlisting role="c">
 <![CDATA[
 zval *new_double;
@@ -250,11 +250,11 @@ MAKE_STD_ZVAL(new_double);
 ZVAL_DOUBLE(new_double, 3.45);
 ]]>
     </programlisting>
-   </para> 
-  </sect3> 
+   </para>
+  </sect3>
 
-  <sect3 xml:id="internals2.ze1.zendapi.variables.string"> 
-   <title>Strings</title> 
+  <sect3 xml:id="internals2.ze1.zendapi.variables.string">
+   <title>Strings</title>
    <para>
     Strings need slightly more effort. As mentioned earlier, all strings
     that will be associated with Zend's internal data structures need to be
@@ -294,17 +294,17 @@ ZVAL_STRING(new_string, string_contents, 1);
     duplicated; <literal>0</literal> simply uses the supplied pointer for the
     variable contents. This is most useful if you want to create a new variable
     referring to a string that's already allocated in Zend internal memory.
-   </para> 
+   </para>
    <para>
     If you want to truncate the string at a certain position or you
     already know its length, you can use <literal>ZVAL_STRINGL(zval,
      string, length, duplicate)</literal>, which accepts an explicit
     string length to be set for the new string. This macro is faster
     than <literal>ZVAL_STRING</literal> and also binary-safe.
-   </para> 
+   </para>
    <para>
     To create empty strings, set the string length to <literal>0</literal> and
-    use <literal>empty_string</literal> as contents: 
+    use <literal>empty_string</literal> as contents:
     <programlisting role="c">
 <![CDATA[
 new_string-&gt;type = IS_STRING;
@@ -320,11 +320,11 @@ MAKE_STD_ZVAL(new_string);
 ZVAL_EMPTY_STRING(new_string);
 ]]>
     </programlisting>
-   </para> 
-  </sect3> 
+   </para>
+  </sect3>
 
-  <sect3 xml:id="internals2.ze1.zendapi.variables.boolean"> 
-   <title>Booleans</title> 
+  <sect3 xml:id="internals2.ze1.zendapi.variables.boolean">
+   <title>Booleans</title>
    <para>
     Booleans are created just like longs, but have the
     type <literal>IS_BOOL</literal>. Allowed values in
@@ -344,22 +344,22 @@ new_bool-&gt;value.lval = 1;
     as <literal>ZVAL_TRUE</literal> and <literal>ZVAL_FALSE</literal> (which
     explicitly set the value to <literal>TRUE</literal> and <literal>FALSE</literal>,
     respectively).
-   </para> 
-  </sect3> 
+   </para>
+  </sect3>
 
-  <sect3 xml:id="internals2.ze1.zendapi.variables.array"> 
-   <title>Arrays</title> 
+  <sect3 xml:id="internals2.ze1.zendapi.variables.array">
+   <title>Arrays</title>
    <para>
     Arrays are stored using Zend's internal hash tables, which can be
     accessed using the <function>zend_hash_*</function> API. For every
     array that you want to create, you need a new hash table handle,
     which will be stored in the <envar>ht</envar> member of the
     <envar>zval.value</envar> container.
-   </para> 
+   </para>
    <para>
     There's a whole API solely for the creation of arrays, which is extremely
     handy. To start a new array, you call
-    <function>array_init</function>. 
+    <function>array_init</function>.
     <programlisting role="c">
 <![CDATA[
 zval *new_array;
@@ -370,10 +370,10 @@ array_init(new_array);
 ]]>
      </programlisting>
     <function>array_init</function> always returns <literal>SUCCESS</literal>.
-   </para> 
+   </para>
    <para>
     To add new elements to the array, you can use numerous functions,
-    depending on what you want to do. 
+    depending on what you want to do.
     <xref linkend="internals2.ze1.zendapi.tab.api-assoc-arrays"/>,
     <xref linkend="internals2.ze1.zendapi.tab.api-indexed-arrays"/> and
     <xref linkend="internals2.ze1.zendapi.tab.api-indexed-array-2"/>
@@ -385,213 +385,213 @@ array_init(new_array);
     <title>Zend's API for Associative Arrays</title>
 <!--
     <programlisting>
-Note: The functions in this table all operate on the array "array" with the key "key". 
+Note: The functions in this table all operate on the array "array" with the key "key".
 The key string doesn't have to reside in Zend internal memory; it will be duplicated by the API.
     </programlisting>
 -->
      <tgroup cols="2">
       <colspec colnum="1" colname="col1" colwidth="*"/>
-      <colspec colnum="2" colname="col2" colwidth="*"/> 
-      <tbody> 
-       <row> 
-        <entry colname="col1">Function</entry> 
-        <entry colname="col2">Description</entry> 
-       </row> 
-       <row> 
+      <colspec colnum="2" colname="col2" colwidth="*"/>
+      <tbody>
+       <row>
+        <entry colname="col1">Function</entry>
+        <entry colname="col2">Description</entry>
+       </row>
+       <row>
         <entry colname="col1">
          <function>add_assoc_long(zval *array, char *key, long n);</function>
-        </entry> 
-        <entry colname="col2">Adds an element of type <literal>long</literal>.</entry> 
-       </row> 
-       <row> 
+        </entry>
+        <entry colname="col2">Adds an element of type <literal>long</literal>.</entry>
+       </row>
+       <row>
         <entry colname="col1">
-         <function>add_assoc_unset(zval *array, char *key);</function></entry> 
-        <entry colname="col2">Adds an unset element.</entry> 
-       </row> 
-       <row> 
+         <function>add_assoc_unset(zval *array, char *key);</function></entry>
+        <entry colname="col2">Adds an unset element.</entry>
+       </row>
+       <row>
         <entry colname="col1">
          <function>add_assoc_bool(zval *array, char *key, int b);</function>
-        </entry> 
-        <entry colname="col2">Adds a Boolean element.</entry> 
-       </row> 
-       <row> 
+        </entry>
+        <entry colname="col2">Adds a Boolean element.</entry>
+       </row>
+       <row>
         <entry colname="col1">
          <function>add_assoc_resource(zval *array, char *key, int r);</function>
-        </entry> 
-        <entry colname="col2">Adds a resource to the array.</entry> 
-       </row> 
-       <row> 
+        </entry>
+        <entry colname="col2">Adds a resource to the array.</entry>
+       </row>
+       <row>
         <entry colname="col1">
          <function>add_assoc_double(zval *array, char *key, double d);</function>
-        </entry> 
-        <entry colname="col2">Adds a floating-point value.</entry> 
-       </row> 
-       <row> 
+        </entry>
+        <entry colname="col2">Adds a floating-point value.</entry>
+       </row>
+       <row>
         <entry colname="col1">
          <function>add_assoc_string(zval *array, char *key, char *str, int duplicate);</function>
-        </entry> 
+        </entry>
         <entry colname="col2">
          Adds a string to the array. The
          flag <envar>duplicate</envar> specifies whether the string contents have to be
          copied to Zend internal memory.
-        </entry> 
-       </row> 
-       <row> 
+        </entry>
+       </row>
+       <row>
         <entry colname="col1">
          <function>
           add_assoc_stringl(zval *array, char *key, char *str, uint length, int duplicate);
          </function>
-        </entry> 
+        </entry>
         <entry colname="col2">
          Adds a string with the desired length <envar>length</envar>
          to the array. Otherwise, behaves like
          <function>add_assoc_string</function>.
-        </entry> 
-       </row> 
+        </entry>
+       </row>
        <row>
         <entry colname="col1"><function>add_assoc_zval(zval *array, char *key, zval *value);</function></entry>
         <entry colname="col2">Adds a zval to the array.  Useful for adding other arrays, objects, streams, etc...</entry>
        </row>
-      </tbody> 
-     </tgroup> 
-   </table> 
+      </tbody>
+     </tgroup>
+   </table>
    <table xml:id="internals2.ze1.zendapi.tab.api-indexed-arrays">
-    <title>Zend's API for Indexed Arrays, Part 1</title> 
+    <title>Zend's API for Indexed Arrays, Part 1</title>
 <!--
     <programlisting>
 Note: The functions in this table all operate on the array "array" with the index "idx".
 The index is always an integer.
-    </programlisting> 
+    </programlisting>
 -->
      <tgroup cols="2">
       <colspec colnum="1" colname="col1" colwidth="*"/>
-      <colspec colnum="2" colname="col2" colwidth="*"/> 
-      <tbody> 
-       <row> 
-        <entry colname="col1">Function</entry> 
-        <entry colname="col2">Description</entry> 
-       </row> 
-       <row> 
+      <colspec colnum="2" colname="col2" colwidth="*"/>
+      <tbody>
+       <row>
+        <entry colname="col1">Function</entry>
+        <entry colname="col2">Description</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_index_long(zval *array, uint idx, long
-          n);</function></entry> 
-        <entry colname="col2">Adds an element of type <literal>long</literal>.</entry> 
-       </row> 
-       <row> 
+          n);</function></entry>
+        <entry colname="col2">Adds an element of type <literal>long</literal>.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_index_unset(zval *array, uint
-          idx);</function></entry> 
-        <entry colname="col2">Adds an unset element.</entry> 
-       </row> 
-       <row> 
+          idx);</function></entry>
+        <entry colname="col2">Adds an unset element.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_index_bool(zval *array, uint idx, int
-          b);</function></entry> 
-        <entry colname="col2">Adds a Boolean element.</entry> 
-       </row> 
-       <row> 
+          b);</function></entry>
+        <entry colname="col2">Adds a Boolean element.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_index_resource(zval *array, uint idx, int
-          r);</function></entry> 
-        <entry colname="col2">Adds a resource to the array.</entry> 
-       </row> 
-       <row> 
+          r);</function></entry>
+        <entry colname="col2">Adds a resource to the array.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_index_double(zval *array, uint idx, double
-          d);</function></entry> 
-        <entry colname="col2">Adds a floating-point value.</entry> 
-       </row> 
-       <row> 
+          d);</function></entry>
+        <entry colname="col2">Adds a floating-point value.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_index_string(zval *array, uint idx, char
-          *str, int duplicate);</function></entry> 
+          *str, int duplicate);</function></entry>
         <entry colname="col2">Adds a string to the array. The
          flag <envar>duplicate</envar> specifies whether the string contents have to be
-         copied to Zend internal memory.</entry> 
-       </row> 
-       <row> 
+         copied to Zend internal memory.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_index_stringl(zval *array, uint idx, char
-          *str, uint length, int duplicate);</function></entry> 
+          *str, uint length, int duplicate);</function></entry>
         <entry colname="col2">Adds a string with the desired
-         length <envar>length</envar> to the array. This function is faster and binary-safe. Otherwise, behaves like <function>add_index_string</function>.</entry> 
-       </row> 
+         length <envar>length</envar> to the array. This function is faster and binary-safe. Otherwise, behaves like <function>add_index_string</function>.</entry>
+       </row>
        <row>
         <entry colname="col1"><function>add_index_zval(zval *array, uint idx, zval *value);</function></entry>
         <entry colname="col2">Adds a zval to the array.  Useful for adding other arrays, objects, streams, etc...</entry>
        </row>
-      </tbody> 
-     </tgroup> 
-   </table> 
+      </tbody>
+     </tgroup>
+   </table>
    <table xml:id="internals2.ze1.zendapi.tab.api-indexed-array-2">
-    <title>Zend's API for Indexed Arrays, Part 2</title> 
+    <title>Zend's API for Indexed Arrays, Part 2</title>
 <!--
     <programlisting>
 Note: The functions in this table all operate on the array "array".
 These functions automatically generate a new index based on the highest index found in the array.
-    </programlisting> 
+    </programlisting>
 -->
      <tgroup cols="2">
       <colspec colnum="1" colname="col1" colwidth="*"/>
-      <colspec colnum="2" colname="col2" colwidth="*"/> 
-      <tbody> 
-       <row> 
-        <entry colname="col1">Function</entry> 
-        <entry colname="col2">Description</entry> 
-       </row> 
-       <row> 
+      <colspec colnum="2" colname="col2" colwidth="*"/>
+      <tbody>
+       <row>
+        <entry colname="col1">Function</entry>
+        <entry colname="col2">Description</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_next_index_long(zval *array, long
-          n);</function></entry> 
-        <entry colname="col2">Adds an element of type <literal>long</literal>.</entry> 
-       </row> 
-       <row> 
+          n);</function></entry>
+        <entry colname="col2">Adds an element of type <literal>long</literal>.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_next_index_unset(zval
-          *array);</function></entry> 
-        <entry colname="col2">Adds an unset element.</entry> 
-       </row> 
-       <row> 
+          *array);</function></entry>
+        <entry colname="col2">Adds an unset element.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_next_index_bool(zval *array, int
-          b);</function></entry> 
-        <entry colname="col2">Adds a Boolean element.</entry> 
-       </row> 
-       <row> 
+          b);</function></entry>
+        <entry colname="col2">Adds a Boolean element.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_next_index_resource(zval *array, int
-          r);</function></entry> 
-        <entry colname="col2">Adds a resource to the array.</entry> 
-       </row> 
-       <row> 
+          r);</function></entry>
+        <entry colname="col2">Adds a resource to the array.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_next_index_double(zval *array, double
-          d);</function></entry> 
-        <entry colname="col2">Adds a floating-point value.</entry> 
-       </row> 
-       <row> 
+          d);</function></entry>
+        <entry colname="col2">Adds a floating-point value.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_next_index_string(zval *array, char *str,
-          int duplicate);</function></entry> 
+          int duplicate);</function></entry>
         <entry colname="col2">Adds a string to the array. The
          flag <envar>duplicate</envar> specifies whether the string contents have to be
-         copied to Zend internal memory.</entry> 
-       </row> 
-       <row> 
+         copied to Zend internal memory.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_next_index_stringl(zval *array, char *str,
-          uint length, int duplicate);</function></entry> 
+          uint length, int duplicate);</function></entry>
         <entry colname="col2">Adds a string with the desired
-         length <envar>length</envar> to the array. This function is faster and binary-safe. Otherwise, behaves like <function>add_index_string</function>.</entry> 
-       </row> 
+         length <envar>length</envar> to the array. This function is faster and binary-safe. Otherwise, behaves like <function>add_index_string</function>.</entry>
+       </row>
        <row>
         <entry colname="col1"><function>add_next_index_zval(zval *array, zval *value);</function></entry>
         <entry colname="col2">Adds a zval to the array.  Useful for adding other arrays, objects, streams, etc...</entry>
        </row>
-      </tbody> 
-     </tgroup> 
-   </table> 
+      </tbody>
+     </tgroup>
+   </table>
    <para>
     All these functions provide a handy abstraction to Zend's internal hash
     API. Of course, you can also use the hash functions directly - for example, if
-    you already have a <envar>zval</envar> container allocated that you want to 
+    you already have a <envar>zval</envar> container allocated that you want to
     insert into an array. This is done using <function>zend_hash_update</function>
-    for associative arrays (see <xref linkend="internals2.ze1.zendapi.example.array-add-assoc"/>) and 
-    <function>zend_hash_index_update</function> for indexed arrays 
-    (see <xref linkend="internals2.ze1.zendapi.example.array-add-indexed"/>): 
+    for associative arrays (see <xref linkend="internals2.ze1.zendapi.example.array-add-assoc"/>) and
+    <function>zend_hash_index_update</function> for indexed arrays
+    (see <xref linkend="internals2.ze1.zendapi.example.array-add-indexed"/>):
     <example xml:id="internals2.ze1.zendapi.example.array-add-assoc">
-     <title>Adding an element to an associative array.</title> 
+     <title>Adding an element to an associative array.</title>
      <programlisting role="c">
 <![CDATA[
 zval *new_array, *new_element;
 char *key = "element_key";
-      
+
 MAKE_STD_ZVAL(new_array);
 MAKE_STD_ZVAL(new_element);
 
@@ -604,10 +604,10 @@ if(zend_hash_update(new_array-&gt;value.ht, key, strlen(key) + 1, (void *)&new_e
     // do error handling here
 }
 ]]>
-     </programlisting> 
-    </example> 
+     </programlisting>
+    </example>
     <example xml:id="internals2.ze1.zendapi.example.array-add-indexed">
-     <title>Adding an element to an indexed array.</title> 
+     <title>Adding an element to an indexed array.</title>
      <programlisting role="c">
 <![CDATA[
 zval *new_array, *new_element;
@@ -625,9 +625,9 @@ if(zend_hash_index_update(new_array-&gt;value.ht, key, (void *)&new_element, siz
     // do error handling here
 }
 ]]>
-     </programlisting> 
+     </programlisting>
     </example>
-   </para> 
+   </para>
    <para>
     To emulate the functionality of
     <function>add_next_index_*</function>, you can use this:
@@ -636,32 +636,32 @@ if(zend_hash_index_update(new_array-&gt;value.ht, key, (void *)&new_element, siz
 <![CDATA[
 zend_hash_next_index_insert(ht, zval **new_element, sizeof(zval *), NULL)
 ]]>
-   </programlisting> 
+   </programlisting>
    <para>
     <emphasis>Note:</emphasis> To return arrays from a function, use <function>array_init</function> and
     all following actions on the predefined variable <envar>return_value</envar>
     (given as argument to your exported function; see the earlier discussion of the call interface). You do not have to use
     <literal>MAKE_STD_ZVAL</literal> on this.
-   </para> 
+   </para>
    <para>
     <emphasis>Tip:</emphasis> To avoid having to
     write <literal>new_array-&gt;value.ht</literal> every time, you can
     use <literal>HASH_OF(new_array)</literal>, which is also recommended for
     compatibility and style reasons.
-   </para> 
-  </sect3> 
+   </para>
+  </sect3>
 
-  <sect3 xml:id="internals2.ze1.zendapi.variables.object"> 
-   <title>Objects</title> 
+  <sect3 xml:id="internals2.ze1.zendapi.variables.object">
+   <title>Objects</title>
    <para>
     Since objects can be converted to arrays (and vice versa), you
     might have already guessed that they have a lot of similarities to
     arrays in PHP. Objects are maintained with the same hash
     functions, but there's a different API for creating them.
-   </para> 
+   </para>
    <para>
     To initialize an object, you use the
-    function <function>object_init</function>: 
+    function <function>object_init</function>:
     <programlisting role="c">
 <![CDATA[
 zval *new_object;
@@ -674,63 +674,63 @@ if(object_init(new_object) != SUCCESS)
 }
 ]]>
     </programlisting>
-    You can use the functions described in 
-    <xref linkend="internals2.ze1.zendapi.tab.object-creation"/> 
+    You can use the functions described in
+    <xref linkend="internals2.ze1.zendapi.tab.object-creation"/>
     to add members to your object.
-   </para> 
+   </para>
    <table xml:id="internals2.ze1.zendapi.tab.object-creation">
-    <title>Zend's API for Object Creation</title> 
+    <title>Zend's API for Object Creation</title>
 <!--
    <programlisting>
      Note: All functions in this table work on the object "object" with the key "key". The key forms the member name,
      so the resulting member can be accessed via $object-&gt;key.
-    </programlisting> 
+    </programlisting>
 -->
      <tgroup cols="2">
       <colspec colnum="1" colname="col1" colwidth="1.24*"/>
-      <colspec colnum="2" colname="col2" colwidth="1.00*"/> 
-      <tbody> 
-       <row> 
-        <entry colname="col1">Function</entry> 
-        <entry colname="col2">Description</entry> 
-       </row> 
-       <row> 
+      <colspec colnum="2" colname="col2" colwidth="1.00*"/>
+      <tbody>
+       <row>
+        <entry colname="col1">Function</entry>
+        <entry colname="col2">Description</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_property_long(zval *object, char *key, long
-          l);</function></entry> 
-        <entry colname="col2">Adds a long to the object.</entry> 
-       </row> 
-       <row> 
+          l);</function></entry>
+        <entry colname="col2">Adds a long to the object.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_property_unset(zval *object, char
-          *key);</function></entry> 
-        <entry colname="col2">Adds an unset property to the object.</entry> 
-       </row> 
-       <row> 
+          *key);</function></entry>
+        <entry colname="col2">Adds an unset property to the object.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_property_bool(zval *object, char *key, int
-          b);</function></entry> 
-        <entry colname="col2">Adds a Boolean to the object.</entry> 
-       </row> 
-       <row> 
+          b);</function></entry>
+        <entry colname="col2">Adds a Boolean to the object.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_property_resource(zval *object, char *key,
-          long r);</function></entry> 
-        <entry colname="col2">Adds a resource to the object.</entry> 
-       </row> 
-       <row> 
+          long r);</function></entry>
+        <entry colname="col2">Adds a resource to the object.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_property_double(zval *object, char *key,
-          double d);</function></entry> 
-        <entry colname="col2">Adds a double to the object.</entry> 
-       </row> 
-       <row> 
+          double d);</function></entry>
+        <entry colname="col2">Adds a double to the object.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_property_string(zval *object, char *key,
-          char *str, int duplicate);</function></entry> 
-        <entry colname="col2">Adds a string to the object.</entry> 
-       </row> 
-       <row> 
+          char *str, int duplicate);</function></entry>
+        <entry colname="col2">Adds a string to the object.</entry>
+       </row>
+       <row>
         <entry colname="col1"><function>add_property_stringl(zval *object, char *key,
-          char *str, uint length, int duplicate);</function></entry> 
+          char *str, uint length, int duplicate);</function></entry>
         <entry colname="col2">Adds a string of the specified length to the object. This
          function is faster than <function>add_property_string</function> and also
-         binary-safe.</entry> 
-       </row> 
+         binary-safe.</entry>
+       </row>
 
        <row>
         <entry colname="col1">
@@ -743,11 +743,11 @@ if(object_init(new_object) != SUCCESS)
         </entry>
        </row>
 
-      </tbody> 
-     </tgroup> 
-   </table> 
-  </sect3> 
-  
+      </tbody>
+     </tgroup>
+   </table>
+  </sect3>
+
   <sect3 xml:id="zend.variables.resource">
    <title>Resources</title>
    <para>
@@ -854,7 +854,7 @@ ZEND_API int zend_register_list_destructors_ex(rsrc_dtor_func_t ld, rsrc_dtor_fu
     <programlisting role="c">
 <![CDATA[
 typedef struct _zend_rsrc_list_entry {
-     
+
     void *ptr;
     int type;
     int refcount;
@@ -872,7 +872,7 @@ typedef struct _zend_rsrc_list_entry {
     <programlisting role="c">
 <![CDATA[
 typedef struct {
-     
+
     int resource_link;
     int resource_type;
 
@@ -999,7 +999,7 @@ int ZEND_REGISTER_RESOURCE(zval *rsrc_result, void *rsrc_pointer, int rsrc_type)
     <programlisting role="c">
 <![CDATA[
     rsrc_id = zend_list_insert(rsrc_pointer, rsrc_type);
-     
+
     if (rsrc_result) {
         rsrc_result->value.lval = rsrc_id;
         rsrc_result->type = IS_RESOURCE;
@@ -1105,8 +1105,8 @@ ZEND_FETCH_RESOURCE(rsrc, rsrc_type, rsrc_id, default_rsrc_id, resource_type_nam
    </para>
   </sect3>
 
-  <sect3 xml:id="internals2.ze1.zendapi.variables.global"> 
-   <title>Macros for Automatic Global Variable Creation</title> 
+  <sect3 xml:id="internals2.ze1.zendapi.variables.global">
+   <title>Macros for Automatic Global Variable Creation</title>
    <para>
     In addition to the macros discussed earlier, a few macros allow
     easy creation of simple global variables. These are nice to know
@@ -1115,75 +1115,75 @@ ZEND_FETCH_RESOURCE(rsrc, rsrc_type, rsrc_id, default_rsrc_id, resource_type_nam
     describes macros that do
     exactly this task. They don't need any <envar>zval</envar>
     allocation; you simply have to supply a variable name and value.
-   </para> 
+   </para>
    <table xml:id="internals2.ze1.zendapi.tab.macros-global-vars">
     <title>Macros for Global Variable Creation</title>
-<!--    
+<!--
  <programlisting>
      Note: All macros in this table create a global variable of the name "name" with the value "value".
-    </programlisting> 
+    </programlisting>
 -->
      <tgroup cols="2">
       <colspec colnum="1" colname="col1" colwidth="*"/>
-      <colspec colnum="2" colname="col2" colwidth="*"/> 
-      <tbody> 
-       <row> 
-        <entry colname="col1">Macro</entry> 
-        <entry colname="col2">Description</entry> 
-       </row> 
-       <row> 
-        <entry colname="col1"><literal>SET_VAR_STRING(name, value)</literal></entry> 
-        <entry colname="col2">Creates a new string.</entry> 
-       </row> 
-       <row> 
+      <colspec colnum="2" colname="col2" colwidth="*"/>
+      <tbody>
+       <row>
+        <entry colname="col1">Macro</entry>
+        <entry colname="col2">Description</entry>
+       </row>
+       <row>
+        <entry colname="col1"><literal>SET_VAR_STRING(name, value)</literal></entry>
+        <entry colname="col2">Creates a new string.</entry>
+       </row>
+       <row>
         <entry colname="col1"><literal>SET_VAR_STRINGL(name, value,
-          length)</literal></entry> 
+          length)</literal></entry>
         <entry colname="col2">Creates a new string of the specified length. This macro
-         is faster than <literal>SET_VAR_STRING</literal> and also binary-safe.</entry> 
-       </row> 
-       <row> 
-        <entry colname="col1"><literal>SET_VAR_LONG(name, value)</literal></entry> 
-        <entry colname="col2">Creates a new long.</entry> 
-       </row> 
-       <row> 
-        <entry colname="col1"><literal>SET_VAR_DOUBLE(name, value)</literal></entry> 
-        <entry colname="col2">Creates a new double.</entry> 
-       </row> 
-      </tbody> 
-     </tgroup> 
-   </table> 
-  </sect3> 
+         is faster than <literal>SET_VAR_STRING</literal> and also binary-safe.</entry>
+       </row>
+       <row>
+        <entry colname="col1"><literal>SET_VAR_LONG(name, value)</literal></entry>
+        <entry colname="col2">Creates a new long.</entry>
+       </row>
+       <row>
+        <entry colname="col1"><literal>SET_VAR_DOUBLE(name, value)</literal></entry>
+        <entry colname="col2">Creates a new double.</entry>
+       </row>
+      </tbody>
+     </tgroup>
+   </table>
+  </sect3>
 
   <sect3 xml:id="internals2.ze1.zendapi.variables.constant">
-   <title>Creating Constants</title> 
+   <title>Creating Constants</title>
    <para>
     Zend supports the creation of true constants (as opposed to
     regular variables). Constants are accessed without the typical
     dollar sign (<literal>$</literal>) prefix and are available in all
     scopes. Examples include <literal>TRUE</literal> and
     <literal>FALSE</literal>, to name just two.
-   </para> 
+   </para>
    <para>
     To create your own constants, you can use the macros in
     <xref linkend="internals2.ze1.zendapi.tab.create-const"/>.
     All the macros create a constant with the specified name and value.
    </para>
    <para>
-    You can also specify flags for each constant: 
-    <itemizedlist> 
-     <listitem> 
+    You can also specify flags for each constant:
+    <itemizedlist>
+     <listitem>
       <para>
        <literal>CONST_CS</literal> - This constant's name is to be
        treated as case sensitive.
-      </para> 
-     </listitem> 
-     <listitem> 
+      </para>
+     </listitem>
+     <listitem>
       <para>
        <literal>CONST_PERSISTENT</literal> - This constant is
        persistent and won't be "forgotten" when the current process
        carrying this constant shuts down.
-      </para> 
-     </listitem> 
+      </para>
+     </listitem>
     </itemizedlist> To use the flags, combine them using a inary OR:
     <programlisting> // register a new constant of type "long"
      REGISTER_LONG_CONSTANT("NEW_MEANINGFUL_CONSTANT", 324, CONST_CS |
@@ -1195,52 +1195,52 @@ ZEND_FETCH_RESOURCE(rsrc, rsrc_type, rsrc_id, default_rsrc_id, resource_type_nam
     the constant is unloaded from memory. The second type creates
     constants that remain in the symbol table independently of the
     module.
-   </para> 
+   </para>
    <table xml:id="internals2.ze1.zendapi.tab.create-const">
-    <title>Macros for Creating Constants</title> 
+    <title>Macros for Creating Constants</title>
      <tgroup cols="2">
       <colspec colnum="1" colname="col1" colwidth="1.53*"/>
-      <colspec colnum="2" colname="col2" colwidth="1.00*"/> 
-      <tbody> 
-       <row> 
-        <entry colname="col1">Macro</entry> 
-        <entry colname="col2">Description</entry> 
-       </row> 
-       <row> 
-        <entry colname="col1"> 
+      <colspec colnum="2" colname="col2" colwidth="1.00*"/>
+      <tbody>
+       <row>
+        <entry colname="col1">Macro</entry>
+        <entry colname="col2">Description</entry>
+       </row>
+       <row>
+        <entry colname="col1">
          <literal>REGISTER_LONG_CONSTANT(name, value, flags)</literal>
          <literal>REGISTER_MAIN_LONG_CONSTANT(name, value, flags)</literal>
-        </entry> 
-        <entry colname="col2">Registers a new constant of type long.</entry> 
-       </row> 
-       <row> 
-        <entry colname="col1"> 
+        </entry>
+        <entry colname="col2">Registers a new constant of type long.</entry>
+       </row>
+       <row>
+        <entry colname="col1">
          <literal>REGISTER_DOUBLE_CONSTANT(name, value, flags)</literal>
          <literal>REGISTER_MAIN_DOUBLE_CONSTANT(name, value, flags)</literal>
-        </entry> 
-        <entry colname="col2">Registers a new constant of type double.</entry> 
-       </row> 
-       <row> 
-        <entry colname="col1"> 
+        </entry>
+        <entry colname="col2">Registers a new constant of type double.</entry>
+       </row>
+       <row>
+        <entry colname="col1">
          <literal>REGISTER_STRING_CONSTANT(name, value, flags)</literal>
          <literal>REGISTER_MAIN_STRING_CONSTANT(name, value, flags)</literal>
-        </entry> 
+        </entry>
         <entry colname="col2"> Registers a new constant of type string. The specified
-         string must reside in Zend's internal memory.</entry> 
-       </row> 
-       <row> 
-        <entry colname="col1"> 
-         <literal>REGISTER_STRINGL_CONSTANT(name, value, length, flags)</literal> 
+         string must reside in Zend's internal memory.</entry>
+       </row>
+       <row>
+        <entry colname="col1">
+         <literal>REGISTER_STRINGL_CONSTANT(name, value, length, flags)</literal>
          <literal>REGISTER_MAIN_STRINGL_CONSTANT(name, value, length,
           flags)</literal>
-        </entry> 
+        </entry>
         <entry colname="col2">Registers a new constant of type string. The string length
          is explicitly set to <envar>length</envar>. The specified string must reside
-         in Zend's internal memory.</entry> 
-       </row> 
-      </tbody> 
-     </tgroup> 
-   </table> 
+         in Zend's internal memory.</entry>
+       </row>
+      </tbody>
+     </tgroup>
+   </table>
   </sect3>
  </sect2>
 <!-- Keep this comment at the end of the file
