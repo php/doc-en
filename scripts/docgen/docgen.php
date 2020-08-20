@@ -202,6 +202,26 @@ function get_type_by_string($str) { /* {{{ */
 }
 /* }}} */
 
+/** @return string|null */
+function get_type_as_string(ReflectionType $type = null) { /* {{{ */
+	if ($type instanceof ReflectionNamedType) {
+		$ret = $type->getName();
+		if ($type->allowsNull()) {
+			$ret .= '|null';
+		}
+		return $ret;
+	}
+	if ($type instanceof ReflectionUnionType) {
+		$types = array_map(function($type) {return $type->getName();}, $type->getTypes());
+		return implode('|', $types);
+	}
+	if ($type instanceof ReflectionType) {
+		return (string) $type;
+	}
+	return null;
+}
+/* }}} */
+
 function create_dir($path) { /* {{{ */
 	global $OPTION;
 
@@ -223,15 +243,13 @@ function create_markup_to_params(array $params, $ident) { /* {{{ */
 	$markup = "";
 	foreach ($params as $param) {
 		/* Parameter type */
-		if (preg_match('/(\w+) \$/', (string) $param, $match)) {
-			/* 'array or NULL' is used for array type-hint */
-			$type = $match[1] == 'NULL' ? 'array' : $match[1];
-		} else {
-			$type = 'string';
+		$type = get_type_as_string($param->getType());
+		if ($type === null) {
+			$type = 'mixed';
 			if (!$param->getName()) {
 				add_warning(sprintf("Parameter name not found, param%d used", $count));
 			}
-			add_warning(sprintf("Type hint for parameter `%s' not found, 'string' used", ($param->getName() ? $param->getName() : $count)));
+			add_warning(sprintf("Type hint for parameter `%s' not found, 'mixed' used", ($param->getName() ? $param->getName() : $count)));
 		}
 
 		$markup .= sprintf("%s<methodparam%s><type>%s</type><parameter%s>%s</parameter></methodparam>". PHP_EOL,
@@ -314,6 +332,14 @@ function gen_function_markup(ReflectionFunction $function, $content) { /* {{{ */
 	/* {FUNCTION_NAME} */
 	$content = preg_replace('/\{FUNCTION_NAME\}/', $function->getName(), $content);
 
+	/* {RETURN_TYPE} */
+	$type = get_type_as_string($function->getReturnType());
+	if ($type === null) {
+		$type = 'mixed';
+		add_warning(sprintf("Return type hint for function `%s' not found, 'mixed' used", $function->getName()));
+	}
+	$content = preg_replace('/\{RETURN_TYPE\}/', "<type>$type</type>", $content, 1);
+
 	/* {FUNCTION_PARAMETERS}, {PARAMETERS_DESCRIPTION} */
 	$content = create_markup_to_parameter_section($function, $content);
 
@@ -342,7 +368,12 @@ function gen_method_markup(ReflectionMethod $method, $content) { /* {{{ */
 
 	/* {RETURN_TYPE} */
 	if (!$method->isConstructor()) {
-		$content = preg_replace('/\{RETURN_TYPE\}/', '<type>ReturnType</type>', $content, 1);
+		$type = get_type_as_string($method->getReturnType());
+		if ($type === null) {
+			$type = 'mixed';
+			add_warning(sprintf("Return type hint for method `%s' not found, 'mixed' used", $method->getName()));
+		}
+		$content = preg_replace('/\{RETURN_TYPE\}/', "<type>$type</type>", $content, 1);
 	} else {
 		$content = preg_replace('/\{RETURN_TYPE\}/', '', $content, 1);
 	}

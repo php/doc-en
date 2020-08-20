@@ -10,7 +10,7 @@
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <type>ReturnType</type><methodname>{FUNCTION_NAME}</methodname>
+   {RETURN_TYPE}<methodname>{FUNCTION_NAME}</methodname>
    {FUNCTION_PARAMETERS}
   </methodsynopsis>
   <para>
