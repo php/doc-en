@@ -46,12 +46,12 @@
       A <link xlink:href="&url.mongodb.docs;reference/connection-string/">mongodb://</link> connection URI:
       <programlisting role="txt">
 <![CDATA[
-mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[defaultAuthDb][?options]]
 ]]>
       </programlisting>
      </para>
      <para>
-      For details on supported options, see
+      For details on supported URI options, see
       <link xlink:href="&url.mongodb.docs;reference/connection-string/#connections-connection-options">Connection String Options</link>
       in the MongoDB manual.
       <link xlink:href="&url.mongodb.docs;reference/connection-string/#connection-pool-options">Connection pool options</link>
@@ -67,6 +67,15 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
       path may contain special characters such as slashes and must be encoded.
       The <function>rawurlencode</function> function may be used to encode
       constituent parts of the URI.
+     </para>
+     <para>
+      The <literal>defaultAuthDb</literal> component may be used to specify the
+      database name associated with the user's credentials; however the
+      <literal>authSource</literal> URI option will take priority if specified.
+      If neither <literal>defaultAuthDb</literal> nor
+      <literal>authSource</literal> are specified, the <literal>admin</literal>
+      database will be used by default. The <literal>defaultAuthDb</literal>
+      component has no effect in the absence of user credentials.
      </para>
     </listitem>
    </varlistentry>
@@ -145,7 +154,8 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           <entry>
            <para>
             The database name associated with the user's credentials. Defaults
-            to the database component of the connection URI.
+            to the database component of the connection URI, or the
+            <literal>admin</literal> database if both are unspecified.
            </para>
            <para>
             For authentication mechanisms that delegate credential storage to
@@ -194,6 +204,23 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
            <para>
             The time in milliseconds to attempt a connection before timing out.
             Defaults to 10,000 milliseconds.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>directConnection</entry>
+          <entry><type>boolean</type></entry>
+          <entry>
+           <para>
+            This option can be used to control replica set discovery behavior
+            when only a single host is provided in the connection string. By
+            default, providing a single member in the connection string will
+            establish a direct connection or discover additional members
+            depending on whether the <literal>"replicaSet"</literal> URI option
+            is omitted or present, respectively. Specify &false; to force
+            discovery to occur (if <literal>"replicaSet"</literal> is omitted)
+            or specify &true; to force a direct connection (if
+            <literal>"replicaSet"</literal> is present).
            </para>
           </entry>
          </row>
@@ -534,13 +561,34 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           </entry>
          </row>
          <row>
+          <entry>tlsDisableCertificateRevocationCheck</entry>
+          <entry><type>boolean</type></entry>
+          <entry>
+           <para>
+            If &true;, the driver will not attempt to check certificate
+            revocation status (e.g. OCSP, CRL). Defaults to &false;.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>tlsDisableOCSPEndpointCheck</entry>
+          <entry><type>boolean</type></entry>
+          <entry>
+           <para>
+            If &true;, the driver will not attempt to contact an OCSP responder
+            endpoint if needed (i.e. an OCSP response is not stapled). Defaults
+            to &false;.
+           </para>
+          </entry>
+         </row>
+         <row>
           <entry>tlsInsecure</entry>
           <entry><type>boolean</type></entry>
           <entry>
            <para>
             Relax TLS constraints as much as possible. Specifying &true; for
             this option has the same effect as specifying &true; for both the
-            <literal>tlsAllowInvalidCertificates</literal> and
+            <literal>"tlsAllowInvalidCertificates"</literal> and
             <literal>"tlsAllowInvalidHostnames"</literal> URI options. Defaults
             to &false;.
            </para>
@@ -809,6 +857,28 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           <entry>Path to a certificate revocation list file.</entry>
          </row>
          <row>
+          <entry>driver</entry>
+          <entry><type>array</type></entry>
+          <entry>
+           <para>
+            Allows custom drivers to append their own metadata to the server
+            handshake. By default, the driver submits its own name, version, and
+            platform (i.e. PHP version) in the handshake. Custom drivers can
+            specify strings for the <literal>"name"</literal>,
+            <literal>"version"</literal>, and
+            <literal>"platform"</literal> keys of this array, which will be
+            appended to the respective field(s) in the handshake document.
+           </para>
+           <note>
+            <simpara>
+             Handshake information is limited to 512 bytes. The driver will
+             truncate handshake data to fit within this 512-byte string. Drivers
+             and ODMs are encouraged to keep their own metadata concise.
+            </simpara>
+           </note>
+          </entry>
+         </row>
+         <row>
           <entry>pem_file</entry>
           <entry><type>string</type></entry>
           <entry>
@@ -876,6 +946,19 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
       </row>
      </thead>
      <tbody>
+      <row>
+       <entry>1.8.0</entry>
+       <entry>
+        <para>
+         Added the <literal>"directConnection"</literal>,
+         <literal>"tlsDisableCertificateRevocationCheck"</literal>, and
+         <literal>"tlsDisableOCSPEndpointCheck"</literal> URI options.
+        </para>
+        <para>
+         Added the <literal>"driver"</literal> driver option.
+        </para>
+       </entry>
+      </row>
       <row>
        <entry>1.7.0</entry>
        <entry>
@@ -1043,7 +1126,7 @@ $manager = new MongoDB\Driver\Manager("mongodb://mongos1.example.com,mongos2.exa
 <![CDATA[
 <?php
 
-$manager = new MongoDB\Driver\Manager("mongodb://myusername:mypassword@example.com/mydatabase");
+$manager = new MongoDB\Driver\Manager("mongodb://myusername:mypassword@example.com/?authSource=databaseName");
 
 ?>
 ]]>
@@ -1062,7 +1145,7 @@ $manager = new MongoDB\Driver\Manager("mongodb://myusername:mypassword@example.c
 <![CDATA[
 <?php
 
-$manager = new MongoDB\Driver\Manager("mongodb://myusername:myp%40ss%3Aw%25rd@example.com/mydatabase");
+$manager = new MongoDB\Driver\Manager("mongodb://myusername:myp%40ss%3Aw%25rd@example.com/?authSource=databaseName");
 
 ?>
 ]]>
