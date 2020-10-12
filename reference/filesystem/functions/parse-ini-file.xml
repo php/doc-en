@@ -32,7 +32,9 @@
      <term><parameter>filename</parameter></term>
      <listitem>
       <para>
-       The filename of the ini file being parsed.
+       The filename of the ini file being parsed. If a relative path is used,
+       it is evaluated relative to the current working directory, then the
+       <link linkend="ini.include-path">include_path</link>.
       </para>
      </listitem>
     </varlistentry>
@@ -103,10 +105,11 @@ urls[git] = "http://git.php.net"
    <example>
     <title><function>parse_ini_file</function> example</title>
     <para>
-     <link linkend="language.constants">Constants</link> may also be parsed
+     <link linkend="language.constants">Constants</link> (but not "magic constants" like <constant>__FILE__</constant>)
+     may also be parsed
      in the ini file so if you define a constant as an ini value before
      running <function>parse_ini_file</function>, it will be integrated into
-     the results.  Only ini values are evaluated.  For example:
+     the results.  Only ini values are evaluated, and the value must be just the constant.  For example:
     </para>
     <programlisting role="php">
 <![CDATA[
@@ -223,6 +226,49 @@ echo '(loaded) magic_quotes_gpc = ' . yesno(get_cfg_var('magic_quotes_gpc')) . P
     </screen>
    </example>
   </para>
+  <para>
+   <example>
+    <title>value interpolation</title>
+    <para>
+     In addition to evaluating constants, certain characters have special meaning in an ini value.
+     Additionally, environment variables and previously defined values may be read using
+     <code>${}</code> syntax.
+    </para>
+    <programlisting>
+<![CDATA[
+; | is used for bitwise OR
+three = 2|3
+
+; & is used for bitwise AND
+four = 6&5
+
+; ^ is used for bitwise XOR
+five = 3^6
+
+; ~ is used for bitwise negate
+negative_two = ~1
+
+; () is used for grouping
+seven = (8|7)&(6|5)
+
+; \ is used to escape a value.
+newline_is = "\\n" ; results in the string "\n", not a newline character.
+with quotes = "She said \"Exactly my point\"." ; Results in a string with quote marks in it.
+
+path = ${PATH}
+also_five = ${five}
+
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+(parsed) magic_quotes_gpc = Yes
+(loaded) magic_quotes_gpc = Yes
+]]>
+    </screen>
+   </example>
+  </para>
  </refsect1>
 
  <refsect1 role="notes">
@@ -262,6 +308,13 @@ echo '(loaded) magic_quotes_gpc = ' . yesno(get_cfg_var('magic_quotes_gpc')) . P
     value. For example, MySQL has a "no-auto-rehash" setting 
     in <filename>my.cnf</filename> that does not take a value, so
     it is ignored.
+   </para>
+  </note>
+  <note>
+   <para>
+    ini files are generally treated as plain text by web servers and thus served to browsers if requested.
+    That means for security you must either keep your ini files outside of your docroot or reconfigure your
+    web server to not serve them.  Failure to do either of those may introduce a security risk.
    </para>
   </note>
  </refsect1>
