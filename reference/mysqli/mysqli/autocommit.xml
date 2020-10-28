@@ -71,56 +71,139 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+
+/* Tell mysqli to throw an exception if an error occurs */
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
+/* The table engine has to support transactions */
+$mysqli->query("CREATE TABLE IF NOT EXISTS language (
+	Code text NOT NULL,
+	Speakers int(11) NOT NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+/* Turn autocommit off */
+$mysqli->autocommit(false);
+
+$result = $mysqli->query("SELECT @@autocommit");
+$row = $result->fetch_row();
+printf("Autocommit is %s\n", $row[0]);
+
+try {
+	/* Prepare insert statement */
+	$stmt = $mysqli->prepare('INSERT INTO language(Code, Speakers) VALUES (?,?)');
+	$stmt->bind_param('ss', $language_code, $native_speakers);
+
+	/* Insert some values */
+	$language_code = 'DE';
+	$native_speakers = 50_123_456;
+	$stmt->execute();
+	$language_code = 'FR';
+	$native_speakers = 40_546_321;
+	$stmt->execute();
+
+	/* Commit the data in the database. This doesn't set autocommit=true */
+	$mysqli->commit();
+	print "Committed 2 rows in the database\n";
+
+	$result = $mysqli->query("SELECT @@autocommit");
+	$row = $result->fetch_row();
+	printf("Autocommit is %s\n", $row[0]);
+
+	/* Try to insert more values */
+	$language_code = 'PL';
+	$native_speakers = 30_555_444;
+	$stmt->execute();
+	$language_code = 'DK';
+	$native_speakers = 5_222_444;
+	$stmt->execute();
+
+	/* Setting autocommit=true will trigger a commit */
+	$mysqli->autocommit(true);
+
+	print "Committed 2 row in the database\n";
+} catch (mysqli_sql_exception $exception) {
+	$mysqli->rollback();
+
+	throw $exception;
 }
-
-/* turn autocommit on */
-$mysqli->autocommit(TRUE);
-
-if ($result = $mysqli->query("SELECT @@autocommit")) {
-    $row = $result->fetch_row();
-    printf("Autocommit is %s\n", $row[0]);
-    $result->free();
-}
-
-/* close connection */
-$mysqli->close();
-?>
 ]]>
    </programlisting>
    <para>&style.procedural;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
-$link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-if (!$link) {
-    printf("Can't connect to localhost. Error: %s\n", mysqli_connect_error());
-    exit();
+/* Tell mysqli to throw an exception if an error occurs */
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+$mysqli = mysqli_connect("localhost", "my_user", "my_password", "world");
+
+/* The table engine has to support transactions */
+mysqli_query($mysqli, "CREATE TABLE IF NOT EXISTS language (
+	Code text NOT NULL,
+	Speakers int(11) NOT NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+/* Turn autocommit off */
+mysqli_autocommit($mysqli, false);
+
+$result = mysqli_query($mysqli, "SELECT @@autocommit");
+$row = mysqli_fetch_row($result);
+printf("Autocommit is %s\n", $row[0]);
+
+try {
+	/* Prepare insert statement */
+	$stmt = mysqli_prepare($mysqli, 'INSERT INTO language(Code, Speakers) VALUES (?,?)');
+	mysqli_stmt_bind_param($stmt, 'ss', $language_code, $native_speakers);
+
+	/* Insert some values */
+	$language_code = 'DE';
+	$native_speakers = 50_123_456;
+	mysqli_stmt_execute($stmt);
+	$language_code = 'FR';
+	$native_speakers = 40_546_321;
+	mysqli_stmt_execute($stmt);
+
+	/* Commit the data in the database. This doesn't set autocommit=true */
+	mysqli_commit($mysqli);
+	print "Committed 2 rows in the database\n";
+
+	$result = mysqli_query($mysqli, "SELECT @@autocommit");
+	$row = mysqli_fetch_row($result);
+	printf("Autocommit is %s\n", $row[0]);
+
+	/* Try to insert more values */
+	$language_code = 'PL';
+	$native_speakers = 30_555_444;
+	mysqli_stmt_execute($stmt);
+	$language_code = 'DK';
+	$native_speakers = 5_222_444;
+	mysqli_stmt_execute($stmt);
+
+	/* Setting autocommit=true will trigger a commit */
+	mysqli_autocommit($mysqli, true);
+
+	print "Committed 2 row in the database\n";
+} catch (mysqli_sql_exception $exception) {
+	mysqli_rollback($mysqli);
+
+	throw $exception;
 }
-
-/* turn autocommit on */
-mysqli_autocommit($link, TRUE);
-
-if ($result = mysqli_query($link, "SELECT @@autocommit")) {
-    $row = mysqli_fetch_row($result);
-    printf("Autocommit is %s\n", $row[0]);
-    mysqli_free_result($result);
-}
-
-/* close connection */
-mysqli_close($link);
-?>
 ]]>
    </programlisting>
    &examples.outputs;
    <screen>
 <![CDATA[
-Autocommit is 1
+Autocommit is 0
+Committed 2 rows in the database
+Autocommit is 0
+Committed 2 row in the database
+Autocommit is 0
+Committed 2 rows in the database
+Autocommit is 0
+Committed 2 row in the database
 ]]>
    </screen>
   </example>
