@@ -171,8 +171,8 @@ function my_error_handler($err_no, $err_msg, $filename, $linenum) {
    </listitem>
    <listitem>
     <para>
-     Following the hash comment operator <literal>#</literal> immediately with an opening bracket is
-     not supported as a comment anymore since this syntax is now used for attributes.
+     <literal>#[</literal> is no longer interpreted as the start of a comment,
+     as this syntax is now used for attributes.
      <!-- RFC: https://wiki.php.net/rfc/shorter_attribute_syntax_change -->
     </para>
    </listitem>
@@ -187,6 +187,19 @@ function my_error_handler($err_no, $err_msg, $filename, $linenum) {
     <para>
      The precedence of the concatenation operator has changed relative to bitshifts and addition as
      well as subtraction.
+    </para>
+    <para>
+     <programlisting role="php">
+<![CDATA[
+<?php
+echo "Sum: " . $a + $b;
+// was previously interpreted as:
+echo ("Sum: " . $a) + $b;
+// is now interpreted as:
+echo "Sum:" . ($a + $b);
+?>
+]]>
+     </programlisting>
      <!-- RFC: https://wiki.php.net/rfc/concatenation_precedence -->
     </para>
    </listitem>
@@ -265,8 +278,9 @@ function test(int $arg = null) {}
    </listitem>
    <listitem>
     <para>
-     Compile time fatal error "Only variables can be passed by reference" has been delayed until
-     runtime and converted to "Argument cannot be passed by reference" exception.
+     The compile time fatal error "Only variables can be passed by reference" has been delayed until
+     runtime, and converted into an "Argument cannot be passed by reference"
+     <classname>Error</classname> exception.
     </para>
    </listitem>
    <listitem>
@@ -319,7 +333,7 @@ class X {
     </para>
     <para>
      If both <code>T1::func()</code> and <code>T2::func()</code> exist, this code was previously
-     silently accepted, and func as assumed to refer to <code>T1::func</code>. Now it will generate a
+     silently accepted, and func was assumed to refer to <code>T1::func</code>. Now it will generate a
      fatal error instead, and either <code>T1::func</code> or <code>T2::func</code> needs to be
      written explicitly.
     </para>
@@ -376,12 +390,43 @@ class MyClass {
    <listitem>
     <para>
      Float to string casting will now always behave locale-independently.
+    </para>
+    <para>
+     <programlisting>
+<![CDATA[
+<?php
+setlocale(LC_ALL, "de_DE");
+$f = 3.14;
+echo $f, "\n";
+// Previously: 3,14
+// Now:        3.14
+?>
+]]>
+     </programlisting>
+    </para>
+    <para>
+     See <function>printf</function>, <function>number_format</function> and
+     <methodname>NumberFormatter</methodname> for ways to customize number formatting.
      <!-- RFC: https://wiki.php.net/rfc/locale_independent_float_to_string -->
     </para>
    </listitem>
    <listitem>
     <para>
      Support for deprecated curly braces for offset access has been removed.
+    </para>
+    <para>
+     <programlisting>
+<![CDATA[
+<?php
+// Instead of:
+$array{0};
+$array{"key"};
+// Write:
+$array[0];
+$array["key"];
+?>
+]]>
+     </programlisting>
      <!-- RFC: https://wiki.php.net/rfc/deprecate_curly_braces_array_access -->
     </para>
    </listitem>
@@ -404,6 +449,49 @@ class MyClass {
      string and comparing the strings. Comparisons between numbers and numeric strings continue to
      work as before. Notably, this means that <code>0 == "not-a-number"</code> is considered false
      now.
+     <informaltable>
+      <tgroup cols="3">
+       <thead>
+        <row>
+         <entry>Comparison</entry>
+         <entry>Before</entry>
+         <entry>After</entry>
+        </row>
+       </thead>
+       <tbody>
+        <row>
+         <entry><code>0 == "0"</code></entry>
+         <entry>&true;</entry>
+         <entry>&true;</entry>
+        </row>
+        <row>
+         <entry><code>0 == "0.0"</code></entry>
+         <entry>&true;</entry>
+         <entry>&true;</entry>
+        </row>
+        <row>
+         <entry><code>0 == "foo"</code></entry>
+         <entry>&true;</entry>
+         <entry>&false;</entry>
+        </row>
+        <row>
+         <entry><code>0 == ""</code></entry>
+         <entry>&true;</entry>
+         <entry>&false;</entry>
+        </row>
+        <row>
+         <entry><code>42 == "   42"</code></entry>
+         <entry>&true;</entry>
+         <entry>&true;</entry>
+        </row>
+        <row>
+         <entry><code>42 == "42foo"</code></entry>
+         <entry>&true;</entry>
+         <entry>&false;</entry>
+        </row>
+       </tbody>
+      </tgroup>
+     </informaltable>
      <!-- RFC: https://wiki.php.net/rfc/string_to_number_comparison -->
     </para>
    </listitem>
@@ -555,8 +643,7 @@ class MyClass {
    <listitem>
     <para>
      The GD extension now uses <classname>GdImage</classname> objects as the underlying data structure
-     for images, rather than &resource;s. These objects are completely opaque, i.e. they don't have
-     any methods.
+     for images, rather than &resource;s.
     </para>
    </listitem>
    <listitem>
@@ -598,6 +685,8 @@ class MyClass {
      <function>socket_addrinfo_connect</function>, <function>socket_addrinfo_bind</function>, and
      <function>socket_wsaprotocol_info_import</function> will now return a
      <classname>Socket</classname> object rather than a &resource;.
+     <function>socket_addrinfo_lookup</function> will now return an array of
+     <classname>AddressInfo</classname> objects rather than &resource;s.
     </para>
    </listitem>
    <listitem>
@@ -946,7 +1035,7 @@ class MyClass {
     <para>
      <function>mb_ereg</function> and <function>mb_eregi</function> will now return boolean &true; on
      a successfuly match. Previously they returned integer <literal>1</literal> if
-     <parameter>matches</parameter> was not passed, or <code>max(1, strlen($reg[0]))</code> if
+     <parameter>matches</parameter> was not passed, or <code>max(1, strlen($matches[0]))</code> if
      <parameter>matches</parameter> was passed.
     </para>
    </listitem>
@@ -1036,8 +1125,8 @@ class MyClass {
     </para>
     <para>
      <simplelist>
-      <member><code>PDO::query(string $statement, ?int $fetch_mode = null, ...$fetch_mode_args)</code></member>
-      <member><code>PDOStatement::setFetchMode(int $mode, ...$params)</code></member>
+      <member><code>PDO::query(string $query, ?int $fetchMode  = null, mixed  ...$fetchModeArgs)</code></member>
+      <member><code>PDOStatement::setFetchMode(int $mode, mixed ...$args)</code></member>
      </simplelist>
     </para>
    </listitem>
@@ -1138,6 +1227,7 @@ class MyClass {
    <listitem>
     <para>
      Reflection export() methods have been removed.
+     Instead reflection objects can be cast to string.
     </para>
    </listitem>
    <listitem>
@@ -1182,12 +1272,6 @@ class MyClass {
      The deprecated <constant>AI_IDN_ALLOW_UNASSIGNED</constant> and
      <constant>AI_IDN_USE_STD3_ASCII_RULES</constant> <parameter>flags</parameter> for
      <function>socket_addrinfo_lookup</function> have been removed.
-    </para>
-   </listitem>
-   <listitem>
-    <para>
-     <function>socket_addrinfo_lookup</function> will now return an array of
-     <classname>AddressInfo</classname> objects rather than resources.
     </para>
    </listitem>
   </itemizedlist>
@@ -1386,7 +1470,7 @@ class MyClass {
      <literal>"C"</literal>, while <constant>LC_CTYPE</constant> was inherited from the environment.
      However, some functions did not respect the inherited locale without an explicit
      <function>setlocale</function> call. An explicit <function>setlocale</function> call is now
-     always required if locale component should be changed from the default.
+     always required if a locale component should be changed from the default.
     </para>
    </listitem>
    <listitem>
@@ -1532,7 +1616,7 @@ echo file_get_contents('http://example.org', false, $ctx);
 
   <para>
    <methodname>XMLReader::open</methodname> and <methodname>XMLReader::xml</methodname> are now
-   static methods. They still can be called dynamically, but inheriting classes need to declare them
+   static methods. They can still be called as instance methods, but inheriting classes need to declare them
    as static if they override these methods.
   </para>
  </sect2>
@@ -1542,8 +1626,7 @@ echo file_get_contents('http://example.org', false, $ctx);
 
   <para>
    The XML-RPC extension has been moved to PECL and is no longer part of the PHP
-   distribution. The PECL package version of this extension will be created
-   according to user demand.
+   distribution.
   </para>
  </sect2>
 
