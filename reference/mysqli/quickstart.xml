@@ -120,7 +120,7 @@ $mysqli = new mysqli("example.com", "user", "password", "database");
 $res = mysqli_query($mysqli, "SELECT 'Possible but bad style.' AS _msg FROM DUAL");
 
 if ($row = $res->fetch_assoc()) {
-	echo $row['_msg'];
+    echo $row['_msg'];
 }
 ]]>
     </programlisting>
@@ -336,7 +336,7 @@ mysqli.default_socket=/tmp/mysql.sock
   <para>
    Statements can be executed with the
    <methodname>mysqli::query</methodname>, <methodname>mysqli::real_query</methodname>
-   and <methodname>mysqli::multi_query</methodname> functions.
+   and <methodname>mysqli::multi_query</methodname>.
    The <methodname>mysqli::query</methodname> function is the most
    common, and combines the executing statement with a
    buffered fetch of its result set, if any, in one call.
@@ -346,21 +346,16 @@ mysqli.default_socket=/tmp/mysql.sock
   </para>
   <para>
    <example>
-    <title>Connecting to MySQL</title>
+    <title>Executing queries</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-$mysqli = new mysqli("example.com", "user", "password", "database");
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
 
-if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
-    !$mysqli->query("CREATE TABLE test(id INT)") ||
-    !$mysqli->query("INSERT INTO test(id) VALUES (1)")) {
-    echo "Table creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
-?>
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = new mysqli("example.com", "user", "password", "database");
+
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
 ]]>
     </programlisting>
    </example>
@@ -369,9 +364,9 @@ if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
    <emphasis role="bold">Buffered result sets</emphasis>
   </para>
   <para>
-   After statement execution results can be retrieved at once to be buffered
-   by the client or by read row by row. Client-side result set buffering
-   allows the server to free resources associated with the statement
+   After statement execution, results can be either retrieved all at once 
+   or read row by row from the server. Client-side result set buffering
+   allows the server to free resources associated with the statement's
    results as early as possible. Generally speaking, clients are slow
    consuming result sets. Therefore, it is recommended to use buffered
    result sets. <methodname>mysqli::query</methodname> combines statement
@@ -389,32 +384,27 @@ if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
     <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("example.com", "user", "password", "database");
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
 
-if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
-    !$mysqli->query("CREATE TABLE test(id INT)") ||
-    !$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3)")) {
-    echo "Table creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3)");
 
-$res = $mysqli->query("SELECT id FROM test ORDER BY id ASC");
+$result = $mysqli->query("SELECT id FROM test ORDER BY id ASC");
 
 echo "Reverse order...\n";
-for ($row_no = $res->num_rows - 1; $row_no >= 0; $row_no--) {
-    $res->data_seek($row_no);
-    $row = $res->fetch_assoc();
+for ($row_no = $result->num_rows - 1; $row_no >= 0; $row_no--) {
+    $result->data_seek($row_no);
+    $row = $result->fetch_assoc();
     echo " id = " . $row['id'] . "\n";
 }
 
 echo "Result set order...\n";
-$res->data_seek(0);
-while ($row = $res->fetch_assoc()) {
+foreach ($result as $row) {
     echo " id = " . $row['id'] . "\n";
 }
-?>
 ]]>
     </programlisting>
     &example.outputs;
@@ -447,14 +437,14 @@ Result set order...
     <programlisting role="php">
 <![CDATA[
 <?php
+
 $mysqli->real_query("SELECT id FROM test ORDER BY id ASC");
-$res = $mysqli->use_result();
+$result = $mysqli->use_result();
 
 echo "Result set order...\n";
-while ($row = $res->fetch_assoc()) {
+foreach ($result as $row) {
     echo " id = " . $row['id'] . "\n";
 }
-?>
 ]]>
     </programlisting>
    </example>
@@ -480,23 +470,19 @@ while ($row = $res->fetch_assoc()) {
     <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("example.com", "user", "password", "database");
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
 
-if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
-    !$mysqli->query("CREATE TABLE test(id INT, label CHAR(1))") ||
-    !$mysqli->query("INSERT INTO test(id, label) VALUES (1, 'a')")) {
-    echo "Table creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT, label CHAR(1))");
+$mysqli->query("INSERT INTO test(id, label) VALUES (1, 'a')");
 
-$res = $mysqli->query("SELECT id, label FROM test WHERE id = 1");
-$row = $res->fetch_assoc();
+$result = $mysqli->query("SELECT id, label FROM test WHERE id = 1");
+$row = $result->fetch_assoc();
 
 printf("id = %s (%s)\n", $row['id'], gettype($row['id']));
 printf("label = %s (%s)\n", $row['label'], gettype($row['label']));
-?>
 ]]>
     </programlisting>
     &example.outputs;
@@ -522,26 +508,22 @@ label = a (string)
     <programlisting role="php">
 <![CDATA[
 <?php
-$mysqli = mysqli_init();
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+$mysqli = new mysqli();
 $mysqli->options(MYSQLI_OPT_INT_AND_FLOAT_NATIVE, 1);
 $mysqli->real_connect("example.com", "user", "password", "database");
 
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT, label CHAR(1))");
+$mysqli->query("INSERT INTO test(id, label) VALUES (1, 'a')");
 
-if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
-    !$mysqli->query("CREATE TABLE test(id INT, label CHAR(1))") ||
-    !$mysqli->query("INSERT INTO test(id, label) VALUES (1, 'a')")) {
-    echo "Table creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
-
-$res = $mysqli->query("SELECT id, label FROM test WHERE id = 1");
-$row = $res->fetch_assoc();
+$result = $mysqli->query("SELECT id, label FROM test WHERE id = 1");
+$row = $result->fetch_assoc();
 
 printf("id = %s (%s)\n", $row['id'], gettype($row['id']));
 printf("label = %s (%s)\n", $row['label'], gettype($row['label']));
-?>
 ]]>
     </programlisting>
     &example.outputs;
@@ -559,14 +541,12 @@ label = a (string)
   <para>
    <simplelist>
     <member><methodname>mysqli::__construct</methodname></member>
-    <member><function>mysqli_init</function></member>
     <member><methodname>mysqli::options</methodname></member>
     <member><methodname>mysqli::real_connect</methodname></member>
     <member><methodname>mysqli::query</methodname></member>
     <member><methodname>mysqli::multi_query</methodname></member>
     <member><methodname>mysqli::use_result</methodname></member>
     <member><methodname>mysqli::store_result</methodname></member>
-    <member><methodname>mysqli_result::free</methodname></member>
    </simplelist>
   </para>
  </section>
