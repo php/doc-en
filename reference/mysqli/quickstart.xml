@@ -556,7 +556,7 @@ label = a (string)
   <para>
    The MySQL database supports prepared statements. A prepared statement
    or a parameterized statement is used to execute the same statement
-   repeatedly with high efficiency.
+   repeatedly with high efficiency and protect against SQL injections.
   </para>
   <para>
    <emphasis role="bold">Basic workflow</emphasis>
@@ -572,31 +572,6 @@ label = a (string)
    with <literal>?</literal>.
   </para>
   <para>
-   <example>
-    <title>First stage: prepare</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-$mysqli = new mysqli("example.com", "user", "password", "database");
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
-
-/* Non-prepared statement */
-if (!$mysqli->query("DROP TABLE IF EXISTS test") || !$mysqli->query("CREATE TABLE test(id INT)")) {
-    echo "Table creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
-
-/* Prepared statement, stage 1: prepare */
-if (!($stmt = $mysqli->prepare("INSERT INTO test(id) VALUES (?)"))) {
-    echo "Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
-?>
-]]>
-    </programlisting>
-   </example>
-  </para>
-  <para>
    Prepare is followed by execute. During execute the client binds
    parameter values and sends them to the server. The server creates a
    statement from the statement template and the bound values to
@@ -604,20 +579,27 @@ if (!($stmt = $mysqli->prepare("INSERT INTO test(id) VALUES (?)"))) {
   </para>
   <para>
    <example>
-    <title>Second stage: bind and execute</title>
+    <title>Prepared statement</title>
     <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = new mysqli("example.com", "user", "password", "database");
+
+/* Non-prepared statement */
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT, label TEXT)");
+
+/* Prepared statement, stage 1: prepare */
+$stmt = $mysqli->prepare("INSERT INTO test(id, label) VALUES (?, ?)");
+
 /* Prepared statement, stage 2: bind and execute */
 $id = 1;
-if (!$stmt->bind_param("i", $id)) {
-    echo "Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error;
-}
+$label = 'PHP';
+$stmt->bind_param("is", $id, $label);
 
-if (!$stmt->execute()) {
-    echo "Execute failed: (" . $stmt->errno . ") " . $stmt->error;
-}
-?>
+$stmt->execute();
 ]]>
     </programlisting>
    </example>
@@ -637,70 +619,57 @@ if (!$stmt->execute()) {
     <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("example.com", "user", "password", "database");
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
 
 /* Non-prepared statement */
-if (!$mysqli->query("DROP TABLE IF EXISTS test") || !$mysqli->query("CREATE TABLE test(id INT)")) {
-    echo "Table creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT, label TEXT)");
 
 /* Prepared statement, stage 1: prepare */
-if (!($stmt = $mysqli->prepare("INSERT INTO test(id) VALUES (?)"))) {
-     echo "Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$stmt = $mysqli->prepare("INSERT INTO test(id, label) VALUES (?, ?)");
 
 /* Prepared statement, stage 2: bind and execute */
-$id = 1;
-if (!$stmt->bind_param("i", $id)) {
-    echo "Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error;
+$stmt->bind_param("is", $id, $label);
+
+$data = [
+    1 => 'PHP',
+    2 => 'Java',
+    3 => 'C++'
+];
+foreach ($data as $id => $label) {
+    $stmt->execute();
 }
 
-if (!$stmt->execute()) {
-    echo "Execute failed: (" . $stmt->errno . ") " . $stmt->error;
-}
-
-/* Prepared statement: repeated execution, only data transferred from client to server */
-for ($id = 2; $id < 5; $id++) {
-    if (!$stmt->execute()) {
-        echo "Execute failed: (" . $stmt->errno . ") " . $stmt->error;
-    }
-}
-
-/* explicit close recommended */
-$stmt->close();
-
-/* Non-prepared statement */
-$res = $mysqli->query("SELECT id FROM test");
-var_dump($res->fetch_all());
-?>
+$result = $mysqli->query('SELECT id, label FROM test');
+var_dump($result->fetch_all(MYSQLI_ASSOC));
 ]]>
     </programlisting>
     &example.outputs;
     <screen>
 <![CDATA[
-array(4) {
+array(3) {
   [0]=>
-  array(1) {
-    [0]=>
+  array(2) {
+    ["id"]=>
     string(1) "1"
+    ["label"]=>
+    string(3) "PHP"
   }
   [1]=>
-  array(1) {
-    [0]=>
+  array(2) {
+    ["id"]=>
     string(1) "2"
+    ["label"]=>
+    string(4) "Java"
   }
   [2]=>
-  array(1) {
-    [0]=>
+  array(2) {
+    ["id"]=>
     string(1) "3"
-  }
-  [3]=>
-  array(1) {
-    [0]=>
-    string(1) "4"
+    ["label"]=>
+    string(3) "C++"
   }
 }
 ]]>
@@ -726,20 +695,6 @@ array(4) {
    the server and client than the prepared statement shown above.
   </para>
   <para>
-   <example>
-    <title>Less round trips using multi-INSERT SQL</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-if (!$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3), (4)")) {
-    echo "Multi-INSERT failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
-?>
-]]>
-    </programlisting>
-   </example>
-  </para>
-  <para>
    <emphasis role="bold">Result set values data types</emphasis>
   </para>
   <para>
@@ -747,8 +702,7 @@ if (!$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3), (4)")) {
    for prepared statements and non-prepared statements. Prepared statements
    are using the so called binary protocol. The MySQL server sends result
    set data "as is" in binary format. Results are not serialized into
-   strings before sending. The client libraries do not receive strings only.
-   Instead, they will receive binary data and try to convert the values into
+   strings before sending. Client libraries receive binary data and try to convert the values into
    appropriate PHP data types. For example, results from an SQL
    <literal>INT</literal> column will be provided as PHP integer variables.
   </para>
@@ -758,32 +712,29 @@ if (!$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3), (4)")) {
     <programlisting role="php">
 <![CDATA[
 <?php
-$mysqli = new mysqli("example.com", "user", "password", "database");
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
 
-if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
-    !$mysqli->query("CREATE TABLE test(id INT, label CHAR(1))") ||
-    !$mysqli->query("INSERT INTO test(id, label) VALUES (1, 'a')")) {
-    echo "Table creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = new mysqli("example.com", "user", "password", "database");
+
+/* Non-prepared statement */
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT, label TEXT)");
+$mysqli->query("INSERT INTO test(id, label) VALUES (1, 'PHP')");
 
 $stmt = $mysqli->prepare("SELECT id, label FROM test WHERE id = 1");
 $stmt->execute();
-$res = $stmt->get_result();
-$row = $res->fetch_assoc();
+$result = $stmt->get_result();
+$row = $result->fetch_assoc();
 
 printf("id = %s (%s)\n", $row['id'], gettype($row['id']));
 printf("label = %s (%s)\n", $row['label'], gettype($row['label']));
-?>
 ]]>
     </programlisting>
     &example.outputs;
     <screen>
 <![CDATA[
 id = 1 (integer)
-label = a (string)
+label = PHP (string)
 ]]>
     </screen>
    </example>
@@ -811,41 +762,29 @@ label = a (string)
     <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("example.com", "user", "password", "database");
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
 
-if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
-    !$mysqli->query("CREATE TABLE test(id INT, label CHAR(1))") ||
-    !$mysqli->query("INSERT INTO test(id, label) VALUES (1, 'a')")) {
-    echo "Table creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+/* Non-prepared statement */
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT, label TEXT)");
+$mysqli->query("INSERT INTO test(id, label) VALUES (1, 'PHP')");
 
-if (!($stmt = $mysqli->prepare("SELECT id, label FROM test"))) {
-    echo "Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$stmt = $mysqli->prepare("SELECT id, label FROM test WHERE id = 1");
+$stmt->execute();
 
-if (!$stmt->execute()) {
-    echo "Execute failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
-
-$out_id    = NULL;
-$out_label = NULL;
-if (!$stmt->bind_result($out_id, $out_label)) {
-    echo "Binding output parameters failed: (" . $stmt->errno . ") " . $stmt->error;
-}
+$stmt->bind_result($out_id, $out_label);
 
 while ($stmt->fetch()) {
-    printf("id = %s (%s), label = %s (%s)\n", $out_id, gettype($out_id), $out_label, gettype($out_label));
+	printf("id = %s (%s), label = %s (%s)\n", $out_id, gettype($out_id), $out_label, gettype($out_label));
 }
-?>
 ]]>
     </programlisting>
     &example.outputs;
     <screen>
 <![CDATA[
-id = 1 (integer), label = a (string)
+id = 1 (integer), label = PHP (string)
 ]]>
     </screen>
    </example>
@@ -877,31 +816,21 @@ id = 1 (integer), label = a (string)
     <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("example.com", "user", "password", "database");
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
 
-if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
-    !$mysqli->query("CREATE TABLE test(id INT, label CHAR(1))") ||
-    !$mysqli->query("INSERT INTO test(id, label) VALUES (1, 'a')")) {
-    echo "Table creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+/* Non-prepared statement */
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT, label TEXT)");
+$mysqli->query("INSERT INTO test(id, label) VALUES (1, 'PHP')");
 
-if (!($stmt = $mysqli->prepare("SELECT id, label FROM test ORDER BY id ASC"))) {
-    echo "Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$stmt = $mysqli->prepare("SELECT id, label FROM test WHERE id = 1");
+$stmt->execute();
 
-if (!$stmt->execute()) {
-     echo "Execute failed: (" . $stmt->errno . ") " . $stmt->error;
-}
+$result = $stmt->get_result();
 
-if (!($res = $stmt->get_result())) {
-    echo "Getting result set failed: (" . $stmt->errno . ") " . $stmt->error;
-}
-
-var_dump($res->fetch_all());
-?>
+var_dump($result->fetch_all(MYSQLI_ASSOC));
 ]]>
     </programlisting>
     &example.outputs;
@@ -910,10 +839,10 @@ var_dump($res->fetch_all());
 array(1) {
   [0]=>
   array(2) {
-    [0]=>
+    ["id"]=>
     int(1)
-    [1]=>
-    string(1) "a"
+    ["label"]=>
+    string(3) "PHP"
   }
 }
 ]]>
@@ -921,7 +850,7 @@ array(1) {
    </example>
   </para>
   <para>
-   Using the <classname>mysqli_result interface</classname> offers the additional benefit of
+   Using the <classname>mysqli_result</classname> interface offers the additional benefit of
    flexible client-side result set navigation.
   </para>
   <para>
@@ -930,35 +859,24 @@ array(1) {
     <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("example.com", "user", "password", "database");
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
 
-if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
-    !$mysqli->query("CREATE TABLE test(id INT, label CHAR(1))") ||
-    !$mysqli->query("INSERT INTO test(id, label) VALUES (1, 'a'), (2, 'b'), (3, 'c')")) {
-    echo "Table creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+/* Non-prepared statement */
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT, label TEXT)");
+$mysqli->query("INSERT INTO test(id, label) VALUES (1, 'PHP'), (2, 'Java'), (3, 'C++')");
 
-if (!($stmt = $mysqli->prepare("SELECT id, label FROM test"))) {
-    echo "Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$stmt = $mysqli->prepare("SELECT id, label FROM test");
+$stmt->execute();
 
-if (!$stmt->execute()) {
-     echo "Execute failed: (" . $stmt->errno . ") " . $stmt->error;
-}
+$result = $stmt->get_result();
 
-if (!($res = $stmt->get_result())) {
-    echo "Getting result set failed: (" . $stmt->errno . ") " . $stmt->error;
+for ($row_no = $result->num_rows - 1; $row_no >= 0; $row_no--) {
+	$result->data_seek($row_no);
+	var_dump($result->fetch_assoc());
 }
-
-for ($row_no = ($res->num_rows - 1); $row_no >= 0; $row_no--) {
-    $res->data_seek($row_no);
-    var_dump($res->fetch_assoc());
-}
-$res->close();
-?>
 ]]>
     </programlisting>
     &example.outputs;
@@ -968,19 +886,19 @@ array(2) {
   ["id"]=>
   int(3)
   ["label"]=>
-  string(1) "c"
+  string(3) "C++"
 }
 array(2) {
   ["id"]=>
   int(2)
   ["label"]=>
-  string(1) "b"
+  string(4) "Java"
 }
 array(2) {
   ["id"]=>
   int(1)
   ["label"]=>
-  string(1) "a"
+  string(3) "PHP"
 }
 ]]>
     </screen>
@@ -1014,7 +932,7 @@ array(2) {
    The API does not include emulation for client-side prepared statement emulation.
   </para>
   <para>
-   <emphasis role="bold">Quick prepared - non-prepared statement comparison</emphasis>
+   <emphasis role="bold">Quick prepared/non-prepared statement comparison</emphasis>
   </para>
   <para>
    The table below compares server-side prepared and non-prepared statements.
@@ -1048,11 +966,11 @@ array(2) {
      <row>
       <entry>Statement string transferred from client to server</entry>
       <entry>1 template, n times bound parameter, if any</entry>
-      <entry>n times together with parameter, if any</entry>
+      <entry>n times and parsed every time</entry>
      </row>
      <row>
       <entry>Input parameter binding API</entry>
-      <entry>Yes, automatic input escaping</entry>
+      <entry>Yes</entry>
       <entry>No, manual input escaping</entry>
      </row>
      <row>
