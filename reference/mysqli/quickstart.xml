@@ -777,7 +777,7 @@ $stmt->execute();
 $stmt->bind_result($out_id, $out_label);
 
 while ($stmt->fetch()) {
-	printf("id = %s (%s), label = %s (%s)\n", $out_id, gettype($out_id), $out_label, gettype($out_label));
+    printf("id = %s (%s), label = %s (%s)\n", $out_id, gettype($out_id), $out_label, gettype($out_label));
 }
 ]]>
     </programlisting>
@@ -874,8 +874,8 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 for ($row_no = $result->num_rows - 1; $row_no >= 0; $row_no--) {
-	$result->data_seek($row_no);
-	var_dump($result->fetch_assoc());
+    $result->data_seek($row_no);
+    var_dump($result->fetch_assoc());
 }
 ]]>
     </programlisting>
@@ -1063,30 +1063,21 @@ array(2) {
     <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("example.com", "user", "password", "database");
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
 
-if (!$mysqli->query("DROP TABLE IF EXISTS test") || !$mysqli->query("CREATE TABLE test(id INT)")) {
-    echo "Table creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
 
-if (!$mysqli->query("DROP PROCEDURE IF EXISTS p") ||
-    !$mysqli->query("CREATE PROCEDURE p(IN id_val INT) BEGIN INSERT INTO test(id) VALUES(id_val); END;")) {
-    echo "Stored procedure creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$mysqli->query("DROP PROCEDURE IF EXISTS p");
+$mysqli->query("CREATE PROCEDURE p(IN id_val INT) BEGIN INSERT INTO test(id) VALUES(id_val); END;");
 
-if (!$mysqli->query("CALL p(1)")) {
-    echo "CALL failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$mysqli->query("CALL p(1)");
 
-if (!($res = $mysqli->query("SELECT id FROM test"))) {
-    echo "SELECT failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$result = $mysqli->query("SELECT id FROM test");
 
-var_dump($res->fetch_assoc());
-?>
+var_dump($result->fetch_assoc());
 ]]>
     </programlisting>
     &example.outputs;
@@ -1113,28 +1104,20 @@ array(1) {
     <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("example.com", "user", "password", "database");
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
 
-if (!$mysqli->query("DROP PROCEDURE IF EXISTS p") ||
-    !$mysqli->query('CREATE PROCEDURE p(OUT msg VARCHAR(50)) BEGIN SELECT "Hi!" INTO msg; END;')) {
-    echo "Stored procedure creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$mysqli->query("DROP PROCEDURE IF EXISTS p");
+$mysqli->query('CREATE PROCEDURE p(OUT msg VARCHAR(50)) BEGIN SELECT "Hi!" INTO msg; END;');
 
+$mysqli->query("SET @msg = ''");
+$mysqli->query("CALL p(@msg)");
 
-if (!$mysqli->query("SET @msg = ''") || !$mysqli->query("CALL p(@msg)")) {
-    echo "CALL failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
-
-if (!($res = $mysqli->query("SELECT @msg as _p_out"))) {
-    echo "Fetch failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$res = $mysqli->query("SELECT @msg as _p_out");
 
 $row = $res->fetch_assoc();
 echo $row['_p_out'];
-?>
 ]]>
     </programlisting>
     &example.outputs;
@@ -1176,38 +1159,26 @@ Hi!
     <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("example.com", "user", "password", "database");
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
 
-if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
-    !$mysqli->query("CREATE TABLE test(id INT)") ||
-    !$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3)")) {
-    echo "Table creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3)");
 
-if (!$mysqli->query("DROP PROCEDURE IF EXISTS p") ||
-    !$mysqli->query('CREATE PROCEDURE p() READS SQL DATA BEGIN SELECT id FROM test; SELECT id + 1 FROM test; END;')) {
-    echo "Stored procedure creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$mysqli->query("DROP PROCEDURE IF EXISTS p");
+$mysqli->query('CREATE PROCEDURE p() READS SQL DATA BEGIN SELECT id FROM test; SELECT id + 1 FROM test; END;');
 
-if (!$mysqli->multi_query("CALL p()")) {
-    echo "CALL failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$mysqli->multi_query("CALL p()");
 
 do {
-    if ($res = $mysqli->store_result()) {
+    if ($result = $mysqli->store_result()) {
         printf("---\n");
-        var_dump($res->fetch_all());
-        $res->free();
-    } else {
-        if ($mysqli->errno) {
-            echo "Store failed: (" . $mysqli->errno . ") " . $mysqli->error;
-        }
+        var_dump($result->fetch_all());
+        $result->free();
     }
-} while ($mysqli->more_results() && $mysqli->next_result());
-?>
+} while ($mysqli->next_result());
 ]]>
     </programlisting>
     &example.outputs;
@@ -1269,42 +1240,28 @@ array(3) {
     <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("example.com", "user", "password", "database");
-if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-}
 
-if (!$mysqli->query("DROP TABLE IF EXISTS test") ||
-    !$mysqli->query("CREATE TABLE test(id INT)") ||
-    !$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3)")) {
-    echo "Table creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3)");
 
-if (!$mysqli->query("DROP PROCEDURE IF EXISTS p") ||
-    !$mysqli->query('CREATE PROCEDURE p() READS SQL DATA BEGIN SELECT id FROM test; SELECT id + 1 FROM test; END;')) {
-    echo "Stored procedure creation failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$mysqli->query("DROP PROCEDURE IF EXISTS p");
+$mysqli->query('CREATE PROCEDURE p() READS SQL DATA BEGIN SELECT id FROM test; SELECT id + 1 FROM test; END;');
 
-if (!($stmt = $mysqli->prepare("CALL p()"))) {
-    echo "Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
+$stmt = $mysqli->prepare("CALL p()");
 
-if (!$stmt->execute()) {
-    echo "Execute failed: (" . $stmt->errno . ") " . $stmt->error;
-}
+$stmt->execute();
 
 do {
-    if ($res = $stmt->get_result()) {
+    if ($result = $stmt->get_result()) {
         printf("---\n");
-        var_dump(mysqli_fetch_all($res));
-        mysqli_free_result($res);
-    } else {
-        if ($stmt->errno) {
-            echo "Store failed: (" . $stmt->errno . ") " . $stmt->error;
-        }
+        var_dump($result->fetch_all());
+        $result->free();
     }
-} while ($stmt->more_results() && $stmt->next_result());
-?>
+} while ($stmt->next_result());
 ]]>
     </programlisting>
    </example>
@@ -1318,26 +1275,29 @@ do {
     <programlisting role="php">
 <![CDATA[
 <?php
-if (!($stmt = $mysqli->prepare("CALL p()"))) {
-    echo "Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error;
-}
 
-if (!$stmt->execute()) {
-    echo "Execute failed: (" . $stmt->errno . ") " . $stmt->error;
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = new mysqli("example.com", "user", "password", "database");
+
+$mysqli->query("DROP TABLE IF EXISTS test");
+$mysqli->query("CREATE TABLE test(id INT)");
+$mysqli->query("INSERT INTO test(id) VALUES (1), (2), (3)");
+
+$mysqli->query("DROP PROCEDURE IF EXISTS p");
+$mysqli->query('CREATE PROCEDURE p() READS SQL DATA BEGIN SELECT id FROM test; SELECT id + 1 FROM test; END;');
+
+$stmt = $mysqli->prepare("CALL p()");
+
+$stmt->execute();
 
 do {
-
-    $id_out = NULL;
-    if (!$stmt->bind_result($id_out)) {
-        echo "Bind failed: (" . $stmt->errno . ") " . $stmt->error;
+    if ($stmt->store_result()) {
+        $stmt->bind_result($id_out);
+        while ($stmt->fetch()) {
+            echo "id = $id_out\n";
+        }
     }
- 
-    while ($stmt->fetch()) {
-        echo "id = $id_out\n";
-    }
-} while ($stmt->more_results() && $stmt->next_result());
-?>
+} while ($stmt->next_result());
 ]]>
     </programlisting>
    </example>
