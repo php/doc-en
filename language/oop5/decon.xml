@@ -160,8 +160,76 @@ class Point {
      </para>
     </note>
    </sect3>
-  </sect2>
+   <sect3 xml:id="language.oop5.decon.constructor.promotion">
+    <title>Static method constructors</title>
+    <para>
+     PHP only supports a single constructor per class.  In some cases, however, it may be
+     desirable to allow an object to be constructed in different ways with different inputs.
+     The recommended way to do so is by using static methods as constructor wrappers.
+    </para>
+    <para>
+     The following example demonstrates this technique.
+    </para>
+    <example>
+     <title>using static constructors</title>
+     <programlisting role="php">
+      <![CDATA[
+<?php
+class Product {
 
+  // Using the constructor promotion syntax of PHP 8.0 and later.
+  private function __construct(private ?int $id = null, private ?string $name = null) {}
+
+  public static function fromBasicData(int $id, string $name): static {
+    $new = new static($id, $name);
+    return $new;
+  }
+
+  public static function fromJson(string $json): static {
+    $data = json_decode($json);
+    return new static($data['id'], $data['name']);
+  }
+
+  public static function fromXml(string $xml): static {
+    // Put your own logic here.
+    $data = convert_xml_to_array($xml);
+    $new = new static();
+    $new->id = $data['id'];
+    $new->name = $data['name'];
+    return $new;
+  }
+}
+
+$p1 = Product::fromBasicData(5, 'Widget');
+$p2 = Product::fromJson($some_json_string);
+$p3 = Product::fromXml($some_xml_string);
+]]>
+     </programlisting>
+    </example>
+    <para>
+     The constructor may be made private or protected to prevent it from being called externally.
+     If so, only a static method will be able to instantiate the class.  Because they are in the
+     same class definition they have access to private methods, even if not of the same object
+     instance.  The private constructor is optional and may or may not make sense in your use case.
+    </para>
+    <para>
+     The three public static methods then demonstrate different ways of instantiating the object.
+    </para>
+    <simplelist>
+     <member><code>fromBasicData()</code> takes the exact parameters that are needed, then creates the
+      object by calling the constructor and returning the result.</member>
+     <member><code>fromJson()</code> accepts a JSON string and does some pre-processing on it itself
+     to convert it into the format desired by the constructor. It then returns the new object.</member>
+     <member><code>fromXml()</code> accepts an XML string, preprocesses it, and then creates a bare
+     object.  The constructor is still called, but as all of the parameters are optional the method
+     skips them.  It then assigns values to the object properties directly before returning the result.</member>
+    </simplelist>
+    <para>
+     In all three cases, the <code>static</code> keyword is translated into the name of the class the code is in.
+     In this case, <code>Product</code>.
+    </para>
+   </sect3>
+  </sect2>
   <sect2 xml:id="language.oop5.decon.destructor">
    <title>Destructor</title>
    <methodsynopsis xml:id="object.destruct">
