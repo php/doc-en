@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<refentry xml:id="sqlite3.setauthorizer" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <refnamediv>
+  <refname>SQLite3::setAuthorizer</refname>
+  <refpurpose>Configures a callback to be used as an authorizer to limit what a statement can do</refpurpose>
+ </refnamediv>
+
+ <refsect1 role="description">
+  &reftitle.description;
+  <methodsynopsis role="oop">
+   <modifier>public</modifier>
+   <type>bool</type><methodname>SQLite3::setAuthorizer</methodname>
+   <methodparam><type class="union"><type>callable</type><type>null</type></type><parameter>callback</parameter></methodparam>
+  </methodsynopsis>
+  <para>
+   Sets a callback that will be called by SQLite every time an action is performed
+   (reading, deleting, updating, etc.). This is used when preparing a SQL statement from
+   an untrusted source to ensure that the SQL statements do not try to access data they
+   are not allowed to see, or that they do not try to execute malicious statements that
+   damage the database. For example, an application may allow a user to enter arbitrary
+   SQL queries for evaluation by a database. But the application does not want the user to
+   be able to make arbitrary changes to the database. An authorizer could then be put in
+   place while the user-entered SQL is being prepared that disallows everything except
+   SELECT statements.
+  </para>
+  <para>
+   The authorizer callback may be called multiple times for each statement prepared by
+   SQLite. A <literal>SELECT</literal> or <literal>UPDATE</literal> query will call the
+   authorizer for every column that would be read or updated.
+  </para>
+  <para>
+   The authorizer is called with up to five parameters. The first parameter is always
+   given, and is an <type>int</type> (action code) matching a constant from
+   <literal>SQLite3</literal>. The other parameters are only passed for some actions. The
+   following table describes the second and third parameters according to the action:
+   <table>
+    <title>List of action codes and parameters</title>
+    <tgroup cols="3">
+     <thead>
+      <row>
+       <entry>Action</entry>
+       <entry>Second parameter</entry>
+       <entry>Third parameter</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row><entry><constant>SQLite3::CREATE_INDEX</constant></entry><entry>Index Name</entry><entry>Table Name</entry></row>
+      <row><entry><constant>SQLite3::CREATE_TABLE</constant></entry><entry>Table Name</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::CREATE_TEMP_INDEX</constant></entry><entry>Index Name</entry><entry>Table Name</entry></row>
+      <row><entry><constant>SQLite3::CREATE_TEMP_TABLE</constant></entry><entry>Table Name</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::CREATE_TEMP_TRIGGER</constant></entry><entry>Trigger Name</entry><entry>Table Name</entry></row>
+      <row><entry><constant>SQLite3::CREATE_TEMP_VIEW</constant></entry><entry>View Name</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::CREATE_TRIGGER</constant></entry><entry>Trigger Name</entry><entry>Table Name</entry></row>
+      <row><entry><constant>SQLite3::CREATE_VIEW</constant></entry><entry>View Name</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::DELETE</constant></entry><entry>Table Name</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::DROP_INDEX</constant></entry><entry>Index Name</entry><entry>Table Name</entry></row>
+      <row><entry><constant>SQLite3::DROP_TABLE</constant></entry><entry>Table Name</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::DROP_TEMP_INDEX</constant></entry><entry>Index Name</entry><entry>Table Name</entry></row>
+      <row><entry><constant>SQLite3::DROP_TEMP_TABLE</constant></entry><entry>Table Name</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::DROP_TEMP_TRIGGER</constant></entry><entry>Trigger Name</entry><entry>Table Name</entry></row>
+      <row><entry><constant>SQLite3::DROP_TEMP_VIEW</constant></entry><entry>View Name</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::DROP_TRIGGER</constant></entry><entry>Trigger Name</entry><entry>Table Name</entry></row>
+      <row><entry><constant>SQLite3::DROP_VIEW</constant></entry><entry>View Name</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::INSERT</constant></entry><entry>Table Name</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::PRAGMA</constant></entry><entry>Pragma Name</entry><entry>First argument passed to the pragma, or &null;</entry></row>
+      <row><entry><constant>SQLite3::READ</constant></entry><entry>Table Name</entry><entry>Column Name</entry></row>
+      <row><entry><constant>SQLite3::SELECT</constant></entry><entry>&null;</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::TRANSACTION</constant></entry><entry>Operation</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::UPDATE</constant></entry><entry>Table Name</entry><entry>Column Name</entry></row>
+      <row><entry><constant>SQLite3::ATTACH</constant></entry><entry>Filename</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::DETACH</constant></entry><entry>Database Name</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::ALTER_TABLE</constant></entry><entry>Database Name</entry><entry>Table Name</entry></row>
+      <row><entry><constant>SQLite3::REINDEX</constant></entry><entry>Index Name</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::ANALYZE</constant></entry><entry>Table Name</entry><entry>&null;</entry></row>
+      <row><entry><constant>SQLite3::CREATE_VTABLE</constant></entry><entry>Table Name</entry><entry>Module Name</entry></row>
+      <row><entry><constant>SQLite3::DROP_VTABLE</constant></entry><entry>Table Name</entry><entry>Module Name</entry></row>
+      <row><entry><constant>SQLite3::FUNCTION</constant></entry><entry>&null;</entry><entry>Function Name</entry></row>
+      <row><entry><constant>SQLite3::SAVEPOINT</constant></entry><entry>Operation</entry><entry>Savepoint Name</entry></row>
+      <row><entry><constant>SQLite3::RECURSIVE</constant></entry><entry>&null;</entry><entry>&null;</entry></row>
+     </tbody>
+    </tgroup>
+   </table>
+  </para>
+  <para>
+   The 5th parameter will be the name of the database (<literal>"main"</literal>,
+   <literal>"temp"</literal>, etc.) if applicable.
+  </para>
+  <para>
+   The 6th parameter to the authorizer callback is the name of the inner-most trigger or
+   view that is responsible for the access attempt or &null; if this access attempt is
+   directly from top-level SQL code.
+  </para>
+  <para>
+   When the callback returns <constant>SQLite3::OK</constant>, that means the operation
+   requested is accepted. When the callback returns <constant>SQLite3::DENY</constant>,
+   the call that triggered the authorizer will fail with an error message explaining that
+   access is denied.
+  </para>
+  <para>
+   If the action code is <constant>SQLite3::READ</constant> and the callback returns
+   <constant>SQLite3::IGNORE</constant> then the prepared statement statement is
+   constructed to substitute a &null; value in place of the table column that would have
+   been read if <constant>SQLite3::OK</constant> had been returned. The
+   <constant>SQLite3::IGNORE</constant> return can be used to deny an untrusted user
+   access to individual columns of a table.
+  </para>
+  <para>
+   When a table is referenced by a <literal>SELECT</literal> but no column values are
+   extracted from that table (for example in a query like <literal>"SELECT count(*) FROM
+   table"</literal>) then the <constant>SQLite3::READ</constant> authorizer callback is
+   invoked once for that table with a column name that is an empty string.
+  </para>
+  <para>
+   If the action code is <constant>SQLite3::DELETE</constant> and the callback returns
+   <constant>SQLite3::IGNORE</constant> then the DELETE operation proceeds but the
+   truncate optimization is disabled and all rows are deleted individually.
+  </para>
+  <para>
+   Only a single authorizer can be in place on a database connection at a time. Each call
+   to <methodname>SQLite3::setAuthorizer</methodname> overrides the previous call. Disable the
+   authorizer by installing a &null; callback. The authorizer is disabled by default.
+  </para>
+  <para>
+   The authorizer callback must not do anything that will modify the database connection
+   that invoked the authorizer callback.
+  </para>
+  <para>
+   Note that the authorizer is only called when a statement is prepared, not when it's
+   executed.
+  </para>
+  <para>
+   More details can be found in the
+   <link xlink:href="&url.sqlite;c3ref/set_authorizer.html">SQLite3 documentation</link>.
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <variablelist>
+   <varlistentry>
+    <term><parameter>callback</parameter></term>
+    <listitem>
+     <para>
+      The <type>callable</type> to be called.
+     </para>
+     <para>
+      If &null; is passed instead, this will disable the current authorizer callback.
+     </para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   &return.success;
+  </para>
+ </refsect1>
+
+ <refsect1 role="errors">
+  &reftitle.errors;
+  <para>
+   This method doesn't throw any error, but if an authorizer is enabled and returns an
+   invalid value, the statement preparation will throw an error (or exception, depending
+   on the use of the <methodname>SQLite3::enableExceptions</methodname> method).
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title><methodname>SQLite3::setAuthorizer</methodname> example</title>
+   <para>
+     This only allows access to reading, and only some columns of the
+     <literal>users</literal> table will be returned. Other columns will be replaced with
+     &null;.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$db = new SQLite3('data.sqlite');
+$db->exec('CREATE TABLE users (id, name, password);');
+$db->exec('INSERT INTO users VALUES (1, \'Pauline\', \'Snails4eva\');');
+
+$allowed_columns = ['id', 'name'];
+
+$db->setAuthorizer(function (int $action, ...$args) use ($allowed_columns) {
+    if ($action === SQLite3::READ) {
+        list($table, $column) = $args;
+
+        if ($table === 'users' && in_array($column, $allowed_columns) {
+            return SQLite3::OK;
+        }
+
+        return SQLite3::IGNORE;
+    }
+
+    return SQLite3::DENY;
+});
+
+print_r($db->querySingle('SELECT * FROM users WHERE id = 1;'));
+]]>
+   </programlisting>
+
+   &example.outputs;
+   <screen>
+<![CDATA[
+Array
+(
+    [id] => 1
+    [name] => Pauline
+    [password] =>
+)
+]]>
+   </screen>
+  </example>
+ </refsect1>
+
+</refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
