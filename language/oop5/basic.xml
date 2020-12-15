@@ -46,27 +46,18 @@ class SimpleClass
    </example>
    <para>
     The pseudo-variable <varname>$this</varname> is available when a
-    method is called from within an object
-    context. <varname>$this</varname> is a reference to the calling
-    object (usually the object to which the method belongs, but
-    possibly another object, if the method is called
-    <link linkend="language.oop5.static">statically</link> from the context
-    of a secondary object).
-    As of PHP 7.0.0 calling a non-static method statically from an incompatible
-    context results in $this being undefined inside the method. Calling a
-    non-static method statically from an incompatible context has been
-    deprecated as of PHP 5.6.0. As of PHP 7.0.0 calling a non-static method
-    statically has been generally deprecated (even if called from a compatible
-    context). Before PHP 5.6.0 such calls already triggered a strict notice.
+    method is called from within an object context.
+    <varname>$this</varname> is a reference to the calling object.
    </para>
-   <para>
+   <warning>
+    <para>
+     Calling a non-static method statically throws an
+     <classname>Error</classname>.
+     Prior to PHP 8.0.0, this would generate a deprecation notice,
+     and <varname>$this</varname> would be undefined.
+    </para>
     <example xml:id="language.oop5.basic.class.this">
      <title>Some examples of the <varname>$this</varname> pseudo-variable</title>
-     <simpara>
-      We're assuming that error_reporting is disabled for this example;
-      otherwise the following code would trigger deprecated and strict notices,
-      respectively, depending on the PHP version.
-     </simpara>
      <programlisting role="php">
 <![CDATA[
 <?php
@@ -104,26 +95,36 @@ B::bar();
 ?>
 ]]>
      </programlisting>
-     &example.outputs.5;
-     <screen>
-<![CDATA[
-$this is defined (A)
-$this is not defined.
-$this is defined (B)
-$this is not defined.
-]]>
-     </screen>
      &example.outputs.7;
      <screen>
 <![CDATA[
 $this is defined (A)
+
+Deprecated: Non-static method A::foo() should not be called statically in %s  on line 27
 $this is not defined.
+
+Deprecated: Non-static method A::foo() should not be called statically in %s  on line 20
 $this is not defined.
+
+Deprecated: Non-static method B::bar() should not be called statically in %s  on line 32
+
+Deprecated: Non-static method A::foo() should not be called statically in %s  on line 20
 $this is not defined.
 ]]>
      </screen>
+     &example.outputs.8;
+     <screen>
+<![CDATA[
+$this is defined (A)
+
+Fatal error: Uncaught Error: Non-static method A::foo() cannot be called statically in %s :27
+Stack trace:
+#0 {main}
+  thrown in %s  on line 27
+]]>
+     </screen>
     </example>
-   </para>
+   </warning>
   </sect2>
 
   <sect2 xml:id="language.oop5.basic.new">
@@ -209,8 +210,7 @@ object(SimpleClass)#1 (1) {
     </screen>
    </example>
    <para>
-    PHP 5.3.0 introduced a couple of new ways to create instances of an
-    object:
+    It's possible to create instances of an object in a couple of ways:
    </para>
    <example>
     <title>Creating new objects</title>
@@ -251,8 +251,8 @@ bool(true)
    </example>
 
    <para>
-    PHP 5.4.0 introduced the possibility to access a member of a newly created
-    object in a single expression:
+    It is possible to access a member of a newly created object
+    in a single expression:
    </para>
    <example>
     <title>Access member of newly created object</title>
@@ -318,7 +318,7 @@ method
     That means that calling an <link linkend="functions.anonymous">anonymous
     function</link> which has been assigned to a property is not directly
     possible. Instead the property has to be assigned to a variable first, for
-    instance. As of PHP 7.0.0 it is possible to call such a property directly
+    instance. It is possible to call such a property directly
     by enclosing it in parentheses.
    </para>
    <example>
@@ -339,11 +339,6 @@ class Foo
 
 $obj = new Foo();
 
-// as of PHP 5.3.0:
-$func = $obj->bar;
-echo $func(), PHP_EOL;
-
-// alternatively, as of PHP 7.0.0:
 echo ($obj->bar)(), PHP_EOL;
 ]]>
     </programlisting>
@@ -357,15 +352,17 @@ echo ($obj->bar)(), PHP_EOL;
   </sect2>
 
   <sect2 xml:id="language.oop5.basic.extends">
+   <!-- TODO Example about class constant redefinition -->
+   <!-- TODO Split into it's own page? -->
    <title>extends</title>
    <para>
-    A class can inherit the methods and properties of another class by
+    A class can inherit the constants, methods, and properties of another class by
     using the keyword <literal>extends</literal> in the class
     declaration. It is not possible to extend multiple classes; a
     class can only inherit from one base class.
    </para>
    <para>
-    The inherited methods and properties can be overridden by
+    The inherited constants, methods, and properties can be overridden by
     redeclaring them with the same name defined in the parent
     class. However, if the parent class has defined a method
     as <link linkend="language.oop5.final">final</link>, that method
@@ -374,6 +371,7 @@ echo ($obj->bar)(), PHP_EOL;
     with <link linkend="language.oop5.paamayim-nekudotayim">parent::</link>.
    </para>
    <para>
+    <!-- TODO rewrite this for PHP 7 and 8 -->
     When overriding methods, the parameter signature should remain the same or
     PHP will generate an <constant>E_STRICT</constant> level error. This does
     not apply to the constructor, which allows overriding with different
