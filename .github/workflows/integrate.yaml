@@ -1,0 +1,43 @@
+# https://docs.github.com/en/actions
+
+name: "Integrate"
+
+on:
+  pull_request: null
+  push:
+    branches:
+      - "master"
+
+jobs:
+  build:
+    name: "Build"
+
+    runs-on: "ubuntu-latest"
+
+    strategy:
+      matrix:
+        language:
+          - "en"
+
+    steps:
+      - name: "Checkout php/doc-${{ matrix.language }}"
+        uses: "actions/checkout@v2"
+        with:
+          path: "${{ matrix.language }}"
+          repository: "php/doc-${{ matrix.language }}"
+
+      - name: "Checkout php/doc-en as fallback"
+        if: "matrix.language != 'en'"
+        uses: "actions/checkout@v2"
+        with:
+          path: "en"
+          repository: "php/doc-en"
+
+      - name: "Checkout php/doc-base"
+        uses: "actions/checkout@v2"
+        with:
+          path: "doc-base"
+          repository: "php/doc-base"
+
+      - name: "Build documentation for ${{ matrix.language }}"
+        run: "php8.0 doc-base/configure.php --disable-libxml-check --enable-xml-details --redirect-stderr-to-stdout --with-lang=${{ matrix.language }}"
