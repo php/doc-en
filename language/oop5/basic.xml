@@ -369,13 +369,7 @@ echo ($obj->bar)(), PHP_EOL;
     may not be overridden.  It is possible to access the overridden
     methods or static properties by referencing them
     with <link linkend="language.oop5.paamayim-nekudotayim">parent::</link>.
-   </para>
-   <para>
-    <!-- TODO rewrite this for PHP 7 and 8 -->
-    When overriding methods, the parameter signature should remain the same or
-    PHP will generate an <constant>E_STRICT</constant> level error. This does
-    not apply to the constructor, which allows overriding with different
-    parameters.
+    <!-- TODO This needs to be corrected for private methods as of PHP 8.0 -->
    </para>
    <example>
     <title>Simple Class Inheritance</title>
@@ -405,6 +399,173 @@ a default value
 ]]>
     </screen>
    </example>
+
+   <sect3 xml:id="language.oop.lsp">
+    <title>Signature compatibility rules</title>
+    <para>
+     When overriding a method, it's signature must be compatible with the parent
+     method, otherwise a Fatal Error is emitted, or prior to PHP 8.0.0 an
+     <constant>E_WARNING</constant> level error is generated.
+     A signature is compatible if it respects the
+     <link linkend="language.oop5.variance">variance</link> rules, makes a
+     mandatory parameter optional, and if any new parameters are optional.
+     This is knows as the Liskov Substitution Principle, or LSP for short.
+     The <link linkend="language.oop5.decon.constructor">constructor</link>
+     is exempt from these signature compatibility rules.
+    </para>
+    <example>
+     <title>Compatible child methods</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class Base
+{
+    public function foo(int $a) {
+        echo "Valid\n";
+    }
+}
+
+class Extend1 extends Base
+{
+    function foo(int $a = 5)
+    {
+        parent::foo($a);
+    }
+}
+class Extend2 extends Base
+{
+    function foo(int $a, $b = 5)
+    {
+        parent::foo($a);
+    }
+}
+
+$extended1 = new Extend1();
+$extended1->foo();
+$extended2 = new Extend2();
+$extended2->foo(1);
+
+]]>
+     </programlisting>
+     &example.outputs;
+     <screen>
+<![CDATA[
+Valid
+Valid
+]]>
+     </screen>
+    </example>
+
+    <para>
+     This means a child method which removes a parameter, or makes an optional
+     parameter mandatory is not compatible with the parent method.
+    </para>
+    <example>
+     <title>Fatal error when a child method removes a parameter</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class Base
+{
+    public function foo(int $a = 5) {
+        echo "Valid\n";
+    }
+}
+
+
+class Extend extends Base
+{
+    function foo()
+    {
+        parent::foo(1);
+    }
+}
+?>
+]]>
+     </programlisting>
+     &example.outputs.8.similar;
+     <screen>
+<![CDATA[
+Fatal error: Declaration of Extend::foo() must be compatible with Base::foo(int $a = 5) in /in/evtlq on line 13
+
+]]>
+     </screen>
+    </example>
+    <example>
+     <title>Fatal error when a child method makes an optional parameter mandatory</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class Base
+{
+    public function foo(int $a = 5) {
+        echo "Valid\n";
+    }
+}
+
+
+class Extend extends Base
+{
+    function foo(int $a)
+    {
+        parent::foo($a);
+    }
+}
+]]>
+     </programlisting>
+     &example.outputs.8.similar;
+     <screen>
+<![CDATA[
+Fatal error: Declaration of Extend::foo(int $a) must be compatible with Base::foo(int $a = 5) in /in/qJXVC on line 13
+
+]]>
+     </screen>
+    </example>
+
+    <warning>
+     <para>
+      Renaming a method parameter in a child class is not a signature
+      incompatibility, however this is discouraged as it will result in a
+      runtime <classname>Error</classname> if
+      <link linkend="functions.named-arguments">named arguments</link>
+      are used.
+     </para>
+     <example>
+      <title>Error when using named arguments when parameter names changed during inheritance</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+class A {
+    public function test($foo, $bar) {}
+}
+
+class B extends A {
+    public function test($a, $b) {}
+}
+
+$obj = new B;
+
+// Pass params according to A::test() contract
+$obj->test(foo: "foo", bar: "bar"); // ERROR!
+?>
+]]>
+      </programlisting>
+      &example.outputs.similar;
+      <screen>
+<![CDATA[
+Fatal error: Uncaught Error: Unknown named parameter $foo in /in/XaaeN:14
+Stack trace:
+#0 {main}
+  thrown in /in/XaaeN on line 14
+]]>
+      </screen>
+     </example>
+    </warning>
+   </sect3>
   </sect2>
 
   <sect2 xml:id="language.oop5.basic.class.class">
