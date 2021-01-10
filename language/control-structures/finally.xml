@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sect1 xml:id="control-structures.finally" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>finally</title>
+ <?phpdoc print-version-for="finally"?>
+ <para>
+  A &finally; block may also be specified after or instead of &catch; blocks.
+  Code within the &finally; block will always be executed after the &try; and
+  &catch; blocks, regardless of whether a <classname>Throwable</classname> error
+  has been thrown, and before normal execution resumes.
+ </para>
+ <example>
+  <title><classname>Throwable</classname> error handling with a &finally; block</title>
+  <programlisting role="php">
+<![CDATA[
+<?php
+function inverse($x) {
+    return 1/$x;
+}
+
+try {
+    echo inverse(5) . "\n";
+} catch (\DivisionByZeroError $e) {
+    echo 'Caught error: ',  $e->getMessage(), "\n";
+} finally {
+    echo "First finally.\n";
+}
+
+try {
+    echo inverse(0) . "\n";
+} catch (\DivisionByZeroError $e) {
+    echo 'Caught error: ',  $e->getMessage(), "\n";
+} finally {
+    echo "Second finally.\n";
+}
+
+// Continue execution
+echo "Hello World\n";
+]]>
+  </programlisting>
+  &example.outputs.8;
+  <screen>
+<![CDATA[
+0.2
+First finally.
+Caught error: Division by zero.
+Second finally.
+Hello World
+]]>
+  </screen>
+ </example>
+
+ <para>
+  When the call stack is unwound after a <classname>Throwable</classname> error
+  has been thrown, all &finally; blocks it encounters along the way will be executed.
+ </para>
+ <example>
+  <title>All &finally; block will be executed</title>
+  <programlisting role="php">
+   <![CDATA[
+<?php
+try {
+    try {
+        throw new Exception();
+    } finally {
+        echo "Inner finally\n";
+    }
+} catch (Exception $e) {
+} finally {
+    echo "Outer finally\n";
+}
+]]>
+  </programlisting>
+  &example.outputs;
+  <screen>
+<![CDATA[
+Inner finally
+Outer finally
+]]>
+  </screen>
+ </example>
+
+ <para>
+  One notable interaction is between the &finally; block and a &return; statement.
+  If a &return; statement is encountered inside either the &try; or the &catch; blocks,
+  the &finally; block will still be executed. Moreover, the &return; statement is
+  evaluated when encountered, but the result will be returned after the &finally; block
+  is executed. Additionally, if the &finally; block also contains a &return; statement,
+  the value from the &finally; block is returned.
+ </para>
+ <example>
+  <title>Interaction between &return; in &finally; block and a previous &return;</title>
+  <programlisting role="php">
+<![CDATA[
+<?php
+function testReturnTry() {
+    try {
+        return 'try';
+    } finally {
+        return 'finally';
+    }
+}
+
+function testReturnCatch() {
+    try {
+        throw new Exception('foo');
+    } catch (Exception $e) {
+        return 'catch';
+    } finally {
+        return 'finally';
+    }
+}
+
+echo testReturnTry(), "\n";
+echo testReturnCatch(), "\n";
+
+]]>
+  </programlisting>
+  &example.outputs;
+  <screen>
+<![CDATA[
+finally
+finally
+]]>
+  </screen>
+ </example>
+ <example>
+  <title>Interaction between the &finally; block and &return;</title>
+  <programlisting role="php">
+<![CDATA[
+<?php
+function testReturnTry() {
+    try {
+        return 'try';
+    } finally {
+        echo 'finally ';
+    }
+}
+
+function testReturnCatch() {
+    try {
+        throw new Exception('foo');
+    } catch (Exception $e) {
+        return 'catch';
+    } finally {
+        echo 'finally ';
+    }
+}
+
+echo testReturnTry(), "\n";
+echo testReturnCatch(), "\n";
+]]>
+  </programlisting>
+  &example.outputs;
+  <screen>
+<![CDATA[
+finally try
+finally catch
+]]>
+  </screen>
+ </example>
+
+ <para>
+  One exception where finally blocks are skipped is if <function>exit</function>
+  is used.
+ </para>
+ <example>
+  <title>Interaction between &finally; block and <function>exit</function></title>
+  <programlisting role="php">
+<![CDATA[
+<?php
+try {
+    echo 'quit';
+    exit(0);
+} finally {
+    echo 'finally';
+}
+]]>
+  </programlisting>
+  &example.outputs;
+  <screen>
+<![CDATA[
+quit
+]]>
+  </screen>
+ </example>
+</sect1>
