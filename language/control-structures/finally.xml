@@ -171,6 +171,117 @@ finally catch
  </sect2>
 
  <sect2>
+  <!-- TODO Link to Generator page language.generators -->
+  <title>Behaviour of a &finally; block in a Generator</title>
+
+  <para>
+   If during the traversal of a generator a <classname>Throwable</classname>
+   error is thrown, the &finally; within the generator will be executed,
+   as it is the previous element of the call stack.
+  </para>
+  <example>
+   <title>
+    &finally; block being run when an <classname>Exception</classname>
+    has been thrown
+   </title>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+function generate()
+{
+    try {
+        yield 1;
+        yield 2;
+    } catch(\Exception $e) {
+        echo 'catch';
+    } finally {
+        echo "finally\n";
+    }
+}
+
+try {
+    foreach (generate() as $i) {
+        echo $i, "\n";
+        throw new Exception();
+    }
+} catch(Exception $e) {
+    echo 'outer catch';
+}
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+1
+finally
+outer catch
+]]>
+   </screen>
+  </example>
+
+  <para>
+   It is possible to &yield; within a &finally; block but if a
+   <classname>Throwable</classname> error occurs and is not &catch;ed within
+   the &foreach; a <literal>Cannot yield from finally in a force-closed
+   generator</literal> <classname>Error</classname> is thrown.
+  </para>
+  <example>
+   <title>
+    Error when &yield;ing in &finally; block when an <classname>Exception</classname>
+    has been thrown
+   </title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+function generate()
+{
+    try {
+        yield 1;
+        yield 2;
+    } catch(\Exception $e) {
+        echo 'catch';
+    } finally {
+        echo "finally\n";
+        yield 3;
+    }
+}
+
+try {
+    foreach (generate() as $i) {
+        echo $i, "\n";
+        throw new Exception();
+    }
+} catch(Exception $e) {
+    echo 'outer catch';
+}
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+1
+finally
+
+Fatal error: Uncaught Exception in /in/GbFmu:19
+Stack trace:
+#0 {main}
+
+Next Error: Cannot yield from finally in a force-closed generator in /in/GbFmu:12
+Stack trace:
+#0 /in/GbFmu(19): generate()
+#1 {main}
+  thrown in /in/GbFmu on line 12
+]]>
+   </screen>
+  </example>
+
+  <!-- TODO Document exit in foreach while yielding a generator which has a finally block
+   Needs section to be re-ordered to be after finally with exit, as behaviour is similar.
+   might be bugged tho currently: see https://3v4l.org/WCCfi -->
+
+ </sect2>
+
+ <sect2>
   <title>Interaction between a &finally; block and a call to <function>exit</function></title>
   <para>
    When <function>exit</function> is called within a &try; or a &catch; block
