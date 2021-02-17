@@ -784,8 +784,43 @@ $error_descriptions[8] = "This is just an informal notice";
    exceptions: integer properties are unaccessible;
    private variables have the class name prepended to the variable
    name; protected variables have a '*' prepended to the variable name. These
-   prepended values have null bytes on either side. This can result in some
-   unexpected behaviour:
+   prepended values have null bytes on either side.
+  </para>
+
+  <informalexample>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+
+class A {
+    private $B;
+    protected $C;
+    public $D;
+    function __construct()
+    {
+        $this->{1} = null;
+    }
+}
+
+var_export((array) new A());
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+    <![CDATA[
+array (
+  '' . "\0" . 'A' . "\0" . 'B' => NULL,
+  '' . "\0" . '*' . "\0" . 'C' => NULL,
+  'D' => NULL,
+  1 => NULL,
+)
+]]>
+   </screen>
+  </informalexample>
+
+  <para>
+   This can result in some unexpected behaviour:
   </para>
 
   <informalexample>
@@ -799,7 +834,6 @@ class A {
 
 class B extends A {
     private $A; // This will become '\0B\0A'
-    protected $B; // This will become '\0*\0B'
     public $AA; // This will become 'AA'
 }
 
@@ -810,14 +844,12 @@ var_dump((array) new B());
    &example.outputs;
    <screen>
     <![CDATA[
-array(4) {
-  ["�B�A"]=>
-  NULL
-  ["�*�B"]=>
+array(3) {
+  ["BA"]=>
   NULL
   ["AA"]=>
   NULL
-  ["�A�A"]=>
+  ["AA"]=>
   NULL
 }
 ]]>
