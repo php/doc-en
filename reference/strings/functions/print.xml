@@ -10,19 +10,20 @@
   &reftitle.description;
   <methodsynopsis>
    <type>int</type><methodname>print</methodname>
-   <methodparam><type>string</type><parameter>arg</parameter></methodparam>
+   <methodparam><type>string</type><parameter>expression</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Outputs <parameter>arg</parameter>.
+   Outputs <parameter>expression</parameter>.
   </para>
   <para>
-   <literal>print</literal> is not actually a real function (it is a
-   language construct) so you are not required to use parentheses
-   with its argument list.
+   <literal>print</literal> is not a function but a language language construct.
+   Its argument is the expression following the <literal>print</literal> keyword,
+   and is not delimited by parentheses.
   </para>
   <para>
-   The major differences to <literal>echo</literal> are that
-   <literal>print</literal> only accepts a single argument and always returns 1.
+   The major differences to <function>echo</function> are that
+   <literal>print</literal> only accepts a single argument and always returns
+   <literal>1</literal>.
   </para>
  </refsect1>
 
@@ -31,10 +32,12 @@
   <para>
    <variablelist>
     <varlistentry>
-     <term><parameter>arg</parameter></term>
+     <term><parameter>expression</parameter></term>
      <listitem>
       <para>
-       The input data.
+       The expression to be output. Non-string values will be coerced to strings,
+       even when <link linkend="language.types.declarations.strict">the
+       <literal>strict_types</literal> directive</link> is enabled.
       </para>
      </listitem>
     </varlistentry>
@@ -57,41 +60,36 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-print("Hello World");
+print "print does not require parentheses.";
 
-print "print() also works without parentheses.";
+// No newline or space is added; the below outputs "helloworld" all on one line
+print "hello";
+print "world";
 
-print "This spans
+print "This string spans
 multiple lines. The newlines will be
 output as well";
 
-print "This spans\nmultiple lines. The newlines will be\noutput as well.";
+print "This string spans\nmultiple lines. The newlines will be\noutput as well.";
 
-print "escaping characters is done \"Like this\".";
+// The argument can be any expression which produces a string
+$foo = "example";
+print "foo is $foo"; // foo is example
 
-// You can use variables inside a print statement
-$foo = "foobar";
-$bar = "barbaz";
+$fruits = ["lemon", "orange", "banana"];
+print implode(" and ", $fruits); // lemon and orange and banana
 
-print "foo is $foo"; // foo is foobar
+// Non-string expressions are coerced to string, even if declare(strict_types=1) is used
+print 6 * 7; // 42
 
-// You can also use arrays
-$bar = array("value" => "foo");
+// Because print has a return value, it can be used in expressions
+// The following outputs "hello world"
+if ( print "hello" ) {
+    echo " world";
+}
 
-print "this is {$bar['value']} !"; // this is foo !
-
-// Using single quotes will print the variable name, not the value
-print 'foo is $foo'; // foo is $foo
-
-// If you are not using any other characters, you can just print variables
-print $foo;          // foobar
-
-print <<<END
-This uses the "here document" syntax to output
-multiple lines with $variable interpolation. Note
-that the here document terminator must appear on a
-line with just a semicolon no extra whitespace!
-END;
+// The following outputs "true"
+( 1 === 1 ) ? print 'true' : print 'false';
 ?>
 ]]>
     </programlisting>
@@ -101,6 +99,85 @@ END;
 
  <refsect1 role="notes">
   &reftitle.notes;
+
+  <note>
+   <title>Using with parentheses</title>
+   <para>
+    Surrounding the argument to <literal>print</literal> with parentheses will not
+    raise a syntax error, and produces syntax which looks like a normal
+    function call. However, this can be misleading, because the parentheses are actually
+    part of the expression being output, not part of the <literal>print</literal>
+    syntax itself.
+   </para>
+   <para>
+    <example>
+     <title/>
+     <programlisting role="php">
+<![CDATA[
+<?php
+print "hello";
+// outputs "hello"
+
+print("hello");
+// also outputs "hello", because ("hello") is a valid expression
+
+print(1 + 2) * 3;
+// outputs "9"; the parentheses cause 1+2 to be evaluated first, then 3*3
+// the print statement sees the whole expression as one argument
+
+if ( print("hello") && false ) {
+    print " - inside if";
+}
+else {
+    print " - inside if";
+}
+// outputs "0 is the answer"
+// the expression ("not the answer") && false is first evaluated, giving false
+// this is coerced to the empty string "" and printed
+// the print construct then returns 1, so code in the if block is run
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+
+   <para>
+    When using <literal>print</literal> in a larger expression, placing both the
+    keyword and its argument in parentheses may be necessary to give the intended
+    result:
+   </para>
+
+   <para>
+    <example>
+     <title/>
+     <programlisting role="php">
+<![CDATA[
+<?php
+if ( (print "hello") && false ) {
+    print " - inside if";
+}
+else {
+    print " - inside else";
+}
+// outputs "hello - inside else"
+// unlike the previous example, the expression (print "hello") is evaluated first
+// after outputting "hello", print returns 1
+// since 1 && false is false, code in the else block is run
+
+print "hello " && print "world";
+// outputs "world1"; print "world" is evaluated first,
+// then the expression "hello " && 1 is passed to the left-hand print
+
+(print "hello ") && (print "world");
+// outputs "hello world"; the parentheses force the print expressions
+// to be evaluated before the &&
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+  </note>
+
   &note.language-construct;
  </refsect1>
 
@@ -111,7 +188,7 @@ END;
     <member><function>echo</function></member>
     <member><function>printf</function></member>
     <member><function>flush</function></member>
-    <member><link linkend="language.types.string.syntax.heredoc">Heredoc syntax</link></member>
+    <member><link linkend="language.types.string">Ways to specify literal strings</link></member>
    </simplelist>
   </para>
  </refsect1>
