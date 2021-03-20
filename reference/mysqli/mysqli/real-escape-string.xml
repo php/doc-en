@@ -73,71 +73,50 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
-$mysqli->query("CREATE TEMPORARY TABLE myCity LIKE City");
-
-$city = "'s Hertogenbosch";
-
-/* this query will fail, cause we didn't escape $city */
-if (!$mysqli->query("INSERT into myCity (Name) VALUES ('$city')")) {
-    printf("Error: %s\n", $mysqli->sqlstate);
-}
-
-$city = $mysqli->real_escape_string($city);
+$city = "'s-Hertogenbosch";
 
 /* this query with escaped $city will work */
-if ($mysqli->query("INSERT into myCity (Name) VALUES ('$city')")) {
-    printf("%d Row inserted.\n", $mysqli->affected_rows);
-}
+$query = sprintf("SELECT CountryCode FROM City WHERE name='%s'",
+	$mysqli->real_escape_string($city));
+$result = $mysqli->query($query);
+printf("Select returned %d rows.\n", $result->num_rows);
 
-$mysqli->close();
-?>
+/* this query will fail, because we didn't escape $city */
+$query = sprintf("SELECT CountryCode FROM City WHERE name='%s'", $city);
+$result = $mysqli->query($query);
 ]]>
    </programlisting>
    <para>&style.procedural;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
-$link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-mysqli_query($link, "CREATE TEMPORARY TABLE myCity LIKE City");
-
-$city = "'s Hertogenbosch";
-
-/* this query will fail, cause we didn't escape $city */
-if (!mysqli_query($link, "INSERT into myCity (Name) VALUES ('$city')")) {
-    printf("Error: %s\n", mysqli_sqlstate($link));
-}
-
-$city = mysqli_real_escape_string($link, $city);
+$city = "'s-Hertogenbosch";
 
 /* this query with escaped $city will work */
-if (mysqli_query($link, "INSERT into myCity (Name) VALUES ('$city')")) {
-    printf("%d Row inserted.\n", mysqli_affected_rows($link));
-}
+$query = sprintf("SELECT CountryCode FROM City WHERE name='%s'",
+	mysqli_real_escape_string($mysqli, $city));
+$result = mysqli_query($mysqli, $query);
+printf("Select returned %d rows.\n", mysqli_num_rows($result));
 
-mysqli_close($link);
-?>
+/* this query will fail, because we didn't escape $city */
+$query = sprintf("SELECT CountryCode FROM City WHERE name='%s'", $city);
+$result = mysqli_query($mysqli, $query);
 ]]>
    </programlisting>
-   &examples.outputs;
+   &examples.outputs.similar;
    <screen>
 <![CDATA[
-Error: 42000
-1 Row inserted.
+Select returned 1 rows.
+
+Fatal error: Uncaught mysqli_sql_exception: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 's-Hertogenbosch'' at line 1 in...
 ]]>
    </screen>
   </example>
