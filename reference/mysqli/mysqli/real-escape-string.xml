@@ -3,7 +3,6 @@
 <refentry xml:id="mysqli.real-escape-string" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>mysqli::real_escape_string</refname>
-  <refname>mysqli::escape_string</refname>
   <refname>mysqli_real_escape_string</refname>
   <refpurpose>Escapes special characters in a string for use in an SQL statement, taking into account the current charset of the connection</refpurpose>
  </refnamediv>
@@ -11,10 +10,6 @@
  <refsect1 role="description">
   &reftitle.description;
   <para>&style.oop;</para>
-  <methodsynopsis role="oop">
-   <modifier>public</modifier> <type>string</type><methodname>mysqli::escape_string</methodname>
-   <methodparam><type>string</type><parameter>string</parameter></methodparam>
-  </methodsynopsis>
   <methodsynopsis role="oop">
    <modifier>public</modifier> <type>string</type><methodname>mysqli::real_escape_string</methodname>
    <methodparam><type>string</type><parameter>string</parameter></methodparam>
@@ -27,7 +22,7 @@
   </methodsynopsis>
   <para>
    This function is used to create a legal SQL string that you can use in an
-   SQL statement. The given string is encoded to an escaped SQL string,
+   SQL statement. The given string is encoded to produce an escaped SQL string,
    taking into account the current character set of the connection.
   </para>
   <caution>
@@ -69,14 +64,6 @@
    Returns an escaped string.
   </para>
  </refsect1>
- 
- <refsect1 role="errors">
-  &reftitle.errors;
-  <para>
-   Executing this function without a valid MySQLi connection passed in will
-   return &null; and emit <constant>E_WARNING</constant> level errors.
-  </para>
- </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
@@ -86,88 +73,53 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
-$mysqli->query("CREATE TEMPORARY TABLE myCity LIKE City");
-
-$city = "'s Hertogenbosch";
-
-/* this query will fail, cause we didn't escape $city */
-if (!$mysqli->query("INSERT into myCity (Name) VALUES ('$city')")) {
-    printf("Error: %s\n", $mysqli->sqlstate);
-}
-
-$city = $mysqli->real_escape_string($city);
+$city = "'s-Hertogenbosch";
 
 /* this query with escaped $city will work */
-if ($mysqli->query("INSERT into myCity (Name) VALUES ('$city')")) {
-    printf("%d Row inserted.\n", $mysqli->affected_rows);
-}
+$query = sprintf("SELECT CountryCode FROM City WHERE name='%s'",
+	$mysqli->real_escape_string($city));
+$result = $mysqli->query($query);
+printf("Select returned %d rows.\n", $result->num_rows);
 
-$mysqli->close();
-?>
+/* this query will fail, because we didn't escape $city */
+$query = sprintf("SELECT CountryCode FROM City WHERE name='%s'", $city);
+$result = $mysqli->query($query);
 ]]>
    </programlisting>
    <para>&style.procedural;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
-$link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-mysqli_query($link, "CREATE TEMPORARY TABLE myCity LIKE City");
-
-$city = "'s Hertogenbosch";
-
-/* this query will fail, cause we didn't escape $city */
-if (!mysqli_query($link, "INSERT into myCity (Name) VALUES ('$city')")) {
-    printf("Error: %s\n", mysqli_sqlstate($link));
-}
-
-$city = mysqli_real_escape_string($link, $city);
+$city = "'s-Hertogenbosch";
 
 /* this query with escaped $city will work */
-if (mysqli_query($link, "INSERT into myCity (Name) VALUES ('$city')")) {
-    printf("%d Row inserted.\n", mysqli_affected_rows($link));
-}
+$query = sprintf("SELECT CountryCode FROM City WHERE name='%s'",
+	mysqli_real_escape_string($mysqli, $city));
+$result = mysqli_query($mysqli, $query);
+printf("Select returned %d rows.\n", mysqli_num_rows($result));
 
-mysqli_close($link);
-?>
+/* this query will fail, because we didn't escape $city */
+$query = sprintf("SELECT CountryCode FROM City WHERE name='%s'", $city);
+$result = mysqli_query($mysqli, $query);
 ]]>
    </programlisting>
-   &examples.outputs;
+   &examples.outputs.similar;
    <screen>
 <![CDATA[
-Error: 42000
-1 Row inserted.
+Select returned 1 rows.
+
+Fatal error: Uncaught mysqli_sql_exception: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 's-Hertogenbosch'' at line 1 in...
 ]]>
    </screen>
   </example>
- </refsect1>
-
- <refsect1 role="notes">
-  &reftitle.notes;
-  <note>
-   <para>
-    For those accustomed to using <function>mysql_real_escape_string</function>,
-    note that the arguments of <function>mysqli_real_escape_string</function>
-    differ from what <function>mysql_real_escape_string</function> expects.
-    The <parameter>mysql</parameter> identifier comes first in 
-    <function>mysqli_real_escape_string</function>, whereas the string to be escaped
-    comes first in <function>mysql_real_escape_string</function>.
-   </para>
-  </note>
  </refsect1>
 
  <refsect1 role="seealso">
@@ -175,7 +127,6 @@ Error: 42000
   <para>
    <simplelist>
     <member><function>mysqli_set_charset</function></member>
-    <member><function>mysqli_character_set_name</function></member>
    </simplelist>
   </para>
  </refsect1>
