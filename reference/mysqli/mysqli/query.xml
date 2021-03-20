@@ -144,90 +144,59 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if ($mysqli->connect_errno) {
-    printf("Connect failed: %s\n", $mysqli->connect_error);
-    exit();
-}
-
 /* Create table doesn't return a resultset */
-if ($mysqli->query("CREATE TEMPORARY TABLE myCity LIKE City") === TRUE) {
-    printf("Table myCity successfully created.\n");
-}
+$mysqli->query("CREATE TEMPORARY TABLE myCity LIKE City");
+printf("Table myCity successfully created.\n");
 
 /* Select queries return a resultset */
-if ($result = $mysqli->query("SELECT Name FROM City LIMIT 10")) {
-    printf("Select returned %d rows.\n", $result->num_rows);
-
-    /* free result set */
-    $result->close();
-}
+$result = $mysqli->query("SELECT Name FROM City LIMIT 10");
+printf("Select returned %d rows.\n", $result->num_rows);
 
 /* If we have to retrieve large amount of data we use MYSQLI_USE_RESULT */
-if ($result = $mysqli->query("SELECT * FROM City", MYSQLI_USE_RESULT)) {
+$result = $mysqli->query("SELECT * FROM City", MYSQLI_USE_RESULT);
 
-    /* Note, that we can't execute any functions which interact with the
-       server until result set was closed. All calls will return an
-       'out of sync' error */
-    if (!$mysqli->query("SET @a:='this will not work'")) {
-        printf("Error: %s\n", $mysqli->error);
-    }
-    $result->close();
-}
-
-$mysqli->close();
-?>
+/* Note, that we can't execute any functions which interact with the
+	server until all records have been fully retrieved or the result
+	set was closed. All calls will return an 'out of sync' error */
+$mysqli->query("SET @a:='this will not work'");
 ]]>
    </programlisting>
    <para>&style.procedural;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
 /* Create table doesn't return a resultset */
-if (mysqli_query($link, "CREATE TEMPORARY TABLE myCity LIKE City") === TRUE) {
-    printf("Table myCity successfully created.\n");
-}
+mysqli_query($link, "CREATE TEMPORARY TABLE myCity LIKE City");
+printf("Table myCity successfully created.\n");
 
 /* Select queries return a resultset */
-if ($result = mysqli_query($link, "SELECT Name FROM City LIMIT 10")) {
-    printf("Select returned %d rows.\n", mysqli_num_rows($result));
-
-    /* free result set */
-    mysqli_free_result($result);
-}
+$result = mysqli_query($link, "SELECT Name FROM City LIMIT 10");
+printf("Select returned %d rows.\n", mysqli_num_rows($result));
 
 /* If we have to retrieve large amount of data we use MYSQLI_USE_RESULT */
-if ($result = mysqli_query($link, "SELECT * FROM City", MYSQLI_USE_RESULT)) {
+$result = mysqli_query($link, "SELECT * FROM City", MYSQLI_USE_RESULT);
 
-    /* Note, that we can't execute any functions which interact with the
-       server until result set was closed. All calls will return an
-       'out of sync' error */
-    if (!mysqli_query($link, "SET @a:='this will not work'")) {
-        printf("Error: %s\n", mysqli_error($link));
-    }
-    mysqli_free_result($result);
-}
-
-mysqli_close($link);
-?>
+/* Note, that we can't execute any functions which interact with the
+	server until all records have been fully retrieved or the result
+	set was closed. All calls will return an 'out of sync' error */
+mysqli_query($link, "SET @a:='this will not work'");
 ]]>
    </programlisting>
-   &examples.outputs;
+   &examples.outputs.similar;
    <screen>
 <![CDATA[
 Table myCity successfully created.
 Select returned 10 rows.
-Error: Commands out of sync;  You can't run this command now
+
+Fatal error: Uncaught mysqli_sql_exception: Commands out of sync; you can't run this command now in...
 ]]>
    </screen>
   </example>
