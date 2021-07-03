@@ -11,26 +11,30 @@
   &reftitle.description;
   <para>&style.oop;</para>
   <methodsynopsis role="oop">
-   <type>object</type><methodname>mysqli_result::fetch_object</methodname>
-   <methodparam choice="opt"><type>string</type><parameter>class_name</parameter><initializer>"stdClass"</initializer></methodparam>
-   <methodparam choice="opt"><type>array</type><parameter>params</parameter></methodparam>
+   <modifier>public</modifier> <type class="union"><type>object</type><type>null</type><type>false</type></type><methodname>mysqli_result::fetch_object</methodname>
+   <methodparam choice="opt"><type>string</type><parameter>class</parameter><initializer>"stdClass"</initializer></methodparam>
+   <methodparam choice="opt"><type>array</type><parameter>constructor_args</parameter><initializer>[]</initializer></methodparam>
   </methodsynopsis>
   <para>&style.procedural;</para>
-  <methodsynopsis>
-   <type>object</type><methodname>mysqli_fetch_object</methodname>
+  <methodsynopsis role="procedural">
+   <type class="union"><type>object</type><type>null</type><type>false</type></type><methodname>mysqli_fetch_object</methodname>
    <methodparam><type>mysqli_result</type><parameter>result</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>class_name</parameter><initializer>"stdClass"</initializer></methodparam>
-   <methodparam choice="opt"><type>array</type><parameter>params</parameter></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>class</parameter><initializer>"stdClass"</initializer></methodparam>
+   <methodparam choice="opt"><type>array</type><parameter>constructor_args</parameter><initializer>[]</initializer></methodparam>
   </methodsynopsis>
   <para>
-   The <function>mysqli_fetch_object</function> will return the current row
+   Returns the current row
    result set as an object where the attributes of the object represent the
    names of the fields found within the result set.
   </para>
-  <para>
-    Note that <function>mysqli_fetch_object</function> sets the properties
-    of the object before calling the object constructor.
-  </para>
+  <note xmlns="http://docbook.org/ns/docbook">
+   <simpara>
+     This function sets the properties
+     of the object before calling the object constructor.
+   </simpara>
+  </note>
+  &database.field-case;
+  &database.fetch-null;
  </refsect1>
 
  <refsect1 role="parameters">
@@ -39,7 +43,7 @@
    <variablelist>
     &mysqli.result.description;
     <varlistentry>
-     <term><parameter>class_name</parameter></term>
+     <term><parameter>class</parameter></term>
      <listitem>
       <para>
        The name of the class to instantiate, set the properties of and return.
@@ -48,11 +52,11 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>params</parameter></term>
+     <term><parameter>constructor_args</parameter></term>
      <listitem>
       <para>
        An optional <type>array</type> of parameters to pass to the constructor
-       for <parameter>class_name</parameter> objects.
+       for <parameter>class</parameter> objects.
       </para>
      </listitem>
     </varlistentry>
@@ -63,79 +67,75 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns an object with string properties that corresponds to the fetched
-   row or &null; if there are no more rows in resultset.
+   Returns an object that corresponds to the fetched
+   row or &null; if there are no more rows in result set.
   </para>
-  &database.field-case;
-  &database.fetch-null;
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>8.0.0</entry>
+      <entry>
+       <parameter>constructor_args</parameter> now accepts <literal>[]</literal> for constructors with 0 parameters;
+       previously an exception was thrown.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title>&style.oop;</title>
+   <title><methodname>mysqli_result::fetch_object</methodname> example</title>
+   <para>&style.oop;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
-
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
  
-$query = "SELECT Name, CountryCode FROM City ORDER by ID DESC LIMIT 50,5";
+$query = "SELECT Name, CountryCode FROM City ORDER BY ID DESC";
 
-if ($result = $mysqli->query($query)) {
+$result = $mysqli->query($query);
 
-    /* fetch object array */
-    while ($obj = $result->fetch_object()) {
-        printf ("%s (%s)\n", $obj->Name, $obj->CountryCode);
-    }
-
-    /* free result set */
-    $result->close();
+/* fetch object array */
+while ($obj = $result->fetch_object()) {
+    printf("%s (%s)\n", $obj->Name, $obj->CountryCode);
 }
-
-/* close connection */
-$mysqli->close();
-?>
 ]]>
    </programlisting>
-  </example>
-  <example>
-   <title>&style.procedural;</title>
+   <para>&style.procedural;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
+$query = "SELECT Name, CountryCode FROM City ORDER BY ID DESC";
+
+$result = mysqli_query($link, $query);
+
+/* fetch associative array */
+while ($obj = mysqli_fetch_object($result)) {
+    printf("%s (%s)\n", $obj->Name, $obj->CountryCode);
 }
-
-$query = "SELECT Name, CountryCode FROM City ORDER by ID DESC LIMIT 50,5";
-
-if ($result = mysqli_query($link, $query)) {
-
-    /* fetch associative array */
-    while ($obj = mysqli_fetch_object($result)) {
-        printf ("%s (%s)\n", $obj->Name, $obj->CountryCode);
-    }
-
-    /* free result set */
-    mysqli_free_result($result);
-}
-
-/* close connection */
-mysqli_close($link);
-?>
 ]]>
    </programlisting>
-   &examples.outputs;
+   &examples.outputs.similar;
    <screen>
 <![CDATA[
 Pueblo (USA)
@@ -162,7 +162,6 @@ Santa Clara (USA)
  </refsect1>
 
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

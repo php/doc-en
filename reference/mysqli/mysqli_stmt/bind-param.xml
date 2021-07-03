@@ -11,22 +11,22 @@
   &reftitle.description;
   <para>&style.oop;</para>
   <methodsynopsis role="oop">
-   <type>bool</type><methodname>mysqli_stmt::bind_param</methodname>
+   <modifier>public</modifier> <type>bool</type><methodname>mysqli_stmt::bind_param</methodname>
    <methodparam><type>string</type><parameter>types</parameter></methodparam>
-   <methodparam><type>mixed</type><parameter role="reference">var1</parameter></methodparam>
-   <methodparam choice="opt"><type>mixed</type><parameter role="reference">...</parameter></methodparam>
+   <methodparam><type>mixed</type><parameter role="reference">var</parameter></methodparam>
+   <methodparam rep="repeat"><type>mixed</type><parameter role="reference">vars</parameter></methodparam>
   </methodsynopsis>
   <para>&style.procedural;</para>
   <methodsynopsis>
    <type>bool</type><methodname>mysqli_stmt_bind_param</methodname>
    <methodparam><type>mysqli_stmt</type><parameter>stmt</parameter></methodparam>
    <methodparam><type>string</type><parameter>types</parameter></methodparam>
-   <methodparam><type>mixed</type><parameter role="reference">var1</parameter></methodparam>
-   <methodparam choice="opt"><type>mixed</type><parameter role="reference">...</parameter></methodparam>
+   <methodparam><type>mixed</type><parameter role="reference">var</parameter></methodparam>
+   <methodparam rep="repeat"><type>mixed</type><parameter role="reference">vars</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Bind variables for the parameter markers in the SQL statement that was
-   passed to <function>mysqli_prepare</function>.
+   Bind variables for the parameter markers in the SQL statement prepared by
+   <function>mysqli_prepare</function> or <function>mysqli_stmt_prepare</function>.
   </para>
   <note>
    <para>
@@ -57,7 +57,7 @@
       <para>
        A string that contains one or more characters which specify the types
        for the corresponding bind variables:
-       <table>
+       <table xml:id="mysqli-stmt.bind-param.parameters">
         <title>Type specification chars</title>
         <tgroup cols="2">
          <thead>
@@ -90,7 +90,8 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>var1</parameter></term>
+     <term><parameter>var</parameter></term>
+     <term><parameter>vars</parameter></term>
      <listitem>
       <para>
        The number of variables and length of string 
@@ -112,17 +113,14 @@
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title>&style.oop;</title>
+   <title><methodname>mysqli_stmt::bind_param</methodname> example</title>
+   <para>&style.oop;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
-$mysqli = new mysqli('localhost', 'my_user', 'my_password', 'world');
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = new mysqli('localhost', 'my_user', 'my_password', 'world');
 
 $stmt = $mysqli->prepare("INSERT INTO CountryLanguage VALUES (?, ?, ?, ?)");
 $stmt->bind_param('sssd', $code, $language, $official, $percent);
@@ -132,36 +130,22 @@ $language = 'Bavarian';
 $official = "F";
 $percent = 11.2;
 
-/* execute prepared statement */
 $stmt->execute();
 
-printf("%d Row inserted.\n", $stmt->affected_rows);
-
-/* close statement and connection */
-$stmt->close();
+printf("%d row inserted.\n", $stmt->affected_rows);
 
 /* Clean up table CountryLanguage */
 $mysqli->query("DELETE FROM CountryLanguage WHERE Language='Bavarian'");
-printf("%d Row deleted.\n", $mysqli->affected_rows);
-
-/* close connection */
-$mysqli->close();
-?>
+printf("%d row deleted.\n", $mysqli->affected_rows);
 ]]>
    </programlisting>
-  </example>
-  <example>
-   <title>&style.procedural;</title>
+   <para>&style.procedural;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
-$link = mysqli_connect('localhost', 'my_user', 'my_password', 'world');
 
-/* check connection */
-if (!$link) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$link = mysqli_connect('localhost', 'my_user', 'my_password', 'world');
 
 $stmt = mysqli_prepare($link, "INSERT INTO CountryLanguage VALUES (?, ?, ?, ?)");
 mysqli_stmt_bind_param($stmt, 'sssd', $code, $language, $official, $percent);
@@ -171,28 +155,49 @@ $language = 'Bavarian';
 $official = "F";
 $percent = 11.2;
 
-/* execute prepared statement */
 mysqli_stmt_execute($stmt);
 
-printf("%d Row inserted.\n", mysqli_stmt_affected_rows($stmt));
-
-/* close statement and connection */
-mysqli_stmt_close($stmt);
+printf("%d row inserted.\n", mysqli_stmt_affected_rows($stmt));
 
 /* Clean up table CountryLanguage */
 mysqli_query($link, "DELETE FROM CountryLanguage WHERE Language='Bavarian'");
-printf("%d Row deleted.\n", mysqli_affected_rows($link));
-
-/* close connection */
-mysqli_close($link);
-?>
+printf("%d row deleted.\n", mysqli_affected_rows($link));
 ]]>
    </programlisting>
    &examples.outputs;
    <screen>
 <![CDATA[
-1 Row inserted.
-1 Row deleted.
+1 row inserted.
+1 row deleted.
+]]>
+   </screen>
+  </example>
+  <example>
+   <title>Using <literal>...</literal> to provide arguments</title>
+   <para>
+    The <literal>...</literal> operator can be used to provide variable-length
+    argument list, e.g. in a <literal>WHERE IN</literal> clause.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = new mysqli('localhost', 'my_user', 'my_password', 'world');
+
+$stmt = $mysqli->prepare("SELECT Language FROM CountryLanguage WHERE CountryCode IN (?, ?)");
+/* Using ... to provide arguments */
+$stmt->bind_param('ss', ...['DEU', 'POL']);
+$stmt->execute();
+$stmt->store_result();
+
+printf("%d rows found.\n", $stmt->num_rows());
+]]>
+   </programlisting>
+   &examples.outputs;
+   <screen>
+<![CDATA[
+10 rows found.
 ]]>
    </screen>
   </example>

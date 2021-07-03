@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-<refentry xmlns="http://docbook.org/ns/docbook" xml:id="function.ob-start">
+<refentry xml:id="function.ob-start" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>ob_start</refname>
   <refpurpose>Turn on output buffering</refpurpose>
@@ -10,7 +10,7 @@
   &reftitle.description;
   <methodsynopsis>
    <type>bool</type><methodname>ob_start</methodname>
-   <methodparam choice="opt"><type>callable</type><parameter>output_callback</parameter><initializer>&null;</initializer></methodparam>
+   <methodparam choice="opt"><type>callable</type><parameter>callback</parameter><initializer>&null;</initializer></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>chunk_size</parameter><initializer>0</initializer></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>flags</parameter><initializer><constant>PHP_OUTPUT_HANDLER_STDFLAGS</constant></initializer></methodparam>
   </methodsynopsis>
@@ -43,6 +43,10 @@
    functions are active, output is being filtered sequentially
    through each of them in nesting order.
   </para>
+  <para>
+   If outbut buffering is still active when the script ends, PHP outputs the
+   contents automatically.
+  </para>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -50,20 +54,20 @@
   <para>
    <variablelist>
     <varlistentry>
-     <term><parameter>output_callback</parameter></term>
+     <term><parameter>callback</parameter></term>
      <listitem>
       <para>
-       An optional <parameter>output_callback</parameter> function may be
+       An optional <parameter>callback</parameter> function may be
        specified. This function takes a string as a parameter and should
        return a string. The function will be called when
        the output buffer is flushed (sent) or cleaned (with
        <function>ob_flush</function>, <function>ob_clean</function> or similar
        function) or when the output buffer
        is flushed to the browser at the end of the request.  When
-       <parameter>output_callback</parameter> is called, it will receive the
+       <parameter>callback</parameter> is called, it will receive the
        contents of the output buffer as its parameter and is expected to
        return a new output buffer as a result, which will be sent to the
-       browser. If the <parameter>output_callback</parameter> is not a
+       browser. If the <parameter>callback</parameter> is not a
        callable function, this function will return &false;.
        This is the callback signature:
       </para>
@@ -93,11 +97,11 @@
        </variablelist>
       </para>
       <para>
-       If <parameter>output_callback</parameter> returns &false; original
+       If <parameter>callback</parameter> returns &false; original
        input is sent to the browser.
       </para>
       <para>
-       The <parameter>output_callback</parameter> parameter may be bypassed
+       The <parameter>callback</parameter> parameter may be bypassed
        by passing a &null; value.
       </para>
       <para>
@@ -132,10 +136,6 @@
        length to equal or exceed <parameter>chunk_size</parameter>. The default
        value <literal>0</literal> means that the output function will only be
        called when the output buffer is closed.
-      </para>
-      <para>
-       Prior to PHP 5.4.0, the value <literal>1</literal> was a special case
-       value that set the chunk size to 4096 bytes.
       </para>
      </listitem>
     </varlistentry>
@@ -204,55 +204,6 @@
   </para>
  </refsect1>
 
- <refsect1 role="changelog">
-  &reftitle.changelog;
-  <para>
-   <informaltable>
-    <tgroup cols="2">
-     <thead>
-      <row>
-       <entry>&Version;</entry>
-       <entry>&Description;</entry>
-      </row>
-     </thead>
-     <tbody>
-      <row>
-       <entry>7.0.0</entry>
-       <entry>
-        In case <function>ob_start</function> is used inside an output buffer 
-        callback, this function will no longer issue an <constant>E_ERROR</constant> 
-        but instead an <constant>E_RECOVERABLE_ERROR</constant>, allowing custom 
-        error handlers to catch such errors.
-       </entry>
-      </row>
-      <row>
-       <entry>5.4.0</entry>
-       <entry>
-        The third parameter of <function>ob_start</function> changed from a
-        <type>boolean</type> parameter called <parameter>erase</parameter>
-        (which, if set to &false;, would prevent the output buffer from being
-        deleted until the script finished executing) to an
-        <type>integer</type> parameter called <parameter>flags</parameter>.
-        Unfortunately, this results in an API compatibility break for code
-        written prior to PHP 5.4.0 that uses the third parameter. See
-        <link linkend="function.ob-start.flags-bc">the flags example</link>
-        for an example of how to handle this with code that needs to be
-        compatible with both.
-       </entry>
-      </row>
-      <row>
-       <entry>5.4.0</entry>
-       <entry>
-        A chunk size of <literal>1</literal> now results in chunks of 1 byte
-        being sent to the output buffer.
-       </entry>
-      </row>
-     </tbody>
-    </tgroup>
-   </informaltable>
-  </para>
- </refsect1>
-
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
@@ -298,17 +249,12 @@ ob_end_flush();
 
   <para>
    <example xml:id="function.ob-start.flags-bc">
-    <title>Creating an uneraseable output buffer in a way compatible with both PHP 5.3 and 5.4</title>
+    <title>Creating an unerasable output buffer</title>
     <programlisting role="php">
 <![CDATA[
 <?php
 
-if (version_compare(PHP_VERSION, '5.4.0', '>=')) {
-  ob_start(null, 0, PHP_OUTPUT_HANDLER_STDFLAGS ^
-    PHP_OUTPUT_HANDLER_REMOVABLE);
-} else {
-  ob_start(null, 0, false);
-}
+ob_start(null, 0, PHP_OUTPUT_HANDLER_STDFLAGS ^ PHP_OUTPUT_HANDLER_REMOVABLE);
 
 ?>
 ]]>
@@ -334,7 +280,6 @@ if (version_compare(PHP_VERSION, '5.4.0', '>=')) {
  </refsect1>  
 
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

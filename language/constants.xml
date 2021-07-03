@@ -6,11 +6,19 @@
   <simpara>
    A constant is an identifier (name) for a simple value. As the name
    suggests, that value cannot change during the execution of the
-   script (except for <link linkend="language.constants.predefined">
+   script (except for <link linkend="language.constants.magic">
    magic constants</link>, which aren't actually constants).
-   A constant is case-sensitive by default. By convention, constant 
+   Constants are case-sensitive. By convention, constant
    identifiers are always uppercase.
   </simpara>
+
+  <note>
+   <para>
+    Prior to PHP 8.0.0, constants defined using the <function>define</function>
+    function may be case-insensitive.
+   </para>
+  </note>
+
   <para>
    The name of a constant follows the same rules as any label in PHP. A 
    valid constant name starts with a letter or underscore, followed
@@ -20,11 +28,12 @@
   </para>
   <para>
    It is possible to <function>define</function> constants with reserved or even
-   invalid names, whose value can (only) be retrieved with
-   <function>constant</function>. However, doing so is not recommended.
+   invalid names, whose value can only be retrieved with the
+   <function>constant</function> function. However, doing so is not recommended.
   </para>
   &tip.userlandnaming;
   <para>
+<!-- TODO Move into syntax section? -->
    <example>
     <title>Valid and invalid constant names</title>
     <programlisting role="php">
@@ -57,19 +66,26 @@ define("__FOO__", "something");
   </note>
 
   <simpara>
-   Like &link.superglobals;, the scope of a constant is global.  You 
-   can access constants anywhere in your script without regard to scope.  
+   Like &link.superglobals;, the scope of a constant is global.
+   Constants can be accessed from anywhere in a script without regard to scope.
    For more information on scope, read the manual section on
    <link linkend="language.variables.scope">variable scope</link>.
   </simpara>
 
+  <note>
+   <simpara>
+    As of PHP 7.1.0, class constant may declare a visibility of protected
+    or private, making them only available in the hierarchical scope of the
+    class in which it is defined.
+   </simpara>
+  </note>
+
   <sect1 xml:id="language.constants.syntax">
    <title>Syntax</title>
    <simpara>
-    You can define a constant by using the 
-    <function>define</function>-function or by using the 
-    <literal>const</literal> keyword outside a class definition as 
-    of PHP 5.3.0. While <function>define</function> allows a constant to be
+    Constants can be defined using the <literal>const</literal> keyword,
+    or by using the <function>define</function>-function.
+    While <function>define</function> allows a constant to be
     defined to an arbitrary expression, the <literal>const</literal> keyword has
     restrictions as outlined in the next paragraph.
     Once a constant is defined, it can never be
@@ -77,24 +93,22 @@ define("__FOO__", "something");
    </simpara>
    <simpara>
     When using the <literal>const</literal> keyword,
-    only scalar data (<type>boolean</type>, <type>integer</type>,
-    <type>float</type> and <type>string</type>) can be contained 
-    in constants prior to PHP 5.6. From PHP 5.6 onwards, it is possible to 
-    define a constant as a scalar expression, and it is also possible
-    to define an <type>array</type> constant. It is possible to define
-    constants as a <type>resource</type>, but it should be avoided, as it can
-    cause unexpected results.
+    only scalar (<type>bool</type>, <type>int</type>,
+    <type>float</type> and <type>string</type>) expressions and constant
+    <type>array</type>s containing only scalar expressions are accepted.
+    It is possible to define constants as a <type>resource</type>,
+    but it should be avoided, as it can cause unexpected results.
    </simpara>
    <simpara>
-    You can get the value of a constant by simply specifying its name.
-    Unlike with variables, you should <emphasis>not</emphasis> prepend
-    a constant with a <literal>$</literal>.
-    You can also use the function <function>constant</function> to
-    read a constant's value if you wish to obtain the constant's name
-    dynamically. 
+    The value of a constant is accessed simply by specifying its name.
+    Unlike variables, a constant is <emphasis>not</emphasis> prepended
+    with a <literal>$</literal>.
+    It is also possible to use the <function>constant</function> function to
+    read a constant's value if the constant's name is obtained dynamically. 
     Use <function>get_defined_constants</function> to get a list of 
     all defined constants.
    </simpara>
+
    <note>
     <simpara>
      Constants and (global) variables are in a different namespace. 
@@ -102,22 +116,29 @@ define("__FOO__", "something");
      <varname>$TRUE</varname> are generally different.
     </simpara>
    </note>
+
    <simpara>
-    If you use an undefined constant, PHP assumes that you mean
-    the name of the constant itself, just as if you called it as
-    a <type>string</type> (CONSTANT vs "CONSTANT"). 
+    If an undefined constant is used an <classname>Error</classname> is thrown.
+    Prior to PHP 8.0.0, undefined constants would be interpreted as a bare
+    word <type>string</type>, i.e. (CONSTANT vs "CONSTANT"). 
     This fallback is deprecated as of PHP 7.2.0, and an error of level
-    <constant>E_WARNING</constant> is issued when it happens
-    (previously, an error of level
-    <link linkend="ref.errorfunc">E_NOTICE</link> has been issued instead.)
+    <constant>E_WARNING</constant> is issued when it happens.
+    Prior to PHP 7.2.0, an error of level
+    <link linkend="ref.errorfunc">E_NOTICE</link> has been issued instead.
     See also the manual entry on why 
     <link linkend="language.types.array.foo-bar">$foo[bar]</link> is
-    wrong (unless you first <function>define</function>
-    <literal>bar</literal> as a constant). This does not apply to <link
+    wrong (unless <literal>bar</literal> is a constant).
+    This does not apply to <link
     linkend="language.namespaces.rules">(fully) qualified constants</link>,
-    which will raise a fatal error if undefined. If you simply want to check if a
-    constant is set, use the <function>defined</function> function.
+    which will always raise a <classname>Error</classname> if undefined.
    </simpara>
+
+   <note>
+    <simpara>
+     To check if a constant is set, use the <function>defined</function> function.
+    </simpara>
+   </note>
+
    <para>
     These are the differences between constants and variables:
     <itemizedlist>
@@ -125,12 +146,6 @@ define("__FOO__", "something");
       <simpara>
        Constants do not have a dollar sign (<literal>$</literal>)
        before them;
-      </simpara>
-     </listitem>
-     <listitem>
-      <simpara>
-       Prior to PHP 5.3, Constants may only be defined using the
-       <function>define</function> function, not by simple assignment;
       </simpara>
      </listitem>
      <listitem>
@@ -147,13 +162,8 @@ define("__FOO__", "something");
      </listitem>
      <listitem>
       <simpara>
-       Constants may only evaluate to scalar values. As of PHP 5.6 it is possible
-       to define array constant using <literal>const</literal> keywords and as of
-       PHP 7 array constants can also be defined using <function>define</function>
-       You may use arrays in constant scalar expressions
-       (for example, <literal>const FOO = array(1,2,3)[0];</literal>),
-       but the end result must be a value of allowed type.
-       </simpara>
+       Constants may only evaluate to scalar values or arrays.
+      </simpara>
      </listitem>
     </itemizedlist>
    </para>
@@ -166,7 +176,8 @@ define("__FOO__", "something");
 <?php
 define("CONSTANT", "Hello world.");
 echo CONSTANT; // outputs "Hello world."
-echo Constant; // outputs "Constant" and issues a notice.
+echo Constant; // Emits an Error: Undefined constant "Constant"
+               // Prior to PHP 8.0.0, outputs "Constant" and issues a warning.
 ?>
 ]]>
      </programlisting>
@@ -179,19 +190,19 @@ echo Constant; // outputs "Constant" and issues a notice.
      <programlisting role="php">
 <![CDATA[
 <?php
-// Works as of PHP 5.3.0
+// Simple scalar value
 const CONSTANT = 'Hello World';
 
 echo CONSTANT;
 
-// Works as of PHP 5.6.0
+// Scalar expression
 const ANOTHER_CONST = CONSTANT.'; Goodbye World';
 echo ANOTHER_CONST;
 
 const ANIMALS = array('dog', 'cat', 'bird');
 echo ANIMALS[1]; // outputs "cat"
 
-// Works as of PHP 7
+// Constant arrays
 define('ANIMALS', array(
     'dog',
     'cat',
@@ -215,21 +226,18 @@ echo ANIMALS[1]; // outputs "cat"
     </para>
    </note>
 
-   <note>
+   <sect2 role="seealso">
+    &reftitle.seealso;
     <para>
-     Constants defined using the <literal>const</literal> keyword are always
-     case-sensitive, while constants defined using <function>define</function>
-     may be case-insensitive.
+     <simplelist>
+      <member><link linkend="language.oop5.constants">Class Constants</link></member>
+     </simplelist>
     </para>
-   </note>
-
-   <simpara>
-    See also <link linkend="language.oop5.constants">Class Constants</link>.
-   </simpara>
+   </sect2>
   </sect1>
   
   <sect1 xml:id="language.constants.predefined">
-   <title>Magic constants</title>
+   <title>Predefined constants</title>
 
    <simpara>
     PHP provides a large number of <link
@@ -239,7 +247,10 @@ echo ANIMALS[1]; // outputs "cat"
     are available, either via dynamic loading or because they have
     been compiled in.
    </simpara>
-   
+  </sect1>
+
+  <sect1 xml:id="language.constants.magic">
+   <title>Magic constants</title>
    <para>
     There are nine magical constants that change depending on
     where they are used.  For example, the value of
@@ -250,12 +261,12 @@ echo ANIMALS[1]; // outputs "cat"
    </para>
    <para>
     <table>
-     <title>A few "magical" PHP constants</title>
+     <title>PHP's magic constants</title>
      <tgroup cols="2">
       <thead>
        <row>
-        <entry>Name</entry>
-        <entry>Description</entry>
+        <entry>&Name;</entry>
+        <entry>&Description;</entry>
        </row>
       </thead>
       <tbody>
@@ -292,7 +303,7 @@ echo ANIMALS[1]; // outputs "cat"
         <entry>
          The class name. The class name includes the namespace
          it was declared in (e.g. <literal>Foo\Bar</literal>).
-         Note that as of PHP 5.4 __CLASS__ works also in traits. When used
+         When used
          in a trait method, __CLASS__ is the name of the class the trait
          is used in.
         </entry>
@@ -317,61 +328,29 @@ echo ANIMALS[1]; // outputs "cat"
         </entry>
        </row>
        <row xml:id="constant.coloncolonclass">
-        <entry><constant>ClassName::class</constant></entry>
+        <entry><constant><replaceable>ClassName</replaceable>::class</constant></entry>
         <entry>
-         The fully qualified class name. See also 
-         <link linkend="language.oop5.basic.class.class">::class</link>.
+         The fully qualified class name.
         </entry>
        </row>
       </tbody>
      </tgroup>
     </table>
    </para>
-<!-- <link linkend="language.oop5.basic.class.class">::class</link> -->
-   <para>
-    See also 
-    <function>get_class</function>,
-    <function>get_object_vars</function>,
-    <function>file_exists</function>&listendand;
-    <function>function_exists</function>.
-   </para>
-   
-   <sect2 xml:id="language.constants.predefined.changelog">
-    &reftitle.changelog;
 
+   <sect2 role="seealso">
+    &reftitle.seealso;
     <para>
-     <informaltable>
-      <tgroup cols="2">
-       <thead>
-        <row>
-         <entry>&Version;</entry>
-         <entry>&Description;</entry>
-        </row>
-       </thead>
-       <tbody>
-        <row>
-         <entry>5.5.0</entry>
-         <entry>
-          Added <constant>::class</constant> magic constant
-         </entry>
-        </row>
-        <row>
-         <entry>5.4.0</entry>
-         <entry>
-          Added <constant>__TRAIT__</constant> constant
-         </entry>
-        </row>
-        <row>
-         <entry>5.3.0</entry>
-         <entry>
-          Added <constant>__DIR__</constant> and <constant>__NAMESPACE__</constant> constants
-         </entry>
-        </row>
-       </tbody>
-      </tgroup>
-     </informaltable>
+     <simplelist>
+      <member><link linkend="language.oop5.basic.class.class">::class</link></member>
+      <member><function>get_class</function></member>
+      <member><function>get_object_vars</function></member>
+      <member><function>file_exists</function></member>
+      <member><function>function_exists</function></member>
+     </simplelist>
     </para>
    </sect2>
+
   </sect1>
  </chapter>
  

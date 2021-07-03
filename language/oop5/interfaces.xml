@@ -5,7 +5,8 @@
   <para>
    Object interfaces allow you to create code which specifies which methods a
    class must implement, without having to define how these methods are
-   implemented.
+   implemented.  Interfaces share a namespace with classes and traits, so they may
+   not use the same name.
   </para>
   <para>
    Interfaces are defined in the same way as a class, but with the <literal>interface</literal>
@@ -17,10 +18,36 @@
    interface.
   </para>
   <para>
-   Note that it is possible to declare a <link
-   linkend="language.oop5.decon.constructor">constructor</link> in an interface,
-   which can be useful in some contexts, e.g. for use by factories.
+   In practice, interfaces serve two complementary purposes:
   </para>
+  <simplelist>
+   <member>
+    To allow developers to create objects of different classes that may be used interchangeably
+    because they implement the same interface or interfaces.  A common example is multiple database access services,
+    multiple payment gateways, or different caching strategies.  Different implementations may
+    be swapped out without requiring any changes to the code that uses them.
+   </member>
+   <member>
+    To allow a function or method to accept and operate on a parameter that conforms to an
+    interface, while not caring what else the object may do or how it is implemented. These interfaces
+    are often named like <literal>Iterable</literal>, <literal>Cacheable</literal>, <literal>Renderable</literal>,
+    or so on to describe the significance of the behavior.
+   </member>
+  </simplelist>
+  <para>
+   Interfaces may define
+   <link linkend="language.oop5.magic">magic methods</link> to require implementing classes to
+   implement those methods.
+  </para>
+  <note>
+   <para>
+    Although they are supported, including <link linkend="language.oop5.decon.constructor">constructors</link>
+    in interfaces is strongly discouraged. Doing so significantly reduces the flexibility of the object implementing the
+    interface.  Additionally, constructors are not enforced by inheritance rules, which can cause inconsistent
+    and unexpected behavior.
+   </para>
+  </note>
+
   <sect2 xml:id="language.oop5.interfaces.implements">
    <title><literal>implements</literal></title>
    <para>
@@ -29,14 +56,20 @@
     so will result in a fatal error. Classes may implement more than one interface
     if desired by separating each interface with a comma.
    </para>
-   <note>
+   <warning>
     <para>
-     Prior to PHP 5.3.9, a class could not implement two interfaces that
-     specified a method with the same name, since it would cause ambiguity.
-     More recent versions of PHP allow this as long as the duplicate methods
-     have the same signature.
+     A class can implement two interfaces which define a method with the
+     same name, only if the method declaration in both interfaces is identical.
     </para>
-   </note>
+   </warning>
+   <warning>
+    <para>
+     A class that implements an interface may use a different name for its parameters than
+     the interface.  However, as of PHP 8.0 the language supports <link linkend="functions.named-arguments">named arguments</link>, which means
+     callers may rely on the parameter name in the interface.  For that reason, it is strongly
+     recommended that developers use the same parameter names as the interface being implemented.
+    </para>
+   </warning>
    <note>
     <para>
      Interfaces can be extended like classes using the <link linkend="language.oop5.inheritance">extends</link> 
@@ -45,12 +78,12 @@
    </note>
    <note>
     <para>
-     The class implementing the interface must use a method signatures
-     which is compatible with LSP (Liskov Substitution Principle).
-     Not doing so will result in a fatal error.
-     </para>
-    </note>
+     The class implementing the interface must declare all methods in the interface
+     with a <link linkend="language.oop.lsp">compatible signature</link>.
+    </para>
+   </note>
   </sect2>
+ <!-- Move this to OOP constants page? -->
   <sect2 xml:id="language.oop5.interfaces.constants">
    <title><literal>Constants</literal></title>
    <para>
@@ -67,8 +100,8 @@
 <![CDATA[
 <?php
 
-// Declare the interface 'iTemplate'
-interface iTemplate
+// Declare the interface 'Template'
+interface Template
 {
     public function setVariable($name, $var);
     public function getHtml($template);
@@ -76,9 +109,9 @@ interface iTemplate
 
 // Implement the interface
 // This will work
-class Template implements iTemplate
+class WorkingTemplate implements Template
 {
-    private $vars = array();
+    private $vars = [];
   
     public function setVariable($name, $var)
     {
@@ -97,10 +130,10 @@ class Template implements iTemplate
 
 // This will not work
 // Fatal error: Class BadTemplate contains 1 abstract methods
-// and must therefore be declared abstract (iTemplate::getHtml)
-class BadTemplate implements iTemplate
+// and must therefore be declared abstract (Template::getHtml)
+class BadTemplate implements Template
 {
-    private $vars = array();
+    private $vars = [];
   
     public function setVariable($name, $var)
     {
@@ -116,18 +149,18 @@ class BadTemplate implements iTemplate
      <programlisting role="php">
 <![CDATA[
 <?php
-interface a
+interface A
 {
     public function foo();
 }
 
-interface b extends a
+interface B extends A
 {
     public function baz(Baz $baz);
 }
 
 // This will work
-class c implements b
+class C implements B
 {
     public function foo()
     {
@@ -139,7 +172,7 @@ class c implements b
 }
 
 // This will not work and result in a fatal error
-class d implements b
+class D implements B
 {
     public function foo()
     {
@@ -158,22 +191,22 @@ class d implements b
      <programlisting role="php">
 <![CDATA[
 <?php
-interface a
+interface A
 {
     public function foo();
 }
 
-interface b
+interface B
 {
     public function bar();
 }
 
-interface c extends a, b
+interface C extends A, B
 {
     public function baz();
 }
 
-class d implements c
+class D implements C
 {
     public function foo()
     {
@@ -196,30 +229,93 @@ class d implements c
      <programlisting role="php">
 <![CDATA[
 <?php
-interface a
+interface A
 {
-    const b = 'Interface constant';
+    const B = 'Interface constant';
 }
 
 // Prints: Interface constant
-echo a::b;
+echo A::B;
 
 
 // This will however not work because it's not allowed to 
 // override constants.
-class b implements a
+class B implements A
 {
-    const b = 'Class constant';
+    const B = 'Class constant';
+}
+?>
+]]>
+     </programlisting>
+   </example>
+   <example xml:id="language.oop5.interfaces.examples.ex5">
+    <title>Interfaces with abstract classes</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+interface A
+{
+    public function foo(string $s): string;
+
+    public function bar(int $i): int;
+}
+
+// An abstract class may implement only a portion of an interface.
+// Classes that extend the abstract class must implement the rest.
+abstract class B implements A
+{
+    public function foo(string $s): string
+    {
+        return $s . PHP_EOL;
+    }
+}
+
+class C extends B
+{
+    public function bar(int $i): int
+    {
+        return $i * 2;
+    }
+}
+?>
+]]>
+     </programlisting>
+   </example>
+   <example xml:id="language.oop5.interfaces.examples.ex6">
+    <title>Extending and implementing simultaneously</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class One
+{
+    /* ... */
+}
+
+interface Usable
+{
+    /* ... */
+}
+
+interface Updatable
+{
+    /* ... */
+}
+
+// The keyword order here is important. 'extends' must come first.
+class Two extends One implements Usable, Updatable
+{
+    /* ... */
 }
 ?>
 ]]>
      </programlisting>
    </example>
    <para>
-     An interface, together with type-hinting, provides a good way to make sure
+     An interface, together with type declarations, provides a good way to make sure
      that a particular object contains particular methods. See
      <link linkend="language.operators.type">instanceof</link> operator and
-     <link linkend="language.oop5.typehinting">type hinting</link>.
+     <link linkend="language.types.declarations">type declarations</link>.
    </para>
   </sect2>
 

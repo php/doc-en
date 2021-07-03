@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision$ --> 
+<!-- $Revision$ -->
 
 <refentry xml:id="mongodb-driver-manager.construct" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
@@ -46,12 +46,12 @@
       A <link xlink:href="&url.mongodb.docs;reference/connection-string/">mongodb://</link> connection URI:
       <programlisting role="txt">
 <![CDATA[
-mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[defaultAuthDb][?options]]
 ]]>
       </programlisting>
      </para>
      <para>
-      For details on supported options, see
+      For details on supported URI options, see
       <link xlink:href="&url.mongodb.docs;reference/connection-string/#connections-connection-options">Connection String Options</link>
       in the MongoDB manual.
       <link xlink:href="&url.mongodb.docs;reference/connection-string/#connection-pool-options">Connection pool options</link>
@@ -67,6 +67,15 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
       path may contain special characters such as slashes and must be encoded.
       The <function>rawurlencode</function> function may be used to encode
       constituent parts of the URI.
+     </para>
+     <para>
+      The <literal>defaultAuthDb</literal> component may be used to specify the
+      database name associated with the user's credentials; however the
+      <literal>authSource</literal> URI option will take priority if specified.
+      If neither <literal>defaultAuthDb</literal> nor
+      <literal>authSource</literal> are specified, the <literal>admin</literal>
+      database will be used by default. The <literal>defaultAuthDb</literal>
+      component has no effect in the absence of user credentials.
      </para>
     </listitem>
    </varlistentry>
@@ -145,7 +154,8 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           <entry>
            <para>
             The database name associated with the user's credentials. Defaults
-            to the database component of the connection URI.
+            to the database component of the connection URI, or the
+            <literal>admin</literal> database if both are unspecified.
            </para>
            <para>
             For authentication mechanisms that delegate credential storage to
@@ -156,7 +166,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>canonicalizeHostname</entry>
-          <entry><type>boolean</type></entry>
+          <entry><type>bool</type></entry>
           <entry>
            <para>
             If &true;, the driver will resolve the real hostname for the server
@@ -189,11 +199,28 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row xml:id="mongodb-driver-manager.construct-urioptions.connecttimeoutms">
           <entry>connectTimeoutMS</entry>
-          <entry><type>integer</type></entry>
+          <entry><type>int</type></entry>
           <entry>
            <para>
             The time in milliseconds to attempt a connection before timing out.
             Defaults to 10,000 milliseconds.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>directConnection</entry>
+          <entry><type>bool</type></entry>
+          <entry>
+           <para>
+            This option can be used to control replica set discovery behavior
+            when only a single host is provided in the connection string. By
+            default, providing a single member in the connection string will
+            establish a direct connection or discover additional members
+            depending on whether the <literal>"replicaSet"</literal> URI option
+            is omitted or present, respectively. Specify &false; to force
+            discovery to occur (if <literal>"replicaSet"</literal> is omitted)
+            or specify &true; to force a direct connection (if
+            <literal>"replicaSet"</literal> is present).
            </para>
           </entry>
          </row>
@@ -217,7 +244,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>heartbeatFrequencyMS</entry>
-          <entry><type>integer</type></entry>
+          <entry><type>int</type></entry>
           <entry>
            <para>
             Specifies the interval in milliseconds between the driver's checks
@@ -234,7 +261,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>journal</entry>
-          <entry><type>boolean</type></entry>
+          <entry><type>bool</type></entry>
           <entry>
            <para>
             Corresponds to the default write concern's
@@ -247,7 +274,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>localThresholdMS</entry>
-          <entry><type>integer</type></entry>
+          <entry><type>int</type></entry>
           <entry>
            <para>
             The size in milliseconds of the latency window for selecting among
@@ -258,7 +285,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>maxStalenessSeconds</entry>
-          <entry><type>integer</type></entry>
+          <entry><type>int</type></entry>
           <entry>
            <para>
             Corresponds to the read preference's
@@ -336,7 +363,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>retryReads</entry>
-          <entry><type>boolean</type></entry>
+          <entry><type>bool</type></entry>
           <entry>
            <para>
             Specifies whether or not the driver should automatically retry
@@ -353,7 +380,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>retryWrites</entry>
-          <entry><type>boolean</type></entry>
+          <entry><type>bool</type></entry>
           <entry>
            <para>
             Specifies whether or not the driver should automatically retry
@@ -370,7 +397,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>safe</entry>
-          <entry><type>boolean</type></entry>
+          <entry><type>bool</type></entry>
           <entry>
            <para>
             If &true;, specifies <literal>1</literal> for the default write
@@ -385,7 +412,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row xml:id="mongodb-driver-manager.construct-urioptions.serverselectiontimeoutms">
           <entry>serverSelectionTimeoutMS</entry>
-          <entry><type>integer</type></entry>
+          <entry><type>int</type></entry>
           <entry>
            <para>
             Specifies how long in milliseconds to block for server selection
@@ -395,7 +422,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>serverSelectionTryOnce</entry>
-          <entry><type>boolean</type></entry>
+          <entry><type>bool</type></entry>
           <entry>
            <para>
             When &true;, instructs the driver to scan the MongoDB deployment
@@ -408,33 +435,19 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           </entry>
          </row>
          <row>
-          <entry>slaveOk</entry>
-          <entry><type>boolean</type></entry>
-          <entry>
-           <para>
-            Specifies <literal>"secondaryPreferred"</literal> for the read
-            preference mode if &true;. For details, see
-            <classname>MongoDB\Driver\ReadPreference</classname>.
-           </para>
-           <para>
-            This option is deprecated and should not be used.
-           </para>
-          </entry>
-         </row>
-         <row>
           <entry>socketCheckIntervalMS</entry>
-          <entry><type>integer</type></entry>
+          <entry><type>int</type></entry>
           <entry>
            <para>
             If a socket has not been used recently, the driver must check it via
-            an <literal>isMaster</literal> command before using it for any
+            a <literal>hello</literal> command before using it for any
             operation. Defaults to 5,000 milliseconds.
            </para>
           </entry>
          </row>
          <row>
           <entry>socketTimeoutMS</entry>
-          <entry><type>integer</type></entry>
+          <entry><type>int</type></entry>
           <entry>
            <para>
             The time in milliseconds to attempt a send or receive on a socket
@@ -445,7 +458,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>ssl</entry>
-          <entry><type>boolean</type></entry>
+          <entry><type>bool</type></entry>
           <entry>
            <para>
             Initiates the connection with TLS/SSL if &true;. Defaults to
@@ -459,7 +472,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>tls</entry>
-          <entry><type>boolean</type></entry>
+          <entry><type>bool</type></entry>
           <entry>
            <para>
             Initiates the connection with TLS/SSL if &true;. Defaults to
@@ -469,7 +482,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>tlsAllowInvalidCertificates</entry>
-          <entry><type>boolean</type></entry>
+          <entry><type>bool</type></entry>
           <entry>
            <para>
             Specifies whether or not the driver should error when the server's
@@ -484,7 +497,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>tlsAllowInvalidHostnames</entry>
-          <entry><type>boolean</type></entry>
+          <entry><type>bool</type></entry>
           <entry>
            <para>
             Specifies whether or not the driver should error when there is a
@@ -534,13 +547,34 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           </entry>
          </row>
          <row>
+          <entry>tlsDisableCertificateRevocationCheck</entry>
+          <entry><type>bool</type></entry>
+          <entry>
+           <para>
+            If &true;, the driver will not attempt to check certificate
+            revocation status (e.g. OCSP, CRL). Defaults to &false;.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>tlsDisableOCSPEndpointCheck</entry>
+          <entry><type>bool</type></entry>
+          <entry>
+           <para>
+            If &true;, the driver will not attempt to contact an OCSP responder
+            endpoint if needed (i.e. an OCSP response is not stapled). Defaults
+            to &false;.
+           </para>
+          </entry>
+         </row>
+         <row>
           <entry>tlsInsecure</entry>
-          <entry><type>boolean</type></entry>
+          <entry><type>bool</type></entry>
           <entry>
            <para>
             Relax TLS constraints as much as possible. Specifying &true; for
             this option has the same effect as specifying &true; for both the
-            <literal>tlsAllowInvalidCertificates</literal> and
+            <literal>"tlsAllowInvalidCertificates"</literal> and
             <literal>"tlsAllowInvalidHostnames"</literal> URI options. Defaults
             to &false;.
            </para>
@@ -564,7 +598,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>w</entry>
-          <entry><type>integer|string</type></entry>
+          <entry><type class="union"><type>int</type><type>string</type></type></entry>
           <entry>
            <para>
             Corresponds to the default write concern's <parameter>w</parameter>
@@ -575,7 +609,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>wTimeoutMS</entry>
-          <entry><type>integer|string</type></entry>
+          <entry><type class="union"><type>int</type><type>string</type></type></entry>
           <entry>
            <para>
             Corresponds to the default write concern's
@@ -591,7 +625,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          </row>
          <row>
           <entry>zlibCompressionLevel</entry>
-          <entry><type>integer</type></entry>
+          <entry><type>int</type></entry>
           <entry>
            <para>
             Specifies the compression level to use for the zlib compressor. This
@@ -625,7 +659,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
         <tbody>
          <row>
           <entry>allow_invalid_hostname</entry>
-          <entry><type>boolean</type></entry>
+          <entry><type>bool</type></entry>
           <entry>
            <para>
             Disables hostname validation if &true;. Defaults to &false;.
@@ -690,7 +724,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
                </row>
                <row>
                 <entry>bypassAutoEncryption</entry>
-                <entry><type>boolean</type></entry>
+                <entry><type>bool</type></entry>
                 <entry>
                  With this option set to &true;, <literal>mongocryptd</literal>
                  will not be spawned automatically. This is used to disable
@@ -720,7 +754,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
              are not bypassed will result in error. To bypass automatic
              encryption for all operations, set <literal>bypassAutoEncryption=true</literal>
              in <literal>autoEncryption</literal>. For more information on
-             whitelisted operations, see the
+             allowed operations, see the
              <link xlink:href="&url.mongodb.specs;/blob/master/source/client-side-encryption/client-side-encryption.rst#libmongocrypt-auto-encryption-whitelist">Client-Side Encryption Specification</link>.
             </simpara>
            </note>
@@ -809,6 +843,28 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           <entry>Path to a certificate revocation list file.</entry>
          </row>
          <row>
+          <entry>driver</entry>
+          <entry><type>array</type></entry>
+          <entry>
+           <para>
+            Allows custom drivers to append their own metadata to the server
+            handshake. By default, the driver submits its own name, version, and
+            platform (i.e. PHP version) in the handshake. Custom drivers can
+            specify strings for the <literal>"name"</literal>,
+            <literal>"version"</literal>, and
+            <literal>"platform"</literal> keys of this array, which will be
+            appended to the respective field(s) in the handshake document.
+           </para>
+           <note>
+            <simpara>
+             Handshake information is limited to 512 bytes. The driver will
+             truncate handshake data to fit within this 512-byte string. Drivers
+             and ODMs are encouraged to keep their own metadata concise.
+            </simpara>
+           </note>
+          </entry>
+         </row>
+         <row>
           <entry>pem_file</entry>
           <entry><type>string</type></entry>
           <entry>
@@ -835,8 +891,18 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           </entry>
          </row>
          <row>
+          <entry>serverApi</entry>
+          <entry><classname>MongoDB\Driver\ServerApi</classname></entry>
+          <entry>
+           <para>
+            This option is used to declare a server API version for the manager.
+            If omitted, no API version is declared.
+           </para>
+          </entry>
+         </row>
+         <row>
           <entry>weak_cert_validation</entry>
-          <entry><type>boolean</type></entry>
+          <entry><type>bool</type></entry>
           <entry>
            <para>
             Disables certificate validation if &true;. Defaults to &false;
@@ -877,7 +943,20 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
      </thead>
      <tbody>
       <row>
-       <entry>1.7.0</entry>
+       <entry>PECL mongodb 1.8.0</entry>
+       <entry>
+        <para>
+         Added the <literal>"directConnection"</literal>,
+         <literal>"tlsDisableCertificateRevocationCheck"</literal>, and
+         <literal>"tlsDisableOCSPEndpointCheck"</literal> URI options.
+        </para>
+        <para>
+         Added the <literal>"driver"</literal> driver option.
+        </para>
+       </entry>
+      </row>
+      <row>
+       <entry>PECL mongodb 1.7.0</entry>
        <entry>
         <para>
          Added the <literal>"autoEncryption"</literal> driver option.
@@ -890,7 +969,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
        </entry>
       </row>
       <row>
-       <entry>1.6.0</entry>
+       <entry>PECL mongodb 1.6.0</entry>
        <entry>
         <para>
          Added the <literal>"retryReads"</literal>, <literal>"tls"</literal>,
@@ -915,7 +994,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
        </entry>
       </row>
       <row>
-       <entry>1.5.0</entry>
+       <entry>PECL mongodb 1.5.0</entry>
        <entry>
         <para>
          <literal>"wtimeoutMS"</literal> is now always validated and applied to
@@ -926,7 +1005,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
        </entry>
       </row>
       <row>
-       <entry>1.4.0</entry>
+       <entry>PECL mongodb 1.4.0</entry>
        <entry>
         <para>
          Added the <literal>"compressors"</literal>,
@@ -936,7 +1015,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
        </entry>
       </row>
       <row>
-       <entry>1.3.0</entry>
+       <entry>PECL mongodb 1.3.0</entry>
        <entry>
         <para>
          The <parameter>uriOptions</parameter> argument now accepts
@@ -947,7 +1026,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
        </entry>
       </row>
       <row>
-       <entry>1.2.0</entry>
+       <entry>PECL mongodb 1.2.0</entry>
        <entry>
         <para>
          The <parameter>uri</parameter> argument defaults to
@@ -976,7 +1055,7 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
        </entry>
       </row>
       <row>
-       <entry>1.1.0</entry>
+       <entry>PECL mongodb 1.1.0</entry>
        <entry>
         <para>
          The <parameter>uri</parameter> argument is optional and defaults to
@@ -1043,7 +1122,7 @@ $manager = new MongoDB\Driver\Manager("mongodb://mongos1.example.com,mongos2.exa
 <![CDATA[
 <?php
 
-$manager = new MongoDB\Driver\Manager("mongodb://myusername:mypassword@example.com/mydatabase");
+$manager = new MongoDB\Driver\Manager("mongodb://myusername:mypassword@example.com/?authSource=databaseName");
 
 ?>
 ]]>
@@ -1062,7 +1141,7 @@ $manager = new MongoDB\Driver\Manager("mongodb://myusername:mypassword@example.c
 <![CDATA[
 <?php
 
-$manager = new MongoDB\Driver\Manager("mongodb://myusername:myp%40ss%3Aw%25rd@example.com/mydatabase");
+$manager = new MongoDB\Driver\Manager("mongodb://myusername:myp%40ss%3Aw%25rd@example.com/?authSource=databaseName");
 
 ?>
 ]]>

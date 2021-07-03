@@ -7,11 +7,10 @@
    <title>Constructor</title>
    <methodsynopsis xml:id="object.construct">
     <type>void</type><methodname>__construct</methodname>
-    <methodparam choice="opt"><type>mixed</type><parameter>args</parameter><initializer>""</initializer></methodparam>
-    <methodparam choice="opt"><parameter>...</parameter></methodparam>
+    <methodparam rep="repeat"><type>mixed</type><parameter>values</parameter><initializer>""</initializer></methodparam>
    </methodsynopsis>
    <para>
-    PHP 5 allows developers to declare constructor methods for classes.
+    PHP allows developers to declare constructor methods for classes.
     Classes which have a constructor method call this method on each
     newly-created object, so it is suitable for any initialization that the
     object may need before it is used.
@@ -27,7 +26,7 @@
     </simpara>
    </note>
    <example>
-    <title>using new unified constructors</title>
+    <title>Constructors in inheritance</title>
     <programlisting role="php">
 <![CDATA[
 <?php
@@ -62,53 +61,181 @@ $obj = new OtherSubClass();
     </programlisting>
    </example>
    <para>
-    For backwards compatibility with PHP 3 and 4, if PHP cannot find a 
-    <link linkend="object.construct">__construct()</link> function for a given
-    class, it will
-    search for the old-style constructor function, by the name of the class.
-    Effectively, it means that the only case that would have compatibility
-    issues is if the class had a method named 
-    <link linkend="object.construct">__construct()</link> which was used for
-    different semantics.
-   </para>
-   <!-- Not using an entity because I want specific wording here, since we're
-   not deprecating constructors in general. -->
-   <warning>
-    <simpara>
-     Old style constructors are <emphasis>DEPRECATED</emphasis> in PHP 7.0, and
-     will be removed in a future version. You should always use
-     <link linkend="object.construct">__construct()</link> in new code.
-    </simpara>
-   </warning>
-   <para>
-    Unlike with other methods, PHP will not generate an
-    <constant>E_STRICT</constant> level error message when
-    <link linkend="object.construct">__construct()</link> is overridden with different parameters
-    than the parent <link linkend="object.construct">__construct()</link> method has.
+    Unlike other methods, <link linkend="object.construct">__construct()</link>
+    is exempt from the usual
+    <link linkend="language.oop.lsp">signature compatibility rules</link>
+    when being extended.
    </para>
    <para>
-    As of PHP 5.3.3, methods with the same name as the last element of a
-    namespaced class name will no longer be treated as constructor. This
-    change doesn't affect non-namespaced classes.
+    Constructors are ordinary methods which are called during the instantiation of their
+    corresponding object.  As such, they may define an arbitrary number of arguments, which
+    may be required, may have a type, and may have a default value. Constructor arguments
+    are called by placing the arguments in parentheses after the class name.
    </para>
    <example>
-    <title>Constructors in namespaced classes</title>
+    <title>Using constructor arguments</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-namespace Foo;
-class Bar {
-    public function Bar() {
-        // treated as constructor in PHP 5.3.0-5.3.2
-        // treated as regular method as of PHP 5.3.3
+class Point {
+    protected int $x;
+    protected int $y;
+
+    public function __construct(int $x, int $y = 0) {
+        $this->x = $x;
+        $this->y = $y;
     }
 }
+
+// Pass both parameters.
+$p1 = new Point(4, 5);
+// Pass only the required parameter. $y will take its default value of 0.
+$p2 = new Point(4);
+// With named parameters (as of PHP 8.0):
+$p3 = new Point(y: 5, x: 4);
 ?>
 ]]>
     </programlisting>
    </example>
-  </sect2>
+   <para>
+    If a class has no constructor, or the constructor has no required arguments, the parentheses
+    may be omitted.
+   </para>
+   <sect3>
+    <title>Old-style constructors</title>
+    <para>
+     Prior to PHP 8.0.0, classes in the global namespace will interpret a method named
+     the same as the class as an old-style constructor.  That syntax is deprecated,
+     and will result in an <constant>E_DEPRECATED</constant> error but still call that function as a constructor.
+     If both <link linkend="object.construct">__construct()</link> and a same-name method are
+     defined, <link linkend="object.construct">__construct()</link> will be called.
+    </para>
+    <para>
+     In namespaced classes, or any class as of PHP 8.0.0, a method named
+     the same as the class never has any special meaning.
+    </para>
+    <para>Always use <link linkend="object.construct">__construct()</link> in new code.
+    </para>
+   </sect3>
+   <sect3 xml:id="language.oop5.decon.constructor.promotion">
+    <title>Constructor Promotion</title>
+    <para>
+     As of PHP 8.0.0, constructor parameters may also be promoted to correspond to an
+     object property.  It is very common for constructor parameters to be assigned to
+     a property in the constructor but otherwise not operated upon.  Constructor promotion
+     provides a short-hand for that use case.  The example above could be rewritten as the following.
+    </para>
+    <example>
+     <title>Using constructor property promotion</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+class Point {
+    public function __construct(protected int $x, protected int $y = 0) {
+    }
+}
+]]>
+     </programlisting>
+    </example>
+    <para>
+     When a constructor argument includes a visibility modifier, PHP will interpret it as
+     both an object property and a constructor argument, and assign the argument value to
+     the property.  The constructor body may then be empty or may contain other statements.
+     Any additional statements will be executed after the argument values have been assigned
+     to the corresponding properties.
+    </para>
+    <para>
+     Not all arguments need to be promoted. It is possible to mix and match promoted and not-promoted
+     arguments, in any order.  Promoted arguments have no impact on code calling the constructor.
+    </para>
+    <note>
+     <para>
+      Object properties may not be typed <type>callable</type> due to engine ambiguity that would
+      introduce. Promoted arguments, therefore, may not be typed <type>callable</type> either. Any
+      other <link linkend="language.types.declarations">type declaration</link> is permitted, however.
+     </para>
+    </note>
+    <note>
+     <para>
+      <link linkend="language.attributes">Attributes</link> placed on a
+      promoted constructor argument will be replicated to both the property
+      and argument.
+     </para>
+    </note>
+   </sect3>
+   <sect3 xml:id="language.oop5.decon.constructor.static">
+    <title>Static creation methods</title>
+    <para>
+     PHP only supports a single constructor per class.  In some cases, however, it may be
+     desirable to allow an object to be constructed in different ways with different inputs.
+     The recommended way to do so is by using static methods as constructor wrappers.
+    </para>
+    <example>
+     <title>Using static creation methods</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+class Product {
 
+    private ?int $id;
+    private ?string $name;
+
+    private function __construct(?int $id = null, ?string $name = null) {
+        $this->id = $id;
+        $this->name = $name;
+    }
+
+    public static function fromBasicData(int $id, string $name): static {
+        $new = new static($id, $name);
+        return $new;
+    }
+
+    public static function fromJson(string $json): static {
+        $data = json_decode($json);
+        return new static($data['id'], $data['name']);
+    }
+
+    public static function fromXml(string $xml): static {
+        // Custom logic here.
+        $data = convert_xml_to_array($xml);
+        $new = new static();
+        $new->id = $data['id'];
+        $new->name = $data['name'];
+        return $new;
+    }
+}
+
+$p1 = Product::fromBasicData(5, 'Widget');
+$p2 = Product::fromJson($some_json_string);
+$p3 = Product::fromXml($some_xml_string);
+]]>
+     </programlisting>
+    </example>
+    <para>
+     The constructor may be made private or protected to prevent it from being called externally.
+     If so, only a static method will be able to instantiate the class. Because they are in the
+     same class definition they have access to private methods, even if not of the same object
+     instance. The private constructor is optional and may or may not make sense depending on
+     the use case.
+    </para>
+    <para>
+     The three public static methods then demonstrate different ways of instantiating the object.
+    </para>
+    <simplelist>
+     <member><code>fromBasicData()</code> takes the exact parameters that are needed, then creates the
+      object by calling the constructor and returning the result.</member>
+     <member><code>fromJson()</code> accepts a JSON string and does some pre-processing on it itself
+     to convert it into the format desired by the constructor. It then returns the new object.</member>
+     <member><code>fromXml()</code> accepts an XML string, preprocesses it, and then creates a bare
+     object.  The constructor is still called, but as all of the parameters are optional the method
+     skips them.  It then assigns values to the object properties directly before returning the result.</member>
+    </simplelist>
+    <para>
+     In all three cases, the <code>static</code> keyword is translated into the name of the class the code is in.
+     In this case, <code>Product</code>.
+    </para>
+   </sect3>
+  </sect2>
   <sect2 xml:id="language.oop5.decon.destructor">
    <title>Destructor</title>
    <methodsynopsis xml:id="object.destruct">
@@ -116,7 +243,7 @@ class Bar {
     <void />
    </methodsynopsis>
    <para>
-    PHP 5 introduces a destructor concept similar to that of other
+    PHP possesses a destructor concept similar to that of other
     object-oriented languages, such as C++. The destructor method will be
     called as soon as there are no other references to a particular object,
     or in any order during the shutdown sequence.
@@ -171,7 +298,6 @@ $obj = new MyDestructableClass();
   </sect2>
 
  </sect1>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

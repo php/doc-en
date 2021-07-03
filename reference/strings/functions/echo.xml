@@ -10,27 +10,23 @@
   &reftitle.description;
   <methodsynopsis>
    <type>void</type><methodname>echo</methodname>
-   <methodparam><type>string</type><parameter>arg1</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>...</parameter></methodparam>
+   <methodparam rep="repeat"><type>string</type><parameter>expressions</parameter></methodparam>
   </methodsynopsis>
   <simpara>
-   Outputs all parameters. No additional newline is appended.
+   Outputs one or more expressions, with no additional newlines or spaces.
   </simpara>
   <para>
-   <literal>echo</literal> is not actually a function (it is a
-   language construct), so you are not required to use parentheses
-   with it. <literal>echo</literal> (unlike some other language
-   constructs) does not behave like a function, so it cannot
-   always be used in the context of a function. Additionally, if you want to
-   pass more than one parameter to <literal>echo</literal>, the parameters
-   must not be enclosed within parentheses.
+   <literal>echo</literal> is not a function but a language construct.
+   Its arguments are a list of expressions following the <literal>echo</literal>
+   keyword, separated by commas, and not delimited by parentheses.
+   Unlike some other language constructs, <literal>echo</literal> does not have
+   any return value, so it cannot be used in the context of an expression.
   </para>
   <para>
    <literal>echo</literal> also has a shortcut syntax, where you can
-   immediately follow the opening tag with an equals sign. Prior to PHP 5.4.0,
-   this short syntax only works with the
-   <link linkend="ini.short-open-tag">short_open_tag</link> configuration
-   setting enabled.
+   immediately follow the opening tag with an equals sign. This syntax is available
+   even with the <link linkend="ini.short-open-tag">short_open_tag</link> configuration
+   setting disabled.
    <informalexample>
     <programlisting role="php">
 <![CDATA[
@@ -40,8 +36,8 @@ I have <?=$foo?> foo.
    </informalexample>
   </para>
   <para>
-   The major differences to <literal>print</literal> are that
-   <literal>echo</literal> accepts an argument list and doesn't have a return value.
+   The major differences to <function>print</function> are that
+   <literal>echo</literal> accepts multiple arguments and doesn't have a return value.
   </para>
  </refsect1>
 
@@ -50,17 +46,13 @@ I have <?=$foo?> foo.
   <para>
    <variablelist>
     <varlistentry>
-     <term><parameter>arg1</parameter></term>
+     <term><parameter>expressions</parameter></term>
      <listitem>
       <para>
-       The parameter to output.
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry>
-     <term><parameter>...</parameter></term>
-     <listitem>
-      <para>
+       One or more string expressions to output, separated by commas.
+       Non-string values will be coerced to strings, even when
+       <link linkend="language.types.declarations.strict">the
+       <literal>strict_types</literal> directive</link> is enabled.
       </para>
      </listitem>
     </varlistentry>
@@ -83,22 +75,45 @@ I have <?=$foo?> foo.
     <programlisting role="php">
 <![CDATA[
 <?php
-echo "Hello World";
+echo "echo does not require parentheses.";
 
 // Strings can either be passed individually as multiple arguments or
 // concatenated together and passed as a single argument
-echo 'This ', 'string ', 'was ', 'made ', 'with multiple parameters.', chr(10);
+echo 'This ', 'string ', 'was ', 'made ', 'with multiple parameters.', "\n";
 echo 'This ' . 'string ' . 'was ' . 'made ' . 'with concatenation.' . "\n";
 
-// Because echo does not behave like a function, the following code is invalid.
+// No newline or space is added; the below outputs "helloworld" all on one line
+echo "hello";
+echo "world";
+
+// Same as above
+echo "hello", "world";
+
+echo "This string spans
+multiple lines. The newlines will be
+output as well";
+
+echo "This string spans\nmultiple lines. The newlines will be\noutput as well.";
+
+// The argument can be any expression which produces a string
+$foo = "example";
+echo "foo is $foo"; // foo is example
+
+$fruits = ["lemon", "orange", "banana"];
+echo implode(" and ", $fruits); // lemon and orange and banana
+
+// Non-string expressions are coerced to string, even if declare(strict_types=1) is used
+echo 6 * 7; // 42
+
+// Because echo does not behave as an expression, the following code is invalid.
 ($some_var) ? echo 'true' : echo 'false';
 
 // However, the following examples will work:
 ($some_var) ? print 'true' : print 'false'; // print is also a construct, but
-                                            // it behaves like a function, so
-                                            // it may be used in this context.
+                                            // it is a valid expression, returning 1,
+                                            // so it may be used in this context.
 
-echo $some_var ? 'true': 'false'; // changing the statement around
+echo $some_var ? 'true': 'false'; // evaluating the expression first and passing it to echo
 ?>
 ]]>
     </programlisting>
@@ -109,31 +124,82 @@ echo $some_var ? 'true': 'false'; // changing the statement around
  <refsect1 role="notes">
   &reftitle.notes;
   &note.language-construct;
+
+  <note>
+   <title>Using with parentheses</title>
+   <para>
+    Surrounding a single argument to <literal>echo</literal> with parentheses will not
+    raise a syntax error, and produces syntax which looks like a normal
+    function call. However, this can be misleading, because the parentheses are actually
+    part of the expression being output, not part of the <literal>echo</literal>
+    syntax itself.
+   </para>
+   <para>
+    <example>
+     <title/>
+     <programlisting role="php">
+     <![CDATA[
+<?php
+echo "hello";
+// outputs "hello"
+
+echo("hello");
+// also outputs "hello", because ("hello") is a valid expression
+
+echo(1 + 2) * 3;
+// outputs "9"; the parentheses cause 1+2 to be evaluated first, then 3*3
+// the echo statement sees the whole expression as one argument
+
+echo "hello", " world";
+// outputs "hello world"
+
+echo("hello"), (" world");
+// outputs "hello world"; the parentheses are part of each expression
+
+echo("hello", " world");
+// Throws a Parse Error because ("hello", " world") is not a valid expression
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  </note>
+
   <tip>
    <para>
-    A benefit to passing in multiple arguments over using concatenation in
-    <function>echo</function> regards the precedence of the period operator in
-    PHP. If multiple arguments are passed in, then parentheses will not be
-    required to enforce precedence:
+    Passing multiple arguments to <literal>echo</literal> can avoid
+    complications arising from the precedence of the concatenation operator in
+    PHP. For instance, the concatenation operator has higher precedence than
+    the ternary operator, and prior to PHP 8.0.0 had the same precedence as addition
+    and subtraction:
    </para>
    <programlisting role="php">
-<![CDATA[
+    <![CDATA[
 <?php
-echo "Sum: ", 1 + 2;
-echo "Hello ", isset($name) ? $name : "John Doe", "!";
+// Below, the expression 'Hello ' . isset($name) is evaluated first,
+// and is always true, so the argument to echo is always $name
+echo 'Hello ' . isset($name) ? $name : 'John Doe' . '!';
+
+// The intended behaviour requires additional parentheses
+echo 'Hello ' . (isset($name) ? $name : 'John Doe') . '!';
+
+// In PHP prior to 8.0.0, the below outputs "2", rather than "Sum: 3"
+echo 'Sum: ' . 1 + 2;
+
+// Again, adding parentheses ensures the intended order of evaluation
+echo 'Sum: ' . (1 + 2);
 ]]>
    </programlisting>
-
    <para>
-    With concatenation, the period operator has a higher precedence than both
-    the addition and ternary operators, and so parentheses must be used for the
-    correct behaviour:
+    If multiple arguments are passed in, then parentheses will not be
+    required to enforce precedence, because each expression is separate:
    </para>
    <programlisting role="php">
 <![CDATA[
 <?php
-echo 'Sum: ' . (1 + 2);
-echo 'Hello ' . (isset($name) ? $name : 'John Doe') . '!';
+echo "Hello ", isset($name) ? $name : "John Doe", "!";
+
+echo "Sum: ", 1 + 2;
 ]]>
    </programlisting>
   </tip>
@@ -146,7 +212,7 @@ echo 'Hello ' . (isset($name) ? $name : 'John Doe') . '!';
     <member><function>print</function></member>
     <member><function>printf</function></member>
     <member><function>flush</function></member>
-    <member><link linkend="language.types.string.syntax.heredoc">Heredoc syntax</link></member>
+    <member><link linkend="language.types.string">Ways to specify literal strings</link></member>
    </simplelist>
   </para>
  </refsect1>

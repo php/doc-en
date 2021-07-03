@@ -4,7 +4,7 @@
  <refnamediv>
   <refname>mysqli_driver::$report_mode</refname>
   <refname>mysqli_report</refname>
-  <refpurpose>Enables or disables internal report functions</refpurpose>
+  <refpurpose>Sets mysqli error reporting mode</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -19,9 +19,12 @@
    <methodparam><type>int</type><parameter>flags</parameter></methodparam>
   </methodsynopsis>
   <para>
-   A function helpful in improving queries during code development and testing. 
-   Depending on the flags, it reports errors from mysqli function calls or 
-   queries that don't use an index (or use a bad index).
+   Depending on the flags, it sets mysqli error reporting mode to exception, warning or none.  
+   When set to <constant>MYSQLI_REPORT_ALL</constant> or <constant>MYSQLI_REPORT_INDEX</constant> 
+   it will also inform about queries that don't use an index (or use a bad index).
+  </para>
+  <para>
+   The default setting is <constant>MYSQLI_REPORT_OFF</constant>.
   </para>
  </refsect1>
 
@@ -33,7 +36,7 @@
      <term><parameter>flags</parameter></term>
      <listitem>
       <para>
-       <table>
+       <table xml:id="mysqli-driver.report-mode.parameters">
         <title>Supported flags</title>
         <tgroup cols="2">
          <thead>
@@ -45,7 +48,7 @@
          <tbody>
           <row>
            <entry><constant>MYSQLI_REPORT_OFF</constant></entry>
-           <entry>Turns reporting off</entry>
+           <entry>Turns reporting off (the default)</entry>
           </row>
           <row>
            <entry><constant>MYSQLI_REPORT_ERROR</constant></entry>
@@ -79,37 +82,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   &return.success;
-  </para>
- </refsect1>
-
- <refsect1 role="changelog">
-  &reftitle.changelog;
-  <para>
-   <informaltable>
-    <tgroup cols="2">
-     <thead>
-      <row>
-       <entry>&Version;</entry>
-       <entry>&Description;</entry>
-      </row>
-     </thead>
-     <tbody>
-      <row>
-       <entry>5.3.4</entry>
-       <entry>
-        Changing the reporting mode is now be per-request, rather than per-process.
-       </entry>
-      </row>
-      <row>
-       <entry>5.2.15</entry>
-       <entry>
-        Changing the reporting mode is now be per-request, rather than per-process.
-       </entry>
-      </row>
-     </tbody>
-    </tgroup>
-   </informaltable>
+   Returns &true;.
   </para>
  </refsect1>
 
@@ -121,35 +94,22 @@
 <![CDATA[
 <?php
 
-$mysqli = new mysqli("localhost", "my_user", "my_password", "world");
-
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
 /* activate reporting */
 $driver = new mysqli_driver();
 $driver->report_mode = MYSQLI_REPORT_ALL;
 
 try {
+    /* if the connection fails, a mysqli_sql_exception will be thrown */
+    $mysqli = new mysqli("localhost", "my_user", "my_password", "my_db");
 
     /* this query should report an error */
     $result = $mysqli->query("SELECT Name FROM Nonexistingtable WHERE population > 50000");
 
-    /* this query should report a bad index */
+    /* this query should report a bad index if the column population doesn't have an index */
     $result = $mysqli->query("SELECT Name FROM City WHERE population > 50000");
-
-    $result->close();
-
-    $mysqli->close();
-
 } catch (mysqli_sql_exception $e) {
-
-    echo $e->__toString();
+    error_log($e->__toString());
 }
-?>
 ]]>
    </programlisting>
   </example>
@@ -158,27 +118,45 @@ try {
    <programlisting role="php">
 <![CDATA[
 <?php
+
 /* activate reporting */
 mysqli_report(MYSQLI_REPORT_ALL);
 
-$link = mysqli_connect("localhost", "my_user", "my_password", "world");
+try {
+    $link = mysqli_connect("localhost", "my_user", "my_password", "my_db");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
+    /* this query should report an error */
+    $result = mysqli_query($link, "SELECT Name FROM Nonexistingtable WHERE population > 50000");
+
+    /* this query should report a bad index if the column population doesn't have an index */
+    $result = mysqli_query($link, "SELECT Name FROM City WHERE population > 50000");
+} catch (mysqli_sql_exception $e) {
+    error_log($e->__toString());
 }
+]]>
+   </programlisting>
+  </example>
+  <example>
+   <title>Error reporting except bad index errors</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
 
-/* this query should report an error */
-$result = mysqli_query("SELECT Name FROM Nonexistingtable WHERE population > 50000");
+/* activate reporting */
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-/* this query should report a bad index */
-$result = mysqli_query("SELECT Name FROM City WHERE population > 50000");
+try {
+    /* if the connection fails, a mysqli_sql_exception will be thrown */
+    $mysqli = new mysqli("localhost", "my_user", "my_password", "my_db");
 
-mysqli_free_result($result);
+    /* this query should report an error */
+    $result = $mysqli->query("SELECT Name FROM Nonexistingtable WHERE population > 50000");
 
-mysqli_close($link);
-?>
+    /* this WILL NOT report any errors even if index is not available */
+    $result = $mysqli->query("SELECT Name FROM City WHERE population > 50000");
+} catch (mysqli_sql_exception $e) {
+    error_log($e->__toString());
+}
 ]]>
    </programlisting>
   </example>
@@ -188,8 +166,6 @@ mysqli_close($link);
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>mysqli_debug</function></member>
-    <member><function>mysqli_dump_debug_info</function></member>
     <member><classname>mysqli_sql_exception</classname></member>
     <member><function>set_exception_handler</function></member>
     <member><function>error_reporting</function></member>

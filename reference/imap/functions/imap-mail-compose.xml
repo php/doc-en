@@ -8,13 +8,13 @@
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <type>string</type><methodname>imap_mail_compose</methodname>
+   <type class="union"><type>string</type><type>false</type></type><methodname>imap_mail_compose</methodname>
    <methodparam><type>array</type><parameter>envelope</parameter></methodparam>
-   <methodparam><type>array</type><parameter>body</parameter></methodparam>
+   <methodparam><type>array</type><parameter>bodies</parameter></methodparam>
   </methodsynopsis>
   <para>
    Create a MIME message based on the given <parameter>envelope</parameter>
-   and <parameter>body</parameter> sections.
+   and <parameter>bodies</parameter> sections.
   </para>
  </refsect1>
  <refsect1 role="parameters">
@@ -25,24 +25,113 @@
      <term><parameter>envelope</parameter></term>
      <listitem>
       <para>
-       An associative array of headers fields. Valid keys are: "remail",
-       "return_path", "date", "from", "reply_to", "in_reply_to", "subject",
-       "to", "cc", "bcc", "message_id" and "custom_headers" (which contains
-       associative array of other headers).
+       An associative array of header fields. Valid keys are: <literal>"remail"</literal>,
+       <literal>"return_path"</literal>, <literal>"date"</literal>, <literal>"from"</literal>, <literal>"reply_to"</literal>, <literal>"in_reply_to"</literal>, <literal>"subject"</literal>,
+       <literal>"to"</literal>, <literal>"cc"</literal>, <literal>"bcc"</literal> and <literal>"message_id"</literal>, which set the respective message headers to the given &string;.
+       To set additional headers, the key <literal>"custom_headers"</literal> is supported, which expects
+       an array of those headers, e.g. <code>["User-Agent: My Mail Client"]</code>.
       </para>
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>body</parameter></term>
+     <term><parameter>bodies</parameter></term>
      <listitem>
       <para>
-       An indexed array of bodies
+       An indexed array of bodies. The first body is the main body of the message;
+       only if it has a type of <constant>TYPEMULTIPART</constant>, further bodies
+       are processed; these bodies constitute the bodies of the parts.
       </para>
       <para>
-       A body is an associative array which can consist of the following keys:
-       "type", "encoding", "charset", "type.parameters", "subtype", "id",
-       "description", "disposition.type", "disposition", "contents.data",
-       "lines", "bytes" and "md5".
+       <table>
+        <title>Body Array Structure</title>
+        <tgroup cols="2">
+         <thead>
+          <row>
+           <entry>Key</entry>
+           <entry>Type</entry>
+           <entry>Description</entry>
+          </row>
+         </thead>
+         <tbody>
+          <row>
+           <entry><literal>type</literal></entry>
+           <entry><type>int</type></entry>
+           <entry>
+            The MIME type.
+            One of <constant>TYPETEXT</constant> (default), <constant>TYPEMULTIPART</constant>,
+            <constant>TYPEMESSAGE</constant>, <constant>TYPEAPPLICATION</constant>,
+            <constant>TYPEAUDIO</constant>, <constant>TYPEIMAGE</constant>,
+            <constant>TYPEMODEL</constant> or <constant>TYPEOTHER</constant>.
+           </entry>
+          </row>
+          <row>
+           <entry><literal>encoding</literal></entry>
+           <entry><type>int</type></entry>
+           <entry>
+            The <literal>Content-Transfer-Encoding</literal>.
+            One of <constant>ENC7BIT</constant> (default), <constant>ENC8BIT</constant>,
+            <constant>ENCBINARY</constant>, <constant>ENCBASE64</constant>,
+            <constant>ENCQUOTEDPRINTABLE</constant> or <constant>ENCOTHER</constant>.
+           </entry>
+          </row>
+          <row>
+           <entry><literal>charset</literal></entry>
+           <entry><type>string</type></entry>
+           <entry>The charset parameter of the MIME type.</entry>
+          </row>
+          <row>
+           <entry><literal>type.parameters</literal></entry>
+           <entry><type>array</type></entry>
+           <entry>An associative &array; of <literal>Content-Type</literal> parameter names and their values.</entry>
+          </row>
+          <row>
+           <entry><literal>subtype</literal></entry>
+           <entry><type>string</type></entry>
+           <entry>The MIME subtype, e.g. <literal>'jpeg'</literal> for <constant>TYPEIMAGE</constant>.</entry>
+          </row>
+          <row>
+           <entry><literal>id</literal></entry>
+           <entry><type>string</type></entry>
+           <entry>The <literal>Content-ID</literal>.</entry>
+          </row>
+          <row>
+           <entry><literal>description</literal></entry>
+           <entry><type>string</type></entry>
+           <entry>The <literal>Content-Description</literal>.</entry>
+          </row>
+          <row>
+           <entry><literal>disposition.type</literal></entry>
+           <entry><type>string</type></entry>
+           <entry>The <literal>Content-Disposition</literal>, e.g. <literal>'attachment'</literal>.</entry>
+          </row>
+          <row>
+           <entry><literal>disposition</literal></entry>
+           <entry><type>array</type></entry>
+           <entry>An associative &array; of <literal>Content-Disposition</literal> parameter names and values.</entry>
+          </row>
+          <row>
+           <entry><literal>contents.data</literal></entry>
+           <entry><type>string</type></entry>
+           <entry>The payload.</entry>
+          </row>
+          <row>
+           <entry><literal>lines</literal></entry>
+           <entry><type>int</type></entry>
+           <entry>The size of the payload in lines.</entry>
+          </row>
+          <row>
+           <entry><literal>bytes</literal></entry>
+           <entry><type>int</type></entry>
+           <entry>The size of the payload in bytes.</entry>
+          </row>
+          <row>
+           <entry><literal>md5</literal></entry>
+           <entry><type>string</type></entry>
+           <entry>The MD5 checksum of the payload.</entry>
+          </row>
+         </tbody>
+        </tgroup>
+       </table>
       </para>
      </listitem>
     </varlistentry>
@@ -52,7 +141,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns the MIME message.
+   Returns the MIME message as &string;, &return.falseforfailure;.
   </para>
  </refsect1>
  <refsect1 role="examples">
@@ -100,7 +189,6 @@ echo nl2br(imap_mail_compose($envelope, $body));
   </para>
  </refsect1>
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

@@ -11,9 +11,9 @@
   <methodsynopsis>
    <type>mixed</type><methodname>json_decode</methodname>
    <methodparam><type>string</type><parameter>json</parameter></methodparam>
-   <methodparam choice="opt"><type>bool</type><parameter>assoc</parameter><initializer>&false;</initializer></methodparam>
+   <methodparam choice="opt"><type class="union"><type>bool</type><type>null</type></type><parameter>associative</parameter><initializer>&null;</initializer></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>depth</parameter><initializer>512</initializer></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>options</parameter><initializer>0</initializer></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>flags</parameter><initializer>0</initializer></methodparam>
   </methodsynopsis>
   <para>
    Takes a JSON encoded string and converts it into a PHP variable.
@@ -37,11 +37,14 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>assoc</parameter></term>
+     <term><parameter>associative</parameter></term>
      <listitem>
       <para>
-       When &true;, returned &object;s will be converted into
-       associative &array;s.
+       When &true;, JSON objects will be returned as
+       associative &array;s; when &false;, JSON objects will be returned as &object;s.
+       When &null;, JSON objects will be returned as associative &array;s or
+       &object;s depending on whether <constant>JSON_OBJECT_AS_ARRAY</constant>
+       is set in the <parameter>flags</parameter>.
       </para>
      </listitem>
     </varlistentry>
@@ -49,12 +52,12 @@
      <term><parameter>depth</parameter></term>
      <listitem>
       <para>
-       User specified recursion depth.
+       Maximum nesting depth of the structure being decoded.
       </para>
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>options</parameter></term>
+     <term><parameter>flags</parameter></term>
      <listitem>
       <para>
        Bitmask of
@@ -79,7 +82,7 @@
    PHP type. Values <literal>true</literal>, <literal>false</literal> and
    <literal>null</literal> are returned as &true;, &false; and &null;
    respectively. &null; is returned if the <parameter>json</parameter> cannot
-   be decoded or if the encoded data is deeper than the recursion limit.
+   be decoded or if the encoded data is deeper than the nesting limit.
   </para>
  </refsect1>
 
@@ -99,7 +102,13 @@
        <entry>7.3.0</entry>
        <entry>
         <constant>JSON_THROW_ON_ERROR</constant>
-        <parameter>options</parameter> was added.
+        <parameter>flags</parameter> was added.
+       </entry>
+      </row>
+      <row>
+       <entry>7.2.0</entry>
+       <entry>
+        <parameter>associative</parameter> is nullable now.
        </entry>
       </row>
       <row>
@@ -107,7 +116,7 @@
        <entry>
         <constant>JSON_INVALID_UTF8_IGNORE</constant>, and
         <constant>JSON_INVALID_UTF8_SUBSTITUTE</constant>
-        <parameter>options</parameter> were added.
+        <parameter>flags</parameter> were added.
        </entry>
       </row>
       <row>
@@ -115,62 +124,6 @@
        <entry>
         An empty JSON key ("") can be encoded to the empty object property
         instead of using a key with value <literal>_empty_</literal>.
-       </entry>
-      </row>
-      <row>
-       <entry>7.0.0</entry>
-       <entry>
-        Rejected RFC 7159 incompatible number formats - top level
-        (07, 0xff, .1, -.1) and all levels ([1.], [1.e1])
-       </entry>
-      </row>
-      <row>
-       <entry>7.0.0</entry>
-       <entry>
-        An empty PHP string or value that after casting to string is an empty
-        string (<literal>NULL</literal>, <literal>FALSE</literal>) results
-        in JSON syntax error.
-       </entry>
-      </row>
-      <row>
-       <entry>5.6.0</entry>
-       <entry>
-        Invalid non-lowercased variants of the <literal>true</literal>,
-        <literal>false</literal> and <literal>null</literal> literals are no
-        longer accepted as valid input, and will generate warnings.
-       </entry>
-      </row>
-      <row>
-       <entry>5.4.0</entry>
-       <entry>
-        <constant>JSON_BIGINT_AS_STRING</constant>, and
-        <constant>JSON_OBJECT_AS_ARRAY</constant>
-        <parameter>options</parameter> were added.
-       </entry>
-      </row>
-      <row>
-       <entry>5.4.0</entry>
-       <entry>
-        The <parameter>options</parameter> parameter was added.
-       </entry>
-      </row>
-      <row>
-       <entry>5.3.0</entry>
-       <entry>
-        Added the optional <parameter>depth</parameter>. The default
-        recursion depth was increased from 128 to 512
-       </entry>
-      </row>
-      <row>
-       <entry>5.2.3</entry>
-       <entry>
-        The nesting limit was increased from 20 to 128
-       </entry>
-      </row>
-      <row>
-       <entry>5.2.1</entry>
-       <entry>
-        Added support for JSON decoding of basic types.
        </entry>
       </row>
      </tbody>
@@ -266,7 +219,7 @@ json_decode($bad_json); // null
     <programlisting role="php">
 <![CDATA[
 <?php
-// Encode the data.
+// Encode some data with a maximum depth  of 4 (array -> array -> array -> string)
 $json = json_encode(
     array(
         1 => array(
@@ -282,20 +235,12 @@ $json = json_encode(
     )
 );
 
-// Define the errors.
-$constants = get_defined_constants(true);
-$json_errors = array();
-foreach ($constants["json"] as $name => $value) {
-    if (!strncmp($name, "JSON_ERROR_", 11)) {
-        $json_errors[$value] = $name;
-    }
-}
-
 // Show the errors for different depths.
-foreach (range(4, 3, -1) as $depth) {
-    var_dump(json_decode($json, true, $depth));
-    echo 'Last error: ', $json_errors[json_last_error()], PHP_EOL, PHP_EOL;
-}
+var_dump(json_decode($json, true, 4));
+echo 'Last error: ', json_last_error_msg(), PHP_EOL, PHP_EOL;
+
+var_dump(json_decode($json, true, 3));
+echo 'Last error: ', json_last_error_msg(), PHP_EOL, PHP_EOL;
 ?>
 ]]>
     </programlisting>
@@ -321,10 +266,10 @@ array(1) {
     }
   }
 }
-Last error: JSON_ERROR_NONE
+Last error: No error
 
 NULL
-Last error: JSON_ERROR_DEPTH
+Last error: Maximum stack depth exceeded
 ]]>
     </screen>
    </example>
@@ -383,7 +328,6 @@ object(stdClass)#1 (1) {
   </para>
  </refsect1>
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

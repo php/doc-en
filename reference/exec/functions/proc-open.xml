@@ -12,7 +12,7 @@
     &reftitle.description;
      <methodsynopsis>
       <type>resource</type><methodname>proc_open</methodname>
-      <methodparam><type>string</type><parameter>cmd</parameter></methodparam>
+      <methodparam><type>mixed</type><parameter>cmd</parameter></methodparam>
       <methodparam><type>array</type><parameter>descriptorspec</parameter></methodparam>
       <methodparam><type>array</type><parameter role="reference">pipes</parameter></methodparam>
       <methodparam choice="opt"><type>string</type><parameter>cwd</parameter><initializer>&null;</initializer></methodparam>
@@ -47,8 +47,35 @@
      <term><parameter>cmd</parameter></term>
      <listitem>
       <para>
-       The command to execute
+       The commandline to execute as &string;. Special characters have to be properly escaped,
+       and proper quoting has to be applied.
       </para>
+      <note>
+       <simpara>
+        On <emphasis>Windows</emphasis>, unless <literal>bypass_shell</literal> is set to &true; in
+        <parameter>other_options</parameter>, the <parameter>cmd</parameter> is
+        passed to <command>cmd.exe</command> (actually, <literal>%ComSpec%</literal>)
+        with the <literal>/c</literal> flag as <emphasis>unquoted</emphasis> string
+        (i.e. exactly as has been given to <function>proc_open</function>).
+        This can cause <command>cmd.exe</command> to remove enclosing quotes from
+        <parameter>cmd</parameter> (for details see the <command>cmd.exe</command> documentation),
+        resulting in unexpected, and potentially even dangerous behavior, because
+        <command>cmd.exe</command> error messages may contain (parts of) the passed
+        <parameter>cmd</parameter> (see example below).
+       </simpara>
+      </note>
+      <para>
+       As of PHP 7.4.0, <parameter>cmd</parameter> may be passed as &array; of command parameters.
+       In this case the process will be opened directly (without going through a shell)
+       and PHP will take care of any necessary argument escaping.
+      </para>
+      <note>
+       <para>
+        On Windows, the argument escaping of the &array; elements assumes that the
+        command line parsing of the executed command is compatible with the parsing
+        of command line arguments done by the VC runtime.
+       </para>
+      </note>
      </listitem>
     </varlistentry>
     <varlistentry>
@@ -138,6 +165,10 @@
          <literal>create_process_group</literal> (windows only): allow the
          child process to handle <literal>CTRL</literal> events when set to &true;
         </member>
+        <member>
+         <literal>create_new_console</literal> (windows only): the new process
+         has a new console, instead of inheriting its parent's console
+        </member>
        </simplelist>
       </para>
      </listitem>
@@ -168,23 +199,23 @@
      </thead>
      <tbody>
       <row>
+       <entry>7.4.4</entry>
+       <entry>
+        Added the <literal>create_new_console</literal> option to the
+        <parameter>other_options</parameter> parameter.
+       </entry>
+      </row>
+      <row>
+       <entry>7.4.0</entry>
+       <entry>
+        <function>proc_open</function> now also accepts an &array;
+        for the <parameter>cmd</parameter>.
+       </entry>
+      </row>
+      <row>
        <entry>7.4.0</entry>
        <entry>
         Added the <literal>create_process_group</literal> option to the
-        <parameter>other_options</parameter> parameter.
-       </entry>
-      </row>
-      <row>
-       <entry>7.0.0</entry>
-       <entry>
-        Added the <literal>blocking_pipes</literal> option to the
-        <parameter>other_options</parameter> parameter.
-       </entry>
-      </row>
-      <row>
-       <entry>5.2.1</entry>
-       <entry>
-        Added the <literal>bypass_shell</literal> option to the
         <parameter>other_options</parameter> parameter.
        </entry>
       </row>
@@ -247,6 +278,43 @@ Array
 command returned 0
 ]]>
     </screen>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title><function>proc_open</function> quirk on Windows</title>
+    <simpara>
+     While one may expect the following program to search the file
+     <filename>filename.txt</filename> for the text <literal>search</literal> and
+     to print the results, it behaves rather differently.
+    </simpara>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$descriptorspec = [STDIN, STDOUT, STDOUT];
+$cmd = '"findstr" "search" "filename.txt"';
+$proc = proc_open($cmd, $descriptorspec, $pipes);
+proc_close($proc);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+'findstr" "search" "filename.txt' is not recognized as an internal or external command,
+operable program or batch file.
+]]>
+    </screen>
+    <simpara>
+     To work around that behavior, it is usually sufficient to enclose the
+     <parameter>cmd</parameter> in additional quotes:
+    </simpara>
+    <programlisting role="php">
+<![CDATA[
+$cmd = '""findstr" "search" "filename.txt""';
+]]>
+    </programlisting>
    </example>
   </para>
 

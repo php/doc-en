@@ -4,30 +4,31 @@
  <refnamediv>
   <refname>mysqli_stmt::prepare</refname>
   <refname>mysqli_stmt_prepare</refname>
-  <refpurpose>Prepare an SQL statement for execution</refpurpose>
+  <refpurpose>Prepares an SQL statement for execution</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <para>&style.oop;</para>
   <methodsynopsis role="oop">
-   <type>mixed</type><methodname>mysqli_stmt::prepare</methodname>
+   <modifier>public</modifier> <type>bool</type><methodname>mysqli_stmt::prepare</methodname>
    <methodparam><type>string</type><parameter>query</parameter></methodparam>
   </methodsynopsis>
   <para>&style.procedural;</para>
-  <methodsynopsis>
+  <methodsynopsis role="procedural">
    <type>bool</type><methodname>mysqli_stmt_prepare</methodname>
-   <methodparam><type>mysqli_stmt</type><parameter>stmt</parameter></methodparam>
+   <methodparam><type>mysqli_stmt</type><parameter>statement</parameter></methodparam>
    <methodparam><type>string</type><parameter>query</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Prepares the SQL query pointed to by the null-terminated string query. 
+   Prepares a statement for execution.
+   The query must consist of a single SQL statement.
   </para>
   <para>
+   The statement template can contain zero or more question mark
+   (<literal>?</literal>) parameter markers⁠—also called placeholders.
    The parameter markers must be bound to application variables using
-   <function>mysqli_stmt_bind_param</function> and/or 
-   <function>mysqli_stmt_bind_result</function> before executing the
-   statement or fetching rows.
+   <function>mysqli_stmt_bind_param</function> before executing the statement.
   </para>
   <note>
    <para>
@@ -75,31 +76,27 @@
        The query, as a string. It must consist of a single SQL statement.
       </para>
       <para>
-       You can include one or more parameter markers in the SQL statement by
-       embedding question mark (<literal>?</literal>) characters at the
-       appropriate positions.
+       The SQL statement may contain zero or more parameter markers
+       represented by question mark (<literal>?</literal>) characters
+       at the appropriate positions.
       </para>
       <note>
-       <para>
-        You should not add a terminating semicolon or <literal>\g</literal>
-        to the statement.
-       </para>
-      </note>
-      <note>
+<!-- Copied from https://dev.mysql.com/doc/c-api/8.0/en/mysql-stmt-prepare.html -->
        <para>
         The markers are legal only in certain places in SQL statements.
-        For example, they are allowed in the VALUES() list of an INSERT statement
-        (to specify column values for a row), or in a comparison with a column in
-        a WHERE clause to specify a comparison value.
+        For example, they are permitted in the <literal>VALUES()</literal>
+        list of an <literal>INSERT</literal> statement (to specify column
+        values for a row), or in a comparison with a column in a
+        <literal>WHERE</literal> clause to specify a comparison value.
        </para>
        <para>
-        However, they are not allowed for identifiers (such as table or column names),
-        in the select list that names the columns to be returned by a SELECT statement),
-        or to specify both operands of a binary operator such as the <literal>=</literal>
-        equal sign. The latter restriction is necessary because it would be impossible
-        to determine the parameter type. In general, parameters are legal only in Data
-        Manipulation Language (DML) statements, and not in Data Definition Language
-        (DDL) statements.
+        However, they are not permitted for identifiers (such as table or
+        column names), or to specify both
+        operands of a binary operator such as the <literal>=</literal> equal
+        sign. The latter restriction is necessary because it would be
+        impossible to determine the parameter type. In general, parameters are
+        legal only in Data Manipulation Language (DML) statements, and not in
+        Data Definition Language (DDL) statements.
        </para>
       </note>
      </listitem>
@@ -118,88 +115,63 @@
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title>&style.oop;</title>
+   <title><methodname>mysqli_stmt::prepare</methodname> example</title>
+   <para>&style.oop;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
-$mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
 $city = "Amersfoort";
 
 /* create a prepared statement */
-$stmt =  $mysqli->stmt_init();
-if ($stmt->prepare("SELECT District FROM City WHERE Name=?")) {
+$stmt = $mysqli->stmt_init();
+$stmt->prepare("SELECT District FROM City WHERE Name=?");
 
-    /* bind parameters for markers */
-    $stmt->bind_param("s", $city);
+/* bind parameters for markers */
+$stmt->bind_param("s", $city);
 
-    /* execute query */
-    $stmt->execute();
+/* execute query */
+$stmt->execute();
 
-    /* bind result variables */
-    $stmt->bind_result($district);
+/* bind result variables */
+$stmt->bind_result($district);
 
-    /* fetch value */
-    $stmt->fetch();
+/* fetch value */
+$stmt->fetch();
 
-    printf("%s is in district %s\n", $city, $district);
-
-    /* close statement */
-    $stmt->close();
-}
-
-/* close connection */
-$mysqli->close();
-?>
+printf("%s is in district %s\n", $city, $district);
 ]]>
    </programlisting>
-  </example>
-  <example>
-   <title>&style.procedural;</title>
+   <para>&style.procedural;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
-$link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
 $city = "Amersfoort";
 
 /* create a prepared statement */
 $stmt = mysqli_stmt_init($link);
-if (mysqli_stmt_prepare($stmt, 'SELECT District FROM City WHERE Name=?')) {
+mysqli_stmt_prepare($stmt, "SELECT District FROM City WHERE Name=?");
 
-    /* bind parameters for markers */
-    mysqli_stmt_bind_param($stmt, "s", $city);
+/* bind parameters for markers */
+mysqli_stmt_bind_param($stmt, "s", $city);
 
-    /* execute query */
-    mysqli_stmt_execute($stmt);
+/* execute query */
+mysqli_stmt_execute($stmt);
 
-    /* bind result variables */
-    mysqli_stmt_bind_result($stmt, $district);
+/* bind result variables */
+mysqli_stmt_bind_result($stmt, $district);
 
-    /* fetch value */
-    mysqli_stmt_fetch($stmt);
+/* fetch value */
+mysqli_stmt_fetch($stmt);
 
-    printf("%s is in district %s\n", $city, $district);
-
-    /* close statement */
-    mysqli_stmt_close($stmt);
-}
-
-/* close connection */
-mysqli_close($link);
-?>
+printf("%s is in district %s\n", $city, $district);
 ]]>
    </programlisting>
    &examples.outputs;
@@ -227,7 +199,6 @@ Amersfoort is in district Utrecht
  </refsect1>
 
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

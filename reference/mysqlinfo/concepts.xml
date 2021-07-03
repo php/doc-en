@@ -69,7 +69,6 @@ if ($uresult) {
        echo $row['Name'] . PHP_EOL;
    }
 }
-$uresult->close();
 ?>
 ]]>
    </programlisting>
@@ -86,25 +85,6 @@ $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
 $uresult = $pdo->query("SELECT Name FROM City");
 if ($uresult) {
    while ($row = $uresult->fetch(PDO::FETCH_ASSOC)) {
-       echo $row['Name'] . PHP_EOL;
-   }
-}
-?>
-]]>
-   </programlisting>
-  </example>
-
-  <example>
-   <title>Unbuffered query example: mysql</title>
-   <programlisting role="php">
-<![CDATA[
-<?php
-$conn = mysql_connect("localhost", "my_user", "my_pass");
-$db   = mysql_select_db("world");
-
-$uresult = mysql_unbuffered_query("SELECT Name FROM City");
-if ($uresult) {
-   while ($row = mysql_fetch_assoc($uresult)) {
        echo $row['Name'] . PHP_EOL;
    }
 }
@@ -129,8 +109,7 @@ if ($uresult) {
    <para>
     The character set should be understood and defined, as it has an affect on every
     action, and includes security implications. For example, the escaping mechanism
-    (e.g., <function>mysqli_real_escape_string</function> for mysqli, <function>mysql_real_escape_string</function>
-    for mysql, and <methodname>PDO::quote</methodname> for PDO_MySQL) will adhere to
+    (e.g., <function>mysqli_real_escape_string</function> for mysqli and <methodname>PDO::quote</methodname> for PDO_MySQL) will adhere to
     this setting. It is important to realize that these functions will not use the character
     set that is defined with a query, so for example the following will not have an effect
     on them:
@@ -146,17 +125,16 @@ if ($uresult) {
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
 // Will NOT affect $mysqli->real_escape_string();
-$mysqli->query("SET NAMES utf8");
+$mysqli->query("SET NAMES utf8mb4");
 
 // Will NOT affect $mysqli->real_escape_string();
-$mysqli->query("SET CHARACTER SET utf8");
+$mysqli->query("SET CHARACTER SET utf8mb4");
 
 // But, this will affect $mysqli->real_escape_string();
-$mysqli->set_charset('utf8');
+$mysqli->set_charset('utf8mb4');
 
-// But, this will NOT affect it (utf-8 vs utf8) -- don't use dashes here
-$mysqli->set_charset('utf-8');
-
+// But, this will NOT affect it (UTF-8 vs utf8mb4) -- don't use dashes here
+$mysqli->set_charset('UTF-8');
 ?>
 ]]>
    </programlisting>
@@ -171,9 +149,8 @@ $mysqli->set_charset('utf-8');
    <title>Possible UTF-8 confusion</title>
    <para>
     Because character set names in MySQL do not contain dashes, the string 
-    "utf8" is valid in MySQL to set the character set to UTF-8. The string 
-    "utf-8" is not valid, as using "utf-8" will fail to change the
-    character set.
+    "utf8" is valid in MySQL to set the character set to UTF-8 (up to 3 byte UTF-8 Unicode Encoding). The string 
+    "UTF-8" is not valid, as using "UTF-8" will fail to change the character set and will throw an error.
    </para>
   </note>
 
@@ -184,16 +161,14 @@ $mysqli->set_charset('utf-8');
 <?php
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-printf("Initial character set: %s\n", $mysqli->character_set_name());
+echo 'Initial character set: ' . $mysqli->character_set_name() . "\n";
 
-if (!$mysqli->set_charset('utf8')) {
-    printf("Error loading character set utf8: %s\n", $mysqli->error);
+if (!$mysqli->set_charset('utf8mb4')) {
+    printf("Error loading character set utf8mb4: %s\n", $mysqli->error);
     exit;
 }
 
-echo "New character set information:\n";
-print_r( $mysqli->get_charset() );
-
+echo 'Your current character set is: ' . $mysqli->character_set_name() . "\n";
 ?>
 ]]>
    </programlisting>
@@ -201,38 +176,15 @@ print_r( $mysqli->get_charset() );
 
   <example>
    <title>Setting the character set example: <link linkend="ref.pdo-mysql.connection">pdo_mysql</link></title>
-   <para>
-    Note: This only works as of PHP 5.3.6.
-   </para>
    <programlisting role="php">
 <![CDATA[
 <?php
-$pdo = new PDO("mysql:host=localhost;dbname=world;charset=utf8", 'my_user', 'my_pass');
+$pdo = new PDO("mysql:host=localhost;dbname=world;charset=utf8mb4", 'my_user', 'my_pass');
 ?>
 ]]>
    </programlisting>
   </example>
 
-  <example>
-   <title>Setting the character set example: mysql</title>
-   <programlisting role="php">
-<![CDATA[
-<?php
-$conn = mysql_connect("localhost", "my_user", "my_pass");
-$db   = mysql_select_db("world");
-
-echo 'Initial character set: ' .  mysql_client_encoding($conn) . "\n";
-
-if (!mysql_set_charset('utf8', $conn)) {
-    echo "Error: Unable to set the character set.\n";
-    exit;
-}
-
-echo 'Your current character set is: ' .  mysql_client_encoding($conn);
-?>
-]]>
-   </programlisting>
-  </example>  
  </section>
 
 </chapter>

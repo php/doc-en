@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-<refentry xmlns="http://docbook.org/ns/docbook" xml:id="function.strtok" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="function.strtok" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>strtok</refname>
   <refpurpose>Tokenize string</refpurpose>
@@ -9,32 +9,49 @@
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <type>string</type><methodname>strtok</methodname>
-   <methodparam><type>string</type><parameter>str</parameter></methodparam>
+   <type class="union"><type>string</type><type>false</type></type><methodname>strtok</methodname>
+   <methodparam><type>string</type><parameter>string</parameter></methodparam>
    <methodparam><type>string</type><parameter>token</parameter></methodparam>
   </methodsynopsis>
+  <simpara>Alternative signature (not supported with named arguments):</simpara>
   <methodsynopsis>
-   <type>string</type><methodname>strtok</methodname>
+   <type class="union"><type>string</type><type>false</type></type><methodname>strtok</methodname>
    <methodparam><type>string</type><parameter>token</parameter></methodparam>
   </methodsynopsis>
   <para>
-   <function>strtok</function> splits a string (<parameter>str</parameter>)
+   <function>strtok</function> splits a string (<parameter>string</parameter>)
    into smaller strings (tokens), with each token being delimited by any
    character from <parameter>token</parameter>.
    That is, if you have a string like "This is an example string" you
    could tokenize this string into its individual words by using the
-   space character as the token.
+   space character as the <parameter>token</parameter>.
   </para>
   <para>
-   Note that only the first call to strtok uses the string argument.
-   Every subsequent call to strtok only needs the token to use, as
+   Note that only the first call to strtok uses the <parameter>string</parameter> argument.
+   Every subsequent call to strtok only needs the <parameter>token</parameter> to use, as
    it keeps track of where it is in the current string.  To start
    over, or to tokenize a new string you simply call strtok with the
-   string argument again to initialize it.  Note that you may put
-   multiple tokens in the token parameter.  The string will be
-   tokenized when any one of the characters in the argument is
+   <parameter>string</parameter> argument again to initialize it.  Note that you may put
+   multiple tokens in the <parameter>token</parameter> parameter.  The string will be
+   tokenized when any one of the characters in the <parameter>token</parameter> argument is
    found.
   </para>
+  <note>
+   <para>
+    This function behaves slightly different from what one may expect being
+    familiar with <function>explode</function>. 
+    First, a sequence of two or more contiguous <parameter>token</parameter>
+    characters in the parsed string is considered to be a single delimiter. 
+    Also, a <parameter>token</parameter> situated at the start or end of the
+    string is ignored.
+    For example, if a string <literal>";aaa;;bbb;"</literal> is used, successive
+    calls to <function>strtok</function> with <literal>";"</literal> as a
+    <parameter>token</parameter> would return strings
+    "aaa" and "bbb", and then &false;.
+    As a result, the string will be split into only two elements, while
+    <literal>explode(";", $string)</literal> would return an array of 5 elements.
+   </para>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -42,7 +59,7 @@
   <para>
    <variablelist>
     <varlistentry>
-     <term><parameter>str</parameter></term>
+     <term><parameter>string</parameter></term>
      <listitem>
       <para>
        The <type>string</type> being split up into smaller strings (tokens).
@@ -53,7 +70,7 @@
      <term><parameter>token</parameter></term>
      <listitem>
       <para>
-       The delimiter used when splitting up <parameter>str</parameter>.
+       The delimiter used when splitting up <parameter>string</parameter>.
       </para>
      </listitem>
     </varlistentry>
@@ -64,7 +81,7 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   A <type>string</type> token.
+   A <type>string</type> token, or &false; if no more tokens are available.
   </para>
  </refsect1>
 
@@ -110,6 +127,35 @@ var_dump($first_token, $second_token);
     </screen>
    </example>
   </para>
+  <para>
+   <example>
+    <title>The difference between <function>strtok</function> and <function>explode</function></title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$string = ";aaa;;bbb;";
+
+$parts = [];
+$tok = strtok($string, ";");
+while ($tok !== false) {
+    $parts[] = $tok;
+    $tok = strtok(";");
+}
+echo json_encode($parts),"\n";
+
+$parts = explode(";", $string);
+echo json_encode($parts),"\n";
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+["aaa","bbb"]
+["","aaa","","bbb",""]
+]]>
+    </screen>
+   </example>
+  </para>
  </refsect1>
 
  <refsect1 role="notes">
@@ -122,14 +168,12 @@ var_dump($first_token, $second_token);
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>split</function></member>
     <member><function>explode</function></member>
    </simplelist>
   </para>
  </refsect1>
 
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml
