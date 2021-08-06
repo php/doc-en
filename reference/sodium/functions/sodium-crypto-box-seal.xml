@@ -3,7 +3,7 @@
 <refentry xml:id="function.sodium-crypto-box-seal" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>sodium_crypto_box_seal</refname>
-  <refpurpose>Encrypt a message</refpurpose>
+  <refpurpose>Anonymous public-key encryption</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -11,13 +11,25 @@
   <methodsynopsis>
    <type>string</type><methodname>sodium_crypto_box_seal</methodname>
    <methodparam><type>string</type><parameter>message</parameter></methodparam>
-   <methodparam><type>string</type><parameter>key_pair</parameter></methodparam>
+   <methodparam><type>string</type><parameter>public_key</parameter></methodparam>
   </methodsynopsis>
   <para>
-
+   Encrypt a message such that only the recipient can decrypt it.
   </para>
-
-  &warn.undocumented.func;
+  <para>
+   Unlike with <function>sodium_crypto_box</function>, you only need to know the recipient's
+   public key to use <function>sodium_crypto_box_seal</function>. One consequence of this
+   convenience, however, is that the ciphertext isn't bound to a static public key,
+   and is therefore not authenticated. Hence, anonymous public-key encryption.
+  </para>
+  <para>
+   <function>sodium_crypto_box_seal</function> still provides ciphertext integrity. Just not
+   sender identity authentication.
+  </para>
+  <para>
+   If you also need sender authentication, the <function>sodium_crypto_sign</function> functions
+   are likely the best place to start.
+  </para>
 
  </refsect1>
 
@@ -28,15 +40,15 @@
     <term><parameter>message</parameter></term>
     <listitem>
      <para>
-      
+      The message to encrypt.
      </para>
     </listitem>
    </varlistentry>
    <varlistentry>
-    <term><parameter>key_pair</parameter></term>
+    <term><parameter>public_key</parameter></term>
     <listitem>
      <para>
-      
+      The public key that corresponds to the only key that can decrypt the message.
      </para>
     </listitem>
    </varlistentry>
@@ -46,10 +58,41 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   
+   A ciphertext string in the format of (one-time public key, encrypted message, authentication tag).
   </para>
  </refsect1>
 
+ <refsect1 role="examples"><!-- {{{ -->
+  &reftitle.examples;
+  <example xml:id="sodium-crypto-box-seal.example.basic"><!-- {{{ -->
+   <title><function>sodium_crypto_box_seal</function> example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$keypair = sodium_crypto_box_keypair();
+$public_key = sodium_crypto_box_publickey($keypair);
+
+// Obfuscated plaintext to make the example more fun
+$plaintext_b64 = "V3JpdGluZyBzb2Z0d2FyZSBpbiBQSFAgY2FuIGJlIGEgZGVsaWdodCE=";
+$decoded_plaintext = sodium_base642bin($plaintext_b64, SODIUM_BASE64_VARIANT_ORIGINAL);
+
+$sealed = sodium_crypto_box_seal($decoded_plaintext, $public_key);
+var_dump(base64_encode($sealed));
+
+$opened = sodium_crypto_box_seal_open($sealed, $keypair);
+var_dump($opened);
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+string(120) "oRBXXAV4iQBrxlV4A21Bord8Yo/D8ZlrIIGNyaRCcGBfpz0map52I3xq6l+CST+1NSgQkbV+HiYyFjXWiWiaCGupGf+zl4bgWj/A9Adtem7Jt3h3emrMsLw="
+string(41) "Writing software in PHP can be a delight!"
+]]>
+   </screen>
+  </example><!-- }}} -->
+ </refsect1><!-- }}} -->
 
 </refentry>
 <!-- Keep this comment at the end of the file
