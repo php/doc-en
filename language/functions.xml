@@ -175,7 +175,8 @@ function recursion($a)
    <simpara>
     Information may be passed to functions via the argument list,
     which is a comma-delimited list of expressions. The arguments are
-    evaluated from left to right.
+    evaluated from left to right, before the function is actually called
+    (<emphasis>eager</emphasis> evaluation).
    </simpara>
 
    <para>
@@ -501,7 +502,7 @@ echo add(...$a);
      It is also possible to add a
      <link linkend="language.types.declarations">type declaration</link> before the
      <literal>...</literal> token. If this is present, then all arguments
-     captured by <literal>...</literal> must be objects of the hinted class.
+     captured by <literal>...</literal> must match that parameter type.
 
      <example>
       <title>Type declared variable arguments</title>
@@ -641,7 +642,7 @@ array_fill(start_index: 0, count: 100, value: 50);
      <programlisting role="php">
       <![CDATA[
 <?php
-array_fill(value: 50, num: 100, start_index: 0);
+array_fill(value: 50, count: 100, start_index: 0);
 ?>
 ]]>
      </programlisting>
@@ -661,7 +662,7 @@ array_fill(value: 50, num: 100, start_index: 0);
 <?php
 htmlspecialchars($string, double_encode: false);
 // Same as
-htmlspecialchars($string, ENT_COMPAT | ENT_HTML401, 'UTF-8', false);
+htmlspecialchars($string, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401, 'UTF-8', false);
 ?>
 ]]>
      </programlisting>
@@ -739,9 +740,14 @@ echo square(4);   // outputs '16'.
 <?php
 function small_numbers()
 {
-    return array (0, 1, 2);
+    return [0, 1, 2];
 }
-list ($zero, $one, $two) = small_numbers();
+// Array destructuring will collect each member of the array individually
+[$zero, $one, $two] = small_numbers();
+
+// Prior to 7.1.0, the only equivalent alternative is using list() construct
+list($zero, $one, $two) = small_numbers();
+
 ?>
 ]]>
       </programlisting>
@@ -1043,6 +1049,8 @@ $greet('PHP');
     variables must be passed to the <literal>use</literal> language construct.
     As of PHP 7.1, these variables must not include &link.superglobals;,
     <varname>$this</varname>, or variables with the same name as a parameter.
+    A return type declaration of the function has to be placed
+    <emphasis>after</emphasis> the <literal>use</literal> clause.
    </simpara>
 
    <example>
@@ -1088,6 +1096,12 @@ $example = function ($arg) use ($message) {
     var_dump($arg . ' ' . $message);
 };
 $example("hello");
+
+// Return type declaration comes after the use clause
+$example = function () use ($message): string {
+    return "hello $message";
+};
+var_dump($example());
 ?>
 ]]>
     </programlisting>
@@ -1100,6 +1114,7 @@ string(5) "hello"
 string(5) "hello"
 string(5) "hello"
 string(5) "world"
+string(11) "hello world"
 string(11) "hello world"
 ]]>
     </screen>
