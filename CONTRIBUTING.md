@@ -1,4 +1,4 @@
-# PHP Manual Contribution Guide
+# PHP Documentation Guide
 
 ## Build the documentation
 
