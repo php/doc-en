@@ -37,4 +37,10 @@ php doc-base/configure.php
 php phd/render.php --docbook doc-base/.manual.xml --package PHP --format xhtml
 ```
 
-Then you can preview the build in ``output/php-chunked-xhtml/`` directory with your browser. 
+Then you can preview the build in ``output/php-chunked-xhtml/`` directory with your browser.
+
+## See also
+
+- [PHP Manual Contribution Guide](http://doc.php.net/tutorial/)
+- [PHP Documentation skeletons](https://github.com/php/doc-base/tree/master/RFC/skeletons)
+- [Style Guidelines](http://doc.php.net/tutorial/style.php)
