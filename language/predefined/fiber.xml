@@ -12,6 +12,31 @@
     Fibers represent full-stack, interruptible functions. Fibers may be suspended from anywhere in the call-stack,
     pausing execution within the fiber until the fiber is resumed at a later time.
    </para>
+   <para>
+    Fibers pause the entire execution stack, so the direct caller of the function does not need to change how it
+    invokes the function.
+   </para>
+   <para>
+    Execution may be interrupted anywhere in the call stack using <methodname>Fiber::suspend</methodname>
+    (that is, the call to <methodname>Fiber::suspend</methodname> may be in a deeply nested function or not
+    even exist at all).
+   </para>
+   <para>
+    Unlike stack-less <classname>Generator</classname>s, each <classname>Fiber</classname> has its own call stack,
+    allowing them to be paused within deeply nested function calls. A function declaring an interruption point
+    (that is, calling <methodname>Fiber::suspend</methodname>) need not change its return type, unlike a function using
+    &yield; which must return a <classname>Generator</classname> instance.
+   </para>
+   <para>
+    Fibers can be suspended in any function call, including those called from within the PHP VM, such as functions
+    provided to <function>array_map</function> or methods called by foreach on an
+    <classname>Iterator</classname> object.
+   </para>
+   <para>
+    Once suspended, execution of the fiber may be resumed with any value using <methodname>Fiber::resume</methodname>
+    or by throwing an exception into the fiber using <methodname>Fiber::throw</methodname>. The value is returned
+    (or exception thrown) from <methodname>Fiber::suspend</methodname>.
+   </para>
   </section>
 <!-- }}} -->
 
@@ -36,6 +61,35 @@
    </classsynopsis>
 <!-- }}} -->
 
+  </section>
+
+  <section xml:id="fiber.examples">
+   <example xml:id="fiber.example.basic"><!-- {{{ -->
+    <title>Basic usage</title>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+$fiber = new Fiber(function (): void {
+    $value = Fiber::suspend('fiber');
+    echo "Value used to resume fiber: ", $value, PHP_EOL;
+});
+
+$value = $fiber->start();
+
+echo "Value from fiber suspending: ", $value, PHP_EOL;
+
+$fiber->resume('test');
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+     <![CDATA[
+Value from fiber suspending: fiber
+Value used to resume fiber: test
+]]>
+    </screen>
+   </example><!-- }}} -->
   </section>
 
  </partintro>
