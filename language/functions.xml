@@ -1504,6 +1504,127 @@ var_export($x);  // Outputs 1
    </sect2>
   </sect1>
 
+  <sect1 xml:id="functions.first_class_callable_syntax">
+   <title>First class callable syntax</title>
+
+   <para>
+    The first class callable syntax is introduced as of PHP 8.1.0, as a way to creating <link linkend="functions.anonymous">anonymous functions</link> from <link linkend="language.types.callable">callable</link>.
+    It supersedes existing callable encodings using strings and arrays.
+    The advantage of this syntax is that it is accessible to static analysis, and respects the scope at the point where the callable is created.
+   </para>
+
+   <para>
+    <code>CallableExpr(...)</code> syntax is used to create a <classname>Closure</classname> object from callable. <code>CallableExpr</code> accepts any expression that can be directly called in the PHP grammar:
+    <example>
+     <title>Simple first class callable syntax</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class Foo {
+   public function method() {}
+   public static function staticmethod() {}
+   public function __invoke() {}
+}
+
+$obj = new Foo();
+$classStr = 'Foo';
+$methodStr = 'method';
+$staticmethodStr = 'staticmethod';
+
+
+$f1 = strlen(...);
+$f2 = $obj(...);  // invokable object
+$f3 = $obj->method(...);
+$f4 = $obj->$methodStr(...);
+$f5 = Foo::staticmethod(...);
+$f6 = $classStr::$staticmethodStr(...);
+
+// traditional callable using string, array
+$f7 = 'strlen'(...);
+$f8 = [$obj, 'method'](...);
+$f9 = [Foo::class, 'staticmethod'](...);
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+
+   <note>
+    <para>
+      The <code>...</code> is part of the syntax, and not an omission.
+    </para>
+   </note>
+
+   <para>
+    <code>CallableExpr</code> has the same semantics as <methodname>Closure::fromCallable</methodname>.
+    That is, unlike callable using strings and arrays, <code>CallableExpr(...)</code> respects the scope at the point where it is created:
+    <example>
+     <title>Scope comparison of <code>CallableExpr(...)</code> and traditional callable</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class Foo {
+    public function getPrivateMethod() {
+        return [$this, 'privateMethod'];
+    }
+
+    private function privateMethod() {
+        echo __METHOD__, "\n";
+    }
+}
+
+$foo = new Foo;
+$privateMethod = $foo->getPrivateMethod();
+$privateMethod();
+// Fatal error: Call to private method Foo::privateMethod() from global scope
+// This is because call is performed outside from Foo and visibility will be checked from this point.
+
+class Foo1 {
+    public function getPrivateMethod() {
+        // Uses the scope where the callable is acquired.
+        return $this->privateMethod(...); // identical to Closure::fromCallable([$this, 'privateMethod']);
+    }
+
+    private function privateMethod() {
+        echo __METHOD__, "\n";
+    }
+}
+
+$foo1 = new Foo1;
+$privateMethod = $foo1->getPrivateMethod();
+$privateMethod();  // Foo1::privateMethod
+?>
+]]>
+     </programlisting>
+    </example>
+
+   </para>
+
+   <note>
+    <para>
+     Object creation by this syntax (e.g <code>new Foo(...)</code>) is not supported, because <code>new Foo()</code> syntax is not considered a call.
+    </para>
+   </note>
+
+   <note>
+    <para>
+     The first-class callable syntax cannot be combined with the nullsafe operator. Both of the following result in a compile-time error:
+     <example>
+      <programlisting role="php">
+<![CDATA[
+<?php
+$obj?->method(...);
+$obj?->prop->method(...);
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+   </note>
+  </sect1>
+
  </chapter>
  
 <!-- Keep this comment at the end of the file
