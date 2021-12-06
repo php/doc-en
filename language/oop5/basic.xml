@@ -46,27 +46,18 @@ class SimpleClass
    </example>
    <para>
     The pseudo-variable <varname>$this</varname> is available when a
-    method is called from within an object
-    context. <varname>$this</varname> is a reference to the calling
-    object (usually the object to which the method belongs, but
-    possibly another object, if the method is called
-    <link linkend="language.oop5.static">statically</link> from the context
-    of a secondary object).
-    As of PHP 7.0.0 calling a non-static method statically from an incompatible
-    context results in $this being undefined inside the method. Calling a
-    non-static method statically from an incompatible context has been
-    deprecated as of PHP 5.6.0. As of PHP 7.0.0 calling a non-static method
-    statically has been generally deprecated (even if called from a compatible
-    context). Before PHP 5.6.0 such calls already triggered a strict notice.
+    method is called from within an object context.
+    <varname>$this</varname> is the value of the calling object.
    </para>
-   <para>
+   <warning>
+    <para>
+     Calling a non-static method statically throws an
+     <classname>Error</classname>.
+     Prior to PHP 8.0.0, this would generate a deprecation notice,
+     and <varname>$this</varname> would be undefined.
+    </para>
     <example xml:id="language.oop5.basic.class.this">
      <title>Some examples of the <varname>$this</varname> pseudo-variable</title>
-     <simpara>
-      We're assuming that error_reporting is disabled for this example;
-      otherwise the following code would trigger deprecated and strict notices,
-      respectively, depending on the PHP version.
-     </simpara>
      <programlisting role="php">
 <![CDATA[
 <?php
@@ -104,26 +95,36 @@ B::bar();
 ?>
 ]]>
      </programlisting>
-     &example.outputs.5;
-     <screen>
-<![CDATA[
-$this is defined (A)
-$this is not defined.
-$this is defined (B)
-$this is not defined.
-]]>
-     </screen>
      &example.outputs.7;
      <screen>
 <![CDATA[
 $this is defined (A)
+
+Deprecated: Non-static method A::foo() should not be called statically in %s  on line 27
 $this is not defined.
+
+Deprecated: Non-static method A::foo() should not be called statically in %s  on line 20
 $this is not defined.
+
+Deprecated: Non-static method B::bar() should not be called statically in %s  on line 32
+
+Deprecated: Non-static method A::foo() should not be called statically in %s  on line 20
 $this is not defined.
 ]]>
      </screen>
+     &example.outputs.8;
+     <screen>
+<![CDATA[
+$this is defined (A)
+
+Fatal error: Uncaught Error: Non-static method A::foo() cannot be called statically in %s :27
+Stack trace:
+#0 {main}
+  thrown in %s  on line 27
+]]>
+     </screen>
     </example>
-   </para>
+   </warning>
   </sect2>
 
   <sect2 xml:id="language.oop5.basic.new">
@@ -209,8 +210,7 @@ object(SimpleClass)#1 (1) {
     </screen>
    </example>
    <para>
-    PHP 5.3.0 introduced a couple of new ways to create instances of an
-    object:
+    It's possible to create instances of an object in a couple of ways:
    </para>
    <example>
     <title>Creating new objects</title>
@@ -251,8 +251,8 @@ bool(true)
    </example>
 
    <para>
-    PHP 5.4.0 introduced the possibility to access a member of a newly created
-    object in a single expression:
+    It is possible to access a member of a newly created object
+    in a single expression:
    </para>
    <example>
     <title>Access member of newly created object</title>
@@ -318,7 +318,7 @@ method
     That means that calling an <link linkend="functions.anonymous">anonymous
     function</link> which has been assigned to a property is not directly
     possible. Instead the property has to be assigned to a variable first, for
-    instance. As of PHP 7.0.0 it is possible to call such a property directly
+    instance. It is possible to call such a property directly
     by enclosing it in parentheses.
    </para>
    <example>
@@ -339,11 +339,6 @@ class Foo
 
 $obj = new Foo();
 
-// as of PHP 5.3.0:
-$func = $obj->bar;
-echo $func(), PHP_EOL;
-
-// alternatively, as of PHP 7.0.0:
 echo ($obj->bar)(), PHP_EOL;
 ]]>
     </programlisting>
@@ -357,28 +352,29 @@ echo ($obj->bar)(), PHP_EOL;
   </sect2>
 
   <sect2 xml:id="language.oop5.basic.extends">
+   <!-- TODO Example about class constant redefinition -->
+   <!-- TODO Split into it's own page? -->
    <title>extends</title>
    <para>
-    A class can inherit the methods and properties of another class by
+    A class can inherit the constants, methods, and properties of another class by
     using the keyword <literal>extends</literal> in the class
     declaration. It is not possible to extend multiple classes; a
     class can only inherit from one base class.
    </para>
    <para>
-    The inherited methods and properties can be overridden by
+    The inherited constants, methods, and properties can be overridden by
     redeclaring them with the same name defined in the parent
-    class. However, if the parent class has defined a method
-    as <link linkend="language.oop5.final">final</link>, that method
-    may not be overridden.  It is possible to access the overridden
+    class. However, if the parent class has defined a method or constant
+    as <link linkend="language.oop5.final">final</link>,
+    they may not be overridden.  It is possible to access the overridden
     methods or static properties by referencing them
     with <link linkend="language.oop5.paamayim-nekudotayim">parent::</link>.
    </para>
-   <para>
-    When overriding methods, the parameter signature should remain the same or
-    PHP will generate an <constant>E_STRICT</constant> level error. This does
-    not apply to the constructor, which allows overriding with different
-    parameters.
-   </para>
+   <note>
+    <simpara>
+     As of PHP 8.1.0, constants may be declared as final.
+    </simpara>
+   </note>
    <example>
     <title>Simple Class Inheritance</title>
     <programlisting role="php">
@@ -407,16 +403,179 @@ a default value
 ]]>
     </screen>
    </example>
+
+   <sect3 xml:id="language.oop.lsp">
+    <title>Signature compatibility rules</title>
+    <para>
+     When overriding a method, its signature must be compatible with the parent
+     method. Otherwise, a fatal error is emitted, or, prior to PHP 8.0.0, an
+     <constant>E_WARNING</constant> level error is generated.
+     A signature is compatible if it respects the
+     <link linkend="language.oop5.variance">variance</link> rules, makes a
+     mandatory parameter optional, and if any new parameters are optional.
+     This is known as the Liskov Substitution Principle, or LSP for short.
+     The <link linkend="language.oop5.decon.constructor">constructor</link>,
+     and <literal>private</literal> methods are exempt from these signature
+     compatibility rules, and thus won't emit a fatal error in case of a
+     signature mismatch.
+    </para>
+    <example>
+     <title>Compatible child methods</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class Base
+{
+    public function foo(int $a) {
+        echo "Valid\n";
+    }
+}
+
+class Extend1 extends Base
+{
+    function foo(int $a = 5)
+    {
+        parent::foo($a);
+    }
+}
+
+class Extend2 extends Base
+{
+    function foo(int $a, $b = 5)
+    {
+        parent::foo($a);
+    }
+}
+
+$extended1 = new Extend1();
+$extended1->foo();
+$extended2 = new Extend2();
+$extended2->foo(1);
+]]>
+     </programlisting>
+     &example.outputs;
+     <screen>
+<![CDATA[
+Valid
+Valid
+]]>
+     </screen>
+    </example>
+
+    <para>
+     The following examples demonstrate that a child method which removes a parameter, or makes an optional
+     parameter mandatory, is not compatible with the parent method.
+    </para>
+    <example>
+     <title>Fatal error when a child method removes a parameter</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class Base
+{
+    public function foo(int $a = 5) {
+        echo "Valid\n";
+    }
+}
+
+class Extend extends Base
+{
+    function foo()
+    {
+        parent::foo(1);
+    }
+}
+]]>
+     </programlisting>
+     &example.outputs.8.similar;
+     <screen>
+<![CDATA[
+Fatal error: Declaration of Extend::foo() must be compatible with Base::foo(int $a = 5) in /in/evtlq on line 13
+]]>
+     </screen>
+    </example>
+    <example>
+     <title>Fatal error when a child method makes an optional parameter mandatory</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class Base
+{
+    public function foo(int $a = 5) {
+        echo "Valid\n";
+    }
+}
+
+class Extend extends Base
+{
+    function foo(int $a)
+    {
+        parent::foo($a);
+    }
+}
+]]>
+     </programlisting>
+     &example.outputs.8.similar;
+     <screen>
+<![CDATA[
+Fatal error: Declaration of Extend::foo(int $a) must be compatible with Base::foo(int $a = 5) in /in/qJXVC on line 13
+]]>
+     </screen>
+    </example>
+
+    <warning>
+     <para>
+      Renaming a method's parameter in a child class is not a signature
+      incompatibility. However, this is discouraged as it will result in a
+      runtime <classname>Error</classname> if
+      <link linkend="functions.named-arguments">named arguments</link>
+      are used.
+     </para>
+     <example>
+      <title>Error when using named arguments and parameters were renamed in a child class</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+class A {
+    public function test($foo, $bar) {}
+}
+
+class B extends A {
+    public function test($a, $b) {}
+}
+
+$obj = new B;
+
+// Pass parameters according to A::test() contract
+$obj->test(foo: "foo", bar: "bar"); // ERROR!
+]]>
+      </programlisting>
+      &example.outputs.similar;
+      <screen>
+<![CDATA[
+Fatal error: Uncaught Error: Unknown named parameter $foo in /in/XaaeN:14
+Stack trace:
+#0 {main}
+  thrown in /in/XaaeN on line 14
+]]>
+      </screen>
+     </example>
+    </warning>
+   </sect3>
   </sect2>
 
   <sect2 xml:id="language.oop5.basic.class.class">
    <title>::class</title>
 
    <para>
-    Since PHP 5.5, the <literal>class</literal> keyword is also used for class
-    name resolution. You can get a string containing the fully qualified name
-    of the <literal>ClassName</literal> class by using
-    <literal>ClassName::class</literal>. This is particularly useful with
+    The <literal>class</literal> keyword is also used for class
+    name resolution.
+    To obtain the fully qualified name of a class <literal>ClassName</literal>
+    use <literal>ClassName::class</literal>. This is particularly useful with
     <link linkend="language.namespaces">namespaced</link> classes.
    </para>
    <para>
@@ -449,9 +608,99 @@ NS\ClassName
      are expanded even if the class does not exist. No error is issued in
      that case.
     </para>
+    <example xml:id="language.oop5.basic.class.class.fail">
+     <title>Missing class name resolution</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+print Does\Not\Exist::class;
+?>
+]]>
+     </programlisting>
+     &example.outputs;
+     <screen>
+<![CDATA[
+Does\Not\Exist
+]]>
+     </screen>
+    </example>
    </note>
+   <para>
+    As of PHP 8.0.0, the <literal>::class</literal> constant may also be used on
+    objects. This resolution happens at runtime, not compile time. Its effect is
+    the same as calling <function>get_class</function> on the object.
+   </para>
+   <example xml:id="language.oop5.basic.class.class.object">
+    <title>Object name resolution</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+namespace NS {
+    class ClassName {
+    }
+}
+$c = new ClassName();
+print $c::class;
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+NS\ClassName
+]]>
+    </screen>
+   </example>
   </sect2>
- </sect1>
+ <sect2 xml:id="language.oop5.basic.nullsafe">
+  <title>Nullsafe methods and properties</title>
+  <para>
+   As of PHP 8.0.0, properties and methods may also be accessed with the
+   "nullsafe" operator instead: <literal>?-></literal>. The nullsafe operator
+   works the same as property or method access as above, except that if the
+   object being dereferenced is &null; then &null;
+   will be returned rather than an exception thrown. If the dereference is part of a
+   chain, the rest of the chain is skipped.
+  </para>
+  <para>
+   The effect is similar to wrapping each access in an <function>is_null</function>
+   check first, but more compact.
+  </para>
+  <para>
+   <example>
+    <title>Nullsafe Operator</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+// As of PHP 8.0.0, this line:
+$result = $repository?->getUser(5)?->name;
+
+// Is equivalent to the following code block:
+if (is_null($repository)) {
+    $result = null;
+} else {
+    $user = $repository->getUser(5);
+    if (is_null($user)) {
+        $result = null;
+    } else {
+        $result = $user->name;
+    }
+}
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <note>
+   <para>
+    The nullsafe operator is best used when null is considered a valid and expected
+    possible value for a property or method return. For indicating an error,
+    a thrown exception is preferable.
+   </para>
+  </note>
+ </sect2>
+</sect1>
 
 <!-- Keep this comment at the end of the file
 Local variables:

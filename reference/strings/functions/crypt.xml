@@ -14,26 +14,23 @@
   &reftitle.description;
   <methodsynopsis>
    <type>string</type><methodname>crypt</methodname>
-   <methodparam><type>string</type><parameter>str</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>salt</parameter></methodparam>
+   <methodparam><type>string</type><parameter>string</parameter></methodparam>
+   <methodparam><type>string</type><parameter>salt</parameter></methodparam>
   </methodsynopsis>
   <para>
    <function>crypt</function> will return a hashed string using the
    standard Unix <abbrev>DES</abbrev>-based algorithm or
-   alternative algorithms that may be available on the system.
+   alternative algorithms.
   </para>
   <para>
-   The <parameter>salt</parameter> parameter is optional. However, <function>crypt</function> creates a weak hash without the <parameter>salt</parameter>. PHP 5.6 or later raise an E_NOTICE error without it. Make sure to specify a strong enough salt for better security. 
+   The <parameter>salt</parameter> parameter is optional. However, <function>crypt</function> creates a weak hash without the <parameter>salt</parameter>, and raises an <constant>E_NOTICE</constant> error without it. Make sure to specify a strong enough salt for better security. 
   </para>
   <para>
    <function>password_hash</function> uses a strong hash, generates a strong salt, and applies proper rounds automatically. <function>password_hash</function> is a simple <function>crypt</function> wrapper and compatible with existing password hashes. Use of <function>password_hash</function> is encouraged.
   </para>
   <para>
-   Some operating systems support more than one type of hash.  In
-   fact, sometimes the standard DES-based algorithm is replaced by an
-   MD5-based algorithm.  The hash type is triggered by the salt argument.
-   Prior to 5.3, PHP would determine the available algorithms at install-time
-   based on the system's crypt(). If no salt is provided, PHP will
+   The hash type is triggered by the salt argument.
+   If no salt is provided, PHP will
    auto-generate either a standard two character (DES) salt, or a twelve
    character (MD5), depending on the availability of MD5 crypt().  PHP sets a
    constant named <constant>CRYPT_SALT_LENGTH</constant> which indicates the
@@ -42,14 +39,12 @@
   <para>
    The standard DES-based <function>crypt</function> returns the
    salt as the first two characters of the output. It also only uses the
-   first eight characters of <parameter>str</parameter>, so longer strings
+   first eight characters of <parameter>string</parameter>, so longer strings
    that start with the same eight characters will generate the same result
    (when the same salt is used).
   </para>
   <simpara>
-   On systems where the crypt() function supports multiple
-   hash types, the following constants are set to 0 or 1
-   depending on whether the given type is available:
+   The following hash types are supported:
   </simpara>
   <itemizedlist>
    <listitem>
@@ -81,14 +76,13 @@
      22 characters from the alphabet "./0-9A-Za-z". Using characters outside of
      this range in the salt will cause crypt() to return a zero-length string.
      The two digit cost parameter is the base-2 logarithm of the iteration
-     count for the underlying Blowfish-based hashing algorithmeter and must be
+     count for the underlying Blowfish-based hashing algorithm and must be
      in range 04-31, values outside this range will cause crypt() to fail.
-     Versions of PHP before 5.3.7 only support "$2a$" as the salt prefix: PHP
-     5.3.7 introduced the new prefixes to fix a security weakness in the
-     Blowfish implementation.  Please refer to
+     "$2x$" hashes are potentially weak; "$2a$" hashes are compatible and
+     mitigate this weakness. For new hashes, "$2y$" should be used.
+     Please refer to
      <link xlink:href="&url.crypt.blowfish;">this document</link> for full
-     details of the security fix, but to summarise, developers targeting only
-     PHP 5.3.7 and later should use "$2y$" in preference to "$2a$".
+     details of the related security fix.
     </simpara>
    </listitem>
    <listitem>
@@ -112,12 +106,6 @@
     </simpara>
    </listitem>
   </itemizedlist>
-  <note>
-   <para>
-    As of PHP 5.3.0, PHP contains its own implementation and will use that
-    if the system lacks of support for one or more of the algorithms.
-   </para>
-  </note>
  </refsect1>
  
  <refsect1 role="parameters">
@@ -125,7 +113,7 @@
   <para>
    <variablelist>
     <varlistentry>
-     <term><parameter>str</parameter></term>
+     <term><parameter>string</parameter></term>
      <listitem>
       <para>
        The string to be hashed.
@@ -133,7 +121,7 @@
       <caution>
        <para>
         Using the <constant>CRYPT_BLOWFISH</constant> algorithm, will result
-        in the <parameter>str</parameter> parameter being truncated to a
+        in the <parameter>string</parameter> parameter being truncated to a
         maximum length of 72 characters.
        </para>
       </caution>
@@ -163,12 +151,34 @@
    <simpara>
     When validating passwords, a string comparison function that isn't
     vulnerable to timing attacks should be used to compare the output of
-    <function>crypt</function> to the previously known hash. PHP 5.6 onwards
+    <function>crypt</function> to the previously known hash. PHP
     provides <function>hash_equals</function> for this purpose.
    </simpara>
   </warning>
  </refsect1>
  
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>8.0.0</entry>
+      <entry>
+       The <parameter>salt</parameter> is no longer optional.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
+ </refsect1>
+
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
@@ -177,7 +187,8 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-$hashed_password = crypt('mypassword'); // let the salt be automatically generated
+ // let the salt be automatically generated; not recommended
+$hashed_password = crypt('mypassword');
 
 /* You should pass the entire results of crypt() as the salt for comparing a
    password, to avoid problems when different hashing algorithms are used. (As
@@ -200,7 +211,7 @@ if (hash_equals($hashed_password, crypt($user_input, $hashed_password))) {
 // Set the password
 $password = 'mypassword';
 
-// Get the hash, letting the salt be automatically generated
+// Get the hash, letting the salt be automatically generated; not recommended
 $hash = crypt($password);
 ?>
 ]]>
@@ -216,29 +227,24 @@ $hash = crypt($password);
 /* These salts are examples only, and should not be used verbatim in your code.
    You should generate a distinct, correctly-formatted salt for each password.
 */
-if (CRYPT_STD_DES == 1) {
-    echo 'Standard DES: ' . crypt('rasmuslerdorf', 'rl') . "\n";
-}
-
-if (CRYPT_EXT_DES == 1) {
-    echo 'Extended DES: ' . crypt('rasmuslerdorf', '_J9..rasm') . "\n";
-}
-
-if (CRYPT_MD5 == 1) {
-    echo 'MD5:          ' . crypt('rasmuslerdorf', '$1$rasmusle$') . "\n";
-}
-
-if (CRYPT_BLOWFISH == 1) {
-    echo 'Blowfish:     ' . crypt('rasmuslerdorf', '$2a$07$usesomesillystringforsalt$') . "\n";
-}
-
-if (CRYPT_SHA256 == 1) {
-    echo 'SHA-256:      ' . crypt('rasmuslerdorf', '$5$rounds=5000$usesomesillystringforsalt$') . "\n";
-}
-
-if (CRYPT_SHA512 == 1) {
-    echo 'SHA-512:      ' . crypt('rasmuslerdorf', '$6$rounds=5000$usesomesillystringforsalt$') . "\n";
-}
+echo 'Standard DES: ',
+    crypt('rasmuslerdorf', 'rl'),
+    "\n";
+echo 'Extended DES: ',
+    crypt('rasmuslerdorf', '_J9..rasm'),
+    "\n";
+echo 'MD5:          ',
+    crypt('rasmuslerdorf', '$1$rasmusle$'),
+    "\n";
+echo 'Blowfish:     ',
+    crypt('rasmuslerdorf', '$2a$07$usesomesillystringforsalt$'),
+    "\n";
+echo 'SHA-256:      ',
+    crypt('rasmuslerdorf', '$5$rounds=5000$usesomesillystringforsalt$'),
+    "\n";
+echo 'SHA-512:      ',
+    crypt('rasmuslerdorf', '$6$rounds=5000$usesomesillystringforsalt$'),
+    "\n";
 ?>
 ]]>
     </programlisting>
@@ -248,7 +254,7 @@ if (CRYPT_SHA512 == 1) {
 Standard DES: rl.3StKT.4T8M
 Extended DES: _J9..rasmBYk8r9AiWNc
 MD5:          $1$rasmusle$rISCgZzpwk3UhDidwXvin0
-Blowfish:     $2a$07$usesomesillystringfore2uDLvp1Ii2e./U9C8sBjqp8I90dH6hi
+Blowfish:     $2y$07$usesomesillystringfore2uDLvp1Ii2e./U9C8sBjqp8I90dH6hi
 SHA-256:      $5$rounds=5000$usesomesillystri$KqJWpanXZHKq2BOB43TSaYhEWsQ1Lr5QNyPCDH/Tp.6
 SHA-512:      $6$rounds=5000$usesomesillystri$D4IrlXatmP7rx3P3InaxBeoomnAihCKRVQP22JZ6EY47Wc6BkroIuUUBOov1i.S5KPgErtP/EN5mcO.ChWQW21
 ]]>
@@ -274,14 +280,12 @@ SHA-512:      $6$rounds=5000$usesomesillystri$D4IrlXatmP7rx3P3InaxBeoomnAihCKRVQ
     <member><function>hash_equals</function></member>
     <member><function>password_hash</function></member>
     <member><function>md5</function></member>
-    <member>The <link linkend="ref.mcrypt">Mcrypt</link> extension</member>
     <member>The Unix man page for your crypt function for more information</member>
    </simplelist>
   </para>
  </refsect1>
  
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

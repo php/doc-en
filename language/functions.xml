@@ -175,7 +175,8 @@ function recursion($a)
    <simpara>
     Information may be passed to functions via the argument list,
     which is a comma-delimited list of expressions. The arguments are
-    evaluated from left to right.
+    evaluated from left to right, before the function is actually called
+    (<emphasis>eager</emphasis> evaluation).
    </simpara>
 
    <para>
@@ -184,7 +185,8 @@ function recursion($a)
     reference</link>, and <link
     linkend="functions.arguments.default">default argument
     values</link>. <link linkend="functions.variable-arg-list">Variable-length
-    argument lists</link> are also supported.
+    argument lists</link> and <link linkend="functions.named-arguments">Named Arguments</link>
+    are also supported.
    </para>
    <para>
     <example>
@@ -200,7 +202,54 @@ function takes_array($input)
 ]]>
      </programlisting>
     </example>
-   </para>   
+   </para>
+   <para>
+    As of PHP 8.0.0, the list of function arguments may include a trailing comma, which
+    will be ignored.  That is particularly useful in cases where the list of arguments is
+    long or contains long variable names, making it convenient to list arguments vertically.
+   </para>
+   <example>
+    <title>Function Argument List with trailing Comma</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function takes_many_args(
+    $first_arg,
+    $second_arg,
+    $a_very_long_argument_name,
+    $arg_with_default = 5,
+    $again = 'a default string', // This trailing comma was not permitted before 8.0.0.
+)
+{
+    // ...
+}
+?>
+]]>
+    </programlisting>
+   </example>
+   <para>
+    As of PHP 8.0.0, passing mandatory arguments after optional arguments
+    is deprecated. This can generally be resolved by dropping the default value.
+    One exception to this rule are arguments of the form
+    <code>Type $param = null</code>, where the &null; default makes the type implicitly
+    nullable. This usage remains allowed, though it is recommended to use an
+    explicit nullable type instead.
+   </para>
+   <example>
+    <title>Passing optional arguments after mandatory arguments</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function foo($a = [], $b) {} // Before
+function foo($a, $b) {}      // After
+
+function bar(A $a = null, $b) {} // Still allowed
+function bar(?A $a, $b) {}       // Recommended
+?>
+]]>
+    </programlisting>
+   </example>
+
    <sect2 xml:id="functions.arguments.by-reference">
     <title>Passing arguments by reference</title>
  
@@ -231,6 +280,9 @@ echo $str;    // outputs 'This is a string, and something extra.'
 ]]>
       </programlisting>
      </example>
+    </para>
+    <para>
+     It is an error to pass a value as argument which is supposed to be passed by reference.
     </para>
    </sect2>
    <sect2 xml:id="functions.arguments.default">
@@ -351,442 +403,40 @@ Making a bowl of acidophilus raspberry.
     </para>
     <note>
      <simpara>
-      As of PHP 5, arguments that are passed by reference may have a default value.
+      Arguments that are passed by reference may have a default value.
      </simpara>
     </note>
    </sect2>
 
-   <sect2 xml:id="functions.arguments.type-declaration">
-    <title>Type declarations</title>
-
-    <note>
-     <para>
-      Type declarations were also known as type hints in PHP 5.
-     </para>
-    </note>
-
-    <para>
-     Type declarations allow functions to require that parameters are of a certain type at call time.
-     If the given value is of the incorrect type,
-     then an error is generated: in PHP 5, this will be a recoverable fatal
-     error, while PHP 7 will throw a <classname>TypeError</classname>
-     exception.
-    </para>
-
-    <para>
-     To specify a type declaration, the type name should be added before the
-     parameter name. The declaration can be made to accept &null; values if
-     the default value of the parameter is set to &null;.
-    </para>
-
-    <sect3 xml:id="functions.arguments.type-declaration.types">
-     <title>Valid types</title>
-     <informaltable>
-      <tgroup cols="3">
-       <thead>
-        <row>
-         <entry>Type</entry>
-         <entry>Description</entry>
-         <entry>Minimum PHP version</entry>
-        </row>
-       </thead>
-       <tbody>
-        <row>
-         <entry>Class/interface name</entry>
-         <entry>
-          The parameter must be an &instanceof; the given class or interface
-          name.
-         </entry>
-         <entry>PHP 5.0.0</entry>
-        </row>
-        <row>
-         <entry><literal>self</literal></entry>
-         <entry>
-          The parameter must be an &instanceof; the same class as the one the
-          method is defined on. This can only be used on class and instance
-          methods.
-         </entry>
-         <entry>PHP 5.0.0</entry>
-        </row>
-        <row>
-         <entry><type>array</type></entry>
-         <entry>
-          The parameter must be an <type>array</type>.
-         </entry>
-         <entry>PHP 5.1.0</entry>
-        </row>
-        <row>
-         <entry><type>callable</type></entry>
-         <entry>
-          The parameter must be a valid <type>callable</type>.
-         </entry>
-         <entry>PHP 5.4.0</entry>
-        </row>
-        <row>
-         <entry><type>bool</type></entry>
-         <entry>
-          The parameter must be a <type>boolean</type> value.
-         </entry>
-         <entry>PHP 7.0.0</entry>
-        </row>
-        <row>
-         <entry><type>float</type></entry>
-         <entry>
-          The parameter must be a <type>float</type>ing point number.
-         </entry>
-         <entry>PHP 7.0.0</entry>
-        </row>
-        <row>
-         <entry><type>int</type></entry>
-         <entry>
-          The parameter must be an <type>integer</type>.
-         </entry>
-         <entry>PHP 7.0.0</entry>
-        </row>
-        <row>
-         <entry><type>string</type></entry>
-         <entry>
-          The parameter must be a <type>string</type>.
-         </entry>
-         <entry>PHP 7.0.0</entry>
-        </row>
-        <row>
-         <entry><literal>iterable</literal></entry>
-         <entry>
-          The parameter must be either an <type>array</type> or an &instanceof; <classname>Traversable</classname>.
-         </entry>
-         <entry>PHP 7.1.0</entry>
-        </row>
-        <row>
-         <entry><literal>object</literal></entry>
-         <entry>
-          The parameter must be an <type>object</type>.
-         </entry>
-         <entry>PHP 7.2.0</entry>
-        </row>
-       </tbody>
-      </tgroup>
-     </informaltable>
-
-     <warning>
-      <para>
-       Aliases for the above scalar types are not supported. Instead, they are
-       treated as class or interface names. For example, using
-       <literal>boolean</literal> as a parameter or return type will require
-       an argument or return value that is an &instanceof; the class or
-       interface <literal>boolean</literal>, rather than of type
-       <type>bool</type>:
-      </para>
-      <para>
-       <example>
-        <programlisting role="php">
- <![CDATA[
- <?php
- function test(boolean $param) {}
- test(true);
- ?>
- ]]>
-        </programlisting>
-        &example.outputs;
-        <screen>
- <![CDATA[
- Fatal error: Uncaught TypeError: Argument 1 passed to test() must be an instance of boolean, boolean given, called in - on line 1 and defined in -:1
- ]]>
-        </screen>
-       </example>
-      </para>
-     </warning>
-    </sect3>
-
-    <sect3 xml:id="functions.arguments.type-declaration.examples">
-     &reftitle.examples;
-     <example>
-      <title>Basic class type declaration</title>
-      <programlisting role="php">
-<![CDATA[
-<?php
-class C {}
-class D extends C {}
-
-// This doesn't extend C.
-class E {}
-
-function f(C $c) {
-    echo get_class($c)."\n";
-}
-
-f(new C);
-f(new D);
-f(new E);
-?>
-]]>
-      </programlisting>
-      &example.outputs;
-      <screen>
-<![CDATA[
-C
-D
-
-Fatal error: Uncaught TypeError: Argument 1 passed to f() must be an instance of C, instance of E given, called in - on line 14 and defined in -:8
-Stack trace:
-#0 -(14): f(Object(E))
-#1 {main}
-  thrown in - on line 8
-]]>
-      </screen>
-     </example>
-
-     <example>
-      <title>Basic interface type declaration</title>
-      <programlisting role="php">
-<![CDATA[
-<?php
-interface I { public function f(); }
-class C implements I { public function f() {} }
-
-// This doesn't implement I.
-class E {}
-
-function f(I $i) {
-    echo get_class($i)."\n";
-}
-
-f(new C);
-f(new E);
-?>
-]]>
-      </programlisting>
-      &example.outputs;
-      <screen>
-<![CDATA[
-C
-
-Fatal error: Uncaught TypeError: Argument 1 passed to f() must implement interface I, instance of E given, called in - on line 13 and defined in -:8
-Stack trace:
-#0 -(13): f(Object(E))
-#1 {main}
-  thrown in - on line 8
-]]>
-      </screen>
-     </example>
-
-     <example>
-      <title>Typed pass-by-reference Parameters</title>
-      <simpara>
-       Declared types of reference parameters are checked on function entry, but
-       not when the function returns, so after the function had returned, the
-       argument's type may have changed.
-      </simpara>
-      <programlisting role="php">
-<![CDATA[
-<?php
-function array_baz(array &$param)
-{
-    $param = 1;
-}
-$var = [];
-array_baz($var);
-var_dump($var);
-array_baz($var);
-?>
-]]>
-      </programlisting>
-      &example.outputs.similar;
-      <screen>
-<![CDATA[
-int(1)
-
-Fatal error: Uncaught TypeError: Argument 1 passed to array_baz() must be of the type array, int given, called in %s on line %d
-]]>
-      </screen>
-     </example>
-     <example>
-      <title>Nullable type declaration</title>
-      <programlisting role="php">
-<![CDATA[
-<?php
-class C {}
-
-function f(C $c = null) {
-    var_dump($c);
-}
-
-f(new C);
-f(null);
-?>
-]]>
-      </programlisting>
-      &example.outputs;
-      <screen>
-<![CDATA[
-object(C)#1 (0) {
-}
-NULL
-]]>
-      </screen>
-     </example>
-    </sect3>
-
-    <sect3 xml:id="functions.arguments.type-declaration.strict">
-     <title>Strict typing</title>
-
-     <para>
-      By default, PHP will coerce values of the wrong type into the expected
-      scalar type if possible. For example, a function that is given an
-      <type>integer</type> for a parameter that expects a <type>string</type>
-      will get a variable of type <type>string</type>.
-     </para>
-
-     <para>
-      It is possible to enable strict mode on a per-file basis. In strict
-      mode, only a variable of exact type of the type declaration will be
-      accepted, or a <classname>TypeError</classname> will be thrown. The
-      only exception to this rule is that an <type>integer</type> may be given
-      to a function expecting a <type>float</type>. Function calls from within
-      internal functions will not be affected by the <literal>strict_types</literal>
-      declaration.
-     </para>
-
-     <para>
-      To enable strict mode, the &declare; statement is used with the
-      <literal>strict_types</literal> declaration:
-     </para>
-
-     <caution>
-      <para>
-       Enabling strict mode will also affect
-       <link linkend="functions.returning-values.type-declaration">return type declarations</link>.
-      </para>
-     </caution>
-
-     <note>
-      <para>
-       Strict typing applies to function calls made from
-       <emphasis>within</emphasis> the file with strict typing enabled, not to
-       the functions declared within that file. If a file without strict
-       typing enabled makes a call to a function that was defined in a file
-       with strict typing, the caller's preference (weak typing) will be
-       respected, and the value will be coerced.
-      </para>
-     </note>
-
-     <note>
-      <para>
-       Strict typing is only defined for scalar type declarations, and as
-       such, requires PHP 7.0.0 or later, as scalar type declarations were
-       added in that version.
-      </para>
-     </note>
-
-     <example>
-      <title>Strict typing</title>
-      <programlisting role="php">
-<![CDATA[
-<?php
-declare(strict_types=1);
-
-function sum(int $a, int $b) {
-    return $a + $b;
-}
-
-var_dump(sum(1, 2));
-var_dump(sum(1.5, 2.5));
-?>
-]]>
-      </programlisting>
-      &example.outputs;
-      <screen>
-<![CDATA[
-int(3)
-
-Fatal error: Uncaught TypeError: Argument 1 passed to sum() must be of the type integer, float given, called in - on line 9 and defined in -:4
-Stack trace:
-#0 -(9): sum(1.5, 2.5)
-#1 {main}
-  thrown in - on line 4
-]]>
-      </screen>
-     </example>
-
-     <example>
-      <title>Weak typing</title>
-      <programlisting role="php">
-<![CDATA[
-<?php
-function sum(int $a, int $b) {
-    return $a + $b;
-}
-
-var_dump(sum(1, 2));
-
-// These will be coerced to integers: note the output below!
-var_dump(sum(1.5, 2.5));
-?>
-]]>
-      </programlisting>
-      &example.outputs;
-      <screen>
-<![CDATA[
-int(3)
-int(3)
-]]>
-      </screen>
-     </example>
-
-     <example>
-      <title>Catching <classname>TypeError</classname></title>
-      <programlisting role="php">
-<![CDATA[
-<?php
-declare(strict_types=1);
-
-function sum(int $a, int $b) {
-    return $a + $b;
-}
-
-try {
-    var_dump(sum(1, 2));
-    var_dump(sum(1.5, 2.5));
-} catch (TypeError $e) {
-    echo 'Error: '.$e->getMessage();
-}
-?>
-]]>
-      </programlisting>
-      &example.outputs;
-      <screen>
-<![CDATA[
-int(3)
-Error: Argument 1 passed to sum() must be of the type integer, float given, called in - on line 10
-]]>
-      </screen>
-     </example>
-    </sect3>
-   </sect2>
    <sect2 xml:id="functions.variable-arg-list">
     <title>Variable-length argument lists</title>
 
     <simpara>
      PHP has support for variable-length argument lists in
-     user-defined functions. This is implemented using the
-     <literal>...</literal> token in PHP 5.6 and later, and using the
-     <function>func_num_args</function>,
-     <function>func_get_arg</function>, and
-     <function>func_get_args</function> functions in PHP 5.5 and earlier.
+     user-defined functions by using the
+     <literal>...</literal> token.
     </simpara>
+    
+    <note>
+     <simpara>
+      It is also possible to achieve variable-length arguments by using
+      <function>func_num_args</function>,
+      <function>func_get_arg</function>, and
+      <function>func_get_args</function> functions.
+      This technique is not recommended as it was used prior to the introduction
+      of the <literal>...</literal> token.
+     </simpara>
+    </note>
 
-    <sect3 xml:id="functions.variable-arg-list.new">
-     <title><literal>...</literal> in PHP 5.6+</title>
+    <para>
+     Argument lists may include the
+     <literal>...</literal> token to denote that the function accepts a
+     variable number of arguments. The arguments will be passed into the
+     given variable as an array; for example:
 
-     <para>
-      In PHP 5.6 and later, argument lists may include the
-      <literal>...</literal> token to denote that the function accepts a
-      variable number of arguments. The arguments will be passed into the
-      given variable as an array; for example:
-
-      <example>
-       <title>Using <literal>...</literal> to access variable arguments</title>
-       <programlisting role="php">
+     <example>
+      <title>Using <literal>...</literal> to access variable arguments</title>
+      <programlisting role="php">
 <![CDATA[
 <?php
 function sum(...$numbers) {
@@ -800,24 +450,24 @@ function sum(...$numbers) {
 echo sum(1, 2, 3, 4);
 ?>
 ]]>
-       </programlisting>
-       &example.outputs;
-       <screen>
+      </programlisting>
+      &example.outputs;
+      <screen>
 <![CDATA[
 10
 ]]>
-       </screen>
-      </example>
-     </para>
+      </screen>
+     </example>
+    </para>
 
-     <para>
-      You can also use <literal>...</literal> when calling functions to unpack
-      an <type>array</type> or <classname>Traversable</classname> variable or
-      literal into the argument list:
+    <para>
+     <literal>...</literal> can also be used when calling functions to unpack
+     an <type>array</type> or <classname>Traversable</classname> variable or
+     literal into the argument list:
 
-      <example>
-       <title>Using <literal>...</literal> to provide arguments</title>
-       <programlisting role="php">
+     <example>
+      <title>Using <literal>...</literal> to provide arguments</title>
+      <programlisting role="php">
 <![CDATA[
 <?php
 function add($a, $b) {
@@ -830,33 +480,33 @@ $a = [1, 2];
 echo add(...$a);
 ?>
 ]]>
-       </programlisting>
-       &example.outputs;
-       <screen>
+      </programlisting>
+      &example.outputs;
+      <screen>
 <![CDATA[
 3
 3
 ]]>
-       </screen>
-      </example>
-     </para>
+      </screen>
+     </example>
+    </para>
 
-     <para>
-      You may specify normal positional arguments before the
-      <literal>...</literal> token. In this case, only the trailing arguments
-      that don't match a positional argument will be added to the array
-      generated by <literal>...</literal>.
-     </para>
+    <para>
+     You may specify normal positional arguments before the
+     <literal>...</literal> token. In this case, only the trailing arguments
+     that don't match a positional argument will be added to the array
+     generated by <literal>...</literal>.
+    </para>
 
-     <para>
-      It is also possible to add a
-      <link linkend="language.oop5.typehinting">type hint</link> before the
-      <literal>...</literal> token. If this is present, then all arguments
-      captured by <literal>...</literal> must be objects of the hinted class.
+    <para>
+     It is also possible to add a
+     <link linkend="language.types.declarations">type declaration</link> before the
+     <literal>...</literal> token. If this is present, then all arguments
+     captured by <literal>...</literal> must match that parameter type.
 
-      <example>
-       <title>Type hinted variable arguments</title>
-       <programlisting role="php">
+     <example>
+      <title>Type declared variable arguments</title>
+      <programlisting role="php">
 <![CDATA[
 <?php
 function total_intervals($unit, DateInterval ...$intervals) {
@@ -875,24 +525,23 @@ echo total_intervals('d', $a, $b).' days';
 echo total_intervals('d', null);
 ?>
 ]]>
-       </programlisting>
-       &example.outputs;
-       <screen>
+      </programlisting>
+      &example.outputs;
+      <screen>
 <![CDATA[
 3 days
 Catchable fatal error: Argument 2 passed to total_intervals() must be an instance of DateInterval, null given, called in - on line 14 and defined in - on line 2
 ]]>
-       </screen>
-      </example>
-     </para>
+      </screen>
+     </example>
+    </para>
 
-     <para>
-      Finally, you may also pass variable arguments
-      <link linkend="functions.arguments.by-reference">by reference</link> by
-      prefixing the <literal>...</literal> with an ampersand
-      (<literal>&amp;</literal>).
-     </para>
-    </sect3>
+    <para>
+     Finally, variable arguments can also be passed
+     <link linkend="functions.arguments.by-reference">by reference</link> by
+     prefixing the <literal>...</literal> with an ampersand
+     (<literal>&amp;</literal>).
+    </para>
 
     <sect3 xml:id="functions.variable-arg-list.old">
      <title>Older versions of PHP</title>
@@ -905,11 +554,10 @@ Catchable fatal error: Argument 2 passed to total_intervals() must be an instanc
      </para>
 
      <para>
-      The first example above would be implemented as follows in PHP 5.5 and
-      earlier:
+      The first example above would be implemented as follows in old versions of PHP:
 
       <example>
-       <title>Accessing variable arguments in PHP 5.5 and earlier</title>
+       <title>Accessing variable arguments in old PHP versions</title>
        <programlisting role="php">
 <![CDATA[
 <?php
@@ -936,6 +584,111 @@ echo sum(1, 2, 3, 4);
     </sect3>
 
    </sect2>
+
+   <sect2 xml:id="functions.named-arguments">
+    <title>Named Arguments</title>
+
+    <para>
+     PHP 8.0.0 introduced named arguments as an extension of the existing
+     positional parameters. Named arguments allow passing arguments to a
+     function based on the parameter name, rather than the parameter position.
+     This makes the meaning of the argument self-documenting, makes the
+     arguments order-independent and allows skipping default values arbitrarily.
+    </para>
+
+    <para>
+     Named arguments are passed by prefixing the value with the parameter name
+     followed by a colon. Using reserved keywords as parameter names is allowed.
+     The parameter name must be an identifier, specifying dynamically
+     is not allowed.
+    </para>
+
+    <example>
+     <title>Named argument syntax</title>
+     <programlisting role="php">
+      <![CDATA[
+<?php
+myFunction(paramName: $value);
+array_foobar(array: $value);
+
+// NOT supported.
+function_name($variableStoringParamName: $value);
+?>
+]]>
+     </programlisting>
+    </example>
+
+    <example>
+     <title>Positional arguments versus named arguments</title>
+     <programlisting role="php">
+      <![CDATA[
+<?php
+// Using positional arguments:
+array_fill(0, 100, 50);
+
+// Using named arguments:
+array_fill(start_index: 0, count: 100, value: 50);
+?>
+]]>
+     </programlisting>
+    </example>
+
+    <para>
+     The order in which the named arguments are passed does not matter.
+    </para>
+
+    <example>
+     <title>Same example as above with a different order of parameters</title>
+     <programlisting role="php">
+      <![CDATA[
+<?php
+array_fill(value: 50, count: 100, start_index: 0);
+?>
+]]>
+     </programlisting>
+    </example>
+
+    <para>
+     Named arguments can be combined with positional arguments. In this case,
+     the named arguments must come after the positional arguments.
+     It is also possible to specify only some of the optional arguments of a
+     function, regardless of their order.
+    </para>
+
+    <example>
+     <title>Combining named arguments with positional arguments</title>
+     <programlisting role="php">
+      <![CDATA[
+<?php
+htmlspecialchars($string, double_encode: false);
+// Same as
+htmlspecialchars($string, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401, 'UTF-8', false);
+?>
+]]>
+     </programlisting>
+    </example>
+
+    <para>
+     Passing the same parameter multiple times results in an Error exception.
+    </para>
+
+    <example>
+     <title>Error exception when passing the same parameter multiple times</title>
+     <programlisting role="php">
+      <![CDATA[
+<?php
+function foo($param) { ... }
+
+foo(param: 1, param: 2);
+// Error: Named parameter $param overwrites previous argument
+foo(1, param: 2);
+// Error: Named parameter $param overwrites previous argument
+?>
+]]>
+     </programlisting>
+    </example>
+
+   </sect2>
   </sect1>
  
   <sect1 xml:id="functions.returning-values">
@@ -958,10 +711,10 @@ echo sum(1, 2, 3, 4);
 
    <sect2>
     <title>Use of return</title>
-   <para>
-    <example>
-     <title>Use of <function>return</function></title>
-     <programlisting role="php">
+    <para>
+     <example>
+      <title>Use of <function>return</function></title>
+      <programlisting role="php">
 <![CDATA[
 <?php
 function square($num)
@@ -971,39 +724,44 @@ function square($num)
 echo square(4);   // outputs '16'.
 ?>
 ]]>
-     </programlisting>
-    </example>
-   </para>
-      
-   <para>
-    A function can not return multiple values, but similar results can be
-    obtained by returning an array.
-   </para>
-   <para>
-    <example>
-     <title>Returning an array to get multiple values</title>
-     <programlisting role="php">
+      </programlisting>
+     </example>
+    </para>
+
+    <para>
+     A function can not return multiple values, but similar results can be
+     obtained by returning an array.
+    </para>
+    <para>
+     <example>
+      <title>Returning an array to get multiple values</title>
+      <programlisting role="php">
 <![CDATA[
 <?php
 function small_numbers()
 {
-    return array (0, 1, 2);
+    return [0, 1, 2];
 }
-list ($zero, $one, $two) = small_numbers();
+// Array destructuring will collect each member of the array individually
+[$zero, $one, $two] = small_numbers();
+
+// Prior to 7.1.0, the only equivalent alternative is using list() construct
+list($zero, $one, $two) = small_numbers();
+
 ?>
 ]]>
-     </programlisting>
-    </example>
-   </para>
-   <para>
-    To return a reference from a function, use the reference operator &amp; in
-    both the function declaration and when assigning the returned value to a
-    variable:
-   </para>
-   <para>
-    <example>
-     <title>Returning a reference from a function</title>
-     <programlisting role="php">
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     To return a reference from a function, use the reference operator &amp; in
+     both the function declaration and when assigning the returned value to a
+     variable:
+    </para>
+    <para>
+     <example>
+      <title>Returning a reference from a function</title>
+      <programlisting role="php">
 <![CDATA[
 <?php
 function &returns_reference()
@@ -1014,158 +772,16 @@ function &returns_reference()
 $newref =& returns_reference();
 ?>
 ]]>
-     </programlisting>
-    </example>
-   </para>
-   <simpara>
-    For more information on references, please check out <link
-    linkend="language.references">References Explained</link>.
-   </simpara>
-  </sect2>   
-
-  <sect2 xml:id="functions.returning-values.type-declaration">
-   <title>Return type declarations</title>
-
-   <para>
-    PHP 7 adds support for return type declarations. Similarly to
-    <link linkend="functions.arguments.type-declaration">argument type declarations</link>,
-    return type declarations specify the type of the value that will be
-    returned from a function. The same
-    <link linkend="functions.arguments.type-declaration.types">types</link>
-    are available for return type declarations as are available for argument
-    type declarations.
-   </para>
-
-   <para>
-    <link linkend="functions.arguments.type-declaration.strict">Strict typing</link>
-    also has an effect on return type declarations. In the default weak mode,
-    returned values will be coerced to the correct type if they are not
-    already of that type. If this type conversion is not allowed 
-    (e.g. when returning an &array; from a function with return type &integer;),
-    a <classname>TypeError</classname> will be thrown.
-    In strict mode, the returned value must be of the
-    correct type, otherwise a <classname>TypeError</classname> will be thrown.
-   </para>
-
-   <para>
-    As of PHP 7.1.0, return statements without an argument trigger <constant>E_COMPILE_ERROR</constant>,
-    unless the return type is <type>void</type>, in which case return statements
-    with an argument trigger that error.
-   </para>
-
-   <para>
-    As of PHP 7.1.0, return values can be marked as nullable by prefixing the
-    type name with a question mark (<literal>?</literal>). This signifies that
-    the function returns either the specified type or &null;.
-   </para>
-
-   <note>
-    <para>
-     When overriding a parent method, the child's method must match any return
-     type declaration on the parent. If the parent doesn't define a return
-     type, then the child method may do so.
+      </programlisting>
+     </example>
     </para>
-   </note>
-
-   <sect3 xml:id="functions.returning-values.type-declaration.examples">
-    &reftitle.examples;
-
-    <example>
-     <title>Basic return type declaration</title>
-     <programlisting role="php">
-<![CDATA[
-<?php
-function sum($a, $b): float {
-    return $a + $b;
-}
-
-// Note that a float will be returned.
-var_dump(sum(1, 2));
-?>
-]]>
-      </programlisting>
-      &example.outputs;
-      <screen>
-<![CDATA[
-float(3)
-]]>
-      </screen>
-     </example>
-
-     <example>
-      <title>Strict mode in action</title>
-      <programlisting role="php">
-<![CDATA[
-<?php
-declare(strict_types=1);
-
-function sum($a, $b): int {
-    return $a + $b;
-}
-
-var_dump(sum(1, 2));
-var_dump(sum(1, 2.5));
-?>
-]]>
-      </programlisting>
-      &example.outputs;
-      <screen>
-<![CDATA[
-int(3)
-
-Fatal error: Uncaught TypeError: Return value of sum() must be of the type integer, float returned in - on line 5 in -:5
-Stack trace:
-#0 -(9): sum(1, 2.5)
-#1 {main}
-  thrown in - on line 5
-]]>
-      </screen>
-     </example>
-
-     <example>
-      <title>Returning an object</title>
-      <programlisting role="php">
-<![CDATA[
-<?php
-class C {}
-
-function getC(): C {
-    return new C;
-}
-
-var_dump(getC());
-?>
-]]>
-      </programlisting>
-      &example.outputs;
-      <screen>
-<![CDATA[
-object(C)#1 (0) {
-}
-]]>
-      </screen>
-     </example>
-
-     <example>
-      <title>Nullable return type declaration (as of PHP 7.1.0)</title>
-      <programlisting role="php">
-<![CDATA[
-<?php
-function get_item(): ?string {
-    if (isset($_GET['item'])) {
-        return $_GET['item'];
-    } else {
-        return null;
-    }
-}
-?>
-]]>
-      </programlisting>
-     </example>
-    </sect3>
+    <simpara>
+     For more information on references, please check out <link
+     linkend="language.references">References Explained</link>.
+    </simpara>
    </sect2>
   </sect1>
- 
+
   <sect1 xml:id="functions.variable-functions">
    <title>Variable functions</title>
 
@@ -1274,7 +890,6 @@ Foo::$variable();  // This calls $foo->Variable() reading $variable in this scop
     </example>
    </para>
    <para>
-     As of PHP 5.4.0, you can call any <type>callable</type> stored in a variable.
     <example>
      <title>Complex callables</title>
      <programlisting role="php">
@@ -1297,46 +912,22 @@ $func(); // prints "bar"
 $func = array(new Foo, "baz");
 $func(); // prints "baz"
 $func = "Foo::bar";
-$func(); // prints "bar" as of PHP 7.0.0; prior, it raised a fatal error
+$func(); // prints "bar"
 ?>
 ]]>
      </programlisting>
     </example>
    </para>
-      
-   <para>
-    See also <function>is_callable</function>, <function>call_user_func</function>,
-    <link linkend="language.variables.variable">
-    variable variables</link> and <function>function_exists</function>.
-   </para>
-   
-   <sect2 role="changelog">
-    &reftitle.changelog;
+
+   <sect2 role="seealso">
+    &reftitle.seealso;
     <para>
-     <informaltable>
-      <tgroup cols="2">
-       <thead>
-        <row>
-         <entry>&Version;</entry>
-         <entry>&Description;</entry>
-        </row>
-       </thead>
-       <tbody>
-        <row>
-         <entry>7.0.0</entry>
-         <entry>
-          'ClassName::methodName' is allowed as variable function.
-         </entry>
-        </row>
-        <row>
-         <entry>5.4.0</entry>
-         <entry>
-          Arrays, which are valid callables, are allowed as variable functions.
-         </entry>
-        </row>
-       </tbody>
-      </tgroup>
-     </informaltable>
+     <simplelist>
+      <member><function>is_callable</function></member>
+      <member><function>call_user_func</function></member>
+      <member><function>function_exists</function></member>
+      <member><link linkend="language.variables.variable">variable variables</link></member>
+     </simplelist>
     </para>
    </sect2>
   </sect1>
@@ -1384,14 +975,22 @@ $func(); // prints "bar" as of PHP 7.0.0; prior, it raised a fatal error
      the return value of the function is undefined. In this case it will
      likely return &null; but this is just a convention, and cannot be relied 
      upon.
+     As of PHP 8.0.0, a <classname>TypeError</classname> exception is supposed to
+     be thrown in this case.
     </simpara>
    </note>
-   <para>
-    See also <function>function_exists</function>, 
-    <link linkend="funcref">the function reference</link>,
-    <function>get_extension_funcs</function>, and 
-    <function>dl</function>.
-   </para>
+
+   <sect2 role="seealso">
+    &reftitle.seealso;
+    <para>
+     <simplelist>
+      <member><function>function_exists</function></member>
+      <member><link linkend="funcref">the function reference</link></member>
+      <member><function>get_extension_funcs</function></member>
+      <member><function>dl</function></member>
+     </simplelist>
+    </para>
+   </sect2>
   </sect1>
   
   <sect1 xml:id="functions.anonymous">
@@ -1400,7 +999,7 @@ $func(); // prints "bar" as of PHP 7.0.0; prior, it raised a fatal error
    <simpara>
     Anonymous functions, also known as <literal>closures</literal>, allow the
     creation of functions which have no specified name. They are most useful as
-    the value of <link linkend="language.types.callback">callback</link>
+    the value of <type>callable</type>
     parameters, but they have many other uses.
    </simpara>
    <simpara>
@@ -1450,8 +1049,10 @@ $greet('PHP');
    <simpara>
     Closures may also inherit variables from the parent scope. Any such
     variables must be passed to the <literal>use</literal> language construct.
-    From PHP 7.1, these variables must not include &link.superglobals;,
+    As of PHP 7.1, these variables must not include &link.superglobals;,
     <varname>$this</varname>, or variables with the same name as a parameter.
+    A return type declaration of the function has to be placed
+    <emphasis>after</emphasis> the <literal>use</literal> clause.
    </simpara>
 
    <example>
@@ -1497,6 +1098,12 @@ $example = function ($arg) use ($message) {
     var_dump($arg . ' ' . $message);
 };
 $example("hello");
+
+// Return type declaration comes after the use clause
+$example = function () use ($message): string {
+    return "hello $message";
+};
+var_dump($example());
 ?>
 ]]>
     </programlisting>
@@ -1510,10 +1117,15 @@ string(5) "hello"
 string(5) "hello"
 string(5) "world"
 string(11) "hello world"
+string(11) "hello world"
 ]]>
     </screen>
    </example>
 
+   <para>
+    As of PHP 8.0.0, the list of scope-inherited variables may include a trailing
+    comma, which will be ignored.
+   </para>
    <simpara>
     Inheriting variables from the parent scope is <emphasis>not</emphasis> 
     the same as using global variables. 
@@ -1613,16 +1225,10 @@ object(Test)#1 (0) {
 }
 ]]>
     </screen>
-    &example.outputs.53;
-    <screen>
-<![CDATA[
-Notice: Undefined variable: this in script.php on line 8
-NULL]]>
-    </screen>
    </example>
 
    <para>
-    As of PHP 5.4.0, when declared in the context of a class, the current class is
+    When declared in the context of a class, the current class is
     automatically bound to it, making <literal>$this</literal> available
     inside of the function's scope. If this automatic binding of the current
     class is not wanted, then
@@ -1633,7 +1239,7 @@ NULL]]>
    <sect2 xml:id="functions.anonymous-functions.static">
     <title>Static anonymous functions</title>
     <para>
-     As of PHP 5.4, anonymous functions may be declared statically. This
+     Anonymous functions may be declared statically. This
      prevents them from having the current class automatically bound to
      them. Objects may also not be bound to them at runtime.
     </para>
@@ -1713,19 +1319,6 @@ Warning: Cannot bind an instance to a static closure in %s on line %d
           Anonymous functions may not close over &link.superglobals;,
           <varname>$this</varname>, or any variable with the same name as a
           parameter.
-         </entry>
-        </row>
-        <row>
-         <entry>5.4.0</entry>
-         <entry>
-          Anonymous functions may use <varname>$this</varname>, as well as be
-          declared statically.
-         </entry>
-        </row>
-        <row>
-         <entry>5.3.0</entry>
-         <entry>
-          Anonymous functions become available.
          </entry>
         </row>
        </tbody>

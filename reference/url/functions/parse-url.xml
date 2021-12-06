@@ -20,7 +20,7 @@
   </para>
   <para>
    This function is <emphasis role="strong">not</emphasis> meant to validate
-   the given URL, it only breaks it up into the above listed parts. Partial
+   the given URL, it only breaks it up into the above listed parts. Partial and invalid
    URLs are also accepted, <function>parse_url</function> tries its best to
    parse them correctly.
   </para>
@@ -34,8 +34,7 @@
      <term><parameter>url</parameter></term>
      <listitem>
       <para>
-       The URL to parse. Invalid characters are replaced by
-       <literal>_</literal>.
+       The URL to parse.
       </para>
      </listitem>
     </varlistentry>
@@ -52,7 +51,7 @@
        or <constant>PHP_URL_FRAGMENT</constant> to retrieve just a specific
        URL component as a <type>string</type> (except when
        <constant>PHP_URL_PORT</constant> is given, in which case the return
-       value will be an <type>integer</type>).
+       value will be an <type>int</type>).
       </para>
      </listitem>
     </varlistentry>
@@ -116,10 +115,54 @@
   <para>
    If the <parameter>component</parameter> parameter is specified,
    <function>parse_url</function> returns a <type>string</type> (or an
-   <type>integer</type>, in the case of <constant>PHP_URL_PORT</constant>)
+   <type>int</type>, in the case of <constant>PHP_URL_PORT</constant>)
    instead of an <type>array</type>. If the requested component doesn't exist
    within the given URL, &null; will be returned.
+   As of PHP 8.0.0, <function>parse_url</function> distinguishes absent and empty
+   queries and fragments:
   </para>
+  <para>
+   <informalexample>
+    <screen>
+<![CDATA[
+http://example.com/foo → query = null, fragment = null
+http://example.com/foo? → query = "",   fragment = null
+http://example.com/foo# → query = null, fragment = ""
+http://example.com/foo?# → query = "",   fragment = ""
+]]>
+    </screen>
+   </informalexample>
+  </para>
+  <para>
+    Previously all cases resulted in query and fragment being &null;.
+  </para>
+  <para>
+   Note that control characters (cf. <function>ctype_cntrl</function>) in the
+   components are replaced with underscores (<literal>_</literal>).
+  </para>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>8.0.0</entry>
+      <entry>
+       <function>parse_url</function> will now distinguish absent and empty queries
+       and fragments.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
  </refsect1>
 
  <refsect1 role="examples">
@@ -209,11 +252,15 @@ array(3) {
 
  <refsect1 role="notes">
   &reftitle.notes;
-  <note>
+  <caution>
    <para>
-    This function may not give correct results for relative URLs.
+    This function may not give correct results for relative or invalid URLs,
+    and the results may not even match common behavior of HTTP clients.
+    If URLs from untrusted input need to be parsed, extra validation is
+    required, e.g. by using <function>filter_var</function> with the
+    <constant>FILTER_VALIDATE_URL</constant> filter.
    </para>
-  </note>
+  </caution>
   <note>
    <para>
     This function is intended specifically for the purpose of parsing URLs

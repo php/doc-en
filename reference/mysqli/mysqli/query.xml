@@ -11,16 +11,16 @@
   &reftitle.description;
   <para>&style.oop;</para>
   <methodsynopsis role="oop">
-   <modifier>public</modifier> <type>mixed</type><methodname>mysqli::query</methodname>
+   <modifier>public</modifier> <type class="union"><type>mysqli_result</type><type>bool</type></type><methodname>mysqli::query</methodname>
    <methodparam><type>string</type><parameter>query</parameter></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>resultmode</parameter><initializer>MYSQLI_STORE_RESULT</initializer></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>result_mode</parameter><initializer><constant>MYSQLI_STORE_RESULT</constant></initializer></methodparam>
   </methodsynopsis>
   <para>&style.procedural;</para>
-  <methodsynopsis>
-   <type>mixed</type><methodname>mysqli_query</methodname>
-   <methodparam><type>mysqli</type><parameter>link</parameter></methodparam>
+  <methodsynopsis role="procedural">
+   <type class="union"><type>mysqli_result</type><type>bool</type></type><methodname>mysqli_query</methodname>
+   <methodparam><type>mysqli</type><parameter>mysql</parameter></methodparam>
    <methodparam><type>string</type><parameter>query</parameter></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>resultmode</parameter><initializer>MYSQLI_STORE_RESULT</initializer></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>result_mode</parameter><initializer><constant>MYSQLI_STORE_RESULT</constant></initializer></methodparam>
   </methodsynopsis>
   <para>
    Performs a <parameter>query</parameter> against the database.
@@ -77,30 +77,36 @@
       <para>
        The query string.
       </para>
-      <para>
-       Data inside the query should be <link
-       linkend="mysqli.real-escape-string">properly escaped</link>.
-      </para>
+      &mysqli.sqlinjection.warning;
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>resultmode</parameter></term>
+     <term><parameter>result_mode</parameter></term>
      <listitem>
       <para>
-       Either the constant <constant>MYSQLI_USE_RESULT</constant> or
-       <constant>MYSQLI_STORE_RESULT</constant> depending on the desired
-       behavior. By default, <constant>MYSQLI_STORE_RESULT</constant> is used.
+       The result mode can be one of 3 constants indicating how the result will
+       be returned from the MySQL server.
       </para>
       <para>
-       If you use <constant>MYSQLI_USE_RESULT</constant> all subsequent calls
-       will return error <literal>Commands out of sync</literal> unless you
-       call <function>mysqli_free_result</function>
+       <constant>MYSQLI_STORE_RESULT</constant> (default) - returns a
+       <classname>mysqli_result</classname> object with buffered result set.
       </para>
       <para>
-       With <constant>MYSQLI_ASYNC</constant> (available with mysqlnd), it is
-       possible to perform query asynchronously.
+       <constant>MYSQLI_USE_RESULT</constant> - returns a
+       <classname>mysqli_result</classname> object with unbuffered result set. 
+       As long as there are pending records waiting to be fetched, the
+       connection line will be busy and all subsequent calls will return error 
+       <literal>Commands out of sync</literal>. To avoid the error all records 
+       must be fetched from the server or the result set must be discarded by
+       calling <function>mysqli_free_result</function>.
+      </para>
+      <para>
+       <constant>MYSQLI_ASYNC</constant> (available with mysqlnd) - the query is
+       performed asynchronously and no result set is immediately returned.
        <function>mysqli_poll</function> is then used to get results from such
-       queries.
+       queries. Used in combination with either
+       <constant>MYSQLI_STORE_RESULT</constant> or
+       <constant>MYSQLI_USE_RESULT</constant> constant.
       </para>
      </listitem>
     </varlistentry>
@@ -111,9 +117,11 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns &false; on failure. For successful <literal>SELECT, SHOW, DESCRIBE</literal> or
-   <literal>EXPLAIN</literal> queries <function>mysqli_query</function> will return
-   a <classname>mysqli_result</classname> object. For other successful queries <function>mysqli_query</function> will
+   Returns &false; on failure. For successful queries which produce a result
+   set, such as <literal>SELECT, SHOW, DESCRIBE</literal> or
+   <literal>EXPLAIN</literal>, <function>mysqli_query</function> will return
+   a <classname>mysqli_result</classname> object. For other successful queries,
+   <function>mysqli_query</function> will
    return &true;.
   </para>
  </refsect1>
@@ -126,90 +134,59 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if ($mysqli->connect_errno) {
-    printf("Connect failed: %s\n", $mysqli->connect_error);
-    exit();
-}
-
 /* Create table doesn't return a resultset */
-if ($mysqli->query("CREATE TEMPORARY TABLE myCity LIKE City") === TRUE) {
-    printf("Table myCity successfully created.\n");
-}
+$mysqli->query("CREATE TEMPORARY TABLE myCity LIKE City");
+printf("Table myCity successfully created.\n");
 
 /* Select queries return a resultset */
-if ($result = $mysqli->query("SELECT Name FROM City LIMIT 10")) {
-    printf("Select returned %d rows.\n", $result->num_rows);
-
-    /* free result set */
-    $result->close();
-}
+$result = $mysqli->query("SELECT Name FROM City LIMIT 10");
+printf("Select returned %d rows.\n", $result->num_rows);
 
 /* If we have to retrieve large amount of data we use MYSQLI_USE_RESULT */
-if ($result = $mysqli->query("SELECT * FROM City", MYSQLI_USE_RESULT)) {
+$result = $mysqli->query("SELECT * FROM City", MYSQLI_USE_RESULT);
 
-    /* Note, that we can't execute any functions which interact with the
-       server until result set was closed. All calls will return an
-       'out of sync' error */
-    if (!$mysqli->query("SET @a:='this will not work'")) {
-        printf("Error: %s\n", $mysqli->error);
-    }
-    $result->close();
-}
-
-$mysqli->close();
-?>
+/* Note, that we can't execute any functions which interact with the
+	server until all records have been fully retrieved or the result
+	set was closed. All calls will return an 'out of sync' error */
+$mysqli->query("SET @a:='this will not work'");
 ]]>
    </programlisting>
    <para>&style.procedural;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
 /* Create table doesn't return a resultset */
-if (mysqli_query($link, "CREATE TEMPORARY TABLE myCity LIKE City") === TRUE) {
-    printf("Table myCity successfully created.\n");
-}
+mysqli_query($link, "CREATE TEMPORARY TABLE myCity LIKE City");
+printf("Table myCity successfully created.\n");
 
 /* Select queries return a resultset */
-if ($result = mysqli_query($link, "SELECT Name FROM City LIMIT 10")) {
-    printf("Select returned %d rows.\n", mysqli_num_rows($result));
-
-    /* free result set */
-    mysqli_free_result($result);
-}
+$result = mysqli_query($link, "SELECT Name FROM City LIMIT 10");
+printf("Select returned %d rows.\n", mysqli_num_rows($result));
 
 /* If we have to retrieve large amount of data we use MYSQLI_USE_RESULT */
-if ($result = mysqli_query($link, "SELECT * FROM City", MYSQLI_USE_RESULT)) {
+$result = mysqli_query($link, "SELECT * FROM City", MYSQLI_USE_RESULT);
 
-    /* Note, that we can't execute any functions which interact with the
-       server until result set was closed. All calls will return an
-       'out of sync' error */
-    if (!mysqli_query($link, "SET @a:='this will not work'")) {
-        printf("Error: %s\n", mysqli_error($link));
-    }
-    mysqli_free_result($result);
-}
-
-mysqli_close($link);
-?>
+/* Note, that we can't execute any functions which interact with the
+	server until all records have been fully retrieved or the result
+	set was closed. All calls will return an 'out of sync' error */
+mysqli_query($link, "SET @a:='this will not work'");
 ]]>
    </programlisting>
-   &examples.outputs;
+   &examples.outputs.similar;
    <screen>
 <![CDATA[
 Table myCity successfully created.
 Select returned 10 rows.
-Error: Commands out of sync;  You can't run this command now
+
+Fatal error: Uncaught mysqli_sql_exception: Commands out of sync; you can't run this command now in...
 ]]>
    </screen>
   </example>
@@ -221,13 +198,13 @@ Error: Commands out of sync;  You can't run this command now
    <simplelist>
     <member><function>mysqli_real_query</function></member>
     <member><function>mysqli_multi_query</function></member>
+    <member><function>mysqli_prepare</function></member>
     <member><function>mysqli_free_result</function></member>
    </simplelist>
   </para>
  </refsect1>
 
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml
