@@ -289,8 +289,9 @@ echo $str;    // outputs 'This is a string, and something extra.'
     <title>Default argument values</title>
  
     <para>
-     A function may define C++-style default values for scalar
-     arguments as follows:
+     A function may define default values for arguments using syntax similar
+     to assigning a variable. The default is used only when the parameter is
+     not specified.
     </para>
     <para>
      <example>
@@ -319,8 +320,9 @@ Making a cup of espresso.
      </example>
     </para>
     <para>
-     PHP also allows the use of <type>array</type>s and the special type &null;
-     as default values, for example:
+     Default parameter values may be scalar values, <type>array</type>s,
+     the special type &null;, and as of PHP 8.1, objects using the
+     <link linkend="language.oop5.basic.new">new ClassName()</link> syntax.
     </para>
     <para>
      <example>
@@ -334,21 +336,46 @@ function makecoffee($types = array("cappuccino"), $coffeeMaker = NULL)
     return "Making a cup of ".join(", ", $types)." with $device.\n";
 }
 echo makecoffee();
-echo makecoffee(array("cappuccino", "lavazza"), "teapot");
+echo makecoffee(array("cappuccino", "lavazza"), "teapot");?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     <example>
+      <title>Using objects as default values (as of PHP 8.1)</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+class DefaultCoffeeMaker {
+    public function brew() {
+        return 'Making coffee.';
+    }
+}
+class FancyCoffeeMaker {
+    public function brew() {
+        return 'Crafting a beautiful coffee just for you.';
+    }
+}
+function makecoffee($coffeeMaker = new DefaultCoffeeMaker)
+{
+    return $coffeeMaker->brew();
+}
+echo makecoffee();
+echo makecoffee(new FancyCoffeeMaker);
 ?>
 ]]>
       </programlisting>
      </example>
-    
     </para>
     <simpara>
      The default value must be a constant expression, not (for
      example) a variable, a class member or a function call.
     </simpara>
     <para>
-     Note that when using default arguments, any defaults should be on
-     the right side of any non-default arguments; otherwise, things
-     will not work as expected. Consider the following code snippet:
+     Note that any optional arguments should be specified after any
+     required arguments, otherwise they cannot be omitted from calls.
+     Consider the following example:
     </para>
     <para>
      <example>
@@ -356,21 +383,20 @@ echo makecoffee(array("cappuccino", "lavazza"), "teapot");
       <programlisting role="php">
 <![CDATA[
 <?php
-function makeyogurt($type = "acidophilus", $flavour)
+function makeyogurt($container = "bowl", $flavour)
 {
-    return "Making a bowl of $type $flavour.\n";
+    return "Making a $container of $flavour yogurt.\n";
 }
  
-echo makeyogurt("raspberry");   // won't work as expected
+echo makeyogurt("raspberry"); // "raspberry" is $container, not $flavour
 ?>
 ]]>
       </programlisting>
       &example.outputs;
       <screen>
 <![CDATA[
-Warning: Missing argument 2 in call to makeyogurt() in 
-/usr/local/etc/httpd/htdocs/phptest/functest.html on line 41
-Making a bowl of raspberry .
+Fatal error: Uncaught ArgumentCountError: Too few arguments
+ to function makeyogurt(), 1 passed in example.php on line 42
 ]]>
       </screen>
      </example>
@@ -384,23 +410,62 @@ Making a bowl of raspberry .
       <programlisting role="php">
 <![CDATA[
 <?php
-function makeyogurt($flavour, $type = "acidophilus")
+function makeyogurt($flavour, $container = "bowl")
 {
-    return "Making a bowl of $type $flavour.\n";
+    return "Making a $container of $flavour yogurt.\n";
 }
  
-echo makeyogurt("raspberry");   // works as expected
+echo makeyogurt("raspberry"); // "raspberry" is $flavour
 ?>
 ]]>
       </programlisting>
       &example.outputs;
       <screen>
 <![CDATA[
-Making a bowl of acidophilus raspberry.
+Making a bowl of raspberry yogurt.
 ]]>
       </screen>
      </example>
     </para>
+    <para>
+     As of PHP 8.0, <link linkend="functions.named-arguments">named arguments</link>
+     can be used to skip over multiple optional parameters.
+    </para>
+    <para>
+     <example>
+      <title>Correct usage of default function arguments</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+function makeyogurt($container = "bowl", $flavour = "raspberry", $style = "Greek")
+{
+    return "Making a $container of $flavour $style yogurt.\n";
+}
+
+echo makeyogurt(style: "natural");
+?>
+]]>
+      </programlisting>
+      &example.outputs;
+      <screen>
+<![CDATA[
+Making a bowl of raspberry natural yogurt.
+]]>
+      </screen>
+     </example>
+    </para>
+    <note>
+     <simpara>
+      As of PHP 7.1, omitting a parameter which does not specify a default
+      throws an <classname>ArgumentCountError</classname>; in previous versions
+      it raised a Warning.
+     </simpara>
+     <simpara>
+      As of PHP 8.0, <emphasis>defining</emphasis> a function with optional
+      parameters after required parameters (as in the first "yogurt"
+      example above) is DEPRECATED.
+     </simpara>
+    </note>
     <note>
      <simpara>
       Arguments that are passed by reference may have a default value.
