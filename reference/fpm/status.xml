@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<sect1 xml:id="fpm.status" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Status Page</title>
+ 
+ <para>
+  This page provides information on the setup and contents of the FPM status page. See also
+  <function>fpm_get_status</function>.
+ </para>
+
+ <sect2 xml:id="fpm.status.configuration">
+  <title>Configuration</title>
+  
+  <para>
+   The FPM status page can be enabled by setting the
+   <link linkend="pm.status-path">pm.status_path</link> configuration parameter in the FPM pool
+   configuration.
+  </para>
+
+  <caution>
+   <para>
+    For security the FPM status page should be restricted to internal requests or known client IPs
+    only as the page reveals request URLs and information about available resources.
+   </para>
+  </caution>
+  
+  <para>
+   Depenending on the web server configuration it might be needed to configure the web server to
+   allow requests directly to this path, bypassing any PHP scripts. An example of a configuration
+   for Apache with FPM listening on UDS and <literal>pm.status_path</literal> set to
+   <literal>/fpm-status</literal> would look like:
+  </para>
+
+  <informalexample>
+   <programlisting role="apache-conf">
+    <![CDATA[
+<LocationMatch "/fpm-status">
+ Order Allow,Deny
+ Allow from 127.0.0.1
+ ProxyPass "unix:/var/run/php-fpm.sock|fcgi://localhost/fpm-status"
+</LocationMatch>
+]]>
+   </programlisting>
+  </informalexample>
+
+  <para>
+   After reloading or restarting both FPM and the web server the status page will be accessible from
+   the browser (as long as the request comes from an allowed IP address if the IP restriction was
+   configured).
+  </para>
+ </sect2>
+
+ <sect2 xml:id="fpm.status.parameters">
+  <title>Query Parameters</title>
+
+  <para>
+   The format of the status page output can be altered by specifying one of the following query
+   parameters:
+  </para>
+  
+  <simplelist>
+   <member><literal>html</literal></member>
+   <member><literal>json</literal></member>
+   <member><literal>openmetrics</literal></member>
+   <member><literal>xml</literal></member>
+  </simplelist>
+
+  <para>
+   Additional information can also be returned using the <literal>full</literal> query parameter.
+  </para>
+  
+  <para>
+   Example status page URLs:
+  </para>
+  
+  <simplelist>
+   <member>
+    <literal>https://localhost/fpm-status</literal>
+    - Brief output in the default text format
+   </member>
+   <member>
+    <literal>https://localhost/fpm-status?full</literal>
+    - Full output in the default text format
+   </member>
+   <member>
+    <literal>https://localhost/fpm-status?json</literal>
+    - Brief output in JSON format
+   </member>
+   <member>
+    <literal>https://localhost/fpm-status?html&amp;full</literal>
+    - Full output in HTML format
+   </member>
+  </simplelist>
+ </sect2>
+ 
+ <sect2 xml:id="fpm.status.contents">
+  <title>Displayed Information</title>
+
+  <para>
+   Date/Time values use the unix timestamp format in JSON and XML output, otherwise they use
+   the format resulting in the following example date
+   <literal>"03/Jun/2021:07:21:46 +0100"</literal>.
+  </para>
+  
+  <table>
+   <title>Basic information - Always displayed on the status page</title>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Parameter</entry>
+      <entry>Description</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>pool</entry>
+      <entry>The name of the FPM process pool.</entry>
+     </row>
+     <row>
+      <entry>proccess manager</entry>
+      <entry>The process manager type - static, dynamic or ondemand.</entry>
+     </row>
+     <row>
+      <entry>start time</entry>
+      <entry>The date/time that the process pool was last started.</entry>
+     </row>
+     <row>
+      <entry>start since</entry>
+      <entry>The time in seconds since the process pool was last started.</entry>
+     </row>
+     <row>
+      <entry>accepted conn</entry>
+      <entry>The total number of accepted connections.</entry>
+     </row>
+     <row>
+      <entry>listen queue</entry>
+      <entry>The number of requests (backlog) currently waiting for a free process.</entry>
+     </row>
+     <row>
+      <entry>max listen queue</entry>
+      <entry>The maximum number of requests seen in the listen queue at any one time.</entry>
+     </row>
+     <row>
+      <entry>listen queue len</entry>
+      <entry>The maximum allowed size of the listen queue.</entry>
+     </row>
+     <row>
+      <entry>idle processes</entry>
+      <entry>The number of processes that are currently idle (waiting for requests).</entry>
+     </row>
+     <row>
+      <entry>active processes</entry>
+      <entry>The number of processes that are currently processing requests.</entry>
+     </row>
+     <row>
+      <entry>total processes</entry>
+      <entry>The current total number of processes.</entry>
+     </row>
+     <row>
+      <entry>max active processes</entry>
+      <entry>The maximum number of concurrently active processes.</entry>
+     </row>
+     <row>
+      <entry>max children reached</entry>
+      <entry>
+       Has the maximum number of processes ever been reached? If so the displayed value is
+       <literal>1</literal> otherwise the value is <literal>0</literal>.
+      </entry>
+     </row>
+     <row>
+      <entry>slow requests</entry>
+      <entry>
+       The total number of requests that have hit the configured
+       <literal>request_slowlog_timeout</literal>.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </table>
+
+  <table>
+   <title>Per-process information - only displayed in <literal>full</literal> output mode</title>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Parameter</entry>
+      <entry>Description</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>pid</entry>
+      <entry>The system PID of the process.</entry>
+     </row>
+     <row>
+      <entry>state</entry>
+      <entry>The state of the process - Idle, Running, ...</entry>
+     </row>
+     <row>
+      <entry>start time</entry>
+      <entry>The date/time at which the process started.</entry>
+     </row>
+     <row>
+      <entry>start since</entry>
+      <entry>The number of seconds since the process started.</entry>
+     </row>
+     <row>
+      <entry>requests</entry>
+      <entry>The total number of requests served.</entry>
+     </row>
+     <row>
+      <entry>request duration</entry>
+      <entry>The total time in seconds spent serving requests.</entry>
+     </row>
+     <row>
+      <entry>request method</entry>
+      <entry>The HTTP method of the last served request.</entry>
+     </row>
+     <row>
+      <entry>request uri</entry>
+      <entry>
+       The URI of the last served request (after webserver processing, it may always be
+       <literal>/index.php</literal> if you use a front controller pattern redirect).
+      </entry>
+     </row>
+     <row>
+      <entry>content length</entry>
+      <entry>The length of the request body, in bytes, of the last request.</entry>
+     </row>
+     <row>
+      <entry>user</entry>
+      <entry>The HTTP user (<literal>PHP_AUTH_USER</literal>) of the last request.</entry>
+     </row>
+     <row>
+      <entry>script</entry>
+      <entry>
+       The full path of the script executed by the last request. This will be
+       <literal>'-'</literal> if not applicable (eg. status page requests).
+      </entry>
+     </row>
+     <row>
+      <entry>last request cpu</entry>
+      <entry>
+       The %cpu of the last request. This will be 0 if the process is not Idle because the
+       calculation is done when the request processing is complete.
+      </entry>
+     </row>
+     <row>
+      <entry>last request memory</entry>
+      <entry>
+       The maximum amount of memory consumed by the last request. This will be 0 if the process is
+       not Idle because the calculation is done when the request processing is complete.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </table>
+
+  <note>
+   <para>
+    All values are specific to the pool and are reset when FPM is restarted.
+   </para>
+  </note>
+
+  <note>
+   <para>
+    OpenMetrics format output uses different parameter types to better suit the OpenMetrics format.
+    The parameters and descriptions of their values are included in the OpenMetrics format output.
+   </para>
+  </note>
+ </sect2>
+
+ <sect2 role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>8.1.0</entry>
+      <entry>The openmetrics format was added.</entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
+ </sect2>
+</sect1>
+
+ <!-- Keep this comment at the end of the file
+ Local variables:
+ mode: sgml
+ sgml-omittag:t
+ sgml-shorttag:t
+ sgml-minimize-attributes:nil
+ sgml-always-quote-attributes:t
+ sgml-indent-step:1
+ sgml-indent-data:t
+ indent-tabs-mode:nil
+ sgml-parent-document:nil
+ sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+ sgml-exposed-tags:nil
+ sgml-local-catalogs:nil
+ sgml-local-ecat-files:nil
+ End:
+ vim600: syn=xml fen fdm=syntax fdl=2 si
+ vim: et tw=78 syn=sgml
+ vi: ts=1 sw=1
+ -->
