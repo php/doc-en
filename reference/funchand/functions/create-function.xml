@@ -3,7 +3,7 @@
 <refentry xml:id="function.create-function" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>create_function</refname>
-  <refpurpose>Create an anonymous (lambda-style) function</refpurpose>
+  <refpurpose>Create a function dynamically by evaluating a string of code</refpurpose>
  </refnamediv>
 
  <refsynopsisdiv>
@@ -18,14 +18,14 @@
    <methodparam><type>string</type><parameter>code</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Creates an anonymous function from the parameters passed, and
-   returns a unique name for it.
+   Creates a function dynamically from the parameters passed, and returns a unique name for it.
   </para>
   <caution>
    <para>
     This function internally performs an <function>eval</function> and as such has the
-    same security issues as <function>eval</function>. Additionally it has bad performance
-    and memory usage characteristics.
+    same security issues as <function>eval</function>. It also has bad performance
+    and memory usage characteristics, because the created functions are global and
+    can not be freed.
    </para>
    <para>
     A native
@@ -36,16 +36,17 @@
  <refsect1 role="parameters">
   &reftitle.parameters;
   <para>
-   Usually these parameters will be passed as single quote delimited strings.
-   The reason for using single quoted strings, is to protect the variable
-   names from parsing, otherwise, if you use double quotes there will be a
-   need to escape the variable names, e.g. <literal>\$avar</literal>.
+   It is normally advisable to pass these parameters as
+   <link linkend="language.types.string.syntax.single">single quoted</link>
+   strings. If using <link linkend="language.types.string.syntax.double">double quoted</link>
+   strings, variable names in the code need to be escaped carefully, e.g.
+   <literal>\$somevar</literal>.
    <variablelist>
     <varlistentry>
      <term><parameter>args</parameter></term>
      <listitem>
       <para>
-       The function arguments.
+       The function arguments, as a single comma-separated string.
       </para>
      </listitem>
     </varlistentry>
@@ -64,7 +65,10 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns a unique function name as a string, or &false; on error.
+   Returns a unique function name as a string, &return.falseforfailure;.
+   Note that the name contains a non-printable character (<literal>"\0"</literal>),
+   so care should be taken when printing the name or incorporating it in any other
+   string.
   </para>
  </refsect1>
 
@@ -73,36 +77,51 @@
   <para>
    <example>
     <title>
-     Creating an anonymous function with <function>create_function</function>
+     Creating a function dynamically, with <function>create_function</function>
+     or anonymous functions
     </title>
     <para>
-     You can use this function, to (for example) create a function from
-     information gathered at run time:
+     You can use a dynamically created function, to (for example) create a function from
+     information gathered at run time. First, using <function>create_function</function>:
     </para>
     <programlisting role="php">
 <![CDATA[
 <?php
 $newfunc = create_function('$a,$b', 'return "ln($a) + ln($b) = " . log($a * $b);');
-echo "New anonymous function: $newfunc\n";
 echo $newfunc(2, M_E) . "\n";
-// outputs
-// New anonymous function: lambda_1
-// ln(2) + ln(2.718281828459) = 1.6931471805599
 ?>
 ]]>
     </programlisting>
+    <para>
+     Now the same code, using an <link linkend="functions.anonymous">anonymous function</link>;
+     note that the code and arguments are no longer contained in strings:
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$newfunc = function($a,$b) { return "ln($a) + ln($b) = " . log($a * $b); };
+echo $newfunc(2, M_E) . "\n";
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+ln(2) + ln(2.718281828459) = 1.6931471805599
+]]>
+    </screen>
    </example>
-  </para>
-  <para>
-   Or, perhaps to have general handler function that can apply a set
-   of operations to a list of parameters:
   </para>
   <para>
    <example>
     <title>
-     Making a general processing function with
-     <function>create_function</function>
+     Making a general processing function, with <function>create_function</function>
+     or anonymous functions
     </title>
+    <para>
+     Another use could be to have general handler function that can apply a set
+     of operations to a list of parameters:
+    </para>
     <programlisting role="php">
 <![CDATA[
 <?php
@@ -114,29 +133,67 @@ function process($var1, $var2, $farr)
 }
 
 // create a bunch of math functions
-$f1 = 'if ($a >=0) {return "b*a^2 = ".$b*sqrt($a);} else {return false;}';
-$f2 = "return \"min(b^2+a, a^2,b) = \".min(\$a*\$a+\$b,\$b*\$b+\$a);";
-$f3 = 'if ($a > 0 && $b != 0) {return "ln(a)/b = ".log($a)/$b; } else { return false; }';
 $farr = array(
     create_function('$x,$y', 'return "some trig: ".(sin($x) + $x*cos($y));'),
     create_function('$x,$y', 'return "a hypotenuse: ".sqrt($x*$x + $y*$y);'),
-    create_function('$a,$b', $f1),
-    create_function('$a,$b', $f2),
-    create_function('$a,$b', $f3)
-    );
+    create_function('$a,$b', 'if ($a >=0) {return "b*a^2 = ".$b*sqrt($a);} else {return false;}'),
+    create_function('$a,$b', "return \"min(b^2+a, a^2,b) = \".min(\$a*\$a+\$b,\$b*\$b+\$a);"),
+    create_function('$a,$b', 'if ($a > 0 && $b != 0) {return "ln(a)/b = ".log($a)/$b; } else { return false; }')
+);
 
-echo "\nUsing the first array of anonymous functions\n";
+echo "\nUsing the first array of dynamic functions\n";
 echo "parameters: 2.3445, M_PI\n";
 process(2.3445, M_PI, $farr);
 
 // now make a bunch of string processing functions
 $garr = array(
     create_function('$b,$a', 'if (strncmp($a, $b, 3) == 0) return "** \"$a\" '.
-    'and \"$b\"\n** Look the same to me! (looking at the first 3 chars)";'),
-    create_function('$a,$b', '; return "CRCs: " . crc32($a) . ", ".crc32($b);'),
-    create_function('$a,$b', '; return "similar(a,b) = " . similar_text($a, $b, &$p) . "($p%)";')
-    );
-echo "\nUsing the second array of anonymous functions\n";
+        'and \"$b\"\n** Look the same to me! (looking at the first 3 chars)";'),
+    create_function('$a,$b', 'return "CRCs: " . crc32($a) . ", ".crc32($b);'),
+    create_function('$a,$b', 'return "similar(a,b) = " . similar_text($a, $b, $p) . "($p%)";')
+);
+echo "\nUsing the second array of dynamic functions\n";
+process("Twas brilling and the slithy toves", "Twas the night", $garr);
+?>
+]]>
+    </programlisting>
+    <para>
+     Again, here is the same code using
+     <link linkend="functions.anonymous">anonymous functions</link>.
+     Note that variable names in the code no longer need to be escaped,
+     because they are not enclosed in a string.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function process($var1, $var2, $farr)
+{
+    foreach ($farr as $f) {
+        echo $f($var1, $var2) . "\n";
+    }
+}
+
+// create a bunch of math functions
+$farr = array(
+    function($x,$y) { return "some trig: ".(sin($x) + $x*cos($y)); },
+    function($x,$y) { return "a hypotenuse: ".sqrt($x*$x + $y*$y); },
+    function($a,$b) { if ($a >=0) {return "b*a^2 = ".$b*sqrt($a);} else {return false;} },
+    function($a,$b) { return "min(b^2+a, a^2,b) = " . min($a*$a+$b, $b*$b+$a); },
+    function($a,$b) { if ($a > 0 && $b != 0) {return "ln(a)/b = ".log($a)/$b; } else { return false; } }
+);
+
+echo "\nUsing the first array of dynamic functions\n";
+echo "parameters: 2.3445, M_PI\n";
+process(2.3445, M_PI, $farr);
+
+// now make a bunch of string processing functions
+$garr = array(
+    function($b,$a) { if (strncmp($a, $b, 3) == 0) return "** \"$a\" " .
+        "and \"$b\"\n** Look the same to me! (looking at the first 3 chars)"; },
+    function($a,$b) { return "CRCs: " . crc32($a) . ", ".crc32($b); },
+    function($a,$b) { return "similar(a,b) = " . similar_text($a, $b, $p) . "($p%)"; }
+);
+echo "\nUsing the second array of dynamic functions\n";
 process("Twas brilling and the slithy toves", "Twas the night", $garr);
 ?>
 ]]>
@@ -144,7 +201,7 @@ process("Twas brilling and the slithy toves", "Twas the night", $garr);
     &example.outputs;
     <screen>
 <![CDATA[
-Using the first array of anonymous functions
+Using the first array of dynamic functions
 parameters: 2.3445, M_PI
 some trig: -1.6291725057799
 a hypotenuse: 3.9199852871011
@@ -152,28 +209,40 @@ b*a^2 = 4.8103313314525
 min(b^2+a, a^2,b) = 8.6382729035898
 ln(a)/b = 0.27122299212594
 
-Using the second array of anonymous functions
+Using the second array of dynamic functions
 ** "Twas the night" and "Twas brilling and the slithy toves"
 ** Look the same to me! (looking at the first 3 chars)
-CRCs: -725381282, 342550513
+CRCs: 3569586014, 342550513
 similar(a,b) = 11(45.833333333333%)
 ]]>
     </screen>
    </example>
   </para>
   <para>
-   But perhaps the most common use for of lambda-style (anonymous) functions
-   is to create callback functions, for example when using
-   <function>array_walk</function> or <function>usort</function>
-  </para>
-  <para>
    <example>
-    <title>Using anonymous functions as callback functions</title>
+    <title>Using dynamic functions as callback functions</title>
+    <para>
+     Perhaps the most common use for dynamic functions
+     is to pass them as callbacks, for example when using
+     <function>array_walk</function> or <function>usort</function>.
+    </para>
     <programlisting role="php">
 <![CDATA[
 <?php
 $av = array("the ", "a ", "that ", "this ");
 array_walk($av, create_function('&$v,$k', '$v = $v . "mango";'));
+print_r($av);
+?>
+]]>
+    </programlisting>
+    <para>
+     Converted to an <link linkend="functions.anonymous">anonymous function</link>:
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$av = array("the ", "a ", "that ", "this ");
+array_walk($av, function(&$v,$k) { $v = $v . "mango"; });
 print_r($av);
 ?>
 ]]>
@@ -191,46 +260,47 @@ Array
 ]]>
     </screen>
     <para>
-     an array of strings ordered from shorter to longer
+     Sorting a string from longest to shortest with <function>create_function</function>:
     </para>
     <programlisting role="php">
 <![CDATA[
 <?php
-
-$sv = array("small", "larger", "a big string", "it is a string thing");
+$sv = array("small", "a big string", "larger", "it is a string thing");
+echo "Original:\n";
 print_r($sv);
-
+echo "Sorted:\n";
+usort($sv, create_function('$a,$b','return strlen($b) - strlen($a);'));
+print_r($sv);
+?>
+]]>
+    </programlisting>
+    <para>
+     Converted to an <link linkend="functions.anonymous">anonymous function</link>:
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$sv = array("small", "a big string", "larger", "it is a string thing");
+echo "Original:\n";
+print_r($sv);
+echo "Sorted:\n";
+usort($sv, function($a,$b) { return strlen($b) - strlen($a); });
+print_r($sv);
 ?>
 ]]>
     </programlisting>
     &example.outputs;
     <screen>
 <![CDATA[
+Original:
 Array
 (
   [0] => small
-  [1] => larger
-  [2] => a big string
+  [1] => a big string
+  [2] => larger
   [3] => it is a string thing
 )
-]]>
-    </screen>
-    <para>
-     sort it from longer to shorter
-    </para>
-    <programlisting role="php">
-<![CDATA[
-<?php
-
-usort($sv, create_function('$a,$b','return strlen($b) - strlen($a);'));
-print_r($sv);
-
-?>
-]]>
-    </programlisting>
-    &example.outputs;
-    <screen>
-<![CDATA[
+Sorted:
 Array
 (
   [0] => it is a string thing
