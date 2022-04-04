@@ -3,7 +3,7 @@
 <refentry xml:id="uconverter.transcode" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>UConverter::transcode</refname>
-  <refpurpose>Convert string from one charset to another</refpurpose>
+  <refpurpose>Convert a string from one character encoding to another</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -16,11 +16,8 @@
    <methodparam choice="opt"><type class="union"><type>array</type><type>null</type></type><parameter>options</parameter><initializer>&null;</initializer></methodparam>
   </methodsynopsis>
   <para>
-
+   Converts <parameter>str</parameter> from <parameter>fromEncoding</parameter> to <parameter>toEncoding</parameter>.
   </para>
-
-  &warn.undocumented.func;
-
  </refsect1>
 
  <refsect1 role="parameters">
@@ -30,7 +27,7 @@
     <term><parameter>str</parameter></term>
     <listitem>
      <para>
-      
+      The &string; to be converted.
      </para>
     </listitem>
    </varlistentry>
@@ -38,7 +35,7 @@
     <term><parameter>toEncoding</parameter></term>
     <listitem>
      <para>
-      
+      The desired encoding of the result.
      </para>
     </listitem>
    </varlistentry>
@@ -46,7 +43,7 @@
     <term><parameter>fromEncoding</parameter></term>
     <listitem>
      <para>
-      
+      The current encoding used to interpret <parameter>str</parameter>.
      </para>
     </listitem>
    </varlistentry>
@@ -54,7 +51,15 @@
     <term><parameter>options</parameter></term>
     <listitem>
      <para>
-      
+      An optional &array;, which may contain the following keys:
+      <simplelist>
+       <member>
+        <literal>'to_subst'</literal> - the substitution character to use
+        in place of any character of <parameter>str</parameter> which cannot
+        be encoded in <parameter>toEncoding</parameter>. If specified, it must
+        represent a single character in the target encoding.
+       </member>
+      </simplelist>
      </para>
     </listitem>
    </varlistentry>
@@ -64,10 +69,110 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   
+   Returns the converted string&return.falseforfailure;.
   </para>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title>Converting from UTF-8 to UTF-16 and back</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$utf8_string = "\x5A\x6F\xC3\xAB"; // 'Zoë' in UTF-8
+$utf16_string = UConverter::transcode($utf8_string, 'UTF-16BE', 'UTF-8');
+echo bin2hex($utf16_string), "\n";
+
+$new_utf8_string = UConverter::transcode($utf16_string, 'UTF-8', 'UTF-16BE');
+echo bin2hex($new_utf8_string), "\n";
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+005a006f00eb
+5a6fc3ab
+]]>
+   </screen>
+  </example>
+  <example>
+   <title>Invalid characters in input</title>
+   <para>
+    If the input string contains a sequence of bytes which is not valid in
+    the encoding specified by <parameter>fromEncoding</parameter>, they are
+    replaced by Unicode code point U+FFFD (Replacement Character) before
+    converting to <parameter>toEncoding</parameter>.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$invalid_utf8_string = "\xC3"; // incomplete multi-byte UTF-8 sequence
+$utf16_string = UConverter::transcode($invalid_utf8_string, 'UTF-16BE', 'UTF-8');
+echo bin2hex($utf16_string), "\n";
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+fffd
+]]>
+   </screen>
+  </example>
+  <example>
+   <title>Characters which cannot be encoded</title>
+   <para>
+    If the input string contains characters which cannot be represented
+    in <parameter>toEncoding</parameter>, they are replaced with a single
+    character. The default character to use depends on the encoding, and
+    can be controlled using the <literal>'to_subst'</literal> option.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$utf8_string = "\xE2\x82\xAC"; // € (Euro Sign) does not exist in ISO 8859-1
+
+// Default replacement in ISO 8859-1 is "\x1A" (Substitute)
+$iso8859_1_string = UConverter::transcode($utf8_string, 'ISO-8859-1', 'UTF-8');
+echo bin2hex($iso8859_1_string), "\n";
+
+// Specify a replacement of '?' ("\x3F") instead
+$iso8859_1_string = UConverter::transcode(
+    $utf8_string, 'ISO-8859-1', 'UTF-8', ['to_subst' => '?']
+);
+echo bin2hex($iso8859_1_string), "\n";
+
+// Since ISO 8859-1 cannot map U+FFFD, invalid input is also replaced by to_subst
+$invalid_utf8_string = "\xC3"; // incomplete multi-byte UTF-8 sequence
+$iso8859_1_string = UConverter::transcode(
+    $invalid_utf8_string, 'ISO-8859-1', 'UTF-8', ['to_subst' => '?']
+);
+echo bin2hex($iso8859_1_string), "\n";
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+1a
+3f
+3f
+]]>
+   </screen>
+  </example>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><function>mb_convert_encoding</function></member>
+    <member><function>iconv</function></member>
+   </simplelist>
+  </para>
+ </refsect1>
 
 </refentry>
 <!-- Keep this comment at the end of the file
