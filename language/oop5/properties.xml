@@ -7,34 +7,33 @@
    Class member variables are called <emphasis>properties</emphasis>.
    They may be referred to using other terms such as <emphasis>fields</emphasis>,
    but for the purposes of this reference <emphasis>properties</emphasis>
-   will be used. They are defined by using one of the keywords
-   <literal>public</literal>, <literal>protected</literal>, or
-   <literal>private</literal>, optionally, as of PHP 7.4,
+   will be used. They are defined by using at least one modifier (such as
+   <xref linkend="language.oop5.visibility"/>,
+   <xref linkend="language.oop5.static"/>,
+   or, as of PHP 8.1.0, <link linkend="language.oop5.properties.readonly-properties">readonly</link>),
+   optionally (except for <code>readonly</code> properties), as of PHP 7.4,
    followed by a type declaration, followed by a normal variable declaration.
    This declaration may include an initialization, but this initialization
    must be a <link linkend="language.constants">constant</link> value.
   </para>
-  <para>
-   See <xref linkend="language.oop5.visibility" /> for more
-   information on the meanings
-   of <literal>public</literal>, <literal>protected</literal>,
-   and <literal>private</literal>.
-  </para>
   <note>
    <para>
-    An alternative and not recommended way of declaring class properties, as it is to maintain backward
-    compatibility with PHP 4, is by using
-    the <literal>var</literal> keyword.
-    It will treat the property identically as it would have been
-    declared as <literal>public</literal>.
+    An obsolete way of declaring class properties, is by using the
+    <literal>var</literal> keyword instead of a modifier.
    </para>
+  </note>
+  <note>
+   <simpara>
+    A property declared without a <xref linkend="language.oop5.visibility"/>
+    modifier will be declared as <literal>public</literal>.
+   </simpara>
   </note>
   <para>
    Within class methods non-static properties may be accessed by using 
    <literal>-&gt;</literal> (Object Operator): <varname>$this-&gt;property</varname> 
    (where <literal>property</literal> is the name of the property). 
    Static properties are accessed by using the <literal>::</literal> (Double Colon):
-   <varname>self::$property</varname>. See <link linkend="language.oop5.static">Static Keyword</link> 
+   <varname>self::$property</varname>. See <xref linkend="language.oop5.static" />
    for more information on the difference between static and non-static properties.
   </para>
   <para>
@@ -67,6 +66,10 @@ EOD;
    public $var8 = <<<'EOD'
 hello world
 EOD;
+
+   // Without visibility modifier:
+   static $var9;
+   readonly int $var10;
 }
 ?>
 ]]>
@@ -182,6 +185,143 @@ string(6) "circle"
 Fatal error: Uncaught Error: Typed property Shape::$numberOfSides must not be accessed before initialization
 ]]>
      </screen>
+    </example>
+   </para>
+  </sect2>
+
+  <sect2 xml:id="language.oop5.properties.readonly-properties">
+   <title>Readonly properties</title>
+   <para>
+    As of PHP 8.1.0, a property can be declared with the <code>readonly</code> modifier, which prevents modification of the property after initialization.
+    <example>
+     <title>Example of readonly properties</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class Test {
+   public readonly string $prop;
+
+   public function __construct(string $prop) {
+       // Legal initialization.
+       $this->prop = $prop;
+   }
+}
+
+$test = new Test("foobar");
+// Legal read.
+var_dump($test->prop); // string(6) "foobar"
+
+// Illegal reassignment. It does not matter that the assigned value is the same.
+$test->prop = "foobar";
+// Error: Cannot modify readonly property Test::$prop
+?>
+]]>
+     </programlisting>
+    </example>
+    <note>
+     <para>
+      The readonly modifier can only be applied to <link linkend="language.oop5.properties.typed-properties">typed properties</link>.
+      A readonly property without type constraints can be created using the <xref linkend="language.types.declarations.mixed" /> type.
+     </para>
+    </note>
+    <note>
+     <para>
+      Readonly static properties are not supported.
+     </para>
+    </note>
+   </para>
+   <para>
+    A readonly property can only be initialized once, and only from the scope where it has been declared. Any other assignment or modification of the property will result in an <classname>Error</classname> exception.
+    <example>
+     <title>Illegal initialization of readonly properties</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+class Test1 {
+    public readonly string $prop;
+}
+
+$test1 = new Test1;
+// Illegal initialization outside of private scope.
+$test1->prop = "foobar";
+// Error: Cannot initialize readonly property Test1::$prop from global scope
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+   <note>
+    <para>
+     Specifying an explicit default value on readonly properties is not allowed, because a readonly property with a default value is essentially the same as a constant, and thus not particularly useful.
+     <example>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+class Test {
+    // Fatal error: Readonly property Test::$prop cannot have default value
+    public readonly int $prop = 42;
+}
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+   </note>
+   <note>
+    <para>
+     Readonly properties cannot be <function>unset</function> once they are initialized. However, it is possible to unset a readonly property prior to initialization, from the scope where the property has been declared.
+    </para>
+   </note>
+   <para>
+    Modifications are not necessarily plain assignments, all of the following will also result in an <classname>Error</classname> exception:
+    <example>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class Test {
+    public function __construct(
+        public readonly int $i = 0,
+        public readonly array $ary = [],
+    ) {}
+}
+
+$test = new Test;
+$test->i += 1;
+$test->i++;
+++$test->i;
+$test->ary[] = 1;
+$test->ary[0][] = 1;
+$ref =& $test->i;
+$test->i =& $ref;
+byRef($test->i);
+foreach ($test as &$prop);
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+   <para>
+    However, readonly properties do not preclude interior mutability. Objects (or resources) stored in readonly properties may still be modified internally:
+    <example>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class Test {
+    public function __construct(public readonly object $obj) {}
+}
+
+$test = new Test(new stdClass);
+// Legal interior mutation.
+$test->obj->foo = 1;
+// Illegal reassignment.
+$test->obj = new stdClass;
+?>
+]]>
+     </programlisting>
     </example>
    </para>
   </sect2>

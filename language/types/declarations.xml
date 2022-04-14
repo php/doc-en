@@ -163,7 +163,7 @@ Stack trace:
   <title>mixed</title>
 
   <para>
-   <type>mixed</type> is equivalent to the <link linkend="language.types.declarations.union">union type</link>
+   <type>mixed</type> is equivalent to the <link linkend="language.types.declarations.composite.union">union type</link>
    <type class="union">
     <type>object</type><type>resource</type><type>array</type><type>string</type>
     <type>int</type><type>float</type><type>bool</type><type>null</type>
@@ -348,7 +348,7 @@ function get_item(): ?string {
 
   <note>
    <para>
-    Prior to PHP 7.1.0, it was possible to achieve nullable arguments by making
+    It is possible to achieve nullable arguments by making
     <literal>null</literal> the default value.
     This is not recommended as this breaks during inheritance.
    </para>
@@ -380,60 +380,97 @@ NULL
   </note>
  </sect2>
 
- <sect2 xml:id="language.types.declarations.union">
-  <title>Union types</title>
+ <sect2 xml:id="language.types.declarations.composite">
+  <title>Composite types</title>
   <para>
-   A union type declaration accepts values of multiple different types,
-   rather than a single one.
-   Union types are specified using the syntax <literal>T1|T2|...</literal>.
-   Union types are available as of PHP 8.0.0.
+   It is possible to combine simple types into composite types.
+   PHP allows types to be combined in the following ways:
   </para>
 
-  <sect3 xml:id="language.types.declarations.union.nullable">
-   <title>Nullable union types</title>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     Union of simple types. As of PHP 8.0.0.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Intersection of class-types (interfaces and class names). As of PHP 8.1.0.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+
+  <caution>
+   <simpara>
+    It is not possible to combine intersection types with union types.
+   </simpara>
+  </caution>
+
+  <sect3 xml:id="language.types.declarations.composite.union">
+   <title>Union types</title>
    <para>
-    The <literal>null</literal> type is supported as part of unions,
-    such that <literal>T1|T2|null</literal> can be used to create a nullable union.
-    The existing <literal>?T</literal> notation is considered a shorthand
-    for the common case of <literal>T|null</literal>.
+    A union type declaration accepts values of multiple different simple types,
+    rather than a single one.
+    Union types are specified using the syntax <literal>T1|T2|...</literal>.
+    Union types are available as of PHP 8.0.0.
    </para>
 
-   <caution>
-    <simpara>
-     <literal>null</literal> cannot be used as a standalone type.
-    </simpara>
-   </caution>
+   <sect4 xml:id="language.types.declarations.composite.union.nullable">
+    <title>Nullable union types</title>
+    <para>
+     The <literal>null</literal> type is supported as part of unions,
+     such that <literal>T1|T2|null</literal> can be used to create a nullable union.
+     The existing <literal>?T</literal> notation is considered a shorthand
+     for the common case of <literal>T|null</literal>.
+    </para>
+
+    <caution>
+     <simpara>
+      <literal>null</literal> cannot be used as a standalone type.
+     </simpara>
+    </caution>
+   </sect4>
+
+   <sect4 xml:id="language.types.declarations.composite.union.false">
+    <title>false pseudo-type</title>
+    <para>
+     The <literal>false</literal> literal type is supported as part of unions,
+     and is included as for historical reasons many internal functions return
+     <literal>false</literal> instead of <literal>null</literal> for failures.
+     A classic example of such a function is <function>strpos</function>.
+    </para>
+
+    <caution>
+     <simpara>
+      <literal>false</literal> cannot be used as a standalone type (including
+      nullable standalone type).
+      As such, <literal>false</literal>, <literal>false|null</literal>
+      and <literal>?false</literal> are not permitted.
+     </simpara>
+    </caution>
+    <caution>
+     <simpara>
+      The <literal>true</literal> literal type does <emphasis>not</emphasis>
+      exist.
+     </simpara>
+    </caution>
+   </sect4>
   </sect3>
 
-  <sect3 xml:id="language.types.declarations.union.false">
-   <title>false pseudo-type</title>
+  <sect3 xml:id="language.types.declarations.composite.intersection">
+   <title>Intersection types</title>
    <para>
-    The <literal>false</literal> literal type is supported as part of unions,
-    and is included as for historical reasons many internal functions return
-    <literal>false</literal> instead of <literal>null</literal> for failures.
-    A classic example of such a function is <function>strpos</function>.
+    An intersection type declaration accepts values which satisfies multiple
+    class-type declarations, rather than a single one.
+    Intersection types are specified using the syntax <literal>T1&amp;T2&amp;...</literal>.
+    Intersection types are available as of PHP 8.1.0.
    </para>
-
-   <caution>
-    <simpara>
-     <literal>false</literal> cannot be used as a standalone type (including
-     nullable standalone type).
-     As such, all of <literal>false</literal>, <literal>false|null</literal>
-     and <literal>?false</literal> are not permitted.
-    </simpara>
-   </caution>
-   <caution>
-    <simpara>
-     The <literal>true</literal> literal type does <emphasis>not</emphasis>
-     exist.
-    </simpara>
-   </caution>
   </sect3>
 
-  <sect3 xml:id="language.types.declarations.union.redundant">
+  <sect3 xml:id="language.types.declarations.composite.redundant">
    <title>Duplicate and redundant types</title>
    <para>
-    To catch simple bugs in union type declarations, redundant types that
+    To catch simple bugs in composite type declarations, redundant types that
     can be detected without performing class loading will result in a
     compile-time error. This includes:
 
@@ -441,24 +478,52 @@ NULL
      <listitem>
       <simpara>
        Each name-resolved type may only occur once. Types such as
-       <literal>int|string|INT</literal> result in an error.
+       <literal>int|string|INT</literal> or
+       <literal>Countable&amp;Traversable&amp;COUNTABLE</literal>
+       result in an error.
       </simpara>
      </listitem>
      <listitem>
       <simpara>
-       If <type>bool</type> is used, <type>false</type> cannot be used additionally.
+       Using <type>mixed</type> results in an error.
       </simpara>
      </listitem>
      <listitem>
-      <simpara>
-       If <type>object</type> is used, class types cannot be used additionally.
-      </simpara>
+      <simpara>For union types:</simpara>
+      <itemizedlist>
+       <listitem>
+        <simpara>
+         If <type>bool</type> is used, <type>false</type> cannot be used additionally.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         If <type>object</type> is used, class types cannot be used additionally.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         If <type>iterable</type> is used, <type>array</type>
+         and <classname>Traversable</classname> cannot be used additionally.
+        </simpara>
+       </listitem>
+      </itemizedlist>
      </listitem>
      <listitem>
-      <simpara>
-       If <type>iterable</type> is used, <type>array</type>
-       and <classname>Traversable</classname> cannot be used additionally.
-      </simpara>
+      <simpara>For intersection types:</simpara>
+      <itemizedlist>
+       <listitem>
+        <simpara>
+         Using a type which is not a class-type results in an error.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         Using either <type>self</type>, <type>parent</type>, or
+         <type>static</type> results in an error.
+        </simpara>
+       </listitem>
+      </itemizedlist>
      </listitem>
     </itemizedlist>
    </para>
@@ -485,19 +550,22 @@ NULL
 <?php
 function foo(): int|INT {} // Disallowed
 function foo(): bool|false {} // Disallowed
+function foo(): int&Traversable {} // Disallowed
+function foo(): self&Traversable {} // Disallowed
 
 use A as B;
 function foo(): A|B {} // Disallowed ("use" is part of name resolution)
+function foo(): A&B {} // Disallowed ("use" is part of name resolution)
 
 class_alias('X', 'Y');
 function foo(): X|Y {} // Allowed (redundancy is only known at runtime)
+function foo(): X&Y {} // Allowed (redundancy is only known at runtime)
 ?>
 ]]>
      </programlisting>
     </informalexample>
    </para>
   </sect3>
-
  </sect2>
 
  <sect2 xml:id="language.types.declarations.return-only">
@@ -511,6 +579,25 @@ function foo(): X|Y {} // Allowed (redundancy is only known at runtime)
     Therefore it cannot be part of a union type declaration.
     Available as of PHP 7.1.0.
    </para>
+   <note>
+    <para>
+     Returning by reference from a <type>void</type> function is deprecated as of PHP 8.1.0,
+     because such a function is contradictory.
+     Previously, it already emitted the following
+     <constant>E_NOTICE</constant> when called:
+     <literal>Only variable references should be returned by reference</literal>.
+
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+<?php
+function &test(): void {}
+?>
+]]>
+      </programlisting>
+     </informalexample>
+    </para>
+   </note>
   </sect3>
 
   <sect3 xml:id="language.types.declarations.never">

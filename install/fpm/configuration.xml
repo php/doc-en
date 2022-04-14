@@ -186,7 +186,7 @@
       <listitem>
        <para>
         Set open file descriptor rlimit for the master process.
-        Default value: Set open file descriptor rlimit for the master process.
+        Default value: system defined value.
        </para>
       </listitem>
      </varlistentry>
@@ -260,8 +260,9 @@
       </term>
       <listitem>
        <para>
-        Set listen(2) backlog. A value of '-1' means unlimited. Default value:
-        -1.
+        Set listen(2) backlog. A value of <literal>-1</literal> means maximum on BSD systems.
+        Default value: <literal>-1</literal> (FreeBSD or OpenBSD) or <literal>511</literal>
+        (Linux and other platforms).
        </para>
       </listitem>
      </varlistentry>
@@ -272,12 +273,11 @@
       </term>
       <listitem>
        <para>
-        List of IPv4 addresses of FastCGI clients which are allowed to
-        connect. Equivalent to the FCGI_WEB_SERVER_ADDRS environment variable in the
-        original PHP FastCGI (5.2.2+). Makes sense only with a tcp listening socket.
-        Each address must be separated by a comma. If this value is left blank,
-        connections will be accepted from any ip address. Default value: any.
-        IPv6 addresses are allowed.
+        List of IPv4 or IPv6 addresses of FastCGI clients which are allowed to connect. Equivalent
+        to the FCGI_WEB_SERVER_ADDRS environment variable in the original PHP FastCGI (5.2.2+).
+        Makes sense only with a tcp listening socket. Each address must be separated by a comma.
+        If this value is left blank, connections will be accepted from any ip address.
+        Default value: not set (any ip address accepted).
        </para>
       </listitem>
      </varlistentry>
@@ -452,6 +452,19 @@
        </para>
       </listitem>
      </varlistentry>
+     <varlistentry xml:id="pm.max-spawn-rate">
+      <term>
+       <parameter>pm.max_spawn_rate</parameter>
+       <type>int</type>
+      </term>
+      <listitem>
+       <para>
+        The number of rate to spawn child processes at once. Used only when
+        <literal>pm</literal> is set to <literal>dynamic</literal>.
+        Default value: 32
+       </para>
+      </listitem>
+     </varlistentry>
      <varlistentry xml:id="pm.process-idle-timeout">
       <term>
        <parameter>pm.process_idle_timeout</parameter>
@@ -480,6 +493,22 @@
        </para>
       </listitem>
      </varlistentry>
+     <varlistentry xml:id="pm.status-listen">
+      <term>
+       <parameter>pm.status_listen</parameter>
+       <type>string</type>
+      </term>
+      <listitem>
+       <para>
+        The address on which to accept FastCGI status request. This creates a new invisible pool
+        that can handle requests independently. This is useful if the main pool is busy with long
+        running requests because it is still possible to get the
+        <link linkend="fpm.status">FPM status page</link> before finishing the long running
+        requests. The syntax is the same as for <link linkend="listen">listen</link> directive.
+        Default value: none.
+       </para>
+      </listitem>
+     </varlistentry>
      <varlistentry xml:id="pm.status-path">
       <term>
        <parameter>pm.status_path</parameter>
@@ -487,8 +516,9 @@
       </term>
       <listitem>
        <para>
-        The URI to view the FPM status page. If this value is not set, no URI
-        will be recognized as a status page. Default value: none.
+        The URI to view the <link linkend="fpm.status">FPM status page</link>. This value must
+        start with a leading slash (/). If this value is not set, no URI will be recognized as
+        a status page. Default value: none.
        </para>
       </listitem>
      </varlistentry>
@@ -572,6 +602,22 @@
        </para>
       </listitem>
      </varlistentry>
+     <varlistentry xml:id="request-terminate-timeout-track-finished">
+      <term>
+       <parameter>request_terminate_timeout_track_finished</parameter>
+       <type>bool</type>
+      </term>
+      <listitem>
+       <para>
+        The timeout set by
+        <link linkend="request-terminate-timeout">request_terminate_timeout</link> is not engaged
+        after a <link linkend="function.fastcgi-finish-request">fastcgi_finish_request</link> or
+        when application has finished and internal shutdown functions are being called. This
+        directive will enable timeout limit to be applied unconditionally even in such cases.
+        Default value: no. Since PHP 7.3.0.
+       </para>
+      </listitem>
+     </varlistentry>
      <varlistentry xml:id="request-slowlog-timeout">
       <term>
        <parameter>request_slowlog_timeout</parameter>
@@ -583,6 +629,18 @@
         will be dumped to the 'slowlog' file. A value of '0' means 'Off'.
         Available units: s(econds)(default), m(inutes), h(ours), or d(ays).
         Default value: 0.
+       </para>
+      </listitem>
+     </varlistentry>
+     <varlistentry xml:id="request-slowlog-trace-depth">
+      <term>
+       <parameter>request_slowlog_trace_depth</parameter>
+       <type>int</type>
+      </term>
+      <listitem>
+       <para>
+        The depth of slowlog log stack trace.
+        Default value: 20. Since PHP 7.2.0.
        </para>
       </listitem>
      </varlistentry>
@@ -699,6 +757,18 @@
         You should only limit FPM to .php extensions to prevent malicious
         users to use other extensions to execute php code.
         Default value: .php .phar
+       </para>
+      </listitem>
+     </varlistentry>
+     <varlistentry xml:id="apparmor-hat">
+      <term>
+       <parameter>apparmor_hat</parameter>
+       <type>string</type>
+      </term>
+      <listitem>
+       <para>
+        If AppArmor is enabled, it allows to change a hat.
+        Default value: not set
        </para>
       </listitem>
      </varlistentry>
@@ -904,6 +974,12 @@ fastcgi_param  PHP_ADMIN_VALUE "open_basedir=/var/www/htdocs";
        <link linkend="listen-allowed-clients">listen.allowed_clients</link>.
       </para>
      </caution>
+     <note>
+      <simpara>
+       Pools are not a security mechanism, because they do not provide full
+       separation; e.g. all pools would use a single OPcache instance.
+      </simpara>
+     </note>
     </para>
    </sect2>
 

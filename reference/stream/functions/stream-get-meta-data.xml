@@ -25,7 +25,7 @@
      <listitem>
       <para>
        The stream can be any stream created by <function>fopen</function>,
-       <function>fsockopen</function> and <function>pfsockopen</function>.
+       <function>fsockopen</function> <function>pfsockopen</function> and <function>stream_socket_client</function>.
       </para>
      </listitem>
     </varlistentry>
@@ -121,6 +121,12 @@
      stream.
     </para>
    </listitem>
+   <listitem>
+    <para>
+     <literal>crypto</literal> (array) - the TLS connection metadata for this
+     stream. (Note: Only provided when the resource's stream uses TLS.)
+    </para>
+   </listitem>
   </itemizedlist>
  </refsect1>
 
@@ -128,7 +134,7 @@
   &reftitle.examples;
   <para>
    <example>
-    <title><function>stream_get_meta_data</function> example</title>
+    <title><function>stream_get_meta_data</function> example using <function>fopen</function> with http</title>
     <programlisting role="php">
 <![CDATA[
 <?php
@@ -140,7 +146,7 @@ if (!$fp = fopen($url, 'r')) {
 
 $meta = stream_get_meta_data($fp);
 
-print_r($meta);
+var_dump($meta);
 
 fclose($fp);
 ?>
@@ -149,33 +155,119 @@ fclose($fp);
     &example.outputs.similar;
     <screen>
 <![CDATA[
-Array
-(
-    [wrapper_data] => Array
-        (
-            [0] => HTTP/1.1 200 OK
-            [1] => Server: Apache/2.2.3 (Red Hat)
-            [2] => Last-Modified: Tue, 15 Nov 2005 13:24:10 GMT
-            [3] => ETag: "b300b4-1b6-4059a80bfd280"
-            [4] => Accept-Ranges: bytes
-            [5] => Content-Type: text/html; charset=UTF-8
-            [6] => Set-Cookie: FOO=BAR; expires=Fri, 21-Dec-2012 12:00:00 GMT; path=/; domain=.example.com
-            [6] => Connection: close     
-            [7] => Date: Fri, 16 Oct 2009 12:00:00 GMT
-            [8] => Age: 1164   
-            [9] => Content-Length: 438
-        )
+array(10) {
+  'timed_out' =>
+  bool(false)
+  'blocked' =>
+  bool(true)
+  'eof' =>
+  bool(false)
+  'wrapper_data' =>
+  array(13) {
+    [0] =>
+    string(15) "HTTP/1.1 200 OK"
+    [1] =>
+    string(11) "Age: 244629"
+    [2] =>
+    string(29) "Cache-Control: max-age=604800"
+    [3] =>
+    string(38) "Content-Type: text/html; charset=UTF-8"
+    [4] =>
+    string(35) "Date: Sat, 20 Nov 2021 18:17:57 GMT"
+    [5] =>
+    string(24) "Etag: "3147526947+ident""
+    [6] =>
+    string(38) "Expires: Sat, 27 Nov 2021 18:17:57 GMT"
+    [7] =>
+    string(44) "Last-Modified: Thu, 17 Oct 2019 07:18:26 GMT"
+    [8] =>
+    string(22) "Server: ECS (chb/0286)"
+    [9] =>
+    string(21) "Vary: Accept-Encoding"
+    [10] =>
+    string(12) "X-Cache: HIT"
+    [11] =>
+    string(20) "Content-Length: 1256"
+    [12] =>
+    string(17) "Connection: close"
+  }
+  'wrapper_type' =>
+  string(4) "http"
+  'stream_type' =>
+  string(14) "tcp_socket/ssl"
+  'mode' =>
+  string(1) "r"
+  'unread_bytes' =>
+  int(1256)
+  'seekable' =>
+  bool(false)
+  'uri' =>
+  string(23) "http://www.example.com/"
+}
+]]>
+    </screen>
+   </example>
+   <example>
+    <title><function>stream_get_meta_data</function> example using <function>stream_socket_client</function> with https</title>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+$streamContext = stream_context_create(
+    [
+        'ssl' => [
+            'capture_peer_cert' => true,
+            'capture_peer_cert_chain' => true,
+            'disable_compression' => true,
+        ],
+    ]
+);
 
-    [wrapper_type] => http
-    [stream_type] => tcp_socket/ssl
-    [mode] => r
-    [unread_bytes] => 438
-    [seekable] => 
-    [uri] => http://www.example.com/
-    [timed_out] => 
-    [blocked] => 1
-    [eof] => 
-)
+$client = stream_socket_client(
+    'ssl://www.example.com:443',
+    $errorNumber,
+    $errorDescription,
+    40,
+    STREAM_CLIENT_CONNECT,
+    $streamContext
+);
+
+
+$meta = stream_get_meta_data($client);
+
+var_dump($meta);
+?>
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+     <![CDATA[
+array(8) {
+  'crypto' =>
+  array(4) {
+    'protocol' =>
+    string(7) "TLSv1.3"
+    'cipher_name' =>
+    string(22) "TLS_AES_256_GCM_SHA384"
+    'cipher_bits' =>
+    int(256)
+    'cipher_version' =>
+    string(7) "TLSv1.3"
+  }
+  'timed_out' =>
+  bool(false)
+  'blocked' =>
+  bool(true)
+  'eof' =>
+  bool(false)
+  'stream_type' =>
+  string(14) "tcp_socket/ssl"
+  'mode' =>
+  string(2) "r+"
+  'unread_bytes' =>
+  int(0)
+  'seekable' =>
+  bool(false)
+}
 ]]>
     </screen>
    </example>
