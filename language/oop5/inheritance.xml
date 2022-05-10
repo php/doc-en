@@ -105,6 +105,81 @@ $bar->printPHP();       // Output: 'PHP is great'
    </example>
   </sect2>
 
+  <sect2 xml:id="language.oop5.inheritance.internal-classes">
+   <title>Return Type Compatibility with Internal Classes</title>
+ 
+   <para>
+    Prior to PHP 8.1, most internal classes or methods didn't declare their return types,
+    and any return type was allowed when extending them.
+   </para>
+ 
+   <para>
+    As of PHP 8.1.0, most internal methods started to "tentatively" declare their return type,
+    in that case the return type of methods should be compatible with the parent being extended;
+    otherwise, a deprecation notice is emitted.
+    Note that lack of an explicit return declaration is also considered a signature mismatch,
+    and thus results in the deprecation notice.
+   </para>
+ 
+   <para>
+    If the return type cannot be declared for an overriding method due to PHP cross-version compatibility concerns,
+    a <code>#[ReturnTypeWillChange]</code> attribute can be added to silence the deprecation notice.
+   </para>
+ 
+   <example>
+    <title>The overriding method does not declare any return type</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class MyDateTime extends DateTime
+{
+    public function modify(string $modifier) { return false; }
+}
+ 
+// "Deprecated: Return type of MyDateTime::modify(string $modifier) should either be compatible with DateTime::modify(string $modifier): DateTime|false, or the #[\ReturnTypeWillChange] attribute should be used to temporarily suppress the notice" as of PHP 8.1.0
+?> 
+]]>
+    </programlisting>
+   </example>
+ 
+   <example>
+    <title>The overriding method declares a wrong return type</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class MyDateTime extends DateTime
+{
+    public function modify(string $modifier): ?DateTime { return null; }
+}
+ 
+// "Deprecated: Return type of MyDateTime::modify(string $modifier): ?DateTime should either be compatible with DateTime::modify(string $modifier): DateTime|false, or the #[\ReturnTypeWillChange] attribute should be used to temporarily suppress the notice" as of PHP 8.1.0
+?> 
+]]>
+    </programlisting>
+   </example>
+ 
+   <example>
+    <title>The overriding method declares a wrong return type without a deprecation notice</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class MyDateTime extends DateTime
+{
+    /**
+     * @return DateTime|false
+     */
+    #[ReturnTypeWillChange]
+    public function modify(string $modifier) { return false; }
+}
+ 
+// No notice is triggered 
+?> 
+]]>
+    </programlisting>
+   </example>
+ 
+  </sect2>
+
  </sect1>
  
 <!-- Keep this comment at the end of the file
