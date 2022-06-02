@@ -11,6 +11,24 @@
    <type>array</type><methodname>date_parse</methodname>
    <methodparam><type>string</type><parameter>datetime</parameter></methodparam>
   </methodsynopsis>
+  <para>
+   <function>date_parse</function> parses the given
+   <parameter>datetime</parameter> string according to the same rules as
+   <function>strtotime</function> and
+   <function>DateTimeImmutable::__construct</function>. Instead of returning a
+   Unix timestamp (with <function>strtotime</function>) or a
+   <classname>DateTimeImmutable</classname> object (with
+   <function>DateTimeImmutable::__construct</function>, it returns an
+   associative array with the information that it could detect in the given
+   <parameter>datetime</parameter> string.
+  </para>
+  <para>
+   If no information about a certain group of elements can be found, these
+   array elements will be set to &false; or are missing. If needed for
+   constructing a timestamp or <classname>DateTimeImmutable</classname> object from
+   the same <parameter>datetime</parameter> string, more fields can be set to
+   a non-&false; value. See the examples for cases where that happens.
+  </para>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -74,36 +92,148 @@
   &reftitle.examples;
   <para>
    <example>
-    <title>A <function>date_parse</function> example</title>
+    <title>A <function>date_parse</function> example with a comprehensive
+    <parameter>datetime</parameter> string</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-print_r(date_parse("2006-12-12 10:00:00.5"));
+var_dump(date_parse("2006-12-12 10:00:00.5"));
 ?>
 ]]>
     </programlisting>
     &example.outputs;
     <screen>
 <![CDATA[
-Array
-(
-    [year] => 2006
-    [month] => 12
-    [day] => 12
-    [hour] => 10
-    [minute] => 0
-    [second] => 0
-    [fraction] => 0.5
-    [warning_count] => 0
-    [warnings] => Array()
-    [error_count] => 0
-    [errors] => Array()
-    [is_localtime] => 
-)
+array(12) {
+  'year' => int(2006)
+  'month' => int(12)
+  'day' => int(12)
+  'hour' => int(10)
+  'minute' => int(0)
+  'second' => int(0)
+  'fraction' => double(0.5)
+  'warning_count' => int(0)
+  'warnings' => array(0) {
+  }
+  'error_count' => int(0)
+  'errors' => array(0) {
+  }
+  'is_localtime' => bool(false)
+}
 ]]>
     </screen>
    </example>
   </para>
+
+  <para>
+   The timezone elements only shows up if they are included in the given
+   <parameter>datetime</parameter> string is parsed. In that case, there will
+   always be a <literal>zone_type</literal> element, and a few more depending
+   on its value.
+   <example>
+    <title><function>date_parse</function> with timezone abbreviation information</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+var_dump(date_parse("June 2nd, 2022, 10:28:17 BST"));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(16) {
+  'year' => int(2022)
+  'month' => int(6)
+  'day' => int(2)
+  'hour' => int(10)
+  'minute' => int(28)
+  'second' => int(17)
+  'fraction' => double(0)
+  'warning_count' => int(0)
+  'warnings' => array(0) {
+  }
+  'error_count' => int(0)
+  'errors' => array(0) {
+  }
+  'is_localtime' => bool(true)
+  'zone_type' => int(2)
+  'zone' => int(0)
+  'is_dst' => bool(true)
+  'tz_abbr' => string(3) "BST"
+}]]>
+    </screen>
+   </example>
+   <example>
+    <title><function>date_parse</function> with timezone identifier information</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+var_dump(date_parse("June 2nd, 2022, 10:28:17 Europe/London"));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(14) {
+  'year' => int(2022)
+  'month' => int(6)
+  'day' => int(2)
+  'hour' => int(10)
+  'minute' => int(28)
+  'second' => int(17)
+  'fraction' => double(0)
+  'warning_count' => int(0)
+  'warnings' => array(0) {
+  }
+  'error_count' => int(0)
+  'errors' => array(0) {
+  }
+  'is_localtime' => bool(true)
+  'zone_type' => int(3)
+  'tz_id' => string(13) "Europe/London"
+}]]>
+    </screen>
+   </example>
+  </para>
+
+  <para>
+   If a more minimal <parameter>datetime</parameter> string is parsed, less
+   information is available. In this example, all the time parts are returned
+   as &false;.
+   <example>
+    <title><function>date_parse</function> with a minimal string</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+var_dump(date_parse("June 2nd, 2022"));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(12) {
+  'year' => int(2022)
+  'month' => int(6)
+  'day' => int(2)
+  'hour' => bool(false)
+  'minute' => bool(false)
+  'second' => bool(false)
+  'fraction' => bool(false)
+  'warning_count' => int(0)
+  'warnings' => array(0) {
+  }
+  'error_count' => int(0)
+  'errors' => array(0) {
+  }
+  'is_localtime' => bool(false)
+}]]>
+    </screen>
+   </example>
+  </para>
+
   <para>
    <link linkend="datetime.formats.relative">Relative formats</link> do not
    influence the values parsed from absolute formats, but are parsed into the
@@ -113,44 +243,87 @@ Array
     <programlisting role="php">
 <![CDATA[
 <?php
-print_r(date_parse("2006-12-12 10:00:00.5 +1 week +1 hour"));
+var_dump(date_parse("2006-12-12 10:00:00.5 +1 week +1 hour"));
 ?>
 ]]>
     </programlisting>
     &example.outputs;
     <screen>
 <![CDATA[
-Array
-(
-    [year] => 2006
-    [month] => 12
-    [day] => 12
-    [hour] => 10
-    [minute] => 0
-    [second] => 0
-    [fraction] => 0.5
-    [warning_count] => 0
-    [warnings] => Array
-        (
-        )
+array(13) {
+  'year' => int(2006)
+  'month' => int(12)
+  'day' => int(12)
+  'hour' => int(10)
+  'minute' => int(0)
+  'second' => int(0)
+  'fraction' => double(0.5)
+  'warning_count' => int(0)
+  'warnings' => array(0) {
+  }
+  'error_count' => int(0)
+  'errors' => array(0) {
+  }
+  'is_localtime' => bool(false)
+  'relative' =>
+  array(6) {
+    'year' => int(0)
+    'month' => int(0)
+    'day' => int(7)
+    'hour' => int(1)
+    'minute' => int(0)
+    'second' => int(0)
+  }
+}]]>
+    </screen>
+   </example>
+  </para>
 
-    [error_count] => 0
-    [errors] => Array
-        (
-        )
-
-    [is_localtime] =>
-    [relative] => Array
-        (
-            [year] => 0
-            [month] => 0
-            [day] => 7
-            [hour] => 1
-            [minute] => 0
-            [second] => 0
-        )
-
-)]]>
+  <para>
+   Some stanzas, such as <literal>Thursday</literal> will set the time portion
+   of the string to <literal>0</literal>. If <literal>Thursday</literal> is
+   passed to <function>DateTimeImmutable::__construct</function> it would also
+   have resulted in the hour, minute, second, and fraction being set to
+   <literal>0</literal>. In the example below, the year element is however
+   left as &false;.
+   <example>
+    <title><function>date_parse</function> with side-effects</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+var_dump(date_parse("Thursday, June 2nd"));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(13) {
+  'year' => bool(false)
+  'month' => int(6)
+  'day' => int(2)
+  'hour' => int(0)
+  'minute' => int(0)
+  'second' => int(0)
+  'fraction' => double(0)
+  'warning_count' => int(0)
+  'warnings' => array(0) {
+  }
+  'error_count' => int(0)
+  'errors' => array(0) {
+  }
+  'is_localtime' => bool(false)
+  'relative' =>
+  array(7) {
+    'year' => int(0)
+    'month' => int(0)
+    'day' => int(0)
+    'hour' => int(0)
+    'minute' => int(0)
+    'second' => int(0)
+    'weekday' => int(4)
+  }
+}]]>
     </screen>
    </example>
   </para>
@@ -160,6 +333,8 @@ Array
   &reftitle.seealso;
   <para>
    <simplelist>
+    <member><function>DateTimeImmutable::parseFromFormat</function> for
+    parsing a <parameter>datetime</parameter> with a specific given format</member>
     <member><function>checkdate</function></member>
     <member><function>getdate</function></member>
    </simplelist>
