@@ -50,6 +50,15 @@
       characters.
      </para>
      <para>
+      Letters that are used for parsing numbers allow a wide range of values,
+      outside of what the logical range would be. For example, the
+      <literal>d</literal> (day of the month) accepts values in the range from
+      <literal>00</literal> to <literal>99</literal>. The only constraint is
+      on the amount of digits. The date/time parser's overflow mechanism is
+      used when out-of-range values are given. The examples below show some of
+      this behaviour.
+     </para>
+     <para>
       <table>
        <title>The following characters are recognized in the
        <parameter>format</parameter> parameter string</title>
@@ -72,7 +81,10 @@
           <entry>Day of the month, 2 digits with or without leading zeros</entry>
           <entry>
            <literal>01</literal> to <literal>31</literal> or
-           <literal>1</literal> to <literal>31</literal>
+           <literal>1</literal> to <literal>31</literal>. (2 digit numbers
+           higher than the number of days in the month are accepted, in which
+           case they will make the month overflow. For example using 33 with
+           January, means February 2nd)
           </entry>
          </row>
          <row>
@@ -98,7 +110,12 @@
            The day of the year (starting from 0);
            must be preceded by <literal>Y</literal> or <literal>y</literal>.
           </entry>
-          <entry><literal>0</literal> through <literal>365</literal></entry>
+          <entry>
+           <literal>0</literal> through <literal>365</literal>. (3 digit
+           numbers higher than the numbers in a year are accepted, in which
+           case they will make the year overflow. For example using 366 with
+           2022, means January 2nd, 2023)
+          </entry>
          </row>
          <row>
           <entry align="center"><emphasis>Month</emphasis></entry>
@@ -118,7 +135,10 @@
           <entry>Numeric representation of a month, with or without leading zeros</entry>
           <entry>
            <literal>01</literal> through <literal>12</literal> or
-           <literal>1</literal> through <literal>12</literal>
+           <literal>1</literal> through <literal>12</literal>.
+           (2 digit numbers higher than 12 are accepted, in which case they
+           will make the year overflow. For example using 13 means January in
+           the next year)
           </entry>
          </row>
          <row>
@@ -160,7 +180,10 @@
           <entry>12-hour format of an hour with or without leading zero</entry>
           <entry>
            <literal>1</literal> through <literal>12</literal> or
-           <literal>01</literal> through <literal>12</literal>
+           <literal>01</literal> through <literal>12</literal> (2 digit
+           numbers higher than 12 are accepted, in which case they will make
+           the day overflow. For example using <literal>14</literal> means
+           <literal>02</literal> in the next AM/PM period)
           </entry>
          </row>
          <row>
@@ -177,12 +200,22 @@
          <row>
           <entry><literal>i</literal></entry>
           <entry>Minutes with leading zeros</entry>
-          <entry><literal>00</literal> to <literal>59</literal></entry>
+          <entry>
+           <literal>00</literal> to <literal>59</literal>. (2 digit
+           numbers higher than 59 are accepted, in which case they will make
+           the hour overflow. For example using <literal>66</literal> means
+           <literal>:06</literal> the next hour)
+          </entry>
          </row>
          <row>
           <entry><literal>s</literal></entry>
           <entry>Seconds, with leading zeros</entry>
-          <entry><literal>00</literal> through <literal>59</literal></entry>
+          <entry>
+           <literal>00</literal> through <literal>59</literal> (2 digit
+           numbers higher than 59 are accepted, in which case they will make
+           the minute overflow. For example using <literal>90</literal> means
+           <literal>:30</literal> the next minute)
+          </entry>
          </row>
          <row>
           <entry><literal>v</literal></entry>
@@ -451,6 +484,7 @@ Format: i; 2022-06-02 00:15:00
 ]]>
    </screen>
   </example>
+
   <example>
    <title>Format string with literal characters</title>
    <programlisting role="php">
@@ -466,6 +500,54 @@ echo DateTimeImmutable::createFromFormat('H\h i\m s\s','23h 15m 03s')->format('H
 23:15:03
 ]]>
    </screen>
+  </example>
+
+  <example>
+   <title>Overflow behaviour</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+echo DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2021-17-35 16:60:97')->format(DateTimeImmutable::RFC2822);
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+Sat, 04 Jun 2022 17:01:37 +0000
+]]>
+   </screen>
+   <para>
+    Although the result looks odd, it is correct, as the following overflows
+    happen:
+   </para>
+   <orderedlist>
+    <listitem>
+     <simpara>
+      <literal>97</literal> seconds overflows to <literal>1</literal> minute,
+      leaving <literal>37</literal> seconds.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      <literal>61</literal> minutes overflows to <literal>1</literal> hour,
+      leaving <literal>1</literal> minutes.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      <literal>35</literal> days overflows to <literal>1</literal> month,
+      leaving <literal>4</literal> days. The amount of days that are left over
+      depends on the month, as not every month has the same amount of days.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      <literal>18</literal> months overflows to <literal>1</literal> year,
+      leaving <literal>6</literal> months.
+     </simpara>
+    </listitem>
+   </orderedlist>
   </example>
  </refsect1>
 
