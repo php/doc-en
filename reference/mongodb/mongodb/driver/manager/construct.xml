@@ -714,7 +714,31 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           <entry><type>array</type></entry>
           <entry>
            <para>
-            Provides options to enable automatic client-side field level encryption.
+            Provides options to enable automatic client-side field level
+            encryption.
+           </para>
+           <note>
+            <para>
+             Automatic encryption is an enterprise-only feature that only
+             applies to operations on a collection. Automatic encryption is not
+             supported for operations on a database or view, and operations that
+             are not bypassed will result in error (see
+             <link xlink:href="https://github.com/mongodb/specifications/blob/master/source/client-side-encryption/client-side-encryption.rst#libmongocrypt-auto-encryption-allow-list">libmongocrypt: Auto Encryption Allow-List</link>). To bypass automatic encryption
+             for all operations, set <literal>bypassAutoEncryption</literal> to
+             &true;.
+            </para>
+            <para>
+             Automatic encryption requires the authenticated user to have the
+             <link xlink:href="&url.mongodb.docs;reference/command/listCollections/#required-access">listCollections</link>
+             privilege action.
+            </para>
+            <para>
+             Explicit encryption/decryption and automatic decryption is a
+             community feature. The driver can still automatically decrypt when
+             <literal>bypassAutoEncryption</literal> is &true;.
+            </para>
+           </note>
+           <para>
             The following options are supported:
 
             <table>
@@ -734,10 +758,15 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
                &mongodb.option.encryption.tlsOptions;
                <row>
                 <entry>schemaMap</entry>
-                <entry><type>array</type></entry>
+                <entry><type class="union"><type>array</type><type>object</type></type></entry>
                 <entry>
                  <para>
-                  Allows specifying a local JSON schema that is used to configure encryption.
+                  Map of collection namespaces to a local JSON schema. This is
+                  used to configure automatic encryption. See
+                  <link xlink:href="&url.mongodb.docs;reference/security-client-side-automatic-json-schema/">Automatic Encryption Rules</link>
+                  in the MongoDB manual for more information. It is an error to
+                  specify a collection in both <literal>schemaMap</literal> and
+                  <literal>encryptedFieldsMap</literal>.
                  </para>
                  <note>
                   <simpara>
@@ -762,9 +791,46 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
                 <entry>bypassAutoEncryption</entry>
                 <entry><type>bool</type></entry>
                 <entry>
-                 With this option set to &true;, <literal>mongocryptd</literal>
-                 will not be spawned automatically. This is used to disable
-                 automatic encryption. Defaults to &false;.
+                 If &true;, <literal>mongocryptd</literal> will not be spawned
+                 automatically. This is used to disable automatic encryption.
+                 Defaults to &false;.
+                </entry>
+               </row>
+               <row>
+                <entry>bypassQueryAnalysis</entry>
+                <entry><type>bool</type></entry>
+                <entry>
+                 If &true;, automatic analysis of outgoing commands will be
+                 disabled and <literal>mongocryptd</literal> will not be spawned
+                 automatically. This enables the use case of explicit encryption
+                 for querying indexed fields without requiring the enterprise
+                 licensed <literal>crypt_shared</literal> library or
+                 <literal>mongocryptd</literal> process. Defaults to &false;.
+                </entry>
+               </row>
+               <row>
+                <entry>encryptedFieldsMap</entry>
+                <entry><type class="union"><type>array</type><type>object</type></type></entry>
+                <entry>
+                 <para>
+                  Map of collection namespaces to an
+                  <literal>encryptedFields</literal> document. This is used to
+                  configure queryable encryption. See
+                  <link xlink:href="https://www.mongodb.com/docs/v6.0/core/queryable-encryption/fundamentals/encrypt-and-query/">Field Encryption and Queryability</link>
+                  in the MongoDB manual for more information. It is an error to
+                  specify a collection in both
+                  <literal>encryptedFieldsMap</literal> and
+                  <literal>schemaMap</literal>.
+                 </para>
+                 <note>
+                  <simpara>
+                   Supplying an <literal>encryptedFieldsMap</literal> provides
+                   more security than relying on an encrypted fields 
+                   <literal>encryptedFields</literal> obtained from the server.
+                   It protects against a malicious server advertising a false
+                   <literal>encryptedFields</literal>.
+                  </simpara>
+                 </note>
                 </entry>
                </row>
                <row>
@@ -776,16 +842,14 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
                   <literal>mongocryptd</literal> process. The following options
                   are supported:
                  </para>
-                 <programlisting role="javascript">
-<![CDATA[
-<provider>: {
-    mongocryptdURI: <optional string>, // Defaults to "mongodb://localhost:27027"
-    mongocryptdBypassSpawn: <optional string>, // Defaults to false
-    mongocryptdSpawnPath: <optional string>, // Defaults to empty string and uses default system paths
-    mongocryptdSpawnArgs: <optional array of strings> // Defaults to [ "--idleShutdownTimeoutSecs=60" ]
-}
-]]>
-                 </programlisting>
+                 <simplelist>
+                  <member><literal>mongocryptdURI</literal> (<type>string</type>): URI to connect to an existing <literal>mongocryptd</literal> process. Defaults to <literal>"mongodb://localhost:27020"</literal>.</member>
+                  <member><literal>mongocryptdBypassSpawn</literal> (<type>bool</type>): If &true;, prevent the driver from spawning <literal>mongocryptd</literal>. Defaults to &false;.</member>
+                  <member><literal>mongocryptdSpawnPath</literal> (<type>string</type>): Absolute path to search for <literal>mongocryptd</literal> binary. Defaults to empty string and consults system paths.</member>
+                  <member><literal>mongocryptdSpawnArgs</literal> (<type>array</type>): Array of string arguments to pass to <literal>mongocryptd</literal> when spawning. Defaults to <literal>["--idleShutdownTimeoutSecs=60"]</literal>.</member>
+                  <member><literal>cryptSharedLibPath</literal> (<type>string</type>): Absolute path to <literal>crypt_shared</literal> shared library. Defaults to empty string and consults system paths.</member>
+                  <member><literal>cryptSharedLibRequired</literal> (<type>bool</type>): If &true;, require the driver to load <literal>crypt_shared</literal>. Defaults to &false;.</member>
+                 </simplelist>
                  <para>
                   See the <link xlink:href="&url.mongodb.specs;/blob/master/source/client-side-encryption/client-side-encryption.rst#extraoptions">Client-Side Encryption Specification</link> for more information.
                  </para>
@@ -1009,6 +1073,18 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
       </row>
      </thead>
      <tbody>
+      <row>
+       <entry>PECL mongodb 1.14.0</entry>
+       <entry>
+        <para>
+         Added the <literal>"bypassQueryAnalysis"</literal> and
+         <literal>"encryptedFieldsMap"</literal> auto encryption options.
+         Additional options pertaining to <literal>crypt_shared</literal> are
+         now supported in the <literal>"extraOptions"</literal> auto encryption
+         option.
+        </para>
+       </entry>
+      </row>
       <row>
        <entry>PECL mongodb 1.13.0</entry>
        <entry>
