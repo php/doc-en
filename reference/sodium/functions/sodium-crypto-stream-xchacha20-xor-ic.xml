@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<refentry xml:id="function.sodium-crypto-stream-xchacha20-xor" xmlns="http://docbook.org/ns/docbook">
+<refentry xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="function.sodium-crypto-stream-xchacha20-xor-ic">
  <refnamediv>
-  <refname>sodium_crypto_stream_xchacha20_xor</refname>
+  <refname>sodium_crypto_stream_xchacha20_xor_ic</refname>
   <refpurpose>Encrypts a message using a nonce and a secret key (no authentication)</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <type>string</type><methodname>sodium_crypto_stream_xchacha20_xor</methodname>
+   <type>string</type><methodname>sodium_crypto_stream_xchacha20_xor_ic</methodname>
    <methodparam><type>string</type><parameter>message</parameter></methodparam>
    <methodparam><type>string</type><parameter>nonce</parameter></methodparam>
+   <methodparam><type>int</type><parameter>counter</parameter></methodparam>
    <methodparam><type>string</type><parameter>key</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Encrypts a <parameter>message</parameter> using a <parameter>nonce</parameter>
-   and a secret <parameter>key</parameter> (no authentication).
+   The function is similar to <function>crypto_stream_xchacha20_xor</function>
+   but adds the ability to set the initial value of the block counter to a non-zero value.
+   This permits direct access to any block without having to compute the previous ones.
   </para>
 
   <caution>
@@ -26,7 +28,6 @@
     or <function>sodium_crypto_auth</function>.
    </para>
   </caution>
-  
  </refsect1>
 
  <refsect1 role="parameters">
@@ -49,6 +50,14 @@
     </listitem>
    </varlistentry>
    <varlistentry>
+    <term><parameter>counter</parameter></term>
+    <listitem>
+     <para>
+      The initial value of the block counter.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
     <term><parameter>key</parameter></term>
     <listitem>
      <para>
@@ -62,15 +71,49 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Encrypted message.
+   Returns the plaintext on success, &return.falseforfailure;.
   </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title><function>sodium_crypto_stream_xchacha20_xor_ic</function> example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$n2 = random_bytes(SODIUM_CRYPTO_STREAM_XCHACHA20_NONCEBYTES);
+$left  = str_repeat("\x01", 64);
+$right = str_repeat("\xfe", 64);
+
+// All at once:
+$stream7_unified = sodium_crypto_stream_xchacha20_xor($left . $right, $n2, $key);
+
+// Piecewise, with initial counter:
+$stream7_left  = sodium_crypto_stream_xchacha20_xor_ic($left, $n2, 0, $key);
+$stream7_right = sodium_crypto_stream_xchacha20_xor_ic($right, $n2, 1, $key);
+$stream7_concat = $stream7_left . $stream7_right;
+
+var_dump(strlen($stream7_concat));
+var_dump($stream7_unified === $stream7_concat);
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+int(128)
+bool(true)
+]]>
+   </screen>
+  </example>
  </refsect1>
 
  <refsect1 role="seealso">
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>sodium_crypto_stream_xchacha20_xor_ic</function></member>
+    <member><function>crypto_stream_xchacha20_xor</function></member>
    </simplelist>
   </para>
  </refsect1>
