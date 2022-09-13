@@ -42,7 +42,7 @@
       <function>date</function> can be used.
      </para>
      <para>
-      ALl fields are initialised with the current date/time. In most cases you
+      All fields are initialised with the current date/time. In most cases you
       would want to reset these to "zero" (the Unix epoch, <literal>1970-01-01
       00:00:00 UTC</literal>). You do that by including the
       <literal>!</literal> character as first character in your
@@ -66,6 +66,14 @@
       on the amount of digits. The date/time parser's overflow mechanism is
       used when out-of-range values are given. The examples below show some of
       this behaviour.
+     </para>
+     <para>
+      This also means that the data parsed for a format letter is greedy, and
+      will read up to the amount of digits its format allows for. That can
+      then also mean that there are
+      longer enough characters in the <parameter>datetime</parameter> string
+      for following format characters. An example on this page also
+      illustrates this issue.
      </para>
      <para>
       <table>
@@ -660,6 +668,65 @@ array(4) {
 }
 ]]>
    </screen>
+  </example>
+
+  <example>
+   <title>Greedy parsing behaviour</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+print_r(date_parse_from_format('Gis', '60101'));
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+Array
+(
+    [year] =>
+    [month] =>
+    [day] =>
+    [hour] => 60
+    [minute] => 10
+    [second] => 0
+    [fraction] => 0
+    [warning_count] => 1
+    [warnings] => Array
+        (
+            [5] => The parsed time was invalid
+        )
+
+    [error_count] => 1
+    [errors] => Array
+        (
+            [4] => A two digit second could not be found
+        )
+
+    [is_localtime] =>
+)
+]]>
+   </screen>
+   <para>
+    The <literal>G</literal> format is to parse 24 hour clock hours, with or
+    without leading zero. This requires to parse 1 or 2 digits. Because there
+    are two following digits, it greedily reads this as <literal>60</literal>.
+   </para>
+   <para>
+    The following <literal>i</literal> and <literal>s</literal> format
+    characters both require two digits. This means that <literal>10</literal>
+    is passed as minute (<literal>i</literal>), and that there are then not
+    enough digits left to parse for as second (<literal>s</literal>).
+   </para>
+   <para>
+    The <literal>errors</literal> array indicates this problem.
+   </para>
+   <para>
+    Additionally, an hour of <literal>60</literal> is outside the range
+    <literal>0</literal>-<literal>24</literal>, which causes the
+    <literal>warnings</literal> array to include a warning that the time is
+    invalid.
+   </para>
   </example>
 
  </refsect1>
