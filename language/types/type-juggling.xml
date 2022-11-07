@@ -131,7 +131,7 @@
   </simpara>
  </sect2>
 
- <sect2>
+ <sect2 xml:id="language.types.type-juggling.function">
   <title>Function contexts</title>
 
   <simpara>
@@ -140,9 +140,26 @@
   </simpara>
 
   <para>
-   In this context, when coercive typing mode is active (the default),
-   only scalar values may be converted to another scalar value.
-   For simple types declarations the behaviour is as follows:
+   In this context the value must be a value of the type.
+   Two exceptions exist, the first one is: if the value is of type
+   <type>int</type> and the declared type is <type>float</type>, then the
+   integer is converted to a floating point number.
+   The second one is: if the value and the declared type are
+   <emphasis>scalar</emphasis> types, and the coercive typing mode is active
+   (the default), the value may be converted to an accepted scalar valued.
+   See below for a description of this behaviour.
+  </para>
+
+  <warning>
+   <simpara>
+    <link linkend="functions.internal">Internal functions</link>
+    automatically coerce &null; to scalar types,
+    this behaviour is <emphasis>DEPRECATED</emphasis> as of PHP 8.1.0.
+   </simpara>
+  </warning>
+
+  <sect3 xml:id="language.types.type-juggling.function.simple">
+   <title>Coercive typing with simple type declarations</title>
    <itemizedlist>
     <listitem>
      <simpara>
@@ -169,18 +186,93 @@
      </simpara>
     </listitem>
    </itemizedlist>
+  </sect3>
 
-   If the type declaration is a union, see the section about
-   <link linkend="language.types.declarations.union.coercive">Coercive typing with union types</link>.
-  </para>
+  <sect3 xml:id="language.types.type-juggling.function.union">
+   <title>Coercive typing with union types</title>
+   <para>
+    When <literal>strict_types</literal> is not enabled, scalar type declarations
+    are subject to limited implicit type coercions.
+    If the exact type of the value is not part of the union, then the target type
+    is chosen in the following order of preference:
 
-  <warning>
-   <simpara>
-    <link linkend="functions.internal">Internal functions</link>
-    automatically coerce &null; to scalar types,
-    this behaviour is <emphasis>DEPRECATED</emphasis> as of PHP 8.1.0.
-   </simpara>
-  </warning>
+    <orderedlist>
+     <listitem>
+      <simpara>
+       <type>int</type>
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <type>float</type>
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <type>string</type>
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <type>bool</type>
+      </simpara>
+     </listitem>
+    </orderedlist>
+
+    If the type both exists in the union, and the value can be coerced to the
+    type under PHPs existing type checking semantics, then the type is chosen.
+    Otherwise, the next type is tried.
+   </para>
+
+   <caution>
+    <para>
+     As an exception, if the value is a string and both int and float are part
+     of the union, the preferred type is determined by the existing
+     “numeric string” semantics.
+     For example, for <literal>"42"</literal> <type>int</type> is chosen,
+     while for <literal>"42.0"</literal> <type>float</type> is chosen.
+    </para>
+   </caution>
+
+   <note>
+    <para>
+     Types that are not part of the above preference list are not eligible
+     targets for implicit coercion. In particular no implicit coercions to
+     the <literal>null</literal> and <literal>false</literal> types occur.
+    </para>
+   </note>
+
+   <example>
+    <title>Example of types being coerced into a type part of the union</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// int|string
+42    --> 42          // exact type
+"42"  --> "42"        // exact type
+new ObjectWithToString --> "Result of __toString()"
+                      // object never compatible with int, fall back to string
+42.0  --> 42          // float compatible with int
+42.1  --> 42          // float compatible with int
+1e100 --> "1.0E+100"  // float too large for int type, fall back to string
+INF   --> "INF"       // float too large for int type, fall back to string
+true  --> 1           // bool compatible with int
+[]    --> TypeError   // array not compatible with int or string
+
+// int|float|bool
+"45"    --> 45        // int numeric string
+"45.0"  --> 45.0      // float numeric string
+
+"45X"   --> true      // not numeric string, fall back to bool
+""      --> false     // not numeric string, fall back to bool
+"X"     --> true      // not numeric string, fall back to bool
+[]      --> TypeError // array not compatible with int, float or bool
+?>
+]]>
+    </programlisting>
+   </example>
+  </sect3>
+
  </sect2>
 
  <sect2 xml:id="language.types.typecasting">
