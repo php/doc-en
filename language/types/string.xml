@@ -684,11 +684,11 @@ EOT;
   </sect3>
 
   <sect3 xml:id="language.types.string.parsing">
-   <title>Variable parsing</title>
+   <title>Variable substitution</title>
 
    <simpara>
     When a <type>string</type> is specified in double quotes or with heredoc,
-    <link linkend="language.variables">variables</link> are parsed within it.
+    <link linkend="language.variables">variables</link> can be substituted within it.
    </simpara>
 
    <simpara>
@@ -700,17 +700,12 @@ EOT;
     property in a <type>string</type> with a minimum of effort.
    </simpara>
 
-   <simpara>
-    The advanced syntax can be recognised by the
-    curly braces surrounding the expression.
-   </simpara>
-
    <sect4 xml:id="language.types.string.parsing.basic">
     <title>Basic syntax</title>
-
     <simpara>
-     If a dollar sign (<literal>$</literal>) is encountered, the parser will
-     consume as many characters as possible to form a valid variable name.
+     If a dollar sign (<literal>$</literal>) is encountered, the characters
+     that follow it which can be used in a variable name will be interpreted
+     as such and substituted.
     </simpara>
     <informalexample>
      <programlisting role="php">
@@ -732,51 +727,46 @@ He drank some apple juice.
     </informalexample>
 
     <simpara>
-     As any valid character for a variable name is used to form the name of
-     the variable to look up, it is possible to enclose the variable name in
-     curly braces to explicitly specify the end of the name.
+     Formally, the structure for the basic variable substitution syntax is
+     as follows:
     </simpara>
     <informalexample>
-     <programlisting role="php">
+     <programlisting>
 <![CDATA[
-<?php
-$juice = "apple";
+string-variable::
+     variable-name   (offset-or-property)?
+   | ${   expression   }
 
-// Unintended. "s" is a valid character for a variable name, so this refers to $juices, not $juice.
-echo "He drank some juice made of $juices." . PHP_EOL;
+offset-or-property::
+     offset-in-string
+   | property-in-string
 
-// Explicitly specify the end of the variable name by enclosing the reference in braces.
-echo "He drank some juice made of {$juice}s.";
+offset-in-string::
+     [   name   ]
+   | [   variable-name   ]
+   | [   integer-literal   ]
 
-?>
+property-in-string::
+     ->  name
+
+variable-name::
+     $   name
+
+name::
+     [a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*
+
 ]]>
      </programlisting>
-     &example.outputs.82;
-     <screen>
-<![CDATA[
-Deprecated: Using ${var} in strings is deprecated, use {$var} instead in file on line 8
-
-Warning: Undefined variable $juices in file on line 5
-He drank some juice made of .
-He drank some juice made of apples.
-]]>
-     </screen>
-     &example.outputs.8;
-     <screen>
-<![CDATA[
-Warning: Undefined variable $juices in file on line 5
-He drank some juice made of .
-He drank some juice made of apples.
-]]>
-     </screen>
     </informalexample>
+
     <warning>
      <para>
-      This syntax is deprecated as of PHP 8.2.0, as it can be interpreted as
+      The <literal>${ expression }</literal> syntax is deprecated as of
+      PHP 8.2.0, as it can be interpreted as
       <link linkend="language.variables.variable">variable variables</link>:
       <informalexample>
        <programlisting role="php">
-  <![CDATA[
+<![CDATA[
 <?php
 const foo = 'bar';
 $foo = 'foo';
@@ -788,7 +778,7 @@ var_dump("${(foo)}");
        </programlisting>
        &example.outputs.82;
        <screen>
-  <![CDATA[
+<![CDATA[
 Deprecated: Using ${var} in strings is deprecated, use {$var} instead in file on line 6
 
 Deprecated: Using ${expr} (variable variables) in strings is deprecated, use {${expr}} instead in file on line 9
@@ -798,7 +788,7 @@ string(3) "bar"
        </screen>
        &example.outputs;
        <screen>
-  <![CDATA[
+<![CDATA[
 string(3) "foo"
 string(3) "bar"
 ]]>
@@ -812,7 +802,7 @@ string(3) "bar"
     <note>
      <simpara>
       If it is not possible to form a valid name the dollar sign remains
-      in the string:
+      as verbatim in the string:
      </simpara>
      <informalexample>
       <programlisting role="php">
@@ -836,14 +826,8 @@ No interpolation $2 has happened
      </informalexample>
     </note>
 
-    <simpara>
-     Moreover, the basic syntax permits access to the first, and only the first,
-     dimension of an array by using array indices (<literal>[]</literal>).
-     The key, must be an unquoted literal value.
-    </simpara>
-
     <example>
-     <title>Interpolating the value of the first dimension of an array with the basic syntax</title>
+     <title>Interpolating the value of the first dimension of an array or property</title>
      <programlisting role="php">
 <![CDATA[
 <?php
@@ -854,6 +838,15 @@ echo PHP_EOL;
 echo "He drank some $juices[1] juice.";
 echo PHP_EOL;
 echo "He drank some $juices[string_key] juice.";
+echo PHP_EOL;
+
+class A {
+    public $s = "string";
+}
+
+$o = new A();
+
+echo "Object value: $o->s.";
 ?>
 ]]>
      </programlisting>
@@ -863,40 +856,15 @@ echo "He drank some $juices[string_key] juice.";
 He drank some apple juice.
 He drank some orange juice.
 He drank some purple juice.
+Object value: string.
 ]]>
      </screen>
     </example>
 
-    <warning>
-     <para>
-      The basic syntax does not permit access to an array entry which has a key
-      containing a minus (<literal>-</literal>) sign.
-      Attempting to do will result in a parse error. The
-      <link linkend="language.types.string.parsing.advanced">advanced</link>
-      syntax must be used instead.
-      <informalexample>
-       <programlisting role="php">
-<![CDATA[
-<?php
-$a = ["string-key" => "value"];
-echo "Array value: $a[string-key]";
-?>
-]]>
-       </programlisting>
-       &example.outputs.similar;
-       <screen>
-<![CDATA[
-Parse error: syntax error, unexpected token "-", expecting "]" in file on line 3
-]]>
-       </screen>
-      </informalexample>
-     </para>
-    </warning>
-
     <note>
      <simpara>
-      Because the array key is unquoted, it is not possible to refer to a
-      constant with the basic syntax. Use the
+      The array key must be unquoted, and it is therefore not possible to
+      refer to a constant as a key with the basic syntax. Use the
       <link linkend="language.types.string.parsing.advanced">advanced</link>
       syntax instead.
      </simpara>
@@ -923,79 +891,6 @@ echo "Changing the character at index -3 to o gives $string.", PHP_EOL;
 <![CDATA[
 The character at index -2 is n.
 Changing the character at index -3 to o gives strong.
-]]>
-     </screen>
-    </example>
-
-    <simpara>
-     Similarly, it is possible to interpolate a non-static property of an
-     object. And it is impossible access a nested property.
-    </simpara>
-    <example>
-     <title>Interpolating the value of non-static property with the basic syntax</title>
-     <programlisting role="php">
-<![CDATA[
-<?php
-class A {
-    public $s = "string";
-}
-
-$o = new A();
-
-echo "Object value: $o->s.";
-?>
-]]>
-     </programlisting>
-     &example.outputs;
-     <screen>
-<![CDATA[
-Object value: string.
-]]>
-     </screen>
-    </example>
-
-    <example>
-     <title>Non-example demonstrating the impossibility to access nested or static properties</title>
-     <programlisting role="php">
-<![CDATA[
-<?php
-class A {
-    public static $bar = 'bar';
-}
-$a = new A();
-echo "Property $a::bar";
-?>
-]]>
-     </programlisting>
-     &example.outputs.similar;
-     <screen>
-<![CDATA[
-Fatal error: Uncaught Error: Object of class A could not be converted to string
-]]>
-     </screen>
-     <programlisting role="php">
-<![CDATA[
-<?php
-class A {
-    public $foo = 'foo';
-    public static $bar = 'bar';
-}
-class B {
-    public $o;
-}
-
-$a = new A();
-$b = new B();
-$b->o = $a;
-
-echo "Property $b->o->foo";
-?>
-]]>
-     </programlisting>
-     &example.outputs.similar;
-     <screen>
-<![CDATA[
-Fatal error: Uncaught Error: Object of class A could not be converted to string
 ]]>
      </screen>
     </example>
