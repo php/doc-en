@@ -65,6 +65,12 @@
      <row>
       <entry>8.1.0</entry>
       <entry>
+       Returning by reference from a <type>void</type> function is now deprecated.
+      </entry>
+     </row>
+     <row>
+      <entry>8.1.0</entry>
+      <entry>
        Support for the return only type <type>never</type> has been added.
       </entry>
      </row>
@@ -116,30 +122,35 @@
  </sect2>
 
  <sect2 xml:id="language.types.declarations.base">
-  <title>Base Types</title>
+  <title>Base Types Usage Notes</title>
+
+  <simpara>
+   Base types have straight forward behaviour with some minor caveats which
+   are described in this section.
+  </simpara>
 
   <sect3 xml:id="language.types.declarations.base.scalar">
    <title>Scalar types</title>
    <warning>
     <para>
-     Name aliases for scalar types are not supported.
+     Name aliases for scalar types (<type>bool</type>, <type>int</type>,
+     <type>float</type>, <type>string</type>) are not supported.
      Instead, they are treated as class or interface names.
      For example, using <literal>boolean</literal> as a type declaration
      will require the value to be an &instanceof; the class or interface
      <literal>boolean</literal>, rather than of type <type>bool</type>:
     </para>
-    <para>
-     <example>
-      <programlisting role="php">
+    <example>
+     <programlisting role="php">
 <![CDATA[
 <?php
     function test(boolean $param) {}
     test(true);
 ?>
 ]]>
-      </programlisting>
-      &example.outputs.8;
-      <screen>
+     </programlisting>
+     &example.outputs.8;
+     <screen>
 <![CDATA[
 Warning: "boolean" will be interpreted as a class name. Did you mean "bool"? Write "\boolean" to suppress this warning in /in/9YrUX on line 2
 
@@ -149,9 +160,8 @@ Stack trace:
 #1 {main}
   thrown in - on line 2
 ]]>
-      </screen>
-     </example>
-    </para>
+     </screen>
+    </example>
    </warning>
   </sect3>
 
@@ -191,120 +201,41 @@ function &test(): void {}
    </note>
   </sect3>
 
-  <sect3 xml:id="language.types.declarations.examples">
-   &reftitle.examples;
+  <sect3 xml:id="language.types.declarations.references">
+   <title>Type declarations on pass-by-reference Parameters</title>
+
+   <simpara>
+    If a pass-by-reference parameter has a type declaration, the type of the
+    variable is <emphasis>only</emphasis> checked on function entry, at the
+    beginning of the call, but not when the function returns.
+    This means that a function can change the type of variable reference.
+   </simpara>
    <example>
-    <title>Basic class type declaration</title>
+    <title>Typed pass-by-reference Parameters</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-class C {}
-class D extends C {}
-
-// This doesn't extend C.
-class E {}
-
-function f(C $c) {
-    echo get_class($c)."\n";
+function array_baz(array &$param)
+{
+    $param = 1;
 }
-
-f(new C);
-f(new D);
-f(new E);
+$var = [];
+array_baz($var);
+var_dump($var);
+array_baz($var);
 ?>
 ]]>
     </programlisting>
-    &example.outputs.8;
+    &example.outputs.similar;
     <screen>
 <![CDATA[
-C
-D
+int(1)
 
-Fatal error: Uncaught TypeError: f(): Argument #1 ($c) must be of type C, E given, called in /in/gLonb on line 14 and defined in /in/gLonb:8
+Fatal error: Uncaught TypeError: array_baz(): Argument #1 ($param) must be of type array, int given, called in - on line 9 and defined in -:2
 Stack trace:
-#0 -(14): f(Object(E))
+#0 -(9): array_baz(1)
 #1 {main}
-  thrown in - on line 8
-]]>
-    </screen>
-   </example>
-
-   <example>
-    <title>Basic interface type declaration</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-interface I { public function f(); }
-class C implements I { public function f() {} }
-
-// This doesn't implement I.
-class E {}
-
-function f(I $i) {
-    echo get_class($i)."\n";
-}
-
-f(new C);
-f(new E);
-?>
-]]>
-    </programlisting>
-    &example.outputs.8;
-    <screen>
-<![CDATA[
-C
-
-Fatal error: Uncaught TypeError: f(): Argument #1 ($i) must be of type I, E given, called in - on line 13 and defined in -:8
-Stack trace:
-#0 -(13): f(Object(E))
-#1 {main}
-  thrown in - on line 8
-]]>
-    </screen>
-   </example>
-
-   <example>
-    <title>Basic return type declaration</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-function sum($a, $b): float {
-    return $a + $b;
-}
-
-// Note that a float will be returned.
-var_dump(sum(1, 2));
-?>
-]]>
-    </programlisting>
-    &example.outputs;
-    <screen>
-<![CDATA[
-float(3)
-]]>
-    </screen>
-   </example>
-
-   <example>
-    <title>Returning an object</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-class C {}
-
-function getC(): C {
-    return new C;
-}
-
-var_dump(getC());
-?>
-]]>
-    </programlisting>
-    &example.outputs;
-    <screen>
-<![CDATA[
-object(C)#1 (0) {
-}
+  thrown in - on line 2
 ]]>
     </screen>
    </example>
@@ -312,10 +243,10 @@ object(C)#1 (0) {
  </sect2>
 
  <sect2 xml:id="language.types.declarations.composite">
-  <title>Composite types</title>
+  <title>Composite Types Usage Notes</title>
   <para>
    Composite type declarations are subject to a couple of restrictions and
-   posses a compile time redundancy check to prevent simple bugs.
+   will perform a redundancy check at compile time to prevent simple bugs.
   </para>
 
   <caution>
@@ -361,54 +292,13 @@ object(C)#1 (0) {
      </simpara>
     </note>
 
-    <example>
-     <title>Nullable argument type declaration</title>
-     <programlisting role="php">
-<![CDATA[
-<?php
-class C {}
-
-function f(?C $c) {
-    var_dump($c);
-}
-
-f(new C);
-f(null);
-?>
-]]>
-     </programlisting>
-     &example.outputs;
-     <screen>
-<![CDATA[
-object(C)#1 (0) {
-}
-NULL
-]]>
-     </screen>
-    </example>
-
-    <example>
-     <title>Nullable return type declaration</title>
-     <programlisting role="php">
-<![CDATA[
-<?php
-function get_item(): ?string {
-    if (isset($_GET['item'])) {
-        return $_GET['item'];
-    } else {
-        return null;
-    }
-}
-?>
-]]>
-     </programlisting>
-    </example>
-
     <note>
      <para>
       It is also possible to achieve nullable arguments by making
       <literal>null</literal> the default value.
-      This is not recommended as this breaks during inheritance.
+      This is not recommended as if the default value is changed in a child
+      class a type compatibility violation will be raised as the
+      <type>null</type> type will need to be added to the type declaration.
      </para>
      <example>
       <title>Old way to make arguments nullable</title>
@@ -556,6 +446,168 @@ function foo(): X&Y {} // Allowed (redundancy is only known at runtime)
   </sect3>
  </sect2>
 
+ <sect2 xml:id="language.types.declarations.examples">
+  &reftitle.examples;
+  <example>
+   <title>Basic class type declaration</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class C {}
+class D extends C {}
+
+// This doesn't extend C.
+class E {}
+
+function f(C $c) {
+    echo get_class($c)."\n";
+}
+
+f(new C);
+f(new D);
+f(new E);
+?>
+]]>
+   </programlisting>
+   &example.outputs.8;
+   <screen>
+<![CDATA[
+C
+D
+
+Fatal error: Uncaught TypeError: f(): Argument #1 ($c) must be of type C, E given, called in /in/gLonb on line 14 and defined in /in/gLonb:8
+Stack trace:
+#0 -(14): f(Object(E))
+#1 {main}
+  thrown in - on line 8
+]]>
+   </screen>
+  </example>
+
+  <example>
+   <title>Basic interface type declaration</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+interface I { public function f(); }
+class C implements I { public function f() {} }
+
+// This doesn't implement I.
+class E {}
+
+function f(I $i) {
+    echo get_class($i)."\n";
+}
+
+f(new C);
+f(new E);
+?>
+]]>
+   </programlisting>
+   &example.outputs.8;
+   <screen>
+<![CDATA[
+C
+
+Fatal error: Uncaught TypeError: f(): Argument #1 ($i) must be of type I, E given, called in - on line 13 and defined in -:8
+Stack trace:
+#0 -(13): f(Object(E))
+#1 {main}
+  thrown in - on line 8
+]]>
+   </screen>
+  </example>
+
+  <example>
+   <title>Basic return type declaration</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+function sum($a, $b): float {
+    return $a + $b;
+}
+
+// Note that a float will be returned.
+var_dump(sum(1, 2));
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+float(3)
+]]>
+   </screen>
+  </example>
+
+  <example>
+   <title>Returning an object</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class C {}
+
+function getC(): C {
+    return new C;
+}
+
+var_dump(getC());
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+object(C)#1 (0) {
+}
+]]>
+   </screen>
+  </example>
+
+  <example>
+   <title>Nullable argument type declaration</title>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+class C {}
+
+function f(?C $c) {
+    var_dump($c);
+}
+
+f(new C);
+f(null);
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+    <![CDATA[
+object(C)#1 (0) {
+}
+NULL
+]]>
+   </screen>
+  </example>
+
+  <example>
+   <title>Nullable return type declaration</title>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+function get_item(): ?string {
+    if (isset($_GET['item'])) {
+        return $_GET['item'];
+    } else {
+        return null;
+    }
+}
+?>
+]]>
+   </programlisting>
+  </example>
+ </sect2>
+
   <!-- TODO Move this into its own declare page -->
  <sect2 xml:id="language.types.declarations.strict">
   <title>Strict typing</title>
@@ -688,45 +740,6 @@ Stack trace:
 ]]>
    </screen>
   </example>
- </sect2>
-
-<!-- TODO figure out what do to with these things -->
- <sect2 xml:id="language.types.declarations.misc">
-  <title>Misc</title>
-   <example>
-    <title>Typed pass-by-reference Parameters</title>
-    <simpara>
-     Declared types of reference parameters are checked on function entry, but
-     not when the function returns, so after the function had returned, the
-     argument's type may have changed.
-    </simpara>
-    <programlisting role="php">
-<![CDATA[
-<?php
-function array_baz(array &$param)
-{
-    $param = 1;
-}
-$var = [];
-array_baz($var);
-var_dump($var);
-array_baz($var);
-?>
-]]>
-    </programlisting>
-    &example.outputs.8;
-    <screen>
-<![CDATA[
-int(1)
-
-Fatal error: Uncaught TypeError: array_baz(): Argument #1 ($param) must be of type array, int given, called in - on line 9 and defined in -:2
-Stack trace:
-#0 -(9): array_baz(1)
-#1 {main}
-  thrown in - on line 2
-]]>
-    </screen>
-   </example>
  </sect2>
 
 </sect1>
