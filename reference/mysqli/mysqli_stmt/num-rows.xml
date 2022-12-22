@@ -5,32 +5,30 @@
   <refname>mysqli_stmt::$num_rows</refname>
   <refname>mysqli_stmt::num_rows</refname>
   <refname>mysqli_stmt_num_rows</refname>
-  <refpurpose>Return the number of rows in statements result set</refpurpose>
+  <refpurpose>Returns the number of rows fetched from the server</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <para>&style.oop;</para>
-  <fieldsynopsis><type>int</type><varname linkend="mysqli-stmt.num-rows">mysqli_stmt-&gt;num_rows</varname></fieldsynopsis>
-  <methodsynopsis role="oop">
+  <fieldsynopsis><type class="union"><type>int</type><type>string</type></type><varname linkend="mysqli-stmt.num-rows">mysqli_stmt-&gt;num_rows</varname></fieldsynopsis>
+  <methodsynopsis role="mysqli_stmt">
    <modifier>public</modifier> <type class="union"><type>int</type><type>string</type></type><methodname>mysqli_stmt::num_rows</methodname>
    <void/>
   </methodsynopsis>
   <para>&style.procedural;</para>
-  <methodsynopsis role="procedural">
+  <methodsynopsis>
    <type class="union"><type>int</type><type>string</type></type><methodname>mysqli_stmt_num_rows</methodname>
    <methodparam><type>mysqli_stmt</type><parameter>statement</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Returns the number of rows in the result set.
-   The use of <function>mysqli_stmt_num_rows</function>
-   depends on whether or not you used
-   <function>mysqli_stmt_store_result</function> to buffer the entire result
-   set in the statement handle.
+   Returns the number of rows buffered in the statement. This function will only
+   work after <function>mysqli_stmt_store_result</function> is called to buffer
+   the entire result set in the statement handle.
   </para>
   <para>
-   If you use <function>mysqli_stmt_store_result</function>,
-   <function>mysqli_stmt_num_rows</function> may be called immediately.
+   This function returns <literal>0</literal> unless all rows have been
+   fetched from the server.
   </para>
  </refsect1>
 
@@ -46,8 +44,11 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   An integer representing the number of rows in result set.
+   An &integer; representing the number of buffered rows.
+   Returns <literal>0</literal> in unbuffered mode unless all rows have been
+   fetched from the server.
   </para>
+  &mysqli.integer.overflow.as.string.note;
  </refsect1>
 
  <refsect1 role="examples">
@@ -57,33 +58,18 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-/* Open a connection */
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
 $query = "SELECT Name, CountryCode FROM City ORDER BY Name LIMIT 20";
-if ($stmt = $mysqli->prepare($query)) {
+$stmt = $mysqli->prepare($query);
+$stmt->execute();
 
-    /* execute query */
-    $stmt->execute();
+/* store the result in an internal buffer */
+$stmt->store_result();
 
-    /* store result */
-    $stmt->store_result();
-
-    printf("Number of rows: %d.\n", $stmt->num_rows);
-
-    /* close statement */
-    $stmt->close();
-}
-
-/* close connection */
-$mysqli->close();
-?>
+printf("Number of rows: %d.\n", $stmt->num_rows);
 ]]>
    </programlisting>
   </example>
@@ -92,33 +78,18 @@ $mysqli->close();
    <programlisting role="php">
 <![CDATA[
 <?php
-/* Open a connection */
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
 $query = "SELECT Name, CountryCode FROM City ORDER BY Name LIMIT 20";
-if ($stmt = mysqli_prepare($link, $query)) {
+$stmt = mysqli_prepare($link, $query);
+mysqli_stmt_execute($stmt);
 
-    /* execute query */
-    mysqli_stmt_execute($stmt);
+/* store the result in an internal buffer */
+mysqli_stmt_store_result($stmt);
 
-    /* store result */
-    mysqli_stmt_store_result($stmt);
-
-    printf("Number of rows: %d.\n", mysqli_stmt_num_rows($stmt));
-
-    /* close statement */
-    mysqli_stmt_close($stmt);
-}
-
-/* close connection */
-mysqli_close($link);
-?>
+printf("Number of rows: %d.\n", mysqli_stmt_num_rows($stmt));
 ]]>
    </programlisting>
    &examples.outputs;
@@ -134,9 +105,9 @@ Number of rows: 20.
   &reftitle.seealso;
   <para>
    <simplelist>
+    <member><function>mysqli_stmt_store_result</function></member>
     <member><function>mysqli_stmt_affected_rows</function></member>
     <member><function>mysqli_prepare</function></member>
-    <member><function>mysqli_stmt_store_result</function></member>
    </simplelist>
   </para>
  </refsect1>

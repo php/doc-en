@@ -203,8 +203,7 @@ function yesno($expression)
     return($expression ? 'Yes' : 'No');
 }
 
-// Get the path to php.ini using the php_ini_loaded_file() 
-// function available as of PHP 5.2.4
+// Get the path to php.ini using the php_ini_loaded_file() function
 $ini_path = php_ini_loaded_file();
 
 // Parse php.ini
@@ -228,10 +227,10 @@ echo '(loaded) magic_quotes_gpc = ' . yesno(get_cfg_var('magic_quotes_gpc')) . P
   </para>
   <para>
    <example>
-    <title>value interpolation</title>
+    <title>Value Interpolation</title>
     <para>
      In addition to evaluating constants, certain characters have special meaning in an ini value.
-     Additionally, environment variables and previously defined values may be read using
+     Additionally, environment variables and previously defined configuration options (see <function>get_cfg_var</function>) may be read using
      <code>${}</code> syntax.
     </para>
     <programlisting>
@@ -251,22 +250,67 @@ negative_two = ~1
 ; () is used for grouping
 seven = (8|7)&(6|5)
 
-; \ is used to escape a value.
-newline_is = "\\n" ; results in the string "\n", not a newline character.
-with quotes = "She said \"Exactly my point\"." ; Results in a string with quote marks in it.
-
+; Interpolate the PATH environment variable
 path = ${PATH}
-also_five = ${five}
+
+; Interpolate the configuration option 'memory_limit'
+configured_memory_limit = ${memory_limit}
 
 ]]>
     </programlisting>
-    &example.outputs.similar;
-    <screen>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Escaping Characters</title>
+    <para>
+     Some characters have special meaning in double-quoted strings and must be escaped by the backslash prefix.
+     First of all, these are the double quote <code>"</code> as the boundary marker, and the backslash <code>\</code> itself
+     (if followed by one of the special characters):
+    </para>
+    <programlisting>
 <![CDATA[
-(parsed) magic_quotes_gpc = Yes
-(loaded) magic_quotes_gpc = Yes
+quoted = "She said \"Exactly my point\"." ; Results in a string with quote marks in it.
+hint = "Use \\\" to escape double quote" ; Results in: Use \" to escape double quote
 ]]>
-    </screen>
+    </programlisting>
+    <para>
+     There is an exception made for Windows-like paths: it's possible to not escape trailing backslash
+     if the quoted string is directly followed by a linebreak:
+    </para>
+    <programlisting>
+<![CDATA[
+save_path = "C:\Temp\"
+]]>
+    </programlisting>
+    <para>
+     If one does need to escape double quote followed by linebreak in a multiline value,
+     it's possible to use value concatenation in the following way
+     (there is one double-quoted string directly followed by another one):
+    </para>
+    <programlisting>
+<![CDATA[
+long_text = "Lorem \"ipsum\"""
+ dolor" ; Results in: Lorem "ipsum"\n dolor
+]]>
+    </programlisting>
+    <para>
+     Another character with special meaning is <code>$</code> (the dollar sign).
+     It must be escaped if followed by the open curly brace:
+    </para>
+    <programlisting>
+<![CDATA[
+code = "\${test}"
+]]>
+    </programlisting>
+    <para>
+     Escaping characters is not supported in the <constant>INI_SCANNER_RAW</constant> mode
+     (in this mode all characters are processed "as is").
+    </para>
+    <para>
+     Note that the ini parser doesn't support standard escape sequences (<code>\n</code>, <code>\t</code>, etc.).
+     If necessary, post-process the result of <function>parse_ini_file</function> with <function>stripcslashes</function> function.
+    </para>
    </example>
   </para>
  </refsect1>
@@ -296,7 +340,7 @@ also_five = ${five}
     Values <literal>null</literal>, <literal>off</literal>, <literal>no</literal> and
     <literal>false</literal> result in <literal>""</literal>, and values
     <literal>on</literal>, <literal>yes</literal> and <literal>true</literal> result
-    in <literal>"1"</literal>, unless <constant>INI_SCANNER_TYPED</constant> mode is used (as of PHP 5.6.1).
+    in <literal>"1"</literal>, unless <constant>INI_SCANNER_TYPED</constant> mode is used.
     Characters <literal>?{}|&amp;~!()^"</literal> must not be used anywhere in
     the key and have a special meaning in the value.
    </simpara>

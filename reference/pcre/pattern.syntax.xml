@@ -461,11 +461,11 @@
     </varlistentry>
     <varlistentry>
      <term><emphasis>\h</emphasis></term>
-     <listitem><simpara>any horizontal whitespace character (since PHP 5.2.4)</simpara></listitem>
+     <listitem><simpara>any horizontal whitespace character</simpara></listitem>
     </varlistentry>
     <varlistentry>
      <term><emphasis>\H</emphasis></term>
-     <listitem><simpara>any character that is not a horizontal whitespace character (since PHP 5.2.4)</simpara></listitem>
+     <listitem><simpara>any character that is not a horizontal whitespace character</simpara></listitem>
     </varlistentry>
     <varlistentry>
      <term><emphasis>\s</emphasis></term>
@@ -477,11 +477,11 @@
     </varlistentry>
     <varlistentry>
      <term><emphasis>\v</emphasis></term>
-     <listitem><simpara>any vertical whitespace character (since PHP 5.2.4)</simpara></listitem>
+     <listitem><simpara>any vertical whitespace character</simpara></listitem>
     </varlistentry>
     <varlistentry>
      <term><emphasis>\V</emphasis></term>
-     <listitem><simpara>any character that is not a vertical whitespace character (since PHP 5.2.4)</simpara></listitem>
+     <listitem><simpara>any character that is not a vertical whitespace character</simpara></listitem>
     </varlistentry>
     <varlistentry>
      <term><emphasis>\w</emphasis></term>
@@ -600,12 +600,16 @@
    regexp metacharacters in the pattern. For example:
    <literal>\w+\Q.$.\E$</literal> will match one or more word characters,
    followed by literals <literal>.$.</literal> and anchored at the end of
-   the string.
+   the string. Note that this does not change the behavior of 
+   delimiters; for instance the pattern <literal>#\Q#\E#$</literal>
+   is not valid, because the second <literal>#</literal> marks the end
+   of the pattern, and the <literal>\E#</literal> is interpreted as invalid
+   modifiers.
   </para>
 
   <para>
-   <literal>\K</literal> can be used to reset the match start since
-   PHP 5.2.4. For example, the pattern <literal>foo\Kbar</literal> matches
+   <literal>\K</literal> can be used to reset the match start. 
+   For example, the pattern <literal>foo\Kbar</literal> matches
    "foobar", but reports that it has matched "bar". The use of
    <literal>\K</literal> does not interfere with the setting of captured
    substrings. For example, when the pattern <literal>(foo)\Kbar</literal>
@@ -1277,7 +1281,7 @@
   <para>
    In UTF-8 mode, characters with values greater than 128 do not match any
    of the POSIX character classes.
-   As of PHP 5.3.0 and libpcre 8.10 some character classes are changed to use
+   As of libpcre 8.10 some character classes are changed to use
    Unicode character properties, in which case the mentioned restriction does
    not apply. Refer to the <link xlink:href="&url.pcre.man;">PCRE(3) manual</link>
    for details.
@@ -1490,7 +1494,7 @@
    It is possible to name a subpattern using the syntax
    <literal>(?P&lt;name&gt;pattern)</literal>. This subpattern will then
    be indexed in the matches array by its normal numeric position and
-   also by name. PHP 5.2.2 introduced two alternative syntaxes
+   also by name. There are two alternative syntaxes
    <literal>(?&lt;name&gt;pattern)</literal> and <literal>(?'name'pattern)</literal>.
   </para>
 
@@ -1727,7 +1731,7 @@
    A "forward back reference" can make sense when a repetition
    is involved and the subpattern to the right has participated
    in an earlier iteration. See the section
-   entitled "Backslash" above for further details of  the  handling
+   <link linkend="regexp.reference.escape">escape sequences</link> for further details of  the  handling
    of digits following a backslash.
   </para>
   <para>
@@ -1782,7 +1786,7 @@
    example above, or by a quantifier with a minimum of zero.
   </para>
   <para>
-   As of PHP 5.2.2, the <literal>\g</literal> escape sequence can be
+   The <literal>\g</literal> escape sequence can be
    used for absolute and relative referencing of subpatterns.
    This escape sequence must be followed by an unsigned number or a negative
    number, optionally enclosed in braces. The sequences <literal>\1</literal>,
@@ -1803,11 +1807,10 @@
   </para>
   <para>
    Back references to the named subpatterns can be achieved by
-   <literal>(?P=name)</literal> or, since PHP 5.2.2, also by
-   <literal>\k&lt;name&gt;</literal> or <literal>\k'name'</literal>.
-   Additionally PHP 5.2.4 added support for <literal>\k{name}</literal>
-   and <literal>\g{name}</literal>, and PHP 5.2.7 for
-   <literal>\g&lt;name&gt;</literal> and <literal>\g'name'</literal>.
+   <literal>(?P=name)</literal>,
+   <literal>\k&lt;name&gt;</literal>, <literal>\k'name'</literal>,
+   <literal>\k{name}</literal>, <literal>\g{name}</literal>,
+   <literal>\g&lt;name&gt;</literal> or <literal>\g'name'</literal>.
   </para>
  </section>
 
@@ -2157,6 +2160,41 @@
    option is set, an unescaped # character outside  a character class
    introduces a comment that continues up to the next newline character
    in the pattern.
+  </para>
+  <para>
+   <example>
+    <title>Usage of comments in PCRE pattern</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$subject = 'test';
+
+/* (?# can be used to add comments without enabling PCRE_EXTENDED */
+$match = preg_match('/te(?# this is a comment)st/', $subject);
+var_dump($match);
+
+/* Whitespace and # is treated as part of the pattern unless PCRE_EXTENDED is enabled */
+$match = preg_match('/te   #~~~~
+st/', $subject);
+var_dump($match);
+
+/* When PCRE_EXTENDED is enabled, all whitespace data characters and anything
+   that follows an unescaped # on the same line is ignored */
+$match = preg_match('/te    #~~~~
+st/x', $subject);
+var_dump($match);
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+int(1)
+int(0)
+int(1)
+]]>
+    </screen>
+   </example>
   </para>
  </section>
 

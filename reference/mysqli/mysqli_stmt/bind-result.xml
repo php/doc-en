@@ -10,7 +10,7 @@
  <refsect1 role="description">
   &reftitle.description;
   <para>&style.oop;</para>
-  <methodsynopsis role="oop">
+  <methodsynopsis role="mysqli_stmt">
    <modifier>public</modifier> <type>bool</type><methodname>mysqli_stmt::bind_result</methodname>
    <methodparam><type>mixed</type><parameter role="reference">var</parameter></methodparam>
    <methodparam rep="repeat"><type>mixed</type><parameter role="reference">vars</parameter></methodparam>
@@ -18,7 +18,7 @@
   <para>&style.procedural;</para>
   <methodsynopsis>
    <type>bool</type><methodname>mysqli_stmt_bind_result</methodname>
-   <methodparam><type>mysqli_stmt</type><parameter>stmt</parameter></methodparam>
+   <methodparam><type>mysqli_stmt</type><parameter>statement</parameter></methodparam>
    <methodparam><type>mixed</type><parameter role="reference">var</parameter></methodparam>
    <methodparam rep="repeat"><type>mixed</type><parameter role="reference">vars</parameter></methodparam>
   </methodsynopsis>
@@ -30,20 +30,31 @@
    MySQL client/server protocol places the data for the bound columns into
    the specified variables <parameter>var</parameter>/<parameter>vars</parameter>.
   </para>
+  <para>
+   A column can be bound or rebound at any time, even after a result set has
+   been partially retrieved. The new binding takes effect the next time 
+   <function>mysqli_stmt_fetch</function> is called.
+  </para>
   <note>
    <para>
-    Note that all columns must be bound after 
+    All columns must be bound after 
     <function>mysqli_stmt_execute</function> and prior to calling
     <function>mysqli_stmt_fetch</function>.
+   </para>
+  </note>
+  <note>
+   <para>
     Depending on column types bound variables can silently change to the
     corresponding PHP type.
    </para>
-   <para>
-    A column can be bound or rebound at any time, even after a result set has
-    been partially retrieved. The new binding takes effect the next time 
-    <function>mysqli_stmt_fetch</function> is called.
-   </para>
   </note>
+  <tip>
+   <para>
+    This functions is useful for simple results. To retrieve iterable result
+    set, or fetch each row as an array or object,
+    use <function>mysqli_stmt_get_result</function>.
+   </para>
+  </tip>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -85,32 +96,21 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
 /* prepare statement */
-if ($stmt = $mysqli->prepare("SELECT Code, Name FROM Country ORDER BY Name LIMIT 5")) {
-    $stmt->execute();
+$stmt = $mysqli->prepare("SELECT Code, Name FROM Country ORDER BY Name LIMIT 5");
+$stmt->execute();
 
-    /* bind variables to prepared statement */
-    $stmt->bind_result($col1, $col2);
+/* bind variables to prepared statement */
+$stmt->bind_result($col1, $col2);
 
-    /* fetch values */
-    while ($stmt->fetch()) {
-        printf("%s %s\n", $col1, $col2);
-    }
-
-    /* close statement */
-    $stmt->close();
+/* fetch values */
+while ($stmt->fetch()) {
+    printf("%s %s\n", $col1, $col2);
 }
-/* close connection */
-$mysqli->close();
-
-?>
 ]]>
    </programlisting>
   </example>
@@ -119,36 +119,24 @@ $mysqli->close();
    <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (!$link) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
 /* prepare statement */
-if ($stmt = mysqli_prepare($link, "SELECT Code, Name FROM Country ORDER BY Name LIMIT 5")) {
-    mysqli_stmt_execute($stmt);
+$stmt = mysqli_prepare($link, "SELECT Code, Name FROM Country ORDER BY Name LIMIT 5");
+mysqli_stmt_execute($stmt);
 
-    /* bind variables to prepared statement */
-    mysqli_stmt_bind_result($stmt, $col1, $col2);
+/* bind variables to prepared statement */
+mysqli_stmt_bind_result($stmt, $col1, $col2);
 
-    /* fetch values */
-    while (mysqli_stmt_fetch($stmt)) {
-        printf("%s %s\n", $col1, $col2);
-    }
-
-    /* close statement */
-    mysqli_stmt_close($stmt);
+/* fetch values */
+while (mysqli_stmt_fetch($stmt)) {
+    printf("%s %s\n", $col1, $col2);
 }
-
-/* close connection */
-mysqli_close($link);
-?>
 ]]>
    </programlisting>
-   &examples.outputs;
+   &examples.outputs.similar;
    <screen>
 <![CDATA[
 AFG Afghanistan
@@ -171,15 +159,11 @@ AND Andorra
     <member><function>mysqli_stmt_fetch</function></member>
     <member><function>mysqli_prepare</function></member>
     <member><function>mysqli_stmt_prepare</function></member>
-    <member><function>mysqli_stmt_init</function></member>
-    <member><function>mysqli_stmt_errno</function></member>
-    <member><function>mysqli_stmt_error</function></member>
    </simplelist>
   </para>
  </refsect1>
 
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

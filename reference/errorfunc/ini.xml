@@ -30,9 +30,11 @@
     </row>
     <row>
      <entry><link linkend="ini.display-startup-errors">display_startup_errors</link></entry>
-     <entry>"0"</entry>
+     <entry>"1"</entry>
      <entry>PHP_INI_ALL</entry>
-     <entry></entry>
+     <entry>
+       Prior to PHP 8.0.0, the default value was <literal>"0"</literal>.
+     </entry>
     </row>
     <row>
      <entry><link linkend="ini.log-errors">log_errors</link></entry>
@@ -68,7 +70,7 @@
      <entry><link linkend="ini.track-errors">track_errors</link></entry>
      <entry>"0"</entry>
      <entry>PHP_INI_ALL</entry>
-     <entry>Deprecated as of PHP 7.2.0.</entry>
+     <entry>Deprecated as of PHP 7.2.0, removed as of PHP 8.0.0.</entry>
     </row>
     <row>
      <entry><link linkend="ini.html-errors">html_errors</link></entry>
@@ -119,6 +121,12 @@
      <entry></entry>
     </row>
     <row>
+     <entry><link linkend="ini.error-log-mode">error_log_mode</link></entry>
+     <entry>0o644</entry>
+     <entry>PHP_INI_ALL</entry>
+     <entry>Available as of PHP 8.2.0</entry>
+    </row>
+    <row>
      <entry><link linkend="ini.syslog.facility">syslog.facility</link></entry>
      <entry>"LOG_USER"</entry>
      <entry>PHP_INI_SYSTEM</entry>
@@ -162,45 +170,18 @@
       <link linkend="ini.display-errors">display_errors</link> directive.
      </para>
      <para>
-      PHP 5.3 or later, the default value
-      is <constant>E_ALL</constant> &amp;
-      ~<constant>E_NOTICE</constant> &amp;
-      ~<constant>E_STRICT</constant> &amp;
-      ~<constant>E_DEPRECATED</constant>. This setting does not
-      show <constant>E_NOTICE</constant>, <constant>E_STRICT</constant>
-      and <constant>E_DEPRECATED</constant> level errors. You may want
-      to show them during development. 
-      Prior to PHP 5.3.0, the default value
-      is <constant>E_ALL</constant> &amp;
-      ~<constant>E_NOTICE</constant> &amp;
-      ~<constant>E_STRICT</constant>.
+      The default value is <constant>E_ALL</constant>.
      </para>
-     <note>
-      <para>Enabling <constant>E_NOTICE</constant> during development has
-      some benefits. For debugging purposes: NOTICE messages will warn you
-      about possible bugs in your code. For example, use of unassigned values
-      is warned. It is extremely useful to find typos and
-      to save time for debugging. NOTICE messages will warn you about bad style.
-      For example, <literal>$arr[item]</literal> is better to be written as
-      <literal>$arr['item']</literal> since PHP tries to treat
-      <literal>"item"</literal> as constant. If it is not a constant, PHP assumes
-      it is a string index for the array.
-      </para>
-     </note>
-     <note>
-      <para>
-       Prior to PHP 5.4.0 <constant>E_STRICT</constant> was not included within
-       <constant>E_ALL</constant>, so you would have to explicitly enable this kind of
-       error level in PHP &lt; 5.4.0. Enabling <constant>E_STRICT</constant> during development
-       has some benefits. STRICT messages provide suggestions that can help
-       ensure the best interoperability and forward compatibility of your code.
-       These messages may include things such as calling non-static methods
-       statically, defining properties in a compatible class definition while
-       defined in a used trait, and prior to PHP 5.3 some deprecated features
-       would issue <constant>E_STRICT</constant> errors such as assigning
-       objects by reference upon instantiation.
-      </para>
-     </note>
+     <para>
+      Prior to PHP 8.0.0, the default value was:
+      <userinput><constant>E_ALL</constant> &amp;
+       ~<constant>E_NOTICE</constant> &amp;
+       ~<constant>E_STRICT</constant> &amp;
+       ~<constant>E_DEPRECATED</constant></userinput>.
+      This means diagnostics of level <constant>E_NOTICE</constant>,
+      <constant>E_STRICT</constant> and <constant>E_DEPRECATED</constant>
+      were not shown.
+     </para>
      <note>
       <title>PHP Constants outside of PHP</title>
       <para>
@@ -229,8 +210,7 @@
      </para>
      <para>
       Value <literal>"stderr"</literal> sends the errors to <literal>stderr</literal>
-      instead of <literal>stdout</literal>. The value is available as of PHP
-      5.2.4. In earlier versions, this directive was of type <type>bool</type>.
+      instead of <literal>stdout</literal>.
      </para>
      <note>
       <para>
@@ -467,6 +447,8 @@
     <listitem>
      <para>
       String to output before an error message.
+      Only used when the error message is displayed on screen. The main purpose
+      is to be able to prepend additional HTML markup to the error message.
      </para>
     </listitem>
    </varlistentry>
@@ -479,6 +461,8 @@
     <listitem>
      <para>
       String to output after an error message.
+      Only used when the error message is displayed on screen. The main purpose
+      is to be able to append additional HTML markup to the error message.
      </para>
     </listitem>
    </varlistentry>
@@ -500,6 +484,19 @@
       For example, it is an error log in Apache or <literal>stderr</literal>
       in CLI.
       See also <function>error_log</function>.
+     </para>
+    </listitem>
+   </varlistentry>
+
+   <varlistentry xml:id="ini.error-log-mode">
+    <term>
+     <parameter>error_log_mode</parameter>
+     <type>int</type>
+    </term>
+    <listitem>
+     <para>
+      File mode for the file described set in
+      <link linkend="ini.error-log">error_log</link>.
      </para>
     </listitem>
    </varlistentry>
@@ -526,21 +523,39 @@
      <para>
       Specifies the filter type to filter the logged messages. Allowed
       characters are passed unmodified; all others are written in their
-      hexadecimal representation prefixed with <literal>\x</literal>. There are
-      three supported filter types:
+      hexadecimal representation prefixed with <literal>\x</literal>. 
       <itemizedlist>
        <listitem>
-        <simpara><literal>all</literal> – all characters</simpara>
+        <simpara><literal>all</literal> – the logged string will be split 
+         at newline characters, and all characters are passed unaltered
+        </simpara>
        </listitem>
        <listitem>
-        <simpara><literal>no-ctrl</literal> – all characters except control characters</simpara>
+        <simpara><literal>ascii</literal> – the logged string will be split 
+         at newline characters, and any non-printable 7-bit ASCII characters will be escaped
+        </simpara>
        </listitem>
        <listitem>
-        <simpara><literal>ascii</literal> – all printable ASCII characters and <literal>NL</literal></simpara>
+        <simpara><literal>no-ctrl</literal> – the logged string will be split 
+         at newline characters, and any non-printable characters will be escaped
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara><literal>raw</literal> – all characters are passed to the system 
+         logger unaltered, without splitting at newlines (identical to PHP before 7.3)
+        </simpara>
        </listitem>
       </itemizedlist>
-      Only effective if <link linkend="ini.error-log">error_log</link> is set to "syslog".
+      This setting will affect logging via <link linkend="ini.error-log">error_log</link> set to "syslog" and calls to <function>syslog</function>.
      </para>
+     <note>
+      <para>
+       The <literal>raw</literal> filter type is available as of PHP 7.3.8 and PHP 7.4.0.
+      </para>
+     </note>
+     <simpara>
+      This directive is not supported on Windows.
+     </simpara>
     </listitem>
    </varlistentry>
 

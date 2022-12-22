@@ -17,12 +17,14 @@
   <para>
    <function>array_map</function> returns an &array; containing
    the results of applying the <parameter>callback</parameter>
-   to the corresponding index of <parameter>array</parameter>
+   to the corresponding value of <parameter>array</parameter>
    (and <parameter>arrays</parameter> if more arrays are provided)
    used as arguments for the callback.
    The number of parameters that the <parameter>callback</parameter>
    function accepts should match the number of arrays
-   passed to <function>array_map</function>.
+   passed to <function>array_map</function>. Excess
+   input arrays are ignored. An <classname>ArgumentCountError</classname>
+   is thrown if an insufficient number of arguments is provided.
   </para>
  </refsect1>
 
@@ -69,7 +71,7 @@
   &reftitle.returnvalues;
   <para>
    Returns an array containing the results of applying the <parameter>callback</parameter>
-   function to the corresponding index of <parameter>array</parameter>
+   function to the corresponding value of <parameter>array</parameter>
    (and <parameter>arrays</parameter> if more arrays are provided)
    used as arguments for the callback.
   </para>
@@ -78,6 +80,23 @@
    if exactly one array is passed. If more than one array is passed, the
    returned array will have sequential integer keys.
   </para>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     &array.changelog.by-ref;
+    </tbody>
+   </tgroup>
+  </informaltable>
  </refsect1>
 
  <refsect1 role="examples">
@@ -118,15 +137,20 @@ Array
   </para>
   <para>
    <example>
-    <title><function>array_map</function> using a lambda function (as of PHP 5.3.0)</title>
+    <title><function>array_map</function> using a lambda function</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-$func = function($value) {
+$func = function(int $value): int {
     return $value * 2;
 };
 
 print_r(array_map($func, range(1, 5)));
+
+// Or as of PHP 7.4.0:
+
+print_r(array_map(fn($value): int => $value * 2, range(1, 5)));
+
 ?>
 ]]>
     </programlisting>
@@ -150,12 +174,12 @@ Array
     <programlisting role="php">
 <![CDATA[
 <?php
-function show_Spanish($n, $m)
+function show_Spanish(int $n, string $m): string
 {
     return "The number {$n} is called {$m} in Spanish";
 }
 
-function map_Spanish($n, $m)
+function map_Spanish(int $n, string $m): array
 {
     return [$n => $m];
 }
@@ -370,6 +394,44 @@ array(1) {
     [1]=>
     string(5) "value"
   }
+}
+]]>
+    </screen>
+   </example>
+   <example>
+    <title><function>array_map</function> - associative arrays</title>
+    <para>
+     While <function>array_map</function> does not directly support
+     using the array key as an input, that may be simulated using <function>array_keys</function>.
+    </para>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$arr = [
+    'v1' => 'First release',
+    'v2' => 'Second release',
+    'v3' => 'Third release',
+];
+
+// Note: Before 7.4.0, use the longer syntax for anonymous functions instead.
+$callback = fn(string $k, string $v): string => "$k was the $v";
+
+$result = array_map($callback, array_keys($arr), array_values($arr));
+
+var_dump($result);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(3) {
+  [0]=>
+  string(24) "v1 was the First release"
+  [1]=>
+  string(25) "v2 was the Second release"
+  [2]=>
+  string(24) "v3 was the Third release"
 }
 ]]>
     </screen>

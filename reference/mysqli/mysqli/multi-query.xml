@@ -4,18 +4,18 @@
  <refnamediv>
   <refname>mysqli::multi_query</refname>
   <refname>mysqli_multi_query</refname>
-  <refpurpose>Performs a query on the database</refpurpose>
+  <refpurpose>Performs one or more queries on the database</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <para>&style.oop;</para>
-  <methodsynopsis role="oop">
+  <methodsynopsis role="mysqli">
    <modifier>public</modifier> <type>bool</type><methodname>mysqli::multi_query</methodname>
    <methodparam><type>string</type><parameter>query</parameter></methodparam>
   </methodsynopsis>
   <para>&style.procedural;</para>
-  <methodsynopsis role="procedural">
+  <methodsynopsis>
    <type>bool</type><methodname>mysqli_multi_query</methodname>
    <methodparam><type>mysqli</type><parameter>mysql</parameter></methodparam>
    <methodparam><type>string</type><parameter>query</parameter></methodparam>
@@ -24,11 +24,46 @@
    Executes one or multiple queries which are concatenated by a semicolon.
   </para>
   <para>
-   To retrieve the resultset from the first query you can use
-   <function>mysqli_use_result</function> or <function>mysqli_store_result</function>.
-   All subsequent query results can be processed using
-   <function>mysqli_more_results</function> and <function>mysqli_next_result</function>.
+   Queries are sent asynchronously in a single call to the database, but the
+   database processes them sequentially.
+   <methodname>mysqli_multi_query</methodname> waits for the first query to
+   complete before returning control to PHP. The MySQL server will then process
+   the next query in the sequence. Once the next result is ready, MySQL will wait
+   for the next execution of <function>mysqli_next_result</function> from PHP.
   </para>
+  <para>
+   It is recommended to use
+   <link linkend="control-structures.do.while">do-while</link> to process multiple
+   queries. The connection will be busy until all queries have completed and
+   their results are fetched to PHP. No other statement can be issued on the
+   same connection until all queries are processed.
+   To proceed to the next query in the sequence, use
+   <function>mysqli_next_result</function>. If the next result is not ready yet,
+   mysqli will wait for the response from the MySQL server.
+   To check if there are more results,
+   use <function>mysqli_more_results</function>.
+  </para>
+  <para>
+   For queries which produce a result set, such as
+   <literal>SELECT, SHOW, DESCRIBE</literal> or
+   <literal>EXPLAIN</literal>,
+   <function>mysqli_use_result</function> or <function>mysqli_store_result</function>
+   can be used to retrieve the result set. For queries which do not produce a
+   result set, the same functions can be used to retrieve information such as
+   the number of affected rows.
+  </para>
+  <tip>
+   <para>
+    Executing <literal>CALL</literal> statements for stored procedures can
+    produce multiple result sets. If the stored procedure contains
+    <literal>SELECT</literal> statements, the result sets are returned in the
+    order that they are produced as the procedure executes. In general, the
+    caller cannot know how many result sets a procedure will return and must be
+    prepared to retrieve multiple results. The final result from the procedure
+    is a status result that includes no result set. The status indicates whether
+    the procedure succeeded or an error occurred.
+   </para>
+  </tip>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -40,11 +75,10 @@
      <term><parameter>query</parameter></term>
      <listitem>
       <para>
-       The query, as a string.
+       A string containing the queries to be executed.
+       Multiple queries must be separated by a semicolon.
       </para>
-      <para>
-       Data inside the query should be <link linkend="mysqli.real-escape-string">properly escaped</link>.
-      </para>
+      &mysqli.sqlinjection.warning;
      </listitem>
     </varlistentry>
    </variablelist>
@@ -68,74 +102,54 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
-$query  = "SELECT CURRENT_USER();";
+$query = "SELECT CURRENT_USER();";
 $query .= "SELECT Name FROM City ORDER BY ID LIMIT 20, 5";
 
 /* execute multi query */
-if ($mysqli->multi_query($query)) {
-    do {
-        /* store first result set */
-        if ($result = $mysqli->store_result()) {
-            while ($row = $result->fetch_row()) {
-                printf("%s\n", $row[0]);
-            }
-            $result->free();
+$mysqli->multi_query($query);
+do {
+    /* store the result set in PHP */
+    if ($result = $mysqli->store_result()) {
+        while ($row = $result->fetch_row()) {
+            printf("%s\n", $row[0]);
         }
-        /* print divider */
-        if ($mysqli->more_results()) {
-            printf("-----------------\n");
-        }
-    } while ($mysqli->next_result());
-}
-
-/* close connection */
-$mysqli->close();
-?>
+    }
+    /* print divider */
+    if ($mysqli->more_results()) {
+        printf("-----------------\n");
+    }
+} while ($mysqli->next_result());
 ]]>
    </programlisting>
    <para>&style.procedural;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
-$query  = "SELECT CURRENT_USER();";
+$query = "SELECT CURRENT_USER();";
 $query .= "SELECT Name FROM City ORDER BY ID LIMIT 20, 5";
 
 /* execute multi query */
-if (mysqli_multi_query($link, $query)) {
-    do {
-        /* store first result set */
-        if ($result = mysqli_store_result($link)) {
-            while ($row = mysqli_fetch_row($result)) {
-                printf("%s\n", $row[0]);
-            }
-            mysqli_free_result($result);
+mysqli_multi_query($link, $query);
+do {
+    /* store the result set in PHP */
+    if ($result = mysqli_store_result($link)) {
+        while ($row = mysqli_fetch_row($result)) {
+            printf("%s\n", $row[0]);
         }
-        /* print divider */
-        if (mysqli_more_results($link)) {
-            printf("-----------------\n");
-        }
-    } while (mysqli_next_result($link));
-}
-
-/* close connection */
-mysqli_close($link);
-?>
+    }
+    /* print divider */
+    if (mysqli_more_results($link)) {
+        printf("-----------------\n");
+    }
+} while (mysqli_next_result($link));
 ]]>
    </programlisting>
    &examples.outputs.similar;

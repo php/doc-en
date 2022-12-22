@@ -54,8 +54,13 @@
     Operators of equal precedence that are non-associative cannot be used
     next to each other, for example <literal>1 &lt; 2 &gt; 1</literal> is
     illegal in PHP. The expression <literal>1 &lt;= 1 == 1</literal> on the
-    other hand is legal, because the <literal>==</literal> operator has lesser
+    other hand is legal, because the <literal>==</literal> operator has a lower
     precedence than the <literal>&lt;=</literal> operator.
+   </para>
+   <para>
+    Associativity is only meaningful for binary (and ternary) operators.
+    Unary operators are either prefix or postfix so this notion is not applicable.
+    For example <literal>!!$a</literal> can only be grouped as <literal>!(!$a)</literal>.
    </para>
    <para>
     Use of parentheses, even when not strictly necessary, can often increase
@@ -93,6 +98,8 @@
        <row>
         <entry>(n/a)</entry>
         <entry>
+         <literal>+</literal> 
+         <literal>-</literal> 
          <literal>++</literal> 
          <literal>--</literal> 
          <literal>~</literal> 
@@ -105,14 +112,18 @@
          <literal>@</literal>
         </entry>
         <entry>
-         <link linkend="language.types">types</link> and <link linkend="language.operators.increment">increment/decrement</link>
+         <link linkend="language.operators.arithmetic">arithmetic</link> (unary <literal>+</literal> and <literal>-</literal>),
+         <link linkend="language.operators.increment">increment/decrement</link>,
+         <link linkend="language.operators.bitwise">bitwise</link>,
+         <link linkend="language.types.typecasting">type casting</link>&listendand;
+         <link linkend="language.operators.errorcontrol">error control</link>
         </entry>
        </row>
        <row>
         <entry>left</entry>
         <entry><literal>instanceof</literal></entry>
         <entry>
-         <link linkend="language.types">types</link>
+         <link linkend="language.operators.type">type</link>
         </entry>
        </row>
        <row>
@@ -141,8 +152,10 @@
          <literal>.</literal>
         </entry>
         <entry>
-         <link linkend="language.operators.arithmetic">arithmetic</link>&listendand;
-         <link linkend="language.operators.string">string</link></entry>
+         <link linkend="language.operators.arithmetic">arithmetic</link> (binary <literal>+</literal> and <literal>-</literal>),
+         <link linkend="language.operators.array">array</link>&listendand;
+         <link linkend="language.operators.string">string</link> (<literal>.</literal> prior to PHP 8.0.0)
+        </entry>
        </row>
        <row>
         <entry>left</entry>
@@ -152,6 +165,13 @@
         </entry>
         <entry>
          <link linkend="language.operators.bitwise">bitwise</link>
+        </entry>
+       </row>
+       <row>
+        <entry>left</entry>
+        <entry><literal>.</literal></entry>
+        <entry>
+         <link linkend="language.operators.string">string</link> (as of PHP 8.0.0)
         </entry>
        </row>
        <row>
@@ -223,10 +243,11 @@
         </entry>
        </row>
        <row>
-        <entry>(n/a)</entry>
+        <entry>non-associative</entry>
         <entry><literal>? :</literal></entry>
         <entry>
          <link linkend="language.operators.comparison.ternary">ternary</link>
+         (left-associative prior to PHP 8.0.0)
         </entry>
        </row>
        <row>
@@ -303,7 +324,7 @@
 <?php
 $a = 3 * 3 % 5; // (3 * 3) % 5 = 4
 // ternary operator associativity differs from C/C++
-$a = true ? 0 : true ? 1 : 2; // (true ? 0 : true) ? 1 : 2 = 2
+$a = true ? 0 : true ? 1 : 2; // (true ? 0 : true) ? 1 : 2 = 2 (prior to PHP 8.0.0)
 
 $a = 1;
 $b = 2;
@@ -335,14 +356,14 @@ $array[$i] = $i++; // may set either index 1 or 2
      </programlisting>
     </example>
     <example>
-     <title><literal>+</literal>, <literal>-</literal> and <literal>.</literal> have the same precedence</title>
+     <title><literal>+</literal>, <literal>-</literal> and <literal>.</literal> have the same precedence (prior to PHP 8.0.0)</title>
      <programlisting role="php">
 <![CDATA[
 <?php
 $x = 4;
 // this line might result in unexpected output:
 echo "x minus one equals " . $x-1 . ", or so I hope\n";
-// because it is evaluated like this line:
+// because it is evaluated like this line (prior to PHP 8.0.0):
 echo (("x minus one equals " . $x) - 1) . ", or so I hope\n";
 // the desired precedence can be enforced by using parentheses:
 echo "x minus one equals " . ($x-1) . ", or so I hope\n";
@@ -382,8 +403,27 @@ x minus one equals 3, or so I hope
        <row>
         <entry>8.0.0</entry>
         <entry>
+         String concatenation (<literal>.</literal>) now has a lower precedence than
+         arithmetic addition/subtraction (<literal>+</literal> and <literal>-</literal>) and
+         bitwise shift left/right (<literal>&lt;&lt;</literal> and <literal>&gt;&gt;</literal>);
+         previously it had the same precedence as <literal>+</literal> and <literal>-</literal>
+         and a higher precedence than <literal>&lt;&lt;</literal> and <literal>&gt;&gt;</literal>.
+        </entry>
+       </row>
+       <row>
+        <entry>8.0.0</entry>
+        <entry>
          The ternary operator (<literal>? :</literal>) is non-associative now;
          previously it was left-associative.
+        </entry>
+       </row>
+       <row>
+        <entry>7.4.0</entry>
+        <entry>
+         Relying on the precedence of string concatenation (<literal>.</literal>) relative to
+         arithmetic addition/subtraction (<literal>+</literal> or <literal>-</literal>) or
+         bitwise shift left/right (<literal>&lt;&lt;</literal> or <literal>&gt;&gt;</literal>),
+         i.e. using them together in an unparenthesized expression, is deprecated.
         </entry>
        </row>
        <row>
@@ -469,8 +509,8 @@ x minus one equals 3, or so I hope
     integer division, see <function>intdiv</function>.
    </simpara>
    <simpara>
-    Operands of modulo are converted to integers (by stripping the decimal
-    part) before processing. For floating-point modulo, see
+    Operands of modulo are converted to <type>int</type>
+    before processing. For floating-point modulo, see
     <function>fmod</function>.
    </simpara>
    <para>
@@ -1521,22 +1561,42 @@ Expression: 0 = -4 << 62
       <programlisting role="php">
 <![CDATA[
 <?php
-var_dump(0 == "a"); // 0 == 0 -> true
-var_dump("1" == "01"); // 1 == 1 -> true
-var_dump("10" == "1e1"); // 10 == 10 -> true
-var_dump(100 == "1e2"); // 100 == 100 -> true
+var_dump(0 == "a");
+var_dump("1" == "01");
+var_dump("10" == "1e1");
+var_dump(100 == "1e2");
 
 switch ("a") {
 case 0:
     echo "0";
     break;
-case "a": // never reached because "a" is already matched with 0
+case "a":
     echo "a";
     break;
 }
 ?>
 ]]>
       </programlisting>
+      &example.outputs.7;
+      <screen>
+<![CDATA[
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+0
+]]>
+      </screen>
+      &example.outputs.8;
+      <screen>
+<![CDATA[
+bool(false)
+bool(true)
+bool(true)
+bool(true)
+a
+]]>
+      </screen>      
      </informalexample>
     </para>
    </warning>
@@ -1625,7 +1685,7 @@ echo $a <=> $b; // 1
        <entry><type>object</type></entry>
        <entry><type>object</type></entry>
        <entry>Built-in classes can define its own comparison, different classes
-        are uncomparable, same class see <link
+        are incomparable, same class see <link
         linkend="language.oop5.object-comparison">Object Comparison</link>
        </entry>
       </row>
@@ -1638,7 +1698,7 @@ echo $a <=> $b; // 1
        <entry><type>array</type></entry>
        <entry><type>array</type></entry>
        <entry>Array with fewer members is smaller, if key from operand 1 is not
-        found in operand 2 then arrays are uncomparable, otherwise - compare
+        found in operand 2 then arrays are incomparable, otherwise - compare
         value by value (see following example)</entry>
       </row>
       <row>
@@ -1673,14 +1733,13 @@ var_dump(min(-100, -10, NULL, 10, 100)); // NULL - (bool)NULL < (bool)-100 is FA
     </example>
    </para>
 
-
    <para>
     <example>
      <title>Transcription of standard array comparison</title>
      <programlisting role="php">
 <![CDATA[
 <?php
-// Arrays are compared like this with standard comparison operators
+// Arrays are compared like this with standard comparison operators as well as the spaceship operator.
 function standard_array_compare($op1, $op2)
 {
     if (count($op1) < count($op2)) {
@@ -1690,7 +1749,7 @@ function standard_array_compare($op1, $op2)
     }
     foreach ($op1 as $key => $val) {
         if (!array_key_exists($key, $op2)) {
-            return null; // uncomparable
+            return 1;
         } elseif ($val < $op2[$key]) {
             return -1;
         } elseif ($val > $op2[$key]) {
@@ -1717,6 +1776,25 @@ function standard_array_compare($op1, $op2)
      See the documentation for <type>float</type> for more information.
     </para>
    </warning>
+
+   <note>
+    <simpara>
+     Be aware that PHP's type juggling is not always obvious when comparing values of different types,
+     particularly comparing &integer;s to &boolean;s or &integer;s to &string;s. It is therefore generally
+     advisable to use <literal>===</literal> and <literal>!==</literal> comparisons rather than
+     <literal>==</literal> and <literal>!=</literal> in most cases.
+    </simpara>
+   </note>
+
+   <sect2 xml:id="language.operators.comparison.incomparable">
+    <title>Incomparable Values</title>
+    <simpara>
+     While identity comparison (<literal>===</literal> and <literal>!==</literal>)
+     can be applied to arbitrary values, the other comparison operators should only be
+     applied to comparable values. The result of comparing incomparable values is
+     undefined, and should not be relied upon.
+    </simpara>
+   </sect2>
 
    <sect2 role="seealso">
     &reftitle.seealso;
@@ -1748,7 +1826,6 @@ if (empty($_POST['action'])) {
 } else {
     $action = $_POST['action'];
 }
-
 ?>
 ]]>
       </programlisting>
@@ -1761,9 +1838,10 @@ if (empty($_POST['action'])) {
     </para>
     <para>
      It is possible to leave out the middle part of the ternary operator.
-     Expression <literal>expr1 ?: expr3</literal> returns
-     <replaceable>expr1</replaceable> if <replaceable>expr1</replaceable>
+     Expression <literal>expr1 ?: expr3</literal> evaluates to
+     the result of <replaceable>expr1</replaceable> if <replaceable>expr1</replaceable>
      evaluates to &true;, and <replaceable>expr3</replaceable> otherwise.
+     <replaceable>expr1</replaceable> is only evaluated once in this case.
     </para>
     <note>
      <simpara>
@@ -1807,12 +1885,31 @@ echo ((true ? 'true' : false) ? 't' : 'f');
       </example>
      </para>
     </note>
+    <note>
+     <para>
+      Chaining of short-ternaries (<literal>?:</literal>), however, is stable and behaves reasonably.
+      It will evaluate to the first argument that evaluates to a non-falsy value.  Note that undefined
+      values will still raise a warning.
+      <example>
+       <title>Short-ternary chaining</title>
+       <programlisting role="php">
+<![CDATA[
+<?php
+echo 0 ?: 1 ?: 2 ?: 3, PHP_EOL; //1
+echo 0 ?: 0 ?: 2 ?: 3, PHP_EOL; //2
+echo 0 ?: 0 ?: 0 ?: 3, PHP_EOL; //3
+?>
+]]>
+       </programlisting>
+      </example>
+     </para>
+    </note>
    </sect2>
    
    <sect2 xml:id="language.operators.comparison.coalesce">
     <title>Null Coalescing Operator</title>
     <para>
-     Further exists the "??" (or null coalescing) operator.
+     Another useful shorthand operator is the "??" (or null coalescing) operator.
      <example>
       <title>Assigning a default value</title>
       <programlisting role="php">
@@ -1827,7 +1924,6 @@ if (isset($_POST['action'])) {
 } else {
     $action = 'default';
 }
-
 ?>
 ]]>
       </programlisting>
@@ -1850,6 +1946,24 @@ if (isset($_POST['action'])) {
       return-by-reference function will therefore not work and a warning is
       issued.
      </simpara>
+    </note>
+    <note>
+     <para>
+      The null coalescing operator has low precedence. That means if mixing it
+      with other operators (such as string concatenation or arithmetic operators)
+      parentheses will likely be required.
+     </para>
+     <programlisting role="php">
+<![CDATA[
+<?php
+// Raises a warning that $name is undefined.
+print 'Mr. ' . $name ?? 'Anonymous';
+
+// Prints "Mr. Anonymous"
+print 'Mr. ' . ($name ?? 'Anonymous');
+?>
+]]>
+     </programlisting>
     </note>
     <note>
      <para>
@@ -1886,31 +2000,14 @@ echo $foo ?? $bar ?? $baz ?? $qux; // outputs 1
    <para>
     If a custom error handler function is set with
     <function>set_error_handler</function>, it will still be called even though
-    the diagnostic has been suppressed, as such the custom error handler should
-    call <function>error_reporting</function> and verify that the
-    <literal>@</literal> operator was used in the following way:
-
-    <informalexample>
-     <programlisting role="php">
-<![CDATA[
-<?php
-function my_error_handler($err_no, $err_msg, $filename, $linenum) {
-    if (!(error_reporting() & $err_no)) {
-        return false; // Silenced
-    }
-    // ...
-}
-?>
-]]>
-     </programlisting>
-    </informalexample>
+    the diagnostic has been suppressed.
    </para>
 
    <warning>
     <para>
-     Prior to PHP 8.0.0, the value of the severity passed to the custom error
-     handler was always <literal>0</literal> if the diagnostic was suppressed.
-     This is no longer the case as of PHP 8.0.0.
+     Prior to PHP 8.0.0, the <function>error_reporting</function> called inside the custom error handler 
+     always returned <literal>0</literal> if the error was suppressed by the <literal>@</literal> operator. 
+     As of PHP 8.0.0, it returns the value <literal>E_ERROR | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR | E_RECOVERABLE_ERROR | E_PARSE</literal>.
     </para>
    </warning>
 
@@ -2103,7 +2200,7 @@ echo "Should be 4: " . $a . "<br />\n";
     <literal>a = 'Z'; a++;</literal> turns <literal>a</literal> into <literal>'['</literal>
     (ASCII value of <literal>'Z'</literal> is 90, ASCII value of <literal>'['</literal> is 91).
     Note that character variables can be incremented but not decremented and
-    even so only plain ASCII alphabets and digits (a-z, A-Z and 0-9) are supported.
+    even so only plain ASCII letters and digits (a-z, A-Z and 0-9) are supported.
     Incrementing/decrementing other character variables has no effect, the
     original string is unchanged.
     <example>
@@ -2111,13 +2208,13 @@ echo "Should be 4: " . $a . "<br />\n";
      <programlisting role="php">
 <![CDATA[
 <?php
-echo '== Alphabets ==' . PHP_EOL;
+echo '== Alphabetic strings ==' . PHP_EOL;
 $s = 'W';
 for ($n=0; $n<6; $n++) {
     echo ++$s . PHP_EOL;
 }
-// Digit characters behave differently
-echo '== Digits ==' . PHP_EOL;
+// Alphanumeric strings behave differently
+echo '== Alphanumeric strings ==' . PHP_EOL;
 $d = 'A8';
 for ($n=0; $n<6; $n++) {
     echo ++$d . PHP_EOL;
@@ -2132,14 +2229,14 @@ for ($n=0; $n<6; $n++) {
      &example.outputs;
      <screen>
 <![CDATA[
-== Characters ==
+== Alphabetic strings ==
 X
 Y
 Z
 AA
 AB
 AC
-== Digits ==
+== Alphanumeric strings ==
 A9
 B0
 B1
@@ -2657,6 +2754,44 @@ var_dump(FALSE instanceof stdClass);
     <screen>
 <![CDATA[
 bool(false)
+]]>
+     </screen>
+    </example>
+   </para>
+   <para>
+    As of PHP 8.0.0, <literal>instanceof</literal> can now be used with arbitrary expressions.
+    The expression must be wrapped in parentheses and produce a <type>string</type>.
+    <!-- RFC: https://wiki.php.net/rfc/variable_syntax_tweaks -->
+    <example>
+     <title>Using <literal>instanceof</literal> with an arbitrary expression</title>
+     <programlisting role="php">
+      <![CDATA[
+<?php
+
+class ClassA extends \stdClass {}
+class ClassB extends \stdClass {}
+class ClassC extends ClassB {}
+class ClassD extends ClassA {}
+
+function getSomeClass(): string
+{
+    return ClassA::class;
+}
+
+var_dump(new ClassA instanceof ('std' . 'Class'));
+var_dump(new ClassB instanceof ('Class' . 'B'));
+var_dump(new ClassC instanceof ('Class' . 'A'));
+var_dump(new ClassD instanceof (getSomeClass()));
+?>
+]]>
+     </programlisting>
+     &example.outputs.8;
+     <screen>
+      <![CDATA[
+bool(true)
+bool(true)
+bool(false)
+bool(true)
 ]]>
      </screen>
     </example>

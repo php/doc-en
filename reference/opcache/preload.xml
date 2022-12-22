@@ -5,7 +5,7 @@
 
  <para>
   As of PHP 7.4.0, PHP can be configured to preload scripts into the opcache when the engine
-  starts.  Any symbols (functions, classes, etc.) in those files will then become
+  starts.  Any functions, classes, interfaces, or traits (but not constants) in those files will then become
   globally available for all requests without needing to be explicitly included.  That trades
   convenience and performance (because the code is always available) for baseline memory usage.  It also
   requires restarting the PHP process to clear pre-loaded scripts, meaning this feature is
@@ -42,10 +42,11 @@ opcache.preload=preload.php
 
  <para>
   <filename>preload.php</filename> is an arbitrary file that will run once at server startup
-  (PHP-FPM, mod_php, etc.) and load code into persistent memory.  If PHP will be run as
-  root (not recommended), the <link linkend="ini.opcache.preload-user">opcache.preload_user</link>
-  value can specify an alternate system user to run the preloading.  Running preloading as
-  root is not allowed.
+  (PHP-FPM, mod_php, etc.) and load code into persistent memory.  In servers that startup as
+  root before switching to an unprivileged system user, or if PHP will be run as root
+  (not recommended), the <link linkend="ini.opcache.preload-user">opcache.preload_user</link>
+  value can specify the system user to run the preloading.  Running preloading as root is not allowed
+  by default. Set <literal>opcache.preload_user=root</literal> to explicitly allow it.
  </para>
 
  <para>
@@ -89,7 +90,9 @@ foreach ($phpFiles as $key => $file) {
     <emphasis>must</emphasis> be included first.</simpara></listitem>
    <listitem><simpara>In either case, if a later script includes a file that has already been preloaded then
     its contents will still execute, but any symbols it defines will not be re-defined.  Using
-    <function>include_once</function> will not prevent the file from being included a second time.</simpara></listitem>
+    <function>include_once</function> will not prevent the file from being included a second time. It
+    may be necessary to load a file again in order to include global constants defined in it, as those are not
+    handled by preloading.</simpara></listitem>
   </itemizedlist>
 
   Which approach is better therefore depends on the desired behavior.  With code that would otherwise use an

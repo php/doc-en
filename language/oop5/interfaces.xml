@@ -5,7 +5,8 @@
   <para>
    Object interfaces allow you to create code which specifies which methods a
    class must implement, without having to define how these methods are
-   implemented.
+   implemented.  Interfaces share a namespace with classes and traits, so they may
+   not use the same name.
   </para>
   <para>
    Interfaces are defined in the same way as a class, but with the <literal>interface</literal>
@@ -16,14 +17,34 @@
    All methods declared in an interface must be public; this is the nature of an
    interface.
   </para>
-
+  <para>
+   In practice, interfaces serve two complementary purposes:
+  </para>
+  <simplelist>
+   <member>
+    To allow developers to create objects of different classes that may be used interchangeably
+    because they implement the same interface or interfaces.  A common example is multiple database access services,
+    multiple payment gateways, or different caching strategies.  Different implementations may
+    be swapped out without requiring any changes to the code that uses them.
+   </member>
+   <member>
+    To allow a function or method to accept and operate on a parameter that conforms to an
+    interface, while not caring what else the object may do or how it is implemented. These interfaces
+    are often named like <literal>Iterable</literal>, <literal>Cacheable</literal>, <literal>Renderable</literal>,
+    or so on to describe the significance of the behavior.
+   </member>
+  </simplelist>
+  <para>
+   Interfaces may define
+   <link linkend="language.oop5.magic">magic methods</link> to require implementing classes to
+   implement those methods.
+  </para>
   <note>
    <para>
-    It is possible to declare
-    <link linkend="language.oop5.magic">magic methods</link> such as the
-    <link linkend="language.oop5.decon.constructor">constructor</link>
-    in an interface, which can be useful in some contexts,
-    e.g. for use by factories.
+    Although they are supported, including <link linkend="language.oop5.decon.constructor">constructors</link>
+    in interfaces is strongly discouraged. Doing so significantly reduces the flexibility of the object implementing the
+    interface.  Additionally, constructors are not enforced by inheritance rules, which can cause inconsistent
+    and unexpected behavior.
    </para>
   </note>
 
@@ -37,8 +58,10 @@
    </para>
    <warning>
     <para>
-     A class can implement two interfaces which define a method with the
-     same name, only if the method declaration in both interfaces is identical.
+     A class that implements an interface may use a different name for its parameters than
+     the interface.  However, as of PHP 8.0 the language supports <link linkend="functions.named-arguments">named arguments</link>, which means
+     callers may rely on the parameter name in the interface.  For that reason, it is strongly
+     recommended that developers use the same parameter names as the interface being implemented.
     </para>
    </warning>
    <note>
@@ -49,8 +72,11 @@
    </note>
    <note>
     <para>
-     The class implementing the interface must declare a method which has a
-     <link linkend="language.oop.lsp">compatible signature</link>.
+     The class implementing the interface must declare all methods in the interface
+     with a <link linkend="language.oop.lsp">compatible signature</link>. A class can implement multiple interfaces
+     which declare a method with the same name. In this case, the implementation must follow the
+     <link linkend="language.oop.lsp">signature compatibility rules</link> for all the interfaces. So
+     <link linkend="language.oop5.variance">covariance and contravariance</link> can be applied.
     </para>
    </note>
   </sect2>
@@ -59,8 +85,8 @@
    <title><literal>Constants</literal></title>
    <para>
     It's possible for interfaces to have constants. Interface constants work exactly 
-    like <link linkend="language.oop5.constants">class constants</link> except
-    they cannot be overridden by a class/interface that inherits them.
+    like <link linkend="language.oop5.constants">class constants</link>.
+    Prior to PHP 8.1.0, they cannot be overridden by a class/interface that inherits them.
    </para>
   </sect2>
   <sect2 xml:id="language.oop5.interfaces.examples">
@@ -71,8 +97,8 @@
 <![CDATA[
 <?php
 
-// Declare the interface 'iTemplate'
-interface iTemplate
+// Declare the interface 'Template'
+interface Template
 {
     public function setVariable($name, $var);
     public function getHtml($template);
@@ -80,9 +106,9 @@ interface iTemplate
 
 // Implement the interface
 // This will work
-class Template implements iTemplate
+class WorkingTemplate implements Template
 {
-    private $vars = array();
+    private $vars = [];
   
     public function setVariable($name, $var)
     {
@@ -101,10 +127,10 @@ class Template implements iTemplate
 
 // This will not work
 // Fatal error: Class BadTemplate contains 1 abstract methods
-// and must therefore be declared abstract (iTemplate::getHtml)
-class BadTemplate implements iTemplate
+// and must therefore be declared abstract (Template::getHtml)
+class BadTemplate implements Template
 {
-    private $vars = array();
+    private $vars = [];
   
     public function setVariable($name, $var)
     {
@@ -120,18 +146,18 @@ class BadTemplate implements iTemplate
      <programlisting role="php">
 <![CDATA[
 <?php
-interface a
+interface A
 {
     public function foo();
 }
 
-interface b extends a
+interface B extends A
 {
     public function baz(Baz $baz);
 }
 
 // This will work
-class c implements b
+class C implements B
 {
     public function foo()
     {
@@ -143,7 +169,7 @@ class c implements b
 }
 
 // This will not work and result in a fatal error
-class d implements b
+class D implements B
 {
     public function foo()
     {
@@ -157,27 +183,54 @@ class d implements b
 ]]>
      </programlisting>
    </example>
+   <example xml:id="language.oop5.interfaces.examples.variance.multiple.interfaces">
+    <title>Variance compatibility with multiple interfaces</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+class Foo {}
+class Bar extends Foo {}
+
+interface A {
+    public function myfunc(Foo $arg): Foo;
+}
+
+interface B {
+    public function myfunc(Bar $arg): Bar;
+}
+
+class MyClass implements A, B
+{
+    public function myfunc(Foo $arg): Bar
+    {
+        return new Bar();
+    }
+}
+?>
+]]>
+     </programlisting>
+   </example>
    <example xml:id="language.oop5.interfaces.examples.ex3">
     <title>Multiple interface inheritance</title>
      <programlisting role="php">
 <![CDATA[
 <?php
-interface a
+interface A
 {
     public function foo();
 }
 
-interface b
+interface B
 {
     public function bar();
 }
 
-interface c extends a, b
+interface C extends A, B
 {
     public function baz();
 }
 
-class d implements c
+class D implements C
 {
     public function foo()
     {
@@ -200,20 +253,86 @@ class d implements c
      <programlisting role="php">
 <![CDATA[
 <?php
-interface a
+interface A
 {
-    const b = 'Interface constant';
+    const B = 'Interface constant';
 }
 
 // Prints: Interface constant
-echo a::b;
+echo A::B;
 
 
-// This will however not work because it's not allowed to 
-// override constants.
-class b implements a
+class B implements A
 {
-    const b = 'Class constant';
+    const B = 'Class constant';
+}
+
+// Prints: Class constant
+// Prior to PHP 8.1.0, this will however not work because it was not
+// allowed to override constants.
+echo B::B;
+?>
+]]>
+     </programlisting>
+   </example>
+   <example xml:id="language.oop5.interfaces.examples.ex5">
+    <title>Interfaces with abstract classes</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+interface A
+{
+    public function foo(string $s): string;
+
+    public function bar(int $i): int;
+}
+
+// An abstract class may implement only a portion of an interface.
+// Classes that extend the abstract class must implement the rest.
+abstract class B implements A
+{
+    public function foo(string $s): string
+    {
+        return $s . PHP_EOL;
+    }
+}
+
+class C extends B
+{
+    public function bar(int $i): int
+    {
+        return $i * 2;
+    }
+}
+?>
+]]>
+     </programlisting>
+   </example>
+   <example xml:id="language.oop5.interfaces.examples.ex6">
+    <title>Extending and implementing simultaneously</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class One
+{
+    /* ... */
+}
+
+interface Usable
+{
+    /* ... */
+}
+
+interface Updatable
+{
+    /* ... */
+}
+
+// The keyword order here is important. 'extends' must come first.
+class Two extends One implements Usable, Updatable
+{
+    /* ... */
 }
 ?>
 ]]>

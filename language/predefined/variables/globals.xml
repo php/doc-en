@@ -45,6 +45,28 @@ $foo in current scope: local variable
     </screen>
    </example>
   </para>
+  <warning>
+   <para>
+    As of PHP 8.1.0, write access to the entire <varname>$GLOBALS</varname> array is no longer supported:
+    <example xml:id="variable.globals.entire_write_error">
+     <title>writing entire <varname>$GLOBALS</varname> will result in error.</title>
+     <programlisting role="php">
+ <![CDATA[
+ <?php
+ // Generates compile-time error:
+ $GLOBALS = [];
+ $GLOBALS += [];
+ $GLOBALS =& $x;
+ $x =& $GLOBALS;
+ unset($GLOBALS);
+ array_pop($GLOBALS);
+ // ...and any other write/read-write operation on $GLOBALS
+ ?>
+ ]]>
+     </programlisting>
+    </example>
+   </para>
+  </warning>
  </refsect1>
  
  <refsect1 role="notes">
@@ -55,6 +77,34 @@ $foo in current scope: local variable
    <para>
     Unlike all of the other <link linkend="language.variables.superglobals">superglobals</link>,
     <varname>$GLOBALS</varname> has essentially always been available in PHP.
+   </para>
+  </note>
+  <note>
+   <para>
+     As of PHP 8.1.0, <varname>$GLOBALS</varname> is now a read-only copy of the global symbol table. That is, global variables cannot be modified via its copy. Previously, <varname>$GLOBALS</varname> array is excluded from the usual by-value behavior of PHP arrays and global variables can be modified via its copy.
+     <informalexample>
+     <programlisting role="php">
+<![CDATA[
+<?php
+// Before PHP 8.1.0
+$a = 1;
+$globals = $GLOBALS; // Ostensibly by-value copy
+$globals['a'] = 2;
+var_dump($a); // int(2)
+
+// As of PHP 8.1.0
+// this no longer modifies $a. The previous behavior violated by-value semantics.
+$globals = $GLOBALS;
+$globals['a'] = 1;
+
+// To restore the previous behavior, iterate its copy and assign each property back to $GLOBALS.
+foreach ($globals as $key => $value) {
+    $GLOBALS[$key] = $value;
+}
+?>
+]]>
+     </programlisting>
+    </informalexample>
    </para>
   </note>
  </refsect1>

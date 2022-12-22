@@ -8,18 +8,18 @@
  
  <refsect1 role="description">
   &reftitle.description;
-  <methodsynopsis role="procedural">
+  <methodsynopsis>
    <type>bool</type><methodname>setcookie</methodname>
    <methodparam><type>string</type><parameter>name</parameter></methodparam>
    <methodparam choice="opt"><type>string</type><parameter>value</parameter><initializer>""</initializer></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>expires</parameter><initializer>0</initializer></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>expires_or_options</parameter><initializer>0</initializer></methodparam>
    <methodparam choice="opt"><type>string</type><parameter>path</parameter><initializer>""</initializer></methodparam>
    <methodparam choice="opt"><type>string</type><parameter>domain</parameter><initializer>""</initializer></methodparam>
    <methodparam choice="opt"><type>bool</type><parameter>secure</parameter><initializer>&false;</initializer></methodparam>
    <methodparam choice="opt"><type>bool</type><parameter>httponly</parameter><initializer>&false;</initializer></methodparam>
   </methodsynopsis>
-  <para>Alternative signature available as of PHP 7.3.0:</para>
-  <methodsynopsis role="procedural">
+  <para>Alternative signature available as of PHP 7.3.0 (not supported with named parameters):</para>
+  <methodsynopsis>
    <type>bool</type><methodname>setcookie</methodname>
    <methodparam><type>string</type><parameter>name</parameter></methodparam>
    <methodparam choice="opt"><type>string</type><parameter>value</parameter><initializer>""</initializer></methodparam>
@@ -68,22 +68,23 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>expires</parameter></term>
+     <term><parameter>expires_or_options</parameter></term>
      <listitem>
       <para>
        The time the cookie expires.  This is a Unix timestamp so is
-       in number of seconds since the epoch.  In other words, you'll
-       most likely set this with the <function>time</function> function
-       plus the number of seconds before you want it to expire.  Or
-       you might use <function>mktime</function>.
-       <literal>time()+60*60*24*30</literal> will set the cookie to
-       expire in 30 days. If set to 0, or omitted, the cookie will expire at
+       in number of seconds since the epoch.
+       One way to set this is by adding the number of seconds before the cookie
+       should expire to the result of calling <function>time</function>.
+       For instance, <literal>time()+60*60*24*30</literal> will set the cookie to
+       expire in 30 days.
+       Another option is to use the <function>mktime</function> function.
+       If set to <literal>0</literal>, or omitted, the cookie will expire at
        the end of the session (when the browser closes).
       </para>
       <para>
        <note>
         <para>
-         You may notice the <parameter>expires</parameter> parameter takes on a
+         You may notice the <parameter>expires_or_options</parameter> parameter takes on a
          Unix timestamp, as opposed to the date format <literal>Wdy, DD-Mon-YYYY
          HH:MM:SS GMT</literal>, this is because PHP does this conversion
          internally.
@@ -185,116 +186,6 @@
   </para>
  </refsect1>
 
- <refsect1 role="examples">
-  &reftitle.examples;
-  <para>
-   Some examples follow how to send cookies:
-   <example>
-    <title><function>setcookie</function> send example</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-$value = 'something from somewhere';
-
-setcookie("TestCookie", $value);
-setcookie("TestCookie", $value, time()+3600);  /* expire in 1 hour */
-setcookie("TestCookie", $value, time()+3600, "/~rasmus/", "example.com", 1);
-?>
-]]>
-    </programlisting>
-   </example>
-  </para>
-  <para>
-   Note that the value portion of the cookie will automatically be
-   urlencoded when you send the cookie, and when it is received, it
-   is automatically decoded and assigned to a variable by the same
-   name as the cookie name. If you don't want this, you can use
-   <function>setrawcookie</function> instead. To see
-   the contents of our test cookie in a script, simply use one of the
-   following examples:
-  </para>
-  <para>
-   <informalexample>
-    <programlisting role="php">
-<![CDATA[
-<?php
-// Print an individual cookie
-echo $_COOKIE["TestCookie"];
-
-// Another way to debug/test is to view all cookies
-print_r($_COOKIE);
-?>
-]]>
-    </programlisting>
-   </informalexample>
-  </para>
-  <para>
-   <example>
-    <title><function>setcookie</function> delete example</title>
-    <para>
-     When deleting a cookie you should assure that the expiration date
-     is in the past, to trigger the removal mechanism in your browser.
-     Examples follow how to delete cookies sent in previous example:
-    </para>
-    <programlisting role="php">
-<![CDATA[
-<?php
-// set the expiration date to one hour ago
-setcookie("TestCookie", "", time() - 3600);
-setcookie("TestCookie", "", time() - 3600, "/~rasmus/", "example.com", 1);
-?>
-]]>
-    </programlisting>
-   </example>
-  </para>
-  <para>
-   <example>
-    <title><function>setcookie</function> and arrays</title>
-    <para>
-     You may also set array cookies by using array notation in the
-     cookie name. This has the effect of setting as many cookies as
-     you have array elements, but when the cookie is received by your
-     script, the values are all placed in an array with the cookie's
-     name:
-    </para>
-    <programlisting role="php">
-<![CDATA[
-<?php
-// set the cookies
-setcookie("cookie[three]", "cookiethree");
-setcookie("cookie[two]", "cookietwo");
-setcookie("cookie[one]", "cookieone");
-
-// after the page reloads, print them out
-if (isset($_COOKIE['cookie'])) {
-    foreach ($_COOKIE['cookie'] as $name => $value) {
-        $name = htmlspecialchars($name);
-        $value = htmlspecialchars($value);
-        echo "$name : $value <br />\n";
-    }
-}
-?>
-]]>
-    </programlisting>
-    &example.outputs;
-    <screen>
-<![CDATA[
-three : cookiethree
-two : cookietwo
-one : cookieone
-]]>
-    </screen>
-   </example>
-   <note>
-    <simpara>
-     Using separator characters such as <literal>[</literal> and <literal>]</literal>
-     as part of the cookie name is not compliant to RFC 6265, section 4, but supposed
-     to be supported by user agents according to RFC 6265, section 5.
-    </simpara>
-   </note>
-  </para>
- </refsect1>
-
  <refsect1 role="changelog">
   &reftitle.changelog;
   <para>
@@ -321,6 +212,116 @@ one : cookieone
   </para>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   Some examples follow how to send cookies:
+   <example>
+    <title><function>setcookie</function> send example</title>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+$value = 'something from somewhere';
+
+setcookie("TestCookie", $value);
+setcookie("TestCookie", $value, time()+3600);  /* expire in 1 hour */
+setcookie("TestCookie", $value, time()+3600, "/~rasmus/", "example.com", 1);
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   Note that the value portion of the cookie will automatically be
+   urlencoded when you send the cookie, and when it is received, it
+   is automatically decoded and assigned to a variable by the same
+   name as the cookie name. If you don't want this, you can use
+   <function>setrawcookie</function> instead. To see
+   the contents of our test cookie in a script, simply use one of the
+   following examples:
+  </para>
+  <para>
+   <informalexample>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+// Print an individual cookie
+echo $_COOKIE["TestCookie"];
+
+// Another way to debug/test is to view all cookies
+print_r($_COOKIE);
+?>
+]]>
+    </programlisting>
+   </informalexample>
+  </para>
+  <para>
+   <example>
+    <title><function>setcookie</function> delete example</title>
+    <para>
+     When deleting a cookie you should assure that the expiration date
+     is in the past, to trigger the removal mechanism in your browser.
+     Examples follow how to delete cookies sent in previous example:
+    </para>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+// set the expiration date to one hour ago
+setcookie("TestCookie", "", time() - 3600);
+setcookie("TestCookie", "", time() - 3600, "/~rasmus/", "example.com", 1);
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title><function>setcookie</function> and arrays</title>
+    <para>
+     You may also set array cookies by using array notation in the
+     cookie name. This has the effect of setting as many cookies as
+     you have array elements, but when the cookie is received by your
+     script, the values are all placed in an array with the cookie's
+     name:
+    </para>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+// set the cookies
+setcookie("cookie[three]", "cookiethree");
+setcookie("cookie[two]", "cookietwo");
+setcookie("cookie[one]", "cookieone");
+
+// after the page reloads, print them out
+if (isset($_COOKIE['cookie'])) {
+    foreach ($_COOKIE['cookie'] as $name => $value) {
+        $name = htmlspecialchars($name);
+        $value = htmlspecialchars($value);
+        echo "$name : $value <br />\n";
+    }
+}
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+     <![CDATA[
+three : cookiethree
+two : cookietwo
+one : cookieone
+]]>
+    </screen>
+   </example>
+   <note>
+    <simpara>
+     Using separator characters such as <literal>[</literal> and <literal>]</literal>
+     as part of the cookie name is not compliant to RFC 6265, section 4, but supposed
+     to be supported by user agents according to RFC 6265, section 5.
+    </simpara>
+   </note>
+  </para>
+ </refsect1>
+ 
  <refsect1 role="notes">
   &reftitle.notes;
   <note>
@@ -342,7 +343,7 @@ one : cookieone
       Cookies will not become visible until the next loading of a page that
       the cookie should be visible for.  To test if a cookie was successfully
       set, check for the cookie on a next loading page before the cookie
-      expires.  Expire time is set via the <parameter>expires</parameter>
+      expires.  Expire time is set via the <parameter>expires_or_options</parameter>
       parameter.  A nice way to debug the existence of cookies is by
       simply calling <literal>print_r($_COOKIE);</literal>.
      </simpara>
@@ -350,11 +351,11 @@ one : cookieone
     <listitem>
      <simpara>
       Cookies must be deleted with the same parameters as they were set with.
-      If the value argument is an empty string, or &false;, and all other arguments
+      If the value argument is an empty string, and all other arguments
       match a previous call to setcookie, then the cookie with the specified
       name will be deleted from the remote client.
-      This is internally achieved by setting value to 'deleted' and expiration
-      time to one year in past.
+      This is internally achieved by setting value to <literal>'deleted'</literal> and expiration
+      time in the past.
      </simpara>
     </listitem>
     <listitem>

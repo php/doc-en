@@ -10,12 +10,12 @@
  <refsect1 role="description">
   &reftitle.description;
   <para>&style.oop;</para>
-  <methodsynopsis role="oop">
+  <methodsynopsis role="mysqli_result">
    <modifier>public</modifier> <type>bool</type><methodname>mysqli_result::data_seek</methodname>
    <methodparam><type>int</type><parameter>offset</parameter></methodparam>
   </methodsynopsis>
   <para>&style.procedural;</para>
-  <methodsynopsis role="procedural">
+  <methodsynopsis>
    <type>bool</type><methodname>mysqli_data_seek</methodname>
    <methodparam><type>mysqli_result</type><parameter>result</parameter></methodparam>
    <methodparam><type>int</type><parameter>offset</parameter></methodparam>
@@ -36,7 +36,7 @@
      <term><parameter>offset</parameter></term>
      <listitem>
       <para>
-       The field offset. Must be between zero and the total number of rows
+       The row offset. Must be between zero and the total number of rows
        minus one (0..<function>mysqli_num_rows</function> - 1).
       </para>
      </listitem>
@@ -52,87 +52,49 @@
   </para>
  </refsect1>
 
- <refsect1 role="notes">
-  &reftitle.notes;
-  <note>
-   <para>
-    This function can only be used with buffered results attained from the
-    use of the <function>mysqli_store_result</function> or
-    <function>mysqli_query</function> functions.
-   </para>
-  </note>
- </refsect1>
-
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title>&style.oop;</title>
+   <title><methodname>mysqli::data_seek</methodname> example</title>
+   <para>&style.oop;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
-/* Open a connection */
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
 $query = "SELECT Name, CountryCode FROM City ORDER BY Name";
-if ($result = $mysqli->query($query)) {
+$result = $mysqli->query($query);
 
-    /* seek to row no. 400 */
-    $result->data_seek(399);
+/* Seek to row no. 401 */
+$result->data_seek(400);
 
-    /* fetch row */
-    $row = $result->fetch_row();
+/* Fetch single row */
+$row = $result->fetch_row();
 
-    printf ("City: %s  Countrycode: %s\n", $row[0], $row[1]);
-
-    /* free result set*/
-    $result->close();
-}
-
-/* close connection */
-$mysqli->close();
-?>
+printf("City: %s  Countrycode: %s\n", $row[0], $row[1]);
 ]]>
    </programlisting>
-  </example>
-  <example>
-   <title>&style.procedural;</title>
+   <para>&style.procedural;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
-/* Open a connection */
-$link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (!$link) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
 $query = "SELECT Name, CountryCode FROM City ORDER BY Name";
 
-if ($result = mysqli_query($link, $query)) {
+$result = mysqli_query($link, $query);
 
-    /* seek to row no. 400 */
-    mysqli_data_seek($result, 399);
+/* Seek to row no. 401 */
+mysqli_data_seek($result, 400);
 
-    /* fetch row */
-    $row = mysqli_fetch_row($result);
+/* Fetch single row */
+$row = mysqli_fetch_row($result);
 
-    printf ("City: %s  Countrycode: %s\n", $row[0], $row[1]);
-
-    /* free result set*/
-    mysqli_free_result($result);
-}
-
-/* close connection */
-mysqli_close($link);
-?>
+printf ("City: %s  Countrycode: %s\n", $row[0], $row[1]);
 ]]>
    </programlisting>
    &examples.outputs;
@@ -142,8 +104,72 @@ City: Benin City  Countrycode: NGA
 ]]>
    </screen>
   </example>
+
+  <example>
+   <title>Adjusting the result pointer when iterating</title>
+   <para>
+    This function can be useful when iterating over the result set to impose
+    a custom order or rewind the result set when iterating multiple times.
+   </para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = new mysqli("localhost", "my_user", "my_password", "world");
+
+$query = "SELECT Name, CountryCode FROM City ORDER BY Name LIMIT 15,4";
+$result = $mysqli->query($query);
+
+/* Iterate the result set in reverse order */
+for ($row_no = $result->num_rows - 1; $row_no >= 0; $row_no--) {
+    $result->data_seek($row_no);
+
+    /* Fetch single row */
+    $row = $result->fetch_row();
+
+    printf("City: %s  Countrycode: %s\n", $row[0], $row[1]);
+}
+
+/* Reset pointer to the beginning of the result set */
+$result->data_seek(0);
+
+print "\n";
+
+/* Iterate the same result set again */
+while ($row = $result->fetch_row()) {
+    printf("City: %s  Countrycode: %s\n", $row[0], $row[1]);
+}
+]]>
+   </programlisting>
+   &examples.outputs;
+   <screen>
+<![CDATA[
+City: Acmbaro  Countrycode: MEX
+City: Abuja  Countrycode: NGA
+City: Abu Dhabi  Countrycode: ARE
+City: Abottabad  Countrycode: PAK
+
+City: Abottabad  Countrycode: PAK
+City: Abu Dhabi  Countrycode: ARE
+City: Abuja  Countrycode: NGA
+City: Acmbaro  Countrycode: MEX
+]]>
+   </screen>
+  </example>
  </refsect1>
 
+ <refsect1 role="notes">
+  &reftitle.notes;
+  <note>
+   <para>
+    This function can only be used with buffered results attained from the
+    use of the <function>mysqli_store_result</function>,
+    <function>mysqli_query</function> or <function>mysqli_stmt_get_result</function> functions.
+   </para>
+  </note>
+ </refsect1>
+ 
  <refsect1 role="seealso">
   &reftitle.seealso;
   <para>

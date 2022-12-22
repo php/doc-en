@@ -175,7 +175,8 @@ function recursion($a)
    <simpara>
     Information may be passed to functions via the argument list,
     which is a comma-delimited list of expressions. The arguments are
-    evaluated from left to right.
+    evaluated from left to right, before the function is actually called
+    (<emphasis>eager</emphasis> evaluation).
    </simpara>
 
    <para>
@@ -226,28 +227,6 @@ function takes_many_args(
 ]]>
     </programlisting>
    </example>
-   <para>
-    As of PHP 8.0.0, passing mandatory arguments after optional arguments
-    is deprecated. This can generally be resolved by dropping the default value.
-    One exception to this rule are arguments of the form
-    <code>Type $param = null</code>, where the &null; default makes the type implicitly
-    nullable. This usage remains allowed, though it is recommended to use an
-    explicit nullable type instead.
-   </para>
-   <example>
-    <title>Passing optional arguments after mandatory arguments</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-function foo($a = [], $b) {} // Before
-function foo($a, $b) {}      // After
-
-function bar(A $a = null, $b) {} // Still allowed
-function bar(?A $a, $b) {}       // Recommended
-?>
-]]>
-    </programlisting>
-   </example>
 
    <sect2 xml:id="functions.arguments.by-reference">
     <title>Passing arguments by reference</title>
@@ -288,8 +267,10 @@ echo $str;    // outputs 'This is a string, and something extra.'
     <title>Default argument values</title>
  
     <para>
-     A function may define C++-style default values for scalar
-     arguments as follows:
+     A function may define default values for arguments using syntax similar
+     to assigning a variable. The default is used only when the parameter is
+     not specified; in particular, note that passing &null; does <emphasis>not</emphasis>
+     assign the default value.
     </para>
     <para>
      <example>
@@ -318,8 +299,9 @@ Making a cup of espresso.
      </example>
     </para>
     <para>
-     PHP also allows the use of <type>array</type>s and the special type &null;
-     as default values, for example:
+     Default parameter values may be scalar values, <type>array</type>s,
+     the special type &null;, and as of PHP 8.1.0, objects using the
+     <link linkend="language.oop5.basic.new">new ClassName()</link> syntax.
     </para>
     <para>
      <example>
@@ -333,21 +315,46 @@ function makecoffee($types = array("cappuccino"), $coffeeMaker = NULL)
     return "Making a cup of ".join(", ", $types)." with $device.\n";
 }
 echo makecoffee();
-echo makecoffee(array("cappuccino", "lavazza"), "teapot");
+echo makecoffee(array("cappuccino", "lavazza"), "teapot");?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+    <para>
+     <example>
+      <title>Using objects as default values (as of PHP 8.1.0)</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+class DefaultCoffeeMaker {
+    public function brew() {
+        return 'Making coffee.';
+    }
+}
+class FancyCoffeeMaker {
+    public function brew() {
+        return 'Crafting a beautiful coffee just for you.';
+    }
+}
+function makecoffee($coffeeMaker = new DefaultCoffeeMaker)
+{
+    return $coffeeMaker->brew();
+}
+echo makecoffee();
+echo makecoffee(new FancyCoffeeMaker);
 ?>
 ]]>
       </programlisting>
      </example>
-    
     </para>
     <simpara>
      The default value must be a constant expression, not (for
      example) a variable, a class member or a function call.
     </simpara>
     <para>
-     Note that when using default arguments, any defaults should be on
-     the right side of any non-default arguments; otherwise, things
-     will not work as expected. Consider the following code snippet:
+     Note that any optional arguments should be specified after any
+     required arguments, otherwise they cannot be omitted from calls.
+     Consider the following example:
     </para>
     <para>
      <example>
@@ -355,21 +362,20 @@ echo makecoffee(array("cappuccino", "lavazza"), "teapot");
       <programlisting role="php">
 <![CDATA[
 <?php
-function makeyogurt($type = "acidophilus", $flavour)
+function makeyogurt($container = "bowl", $flavour)
 {
-    return "Making a bowl of $type $flavour.\n";
+    return "Making a $container of $flavour yogurt.\n";
 }
  
-echo makeyogurt("raspberry");   // won't work as expected
+echo makeyogurt("raspberry"); // "raspberry" is $container, not $flavour
 ?>
 ]]>
       </programlisting>
       &example.outputs;
       <screen>
 <![CDATA[
-Warning: Missing argument 2 in call to makeyogurt() in 
-/usr/local/etc/httpd/htdocs/phptest/functest.html on line 41
-Making a bowl of raspberry .
+Fatal error: Uncaught ArgumentCountError: Too few arguments
+ to function makeyogurt(), 1 passed in example.php on line 42
 ]]>
       </screen>
      </example>
@@ -383,23 +389,80 @@ Making a bowl of raspberry .
       <programlisting role="php">
 <![CDATA[
 <?php
-function makeyogurt($flavour, $type = "acidophilus")
+function makeyogurt($flavour, $container = "bowl")
 {
-    return "Making a bowl of $type $flavour.\n";
+    return "Making a $container of $flavour yogurt.\n";
 }
  
-echo makeyogurt("raspberry");   // works as expected
+echo makeyogurt("raspberry"); // "raspberry" is $flavour
 ?>
 ]]>
       </programlisting>
       &example.outputs;
       <screen>
 <![CDATA[
-Making a bowl of acidophilus raspberry.
+Making a bowl of raspberry yogurt.
 ]]>
       </screen>
      </example>
     </para>
+    <para>
+     As of PHP 8.0.0, <link linkend="functions.named-arguments">named arguments</link>
+     can be used to skip over multiple optional parameters.
+    </para>
+    <para>
+     <example>
+      <title>Correct usage of default function arguments</title>
+      <programlisting role="php">
+<![CDATA[
+<?php
+function makeyogurt($container = "bowl", $flavour = "raspberry", $style = "Greek")
+{
+    return "Making a $container of $flavour $style yogurt.\n";
+}
+
+echo makeyogurt(style: "natural");
+?>
+]]>
+      </programlisting>
+      &example.outputs;
+      <screen>
+<![CDATA[
+Making a bowl of raspberry natural yogurt.
+]]>
+      </screen>
+     </example>
+    </para>
+    <para>
+     As of PHP 8.0.0, declaring mandatory arguments after optional arguments
+     is <emphasis>deprecated</emphasis>. This can generally be resolved by
+     dropping the default value, since it will never be used.
+     One exception to this rule are arguments of the form
+     <code>Type $param = null</code>, where the &null; default makes the type implicitly
+     nullable. This usage remains allowed, though it is recommended to use an
+     explicit <link linkend="language.types.declarations.nullable">nullable type</link> instead.
+     <example>
+      <title>Declaring optional arguments after mandatory arguments</title>
+      <programlisting role="php">
+<![CDATA[
+ <?php
+ function foo($a = [], $b) {} // Default not used; deprecated as of PHP 8.0.0
+ function foo($a, $b) {}      // Functionally equivalent, no deprecation notice
+
+ function bar(A $a = null, $b) {} // Still allowed; $a is required but nullable
+ function bar(?A $a, $b) {}       // Recommended
+ ?>
+ ]]>
+      </programlisting>
+     </example>
+    </para>
+    <note>
+     <simpara>
+      As of PHP 7.1.0, omitting a parameter which does not specify a default
+      throws an <classname>ArgumentCountError</classname>; in previous versions
+      it raised a Warning.
+     </simpara>
+    </note>
     <note>
      <simpara>
       Arguments that are passed by reference may have a default value.
@@ -501,7 +564,7 @@ echo add(...$a);
      It is also possible to add a
      <link linkend="language.types.declarations">type declaration</link> before the
      <literal>...</literal> token. If this is present, then all arguments
-     captured by <literal>...</literal> must be objects of the hinted class.
+     captured by <literal>...</literal> must match that parameter type.
 
      <example>
       <title>Type declared variable arguments</title>
@@ -605,7 +668,7 @@ echo sum(1, 2, 3, 4);
     <example>
      <title>Named argument syntax</title>
      <programlisting role="php">
-      <![CDATA[
+<![CDATA[
 <?php
 myFunction(paramName: $value);
 array_foobar(array: $value);
@@ -620,7 +683,7 @@ function_name($variableStoringParamName: $value);
     <example>
      <title>Positional arguments versus named arguments</title>
      <programlisting role="php">
-      <![CDATA[
+<![CDATA[
 <?php
 // Using positional arguments:
 array_fill(0, 100, 50);
@@ -639,9 +702,9 @@ array_fill(start_index: 0, count: 100, value: 50);
     <example>
      <title>Same example as above with a different order of parameters</title>
      <programlisting role="php">
-      <![CDATA[
+<![CDATA[
 <?php
-array_fill(value: 50, num: 100, start_index: 0);
+array_fill(value: 50, count: 100, start_index: 0);
 ?>
 ]]>
      </programlisting>
@@ -657,11 +720,11 @@ array_fill(value: 50, num: 100, start_index: 0);
     <example>
      <title>Combining named arguments with positional arguments</title>
      <programlisting role="php">
-      <![CDATA[
+<![CDATA[
 <?php
 htmlspecialchars($string, double_encode: false);
 // Same as
-htmlspecialchars($string, ENT_COMPAT | ENT_HTML401, 'UTF-8', false);
+htmlspecialchars($string, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401, 'UTF-8', false);
 ?>
 ]]>
      </programlisting>
@@ -672,9 +735,9 @@ htmlspecialchars($string, ENT_COMPAT | ENT_HTML401, 'UTF-8', false);
     </para>
 
     <example>
-     <title>Error exception when passing the same parameter multiple times</title>
+     <title>Error thrown when passing the same parameter multiple times</title>
      <programlisting role="php">
-      <![CDATA[
+<![CDATA[
 <?php
 function foo($param) { ... }
 
@@ -682,6 +745,29 @@ foo(param: 1, param: 2);
 // Error: Named parameter $param overwrites previous argument
 foo(1, param: 2);
 // Error: Named parameter $param overwrites previous argument
+?>
+]]>
+     </programlisting>
+    </example>
+
+    <para>
+     As of PHP 8.1.0, it is possible to use named arguments after unpacking the arguments.
+     A named argument <emphasis>must not</emphasis> override an already unpacked arguments.
+    </para>
+
+    <example>
+     <title>Use named arguments after unpacking</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+function foo($a, $b, $c = 3, $d = 4) {
+  return $a + $b + $c + $d;
+}
+
+var_dump(foo(...[1, 2], d: 40)); // 46
+var_dump(foo(...['b' => 2, 'a' => 1], d: 40)); // 46
+
+var_dump(foo(...[1, 2], b: 20)); // Fatal error. Named parameter $b overwrites previous argument
 ?>
 ]]>
      </programlisting>
@@ -739,9 +825,14 @@ echo square(4);   // outputs '16'.
 <?php
 function small_numbers()
 {
-    return array (0, 1, 2);
+    return [0, 1, 2];
 }
-list ($zero, $one, $two) = small_numbers();
+// Array destructuring will collect each member of the array individually
+[$zero, $one, $two] = small_numbers();
+
+// Prior to 7.1.0, the only equivalent alternative is using list() construct
+list($zero, $one, $two) = small_numbers();
+
 ?>
 ]]>
       </programlisting>
@@ -969,7 +1060,41 @@ $func(); // prints "bar"
      the return value of the function is undefined. In this case it will
      likely return &null; but this is just a convention, and cannot be relied 
      upon.
+     As of PHP 8.0.0, a <classname>TypeError</classname> exception is supposed to
+     be thrown in this case.
     </simpara>
+   </note>
+   <note>
+    <para>
+     Scalar types for built-in functions are nullable by default in coercive mode.
+     As of PHP 8.1.0, passing &null; to an internal function parameter that is not declared nullable
+     is discouraged and emits a deprecation notice in coercive mode to align with the behavior of user-defined functions,
+     where scalar types need to be marked as nullable explicitly.
+    </para>
+
+    <para>
+     For example, <function>strlen</function> function expects the parameter <literal>$string</literal>
+     to be a non-nullable &string;.
+     For historical reasons, PHP allows passing &null; for this parameter in coercive mode, and the parameter is
+     implicitly cast to <type>string</type>, resulting in a <literal>""</literal> value.
+     In contrast, a <classname>TypeError</classname> is emitted in strict mode.
+    </para>
+
+    <example>
+     <programlisting role="php">
+<![CDATA[
+<?php
+var_dump(strlen(null));
+// "Deprecated: Passing null to parameter #1 ($string) of type string is deprecated" as of PHP 8.1.0
+// int(0)
+
+var_dump(str_contains("foobar", null));
+// "Deprecated: Passing null to parameter #2 ($needle) of type string is deprecated" as of PHP 8.1.0
+// bool(true)
+?> 
+]]>
+     </programlisting>
+    </example>
    </note>
 
    <sect2 role="seealso">
@@ -1026,8 +1151,7 @@ echo preg_replace_callback('~-([a-z])~', function ($match) {
     <programlisting role="php">
 <![CDATA[
 <?php
-$greet = function($name)
-{
+$greet = function($name) {
     printf("Hello %s\r\n", $name);
 };
 
@@ -1043,6 +1167,8 @@ $greet('PHP');
     variables must be passed to the <literal>use</literal> language construct.
     As of PHP 7.1, these variables must not include &link.superglobals;,
     <varname>$this</varname>, or variables with the same name as a parameter.
+    A return type declaration of the function has to be placed
+    <emphasis>after</emphasis> the <literal>use</literal> clause.
    </simpara>
 
    <example>
@@ -1088,6 +1214,12 @@ $example = function ($arg) use ($message) {
     var_dump($arg . ' ' . $message);
 };
 $example("hello");
+
+// Return type declaration comes after the use clause
+$example = function () use ($message): string {
+    return "hello $message";
+};
+var_dump($example());
 ?>
 ]]>
     </programlisting>
@@ -1100,6 +1232,7 @@ string(5) "hello"
 string(5) "hello"
 string(5) "hello"
 string(5) "world"
+string(11) "hello world"
 string(11) "hello world"
 ]]>
     </screen>
@@ -1485,6 +1618,127 @@ var_export($x);  // Outputs 1
      </simpara>
     </note>
    </sect2>
+  </sect1>
+
+  <sect1 xml:id="functions.first_class_callable_syntax">
+   <title>First class callable syntax</title>
+
+   <para>
+    The first class callable syntax is introduced as of PHP 8.1.0, as a way of creating <link linkend="functions.anonymous">anonymous functions</link> from <link linkend="language.types.callable">callable</link>.
+    It supersedes existing callable syntax using strings and arrays.
+    The advantage of this syntax is that it is accessible to static analysis, and uses the scope at the point where the callable is acquired.
+   </para>
+
+   <para>
+    <code>CallableExpr(...)</code> syntax is used to create a <classname>Closure</classname> object from callable. <code>CallableExpr</code> accepts any expression that can be directly called in the PHP grammar:
+    <example>
+     <title>Simple first class callable syntax</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class Foo {
+   public function method() {}
+   public static function staticmethod() {}
+   public function __invoke() {}
+}
+
+$obj = new Foo();
+$classStr = 'Foo';
+$methodStr = 'method';
+$staticmethodStr = 'staticmethod';
+
+
+$f1 = strlen(...);
+$f2 = $obj(...);  // invokable object
+$f3 = $obj->method(...);
+$f4 = $obj->$methodStr(...);
+$f5 = Foo::staticmethod(...);
+$f6 = $classStr::$staticmethodStr(...);
+
+// traditional callable using string, array
+$f7 = 'strlen'(...);
+$f8 = [$obj, 'method'](...);
+$f9 = [Foo::class, 'staticmethod'](...);
+?>
+]]>
+     </programlisting>
+    </example>
+   </para>
+
+   <note>
+    <para>
+      The <code>...</code> is part of the syntax, and not an omission.
+    </para>
+   </note>
+
+   <para>
+    <code>CallableExpr(...)</code> has the same semantics as <methodname>Closure::fromCallable</methodname>.
+    That is, unlike callable using strings and arrays, <code>CallableExpr(...)</code> respects the scope at the point where it is created:
+    <example>
+     <title>Scope comparison of <code>CallableExpr(...)</code> and traditional callable</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class Foo {
+    public function getPrivateMethod() {
+        return [$this, 'privateMethod'];
+    }
+
+    private function privateMethod() {
+        echo __METHOD__, "\n";
+    }
+}
+
+$foo = new Foo;
+$privateMethod = $foo->getPrivateMethod();
+$privateMethod();
+// Fatal error: Call to private method Foo::privateMethod() from global scope
+// This is because call is performed outside from Foo and visibility will be checked from this point.
+
+class Foo1 {
+    public function getPrivateMethod() {
+        // Uses the scope where the callable is acquired.
+        return $this->privateMethod(...); // identical to Closure::fromCallable([$this, 'privateMethod']);
+    }
+
+    private function privateMethod() {
+        echo __METHOD__, "\n";
+    }
+}
+
+$foo1 = new Foo1;
+$privateMethod = $foo1->getPrivateMethod();
+$privateMethod();  // Foo1::privateMethod
+?>
+]]>
+     </programlisting>
+    </example>
+
+   </para>
+
+   <note>
+    <para>
+     Object creation by this syntax (e.g <code>new Foo(...)</code>) is not supported, because <code>new Foo()</code> syntax is not considered a call.
+    </para>
+   </note>
+
+   <note>
+    <para>
+     The first-class callable syntax cannot be combined with the <link linkend="language.oop5.basic.nullsafe">nullsafe operator</link>. Both of the following result in a compile-time error:
+     <example>
+      <programlisting role="php">
+<![CDATA[
+<?php
+$obj?->method(...);
+$obj?->prop->method(...);
+?>
+]]>
+      </programlisting>
+     </example>
+    </para>
+   </note>
   </sect1>
 
  </chapter>

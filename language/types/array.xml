@@ -358,9 +358,10 @@ string(3) "foo"
    
    <note>
     <para>
-     Both square brackets and curly braces can be used interchangeably
-     for accessing array elements (e.g. <literal>$array[42]</literal> and <literal>$array{42}</literal> will
-     both do the same thing in the example above).
+     Prior to PHP 8.0.0, square brackets and curly braces could be used interchangeably
+     for accessing array elements (e.g. <literal>$array[42]</literal> and <literal>$array{42}</literal>
+     would both do the same thing in the example above).
+     The curly brace syntax was deprecated as of PHP 7.4.0 and no longer supported as of PHP 8.0.0.
     </para>
    </note>
 
@@ -374,9 +375,6 @@ function getArray() {
 }
 
 $secondElement = getArray()[1];
-
-// or
-list(, $secondElement) = getArray();
 ?>
 ]]>
     </programlisting>
@@ -386,7 +384,8 @@ list(, $secondElement) = getArray();
     <para>
       Attempting to access an array key which has not been defined is
       the same as accessing any other undefined variable:
-      an <constant>E_NOTICE</constant>-level error message will be
+      an <constant>E_WARNING</constant>-level error message
+      (<constant>E_NOTICE</constant>-level prior to PHP 8.0.0) will be
       issued, and the result will be &null;.
     </para>
    </note>
@@ -421,7 +420,7 @@ $arr[] = <replaceable>value</replaceable>;
 // <replaceable>value</replaceable> may be any value of any type</synopsis>
    
    <para>
-    If <varname>$arr</varname> doesn't exist yet, it will be created, so this is
+    If <varname>$arr</varname> doesn't exist yet or is set to &null; or &false;, it will be created, so this is
     also an alternative way to create an <type>array</type>. This practice is
     however discouraged because if <varname>$arr</varname> already contains
     some value (e.g. <type>string</type> from request variable) then this
@@ -434,6 +433,12 @@ $arr[] = <replaceable>value</replaceable>;
     <simpara>
      As of PHP 7.1.0, applying the empty index operator on a string throws a fatal
      error. Formerly, the string was silently converted to an array.
+    </simpara>
+   </note>
+   <note>
+    <simpara>
+     As of PHP 8.1.0, creating a new array from &false; value is deprecated.
+     Creating a new array from &null; and undefined values is still allowed.
     </simpara>
    </note>
 
@@ -528,11 +533,144 @@ Array
 )
 ]]>
      </screen>
-    </informalexample>       
+    </informalexample>
 
    </note>
 
   </sect3>
+
+  <sect3 xml:id="language.types.array.syntax.destructuring">
+   <title>Array destructuring</title>
+
+   <para>
+    Arrays can be destructured using the <literal>[]</literal> (as of PHP 7.1.0) or
+    <function>list</function> language constructs. These
+    constructs can be used to destructure an array into distinct variables.
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$source_array = ['foo', 'bar', 'baz'];
+
+[$foo, $bar, $baz] = $source_array;
+
+echo $foo;    // prints "foo"
+echo $bar;    // prints "bar"
+echo $baz;    // prints "baz"
+?>
+]]>
+    </programlisting>
+   </informalexample>
+
+   <para>
+    Array destructuring can be used in &foreach; to destructure
+    a multi-dimensional array while iterating over it.
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$source_array = [
+    [1, 'John'],
+    [2, 'Jane'],
+];
+
+foreach ($source_array as [$id, $name]) {
+    // logic here with $id and $name
+}
+?>
+]]>
+    </programlisting>
+   </informalexample>
+
+   <para>
+    Array elements will be ignored if the variable is not provided. Array
+    destructuring always starts at index <literal>0</literal>.
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$source_array = ['foo', 'bar', 'baz'];
+
+// Assign the element at index 2 to the variable $baz
+[, , $baz] = $source_array;
+
+echo $baz;    // prints "baz"
+?>
+]]>
+    </programlisting>
+   </informalexample>
+
+   <para>
+    As of PHP 7.1.0, associative arrays can be destructured too. This also
+    allows for easier selection of the right element in numerically indexed
+    arrays as the index can be explicitly specified.
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$source_array = ['foo' => 1, 'bar' => 2, 'baz' => 3];
+
+// Assign the element at index 'baz' to the variable $three
+['baz' => $three] = $source_array;
+
+echo $three;    // prints 3
+
+$source_array = ['foo', 'bar', 'baz'];
+
+// Assign the element at index 2 to the variable $baz
+[2 => $baz] = $source_array;
+
+echo $baz;    // prints "baz"
+?>
+]]>
+    </programlisting>
+   </informalexample>
+
+   <para>
+    Array destructuring can be used for easy swapping of two variables.
+   </para>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$a = 1;
+$b = 2;
+
+[$b, $a] = [$a, $b];
+
+echo $a;    // prints 2
+echo $b;    // prints 1
+?>
+]]>
+    </programlisting>
+   </informalexample>
+
+   <note>
+    <para>
+      The spread operator (<literal>...</literal>) is not supported in assignments.
+    </para>
+   </note>
+
+   <note>
+    <para>
+      Attempting to access an array key which has not been defined is
+      the same as accessing any other undefined variable:
+      an <constant>E_WARNING</constant>-level error message
+      (<constant>E_NOTICE</constant>-level prior to PHP 8.0.0) will be
+      issued, and the result will be &null;.
+    </para>
+   </note>
+  </sect3>
+
  </sect2><!-- end syntax -->
  
  <sect2 xml:id="language.types.array.useful-funcs">
@@ -616,9 +754,12 @@ echo $foo[bar];
    </para>
    <warning>
     <simpara>
-     The fallback to treat an undefined constant as bare string is deprecated as
-     of PHP 7.2.0, and issues an error of level <constant>E_WARNING</constant>.
-     Formerly, an error of level <constant>E_NOTICE</constant> has been issued.
+     The fallback to treat an undefined constant as bare string issues an error
+     of level <constant>E_NOTICE</constant>.
+     This has been deprecated as of PHP 7.2.0, and issues an error
+     of level <constant>E_WARNING</constant>.
+     As of PHP 8.0.0, it has been removed and throws an
+     <classname>Error</classname> exception.
     </simpara>
    </warning>
 
@@ -836,6 +977,8 @@ $error_descriptions[8] = "This is just an informal notice";
    private variables have the class name prepended to the variable
    name; protected variables have a '*' prepended to the variable name. These
    prepended values have <literal>NUL</literal> bytes on either side.
+   Uninitialized <link linkend="language.oop5.properties.typed-properties">typed properties</link>
+   are silently discarded.
   </para>
 
   <informalexample>
@@ -926,6 +1069,100 @@ array(3) {
    function and with
    <link linkend="language.operators.array">array operators</link>.
   </para>
+ </sect2>
+
+ <sect2 xml:id="language.types.array.unpacking">
+  <title>Array unpacking</title>
+
+  <para>
+   An array prefixed by <code>...</code> will be expanded in place during the definition of the array.
+   Only arrays and objects which implement <interfacename>Traversable</interfacename> can be expanded.
+   Array unpacking with <code>...</code> is available as of PHP 7.4.0.
+  </para>
+
+  <para>
+   It's possible to expand multiple times, and add normal elements before or after the <code>...</code> operator:
+
+   <example>
+    <title>Simple array unpacking</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// Using short array syntax.
+// Also, works with array() syntax.
+$arr1 = [1, 2, 3];
+$arr2 = [...$arr1]; //[1, 2, 3]
+$arr3 = [0, ...$arr1]; //[0, 1, 2, 3]
+$arr4 = [...$arr1, ...$arr2, 111]; //[1, 2, 3, 1, 2, 3, 111]
+$arr5 = [...$arr1, ...$arr1]; //[1, 2, 3, 1, 2, 3]
+
+function getArr() {
+  return ['a', 'b'];
+}
+$arr6 = [...getArr(), 'c' => 'd']; //['a', 'b', 'c' => 'd']
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <para>
+   Unpacking an array with the <code>...</code> operator follows the semantics of the <function>array_merge</function> function.
+   That is, later string keys overwrite earlier ones and integer keys are renumbered:
+
+   <example>
+    <title>Array unpacking with duplicate key</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// string key
+$arr1 = ["a" => 1];
+$arr2 = ["a" => 2];
+$arr3 = ["a" => 0, ...$arr1, ...$arr2];
+var_dump($arr3); // ["a" => 2]
+
+// integer key
+$arr4 = [1, 2, 3];
+$arr5 = [4, 5, 6];
+$arr6 = [...$arr4, ...$arr5];
+var_dump($arr6); // [1, 2, 3, 4, 5, 6]
+// Which is [0 => 1, 1 => 2, 2 => 3, 3 => 4, 4 => 5, 5 => 6]
+// where the original integer keys have not been retained.
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+  <note>
+   <para>
+    Keys that are neither integers nor strings throw a <classname>TypeError</classname>.
+    Such keys can only be generated by a <interfacename>Traversable</interfacename> object.
+   </para>
+  </note>
+  <note>
+   <para>
+    Prior to PHP 8.1, unpacking an array which has a string key is not supported:
+   </para>
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$arr1 = [1, 2, 3];
+$arr2 = ['a' => 4];
+$arr3 = [...$arr1, ...$arr2];
+// Fatal error: Uncaught Error: Cannot unpack array with string keys in example.php:5
+
+$arr4 = [1, 2, 3];
+$arr5 = [4, 5];
+$arr6 = [...$arr4, ...$arr5]; // works. [1, 2, 3, 4, 5]
+?>
+]]>
+    </programlisting>
+   </informalexample>
+  </note>
+
  </sect2>
 
  <sect2 xml:id="language.types.array.examples">

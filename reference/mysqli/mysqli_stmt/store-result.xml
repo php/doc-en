@@ -4,26 +4,26 @@
  <refnamediv>
   <refname>mysqli_stmt::store_result</refname>
   <refname>mysqli_stmt_store_result</refname>
-  <refpurpose>Transfers a result set from a prepared statement</refpurpose>
+  <refpurpose>Stores a result set in an internal buffer</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <para>&style.oop;</para>
-  <methodsynopsis role="oop">
+  <methodsynopsis role="mysqli_stmt">
    <modifier>public</modifier> <type>bool</type><methodname>mysqli_stmt::store_result</methodname>
    <void/>
   </methodsynopsis>
   <para>&style.procedural;</para>
-  <methodsynopsis role="procedural">
+  <methodsynopsis>
    <type>bool</type><methodname>mysqli_stmt_store_result</methodname>
    <methodparam><type>mysqli_stmt</type><parameter>statement</parameter></methodparam>
   </methodsynopsis>
   <para>
-   You must call <function>mysqli_stmt_store_result</function> for every query that
-   successfully produces a result set (<literal>SELECT, SHOW, DESCRIBE, EXPLAIN</literal>),
-   if and only if you want to buffer the complete result set by the client,
-   so that the subsequent <function>mysqli_stmt_fetch</function> call returns buffered data.
+   This function should be called for queries that successfully 
+   produce a result set (e.g. <literal>SELECT, SHOW, DESCRIBE, EXPLAIN</literal>)
+   only if the complete result set needs to be buffered in PHP. Each subsequent
+   <function>mysqli_stmt_fetch</function> call will return buffered data.
   </para>
   <note>
    <para>
@@ -58,36 +58,18 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-/* Open a connection */
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
 $query = "SELECT Name, CountryCode FROM City ORDER BY Name LIMIT 20";
-if ($stmt = $mysqli->prepare($query)) {
+$stmt = $mysqli->prepare($query);
+$stmt->execute();
 
-    /* execute query */
-    $stmt->execute();
+/* store the result in an internal buffer */
+$stmt->store_result();
 
-    /* store result */
-    $stmt->store_result();
-
-    printf("Number of rows: %d.\n", $stmt->num_rows);
-
-    /* free result */
-    $stmt->free_result();
-
-    /* close statement */
-    $stmt->close();
-}
-
-/* close connection */
-$mysqli->close();
-?>
+printf("Number of rows: %d.\n", $stmt->num_rows);
 ]]>
    </programlisting>
   </example>
@@ -96,36 +78,18 @@ $mysqli->close();
    <programlisting role="php">
 <![CDATA[
 <?php
-/* Open a connection */
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
 $query = "SELECT Name, CountryCode FROM City ORDER BY Name LIMIT 20";
-if ($stmt = mysqli_prepare($link, $query)) {
+$stmt = mysqli_prepare($link, $query);
+mysqli_stmt_execute($stmt);
 
-    /* execute query */
-    mysqli_stmt_execute($stmt);
+/* store the result in an internal buffer */
+mysqli_stmt_store_result($stmt);
 
-    /* store result */
-    mysqli_stmt_store_result($stmt);
-
-    printf("Number of rows: %d.\n", mysqli_stmt_num_rows($stmt));
-
-    /* free result */
-    mysqli_stmt_free_result($stmt);
-
-    /* close statement */
-    mysqli_stmt_close($stmt);
-}
-
-/* close connection */
-mysqli_close($link);
-?>
+printf("Number of rows: %d.\n", mysqli_stmt_num_rows($stmt));
 ]]>
    </programlisting>
    &examples.outputs;

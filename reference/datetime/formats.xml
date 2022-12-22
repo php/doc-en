@@ -6,8 +6,8 @@
  <para>
   This section describes all the different formats that the
   <classname>DateTimeImmutable</classname>, <classname>DateTime</classname>,
-  <function>date_create</function>,
-  <function>date_create_immutable</function>, and
+  <function>date_create_immutable</function>,
+  <function>date_create</function>, <function>date_parse</function>, and
   <function>strtotime</function> parser understands. The formats are grouped
   by section. In most cases formats from different sections, separated by
   whitespace, comma or dot, can be used in the same date/time string. For each
@@ -18,6 +18,103 @@
   double quotes are case-sensitive (<literal>"T"</literal> is only
   <literal>T</literal>).
  </para>
+
+ <para>
+  A general set of rules should be taken into account.
+ </para>
+ <orderedlist>
+  <listitem>
+   <simpara>
+    The parser, allows for each unit (year, month, day, hour, minute, second)
+    the full range of values. For a year that's just 4 digits, for a month
+    that's 0-12, day is 0-31, hour is 0-24, and minute is 0-59.
+   </simpara>
+  </listitem>
+  <listitem>
+   <simpara>
+    60 is allowed for seconds, as sometimes date strings with that
+    leapsecond do show up. But PHP implements Unix time where "60" is not
+    a valid second number and hence it overflows.
+   </simpara>
+  </listitem>
+  <listitem>
+   <simpara>
+    <function>strtotime</function> returns &false; if any number is outside of
+    the ranges, and <function>DateTimeImmutable::__construct</function> throws
+    an exception.
+   </simpara>
+  </listitem>
+  <listitem>
+   <simpara>
+    If a string contains a date, all time elements are reset to 0.
+   </simpara>
+  </listitem>
+  <listitem>
+   <simpara>
+    All less-significant time elements are reset to 0 if any part of a time is
+    present in the given string.
+   </simpara>
+  </listitem>
+  <listitem>
+   <simpara>
+    The parser is dumb, and doesn't do any checks to make it faster (and
+    more generic).
+   </simpara>
+  </listitem>
+  <listitem>
+   <para>
+    There is an additional check if an invalid date is provided:
+    <example>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$res = date_parse("2015-09-31");
+var_dump($res["warnings"]);
+?>
+]]>
+     </programlisting>
+     &example.outputs;
+     <screen>
+<![CDATA[
+array(1) {
+  [11] =>
+  string(27) "The parsed date was invalid"
+}
+]]>
+     </screen>
+    </example>
+   </para>
+  </listitem>
+  <listitem>
+   <para>
+    It is already possible to handle the edge cases, but then
+    <function>DateTimeImmutable::createFromFormat</function> must be used
+    while supplying the correct format.
+    <example>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$res = DateTimeImmutable::createFromFormat("Y-m-d", "2015-09-34");
+var_dump($res);
+]]>
+     </programlisting>
+     &example.outputs;
+     <screen>
+<![CDATA[
+object(DateTimeImmutable)#1 (3) {
+  ["date"]=>
+  string(26) "2015-10-04 17:24:43.000000"
+  ["timezone_type"]=>
+  int(3)
+  ["timezone"]=>
+  string(13) "Europe/London"
+}
+]]>
+     </screen>
+    </example>
+   </para>
+  </listitem>
+ </orderedlist>
  
  <!--Time Formats: {{{-->
  <sect1 xml:id="datetime.formats.time">
@@ -26,9 +123,9 @@
   <para>
    This page describes the different date/time formats that the
    <classname>DateTimeImmutable</classname>, <classname>DateTime</classname>,
-  <function>date_create</function>,
-  <function>date_create_immutable</function>, and
-  <function>strtotime</function> parser understands.
+   <function>date_create</function>,
+   <function>date_create_immutable</function>, and
+   <function>strtotime</function> parser understands.
   </para>
   
   <table>
@@ -184,8 +281,10 @@
   
   <para>
    This page describes the different date formats that the
-   <function>strtotime</function>, <classname>DateTime</classname> and
-   <function>date_create</function> parser understands.
+   <classname>DateTimeImmutable</classname>, <classname>DateTime</classname>,
+   <function>date_create</function>,
+   <function>date_create_immutable</function>, and
+   <function>strtotime</function> parser understands.
   </para>
   
   <table>
@@ -253,6 +352,11 @@
       <entry><literal>YY</literal></entry>
       <entry>[0-9]{4}</entry>
       <entry>"2000", "2008", "1978"</entry>
+     </row>
+     <row>
+      <entry><literal>YYY</literal></entry>
+      <entry>[0-9]{5,19}</entry>
+      <entry>"81412", "20192"</entry>
      </row>
     </tbody>
    </tgroup>
@@ -331,7 +435,7 @@
      </row>
      <row>
       <entry>Day and textual month</entry>
-      <entry><literal>d</literal> ([ .\t-])* <literal>m</literal></entry>
+      <entry><literal>dd</literal> ([ .\t-])* <literal>m</literal></entry>
       <entry>"1 July", "17 Apr", "9.May"</entry>
      </row>
      <row>
@@ -348,6 +452,11 @@
       <entry>Year (and just the year)</entry>
       <entry><literal>YY</literal></entry>
       <entry>"1978", "2008"</entry>
+     </row>
+     <row>
+      <entry>Year (expanded, 5-19 digits with sign)</entry>
+      <entry>[+-] <literal>YYY</literal></entry>
+      <entry>"-81120", "+20192"</entry>
      </row>
      <row>
       <entry>Textual month (and just the month)</entry>
@@ -388,6 +497,11 @@
       <entry>Four digit year with optional sign, month and day</entry>
       <entry>[+-]? <literal>YY</literal> "-" <literal>MM</literal> "-" <literal>DD</literal></entry>
       <entry>"-0002-07-26", "+1978-04-17", "1814-05-17"</entry>
+     </row>
+     <row>
+      <entry>Five+ digit year with required sign, month and day</entry>
+      <entry>[+-] <literal>YYY</literal> "-" <literal>MM</literal> "-" <literal>DD</literal></entry>
+      <entry>"-81120-02-26", "+20192-04-17"</entry>
      </row>
     </tbody>
    </tgroup>
@@ -461,8 +575,10 @@
   
   <para>
    This page describes the different compound date/time formats that the
-   <function>strtotime</function>, <classname>DateTime</classname> and
-   <function>date_create</function> parser understands.
+   <classname>DateTimeImmutable</classname>, <classname>DateTime</classname>,
+   <function>date_create</function>,
+   <function>date_create_immutable</function>, and
+   <function>strtotime</function> parser understands.
   </para>
   
   <table>
@@ -561,6 +677,72 @@
   </table>
   
   <table>
+   <title>Standards Formats</title>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Description</entry>
+      <entry>Examples</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>ATOM</entry>
+      <entry>"2022-06-02T16:58:35+00:00"</entry>
+     </row>
+     <row>
+      <entry>COOKIE</entry>
+      <entry>"Thursday, 02-Jun-2022 16:58:35 UTC"</entry>
+     </row>
+     <row>
+      <entry>ISO8601</entry>
+      <entry>"2022-06-02T16:58:35+0000"</entry>
+     </row>
+     <row>
+      <entry><link xlink:href="&url.rfc;822">RFC 822</link></entry>
+      <entry>"Thu, 02 Jun 22 16:58:35 +0000"</entry>
+     </row>
+     <row>
+      <entry><link xlink:href="&url.rfc;850">RFC 850</link></entry>
+      <entry>"Thursday, 02-Jun-22 16:58:35 UTC"</entry>
+     </row>
+     <row>
+      <entry><link xlink:href="&url.rfc;1036">RFC 1036</link></entry>
+      <entry>"Thu, 02 Jun 22 16:58:35 +0000"</entry>
+     </row>
+     <row>
+      <entry><link xlink:href="&url.rfc;1123">RFC 1123</link></entry>
+      <entry>"Thu, 02 Jun 2022 16:58:35 +0000"</entry>
+     </row>
+     <row>
+      <entry><link xlink:href="&url.rfc;2822">RFC 2822</link></entry>
+      <entry>"Thu, 02 Jun 2022 16:58:35 +0000"</entry>
+     </row>
+     <row>
+      <entry><link xlink:href="&url.rfc;3339">RFC 3339</link></entry>
+      <entry>"2022-06-02T16:58:35+00:00"</entry>
+     </row>
+     <row>
+      <entry><link xlink:href="&url.rfc;3339">RFC 3339</link> Extended</entry>
+      <entry>"2022-06-02T16:58:35.698+00:00"</entry>
+     </row>
+     <row>
+      <entry><link xlink:href="&url.rfc;7231">RFC 7231</link></entry>
+      <entry>"Thu, 02 Jun 2022 16:58:35 GMT"</entry>
+     </row>
+     <row>
+      <entry>RSS</entry>
+      <entry>"Thu, 02 Jun 2022 16:58:35 +0000"</entry>
+     </row>
+     <row>
+      <entry>W3C</entry>
+      <entry>"2022-06-02T16:58:35+00:00"</entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </table>
+
+  <table>
    <title>Localized Notations</title>
    <tgroup cols="3">
     <thead>
@@ -612,6 +794,11 @@
       <entry>"@1215282385"</entry>
      </row>
      <row>
+      <entry>Unix Timestamp with microseconds</entry>
+      <entry>"@" "-"? [0-9]+ "." [0-9]{0,6}</entry>
+      <entry>"@1607974647.503686"</entry>
+     </row>
+     <row>
       <entry>XMLRPC</entry>
       <entry><literal>YY</literal> <literal>MM</literal> <literal>DD</literal> "T" <literal>hh</literal> ":" <literal>II</literal> ":" <literal>SS</literal></entry>
       <entry>"20080701T22:38:07", "20080701T9:38:07"</entry>
@@ -637,7 +824,7 @@
     "W".
    </para>
    <para>
-    The "T" in the SOAP, XMRPC and WDDX formats is case-sensitive, you
+    The "T" in the SOAP, XMLRPC and WDDX formats is case-sensitive, you
     can only use the upper case "T".
    </para>
    <para>
@@ -652,8 +839,10 @@
   <title>Relative Formats</title>
   <para>
    This page describes the different relative date/time formats that the
-   <function>strtotime</function>, <classname>DateTime</classname> and
-   <function>date_create</function> parser understands.
+   <classname>DateTimeImmutable</classname>, <classname>DateTime</classname>,
+   <function>date_create</function>,
+   <function>date_create_immutable</function>, and
+   <function>strtotime</function> parser understands.
   </para>
   
   <table>
@@ -696,9 +885,10 @@
      </row>
      <row>
       <entry><literal>unit</literal></entry>
-      <entry>(('sec' | 'second' | 'min' | 'minute' | 'hour' | 'day' |
-       'fortnight' | 'forthnight' | 'month' | 'year') 's'?) | 'weeks' |
-       <literal>daytext</literal></entry>
+      <entry>'ms' | 'µs' | (( 'msec' | 'millisecond' | 'µsec' | 'microsecond'
+      | 'usec' | 'sec' | 'second' | 'min' | 'minute' | 'hour' | 'day' |
+      'fortnight' | 'forthnight' | 'month' | 'year') 's'?) | 'weeks' |
+      <literal>daytext</literal></entry>
      </row>
     </tbody>
    </tgroup>
@@ -758,13 +948,15 @@
      <row>
       <entry>'first day of'</entry>
       <entry>Sets the day of the first of the current month. This phrase is
-       best used together with a month name following it.</entry>
+       usually best used together with a month name following it as it only
+       effects the current month</entry>
       <entry>"first day of January 2008"</entry>
      </row>
      <row>
       <entry>'last day of'</entry>
       <entry>Sets the day to the last day of the current month. This phrase is
-       best used together with a month name following it.</entry>
+       usually best used together with a month name following it as it only
+       effects the current month</entry>
       <entry>"last day of next month"</entry>
      </row>
      <row>
@@ -794,7 +986,10 @@
      </row>
      <row>
       <entry><literal>dayname</literal></entry>
-      <entry>Moves to the next day of this name.</entry>
+      <entry>
+       Moves to the next day of this name. (See <link
+       linkend="datetime.formats.relative.dayname-note">note</link>)
+      </entry>
       <entry>"Monday"</entry>
      </row>
      <row>
@@ -820,10 +1015,18 @@
     produces "2008-07-24 00:00". The reason for this is that those
     five statements directly influence the current time.
    </para>
+   <para>
+    Keywords such as "first day of" depend on the context in which the
+    relative format string is used. If used with a static method or function,
+    the referent is the current system timestamp. However, if used in
+    <function>DateTime::modify</function> or
+    <function>DateTimeImmutable::modify</function>, the referent is the object
+    on which the <literal>modify()</literal> method is called.
+   </para>
   </note>
   
   <note>
-   <para>
+   <para xml:id="datetime.formats.relative.dayname-note">
     Observe the following remarks when the current day-of-week is the
     same as the day-of-week used in the date/time string. The current
     day-of-week could have been (re-)calculated by non-relative parts of
@@ -956,17 +1159,10 @@
       </thead>
       <tbody>
        <row>
-        <entry>5.6.23, 7.0.8</entry>
+        <entry>7.0.8</entry>
         <entry>
          Weeks always start on monday. Formerly, sunday would also be considered
          to start a week.
-        </entry>
-       </row>
-       <row>
-        <entry>5.3.3</entry>
-        <entry>
-         "first day" and "last day" changed to behave has "+1 day" and "-1 day",
-         respectively. Previously, the behaviour was as "first day of" and "last day of".
         </entry>
        </row>
       </tbody>

@@ -214,16 +214,198 @@ echo 'Variables do not $expand $either';
    </simpara>
 
    <simpara>
-    The closing identifier <emphasis>must</emphasis> begin in the first column
-    of the line. Also, the identifier must follow the same naming rules as any
+    The closing identifier may be indented by space or tab, in which case
+    the indentation will be stripped from all lines in the doc string.
+    Prior to PHP 7.3.0, the closing identifier <emphasis>must</emphasis>
+    begin in the first column of the line.
+   </simpara>
+
+   <simpara>
+    Also, the closing identifier must follow the same naming rules as any
     other label in PHP: it must contain only alphanumeric characters and
     underscores, and must start with a non-digit character or underscore.
    </simpara>
 
+   <example>
+    <title>Basic Heredoc example as of PHP 7.3.0</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// no indentation
+echo <<<END
+      a
+     b
+    c
+\n
+END;
+
+// 4 spaces of indentation
+echo <<<END
+      a
+     b
+    c
+    END;
+]]>
+    </programlisting>
+    &example.outputs.73;
+    <screen>
+<![CDATA[
+      a
+     b
+    c
+
+  a
+ b
+c
+]]>
+    </screen>
+   </example>
+
+   <simpara>
+    If the closing identifier is indented further than any lines of the body, then a <classname>ParseError</classname> will be thrown:
+   </simpara>
+
+   <example>
+    <title>Closing identifier must not be indented further than any lines of the body</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+echo <<<END
+  a
+ b
+c
+   END;
+]]>
+    </programlisting>
+    &example.outputs.73;
+    <screen>
+<![CDATA[
+PHP Parse error:  Invalid body indentation level (expecting an indentation level of at least 3) in example.php on line 4
+]]>
+    </screen>
+   </example>
+
+   <simpara>
+    If the closing identifier is indented, tabs can be used as well, however,
+    tabs and spaces <emphasis>must not</emphasis> be intermixed regarding
+    the indentation of the closing identifier and the indentation of the body
+     (up to the closing identifier). In any of these cases, a <classname>ParseError</classname> will be thrown.
+
+    These whitespace constraints have been included because mixing tabs and
+    spaces for indentation is harmful to legibility.
+   </simpara>
+
+   <example>
+    <title>Different indentation for body (spaces) closing identifier</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// All the following code do not work.
+
+// different indentation for body (spaces) ending marker (tabs)
+{
+	echo <<<END
+	 a
+		END;
+}
+
+// mixing spaces and tabs in body
+{
+    echo <<<END
+    	a
+     END;
+}
+
+// mixing spaces and tabs in ending marker
+{
+	echo <<<END
+		  a
+		 END;
+}
+]]>
+    </programlisting>
+    &example.outputs.73;
+    <screen>
+<![CDATA[
+PHP Parse error:  Invalid indentation - tabs and spaces cannot be mixed in example.php line 8
+]]>
+    </screen>
+   </example>
+
+   <simpara>
+    The closing identifier for the body string is not required to be
+    followed by a semicolon or newline. For example, the following code
+    is allowed as of PHP 7.3.0:
+   </simpara>
+
+   <example>
+    <title>Continuing an expression after a closing identifier</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$values = [<<<END
+a
+  b
+    c
+END, 'd e f'];
+var_dump($values);
+]]>
+    </programlisting>
+    &example.outputs.73;
+    <screen>
+<![CDATA[
+array(2) {
+  [0] =>
+  string(11) "a
+  b
+    c"
+  [1] =>
+  string(5) "d e f"
+}
+]]>
+    </screen>
+   </example>
+
    <warning>
     <simpara>
-     It is very important to note that the line with the closing identifier must
-     contain no other characters, except a semicolon (<literal>;</literal>).
+     If the closing identifier was found at the start of a line, then
+     regardless of whether it was a part of another word, it may be considered
+     as the closing identifier and causes a <classname>ParseError</classname>.
+    </simpara>
+
+    <example>
+     <title>Closing identifier in body of the string tends to cause ParseError</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+$values = [<<<END
+a
+b
+END ING
+END, 'd e f'];
+]]>
+     </programlisting>
+     &example.outputs.73;
+    <screen>
+<![CDATA[
+PHP Parse error:  syntax error, unexpected identifier "ING", expecting "]" in example.php on line 6
+]]>
+     </screen>
+    </example>
+
+    <simpara>
+     To avoid this problem, it is safe for you to follow the simple rule:
+     <emphasis>do not choose the closing identifier that appears in the body
+     of the text</emphasis>.
+    </simpara>
+
+   </warning>
+
+   <warning>
+    <simpara>
+     Prior to PHP 7.3.0, it is very important to note that the line with the
+     closing identifier must contain no other characters, except a semicolon
+     (<literal>;</literal>).
      That means especially that the identifier
      <emphasis>may not be indented</emphasis>, and there may not be any spaces
      or tabs before or after the semicolon. It's also important to realize that
@@ -241,7 +423,7 @@ echo 'Variables do not $expand $either';
     </simpara>
 
     <example>
-     <title>Invalid example</title>
+     <title>Invalid example, prior to PHP 7.3.0</title>
      <programlisting role="php">
       <!-- This is an INVALID example -->
 <![CDATA[
@@ -257,7 +439,7 @@ bar
      </programlisting>
     </example>
     <example>
-     <title>Valid example</title>
+     <title>Valid example, even if prior to PHP 7.3.0</title>
      <programlisting role="php">
       <!-- This is a VALID example -->
 <![CDATA[
@@ -645,8 +827,8 @@ Changing the character at index -3 to o gives strong.
     <simpara>
      Any scalar variable, array element or object property with a
      <type>string</type> representation can be included via this syntax.
-     Simply write the expression the same way as it would appear outside the
-     <type>string</type>, and then wrap it in <literal>{</literal> and
+     The expression is written the same way as it would appear outside the
+     <type>string</type>, and then wrapped in <literal>{</literal> and
      <literal>}</literal>. Since <literal>{</literal> can not be escaped, this
      syntax will only be recognised when the <literal>$</literal> immediately
      follows the <literal>{</literal>. Use <literal>{\$</literal> to get a
@@ -702,6 +884,11 @@ echo "This is the value of the var named by the return value of \$object->getNam
 
 // Won't work, outputs: This is the return value of getName(): {getName()}
 echo "This is the return value of getName(): {getName()}";
+
+// Won't work, outputs: C:\folder\{fantastic}.txt
+echo "C:\folder\{$great}.txt"
+// Works, outputs: C:\folder\fantastic.txt
+echo "C:\\folder\\{$great}.txt"
 ?>
 ]]>
 <!-- maybe it's better to leave this out??
@@ -808,8 +995,9 @@ echo "I'd like an {${beers::$ale}}\n";
 
    <note>
     <simpara>
-     <type>String</type>s may also be accessed using braces, as in
+     Prior to PHP 8.0.0, <type>string</type>s could also be accessed using braces, as in
      <varname>$str{42}</varname>, for the same purpose.
+     This curly brace syntax was deprecated as of PHP 7.4.0 and no longer supported as of PHP 8.0.0.
     </simpara>
    </note>
 
@@ -1017,7 +1205,7 @@ bool(false)
   </para>
 
   <para>
-   In order to convert <type>object</type>s to <type>string</type> magic
+   In order to convert <type>object</type>s to <type>string</type>, the magic
    method <link linkend="language.oop5.magic">__toString</link> must be used.
   </para>
 
@@ -1120,15 +1308,7 @@ bool(false)
    <listitem>
     <simpara>
      Others use the current locale (see <function>setlocale</function>), but
-     operate byte-by-byte. This is the case of <function>strcasecmp</function>,
-     <function>strtoupper</function> and <function>ucfirst</function>.
-     This means they can be used only with single-byte encodings, as long as
-     the encoding is matched by the locale. For instance
-     <literal>strtoupper("á")</literal> may return <literal>"Á"</literal> if the
-     locale is correctly set and <literal>á</literal> is encoded with a single
-     byte. If it is encoded in UTF-8, the correct result will not be returned
-     and the resulting string may or may not be returned corrupted, depending
-     on the current locale.
+     operate byte-by-byte.
     </simpara>
    </listitem>
    <listitem>
@@ -1138,9 +1318,6 @@ bool(false)
      <link linkend="book.intl">intl</link> extension and in the
      <link linkend="book.pcre">PCRE</link> extension
      (in the last case, only when the <literal>u</literal> modifier is used).
-     Although this is due to their special purpose, the function
-     <function>utf8_decode</function> assumes a UTF-8 encoding and the
-     function <function>utf8_encode</function> assumes an ISO-8859-1 encoding.
     </simpara>
    </listitem>
   </itemizedlist>

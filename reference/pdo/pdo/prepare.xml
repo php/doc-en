@@ -9,15 +9,15 @@
  </refnamediv>
  <refsect1 role="description">
   &reftitle.description;
-  <methodsynopsis>
-   <modifier>public</modifier> <type>PDOStatement</type><methodname>PDO::prepare</methodname>
-   <methodparam><type>string</type><parameter>statement</parameter></methodparam>
-   <methodparam choice="opt"><type>array</type><parameter>driver_options</parameter><initializer>array()</initializer></methodparam>
+  <methodsynopsis role="PDO">
+   <modifier>public</modifier> <type class="union"><type>PDOStatement</type><type>false</type></type><methodname>PDO::prepare</methodname>
+   <methodparam><type>string</type><parameter>query</parameter></methodparam>
+   <methodparam choice="opt"><type>array</type><parameter>options</parameter><initializer>[]</initializer></methodparam>
   </methodsynopsis>
 
   <para>
    Prepares an SQL statement to be executed by the
-   <function>PDOStatement::execute</function> method. The statement template can
+   <methodname>PDOStatement::execute</methodname> method. The statement template can
    contain zero or more named (:name) or question mark (?) parameter markers
    for which real values will be substituted when the statement is executed.
    Both named and question mark parameter markers cannot be used within the same
@@ -27,7 +27,7 @@
   </para>
   <para>
    You must include a unique parameter marker for each value you wish to pass
-   in to the statement when you call <function>PDOStatement::execute</function>.
+   in to the statement when you call <methodname>PDOStatement::execute</methodname>.
    You cannot use a named parameter marker of the same name more than once in a prepared
    statement, unless emulation mode is on.
   </para>
@@ -40,12 +40,12 @@
    </para>
   </note>
   <para>
-   Calling <function>PDO::prepare</function> and
-   <function>PDOStatement::execute</function> for statements that will be
+   Calling <methodname>PDO::prepare</methodname> and
+   <methodname>PDOStatement::execute</methodname> for statements that will be
    issued multiple times with different parameter values optimizes the
    performance of your application by allowing the driver to negotiate
-   client and/or server side caching of the query plan and meta information. Also, calling <function>PDO::prepare</function> and
-   <function>PDOStatement::execute</function> helps to prevent SQL injection attacks by eliminating the need to
+   client and/or server side caching of the query plan and meta information. Also, calling <methodname>PDO::prepare</methodname> and
+   <methodname>PDOStatement::execute</methodname> helps to prevent SQL injection attacks by eliminating the need to
    manually quote and escape the parameters.
   </para>
   <para>
@@ -56,7 +56,7 @@
   </para>
   <note>
    <simpara>
-    As of PHP 5.3.0, the parser used for emulated prepared statements and for
+    The parser used for emulated prepared statements and for
     rewriting named or question mark style parameters supports the non standard
     backslash escapes for single- and double quotes. That means that terminating
     quotes immediately preceeded by a backslash are not recognized as such, which
@@ -66,13 +66,18 @@
     which is natively supported by the driver.
    </simpara>
   </note>
+  <para>
+    As of PHP 7.4.0, question marks can be escaped by doubling them. That means that
+    the <literal>??</literal> string will be translated to <literal>?</literal>
+    when sending the query to the database.
+  </para>
  </refsect1>
  <refsect1 role="parameters">
   &reftitle.parameters;
   <para>
    <variablelist>
     <varlistentry>
-     <term><parameter>statement</parameter></term>
+     <term><parameter>query</parameter></term>
      <listitem>
       <para>
        This must be a valid SQL statement template for the target database server.
@@ -80,7 +85,7 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>driver_options</parameter></term>
+     <term><parameter>options</parameter></term>
      <listitem>
       <para>
        This array holds one or more key=&gt;value pairs to set
@@ -101,17 +106,16 @@
   &reftitle.returnvalues;
   <para>
    If the database server successfully prepares the statement,
-   <function>PDO::prepare</function> returns a
+   <methodname>PDO::prepare</methodname> returns a
    <classname>PDOStatement</classname> object.
    If the database server cannot successfully prepare the statement,
-   <function>PDO::prepare</function> returns &false; or emits
-   <classname>PDOException</classname> (depending on <link
-   linkend="pdo.error-handling">error handling</link>).
+   <methodname>PDO::prepare</methodname> returns &false; or emits
+   <classname>PDOException</classname> (depending on <link linkend="pdo.error-handling">error handling</link>).
   </para>
   <note>
    <para>
     Emulated prepared statements does not communicate with the database server
-    so <function>PDO::prepare</function> does not check the statement.
+    so <methodname>PDO::prepare</methodname> does not check the statement.
    </para>
   </note>
  </refsect1>
@@ -127,10 +131,11 @@
 $sql = 'SELECT name, colour, calories
     FROM fruit
     WHERE calories < :calories AND colour = :colour';
-$sth = $dbh->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY));
-$sth->execute(array(':calories' => 150, ':colour' => 'red'));
+$sth = $dbh->prepare($sql, [PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY]);
+$sth->execute(['calories' => 150, 'colour' => 'red']);
 $red = $sth->fetchAll();
-$sth->execute(array(':calories' => 175, ':colour' => 'yellow'));
+/* Array keys can be prefixed with colons ":" too (optional) */
+$sth->execute([':calories' => 175, ':colour' => 'yellow']);
 $yellow = $sth->fetchAll();
 ?>
 ]]>
@@ -145,10 +150,25 @@ $yellow = $sth->fetchAll();
 $sth = $dbh->prepare('SELECT name, colour, calories
     FROM fruit
     WHERE calories < ? AND colour = ?');
-$sth->execute(array(150, 'red'));
+$sth->execute([150, 'red']);
 $red = $sth->fetchAll();
-$sth->execute(array(175, 'yellow'));
+$sth->execute([175, 'yellow']);
 $yellow = $sth->fetchAll();
+?>
+]]>
+    </programlisting>
+   </example>
+   <example>
+    <title>SQL statement template with question mark escaped</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+/* note: this is only valid on PostgreSQL databases */
+$sth = $dbh->prepare('SELECT * FROM issues WHERE tag::jsonb ?? ?');
+$sth->execute(['feature']);
+$featureIssues = $sth->fetchAll();
+$sth->execute(['performance']);
+$performanceIssues = $sth->fetchAll();
 ?>
 ]]>
     </programlisting>
@@ -160,14 +180,13 @@ $yellow = $sth->fetchAll();
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>PDO::exec</function></member>
-    <member><function>PDO::query</function></member>
-    <member><function>PDOStatement::execute</function></member>
+    <member><methodname>PDO::exec</methodname></member>
+    <member><methodname>PDO::query</methodname></member>
+    <member><methodname>PDOStatement::execute</methodname></member>
    </simplelist>
   </para>
  </refsect1>
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

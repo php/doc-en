@@ -1,0 +1,828 @@
+<?xml version="1.0" encoding="utf-8"?>
+ <chapter xml:id="language.enumerations" xmlns="http://docbook.org/ns/docbook">
+  <title>Enumerations</title>
+  <sect1 xml:id="language.enumerations.overview">
+   <title>Enumerations overview</title>
+   <?phpdoc print-version-for="enumerations"?>
+
+   <para>
+    Enumerations, or "Enums" allow a developer to define a custom type that is limited to one
+    of a discrete number of possible values.  That can be especially helpful when defining a
+    domain model, as it enables "making invalid states unrepresentable."
+   </para>
+
+   <para>
+    Enums appear in many languages with a variety of different features. In PHP,
+    Enums are a special kind of object.  The Enum itself is a class, and its possible
+    cases are all single-instance objects of that class.  That means Enum cases are
+    valid objects and may be used anywhere an object may be used, including type checks.
+   </para>
+
+   <para>
+    The most popular example of enumerations is the built-in boolean type, which is an
+    enumerated type with legal values &true; and &false;.
+    Enums allows developers to define their own arbitrarily robust enumerations.
+   </para>
+  </sect1>
+  <sect1 xml:id="language.enumerations.basics">
+   <title>Basic enumerations</title>
+
+   <para>
+    Enums are similar to classes, and share the same namespaces as classes, interfaces, and traits.
+    They are also autoloadable the same way. An Enum defines a new type, which has a fixed, limited
+    number of possible legal values.
+   </para>
+
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+enum Suit
+{
+    case Hearts;
+    case Diamonds;
+    case Clubs;
+    case Spades;
+}
+?>
+]]>
+   </programlisting>
+
+   <para>
+    This declaration creates a new enumerated type named <literal>Suit</literal>, which has
+    four and only four legal values: <literal>Suit::Hearts</literal>, <literal>Suit::Diamonds</literal>,
+    <literal>Suit::Clubs</literal>, and <literal>Suit::Spades</literal>. Variables may be assigned
+    to one of those legal values. A function may be type checked against an enumerated type,
+    in which case only values of that type may be passed.
+   </para>
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+function pick_a_card(Suit $suit) { ... }
+
+$val = Suit::Diamonds;
+
+// OK
+pick_a_card($val);
+// OK
+pick_a_card(Suit::Clubs);
+// TypeError: pick_a_card(): Argument #1 ($suit) must be of type Suit, string given
+pick_a_card('Spades');
+?>
+]]>
+   </programlisting>
+
+   <para>
+    An Enumeration may have zero or more <literal>case</literal> definitions, with no maximum.
+    A zero-case enum is syntactically valid, if rather useless.
+   </para>
+
+   <para>
+    For Enumeration cases, the same syntax rules apply as to any label in PHP, see
+    <link linkend="language.constants">Constants</link>.
+   </para>
+
+   <para>
+    By default, cases are not intrinsically backed by a scalar value. That is, <literal>Suit::Hearts</literal>
+    is not equal to <literal>"0"</literal>. Instead, each case is backed by a singleton object of that name. That means that:
+   </para>
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+$a = Suit::Spades;
+$b = Suit::Spades;
+
+$a === $b; // true
+
+$a instanceof Suit;  // true
+?>
+]]>
+   </programlisting>
+
+   <para>
+    It also means that enum values are never <literal>&lt;</literal> or <literal>&gt;</literal> each other,
+    since those comparisons are not meaningful on objects.  Those comparisons will always return
+    &false; when working with enum values.
+   </para>
+
+   <para>
+    This type of case, with no related data, is called a "Pure Case."  An Enum that contains
+    only Pure Cases is called a Pure Enum.
+   </para>
+
+   <para>
+    All Pure Cases are implemented as instances of their enum type.  The enum type is represented internally as a class.
+   </para>
+
+   <para>
+    All Cases have a read-only property, <literal>name</literal>, that is the case-sensitive name
+    of the case itself.
+   </para>
+
+   <programlisting role="php">
+<![CDATA[
+<?php
+print Suit::Spades->name;
+// prints "Spades"
+?>
+]]>
+   </programlisting>
+
+  </sect1>
+
+ <sect1 xml:id="language.enumerations.backed">
+  <title>Backed enumerations</title>
+
+  <para>
+   By default, Enumerated Cases have no scalar equivalent. They are simply singleton objects. However,
+   there are ample cases where an Enumerated Case needs to be able to round-trip to a database or
+   similar datastore, so having a built-in scalar (and thus trivially serializable) equivalent defined
+   intrinsically is useful.
+  </para>
+
+  <para>To define a scalar equivalent for an Enumeration, the syntax is as follows:</para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+enum Suit: string
+{
+    case Hearts = 'H';
+    case Diamonds = 'D';
+    case Clubs = 'C';
+    case Spades = 'S';
+}
+?>
+]]>
+  </programlisting>
+
+  <para>
+   A case that has a scalar equivalent is called a Backed Case, as it is "Backed"
+   by a simpler value.  An Enum that contains all Backed Cases is called a "Backed Enum."
+   A Backed Enum may contain only Backed Cases.  A Pure Enum may contain only Pure Cases.
+  </para>
+
+  <para>
+   A Backed Enum may be backed by types of <literal>int</literal> or <literal>string</literal>,
+   and a given enumeration supports only a single type at a time (that is, no union of <literal>int|string</literal>).
+   If an enumeration is marked as having a scalar equivalent, then all cases must have a unique
+   scalar equivalent defined explicitly.  There are no auto-generated scalar equivalents
+   (e.g., sequential integers).  Backed cases must be unique; two backed enum cases may
+   not have the same scalar equivalent.  However, a constant may refer to a case, effectively
+   creating an alias.  See <link linkend="language.enumerations.constants">Enumeration constants</link>.
+  </para>
+
+  <para>
+   Equivalent values must be literals or literal expressions. Constants and constant expressions
+   are not supported.  That is, <literal>1 + 1</literal> is allowed, but <literal>1 + SOME_CONST</literal>
+   is not.
+  </para>
+
+  <para>
+   Backed Cases have an additional read-only property, <literal>value</literal>, which is the value
+   specified in the definition.
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+print Suit::Clubs->value;
+// Prints "C"
+?>
+]]>
+  </programlisting>
+
+  <para>
+   In order to enforce the <literal>value</literal> property as read-only, a variable cannot
+   be assigned as a reference to it.  That is, the following throws an error:
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+$suit = Suit::Clubs;
+$ref = &$suit->value;
+// Error: Cannot acquire reference to property Suit::$value
+?>
+]]>
+  </programlisting>
+
+  <para>
+   Backed enums implement an internal <interfacename>BackedEnum</interfacename> interface,
+   which exposes two additional methods:
+  </para>
+
+  <simplelist>
+   <member>
+    <literal>from(int|string): self</literal> will take a scalar and return the corresponding
+    Enum Case.  If one is not found, it will throw a <classname>ValueError</classname>.  This is mainly
+    useful in cases where the input scalar is trusted and a missing enum value should be
+    considered an application-stopping error.
+   </member>
+   <member>
+    <literal>tryFrom(int|string): ?self</literal> will take a scalar and return the
+    corresponding Enum Case.  If one is not found, it will return <literal>null</literal>.
+    This is mainly useful in cases where the input scalar is untrusted and the caller wants
+    to implement their own error handling or default-value logic.
+   </member>
+  </simplelist>
+
+  <para>
+   The <literal>from()</literal> and <literal>tryFrom()</literal> methods follow standard
+   weak/strong typing rules.  In weak typing mode, passing an integer or string is acceptable
+   and the system will coerce the value accordingly.  Passing a float will also work and be
+   coerced.  In strict typing mode, passing an integer to <literal>from()</literal> on a
+   string-backed enum (or vice versa) will result in a <classname>TypeError</classname>,
+   as will a float in all circumstances.  All other parameter types will throw a TypeError
+   in both modes.
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+$record = get_stuff_from_database($id);
+print $record['suit'];
+
+$suit =  Suit::from($record['suit']);
+// Invalid data throws a ValueError: "X" is not a valid scalar value for enum "Suit"
+print $suit->value;
+
+$suit = Suit::tryFrom('A') ?? Suit::Spades;
+// Invalid data returns null, so Suit::Spades is used instead.
+print $suit->value;
+?>
+]]>
+  </programlisting>
+
+  <para>Manually defining a <literal>from()</literal> or <literal>tryFrom()</literal> method on a Backed Enum will result in a fatal error.</para>
+
+  </sect1>
+
+ <sect1 xml:id="language.enumerations.methods">
+  <title>Enumeration methods</title>
+
+  <para>
+   Enums (both Pure Enums and Backed Enums) may contain methods, and may implement interfaces.
+   If an Enum implements an interface, then any type check for that interface will also accept
+   all cases of that Enum.
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+interface Colorful
+{
+    public function color(): string;
+}
+
+enum Suit implements Colorful
+{
+    case Hearts;
+    case Diamonds;
+    case Clubs;
+    case Spades;
+
+    // Fulfills the interface contract.
+    public function color(): string
+    {
+        return match($this) {
+            Suit::Hearts, Suit::Diamonds => 'Red',
+            Suit::Clubs, Suit::Spades => 'Black',
+        };
+    }
+
+    // Not part of an interface; that's fine.
+    public function shape(): string
+    {
+        return "Rectangle";
+    }
+}
+
+function paint(Colorful $c) { ... }
+
+paint(Suit::Clubs);  // Works
+
+print Suit::Diamonds->shape(); // prints "Rectangle"
+?>
+]]>
+  </programlisting>
+
+  <para>
+   In this example, all four instances of <literal>Suit</literal> have two methods,
+   <literal>color()</literal> and <literal>shape()</literal>.  As far as calling code
+   and type checks are concerned, they behave exactly the same as any other object instance.
+  </para>
+
+  <para>
+   On a Backed Enum, the interface declaration goes after the backing type declaration.
+  </para>
+
+  <programlisting role="php">
+   <![CDATA[
+<?php
+interface Colorful
+{
+    public function color(): string;
+}
+
+enum Suit: string implements Colorful
+{
+    case Hearts = 'H';
+    case Diamonds = 'D';
+    case Clubs = 'C';
+    case Spades = 'S';
+
+    // Fulfills the interface contract.
+    public function color(): string
+    {
+        return match($this) {
+            Suit::Hearts, Suit::Diamonds => 'Red',
+            Suit::Clubs, Suit::Spades => 'Black',
+        };
+    }
+}
+?>
+]]>
+  </programlisting>
+
+  <para>
+   Inside a method, the <literal>$this</literal> variable is defined and refers to the Case instance.
+  </para>
+
+  <para>
+   Methods may be arbitrarily complex, but in practice will usually return a static value or
+   <link linkend="control-structures.match">match</link> on <literal>$this</literal> to provide
+   different results for different cases.
+  </para>
+
+  <para>
+   Note that in this case it would be a better data modeling practice to also define a
+   <literal>SuitColor</literal> Enum Type with values Red and Black and return that instead.
+   However, that would complicate this example.
+  </para>
+
+  <para>
+   The above hierarchy is logically similar to the following class structure
+   (although this is not the actual code that runs):
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+interface Colorful
+{
+    public function color(): string;
+}
+
+final class Suit implements UnitEnum, Colorful
+{
+    public const Hearts = new self('Hearts');
+    public const Diamonds = new self('Diamonds');
+    public const Clubs = new self('Clubs');
+    public const Spades = new self('Spades');
+
+    private function __construct(public readonly string $name) {}
+
+    public function color(): string
+    {
+        return match($this) {
+            Suit::Hearts, Suit::Diamonds => 'Red',
+            Suit::Clubs, Suit::Spades => 'Black',
+        };
+    }
+
+    public function shape(): string
+    {
+        return "Rectangle";
+    }
+
+    public static function cases(): array
+    {
+        // Illegal method, because manually defining a cases() method on an Enum is disallowed.
+        // See also "Value listing" section.
+    }
+}
+?>
+]]>
+  </programlisting>
+
+  <para>
+   Methods may be public, private, or protected, although in practice private and
+   protected are equivalent as inheritance is not allowed.
+  </para>
+
+ </sect1>
+
+ <sect1 xml:id="language.enumerations.static-methods">
+  <title>Enumeration static methods</title>
+
+  <para>
+   Enumerations may also have static methods.  The use for static methods on the
+   enumeration itself is primarily for alternative constructors.  E.g.:
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+enum Size
+{
+    case Small;
+    case Medium;
+    case Large;
+
+    public static function fromLength(int $cm): static
+    {
+        return match(true) {
+            $cm < 50 => static::Small,
+            $cm < 100 => static::Medium,
+            default => static::Large,
+        };
+    }
+}
+?>
+]]>
+  </programlisting>
+
+  <para>
+   Static methods may be public, private, or protected, although in practice private
+   and protected are equivalent as inheritance is not allowed.
+  </para>
+
+ </sect1>
+
+ <sect1 xml:id="language.enumerations.constants">
+  <title>Enumeration constants</title>
+
+  <para>
+   Enumerations may include constants, which may be public, private, or protected,
+   although in practice private and protected are equivalent as inheritance is not allowed.
+  </para>
+
+  <para>An enum constant may refer to an enum case:</para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+enum Size
+{
+    case Small;
+    case Medium;
+    case Large;
+
+    public const Huge = self::Large;
+}
+?>
+]]>
+  </programlisting>
+ </sect1>
+
+ <sect1 xml:id="language.enumerations.traits">
+  <title>Traits</title>
+
+  <para>Enumerations may leverage traits, which will behave the same as on classes.
+   The caveat is that traits <literal>use</literal>d in an enum must not contain properties.
+   They may only include methods and static methods.  A trait with properties will
+   result in a fatal error.
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+interface Colorful
+{
+    public function color(): string;
+}
+
+trait Rectangle
+{
+    public function shape(): string {
+        return "Rectangle";
+    }
+}
+
+enum Suit implements Colorful
+{
+    use Rectangle;
+
+    case Hearts;
+    case Diamonds;
+    case Clubs;
+    case Spades;
+
+    public function color(): string
+    {
+        return match($this) {
+            Suit::Hearts, Suit::Diamonds => 'Red',
+            Suit::Clubs, Suit::Spades => 'Black',
+        };
+    }
+}
+?>
+]]>
+  </programlisting>
+ </sect1>
+
+ <sect1 xml:id="language.enumerations.expressions">
+  <title>Enum values in constant expressions</title>
+
+  <para>
+   Because cases are represented as constants on the enum itself, they may be used as static
+   values in most constant expressions: property defaults, static variable defaults, parameter
+   defaults, global and class constant values. They may not be used in other enum case values, but
+   normal constants may refer to an enum case.
+  </para>
+
+  <para>
+   However, implicit magic method calls such as <classname>ArrayAccess</classname> on enums are not allowed in static
+   or constant definitions as we cannot absolutely guarantee that the resulting value is deterministic
+   or that the method invocation is free of side effects. Function calls, method calls, and
+   property access continue to be invalid operations in constant expressions.
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+// This is an entirely legal Enum definition.
+enum Direction implements ArrayAccess
+{
+    case Up;
+    case Down;
+
+    public function offsetGet($val) { ... }
+    public function offsetExists($val) { ... }
+    public function offsetSet($val) { throw new Exception(); }
+    public function offsetUnset($val) { throw new Exception(); }
+}
+
+class Foo
+{
+    // This is allowed.
+    const Bar = Direction::Down;
+
+    // This is disallowed, as it may not be deterministic.
+    const Bar = Direction::Up['short'];
+    // Fatal error: Cannot use [] on enums in constant expression
+}
+
+// This is entirely legal, because it's not a constant expression.
+$x = Direction::Up['short'];
+?>
+]]>
+  </programlisting>
+ </sect1>
+
+ <sect1 xml:id="language.enumerations.object-differences">
+  <title>Differences from objects</title>
+
+  <para>
+   Although Enums are built on classes and objects, they do not support all object-related functionality.
+   In particular, Enum cases are forbidden from having state.
+  </para>
+
+  <simplelist>
+   <member>Constructors and Destructors are forbidden.</member>
+   <member>Inheritance is not supported. Enums may not extend or be extended.</member>
+   <member>Static or object properties are not allowed.</member>
+   <member>Cloning an Enum case is not supported, as cases must be singleton instances.</member>
+   <member><link linkend="language.oop5.magic">Magic methods</link>, except for those listed below, are disallowed.</member>
+   <member>Enums must always be declared before they are used.</member>
+  </simplelist>
+
+  <para>The following object functionality is available, and behaves just as it does on any other object:</para>
+
+  <simplelist>
+   <member>Public, private, and protected methods.</member>
+   <member>Public, private, and protected static methods.</member>
+   <member>Public, private, and protected constants.</member>
+   <member>Enums may implement any number of interfaces.</member>
+   <member>
+    Enums and cases may have <link linkend="language.attributes">attributes</link> attached
+    to them.  The <constant>TARGET_CLASS</constant> target
+    filter includes Enums themselves.  The <constant>TARGET_CLASS_CONST</constant> target filter
+    includes Enum Cases.
+   </member>
+   <member>
+    <link linkend="object.call">__call</link>, <link linkend="object.callstatic">__callStatic</link>,
+    and <link linkend="object.invoke">__invoke</link> magic methods
+   </member>
+   <member><constant>__CLASS__</constant> and <constant>__FUNCTION__</constant> constants behave as normal</member>
+  </simplelist>
+
+  <para>
+   The <literal>::class</literal> magic constant on an Enum type evaluates to the type
+   name including any namespace, exactly the same as an object.  The <literal>::class</literal>
+   magic constant on a Case instance also evaluates to the Enum type, as it is an
+   instance of that type.
+  </para>
+
+  <para>
+   Additionally, enum cases may not be instantiated directly with <literal>new</literal>, nor with
+   <methodname>ReflectionClass::newInstanceWithoutConstructor</methodname> in reflection.  Both will result in an error.
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+$clovers = new Suit();
+// Error: Cannot instantiate enum Suit
+$horseshoes = (new ReflectionClass(Suit::class))->newInstanceWithoutConstructor()
+// Error: Cannot instantiate enum Suit
+?>
+]]>
+  </programlisting>
+ </sect1>
+
+ <sect1 xml:id="language.enumerations.listing">
+  <title>Value listing</title>
+
+  <para>
+   Both Pure Enums and Backed Enums implement an internal interface named
+   <interfacename>UnitEnum</interfacename>.  <literal>UnitEnum</literal> includes a static method
+   <literal>cases()</literal>. <literal>cases()</literal> returns a packed array of
+   all defined Cases in the order of declaration.
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+Suit::cases();
+// Produces: [Suit::Hearts, Suit::Diamonds, Suit::Clubs, Suit::Spades]
+?>
+]]>
+  </programlisting>
+
+  <para>Manually defining a <literal>cases()</literal> method on an Enum will result in a fatal error.</para>
+ </sect1>
+
+ <sect1 xml:id="language.enumerations.serialization">
+  <title>Serialization</title>
+
+  <para>
+   Enumerations are serialized differently from objects.  Specifically, they have a new serialization code,
+   <literal>"E"</literal>, that specifies the name of the enum case.  The deserialization routine is then
+   able to use that to set a variable to the existing singleton value.  That ensures that:
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+Suit::Hearts === unserialize(serialize(Suit::Hearts));
+
+print serialize(Suit::Hearts);
+// E:11:"Suit:Hearts";
+?>
+]]>
+  </programlisting>
+
+  <para>
+   On deserialization, if an enum and case cannot be found to match a serialized
+   value a warning will be issued and <literal>false</literal> returned.</para>
+
+  <para>
+   If a Pure Enum is serialized to JSON, an error will be thrown.  If a Backed Enum
+   is serialized to JSON, it will be represented by its value scalar only, in the
+   appropriate type.  The behavior of both may be overridden by implementing
+   <classname>JsonSerializable</classname>.
+  </para>
+
+  <para>For <function>print_r</function>, the output of an enum case is slightly different
+   from objects to minimize confusion.
+  </para>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+enum Foo {
+    case Bar;
+}
+
+enum Baz: int {
+    case Beep = 5;
+}
+
+print_r(Foo::Bar);
+print_r(Baz::Beep);
+
+/* Produces
+
+Foo Enum (
+    [name] => Bar
+)
+Baz Enum:int {
+    [name] => Beep
+    [value] => 5
+}
+*/
+?>
+]]>
+  </programlisting>
+ </sect1>
+
+ <sect1 xml:id="language.enumerations.examples">
+  &reftitle.examples;
+
+  <para>
+   <example>
+    <title>Basic limited values</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+enum SortOrder
+{
+    case Asc;
+    case Desc;
+}
+
+function query($fields, $filter, SortOrder $order = SortOrder::Asc) { ... }
+?>
+]]>
+    </programlisting>
+    <para>
+     The <literal>query()</literal> function can now proceed safe in the knowledge that
+     <literal>$order</literal> is guaranteed to be either <literal>SortOrder::Asc</literal>
+     or <literal>SortOrder::Desc</literal>.  Any other value would have resulted in a
+     <classname>TypeError</classname>, so no further error checking or testing is needed.
+    </para>
+   </example>
+  </para>
+
+  <para>
+
+   <example>
+    <title>Advanced exclusive values</title>
+
+    <programlisting role="php">
+<![CDATA[
+<?php
+enum UserStatus: string
+{
+    case Pending = 'P';
+    case Active = 'A';
+    case Suspended = 'S';
+    case CanceledByUser = 'C';
+
+    public function label(): string
+    {
+        return match($this) {
+            static::Pending => 'Pending',
+            static::Active => 'Active',
+            static::Suspended => 'Suspended',
+            static::CanceledByUser => 'Canceled by user',
+        };
+    }
+}
+?>
+]]>
+    </programlisting>
+
+    <para>
+     In this example, a user's status may be one of, and exclusively, <literal>UserStatus::Pending</literal>,
+     <literal>UserStatus::Active</literal>, <literal>UserStatus::Suspended</literal>, or
+     <literal>UserStatus::CanceledByUser</literal>.  A function can type a parameter against
+     <literal>UserStatus</literal> and then only accept those four values, period.
+    </para>
+
+    <para>
+     All four values have a <literal>label()</literal> method, which returns a human-readable string.
+     That string is independent of the "machine name" scalar equivalent string, which can be used in,
+     for example, a database field or an HTML select box.
+    </para>
+
+    <programlisting role="php">
+<![CDATA[
+<?php
+foreach (UserStatus::cases() as $case) {
+    printf('<option value="%s">%s</option>\n', $case->value, $case->label());
+}
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+
+ </sect1>
+
+ </chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

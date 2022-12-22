@@ -18,6 +18,14 @@
    implementation of additional functionality in similar objects without the
    need to reimplement all of the shared functionality.
   </para>
+  <para>
+   Private methods of a parent class are not accessible to a child class. As a result,
+   child classes may reimplement a private method themselves without regard for normal
+   inheritance rules.  Prior to PHP 8.0.0, however, <literal>final</literal> and <literal>static</literal>
+   restrictions were applied to private methods.  As of PHP 8.0.0, the only private method
+   restriction that is enforced is <literal>private final</literal> constructors, as that
+   is a common way to "disable" the constructor when using static factory methods instead.
+  </para>
  <para>
   The <link linkend="language.oop5.visibility">visibility</link>
   of methods, properties and constants can be relaxed, e.g. a
@@ -32,6 +40,27 @@
     used. If a class extends another, then the parent class must be declared 
     before the child class structure. This rule applies to classes that inherit 
     other classes and interfaces.
+   </para>
+  </note>
+  <note>
+   <para>
+    It is not allowed to override a read-write property with a <link linkend="language.oop5.properties.readonly-properties">readonly property</link> or vice versa.
+    <example>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+class A {
+    public int $prop;
+}
+class B extends A {
+    // Illegal: read-write -> readonly
+    public readonly int $prop;
+}
+?>
+]]>
+     </programlisting>
+    </example>
    </para>
   </note>
 
@@ -74,6 +103,81 @@ $bar->printPHP();       // Output: 'PHP is great'
 ]]>
     </programlisting>
    </example>
+  </sect2>
+
+  <sect2 xml:id="language.oop5.inheritance.internal-classes">
+   <title>Return Type Compatibility with Internal Classes</title>
+ 
+   <para>
+    Prior to PHP 8.1, most internal classes or methods didn't declare their return types,
+    and any return type was allowed when extending them.
+   </para>
+ 
+   <para>
+    As of PHP 8.1.0, most internal methods started to "tentatively" declare their return type,
+    in that case the return type of methods should be compatible with the parent being extended;
+    otherwise, a deprecation notice is emitted.
+    Note that lack of an explicit return declaration is also considered a signature mismatch,
+    and thus results in the deprecation notice.
+   </para>
+ 
+   <para>
+    If the return type cannot be declared for an overriding method due to PHP cross-version compatibility concerns,
+    a <code>#[ReturnTypeWillChange]</code> attribute can be added to silence the deprecation notice.
+   </para>
+ 
+   <example>
+    <title>The overriding method does not declare any return type</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class MyDateTime extends DateTime
+{
+    public function modify(string $modifier) { return false; }
+}
+ 
+// "Deprecated: Return type of MyDateTime::modify(string $modifier) should either be compatible with DateTime::modify(string $modifier): DateTime|false, or the #[\ReturnTypeWillChange] attribute should be used to temporarily suppress the notice" as of PHP 8.1.0
+?> 
+]]>
+    </programlisting>
+   </example>
+ 
+   <example>
+    <title>The overriding method declares a wrong return type</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class MyDateTime extends DateTime
+{
+    public function modify(string $modifier): ?DateTime { return null; }
+}
+ 
+// "Deprecated: Return type of MyDateTime::modify(string $modifier): ?DateTime should either be compatible with DateTime::modify(string $modifier): DateTime|false, or the #[\ReturnTypeWillChange] attribute should be used to temporarily suppress the notice" as of PHP 8.1.0
+?> 
+]]>
+    </programlisting>
+   </example>
+ 
+   <example>
+    <title>The overriding method declares a wrong return type without a deprecation notice</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class MyDateTime extends DateTime
+{
+    /**
+     * @return DateTime|false
+     */
+    #[ReturnTypeWillChange]
+    public function modify(string $modifier) { return false; }
+}
+ 
+// No notice is triggered 
+?> 
+]]>
+    </programlisting>
+   </example>
+ 
   </sect2>
 
  </sect1>

@@ -5,7 +5,7 @@
   <refname>mb_detect_encoding</refname>
   <refpurpose>Detect character encoding</refpurpose>
  </refnamediv>
-   
+
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
@@ -15,7 +15,19 @@
    <methodparam choice="opt"><type>bool</type><parameter>strict</parameter><initializer>&false;</initializer></methodparam>
   </methodsynopsis>
   <para>
-   Detects character encoding in <type>string</type> <parameter>string</parameter>. 
+   Detects the most likely character encoding for <type>string</type> <parameter>string</parameter>
+   from an ordered list of candidates.
+  </para>
+  <para>
+   Automatic detection of the intended character encoding can never be entirely reliable;
+   without some additional information, it is similar to decoding an encrypted string
+   without the key. It is always preferable to use an indication of character encoding
+   stored or transmitted with the data, such as a "Content-Type" HTTP header.
+  </para>
+  <para>
+   This function is most useful with multibyte encodings, where not all sequences of
+   bytes form a valid string. If the input string contains such a sequence, that
+   encoding will be rejected, and the next encoding checked.
   </para>
  </refsect1>
 
@@ -27,7 +39,7 @@
      <term><parameter>string</parameter></term>
      <listitem>
       <para>
-       The <type>string</type> being detected.
+       The <type>string</type> being inspected.
       </para>
      </listitem>
     </varlistentry>
@@ -35,13 +47,14 @@
      <term><parameter>encodings</parameter></term>
      <listitem>
       <para>
-       <parameter>encodings</parameter> is list of character
-       encoding. Encoding order may be specified by array or comma
-       separated list string.
+       A list of character encodings to try, in order. The list may be specified as
+       an array of strings, or a single string separated by commas.
       </para>
       <para>
        If <parameter>encodings</parameter> is omitted or &null;,
-       detect_order is used.
+       the current detect_order (set with the <link linkend="ini.mbstring.detect-order">
+       mbstring.detect_order</link> configuration option, or <function>mb_detect_order</function>
+       function) will be used.
       </para>
      </listitem>
     </varlistentry>
@@ -49,21 +62,28 @@
      <term><parameter>strict</parameter></term>
      <listitem>
       <para>
-       <parameter>strict</parameter> specifies whether to use
-       the strict encoding detection or not.
-       Default is &false;.
+       Controls the behaviour when <parameter>string</parameter>
+       is not valid in any of the listed <parameter>encodings</parameter>.
+       If <parameter>strict</parameter> is set to &false;, the closest matching
+       encoding will be returned; if <parameter>strict</parameter> is set to &true;,
+       &false; will be returned.
+      </para>
+      <para>
+       The default value for <parameter>strict</parameter> can be set
+       with the <link linkend="ini.mbstring.strict-detection">
+       mbstring.strict_detection</link> configuration option.
       </para>
      </listitem>
     </varlistentry>
    </variablelist>
   </para>
  </refsect1>
- 
+
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   The detected character encoding or &false; if the encoding cannot be
-   detected from the given string.
+   The detected character encoding, or &false; if the string is not valid
+   in any of the listed encodings.
   </para>
  </refsect1>
 
@@ -75,23 +95,100 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-/* Detect character encoding with current detect_order */
+// Detect character encoding with current detect_order
 echo mb_detect_encoding($str);
 
-/* "auto" is expanded according to mbstring.language */
+// "auto" is expanded according to mbstring.language
 echo mb_detect_encoding($str, "auto");
 
-/* Specify "encodings" parameter by list separated by comma */
+// Specify "encodings" parameter by list separated by comma
 echo mb_detect_encoding($str, "JIS, eucjp-win, sjis-win");
 
-/* Use array to specify "encodings" parameter  */
-$ary[] = "ASCII";
-$ary[] = "JIS";
-$ary[] = "EUC-JP";
-echo mb_detect_encoding($str, $ary);
+// Use array to specify "encodings" parameter
+$encodings = [
+  "ASCII",
+  "JIS",
+  "EUC-JP"
+];
+echo mb_detect_encoding($str, $encodings);
 ?>
 ]]>
     </programlisting>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Effect of <parameter>strict</parameter> parameter</title>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+// 'áéóú' encoded in ISO-8859-1
+$str = "\xE1\xE9\xF3\xFA";
+
+// The string is not valid ASCII or UTF-8, but UTF-8 is considered a closer match
+var_dump(mb_detect_encoding($str, ['ASCII', 'UTF-8'], false));
+var_dump(mb_detect_encoding($str, ['ASCII', 'UTF-8'], true));
+
+// If a valid encoding is found, the strict parameter does not change the result
+var_dump(mb_detect_encoding($str, ['ASCII', 'UTF-8', 'ISO-8859-1'], false));
+var_dump(mb_detect_encoding($str, ['ASCII', 'UTF-8', 'ISO-8859-1'], true));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+string(5) "UTF-8"
+bool(false)
+string(10) "ISO-8859-1"
+string(10) "ISO-8859-1"
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   In some cases, the same sequence of bytes may form a valid string in multiple
+   character encodings, and it is impossible to know which interpretation was
+   intended. For instance, among many others, the byte sequence "\xC4\xA2" could be:
+  </para>
+  <para>
+   <simplelist>
+    <member>
+     "Ä¢" (U+00C4 LATIN CAPITAL LETTER A WITH DIAERESIS followed by U+00A2 CENT SIGN)
+     encoded in any of ISO-8859-1, ISO-8859-15, or Windows-1252
+    </member>
+    <member>
+     "ФЂ" (U+0424 CYRILLIC CAPITAL LETTER EF followed by U+0402 CYRILLIC CAPITAL LETTER
+     DJE) encoded in ISO-8859-5
+    </member>
+    <member>
+     "Ģ" (U+0122 LATIN CAPITAL LETTER G WITH CEDILLA) encoded in UTF-8
+    </member>
+   </simplelist>
+  </para>
+  <para>
+   <example>
+    <title>Effect of order when multiple encodings match</title>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+$str = "\xC4\xA2";
+
+// The string is valid in all three encodings, so the first one listed will be returned
+var_dump(mb_detect_encoding($str, ['UTF-8', 'ISO-8859-1', 'ISO-8859-5']));
+var_dump(mb_detect_encoding($str, ['ISO-8859-1', 'ISO-8859-5', 'UTF-8']));
+var_dump(mb_detect_encoding($str, ['ISO-8859-5', 'UTF-8', 'ISO-8859-1']));
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+string(5) "UTF-8"
+string(10) "ISO-8859-1"
+string(10) "ISO-8859-5"
+]]>
+    </screen>
    </example>
   </para>
  </refsect1>

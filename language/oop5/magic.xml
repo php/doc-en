@@ -58,6 +58,9 @@
     must be identical to the signature described in this document.
     Otherwise, a fatal error is emitted.
     Prior to PHP 8.0.0, no diagnostic was emitted.
+    However, <link linkend="object.construct">__construct()</link> and
+    <link linkend="object.destruct">__destruct()</link> must not declare a return type;
+    otherwise a fatal error is emitted.
    </para>
   </warning>
  
@@ -96,7 +99,7 @@
    <para>
     The intended use of <link linkend="object.sleep">__sleep()</link> is to commit pending
     data or perform similar cleanup tasks. Also, the function is
-    useful if a very large objects doesn't need to be saved completely.
+    useful if a very large object doesn't need to be saved completely.
    </para>
    <para>
     Conversely, <function>unserialize</function> checks for the
@@ -268,6 +271,12 @@ class Connection
      is disabled.
     </para>
     <para>
+     As of PHP 8.0.0, any class that contains a <link linkend="object.tostring">__toString()</link>
+     method will also implicitly implement the <interfacename>Stringable</interfacename> interface, and will
+     thus pass type checks for that interface.  Explicitly implementing the interface anyway is
+     recommended.
+    </para>
+    <para>
      In PHP 7.4, the returned value <emphasis>must</emphasis> be a
      <type>string</type>, otherwise an <classname>Error</classname> is thrown.
     </para>
@@ -355,6 +364,96 @@ bool(true)
 ]]>
     </screen>
    </example>
+   <example>
+    <title>Using <link linkend="object.invoke">__invoke()</link></title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class Sort
+{
+    private $key;
+
+    public function __construct(string $key)
+    {
+        $this->key = $key;
+    }
+
+    public function __invoke(array $a, array $b): int
+    {
+        return $a[$this->key] <=> $b[$this->key];
+    }
+}
+
+$customers = [
+    ['id' => 1, 'first_name' => 'John', 'last_name' => 'Do'],
+    ['id' => 3, 'first_name' => 'Alice', 'last_name' => 'Gustav'],
+    ['id' => 2, 'first_name' => 'Bob', 'last_name' => 'Filipe']
+];
+
+// sort customers by first name
+usort($customers, new Sort('first_name'));
+print_r($customers);
+
+// sort customers by last name
+usort($customers, new Sort('last_name'));
+print_r($customers);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Array
+(
+    [0] => Array
+        (
+            [id] => 3
+            [first_name] => Alice
+            [last_name] => Gustav
+        )
+
+    [1] => Array
+        (
+            [id] => 2
+            [first_name] => Bob
+            [last_name] => Filipe
+        )
+
+    [2] => Array
+        (
+            [id] => 1
+            [first_name] => John
+            [last_name] => Do
+        )
+
+)
+Array
+(
+    [0] => Array
+        (
+            [id] => 1
+            [first_name] => John
+            [last_name] => Do
+        )
+
+    [1] => Array
+        (
+            [id] => 2
+            [first_name] => Bob
+            [last_name] => Filipe
+        )
+
+    [2] => Array
+        (
+            [id] => 3
+            [first_name] => Alice
+            [last_name] => Gustav
+        )
+
+)
+]]>
+    </screen>
+   </example>
   </sect2>
 
   <sect2 xml:id="language.oop5.magic.set-state">
@@ -422,7 +521,7 @@ object(A)#2 (2) {
     <simpara>
      When exporting an object, <function>var_export</function> does not check
      whether <link linkend="object.set-state">__set_state()</link> is
-     implemented by the object's class, so re-importing such objects will fail,
+     implemented by the object's class, so re-importing objects will result in an <classname>Error</classname> exception,
      if __set_state() is not implemented. Particularly, this affects some
      internal classes.
     </simpara>

@@ -18,7 +18,7 @@
   </methodsynopsis>
   <para>
    Marks event pending. Non-pending event will never occur, and the event
-   callback will never be called. In conjuction with
+   callback will never be called. In conjunction with
    <methodname>Event::del</methodname>
    an event could be re-scheduled by user at any time.
   </para>
@@ -32,6 +32,7 @@
    has no effect.
   </para>
  </refsect1>
+
  <refsect1 role="parameters">
   &reftitle.parameters;
   <variablelist>
@@ -47,24 +48,99 @@
    </varlistentry>
   </variablelist>
  </refsect1>
+
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   Returns &true; on success. Otherwise &false;
+   &return.success;
   </para>
  </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title>Adding a custom signal</title>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+/*
+Launch it in a terminal window:
+
+$ php examples/signal.php
+
+In another terminal window find out the pid and send SIGTERM, e.g.:
+
+$ ps aux | grep examp
+ruslan    3976  0.2  0.0 139896 11256 pts/1    S+   10:25   0:00 php examples/signal.php
+ruslan    3978  0.0  0.0   9572   864 pts/2    S+   10:26   0:00 grep --color=auto examp
+$ kill -TERM 3976
+
+At the first terminal window you should catch the following:
+
+Caught signal 15
+*/
+class MyEventSignal {
+    private $base, $ev;
+
+    public function __construct($base) {
+        $this->base = $base;
+        $this->ev = Event::signal($base, SIGTERM, array($this, 'eventSighandler'));
+        $this->ev->add();
+    }
+
+    public function eventSighandler($no, $c) {
+        echo "Caught signal $no\n";
+        $this->base->exit();
+    }
+}
+
+$base = new EventBase();
+$c    = new MyEventSignal($base);
+
+$base->loop();
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+Caught signal 15
+]]>
+   </screen>
+  </example>
+
+  <example>
+   <title>Adding a timer</title>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+$base = new EventBase();
+$n = 2;
+$e = Event::timer($base, function($n) use (&$e) {
+    echo "$n seconds elapsed\n";
+    $e->delTimer();
+}, $n);
+$e->add($n);
+$base->loop();
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+    <![CDATA[
+2 seconds elapsed
+]]>
+   </screen>
+  </example>
+ </refsect1>
+
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
-   <member>
-    <methodname>Event::addSignal</methodname>
-   </member>
-   <member>
-    <methodname>Event::addTimer</methodname>
-   </member>
-   <member>
-    <methodname>Event::del</methodname>
-   </member>
+   <member><methodname>Event::add</methodname></member>
+   <member><methodname>Event::del</methodname></member>
+   <member><methodname>Event::signal</methodname></member>
+   <member><methodname>Event::timer</methodname></member>
   </simplelist>
  </refsect1>
 </refentry>

@@ -4,24 +4,39 @@
  <refnamediv>
   <refname>mysqli_stmt::get_result</refname>
   <refname>mysqli_stmt_get_result</refname>
-  <refpurpose>Gets a result set from a prepared statement</refpurpose>
+  <refpurpose>Gets a result set from a prepared statement as a <classname>mysqli_result</classname> object</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <para>&style.oop;</para>
-  <methodsynopsis role="oop">
+  <methodsynopsis role="mysqli_stmt">
    <modifier>public</modifier> <type class="union"><type>mysqli_result</type><type>false</type></type><methodname>mysqli_stmt::get_result</methodname>
    <void/>
   </methodsynopsis>
   <para>&style.procedural;</para>
-  <methodsynopsis role="procedural">
+  <methodsynopsis>
    <type class="union"><type>mysqli_result</type><type>false</type></type><methodname>mysqli_stmt_get_result</methodname>
    <methodparam><type>mysqli_stmt</type><parameter>statement</parameter></methodparam>
   </methodsynopsis>
   <para>
-    Call to return a result set from a prepared statement query.
+    Retrieves a result set from a prepared statement as a
+    <classname>mysqli_result</classname> object. The data will be fetched from
+    the MySQL server to PHP. This method should be called only for
+    queries which produce a result set.
   </para>
+  <note>
+   <para>
+    &mysqli.available.mysqlnd;
+   </para>
+  </note>
+  <note>
+   <para>
+    This function cannot be used together
+    with <function>mysqli_stmt_store_result</function>. Both of these functions
+    retrieve the full result set from the MySQL server.
+   </para>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -45,60 +60,34 @@
   </para>
  </refsect1>
 
- <refsect1 role="mysqlnd">
-   &reftitle.mysqlnd;
-
-  <para>
-   &mysqli.available.mysqlnd;
-  </para>
- </refsect1>
-
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
    <title>&style.oop;</title>
    <programlisting role="php">
 <![CDATA[
-<?php 
+<?php
 
-$mysqli = new mysqli("127.0.0.1", "user", "password", "world"); 
-
-if($mysqli->connect_error)
-{
-    die("$mysqli->connect_errno: $mysqli->connect_error");
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
 $query = "SELECT Name, Population, Continent FROM Country WHERE Continent=? ORDER BY Name LIMIT 1";
 
-$stmt = $mysqli->stmt_init();
-if(!$stmt->prepare($query))
-{
-    print "Failed to prepare statement\n";
-}
-else
-{
-    $stmt->bind_param("s", $continent);
+$stmt = $mysqli->prepare($query);
+$stmt->bind_param("s", $continent);
 
-    $continent_array = array('Europe','Africa','Asia','North America');
+$continentList = array('Europe', 'Africa', 'Asia', 'North America');
 
-    foreach($continent_array as $continent)
-    {
-        $stmt->execute();
-        $result = $stmt->get_result();
-        while ($row = $result->fetch_array(MYSQLI_NUM))
-        {
-            foreach ($row as $r)
-            {
-                print "$r ";
-            }
-            print "\n";
+foreach ($continentList as $continent) {
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_array(MYSQLI_NUM)) {
+        foreach ($row as $r) {
+            print "$r ";
         }
+        print "\n";
     }
 }
-
-$stmt->close();
-$mysqli->close();
-?>
 ]]>
    </programlisting>
   </example>
@@ -106,51 +95,31 @@ $mysqli->close();
    <title>&style.procedural;</title>
    <programlisting role="php">
 <![CDATA[
-<?php 
+<?php
 
-$link = mysqli_connect("127.0.0.1", "user", "password", "world"); 
-
-if (!$link)
-{
-    $error = mysqli_connect_error();
-    $errno = mysqli_connect_errno();
-    print "$errno: $error\n";
-    exit();
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
 $query = "SELECT Name, Population, Continent FROM Country WHERE Continent=? ORDER BY Name LIMIT 1";
 
-$stmt = mysqli_stmt_init($link);
-if(!mysqli_stmt_prepare($stmt, $query))
-{
-    print "Failed to prepare statement\n";
-}
-else
-{
-    mysqli_stmt_bind_param($stmt, "s", $continent);
+$stmt = mysqli_prepare($link, $query);
+mysqli_stmt_bind_param($stmt, "s", $continent);
 
-    $continent_array = array('Europe','Africa','Asia','North America');
+$continentList= array('Europe', 'Africa', 'Asia', 'North America');
 
-    foreach($continent_array as $continent)
-    {
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-        while ($row = mysqli_fetch_array($result, MYSQLI_NUM))
-        {
-            foreach ($row as $r)
-            {
-                print "$r ";
-            }
-            print "\n";
+foreach ($continentList as $continent) {
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    while ($row = mysqli_fetch_array($result, MYSQLI_NUM)) {
+        foreach ($row as $r) {
+            print "$r ";
         }
+        print "\n";
     }
 }
-mysqli_stmt_close($stmt);
-mysqli_close($link);
-?>
 ]]>
    </programlisting>
-   &examples.outputs;
+   &examples.outputs.similar;
    <screen>
 <![CDATA[
 Albania 3401200 Europe 
@@ -171,7 +140,6 @@ Anguilla 8000 North America
     <member><function>mysqli_stmt_fetch</function></member>
     <member><function>mysqli_fetch_array</function></member>
     <member><function>mysqli_stmt_store_result</function></member>
-    <member><function>mysqli_errno</function></member>
    </simplelist>
   </para>
  </refsect1>

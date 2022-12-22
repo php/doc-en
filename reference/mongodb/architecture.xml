@@ -13,8 +13,8 @@
    This section explains how all the different parts of the driver fit
    together. From the different language runtimes, through the extension and
    to the PHP libraries on top. This new architecture has replaced the old
-   <link linkend="book.mongo">mongo</link> extension. We refer to the new one
-   as the <emphasis>mongodb</emphasis> extension.
+   <code>mongo</code> extension. We refer to the new one
+   as the <code>mongodb</code> extension.
   </para>
 
   <para>
@@ -197,7 +197,7 @@ foreach ($managers as $manager) {
     <literal>127.0.0.1</literal> and one connection to each of
     <literal>rs1.example.com</literal> and <literal>rs2.example.com</literal>.
     If the driver discovers additional members of the replica set after issuing
-    <literal>isMaster</literal> commands, it will open additional connections to
+    <literal>hello</literal> commands, it will open additional connections to
     those servers as well.
    </para>
 
@@ -205,7 +205,7 @@ foreach ($managers as $manager) {
     If the same worker executes the script again in a second request, the three
     clients will be re-used and no new connections should be made. Depending on
     how long ago the previous request was served, the driver may need to issue
-    additional <literal>isMaster</literal> commands to update its view of the
+    additional <literal>hello</literal> commands to update its view of the
     topologies.
    </para>
   </section>
@@ -267,8 +267,9 @@ foreach ($managers as $manager) {
     <title>Arrays</title>
 
     <para>
-     If an array is a <emphasis>packed array</emphasis> — i.e. the keys start
-     at 0 and are sequential without gaps: <emphasis>BSON array</emphasis>. 
+     If an array is a <emphasis>packed array</emphasis> — i.e. empty array or
+     the keys start at 0 and are sequential without gaps: <emphasis>BSON
+     array</emphasis>.
     </para>
 
     <para>
@@ -440,21 +441,21 @@ class AnotherClass1 implements MongoDB\BSON\Serializable {
   public $foo = 42;
   protected $prot = "wine";
   private $fpr = "cheese";
-  function bsonSerialize() {
+  function bsonSerialize(): array {
       return [ 'foo' => $this->foo, 'prot' => $this->prot ];
   }
 } // => { "foo" : 42, "prot" : "wine" }
 
 class AnotherClass2 implements MongoDB\BSON\Serializable {
   public $foo = 42;
-  function bsonSerialize() {
+  function bsonSerialize(): self {
       return $this;
   }
 } // => MongoDB\Driver\Exception\UnexpectedValueException("bsonSerialize() did not return an array or stdClass")
 
 class AnotherClass3 implements MongoDB\BSON\Serializable {
   private $elements = [ 'foo', 'bar' ];
-  function bsonSerialize() {
+  function bsonSerialize(): array {
       return $this->elements;
   }
 } // => { "0" : "foo", "1" : "bar" }
@@ -462,11 +463,11 @@ class AnotherClass3 implements MongoDB\BSON\Serializable {
 class ContainerClass implements MongoDB\BSON\Serializable {
   public $things = AnotherClass4 implements MongoDB\BSON\Serializable {
     private $elements = [ 0 => 'foo', 2 => 'bar' ];
-    function bsonSerialize() {
+    function bsonSerialize(): array {
       return $this->elements;
     }
   }
-  function bsonSerialize() {
+  function bsonSerialize(): array {
       return [ 'things' => $this->things ];
   }
 } // => { "things" : { "0" : "foo", "2" : "bar" } }
@@ -474,11 +475,11 @@ class ContainerClass implements MongoDB\BSON\Serializable {
 class ContainerClass implements MongoDB\BSON\Serializable {
   public $things = AnotherClass5 implements MongoDB\BSON\Serializable {
     private $elements = [ 0 => 'foo', 2 => 'bar' ];
-    function bsonSerialize() {
+    function bsonSerialize(): array {
       return array_values($this->elements);
     }
   }
-  function bsonSerialize() {
+  function bsonSerialize(): array {
       return [ 'things' => $this->things ];
   }
 } // => { "things" : [ "foo", "bar" ] }
@@ -486,11 +487,11 @@ class ContainerClass implements MongoDB\BSON\Serializable {
 class ContainerClass implements MongoDB\BSON\Serializable {
   public $things = AnotherClass6 implements MongoDB\BSON\Serializable {
     private $elements = [ 'foo', 'bar' ];
-    function bsonSerialize() {
+    function bsonSerialize(): array {
       return (object) $this->elements;
     }
   }
-  function bsonSerialize() {
+  function bsonSerialize(): array {
       return [ 'things' => $this->things ];
   }
 } // => { "things" : { "0" : "foo", "1" : "bar" } }
@@ -499,7 +500,7 @@ class UpperClass implements MongoDB\BSON\Persistable {
   public $foo = 42;
   protected $prot = "wine";
   private $fpr = "cheese";
-  function bsonSerialize() {
+  function bsonSerialize(): array {
       return [ 'foo' => $this->foo, 'prot' => $this->prot ];
   }
 } // => { "foo" : 42, "prot" : "wine", "__pclass" : { "$type" : "80", "$binary" : "VXBwZXJDbGFzcw==" } }
@@ -512,17 +513,18 @@ class UpperClass implements MongoDB\BSON\Persistable {
   <section xml:id="mongodb.persistence.deserialization">
    <title>Deserialization from BSON</title>
 
+   &mongodb.warning.duplicate-keys;
+
    <para>
-    The legacy <link linkend="book.mongo">mongo</link> extension deserialized
+    The legacy <code>mongo</code> extension deserialized
     both BSON documents and arrays as PHP arrays. While PHP arrays are
     convenient to work with, this behavior was problematic because different
     BSON types could deserialize to the same PHP value (e.g.
-     <literal>{"0": "foo"}</literal> and <literal>["foo"]</literal>) and make it
+    <literal>{"0": "foo"}</literal> and <literal>["foo"]</literal>) and make it
     impossible to infer the original BSON type. By default, the current driver
     addresses this concern by ensuring that BSON arrays and documents are
     converted to PHP arrays and objects, respectively.
    </para>
-
    <para>
     For compound types, there are three data types:
    </para>

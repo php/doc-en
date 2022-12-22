@@ -4,8 +4,8 @@
  <refnamediv>
   <refname>mysqli_stmt::$affected_rows</refname>
   <refname>mysqli_stmt_affected_rows</refname>
-  <refpurpose>Returns the total number of rows changed, deleted, or
-  inserted by the last executed statement
+  <refpurpose>Returns the total number of rows changed, deleted, inserted, or
+  matched by the last statement executed
   </refpurpose>
  </refnamediv>
 
@@ -21,11 +21,8 @@
   <para>
    Returns the number of rows affected by <literal>INSERT</literal>,
    <literal>UPDATE</literal>, or <literal>DELETE</literal> query. 
-  </para>
-  <para>
-   This function only works with queries which update a table. In order to
-   get the number of rows from a SELECT query, use 
-   <function>mysqli_stmt_num_rows</function> instead.
+   Works like <function>mysqli_stmt_num_rows</function> for
+   <literal>SELECT</literal> statements.
   </para>
  </refsect1>
 
@@ -42,15 +39,17 @@
   &reftitle.returnvalues;
   <para>
    An integer greater than zero indicates the number of rows affected or
-   retrieved.
-   Zero indicates that no records where updated for an UPDATE/DELETE
-   statement, no rows matched the WHERE clause in the query or that no query
-   has yet been executed. -1 indicates that the query has returned an error.
-   NULL indicates an invalid argument was supplied to the function.
+   retrieved. Zero indicates that no records were updated for an 
+   <literal>UPDATE</literal> statement, no rows matched the
+   <literal>WHERE</literal> clause in the query or that no query has yet been
+   executed. <literal>-1</literal> indicates that the query returned an error or
+   that, for a <literal>SELECT</literal> query,
+   <function>mysqli_stmt_affected_rows</function> was called prior to calling
+   <function>mysqli_stmt_store_result</function>.
   </para>
   <note>
    <para>
-    If the number of affected rows is greater than maximal PHP int value, the
+    If the number of affected rows is greater than maximum PHP int value, the
     number of affected rows will be returned as a string value.
    </para>
   </note>
@@ -59,17 +58,14 @@
  <refsect1 role="examples">
  &reftitle.examples;
   <example>
-   <title>&style.oop;</title>
+   <title><methodname>mysqli_stmt_affected_rows</methodname> example</title>
+   <para>&style.oop;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
-$mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
 /* create temp table */
 $mysqli->query("CREATE TEMPORARY TABLE myCountry LIKE Country");
@@ -77,39 +73,25 @@ $mysqli->query("CREATE TEMPORARY TABLE myCountry LIKE Country");
 $query = "INSERT INTO myCountry SELECT * FROM Country WHERE Code LIKE ?";
 
 /* prepare statement */
-if ($stmt = $mysqli->prepare($query)) {
+$stmt = $mysqli->prepare($query);
 
-    /* Bind variable for placeholder */
-    $code = 'A%';
-    $stmt->bind_param("s", $code);
+/* Bind variable for placeholder */
+$code = 'A%';
+$stmt->bind_param("s", $code);
 
-    /* execute statement */
-    $stmt->execute();
+/* execute statement */
+$stmt->execute();
 
-    printf("rows inserted: %d\n", $stmt->affected_rows);
-
-    /* close statement */
-    $stmt->close();
-}
-
-/* close connection */
-$mysqli->close();
-?>
+printf("Rows inserted: %d\n", $stmt->affected_rows);
 ]]>
    </programlisting>
-  </example>
-  <example>
-   <title>&style.procedural;</title>
+   <para>&style.procedural;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
-$link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
 /* create temp table */
 mysqli_query($link, "CREATE TEMPORARY TABLE myCountry LIKE Country");
@@ -117,30 +99,22 @@ mysqli_query($link, "CREATE TEMPORARY TABLE myCountry LIKE Country");
 $query = "INSERT INTO myCountry SELECT * FROM Country WHERE Code LIKE ?";
 
 /* prepare statement */
-if ($stmt = mysqli_prepare($link, $query)) {
+$stmt = mysqli_prepare($link, $query);
 
-    /* Bind variable for placeholder */
-    $code = 'A%';
-    mysqli_stmt_bind_param($stmt, "s", $code);
+/* Bind variable for placeholder */
+$code = 'A%';
+mysqli_stmt_bind_param($stmt, "s", $code);
 
-    /* execute statement */
-    mysqli_stmt_execute($stmt);
+/* execute statement */
+mysqli_stmt_execute($stmt);
 
-    printf("rows inserted: %d\n", mysqli_stmt_affected_rows($stmt));
-
-    /* close statement */
-    mysqli_stmt_close($stmt);
-}
-
-/* close connection */
-mysqli_close($link);
-?>
+printf("Rows inserted: %d\n", mysqli_stmt_affected_rows($stmt));
 ]]>
    </programlisting>
    &examples.outputs;
    <screen>
 <![CDATA[
-rows inserted: 17
+Rows inserted: 17
 ]]>
    </screen>
   </example>
@@ -151,7 +125,7 @@ rows inserted: 17
   <para>
    <simplelist>
     <member><function>mysqli_stmt_num_rows</function></member>
-    <member><function>mysqli_prepare</function></member>
+    <member><function>mysqli_stmt_store_result</function></member>
    </simplelist>
   </para>
  </refsect1>
