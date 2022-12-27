@@ -18,14 +18,23 @@
   is bundled with the extension should be copied somewhere into the docroot and
   viewed with a browser as it provides a detailed analysis of the internal 
   workings of APCu. If GD is enabled in PHP, it will even display some
-  interesting graphs. If APCu is working, the <literal>Cache full count
+  interesting graphs.</para>
+  <para>
+  If APCu is working, the <literal>Cache full count
   </literal> number (on the left) will display the number of times the cache
-  has reached maximum capacity and has had to forcefully clean any entries that
-  haven't been accessed in the last <literal>apc.ttl</literal> seconds. This
-  number is minimized in a well-configured cache.  If the cache is constantly
-  being filled, and thusly forcefully freed, the resulting churning will have
-  disparaging effects on script performance. The easiest way to minimize this 
-  number is to allocate more memory for APCu.
+  has reached maximum capacity and has had to evict entries to free up memory.
+  During eviction, if <literal>apc.ttl</literal> was specified, APCu will first
+  attempt to remove expired entries, i.e. entries whose TTL has either expired,
+  or entries that have no TTL set and haven't been accessed in the last
+  <literal>apc.ttl</literal> seconds. If <literal>apc.ttl</literal> was not set,
+  or removing expired entries did not free up enough space, APCu will clear the
+  entire cache.
+  </para>
+  <para>
+  The number of evictions should be minimal in a well-configured cache. If the
+  cache is constantly being filled, and thusly forcefully freed, the resulting
+  churning will have disparaging effects on script performance. The easiest way
+  to minimize this number is to allocate more memory for APCu.
  </para>
  <para>
   When APCu is compiled with mmap support (Memory Mapping), it will use only one 
@@ -200,16 +209,15 @@
     </term>
     <listitem>
      <para>
-      The number of seconds a cache entry is allowed to
-      idle in a slot in case this cache entry slot is
-      needed by another entry.  Leaving this at zero
-      means that APC's cache could potentially fill up
-      with stale entries while newer entries won't be
-      cached.  In the event of a cache running out of
-      available memory, the cache will be completely
-      expunged if ttl is equal to 0.  Otherwise, if the
-      ttl is greater than 0, APC will attempt to remove
-      expired entries.
+      Consider cache entries without an explicit TTL to be
+      expired if they have not been accessed in this many
+      seconds. Effectively, this allows such entries to be
+      removed opportunistically during a cache insert, or
+      prior to a full expunge. Note that because removal is
+      opportunistic, entries can still be readable even if
+      they are older than <literal>apc.ttl</literal> seconds.
+      This setting has no effect on cache entries that have
+      an explicit TTL specified.
      </para>
     </listitem>
    </varlistentry>

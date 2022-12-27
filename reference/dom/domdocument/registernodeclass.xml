@@ -7,7 +7,7 @@
  </refnamediv>
  <refsect1 role="description">
   &reftitle.description;
-  <methodsynopsis>
+  <methodsynopsis role="DOMDocument">
    <modifier>public</modifier> <type>bool</type><methodname>DOMDocument::registerNodeClass</methodname>
    <methodparam><type>string</type><parameter>baseClass</parameter></methodparam>
    <methodparam><type class="union"><type>string</type><type>null</type></type><parameter>extendedClass</parameter></methodparam>
@@ -138,33 +138,44 @@ text in child
     <para>
      When instantiating a custom <classname>DOMDocument</classname> the
      <varname>ownerDocument</varname> property will refer to the instantiated
-     class, meaning there is no need (and in fact not possible) to use
+     class. However, if all references to that class are removed, it
+     will be destroyed and new <classname>DOMDocument</classname> will be
+     created instead. For that reason you might use
      <function>DOMDocument::registerNodeClass</function> with
      <classname>DOMDocument</classname>
     </para>
     <programlisting role="php">
 <![CDATA[
 <?php
-class myDOMDocument extends DOMDocument {
+class MyDOMDocument extends DOMDocument {
 }
 
-class myOtherDOMDocument extends DOMDocument {
+class MyOtherDOMDocument extends DOMDocument {
 }
 
-// Create myDOMDocument with some XML
-$doc = new myDOMDocument;
+// Create MyDOMDocument with some XML
+$doc = new MyDOMDocument;
 $doc->loadXML("<root><element><child>text in child</child></element></root>");
 
 $child = $doc->getElementsByTagName("child")->item(0);
 
-// The current owner of the node is myDOMDocument
+// The current owner of the node is MyDOMDocument
+var_dump(get_class($child->ownerDocument));
+// MyDOMDocument is destroyed
+unset($doc);
+// And new DOMDocument instance is created
 var_dump(get_class($child->ownerDocument));
 
-// Import a node from myDOMDocument
-$newdoc = new myOtherDOMDocument;
+// Import a node from MyDOMDocument
+$newdoc = new MyOtherDOMDocument;
 $child = $newdoc->importNode($child);
 
-// The new owner of the node has changed to myOtherDOMDocument
+// Register custom DOMDocument
+$newdoc->registerNodeClass("DOMDocument", "MyOtherDOMDocument");
+
+var_dump(get_class($child->ownerDocument));
+unset($doc);
+// New MyOtherDOMDocument is created
 var_dump(get_class($child->ownerDocument));
 ?>
 ]]>
@@ -172,8 +183,10 @@ var_dump(get_class($child->ownerDocument));
     &example.outputs;
     <screen role="xml">
 <![CDATA[
-string(13) "myDOMDocument"
-string(18) "myOtherDOMDocument"
+string(13) "MyDOMDocument"
+string(11) "DOMDocument"
+string(18) "MyOtherDOMDocument"
+string(18) "MyOtherDOMDocument"
 ]]>
     </screen>
    </example>
