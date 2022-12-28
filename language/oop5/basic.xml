@@ -125,6 +125,72 @@ Stack trace:
      </screen>
     </example>
    </warning>
+
+   <sect3 xml:id="language.oop5.basic.class.readonly">
+    <title>Readonly classes</title>
+    <para>
+     As of PHP 8.2.0, a class can be marked with the
+     <modifier>readonly</modifier> modifier.
+     Marking a class as <modifier>readonly</modifier> will add the
+     <link linkend="language.oop5.properties.readonly-properties"><modifier>readonly</modifier> modifier</link>
+     to every declared property, and prevent the creation of
+     <link linkend="language.oop5.properties.dynamic-properties">dynamic properties</link>.
+     Moreover, it is impossible to add support for them by using the
+     <classname>AllowDynamicProperties</classname> attribute. Attempting to do so
+     will trigger a compile-time error.
+    </para>
+    <example>
+     <programlisting role="php">
+<![CDATA[
+<?php
+#[AllowDynamicProperties]
+readonly class Foo {
+}
+
+// Fatal error: Cannot apply #[AllowDynamicProperties] to readonly class Foo
+?>
+]]>
+     </programlisting>
+    </example>
+
+    <para>
+     As neither untyped, nor static properties can be marked with the
+     <literal>readonly</literal> modifier, readonly classes cannot declare
+     them either:
+    </para>
+    <example>
+     <programlisting role="php">
+<![CDATA[
+<?php
+readonly class Foo
+{
+    public $bar;
+}
+
+// Fatal error: Readonly property Foo::$bar must have type
+?>
+]]>
+     </programlisting>
+     <programlisting role="php">
+<![CDATA[
+<?php
+readonly class Foo
+{
+    public static int $bar;
+}
+
+// Fatal error: Readonly class Foo cannot declare static properties
+?>
+]]>
+     </programlisting>
+    </example>
+    <para>
+     A <modifier>readonly</modifier> class can be
+     <link linkend="language.oop5.basic.extends">extended</link>
+     if, and only if, the child class is also a
+     <modifier>readonly</modifier> class.
+    </para>
+   </sect3>
   </sect2>
 
   <sect2 xml:id="language.oop5.basic.new">
@@ -164,6 +230,53 @@ $instance = new $className(); // new SimpleClass()
 ?>
 ]]>
     </programlisting>
+   </example>
+   <para>
+    As of PHP 8.0.0, using <literal>new</literal> with arbitrary expressions
+    is supported. This allows more complex instantiation if the expression
+    produces a <type>string</type>. The expressions must be wrapped in parentheses.
+   </para>
+   <example>
+    <title>Creating an instance using an arbitrary expression</title>
+    <para>
+     In the given example we show multiple examples of valid arbitrary expressions that produce a class name.
+     This shows a call to a function, string concatenation, and the <constant>::class</constant> constant.
+    </para>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+
+class ClassA extends \stdClass {}
+class ClassB extends \stdClass {}
+class ClassC extends ClassB {}
+class ClassD extends ClassA {}
+
+function getSomeClass(): string
+{
+    return 'ClassA';
+}
+
+var_dump(new (getSomeClass()));
+var_dump(new ('Class' . 'B'));
+var_dump(new ('Class' . 'C'));
+var_dump(new (ClassD::class));
+?>
+]]>
+    </programlisting>
+    &example.outputs.8;
+    <screen>
+     <![CDATA[
+object(ClassA)#1 (0) {
+}
+object(ClassB)#1 (0) {
+}
+object(ClassC)#1 (0) {
+}
+object(ClassD)#1 (0) {
+}
+
+]]>
+    </screen>
    </example>
    <para>
     In the class context, it is possible to create a new object by

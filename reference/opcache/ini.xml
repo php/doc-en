@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-<sect1 xml:id="opcache.configuration" xmlns="http://docbook.org/ns/docbook">
+<sect1 xml:id="opcache.configuration" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  &reftitle.runtime;
  &extension.runtime;
  <para>
@@ -148,6 +148,12 @@
       <entry>"1"</entry>
       <entry>PHP_INI_SYSTEM</entry>
       <entry></entry>
+     </row>
+     <row>
+      <entry><link linkend="ini.opcache.record-warnings">opcache.record_warnings</link></entry>
+      <entry>"0"</entry>
+      <entry>PHP_INI_SYSTEM</entry>
+      <entry>Available as of PHP 8.0.0</entry>
      </row>
      <row>
       <entry><link linkend="ini.opcache.preferred-memory-model">opcache.preferred_memory_model</link></entry>
@@ -570,6 +576,9 @@
     <listitem>
      <para>
       A bitmask that controls which optimisation passes are executed.
+      The default is to apply all safe optimizations.
+      Changing the default is mostly useful for debugging/developing the optimizer
+      (see also <link linkend="ini.opcache.opt_debug_level">opcache.opt_debug_level</link>).
      </para>
     </listitem>
    </varlistentry>
@@ -696,6 +705,18 @@
       The log verbosity level. By default, only fatal errors (level 0) and
       errors (level 1) are logged. Other levels available are warnings (level
       2), information messages (level 3) and debug messages (level 4).
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry xml:id="ini.opcache.record-warnings">
+    <term>
+     <parameter>opcache.record_warnings</parameter>
+     <type>bool</type>
+    </term>
+    <listitem>
+     <para>
+      If enabled, OPcache will record compile-time warnings and replay them on
+      the next include, even if it is served from cache.
      </para>
     </listitem>
    </varlistentry>
@@ -914,8 +935,10 @@
     </term>
     <listitem>
      <para>
-      Preloading code as root is not allowed for security reasons. This directive
-      facilitates to let the preloading to be run as another user.
+      Lets the preloading to be run as the specified system user. This is useful for servers that
+      startup as root before switching to an unprivileged system user. Preloading as root is not
+      allowed by default for security reasons, unless this directive is explicitly set to
+      <literal>root</literal>.
      </para>
     </listitem>
    </varlistentry>
@@ -1037,7 +1060,9 @@
     <listitem>
      <para>
       A bit mask specifying which JIT debug output to enable.
-      For possible values, please consult <filename>zend_jit.h</filename>.
+      For possible values, please consult
+      <link xlink:href="&url.php.git.src.master.view;ext/opcache/jit/zend_jit.h">zend_jit.h</link>
+      (search for macro definitions beginning with <code>ZEND_JIT_DEBUG</code>).
      </para>
     </listitem>
    </varlistentry>
@@ -1049,7 +1074,9 @@
     <listitem>
      <para>
       Debugging option that disables JIT compilation after compiling a certain number of functions.
-      This may be helpful to bisect the source of a JIT miscompilation.
+      This may be helpful to bisect the source of a JIT miscompilation. Note: this option only works
+      when JIT trigger is set to 0 (compile on script load) or 1 (compile on first execution),
+      e.g., <code>opcache.jit=1215</code>. See more in <link linkend="ini.opcache.jit">opcache.jit</link> option.
      </para>
     </listitem>
    </varlistentry>
@@ -1074,7 +1101,8 @@
     </term>
     <listitem>
      <para>
-      Maximum number of root traces.
+      Maximum number of root traces. The root trace is an execution flow taking one path through the code firstly,
+      which is a unit of JIT compilation. JIT will not compile new code if it reaches this limit.
      </para>
     </listitem>
    </varlistentry>
@@ -1085,7 +1113,9 @@
     </term>
     <listitem>
      <para>
-      Maximum number of side traces a root trace may have.
+      Maximum number of side traces a root trace may have. The side trace is another execution flow that does not
+      follow the path of compiled root trace. Side traces belonging to the same root trace will not be compiled
+      if it reaches this limit.
      </para>
     </listitem>
    </varlistentry>
@@ -1109,6 +1139,9 @@
     <listitem>
      <para>
       After how many iterations a loop is considered hot.
+      Valid value range is <code>[0,255]</code>; for any setting out of this range,
+      e.g., -1 or 256, default value will be used instead. Specially, a zero value
+      will disable JIT to trace and compile any loops.
      </para>
     </listitem>
    </varlistentry>
@@ -1120,6 +1153,9 @@
     <listitem>
      <para>
       After how many calls a function is considered hot.
+      Valid value range is <code>[0,255]</code>; for any setting out of this range,
+      e.g., -1 or 256, default value will be used instead. Specially, a zero value
+      will disable JIT to trace and compile any functions.
      </para>
     </listitem>
    </varlistentry>
@@ -1131,6 +1167,9 @@
     <listitem>
      <para>
       After how many returns a return is considered hot.
+      Valid value range is <code>[0,255]</code>; for any setting out of this range,
+      e.g., -1 or 256, default value will be used instead. Specially, a zero value
+      will disable JIT to trace and compile any returns.
      </para>
     </listitem>
    </varlistentry>
@@ -1142,6 +1181,9 @@
     <listitem>
      <para>
       After how many exits a side exit is considered hot.
+      Valid value range is <code>[0,255]</code>; for any setting out of this range,
+      e.g., -1 or 256, default value will be used instead. Specially, a zero value
+      will disable JIT to trace and compile any side exits.
      </para>
     </listitem>
    </varlistentry>
