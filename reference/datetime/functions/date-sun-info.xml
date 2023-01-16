@@ -84,7 +84,8 @@
      <term><literal>civil_twilight_begin</literal></term>
      <listitem>
       <simpara>
-       The start of the civil dawn (zenith angle = 96°). It ends at <literal>sunrise</literal>.
+       The start of the civil dawn (zenith angle = 96°). It ends at
+       <literal>sunrise</literal>.
       </simpara>
      </listitem> 
     </varlistentry>
@@ -92,7 +93,8 @@
      <term><literal>civil_twilight_end</literal></term>
      <listitem>
       <simpara>
-       The end of the civil dusk (zenith angle = 96°). It starts at <literal>sunset</literal>.
+       The end of the civil dusk (zenith angle = 96°). It starts at
+       <literal>sunset</literal>.
       </simpara>
      </listitem> 
     </varlistentry>
@@ -141,6 +143,31 @@
   </para>
  </refsect1>
 
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>7.2.0</entry>
+       <entry>
+        The calculation was fixed with regards to local midnight instead of
+        local noon, which changes the results slightly.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
+  </para>
+ </refsect1>
+
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
@@ -171,86 +198,99 @@ astronomical_twilight_end: 17:12:00
 ]]>
     </screen>
    </example>
+  </para>
+
+  <para>
    <example>
-    <title>Polar night</title>
+    <title>Polar night, with some processing</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-var_dump(date_sun_info(strtotime("2017-12-21"), 90, 0));
+$tz = new \DateTimeZone('America/Anchorage');
+
+$si = date_sun_info(strtotime("2022-12-21"), 70.21, -148.51);
+foreach ($si as $key => $value) {
+    echo
+        match ($value) {
+            true => 'always',
+            false => 'never',
+            default => date_create("@{$value}")->setTimeZone($tz)->format( 'H:i:s T' ),
+        },
+        ": {$key}",
+        "\n";
+}
 ?>
 ]]>
     </programlisting>
     &example.outputs;
     <screen>
 <![CDATA[
-array(9) {
-  ["sunrise"]=>
-  bool(false)
-  ["sunset"]=>
-  bool(false)
-  ["transit"]=>
-  int(1513857490)
-  ["civil_twilight_begin"]=>
-  bool(false)
-  ["civil_twilight_end"]=>
-  bool(false)
-  ["nautical_twilight_begin"]=>
-  bool(false)
-  ["nautical_twilight_end"]=>
-  bool(false)
-  ["astronomical_twilight_begin"]=>
-  bool(false)
-  ["astronomical_twilight_end"]=>
-  bool(false)
-}
-]]>
-    </screen>
-   </example>
-   <example>
-    <title>Midnight sun</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-var_dump(date_sun_info(strtotime("2017-06-21"), 90, 0));
-?>
-]]>
-    </programlisting>
-    &example.outputs;
-    <screen>
-<![CDATA[
-array(9) {
-  ["sunrise"]=>
-  bool(true)
-  ["sunset"]=>
-  bool(true)
-  ["transit"]=>
-  int(1498046510)
-  ["civil_twilight_begin"]=>
-  bool(true)
-  ["civil_twilight_end"]=>
-  bool(true)
-  ["nautical_twilight_begin"]=>
-  bool(true)
-  ["nautical_twilight_end"]=>
-  bool(true)
-  ["astronomical_twilight_begin"]=>
-  bool(true)
-  ["astronomical_twilight_end"]=>
-  bool(true)
-}
+never: sunrise
+never: sunset
+12:52:18 AKST: transit
+10:53:19 AKST: civil_twilight_begin
+14:51:17 AKST: civil_twilight_end
+09:01:47 AKST: nautical_twilight_begin
+16:42:48 AKST: nautical_twilight_end
+07:40:47 AKST: astronomical_twilight_begin
+18:03:49 AKST: astronomical_twilight_end
 ]]>
     </screen>
    </example>
   </para>
- </refsect1>
 
- <refsect1 role="seealso">
-  &reftitle.seealso;
   <para>
-   <simplelist>
-    <member><function>date_sunrise</function></member>
-    <member><function>date_sunset</function></member>
-   </simplelist>
+   <example>
+    <title>Midnight sun (Tromsø, Norway)</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$si = date_sun_info(strtotime("2022-06-26"), 69.68, 18.94);
+print_r($si);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Array
+(
+    [sunrise] => 1
+    [sunset] => 1
+    [transit] => 1656240426
+    [civil_twilight_begin] => 1
+    [civil_twilight_end] => 1
+    [nautical_twilight_begin] => 1
+    [nautical_twilight_end] => 1
+    [astronomical_twilight_begin] => 1
+    [astronomical_twilight_end] => 1
+)
+]]>
+    </screen>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>Calculating length of day (Kyiv)</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$si = date_sun_info(strtotime('2022-08-26'), 50.45, 30.52);
+$diff = $si['sunset'] - $si['sunrise'];
+echo "Length of day: ",
+    floor($diff / 3600), "h ",
+    floor(($diff % 3600) / 60), "s\n";
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Length of day: 13h 56s
+]]>
+    </screen>
+   </example>
   </para>
  </refsect1>
 

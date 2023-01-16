@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry xml:id="function.simdjson-decode" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <refnamediv>
+  <refname>simdjson_decode</refname>
+  <refpurpose>Decodes a JSON string</refpurpose>
+ </refnamediv>
+
+ <refsect1 role="description">
+  &reftitle.description;
+  <methodsynopsis>
+   <type>mixed</type><methodname>simdjson_decode</methodname>
+   <methodparam><type>string</type><parameter>json</parameter></methodparam>
+   <methodparam choice="opt"><type>bool</type><parameter>associative</parameter><initializer>&false;</initializer></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>depth</parameter><initializer>512</initializer></methodparam>
+  </methodsynopsis>
+  <para>
+   Takes a JSON encoded string and converts it into a PHP value.
+   This uses a faster Simultaneous Instruction, Multiple Data implementation
+   than <function>json_decode</function> when it is supported by the computer architecture.
+  </para>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <variablelist>
+   <varlistentry>
+    <term><parameter>json</parameter></term>
+    <listitem>
+     <para>
+      The <parameter>json</parameter> <type>string</type> being decoded.
+     </para>
+     <para>
+      This function only works with UTF-8 encoded strings.
+     </para>
+     <para>
+      This function parses valid inputs which
+      <function>json_decode</function> can decode,
+      provided that they are less than 4 GiB long.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>associative</parameter></term>
+    <listitem>
+     <para>
+      When &true;, JSON objects will be returned as
+      associative &array;s; when &false;, JSON objects will be returned as &object;s.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>depth</parameter></term>
+    <listitem>
+     <para>
+      Maximum nesting depth of the structure being decoded.
+      The value must be greater than <literal>0</literal>,
+      and less than or equal to <literal>2147483647</literal>.
+
+      Callers should use reasonably small values,
+      because larger depths require more buffer space and will
+      increase the recursion depth, unlike the current <function>json_decode</function> implementation.
+     </para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <para>
+   Returns the value encoded in <parameter>json</parameter> in appropriate
+   PHP type. Values <literal>true</literal>, <literal>false</literal> and
+   <literal>null</literal> are returned as &true;, &false; and &null;
+   respectively.
+  </para>
+ </refsect1>
+
+ <refsect1 role="errors">
+  &reftitle.errors;
+  <para>
+   If <parameter>json</parameter> is invalid, a <classname>SimdJsonException</classname> is thrown as of PECL simdjson 2.1.0,
+   while previously, a <classname>RuntimeException</classname> was thrown.
+  </para>
+  <para>
+   If <parameter>depth</parameter> is outside the allowed range,
+   a <classname>SimdJsonValueError</classname> is thrown as of PECL simdjson 3.0.0,
+   while previously, an error of level <constant>E_WARNING</constant> was raised.
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>simdjson_decode</function> examples</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$json = '{"a":1,"b":2,"c":3}';
+
+var_dump(simdjson_decode($json));
+var_dump(simdjson_decode($json, true));
+
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+object(stdClass)#1 (3) {
+  ["a"]=>
+  int(1)
+  ["b"]=>
+  int(2)
+  ["c"]=>
+  int(3)
+}
+array(3) {
+  ["a"]=>
+  int(1)
+  ["b"]=>
+  int(2)
+  ["c"]=>
+  int(3)
+}
+]]>
+    </screen>
+   </example>
+   <example>
+    <title>Accessing invalid object properties</title>
+    <simpara>
+     Accessing elements within an object that contain characters not
+     permitted under PHP's naming convention (e.g. the hyphen) can be
+     accomplished by encapsulating the element name within braces and the apostrophe.
+    </simpara>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$json = '{"foo-bar": 12345}';
+
+$obj = simdjson_decode($json);
+print $obj->{'foo-bar'}; // 12345
+
+?>
+]]>
+    </programlisting>
+   </example>
+   <example>
+    <title>common mistakes using <function>simdjson_decode</function></title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+// the following strings are valid JavaScript but not valid JSON
+
+// the name and value must be enclosed in double quotes
+// single quotes are not valid
+$bad_json = "{ 'bar': 'baz' }";
+simdjson_decode($bad_json); // Throws SimdJsonException
+
+// the name must be enclosed in double quotes
+$bad_json = '{ bar: "baz" }';
+simdjson_decode($bad_json); // Throws SimdJsonException
+
+// trailing commas are not allowed
+$bad_json = '{ bar: "baz", }';
+simdjson_decode($bad_json); // Throws SimdJsonException
+
+?>
+]]>
+    </programlisting>
+   </example>
+   <example>
+    <title><parameter>depth</parameter> errors</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+// Encode some data with a maximum depth of 4
+// (array -> array -> array -> string)
+$json = json_encode(
+    [
+        1 => [
+            'English' => [
+                'One',
+                'January'
+            ],
+            'French' => [
+                'Une',
+                'Janvier'
+            ]
+        ]
+    ]
+);
+
+// Show the errors for different depths.
+var_dump(simdjson_decode($json, true, 4));
+try {
+    var_dump(simdjson_decode($json, true, 3));
+} catch (SimdJsonException $e) {
+     echo "Caught: ", $e->getMessage(), "\n";
+}
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+array(1) {
+  [1]=>
+  array(2) {
+    ["English"]=>
+    array(2) {
+      [0]=>
+      string(3) "One"
+      [1]=>
+      string(7) "January"
+    }
+    ["French"]=>
+    array(2) {
+      [0]=>
+      string(3) "Une"
+      [1]=>
+      string(7) "Janvier"
+    }
+  }
+}
+Caught: The JSON document was too deep (too many nested objects and arrays)
+]]>
+    </screen>
+   </example>
+   <example>
+    <title><function>simdjson_decode</function> of large integers</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$json = '{"number": 12345678901234567890}';
+
+var_dump(simdjson_decode($json));
+
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+object(stdClass)#1 (1) {
+  ["number"]=>
+  float(1.2345678901235E+19)
+}
+]]>
+    </screen>
+   </example>
+  </para>
+ </refsect1>
+
+ <refsect1 role="notes">
+  &reftitle.notes;
+  <note>
+   <para>
+    The JSON spec is not JavaScript, but a subset of JavaScript.
+   </para>
+  </note>
+  <note>
+   <para>
+    In the event of a failure to decode,
+    a <classname>SimdJsonException</classname> is thrown
+    and <methodname>SimdJsonException::getCode</methodname> and
+    <methodname>SimdJsonException::getMessage</methodname> can be used
+    to determine the exact nature of the error.
+   </para>
+  </note>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><function>json_encode</function></member>
+    <member><function>json_decode</function></member>
+   </simplelist>
+  </para>
+ </refsect1>
+</refentry>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

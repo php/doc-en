@@ -11,8 +11,10 @@
    <type class="union"><type>resource</type><type>false</type></type><methodname>dba_open</methodname>
    <methodparam><type>string</type><parameter>path</parameter></methodparam>
    <methodparam><type>string</type><parameter>mode</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>handler</parameter></methodparam>
-   <methodparam rep="repeat"><type>string</type><parameter>args</parameter></methodparam>
+   <methodparam choice="opt"><type class="union"><type>string</type><type>null</type></type><parameter>handler</parameter><initializer>&null;</initializer></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>permission</parameter><initializer>0644</initializer></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>map_size</parameter><initializer>0</initializer></methodparam>
+   <methodparam choice="opt"><type class="union"><type>int</type><type>null</type></type><parameter>flags</parameter><initializer>&null;</initializer></methodparam>
   </methodsynopsis>
   <para>
    <function>dba_open</function> establishes a database instance for
@@ -20,6 +22,7 @@
    <parameter>handler</parameter>.
   </para>
  </refsect1>
+
  <refsect1 role="parameters">
   &reftitle.parameters;
   <para>
@@ -154,46 +157,68 @@
      <listitem>
       <para>
        The name of the <link linkend="dba.requirements">handler</link> which
-       shall be used for accessing <parameter>path</parameter>. It is passed 
-       all optional parameters given to <function>dba_open</function> and 
-       can act on behalf of them.
+       shall be used for accessing <parameter>path</parameter>. It is passed
+       all optional parameters given to <function>dba_open</function> and
+       can act on behalf of them. If <parameter>handler</parameter> is &null;,
+       then the default handler is invoked.
       </para>
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>args</parameter></term>
+     <term><parameter>permission</parameter></term>
      <listitem>
       <para>
-       Optional &string; parameters which are passed to the driver.
-      </para>
-      <para>
-       The <literal>cdb</literal>, <literal>cdb_make</literal>, <literal>flatfile</literal>,
-       <literal>inifile</literal>, <literal>qdbm</literal> and <literal>tcadb</literal> drivers
-       do not support additional parameters.
+       Optional &integer; parameter which is passed to the driver. It has the same meaning as
+       the <parameter>permissions</parameter> parameter of <function>chmod</function>,
+       and defaults to <literal>0644</literal>.
       </para>
       <para>
        The <literal>db1</literal>, <literal>db2</literal>, <literal>db3</literal>,
        <literal>db4</literal>, <literal>dbm</literal>, <literal>gdbm</literal>,
-       and <literal>ndbm</literal> drivers supports a single additional parameter <literal>$filemode</literal>,
-       which has the same meaning as the <literal>$mode</literal> parameter of <function>chmod</function>,
-       and defaults to <literal>0644</literal>.
+       <literal>ndbm</literal>, and <literal>lmdb</literal> drivers support the
+       <parameter>permission</parameter> parameter.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>map_size</parameter></term>
+     <listitem>
+      <para>
+       Optional &integer; parameter which is passed to the driver. Its value should be a multiple of the
+       page size of the OS, or zero, to use the default map size.
       </para>
       <para>
-       The <literal>lmdb</literal> driver accepts two additional parameters. The first
-       allows to specify the <literal>$filemode</literal> (see description above), and the
-       second to specify the <literal>$mapsize</literal>, where the value should be a multiple
-       of the page size of the OS, or zero, to use the default mapsize. The <literal>$mapsize</literal>
-       parameter is supported as of PHP 7.3.14 and 7.4.2, respectively.
+       Only the <literal>lmdb</literal> driver accepts the <parameter>map_size</parameter> parameter.
+      </para>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>flags</parameter></term>
+     <listitem>
+      <para>
+       Flags to pass to the database drivers. If &null; the default flags will be provided.
+       Currently, only the LMDB driver supports the following flags
+       <constant>DBA_LMDB_USE_SUB_DIR</constant> and
+       <constant>DBA_LMDB_NO_SUB_DIR</constant>.
       </para>
      </listitem>
     </varlistentry>
    </variablelist>
   </para>
  </refsect1>
+
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
    Returns a positive handle on success&return.falseforfailure;.
+  </para>
+ </refsect1>
+
+ <refsect1 role="errors">
+  &reftitle.errors;
+  <para>
+   &false; is returned and an <constant>E_WARNING</constant> level error is issued when
+   <parameter>handler</parameter> is &null;, but there is no default handler.
   </para>
  </refsect1>
 
@@ -209,9 +234,21 @@
     </thead>
     <tbody>
      <row>
+      <entry>8.2.0</entry>
+      <entry>
+       <parameter>flags</parameter> is added.
+      </entry>
+     </row>
+     <row>
+      <entry>8.1.0</entry>
+      <entry>
+       <parameter>handler</parameter> is now nullable.
+      </entry>
+     </row>
+     <row>
       <entry>7.3.14, 7.4.2</entry>
       <entry>
-       The <literal>lmdb</literal> driver now supports an additional <literal>$mapsize</literal>
+       The <literal>lmdb</literal> driver now supports an additional <parameter>map_size</parameter>
        parameter.
       </entry>
      </row>
@@ -230,7 +267,6 @@
   </para>
  </refsect1>
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml
