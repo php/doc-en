@@ -4,7 +4,7 @@
  <refnamediv>
   <refname>mysqli_stmt::data_seek</refname>
   <refname>mysqli_stmt_data_seek</refname>
-  <refpurpose>Seeks to an arbitrary row in statement result set</refpurpose>
+  <refpurpose>Adjusts the result pointer to an arbitrary row in the buffered result</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -21,9 +21,11 @@
    <methodparam><type>int</type><parameter>offset</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Seeks to an arbitrary result pointer in the statement result set.
+   This function moves the result set pointer of the buffered result set to
+   an arbitrary row specified by the <parameter>offset</parameter> parameter.
   </para>
   <para>
+   This function works only on the buffered internal result set.
    <function>mysqli_stmt_store_result</function> must be called prior to
    <function>mysqli_stmt_data_seek</function>.
   </para>
@@ -61,42 +63,24 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-/* Open a connection */
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
 $query = "SELECT Name, CountryCode FROM City ORDER BY Name";
-if ($stmt = $mysqli->prepare($query)) {
+$stmt = $mysqli->prepare($query);
+$stmt->execute();
 
-    /* execute query */
-    $stmt->execute();
+$stmt->bind_result($name, $code);
 
-    /* bind result variables */
-    $stmt->bind_result($name, $code);
+$stmt->store_result();
 
-    /* store result */
-    $stmt->store_result();
+/* seek to row no. 400 */
+$stmt->data_seek(399);
 
-    /* seek to row no. 400 */
-    $stmt->data_seek(399);
+$stmt->fetch();
 
-    /* fetch values */
-    $stmt->fetch();
-
-    printf ("City: %s  Countrycode: %s\n", $name, $code);
-
-    /* close statement */
-    $stmt->close();
-}
-
-/* close connection */
-$mysqli->close();
-?>
+printf("City: %s  Countrycode: %s\n", $name, $code);
 ]]>
    </programlisting>
   </example>
@@ -105,42 +89,25 @@ $mysqli->close();
    <programlisting role="php">
 <![CDATA[
 <?php
-/* Open a connection */
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $link = mysqli_connect("localhost", "my_user", "my_password", "world");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
 $query = "SELECT Name, CountryCode FROM City ORDER BY Name";
-if ($stmt = mysqli_prepare($link, $query)) {
+$stmt = mysqli_prepare($link, $query);
 
-    /* execute query */
-    mysqli_stmt_execute($stmt);
+mysqli_stmt_execute($stmt);
 
-    /* bind result variables */
-    mysqli_stmt_bind_result($stmt, $name, $code);
+mysqli_stmt_bind_result($stmt, $name, $code);
 
-    /* store result */
-    mysqli_stmt_store_result($stmt);
+mysqli_stmt_store_result($stmt);
 
-    /* seek to row no. 400 */
-    mysqli_stmt_data_seek($stmt, 399);
+/* seek to row no. 400 */
+mysqli_stmt_data_seek($stmt, 399);
 
-    /* fetch values */
-    mysqli_stmt_fetch($stmt);
+mysqli_stmt_fetch($stmt);
 
-    printf ("City: %s  Countrycode: %s\n", $name, $code);
-
-    /* close statement */
-    mysqli_stmt_close($stmt);
-}
-
-/* close connection */
-mysqli_close($link);
-?>
+printf("City: %s  Countrycode: %s\n", $name, $code);
 ]]>
    </programlisting>
    &examples.outputs;
@@ -157,6 +124,9 @@ City: Benin City  Countrycode: NGA
   <para>
    <simplelist>
     <member><function>mysqli_prepare</function></member>
+    <member><function>mysqli_stmt_store_result</function></member>
+    <member><function>mysqli_stmt_num_rows</function></member>
+    <member><function>mysqli_data_seek</function></member>
    </simplelist>
   </para>
  </refsect1>
