@@ -350,7 +350,7 @@ $result = mssql_query($query);
     <sect2 xml:id="security.database.avoiding">
      <title>Avoidance Techniques</title>
      <para>
-      The recommended way to avoid SQL injection is by binding all data via the
+      The recommended way to avoid SQL injection is by binding all data via
       prepared statements. Using parameterized queries isn't enough to entirely
       avoid SQL injection, but it is the easiest and safest way to provide input
       to SQL statements. All dynamic data literals in <literal>WHERE</literal>,
@@ -359,7 +359,7 @@ $result = mssql_query($query);
       execution and sent separately from the SQL command.
      </para>
      <para>
-      Parameter binding can be used only for data. Other dynamic parts of the
+      Parameter binding can only be used for data. Other dynamic parts of the
       SQL query must be filtered against a known list of allowed values.
      </para>
      <para>
@@ -382,6 +382,14 @@ $stmt->execute(["%$productId%"]);
        </programlisting>
       </example>
      </para>
+
+     <simpara>
+      Prepared statements are provided
+      <link linkend="pdo.prepared-statements">by PDO</link>,
+      <link linkend="mysqli.quickstart.prepared-statements">by MySQLi</link>,
+      and by other database libraries.
+     </simpara>
+
      <simpara>
       SQL injection attacks are mainly based on exploiting the code not being written
       with security in mind. Never trust any input, especially
@@ -390,87 +398,65 @@ $stmt->execute(["%$productId%"]);
       simple query can cause disasters.
      </simpara>
 
-     <itemizedlist>
-      <listitem>
-       <simpara>
-        Never connect to the database as a superuser or as the database owner.
-        Use always customized users with minimal privileges.
-       </simpara>
-      </listitem>
-      <listitem>
-       <simpara>
-        Use prepared statements with bound variables. They are provided 
-        <link linkend="pdo.prepared-statements">by PDO</link>,
-        <link linkend="mysqli.quickstart.prepared-statements">by MySQLi</link>
-        and by other libraries.
-       </simpara>
-      </listitem>
-      <listitem>
-       <simpara>
-        Check if the given input has the expected data type. <acronym>PHP</acronym> has
-        a wide range of input validating functions, from the simplest ones
-        found in <link linkend="ref.var">Variable Functions</link> and
-        in <link linkend="ref.ctype">Character Type Functions</link>
-        (e.g. <function>is_numeric</function>, <function>ctype_digit</function>
-        respectively) and onwards to the
-        <link linkend="ref.pcre">Perl Compatible Regular Expressions</link>
-        support.
-       </simpara>
-      </listitem>
-      <listitem>
-       <para>
-        If the application waits for numerical input, consider verifying data
-        with <function>ctype_digit</function>, silently change its type
-        using <function>settype</function>, or use its numeric representation
-        by <function>sprintf</function>.
-        <example>
-         <title>A more secure way to compose a query for paging</title>
-         <programlisting role="php">
-<![CDATA[
-<?php
-
-settype($offset, 'integer');
-$query = "SELECT id, name FROM products ORDER BY name LIMIT 20 OFFSET $offset;";
-
-// please note %d in the format string, using %s would be meaningless
-$query = sprintf("SELECT id, name FROM products ORDER BY name LIMIT 20 OFFSET %d;",
-                 $offset);
-
-?>
-]]>
-         </programlisting>
-        </example>
-       </para>
-      </listitem>
-      <listitem>
-       <simpara>
-        If the database layer doesn't support binding variables then
-        quote each non-numeric user-supplied value that is passed to the
-        database with the database-specific string escape function (e.g.
-        <function>mysql_real_escape_string</function>,
-        <function>sqlite_escape_string</function>, etc.).
-        Generic functions like <function>addslashes</function> are useful only
-        in a very specific environment (e.g. MySQL in a single-byte character
-        set with disabled <varname>NO_BACKSLASH_ESCAPES</varname>), so it is
-        better to avoid them.
-       </simpara>
-      </listitem>
-      <listitem>
-       <simpara>
-        Do not print out any database-specific information, especially
-        about the schema, by fair means or foul. See also <link
-        linkend="security.errors">Error Reporting</link> and <link
-        linkend="ref.errorfunc">Error Handling and Logging Functions</link>.
-       </simpara>
-      </listitem>
-      <listitem>
-       <simpara>
-        You may use stored procedures and previously defined cursors to abstract
-        data access so that users do not directly access tables or views, but
-        this solution has other impacts.
-       </simpara>
-      </listitem>
-     </itemizedlist>
+     <para>
+      A defense-in-depth strategy involves several good coding practices:
+      <itemizedlist>
+       <listitem>
+        <simpara>
+         Never connect to the database as a superuser or as the database owner.
+         Use always customized users with minimal privileges.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         Check if the given input has the expected data type. <acronym>PHP</acronym> has
+         a wide range of input validating functions, from the simplest ones
+         found in <link linkend="ref.var">Variable Functions</link> and
+         in <link linkend="ref.ctype">Character Type Functions</link>
+         (e.g. <function>is_numeric</function>, <function>ctype_digit</function>
+         respectively) and onwards to the
+         <link linkend="ref.pcre">Perl Compatible Regular Expressions</link>
+         support.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         If the application waits for numerical input, consider verifying data
+         with <function>ctype_digit</function>, silently change its type
+         using <function>settype</function>, or use its numeric representation
+         by <function>sprintf</function>.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         If the database layer doesn't support binding variables then
+         quote each non-numeric user-supplied value that is passed to the
+         database with the database-specific string escape function (e.g.
+         <function>mysql_real_escape_string</function>,
+         <function>sqlite_escape_string</function>, etc.).
+         Generic functions like <function>addslashes</function> are useful only
+         in a very specific environment (e.g. MySQL in a single-byte character
+         set with disabled <varname>NO_BACKSLASH_ESCAPES</varname>), so it is
+         better to avoid them.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         Do not print out any database-specific information, especially
+         about the schema, by fair means or foul. See also <link
+         linkend="security.errors">Error Reporting</link> and <link
+         linkend="ref.errorfunc">Error Handling and Logging Functions</link>.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         You may use stored procedures and previously defined cursors to abstract
+         data access so that users do not directly access tables or views, but
+         this solution has other impacts.
+        </simpara>
+       </listitem>
+      </itemizedlist>
+     </para>
 
      <simpara>
       Besides these, you benefit from logging queries either within your script
