@@ -155,19 +155,20 @@ if ($row && password_verify($password, $row['pwd'])) {
      interpolate arbitrary input in their SQL statements.
     </simpara>
     <para>
-     Owing to the lack of input validation and connecting to the database on
-     behalf of a superuser or the one who can create users, the attacker
-     may create a superuser in your database.
      <example>
       <title>
        Splitting the result set into pages ... and making superusers
        (PostgreSQL)
       </title>
+      <simpara>
+       In the following example, user input is directly interpolated into the
+       SQL query allowing the attacker to gain a superuser account in the database.
+      </simpara>
       <programlisting role="php">
 <![CDATA[
 <?php
 
-$offset = $argv[0]; // beware, no input validation!
+$offset = $_GET['offset']; // beware, no input validation!
 $query  = "SELECT id, name FROM products ORDER BY name LIMIT 20 OFFSET $offset;";
 $result = pg_query($conn, $query);
 
@@ -177,9 +178,8 @@ $result = pg_query($conn, $query);
      </example>
       Normal users click on the 'next', 'prev' links where the <varname>$offset</varname>
       is encoded into the <acronym>URL</acronym>. The script expects that the incoming
-      <varname>$offset</varname> is a decimal number. However, what if someone tries to
-      break in by appending a <function>urlencode</function>'d form of the
-      following to the <acronym>URL</acronym>
+      <varname>$offset</varname> is a number. However, what if someone tries to
+      break in by appending the following to the <acronym>URL</acronym>
       <informalexample>
        <programlisting role="sql">
 <![CDATA[
@@ -191,7 +191,7 @@ insert into pg_shadow(usename,usesysid,usesuper,usecatupd,passwd)
 ]]>
        </programlisting>
       </informalexample>
-      If it happened, the script would present a superuser access to him.
+      If it happened, the script would present a superuser access to the attacker.
       Note that <literal>0;</literal> is to supply a valid offset to the
       original query and to terminate it.
     </para>
