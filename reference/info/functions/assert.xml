@@ -15,10 +15,23 @@
   </methodsynopsis>
   <para>
    <function>assert</function> is not a function but a language construct.
-   allowing for
-   the definition of expectations: assertions that take effect in development
-   and testing environments, but are optimised away to have zero cost in
-   production.
+   allowing for the definition of expectations: assertions that take effect
+   in development and testing environments, but are optimised away to have
+   zero cost in production.
+  </para>
+  <para>
+   Assertions should be used as a debugging feature only.
+   One use case for them is to act as sanity-checks for preconditions
+   that should always be &true; and that if they aren't upheld this indicates
+   some programming errors.
+   Another use case is to ensure the presence of certain features like
+   extension functions or certain system limits and features.
+  </para>
+  <para>
+   As assertions can be configured to be eliminated, they should
+   <emphasis>not</emphasis> be used for normal runtime operations like
+   input parameter checks. As a rule of thumb code should behave as expected
+   even if assertion checking is deactivated.
   </para>
   <para>
    <function>assert</function> will check that the expectation given in
@@ -26,7 +39,7 @@
    If not, and thus the result is &false;, it will take the appropriate action
    depending on how <function>assert</function> was configured.
   </para>
-  
+
   <para>
    The behaviour of <function>assert</function> is dictated by the
    following INI settings:
@@ -115,7 +128,7 @@
       </row>
       <row>
        <entry><link linkend="ini.assert.warning">assert.warning</link></entry>
-       <entry>&ture;</entry>
+       <entry>&true;</entry>
        <entry>
         If &true;, will emit an <constant>E_WARNING</constant> if the
         expectation isn't upheld. This INI setting is ineffective if
@@ -127,35 +140,10 @@
      </tbody>
     </tgroup>
    </table>
-   
-   Some of these option can be configured via <function>assert_options</function>.
-   However, this is not recommended.
+
+   The options starting with <literal>assert.</literal> can be configured via
+   <function>assert_options</function>. However, this is not recommended.
   </para>
-  
-  <!-- TODO Clean-up/integrate/delete -->
-  <refsect2>
-   <para>
-    Assertions should be used as a debugging feature only. You may
-    use them for sanity-checks that test for conditions that should
-    always be &true; and that indicate some programming errors if not
-    or to check for the presence of certain features like extension
-    functions or certain system limits and features.
-   </para>
-   <para>
-    Assertions should not be used for normal runtime operations like
-    input parameter checks. As a rule of thumb your code should
-    always be able to work correctly if assertion checking is not
-    activated.
-   </para>
-   <para>
-    <function>assert</function> callbacks are particularly useful for
-    building automated test suites because they allow you to easily
-    capture the code passed to the assertion, along with information
-    on where the assertion was made. While this information can be
-    captured via other methods, using assertions makes it much faster
-    and easier!
-   </para>
-  </refsect2>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -189,8 +177,8 @@
        If <parameter>description</parameter> is an instance of
        <classname>Throwable</classname>, it will be thrown if the
        <parameter>assertion</parameter> fails.
-       This is done <emphasis>prior</emphasis> to calling the potentially
-       defined assertion callback.
+       As of PHP 8.0.0, this is done <emphasis>prior</emphasis> to calling
+       the potentially defined assertion callback.
        As of PHP 8.0.0, the &object; will be thrown regardless of the configuration of
        <link linkend="ini.assert.exception">assert.exception</link>.
        As of PHP 8.0.0, the
@@ -271,7 +259,7 @@
       <row>
        <entry>7.3.0</entry>
        <entry>
-        Declaring a function called <literal>assert()</literal> inside a namespace 
+        Declaring a function called <literal>assert()</literal> inside a namespace
         became deprecated. Such declaration now emits an <constant>E_DEPRECATED</constant>.
        </entry>
       </row>
@@ -390,11 +378,17 @@ Stack trace:
   </refsect2>
   <refsect2>
    <title>Evaluated code assertions (PHP 7 only)</title>
+
+   <para>
+    With evaluated code assertions, <function>assert</function> callbacks
+    can be particularly useful as the code used for the assertion is passed
+    to the callback alongside information on where the assertion was done.
+   </para>
    <para>
     <example>
      <title>Handle a failed assertion with a custom handler</title>
      <programlisting role="php">
-      <![CDATA[
+<![CDATA[
 <?php
 // Activate assert and make it quiet
 assert_options(ASSERT_ACTIVE, 1);
@@ -414,17 +408,37 @@ function my_assert_handler($file, $line, $code)
 assert_options(ASSERT_CALLBACK, 'my_assert_handler');
 
 // Make an assertion that should fail
-assert('mysql_query("")');
+$array = [];
+assert('count($array);');
 ?>
 ]]>
      </programlisting>
+     &example.outputs.72;
+     <screen>
+<![CDATA[
+Deprecated: assert(): Calling assert() with a string argument is deprecated in test.php on line 21
+<hr>Assertion Failed:
+        File 'test.php'<br />
+        Line '21'<br />
+        Code 'count($array);'<br /><hr />
+]]>
+     </screen>
+     &example.outputs.71;
+     <screen>
+<![CDATA[
+<hr>Assertion Failed:
+        File 'test.php'<br />
+        Line '21'<br />
+        Code 'count($array);'<br /><hr />
+]]>
+     </screen>
     </example>
    </para>
    <para>
     <example>
      <title>Using a custom handler to print a description</title>
      <programlisting role="php">
-      <![CDATA[
+<![CDATA[
 <?php
 // Activate assert and make it quiet
 assert_options(ASSERT_ACTIVE, 1);
@@ -450,9 +464,19 @@ assert('2 < 1', 'Two is less than one');
 ?>
 ]]>
      </programlisting>
-     &example.outputs;
+     &example.outputs.72;
      <screen>
-      <![CDATA[
+<![CDATA[
+Deprecated: assert(): Calling assert() with a string argument is deprecated in test.php on line 21
+Assertion failed at test.php:21: 2 < 1
+
+Deprecated: assert(): Calling assert() with a string argument is deprecated in test.php on line 22
+Assertion failed at test.php:22: 2 < 1: Two is less than one
+]]>
+     </screen>
+     &example.outputs.71;
+     <screen>
+<![CDATA[
  Assertion failed at test.php:21: 2 < 1
  Assertion failed at test.php:22: 2 < 1: Two is less than one
  ]]>
@@ -472,7 +496,6 @@ assert('2 < 1', 'Two is less than one');
  </refsect1>
 
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml
