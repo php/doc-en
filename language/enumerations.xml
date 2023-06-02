@@ -727,6 +727,103 @@ Baz Enum:int {
   </programlisting>
  </sect1>
 
+ <sect1 xml:id="language.enumerations.object-differences.inheritance">
+
+  <title>Why enums aren't extendable</title>
+
+  <simpara>
+   Classes have contracts on their methods:
+  </simpara>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+class A {}
+class B {}
+
+function foo(A $a) {}
+
+function bar(B $b) {
+    foo($b);
+}
+?>
+]]>
+ </programlisting>
+
+  <simpara>
+   This code is type-safe, as B follows the contract of A, and through the magic of
+   co/contra-variance, any expectation one may have of the methods will be
+   preserved, exceptions excepted.
+  </simpara>
+
+  <simpara>
+   Enums have contracts on their cases, not methods:
+  </simpara>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+enum ErrorCode {
+    case SOMETHING_BROKE;
+}
+
+function quux(ErrorCode $errorCode)
+{
+    // When written, this code appears to cover all cases
+    match ($errorCode) {
+        ErrorCode::SOMETHING_BROKE => true,
+    }
+}
+
+?>
+]]>
+  </programlisting>
+
+  <simpara>
+   The &match; statement in the function <code>quux</code> can be static analyzed to cover
+   all of the cases in ErrorCode.
+  </simpara>
+
+  <simpara>
+   But imagine it was allowed to extend enums:
+  </simpara>
+
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+// Thought experiment code where enums are not final.
+// Note, this won't actually work in PHP.
+enum MoreErrorCode extends ErrorCode {
+    case PEBKAC;
+}
+
+function fot(MoreErrorCode $errorCode) {
+    quux($errorCode);
+}
+
+fot(MoreErrorCode::PEBKAC);
+
+?>
+]]>
+ </programlisting>
+
+  <simpara>
+   Under normal inheritance rules, a class that extends another will pass
+   the type check.
+  </simpara>
+
+  <simpara>
+   The problem would be that the &match; statement in <code>quux()</code> no longer covers all
+   the cases. Because it doesn't know about <code>MoreErrorCode::PEBKAC</code> the match will throw an exception.
+  </simpara>
+
+  <simpara>
+   Because of this enums are final and can't be extended.
+  </simpara>
+ </sect1>
+
  <sect1 xml:id="language.enumerations.examples">
   &reftitle.examples;
 
