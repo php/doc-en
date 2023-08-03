@@ -6,7 +6,7 @@ RUN apt-get update && \
 WORKDIR /var/www
 
 RUN git clone https://github.com/php/phd.git &&  \
-    git clone https://github.com/php/doc-base.git && \
+    git clone --depth 1 https://github.com/php/doc-base.git && \
     git -C phd checkout 5708881e233cd9979dd11bcbd9fd0bb8a714f9d5
 
 RUN echo 'memory_limit = 512M' >> /usr/local/etc/php/conf.d/local.ini
