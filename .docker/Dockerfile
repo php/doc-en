@@ -5,6 +5,9 @@ RUN apt-get update && \
 
 WORKDIR /var/www
 
+ADD https://api.github.com/repos/php/phd/git/refs/heads/master version-phd.json
+ADD https://api.github.com/repos/php/doc-base/git/refs/heads/master version-doc-base.json
+
 RUN git clone --depth 1 https://github.com/php/phd.git &&  \
     git clone --depth 1 https://github.com/php/doc-base.git
 
