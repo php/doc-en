@@ -10,94 +10,60 @@
   <title>Architecture Overview</title>
 
   <para>
-   This section explains how all the different parts of the driver fit
-   together. From the different language runtimes, through the extension and
-   to the PHP libraries on top. This new architecture has replaced the old
-   <code>mongo</code> extension. We refer to the new one
-   as the <code>mongodb</code> extension.
+   This article explains how all the different components of the PHP driver fit
+   together, from base system libraries, through the extension, and to the PHP
+   libraries on top.
   </para>
 
   <para>
    <mediaobject>
-    <alt>Architecture Diagram</alt>
+    <alt>
+     PHP Driver Architecture Diagram. The lowest level of the driver is our
+     system libraries: libmongoc, libbson, and libmongocrypt. The middle level
+     is the MongoDB PHP C extension. The upper level is PHP userland and
+     includes the MongoDB PHP library and higher-level packages such as
+     framework integrations and applications.
+    </alt>
     <imageobject>
-     <imagedata fileref="en/reference/mongodb/images/driver_arch.png"/>
+     <imagedata fileref="en/reference/mongodb/images/driver_arch.svg" width="625" depth="450" format="SVG" />
     </imageobject>
    </mediaobject>
   </para>
 
   <para>
-   At the top of this stack sits a pure
-   <link xlink:href="&url.mongodb.library;">PHP library</link>, which we will
-   distribute as a Composer package. This library will provide an API similar
-   to what users have come to expect from the old mongo driver (e.g. CRUD methods,
-   database and collection objects, command helpers) and we expect it to be a
-   common dependency for most applications built with MongoDB. This library
-   will also implement common
-   <link xlink:href="&url.mongodb.specs;">specifications</link>, in the
-   interest of improving API consistency across all of the
-   <link xlink:href="&url.mongodb.drivers;">drivers</link> maintained by
-   MongoDB (and hopefully some community drivers, too).
+   At the top of this stack sits a
+   <link xlink:href="&url.mongodb.library;">PHP library</link>,
+   which is distributed as a
+   <link xlink:href="https://packagist.org/packages/mongodb/mongodb">Composer package</link>.
+   This library provides an API consistent with other MongoDB
+   <link xlink:href="&url.mongodb.drivers;">drivers</link>
+   and implements various cross-driver
+   <link xlink:href="&url.mongodb.specs;">specifications</link>.
+   While the extension can be used directly, the library has minimal overhead and
+   should be a common dependency for most applications built with MongoDB.
   </para>
 
   <para>
-   Sitting below that library we have the lower level driver.
-   This extension will effectively form the glue between PHP and our
-   system libraries (<link xlink:href="&url.mongodb.libmongoc;">libmongoc</link> and
-   <link xlink:href="&url.mongodb.libbson;">libbson</link>). This extension
-   will expose an identical public API for the most essential and
-   performance-sensitive functionality:
+   Sitting below that library is a PHP extension, which is distributed through
+   <link xlink:href="&url.pecl.package;mongodb">PECL</link>.
+   The extension forms the glue between PHP and our system libraries
+   (<link xlink:href="&url.mongodb.libmongoc;">libmongoc</link>,
+   <link xlink:href="&url.mongodb.libbson;">libbson</link>, and
+   <link xlink:href="&url.mongodb.libmongocrypt;">libmongocrypt</link>).
+   Its public API provides only the most essential functionality:
 
    <simplelist>
     <member>Connection management</member>
     <member>BSON encoding and decoding</member>
     <member>Object document serialization (to support ODM libraries)</member>
-    <member>Executing commands and write operations</member>
-    <member>Handling queries and cursors</member>
+    <member>Executing commands, queries, and write operations</member>
+    <member>Handling cursors for command and query results</member>
    </simplelist>
   </para>
 
   <para>
-   By decoupling the driver internals and a high-level API into an extension and
-   PHP libraries, respectively, we hope to reduce our maintainence burden and
-   allow for faster iteration on new features. As a welcome side effect, this
-   also makes it easier for anyone to contribute to the driver. Additionally,
-   an identical public API will make it that much easier to port an
-   application across PHP runtimes, whether the application uses the low-level
-   driver directly or a higher-level PHP library.
-  </para>
-  <para>
-   <link xlink:href="&url.mongodb.docs.gridfs;">GridFS</link> is a great example
-   of why we chose this direction.
-   Although we implemented GridFS in C for our old mongo driver, it is actually
-   quite a high-level specification. Its API is just an abstraction for
-   accessing two collections: files (i.e. metadata) and chunks (i.e. blocks of
-   data). Likewise, all of the syntactic sugar found in the old mongo driver,
-   such as processing uploaded files or exposing GridFS files as PHP streams,
-   can be implemented in pure PHP. Provided we have performant methods for
-   reading from and writing to GridFS' collections – and thanks to our low
-   level extensions, we will – shifting this API to PHP is win-win.
-  </para>
-  <para>
-   Earlier I mentioned that we expect the PHP library to be a common
-   dependency for <emphasis>most</emphasis> applications, but not
-   <emphasis>all</emphasis>. Some users may prefer to stick to the no-frills
-   API offered by the extensions, or create their own high-level abstraction
-   (akin to <link xlink:href="&url.mongodb.doctrine;">Doctrine MongoDB</link> for
-   the old mongo driver). Future libraries could include a PHP library geared
-   for MongoDB administration, which provides an API for various user
-   management and ops commands. The next major version of
-   <link xlink:href="&url.mongodb.doctrine-odm;">Doctrine MongoDB ODM</link> will
-   likely also sit directly atop the extensions.
-  </para>
-  <para>
-   While we will continue to maintain and support the old mongo driver and its
-   users for the foreseeable future, we invite everyone to use the
-   next-generation driver and consider it for any new projects going forward.
-   You can find all of the essential components across GitHub and JIRA:
-
    <table>
-    <title>Driver Source Code and JIRA Locations</title>
+    <title>Driver Source Code and JIRA Projects</title>
     <tgroup cols="3">
      <thead>
       <row>
@@ -113,20 +79,13 @@
        <entry><link xlink:href="&url.mongodb.jira.phplib;">PHPLIB</link></entry>
       </row>
       <row>
-       <entry>PHP 5 and PHP 7 Driver (phongo)</entry>
+       <entry>PHP Extension</entry>
        <entry><link xlink:href="&url.mongodb.github.phpc;">mongodb/mongo-php-driver</link></entry>
        <entry><link xlink:href="&url.mongodb.jira.phpc;">PHPC</link></entry>
       </row>
      </tbody>
     </tgroup>
    </table>
-  </para>
-
-  <para>
-   The existing <link xlink:href="&url.mongodb.jira;">PHP</link> project in JIRA
-   will remain open for reporting bugs against the old mongo driver, but we
-   would ask that you use the new projects above for anything pertaining to
-   our next-generation drivers.
   </para>
  </article>
 
@@ -153,7 +112,8 @@
     options). The driver will attempt to find a previously persisted
     <link xlink:href="&url.mongodb.libmongoc;">libmongoc</link> client object for
     that hash. If an existing client cannot be found for the hash, a new client
-    will be created (and persisted for future use).
+    will be created and persisted for future use. This behavior can be disabled
+    via the <literal>"disableClientPersistence"</literal> driver option.
    </para>
 
    <para>
@@ -203,7 +163,7 @@ foreach ($managers as $manager) {
 
    <para>
     If the same worker executes the script again in a second request, the three
-    clients will be re-used and no new connections should be made. Depending on
+    clients will be re-used and no new connections will be made. Depending on
     how long ago the previous request was served, the driver may need to issue
     additional <literal>hello</literal> commands to update its view of the
     topologies.
