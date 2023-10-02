@@ -15,8 +15,21 @@
 
   </para>
 
-  &warn.undocumented.func;
-
+  <caution>
+   <para>
+    Scaling the return value to a different interval using multiplication
+    or addition (a so-called affine transformation) might result in a bias
+    in the resulting value as floats are not equally dense across the number
+    line. As not all values can be exactly represented by a float, the
+    result of the affine transformation might also result in values outside
+    of the requested interval.
+   </para>
+   <para>
+    Use <methodname>Random\Randomizer::getFloat</methodname> to generate a
+    random float within an arbitrary interval. Use <methodname>Random\Randomizer::getInt</methodname>
+    to generate a random integer within an arbitrary interval.
+   </para>
+  </caution>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -41,7 +54,7 @@
 
  <refsect1 role="examples">
   &reftitle.examples;
-  <example xml:id="random-randomizer.nextfloat.example.basic">
+  <example>
    <title><methodname>Random\Randomizer::nextFloat</methodname> example</title>
    <programlisting role="php">
 <![CDATA[
@@ -61,6 +74,41 @@ echo ($bool ? "You won" : "You lost"), "\n";
    <screen>
 <![CDATA[
 You won
+]]>
+   </screen>
+  </example>
+
+  <example>
+   <title>Incorrect scaling using an affine transformation</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+final class MaxEngine implements Random\Engine {
+    public function generate(): string {
+        return "\xff";
+    }
+}
+
+$randomizer = new \Random\Randomizer(new MaxEngine);
+
+$min = 3.5;
+$max = 4.5;
+
+// DO NOT DO THIS:
+//
+// This will output 4.5, despite nextFloat() sampling from
+// a right-open interval, which will never return 1.
+printf("Wrong scaling: %.17g", $randomizer->nextFloat() * ($max - $min) + $min);
+
+// Correct:
+// $randomizer->getFloat($min, $max, \Random\IntervalBoundary::ClosedOpen);
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+float(4.5)
 ]]>
    </screen>
   </example>
