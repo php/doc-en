@@ -2,17 +2,9 @@
 <sect1 xml:id="language.operators.increment">
  <title>Incrementing/Decrementing Operators</title>
  <para>
-  PHP supports C-style pre- and post-increment and decrement
-  operators.
+  PHP supports pre- and post-increment and decrement operators.
+  Those unary operators allow to increment or decrement the value by one.
  </para>
- <note>
-  <simpara>
-   The increment/decrement operators only affect numbers and strings.
-   Arrays, objects, booleans and resources are not affected.
-   Decrementing &null; values has no effect too, but incrementing them
-   results in <literal>1</literal>.
-  </simpara>
- </note>
  <table>
   <title>Increment/decrement Operators</title>
   <tgroup cols="3">
@@ -47,48 +39,110 @@
    </tbody>
   </tgroup>
  </table>
+
  <para>
   Here's a simple example script:
   <informalexample>
    <programlisting role="php">
 <![CDATA[
 <?php
-echo "<h3>Postincrement</h3>";
+echo 'Post-increment:', PHP_EOL;
 $a = 5;
-echo "Should be 5: " . $a++ . "<br />\n";
-echo "Should be 6: " . $a . "<br />\n";
+var_dump($a++);
+var_dump($a);
 
-echo "<h3>Preincrement</h3>";
+echo 'Pre-increment:', PHP_EOL;
 $a = 5;
-echo "Should be 6: " . ++$a . "<br />\n";
-echo "Should be 6: " . $a . "<br />\n";
+var_dump(++$a);
+var_dump($a);
 
-echo "<h3>Postdecrement</h3>";
+echo 'Post-decrement:', PHP_EOL;
 $a = 5;
-echo "Should be 5: " . $a-- . "<br />\n";
-echo "Should be 4: " . $a . "<br />\n";
+var_dump($a--);
+var_dump($a);
 
-echo "<h3>Predecrement</h3>";
+echo 'Pre-decrement:', PHP_EOL;
 $a = 5;
-echo "Should be 4: " . --$a . "<br />\n";
-echo "Should be 4: " . $a . "<br />\n";
+var_dump(--$a);
+var_dump($a);
 ?>
 ]]>
    </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+Post-increment:
+int(5)
+int(6)
+Pre-increment:
+int(6)
+int(6)
+Post-decrement:
+int(5)
+int(4)
+Pre-decrement:
+int(4)
+int(4)
+]]>
+   </screen>
   </informalexample>
+
+  <warning>
+   <para>
+    The increment and decrement operators have no effect on values
+    of type <type>bool</type>.
+    A <constant>E_WARNING</constant> is emitted as of PHP 8.3.0,
+    because this will implicitly cast the value to <type>int</type> in the future.
+   </para>
+   <para>
+    The decrement operator has no effect on values
+    of type <type>null</type>.
+    A <constant>E_WARNING</constant> is emitted as of PHP 8.3.0,
+    because this will implicitly cast the value to <type>int</type> in the future.
+   </para>
+   <para>
+    The decrement operator has no effect on non-
+    <link linkend="language.types.numeric-strings">numeric string</link>.
+    A <constant>E_WARNING</constant> is emitted as of PHP 8.3.0,
+    because a <classname>TypeError</classname> will be thrown in the future.
+   </para>
+   <para>
+    The decrement operator has no effect on non-
+    <link linkend="language.types.numeric-strings">numeric string</link>.
+    A <constant>E_WARNING</constant> is emitted as of PHP 8.3.0,
+    because a <classname>TypeError</classname> will be thrown in the future.
+   </para>
+  </warning>
+  <note>
+   <para>
+    Internal objects that support overloading addition and/or subtraction
+    can also be incremented and/or decremented.
+    One such internal object is <classname>GMP</classname>.
+   </para>
+  </note>
  </para>
- <para>
-  PHP follows Perl's convention when dealing with arithmetic operations
-  on character variables and not C's.  For example, in PHP and Perl
-  <literal>$a = 'Z'; $a++;</literal> turns <literal>$a</literal> into <literal>'AA'</literal>, while in C
-  <literal>a = 'Z'; a++;</literal> turns <literal>a</literal> into <literal>'['</literal>
-  (ASCII value of <literal>'Z'</literal> is 90, ASCII value of <literal>'['</literal> is 91).
-  Note that character variables can be incremented but not decremented and
-  even so only plain ASCII letters and digits (a-z, A-Z and 0-9) are supported.
-  Incrementing/decrementing other character variables has no effect, the
-  original string is unchanged.
+
+ <sect2 xml:id="language.operators.increment.string">
+  <title>PERL string increment feature</title>
+  <warning>
+   <simpara>
+    This feature is soft-deprecated as of PHP 8.3.0.
+    The <function>str_increment</function> function should be used instead.
+   </simpara>
+  </warning>
+
+  <para>
+   It is possible to increment a non-
+   <link linkend="language.types.numeric-strings">numeric string</link>
+   in PHP. The string must be an alphanumerical ASCII string.
+   Which increments letters up to the next letter, when reaching the letter
+   <literal>Z</literal> the increment is carried to the value on the left.
+   For example, <code>$a = 'Z'; $a++;</code> turns <varname>$a</varname>
+   into <literal>'AA'</literal>.
+  </para>
+
   <example>
-   <title>Arithmetic Operations on Character Variables</title>
+   <title>PERL string increment example</title>
    <programlisting role="php">
 <![CDATA[
 <?php
@@ -136,8 +190,41 @@ A14
 ]]>
    </screen>
   </example>
- </para>
- <para>
-  Incrementing or decrementing booleans has no effect.
- </para>
+
+  <warning>
+   <para>
+    If the alphanumerical string can be interpreted as a
+    <link linkend="language.types.numeric-strings">numeric string</link>
+    it will be cast to an <type>int</type> or <type>float</type>.
+    This is particularly an issue with strings that look like a floating point
+    numbers written in exponential notation.
+    The <function>str_increment</function> function does not suffer from
+    these implicit type cast.
+   </para>
+   <example>
+    <title>Alphanumerical string converted to float</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$s = "5d9";
+var_dump(++$s);
+var_dump(++$s);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+string(3) "5e0"
+float(6)
+]]>
+    </screen>
+    <para>
+     This is because the value <literal>"5e0"</literal> is interpreted
+     as a <type>float</type> and cast to the value <literal>5.0</literal>
+     before being incremented.
+    </para>
+   </example>
+  </warning>
+ </sect2>
 </sect1>
