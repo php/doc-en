@@ -30,34 +30,25 @@
   <para>
    If <link linkend="ini.output-buffering">output_buffering</link> is enabled
    and no <link linkend="ini.output-handler">output_handler</link> is set,
-   or no callback or <literal>null</literal> was passed to <function>ob_start</function>,
-   "default output handler" is returned.
+   or no callback or &null; was passed to <function>ob_start</function>,
+   <literal>"default output handler"</literal> is returned.
    Enabling <link linkend="ini.output-buffering">output_buffering</link>
    and setting an <link linkend="ini.output-handler">output_handler</link>
    is equivalent to passing
    an <link linkend="functions.internal">internal (built-in) function</link>
-   to <function>ob_start</function> (see below).
+   to <function>ob_start</function>.
   </para>
   <para>
-   If an <link linkend="functions.anonymous">anonymous function</link>,
-   an <link linkend="functions.arrow">arrow function</link>
-   or a <link linkend="functions.first_class_callable_syntax">first class callable</link>
-   was passed to <function>ob_start</function>,
-   "Closure::__invoke" is returned.
-  </para>
-  <para>
-   If an <link linkend="functions.internal">internal (built-in) function</link>
-   or a <link linkend="functions.user-defined">user-defined function</link>
-   callback was passed to <function>ob_start</function>,
-   then the <link linkend="language.namespaces.basics">fully qualified name</link>
-   of the function is returned.
-  </para>
-  <para>
-   If an <link linkend="language.oop5.basic">class and method name</link>
-   or an <link linkend="language.oop5.basic">object and method name</link>
-   was passed to <function>ob_start</function>,
-   then the <link linkend="language.namespaces.basics">fully qualified name</link>
-   of the method is returned.
+   If a <type>callable</type> was passed to <function>ob_start</function>,
+   the <link linkend="language.namespaces.basics">fully qualified name</link>
+   of the <type>callable</type> is returned.
+   If the <type>callable</type> is an object implementing
+   <link linkend="language.oop5.magic.invoke">__invoke()</link>,
+   the <link linkend="language.namespaces.basics">fully qualified name</link>
+   of the object's <link linkend="language.oop5.magic.invoke">__invoke()</link>
+   method is returned.
+   If the <type>callable</type> is a <classname>Closure</classname>,
+   <literal>"Closure::__invoke"</literal> is returned.
   </para>
  </refsect1>
 
@@ -69,44 +60,43 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-// using output_buffering=On
-print_r(ob_list_handlers());
+// using output_buffering=On, no output_handler set
+var_dump(ob_list_handlers());
 ob_end_flush();
 
 // no callback or null
 ob_start();
-print_r(ob_list_handlers());
+var_dump(ob_list_handlers());
 ob_end_flush();
 
 // anonymous function
 ob_start(function($string) { return $string; });
-print_r(ob_list_handlers());
+var_dump(ob_list_handlers());
 ob_end_flush();
 
 // arrow function
 ob_start(fn($string) => $string);
-print_r(ob_list_handlers());
+var_dump(ob_list_handlers());
 ob_end_flush();
 
 // first class callable
 $firstClassCallable = userDefinedFunction(...);
 
 ob_start([$firstClassCallable, '__invoke']);
-print_r(ob_list_handlers());
+var_dump(ob_list_handlers());
 ob_end_flush();
 
 // internal (built-in) function
 ob_start('print_r');
-print_r(ob_list_handlers());
+var_dump(ob_list_handlers());
 ob_end_flush();
 
 // user-defined function
 function userDefinedFunction($string, $flags) { return $string; };
 
 ob_start('userDefinedFunction');
-print_r(ob_list_handlers());
+var_dump(ob_list_handlers());
 ob_end_flush();
-
 
 class MyClass {
     public static function staticHandle($string) {
@@ -116,16 +106,25 @@ class MyClass {
     public static function handle($string) {
         return $string;
     }
+    
+    public function __invoke($string) {
+        return $string;
+    }
 }
 
 // class and static method
 ob_start(['MyClass','staticHandle']);
-print_r(ob_list_handlers());
+var_dump(ob_list_handlers());
 ob_end_flush();
 
 // object and non-static method
 ob_start([new MyClass,'handle']);
-print_r(ob_list_handlers());
+var_dump(ob_list_handlers());
+ob_end_flush();
+
+// invokable object
+ob_start(new MyClass);
+var_dump(ob_list_handlers());
 ob_end_flush();
 ?>
 ]]>
@@ -133,42 +132,46 @@ ob_end_flush();
     &example.outputs;
     <screen>
 <![CDATA[
-Array
-(
-    [0] => default output handler
-)
-Array
-(
-    [0] => default output handler
-)
-Array
-(
-    [0] => Closure::__invoke
-)
-Array
-(
-    [0] => Closure::__invoke
-)
-Array
-(
-    [0] => Closure::__invoke
-)
-Array
-(
-    [0] => print_r
-)
-Array
-(
-    [0] => userDefinedFunction
-)
-Array
-(
-    [0] => MyClass::staticHandle
-)
-Array
-(
-    [0] => MyClass::handle
-)
+array(1) {
+  [0]=>
+  string(22) "default output handler"
+}
+array(1) {
+  [0]=>
+  string(22) "default output handler"
+}
+array(1) {
+  [0]=>
+  string(7) "print_r"
+}
+array(1) {
+  [0]=>
+  string(19) "userDefinedFunction"
+}
+array(1) {
+  [0]=>
+  string(17) "Closure::__invoke"
+}
+array(1) {
+  [0]=>
+  string(17) "Closure::__invoke"
+}
+array(1) {
+  [0]=>
+  string(17) "Closure::__invoke"
+}
+array(1) {
+  [0]=>
+  string(21) "MyClass::staticHandle"
+}
+array(1) {
+  [0]=>
+  string(15) "MyClass::handle"
+}
+array(1) {
+  [0]=>
+  string(17) "MyClass::__invoke"
+}
 ]]>
     </screen>
    </example>
