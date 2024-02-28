@@ -1,0 +1,16 @@
+#! /bin/bash
+
+\grep -lrE --include='*.xml' '"constant\.win32-info-load-order"' | xargs -d '\n' sed -i 's/"constant\.win32-info-load-order"/"constant\.info-load-order"/g'
+\grep -lrE --include='*.xml' '"constant\.win32-info-svc-type"' | xargs -d '\n' sed -i 's/"constant\.win32-info-svc-type"/"constant\.info-svc-type"/g'
+\grep -lrE --include='*.xml' '"constant\.win32-info-error-control"' | xargs -d '\n' sed -i 's/"constant\.win32-info-error-control"/"constant\.info-error-control"/g'
+\grep -lrE --include='*.xml' '"constant\.win32-info-delayed-start"' | xargs -d '\n' sed -i 's/"constant\.win32-info-delayed-start"/"constant\.info-delayed-start"/g'
+\grep -lrE --include='*.xml' '"constant\.win32-info-base-priority"' | xargs -d '\n' sed -i 's/"constant\.win32-info-base-priority"/"constant\.info-base-priority"/g'
+\grep -lrE --include='*.xml' '"constant\.win32-info-dependencies"' | xargs -d '\n' sed -i 's/"constant\.win32-info-dependencies"/"constant\.info-dependencies"/g'
+\grep -lrE --include='*.xml' '"constant\.win32-info-recovery-delay"' | xargs -d '\n' sed -i 's/"constant\.win32-info-recovery-delay"/"constant\.info-recovery-delay"/g'
+\grep -lrE --include='*.xml' '"constant\.win32-info-recovery-action-1"' | xargs -d '\n' sed -i 's/"constant\.win32-info-recovery-action-1"/"constant\.info-recovery-action-1"/g'
+\grep -lrE --include='*.xml' '"constant\.win32-info-recovery-action-2"' | xargs -d '\n' sed -i 's/"constant\.win32-info-recovery-action-2"/"constant\.info-recovery-action-2"/g'
+\grep -lrE --include='*.xml' '"constant\.win32-info-recovery-action-3"' | xargs -d '\n' sed -i 's/"constant\.win32-info-recovery-action-3"/"constant\.info-recovery-action-3"/g'
+\grep -lrE --include='*.xml' '"constant\.win32-info-recovery-reset-period"' | xargs -d '\n' sed -i 's/"constant\.win32-info-recovery-reset-period"/"constant\.info-recovery-reset-period"/g'
+\grep -lrE --include='*.xml' '"constant\.win32-info-recovery-enabled"' | xargs -d '\n' sed -i 's/"constant\.win32-info-recovery-enabled"/"constant\.info-recovery-enabled"/g'
+\grep -lrE --include='*.xml' '"constant\.win32-info-recovery-reboot-msg"' | xargs -d '\n' sed -i 's/"constant\.win32-info-recovery-reboot-msg"/"constant\.info-recovery-reboot-msg"/g'
+\grep -lrE --include='*.xml' '"constant\.win32-info-recovery-command"' | xargs -d '\n' sed -i 's/"constant\.win32-info-recovery-command"/"constant\.info-recovery-command"/g'
