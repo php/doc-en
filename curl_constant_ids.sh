@@ -13,3 +13,4 @@
 \grep -lrE --include='*.xml' '"constant\.curlopt-verifystatus"' | xargs -d '\n' sed -i 's/"constant\.curlopt-verifystatus"/"constant\.curlopt-ssl-verifystatus"/g'
 \grep -lrE --include='*.xml' '"constant\.curlinfo-lock-data-connect"' | xargs -d '\n' sed -i 's/"constant\.curlinfo-lock-data-connect"/"constant\.curl-lock-data-connect"/g'
 \grep -lrE --include='*.xml' '"constant\.curlinfo-lock-data-psl"' | xargs -d '\n' sed -i 's/"constant\.curlinfo-lock-data-psl"/"constant\.curl-lock-data-psl"/g'
+\grep -lrE --include='*.xml' '"constant\.curlopt-proxy-cainfo-blobl"' | xargs -d '\n' sed -i 's/"constant\.curlopt-proxy-cainfo-blobl"/"constant\.curlopt-proxy-cainfo-blob"/g'
