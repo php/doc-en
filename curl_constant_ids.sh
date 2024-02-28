@@ -1,0 +1,15 @@
+#! /bin/bash
+
+\grep -lrE --include='*.xml' '"constant\.curlopt-sslversion-default"' | xargs -d '\n' sed -i 's/"constant\.curlopt-sslversion-default"/"constant\.curl-sslversion-default"/g'
+\grep -lrE --include='*.xml' '"constant\.curlopt-sslversion-tlsv1"' | xargs -d '\n' sed -i 's/"constant\.curlopt-sslversion-tlsv1"/"constant\.curl-sslversion-tlsv1"/g'
+\grep -lrE --include='*.xml' '"constant\.curlopt-sslversion-sslv2"' | xargs -d '\n' sed -i 's/"constant\.curlopt-sslversion-sslv2"/"constant\.curl-sslversion-sslv2"/g'
+\grep -lrE --include='*.xml' '"constant\.curlopt-sslversion-sslv3"' | xargs -d '\n' sed -i 's/"constant\.curlopt-sslversion-sslv3"/"constant\.curl-sslversion-sslv3"/g'
+\grep -lrE --include='*.xml' '"constant\.curlopt-sslversion-tlsv1-0"' | xargs -d '\n' sed -i 's/"constant\.curlopt-sslversion-tlsv1-0"/"constant\.curl-sslversion-tlsv1-0"/g'
+\grep -lrE --include='*.xml' '"constant\.curlopt-sslversion-tlsv1-1"' | xargs -d '\n' sed -i 's/"constant\.curlopt-sslversion-tlsv1-1"/"constant\.curl-sslversion-tlsv1-1"/g'
+\grep -lrE --include='*.xml' '"constant\.curlopt-sslversion-tlsv1-2"' | xargs -d '\n' sed -i 's/"constant\.curlopt-sslversion-tlsv1-2"/"constant\.curl-sslversion-tlsv1-2"/g'
+\grep -lrE --include='*.xml' '"constant\.curlopt-mail-rcpt-allowfails"' | xargs -d '\n' sed -i 's/"constant\.curlopt-mail-rcpt-allowfails"/"constant\.curlopt-mail-rcpt-alllowfails"/g'
+\grep -lrE --include='*.xml' '"constant\.curlinfo-referrer"' | xargs -d '\n' sed -i 's/"constant\.curlinfo-referrer"/"constant\.curlinfo-referer"/g'
+\grep -lrE --include='*.xml' '"constant\.curloptunix-socket-path"' | xargs -d '\n' sed -i 's/"constant\.curloptunix-socket-path"/"constant\.curlopt-unix-socket-path"/g'
+\grep -lrE --include='*.xml' '"constant\.curlopt-verifystatus"' | xargs -d '\n' sed -i 's/"constant\.curlopt-verifystatus"/"constant\.curlopt-ssl-verifystatus"/g'
+\grep -lrE --include='*.xml' '"constant\.curlinfo-lock-data-connect"' | xargs -d '\n' sed -i 's/"constant\.curlinfo-lock-data-connect"/"constant\.curl-lock-data-connect"/g'
+\grep -lrE --include='*.xml' '"constant\.curlinfo-lock-data-psl"' | xargs -d '\n' sed -i 's/"constant\.curlinfo-lock-data-psl"/"constant\.curl-lock-data-psl"/g'
