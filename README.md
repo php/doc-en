@@ -23,8 +23,8 @@ or [this page](http://doc.php.net/tutorial/local-setup.php) on our documentation
 
 For the translations of this documentation, see:
 
-- [Brazilian Portugues](https://github.com/php/doc-pt_br) (doc-pt_br)
-- [Chinese(Simplified)](https://github.com/php/doc-zh) (doc-zh)
+- [Brazilian Portuguese](https://github.com/php/doc-pt_br) (doc-pt_br)
+- [Chinese (Simplified)](https://github.com/php/doc-zh) (doc-zh)
 - [English](https://github.com/php/doc-en) (doc-en)
 - [French](https://github.com/php/doc-fr) (doc-fr)
 - [German](https://github.com/php/doc-de) (doc-de)
