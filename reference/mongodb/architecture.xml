@@ -18,9 +18,9 @@
   <para>
    <mediaobject>
     <alt>
-     PHP Driver Architecture Diagram. The lowest level of the driver is our
-     system libraries: libmongoc, libbson, and libmongocrypt. The middle level
-     is the MongoDB PHP C extension. The upper level is PHP userland and
+     MongoDB PHP Driver Architecture Diagram. The lowest level of the driver is
+     our system libraries: libmongoc, libbson, and libmongocrypt. The middle
+     level is the MongoDB PHP extension. The upper level is PHP userland and
      includes the MongoDB PHP library and higher-level packages such as
      framework integrations and applications.
     </alt>
@@ -99,7 +99,7 @@
    <title>Connection and topology persistence (PHP version since 1.2.0)</title>
 
    <para>
-    All versions of the driver since 1.2.0 persist the
+    All versions of the extension since 1.2.0 persist the
     <link xlink:href="&url.mongodb.libmongoc;">libmongoc</link> client object in
     the PHP worker process, which allows it to re-use database connections,
     authentication states, <emphasis>and</emphasis> topology information across
@@ -109,7 +109,7 @@
    <para>
     When <methodname>MongoDB\Driver\Manager::__construct</methodname> is
     invoked, a hash is created from its arguments (i.e. URI string and array
-    options). The driver will attempt to find a previously persisted
+    options). The extension will attempt to find a previously persisted
     <link xlink:href="&url.mongodb.libmongoc;">libmongoc</link> client object for
     that hash. If an existing client cannot be found for the hash, a new client
     will be created and persisted for future use. This behavior can be disabled
@@ -119,7 +119,7 @@
    <para>
     Each client contains its own database connections and a view of the server
     topology (e.g. standalone, replica set, shard cluster). By persisting the
-    client between PHP requests, the driver is able to re-use established
+    client between PHP requests, the extension is able to re-use established
     database connections and remove the need for
     <link xlink:href="&url.mongodb.sdam;">discovering the server topology</link>
     on each request.
@@ -156,16 +156,16 @@ foreach ($managers as $manager) {
     PHP worker executing this script will open two connections to
     <literal>127.0.0.1</literal> and one connection to each of
     <literal>rs1.example.com</literal> and <literal>rs2.example.com</literal>.
-    If the driver discovers additional members of the replica set after issuing
-    <literal>hello</literal> commands, it will open additional connections to
-    those servers as well.
+    If the extension discovers additional members of the replica set after
+    issuing <literal>hello</literal> commands, it will open additional
+    connections to those servers as well.
    </para>
 
    <para>
     If the same worker executes the script again in a second request, the three
     clients will be re-used and no new connections will be made. Depending on
-    how long ago the previous request was served, the driver may need to issue
-    additional <literal>hello</literal> commands to update its view of the
+    how long ago the previous request was served, the extension may need to
+    issue additional <literal>hello</literal> commands to update its view of the
     topologies.
    </para>
   </section>
@@ -174,14 +174,14 @@ foreach ($managers as $manager) {
    <title>Socket persistence (PHP versions before 1.2.0)</title>
 
    <para>
-    Versions of the PHP driver before 1.2.0 utilize PHP&apos;s Streams API for
+    Versions of the extension before 1.2.0 utilize PHP&apos;s Streams API for
     database connections, using an API within
     <link xlink:href="&url.mongodb.libmongoc;">libmongoc</link> to designate
     custom handlers for socket communication; however, a new libmongoc client is
     created for each <classname>MongoDB\Driver\Manager</classname>. As a result,
-    the driver persists individual database connections but not authentication
-    state or topology information. This means that the driver needs to issue
-    commands at the start of each request to authenticate and
+    the extension persists individual database connections but not
+    authentication state or topology information. This means that the extension
+    needs to issue commands at the start of each request to authenticate and
     <link xlink:href="&url.mongodb.sdam;">discover the server topology</link>.
    </para>
 
@@ -194,7 +194,7 @@ foreach ($managers as $manager) {
 
    <note>
     <simpara>
-     Versions of the driver &gt;= 1.1.8 and &lt; 1.2.0 do not persist sockets
+     Versions of the extension &gt;= 1.1.8 and &lt; 1.2.0 do not persist sockets
      for SSL connections. See
      <link xlink:href="&url.mongodb.jira.phpc;-720">PHPC-720</link> for
      additional information.
@@ -203,7 +203,7 @@ foreach ($managers as $manager) {
 
    <para>
     Despite its shortcomings with persisting SSL connections when and topology
-    information, this version of the driver supports all
+    information, this version of the extension supports all
     <link linkend="context.ssl">SSL context options</link> since it uses
     PHP&apos;s Streams API.
    </para>
@@ -215,9 +215,8 @@ foreach ($managers as $manager) {
   <title>Serialization and deserialization of PHP variables into MongoDB</title>
 
   <para>
-   This document discusses the methods how compound structures (documents,
-   arrays, objects) are persisted through the drivers. And how they are brought
-   back into PHP land.
+   This document discusses how compound structures (i.e. documents, arrays, and
+   objects) are converted between BSON and PHP values.
   </para>
 
   <section xml:id="mongodb.persistence.serialization">
@@ -481,9 +480,9 @@ class UpperClass implements MongoDB\BSON\Persistable {
     convenient to work with, this behavior was problematic because different
     BSON types could deserialize to the same PHP value (e.g.
     <literal>{"0": "foo"}</literal> and <literal>["foo"]</literal>) and make it
-    impossible to infer the original BSON type. By default, the current driver
-    addresses this concern by ensuring that BSON arrays and documents are
-    converted to PHP arrays and objects, respectively.
+    impossible to infer the original BSON type. By default, the
+    <code>mongodb</code> extension addresses this concern by ensuring that BSON
+    arrays and documents are converted to PHP arrays and objects, respectively.
    </para>
    <para>
     For compound types, there are three data types:
