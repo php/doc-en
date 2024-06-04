@@ -7,6 +7,8 @@ and the [README file](https://github.com/php/doc-base/blob/master/README.md)
 within the [doc-base repository](https://github.com/php/doc-base)
 for details on how to contribute to PHP's documentation.
 
+The PHP manual is available at [php.net/docs](https://php.net/docs).
+
 ## Creating this setup
 
 For information related to creating this setup,
