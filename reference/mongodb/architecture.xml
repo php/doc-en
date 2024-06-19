@@ -424,39 +424,90 @@ class AnotherClass3 implements MongoDB\BSON\Serializable
 {
     private $elements = ['foo', 'bar'];
 
-    public function bsonSerialize(): array;
+    public function bsonSerialize(): array
     {
         return $this->elements;
     }
 } // => {"0": "foo", "1": "bar"}
 
+/**
+ * Containered classes
+ */
+
 class AnotherClass4 implements MongoDB\BSON\Serializable
 {
-    private $things = [0 => 'foo', 2 => 'bar'];
+    private $elements = [0 => 'foo', 2 => 'bar'];
 
     public function bsonSerialize(): array
+    {
+        return $this->elements;
+    }
+}
+
+class ContainerClass1 implements MongoDB\BSON\Serializable
+{
+    public $things;
+
+    public function __construct()
+    {
+        $this->things = new AnotherClass4();
+    }
+
+    function bsonSerialize(): array
     {
         return ['things' => $this->things];
     }
 } // => {"things": {"0": "foo", "2": "bar"}}
 
+
 class AnotherClass5 implements MongoDB\BSON\Serializable
 {
-    private $things = [0 => 'foo', 2 => 'bar'];
+    private $elements = [0 => 'foo', 2 => 'bar'];
 
     public function bsonSerialize(): array
     {
-        return ['things' => array_values($this->elements)];
+        return array_values($this->elements);
+    }
+}
+
+class ContainerClass2 implements MongoDB\BSON\Serializable
+{
+    public $things;
+
+    public function __construct()
+    {
+        $this->things = new AnotherClass5();
+    }
+
+    public function bsonSerialize(): array
+    {
+        return ['things' => $this->things];
     }
 } // => {"things": ["foo", "bar"]}
 
+
 class AnotherClass6 implements MongoDB\BSON\Serializable
 {
-    private $things = ['foo', 'bar'];
+    private $elements = ['foo', 'bar'];
+
+    function bsonSerialize(): object
+    {
+        return (object) $this->elements;
+    }
+}
+
+class ContainerClass3 implements MongoDB\BSON\Serializable
+{
+    public $things;
+
+    public function __construct()
+    {
+        $this->things = new AnotherClass6();
+    }
 
     public function bsonSerialize(): array
     {
-        return ['things' => (object) $this->elements];
+        return ['things' => $this->things];
     }
 } // => {"things": {"0": "foo", "1": "bar"}}
 
@@ -465,6 +516,13 @@ class UpperClass implements MongoDB\BSON\Persistable
     public $foo = 42;
     protected $prot = 'wine';
     private $fpr = 'cheese';
+
+    private $data;
+
+    public function bsonUnserialize(array $data): void
+    {
+        $this->data = $data;
+    }
 
     public function bsonSerialize(): array
     {
