@@ -81,31 +81,34 @@
      <programlisting role="php">
  <![CDATA[
 <?php
-function exception_error_handler(int $errno, string $errstr, string $errfile = null, int $errline) {
+set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline) {
     if (!(error_reporting() & $errno)) {
-        // This error code is not included in error_reporting
+        // This error code is not included in error_reporting.
+        return;
+    }
+    if ($errno === E_DEPRECATED || $errno === E_USER_DEPRECATED) {
+        // Do not throw an Exception for deprecation warnings as new or unexpected
+        // deprecations would break the application.
         return;
     }
     throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
-}
-set_error_handler(exception_error_handler(...));
-// Prior to PHP 8.1.0 and the introduction of the first class callable syntax, the following call must be used instead
-// set_error_handler(__NAMESPACE__ . "\\exception_error_handler");
+});
 
-/* Trigger exception */
-strpos();
+// Unserializing broken data triggers a warning which will be turned into an
+// ErrorException by the error handler.
+unserialize('broken data');
 ?>
 ]]>
      </programlisting>
      &example.outputs.similar;
      <screen>
 <![CDATA[
-Fatal error: Uncaught exception 'ErrorException' with message 'strpos() expects at least 2 parameters, 0 given' in /home/bjori/tmp/ex.php:12
+Fatal error: Uncaught ErrorException: unserialize(): Error at offset 0 of 11 bytes in test.php:16
 Stack trace:
-#0 [internal function]: exception_error_handler(2, 'strpos() expect...', '/home/bjori/php...', 12, Array)
-#1 /home/bjori/php/cleandocs/test.php(12): strpos()
+#0 [internal function]: {closure}(2, 'unserialize(): ...', 'test.php', 16)
+#1 test.php(16): unserialize('broken data')
 #2 {main}
-  thrown in /home/bjori/tmp/ex.php on line 12
+  thrown in test.php on line 16
 ]]>
      </screen>
     </example><!-- }}} -->
