@@ -15,11 +15,21 @@ For information related to creating this setup,
 see the [contribution guidelines](https://github.com/php/doc-base/blob/master/CONTRIBUTING_DOCS.md)
 or [this page](http://doc.php.net/tutorial/local-setup.php) on our documentation website.
 
-## Running With Docker
+## Building With make and Docker
 
 - Install Docker (https://docs.docker.com/get-docker/)
-- Rebuild the documentation using `docker-compose up`
+- Rebuild the documentation using `make`
 - Open output/php-chunked-xhtml/ in your browser.
+
+If the `doc-base` or `phd` repositories are available in directories to the
+adjacent to this directory, those will be used for building.
+
+To force the Docker image used for building to itself be rebuilt, you can run
+`make -B build`, otherwise the `Makefile` will only build it if does not
+already exist.
+
+You can also build the `web` version of the documentation with `make php`
+and the output will be placed in output/php-web
 
 ## Translations
 
