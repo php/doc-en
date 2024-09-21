@@ -5,7 +5,7 @@
   <refname>ob_get_status</refname>
   <refpurpose>Get status of output buffers</refpurpose>
  </refnamediv>
- 
+
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
@@ -39,81 +39,142 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   If called without the <parameter>full_status</parameter> parameter
-   or with <parameter>full_status</parameter> = &false; a simple array
-   with the following elements is returned:
-   <informalexample>
-    <screen>
-<![CDATA[
-Array
-(
-    [level] => 2
-    [type] => 0
-    [status] => 0
-    [name] => URL-Rewriter
-    [del] => 1
-)
-]]>
-    </screen>
-   </informalexample>
-   <segmentedlist>
-    <title>Simple <function>ob_get_status</function> results</title>
-    <segtitle>Key</segtitle><segtitle>Value</segtitle>
-    <seglistitem><seg>level</seg><seg>Output nesting level</seg></seglistitem>
-    <seglistitem><seg>type</seg><seg><literal>0</literal> (internal handler) or <literal>1</literal> (user supplied handler)</seg></seglistitem>
-    <seglistitem><seg>status</seg><seg>One of <literal>PHP_OUTPUT_HANDLER_START</literal> (0), <literal>PHP_OUTPUT_HANDLER_CONT</literal> (1) or <literal>PHP_OUTPUT_HANDLER_END</literal> (2)</seg></seglistitem>
-    <seglistitem><seg>name</seg><seg>Name of active output handler or ' default output handler' if none is set</seg></seglistitem>
-    <seglistitem><seg>del</seg><seg>Erase-flag as set by <function>ob_start</function></seg></seglistitem>
-   </segmentedlist>
+   If <parameter>full_status</parameter> is omitted or &false; a simple array
+   holding status information on the active output level is returned.
   </para>
   <para>
-   If called with <parameter>full_status</parameter> = &true; an array
+   If <parameter>full_status</parameter> is &true; an array
    with one element for each active output buffer level is returned.
    The output level is used as key of the top level array and each array
    element itself is another array holding status information
    on one active output level.
-   <informalexample>
+  </para>
+  <para>
+   An empty array is returned if output buffering is not turned on.
+  </para>
+  <para>
+   <segmentedlist>
+    <title><function>ob_get_status</function> return array elements</title>
+    <segtitle>Key</segtitle><segtitle>Value</segtitle>
+    <seglistitem>
+     <seg>name</seg>
+     <seg>
+      Name of active output handler (see the return values of
+      <function>ob_list_handlers</function> for details)
+     </seg>
+    </seglistitem>
+    <seglistitem>
+     <seg>type</seg>
+     <seg>
+      <literal>0</literal> (internal handler) or
+      <literal>1</literal> (user supplied handler)
+     </seg>
+    </seglistitem>
+    <seglistitem>
+     <seg>flags</seg>
+     <seg>
+      Bitmask of flags set by <function>ob_start</function>,
+      the type of output handler (see above)
+      and the status of the buffering process
+      (<link linkend="outcontrol.constants.flags-returned-by-handler">
+       <constant>PHP_OUTPUT_HANDLER_<replaceable>*</replaceable></constant>
+      </link> constants).
+      If the handler successfully processed the buffer and did not return &false;,
+      <constant>PHP_OUTPUT_HANDLER_STARTED</constant> and
+      <constant>PHP_OUTPUT_HANDLER_PROCESSED</constant> will be set.
+      If the handler failed while processing the buffer or returned &false;,
+      <constant>PHP_OUTPUT_HANDLER_STARTED</constant> and
+      <constant>PHP_OUTPUT_HANDLER_DISABLED</constant> will be set.
+     </seg>
+    </seglistitem>
+    <seglistitem>
+     <seg>level</seg>
+     <seg>
+      Output nesting level (zero based). Note that the value returned for the
+      same level by <function>ob_get_level</function> is off by one.
+      The first level is <literal>0</literal> for <function>ob_get_status</function>,
+      and <literal>1</literal> for <function>ob_get_level</function>.
+     </seg>
+    </seglistitem>
+    <seglistitem>
+     <seg>chunk_size</seg>
+     <seg>
+      Chunk size in bytes. Set by <function>ob_start</function>
+      or <link linkend="ini.output-buffering">output_buffering</link> is enabled
+      and its value is set to a positive integer
+     </seg>
+    </seglistitem>
+    <seglistitem>
+     <seg>buffer_size</seg>
+     <seg>
+      Output buffer size in bytes
+     </seg>
+    </seglistitem>
+    <seglistitem>
+     <seg>buffer_used</seg>
+     <seg>
+      Size of data in output buffer in bytes
+      (the same as the integer return value of <function>ob_get_length</function>)
+     </seg>
+    </seglistitem>
+   </segmentedlist>
+  </para>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title>Array returned when <parameter>full_status</parameter> is &false;</title>
+    <screen>
+<![CDATA[
+Array
+(
+    [name] => URL-Rewriter
+    [type] => 0
+    [flags] => 112
+    [level] => 2
+    [chunk_size] => 0
+    [buffer_size] => 16384
+    [buffer_used] => 1024
+)
+]]>
+    </screen>
+   </example>
+  </para>
+  <para>
+   <example>
+    <title>Array returned when <parameter>full_status</parameter> is &true;</title>
     <screen>
 <![CDATA[
 Array
 (
     [0] => Array
         (
-            [chunk_size] => 0
-            [size] => 40960
-            [block_size] => 10240
-            [type] => 1
-            [status] => 0
             [name] => default output handler
-            [del] => 1
+            [type] => 0
+            [flags] => 112
+            [level] => 1
+            [chunk_size] => 0
+            [buffer_size] => 16384
+            [buffer_used] => 2048
         )
 
     [1] => Array
         (
-            [chunk_size] => 0
-            [size] => 40960
-            [block_size] => 10240
-            [type] => 0
-            [buffer_size] => 0
-            [status] => 0
             [name] => URL-Rewriter
-            [del] => 1
+            [type] => 0
+            [flags] => 112
+            [level] => 2
+            [chunk_size] => 0
+            [buffer_size] => 16384
+            [buffer_used] => 1024
         )
 
 )
 ]]>
     </screen>
-   </informalexample>
-  </para>
-  <para>
-   The full output contains these additional elements:
-   <segmentedlist>
-    <title>Full <function>ob_get_status</function> results</title>
-    <segtitle>Key</segtitle><segtitle>Value</segtitle>
-    <seglistitem><seg>chunk_size</seg><seg>Chunk size as set by <function>ob_start</function></seg></seglistitem>
-    <seglistitem><seg>size</seg><seg>...</seg></seglistitem>
-    <seglistitem><seg>blocksize</seg><seg>...</seg></seglistitem>
-   </segmentedlist>
+   </example>
   </para>
  </refsect1>
 
@@ -123,6 +184,8 @@ Array
    <simplelist>
     <member><function>ob_get_level</function></member>
     <member><function>ob_list_handlers</function></member>
+    <member><function>ob_get_length</function></member>
+    <member><function>ob_start</function></member>
    </simplelist>
   </para>
  </refsect1>

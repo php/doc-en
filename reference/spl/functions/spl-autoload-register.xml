@@ -47,8 +47,12 @@
       </para>
       <methodsynopsis>
        <type>void</type><methodname><replaceable>callback</replaceable></methodname>
-       <methodparam><type>string</type><parameter>class_name</parameter></methodparam>
+       <methodparam><type>string</type><parameter>class</parameter></methodparam>
       </methodsynopsis>
+      <para>
+       The <parameter>class</parameter> will not contain the leading
+       backslash of a fully-qualified identifier.
+      </para>
      </listitem>
     </varlistentry>
     <varlistentry>
@@ -60,13 +64,21 @@
        exceptions when the <parameter>callback</parameter>
        cannot be registered.
       </para>
+      <warning>
+        <para>
+          This parameter is ignored as of PHP 8.0.0, and a notice will be
+          emitted if set to &false;. <function>spl_autoload_register</function>
+          will now always throw a <classname>TypeError</classname> on invalid
+          arguments.
+        </para>
+      </warning>
      </listitem>
     </varlistentry>
     <varlistentry>
      <term><parameter>prepend</parameter></term>
      <listitem>
       <para>
-       If true, <function>spl_autoload_register</function> will prepend
+       If &true;, <function>spl_autoload_register</function> will prepend
        the autoloader on the autoload queue instead of appending it.
       </para>
      </listitem>
@@ -143,8 +155,8 @@ spl_autoload_register(function ($class) {
 namespace Foobar;
 
 class Foo {
-    static public function test($name) {
-        print '[['. $name .']]';
+    static public function test($class) {
+        print '[['. $class .']]';
     }
 }
 
@@ -160,6 +172,34 @@ new InexistentClass;
 <![CDATA[
 [[Foobar\InexistentClass]]
 Fatal error: Class 'Foobar\InexistentClass' not found in ...
+]]>
+    </screen>
+   </example>
+   <example>
+    <title>The identifier will be provided without the leading backslash</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+spl_autoload_register(static function ($class) {
+    var_dump($class);
+});
+
+class_exists('RelativeName');
+class_exists('RelativeName\\WithNamespace');
+class_exists('\\AbsoluteName');
+class_exists('\\AbsoluteName\\WithNamespace');
+
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+string(12) "RelativeName"
+string(26) "RelativeName\WithNamespace"
+string(12) "AbsoluteName"
+string(26) "AbsoluteName\WithNamespace"
 ]]>
     </screen>
    </example>

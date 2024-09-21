@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-<refentry xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="function.hash-pbkdf2">
+<refentry xml:id="function.hash-pbkdf2" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>hash_pbkdf2</refname>
   <refpurpose>Generate a PBKDF2 key derivation of a supplied password</refpurpose>
@@ -11,11 +11,12 @@
   <methodsynopsis>
    <type>string</type><methodname>hash_pbkdf2</methodname>
    <methodparam><type>string</type><parameter>algo</parameter></methodparam>
-   <methodparam><type>string</type><parameter>password</parameter></methodparam>
+   <methodparam><modifier role="attribute">#[\SensitiveParameter]</modifier><type>string</type><parameter>password</parameter></methodparam>
    <methodparam><type>string</type><parameter>salt</parameter></methodparam>
    <methodparam><type>int</type><parameter>iterations</parameter></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>length</parameter><initializer>0</initializer></methodparam>
    <methodparam choice="opt"><type>bool</type><parameter>binary</parameter><initializer>&false;</initializer></methodparam>
+   <methodparam choice="opt"><type>array</type><parameter>options</parameter><initializer>[]</initializer></methodparam>
   </methodsynopsis>
  </refsect1>
 
@@ -27,9 +28,13 @@
      <term><parameter>algo</parameter></term>
      <listitem>
       <para>
-       Name of selected hashing algorithm (i.e. <literal>md5</literal>,
-       <literal>sha256</literal>, <literal>haval160,4</literal>, etc..) See
-       <function>hash_algos</function> for a list of supported algorithms.
+       Name of selected hashing algorithm (e.g. <literal>"sha256"</literal>).
+       For a list of supported algorithms see <function>hash_hmac_algos</function>.
+       <note>
+        <para>
+         Non-cryptographic hash functions are not allowed.
+        </para>
+       </note>
       </para>
      </listitem>
     </varlistentry>
@@ -82,6 +87,16 @@
       </para>
      </listitem>
     </varlistentry>
+    <varlistentry>
+     <term><parameter>options</parameter></term>
+     <listitem>
+      <para>
+       An array of options for the various hashing algorithms.
+       Currently, only the <literal>"seed"</literal> key is
+       supported by the MurmurHash variants.
+      </para>
+     </listitem>
+    </varlistentry>
    </variablelist>
   </para>
  </refsect1>
@@ -98,7 +113,7 @@
  <refsect1 role="errors"><!-- {{{ -->
   &reftitle.errors;
   <para>
-   An <constant>E_WARNING</constant> will be raised if the algorithm is
+   Throws a <classname>ValueError</classname> exception if the algorithm is
    unknown, the <parameter>iterations</parameter> parameter is less than or
    equal to <literal>0</literal>, the <parameter>length</parameter> is less
    than <literal>0</literal> or the <parameter>salt</parameter> is too long
@@ -119,6 +134,14 @@
      </thead>
      <tbody>
       <row>
+       <entry>8.0.0</entry>
+       <entry>
+        Now throws a <classname>ValueError</classname> exception on error.
+        Previously, &false; was returned and an <constant>E_WARNING</constant>
+        message was emitted.
+       </entry>
+      </row>
+      <row>
        <entry>7.2.0</entry>
        <entry>Usage of non-cryptographic hash functions (adler32, crc32, crc32b, fnv132, fnv1a32, fnv164, fnv1a64, joaat) was disabled.</entry>
       </row>
@@ -137,11 +160,10 @@
 <![CDATA[
 <?php
 $password = "password";
-$iterations = 1000;
+$iterations = 600000;
 
-// Generate a random IV using openssl_random_pseudo_bytes()
-// random_bytes() or another suitable source of randomness
-$salt = openssl_random_pseudo_bytes(16);
+// Generate a cryptographically secure random salt using random_bytes()
+$salt = random_bytes(16);
 
 $hash = hash_pbkdf2("sha256", $password, $salt, $iterations, 20);
 var_dump($hash);
@@ -178,14 +200,9 @@ string(20) "120fb6cffcf8b32c43e7"
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>crypt</function></member>
     <member><function>password_hash</function></member>
-    <member><function>hash</function></member>
-    <member><function>hash_algos</function></member>
-    <member><function>hash_init</function></member>
-    <member><function>hash_hmac</function></member>
-    <member><function>hash_hmac_file</function></member>
-    <member><function>openssl_pbkdf2</function></member>
+    <member><function>hash_hkdf</function></member>
+    <member><function>sodium_crypto_pwhash</function></member>
    </simplelist>
   </para>
  </refsect1>

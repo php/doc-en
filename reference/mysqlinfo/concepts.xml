@@ -31,17 +31,21 @@
   </note>
   
   <para>
-   Unbuffered MySQL queries execute the query and then return a <type>resource</type> while
-   the data is still waiting on the MySQL server for being fetched. This uses less memory
+   Unbuffered MySQL queries execute the query and then wait
+   for the data from the MySQL server to be fetched. This uses less memory
    on the PHP-side, but can increase the load on the server. Unless the full result set was
    fetched from the server no further queries can be sent over the same connection. Unbuffered
-   queries can also be referred to as "use result".
+   queries can also be referred to as "use result". Once all rows in the result set
+   are fetched, the result set is gone and it cannot be iterated again.
   </para>
 
   <para>
-   Following these characteristics buffered queries should be used in cases where you expect
-   only a limited result set or need to know the amount of returned rows before reading all
-   rows. Unbuffered mode should be used when you expect larger results.
+   Following these characteristics, unbuffered queries should be used only
+   when a large result set is expected that will be processed sequentially.
+   Unbuffered queries contain a number of pitfalls that makes it more
+   difficult to use them, e.g. the number of rows in the result set is unknown
+   until the last row is fetched.
+   Buffered queries are the easier and more flexible way to process result sets.
   </para>
   
   <!-- @TODO
@@ -62,12 +66,10 @@
 <![CDATA[
 <?php
 $mysqli  = new mysqli("localhost", "my_user", "my_password", "world");
-$uresult = $mysqli->query("SELECT Name FROM City", MYSQLI_USE_RESULT);
+$unbufferedResult = $mysqli->query("SELECT Name FROM City", MYSQLI_USE_RESULT);
 
-if ($uresult) {
-   while ($row = $uresult->fetch_assoc()) {
-       echo $row['Name'] . PHP_EOL;
-   }
+foreach ($unbufferedResult as $row) {
+    echo $row['Name'] . PHP_EOL;
 }
 ?>
 ]]>
@@ -79,14 +81,12 @@ if ($uresult) {
    <programlisting role="php">
 <![CDATA[
 <?php
-$pdo = new PDO("mysql:host=localhost;dbname=world", 'my_user', 'my_pass');
+$pdo = new PDO("mysql:host=localhost;dbname=world", 'my_user', 'my_password');
 $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
 
-$uresult = $pdo->query("SELECT Name FROM City");
-if ($uresult) {
-   while ($row = $uresult->fetch(PDO::FETCH_ASSOC)) {
-       echo $row['Name'] . PHP_EOL;
-   }
+$unbufferedResult = $pdo->query("SELECT Name FROM City");
+foreach ($unbufferedResult as $row) {
+    echo $row['Name'] . PHP_EOL;
 }
 ?>
 ]]>
