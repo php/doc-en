@@ -199,7 +199,7 @@ echo 'Variables do not $expand $either';
    <para>
     The most important feature of double-quoted <type>string</type>s is the fact
     that variable names will be expanded. See
-    <link linkend="language.types.string.parsing">string parsing</link> for
+    <link linkend="language.types.string.parsing">string interpolation</link> for
     details.
    </para>
   </sect3>
@@ -592,7 +592,7 @@ FOOBAR;
    <para>
     Nowdocs are to single-quoted strings what heredocs are to double-quoted
     strings. A nowdoc is specified similarly to a heredoc, but <emphasis>no
-    parsing is done</emphasis> inside a nowdoc. The construct is ideal for
+    String interpolation is done</emphasis> inside a nowdoc. The construct is ideal for
     embedding PHP code or other large blocks of text without the need for
     escaping. It shares some features in common with the SGML
     <literal>&lt;![CDATA[ ]]&gt;</literal> construct, in that it declares a
@@ -684,37 +684,29 @@ EOT;
   </sect3>
 
   <sect3 xml:id="language.types.string.parsing">
-   <title>Variable parsing</title>
+   <title>String interpolation</title>
 
    <simpara>
     When a <type>string</type> is specified in double quotes or with heredoc,
-    <link linkend="language.variables">variables</link> are parsed within it.
+    <link linkend="language.variables">variables</link> can be substituted within it.
    </simpara>
 
    <simpara>
     There are two types of syntax: a
-    <link linkend="language.types.string.parsing.simple">simple</link> one and a
-    <link linkend="language.types.string.parsing.complex">complex</link> one.
-    The simple syntax is the most common and convenient. It provides a way to
+    <link linkend="language.types.string.parsing.basic">basic</link> one and an
+    <link linkend="language.types.string.parsing.advanced">advanced</link> one.
+    The basic syntax is the most common and convenient. It provides a way to
     embed a variable, an <type>array</type> value, or an <type>object</type>
     property in a <type>string</type> with a minimum of effort.
    </simpara>
 
-   <simpara>
-    The complex syntax can be recognised by the
-    curly braces surrounding the expression.
-   </simpara>
-
-   <sect4 xml:id="language.types.string.parsing.simple">
-    <title>Simple syntax</title>
-
+   <sect4 xml:id="language.types.string.parsing.basic">
+    <title>Basic syntax</title>
     <simpara>
-     If a dollar sign (<literal>$</literal>) is encountered, the parser will
-     greedily take as many tokens as possible to form a valid variable name.
-     Enclose the variable name in curly braces to explicitly specify the end of
-     the name.
+     If a dollar sign (<literal>$</literal>) is encountered, the characters
+     that follow it which can be used in a variable name will be interpreted
+     as such and substituted.
     </simpara>
-
     <informalexample>
      <programlisting role="php">
 <![CDATA[
@@ -723,12 +715,6 @@ $juice = "apple";
 
 echo "He drank some $juice juice." . PHP_EOL;
 
-// Unintended. "s" is a valid character for a variable name, so this refers to $juices, not $juice.
-echo "He drank some juice made of $juices." . PHP_EOL;
-
-// Explicitly specify the end of the variable name by enclosing the reference in braces.
-echo "He drank some juice made of {$juice}s.";
-
 ?>
 ]]>
      </programlisting>
@@ -736,43 +722,131 @@ echo "He drank some juice made of {$juice}s.";
      <screen>
 <![CDATA[
 He drank some apple juice.
-He drank some juice made of .
-He drank some juice made of apples.
 ]]>
      </screen>
     </informalexample>
 
     <simpara>
-     Similarly, an <type>array</type> index or an <type>object</type> property
-     can be parsed. With array indices, the closing square bracket
-     (<literal>]</literal>) marks the end of the index. The same rules apply to
-     object properties as to simple variables.
+     Formally, the structure for the basic variable substitution syntax is
+     as follows:
     </simpara>
+    <informalexample>
+     <programlisting>
+<![CDATA[
+string-variable::
+     variable-name   (offset-or-property)?
+   | ${   expression   }
 
-    <example><title>Simple syntax example</title>
+offset-or-property::
+     offset-in-string
+   | property-in-string
+
+offset-in-string::
+     [   name   ]
+   | [   variable-name   ]
+   | [   integer-literal   ]
+
+property-in-string::
+     ->  name
+
+variable-name::
+     $   name
+
+name::
+     [a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*
+
+]]>
+     </programlisting>
+    </informalexample>
+
+    <warning>
+     <para>
+      The <literal>${ expression }</literal> syntax is deprecated as of
+      PHP 8.2.0, as it can be interpreted as
+      <link linkend="language.variables.variable">variable variables</link>:
+      <informalexample>
+       <programlisting role="php">
+<![CDATA[
+<?php
+const foo = 'bar';
+$foo = 'foo';
+$bar = 'bar';
+var_dump("${foo}");
+var_dump("${(foo)}");
+?>
+]]>
+       </programlisting>
+       &example.outputs.82;
+       <screen>
+<![CDATA[
+Deprecated: Using ${var} in strings is deprecated, use {$var} instead in file on line 6
+
+Deprecated: Using ${expr} (variable variables) in strings is deprecated, use {${expr}} instead in file on line 9
+string(3) "foo"
+string(3) "bar"
+]]>
+       </screen>
+       &example.outputs;
+       <screen>
+<![CDATA[
+string(3) "foo"
+string(3) "bar"
+]]>
+       </screen>
+      </informalexample>
+      The <link linkend="language.types.string.parsing.advanced">advanced</link>
+      string interpolation syntax should be used instead.
+     </para>
+    </warning>
+
+    <note>
+     <simpara>
+      If it is not possible to form a valid name the dollar sign remains
+      as verbatim in the string:
+     </simpara>
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+<?php
+echo "No interpolation $  has happened\n";
+echo "No interpolation $\n has happened\n";
+echo "No interpolation $2 has happened\n";
+?>
+]]>
+      </programlisting>
+      &example.outputs;
+      <screen>
+<![CDATA[
+No interpolation $  has happened
+No interpolation $
+ has happened
+No interpolation $2 has happened
+]]>
+      </screen>
+     </informalexample>
+    </note>
+
+    <example>
+     <title>Interpolating the value of the first dimension of an array or property</title>
      <programlisting role="php">
 <![CDATA[
 <?php
-$juices = array("apple", "orange", "koolaid1" => "purple");
+$juices = array("apple", "orange", "string_key" => "purple");
 
-echo "He drank some $juices[0] juice.".PHP_EOL;
-echo "He drank some $juices[1] juice.".PHP_EOL;
-echo "He drank some $juices[koolaid1] juice.".PHP_EOL;
+echo "He drank some $juices[0] juice.";
+echo PHP_EOL;
+echo "He drank some $juices[1] juice.";
+echo PHP_EOL;
+echo "He drank some $juices[string_key] juice.";
+echo PHP_EOL;
 
-class people {
-    public $john = "John Smith";
-    public $jane = "Jane Smith";
-    public $robert = "Robert Paulsen";
-
-    public $smith = "Smith";
+class A {
+    public $s = "string";
 }
 
-$people = new people();
+$o = new A();
 
-echo "$people->john drank some $juices[0] juice.".PHP_EOL;
-echo "$people->john then said hello to $people->jane.".PHP_EOL;
-echo "$people->john's wife greeted $people->robert.".PHP_EOL;
-echo "$people->robert greeted the two $people->smiths."; // Won't work
+echo "Object value: $o->s.";
 ?>
 ]]>
      </programlisting>
@@ -782,13 +856,19 @@ echo "$people->robert greeted the two $people->smiths."; // Won't work
 He drank some apple juice.
 He drank some orange juice.
 He drank some purple juice.
-John Smith drank some apple juice.
-John Smith then said hello to Jane Smith.
-John Smith's wife greeted Robert Paulsen.
-Robert Paulsen greeted the two .
+Object value: string.
 ]]>
      </screen>
     </example>
+
+    <note>
+     <simpara>
+      The array key must be unquoted, and it is therefore not possible to
+      refer to a constant as a key with the basic syntax. Use the
+      <link linkend="language.types.string.parsing.advanced">advanced</link>
+      syntax instead.
+     </simpara>
+    </note>
 
     <simpara>
      As of PHP 7.1.0 also <emphasis>negative</emphasis> numeric indices are
@@ -816,20 +896,23 @@ Changing the character at index -3 to o gives strong.
     </example>
 
     <simpara>
-     For anything more complex, you should use the complex syntax.
+     For anything more complex, the
+     <link linkend="language.types.string.parsing.advanced">advanced</link>
+     syntax must be used.
     </simpara>
    </sect4>
 
-   <sect4 xml:id="language.types.string.parsing.complex">
-    <title>Complex (curly) syntax</title>
+   <sect4 xml:id="language.types.string.parsing.advanced">
+    <title>Advanced (curly) syntax</title>
 
     <simpara>
-     This isn't called complex because the syntax is complex, but because it
-     allows for the use of complex expressions.
+     The advanced syntax permits the interpolation of
+     <emphasis>variables</emphasis> with arbitrary accessors.
     </simpara>
 
     <simpara>
-     Any scalar variable, array element or object property with a
+     Any scalar variable, array element or object property
+     (<modifier>static</modifier> or not) with a
      <type>string</type> representation can be included via this syntax.
      The expression is written the same way as it would appear outside the
      <type>string</type>, and then wrapped in <literal>{</literal> and
@@ -843,10 +926,18 @@ Changing the character at index -3 to o gives strong.
      <programlisting role="php">
 <![CDATA[
 <?php
-// Show all errors
-error_reporting(E_ALL);
 
+const DATA_KEY = 'const-key';
 $great = 'fantastic';
+$arr = [
+    '1',
+    '2',
+    '3',
+    [41, 42, 43],
+    'key' => 'Indexed value',
+    'const-key' => 'Key with minus sign',
+    'foo' => ['foo1', 'foo2', 'foo3']
+];
 
 // Won't work, outputs: This is { fantastic}
 echo "This is { $great}";
@@ -854,8 +945,16 @@ echo "This is { $great}";
 // Works, outputs: This is fantastic
 echo "This is {$great}";
 
+class Square {
+    public $width;
+
+    public function __construct(int $width) { $this->width = $width; }
+}
+
+$square = new Square(5);
+
 // Works
-echo "This square is {$square->width}00 centimeters broad.";
+echo "This square is {$square->width}00 centimeters wide.";
 
 
 // Works, quoted keys only work using the curly brace syntax
@@ -865,29 +964,15 @@ echo "This works: {$arr['key']}";
 // Works
 echo "This works: {$arr[4][3]}";
 
-// This is wrong for the same reason as $foo[bar] is wrong  outside a string.
-// PHP first looks for a constant named foo, and throws an error if not found.
-// If the constant is found, its value (and not 'foo' itself) would be used
-// for the array index.
-echo "This is wrong: {$arr[foo][3]}";
+echo "This works: {$arr[DATA_KEY]}";
 
-// Works. When using multi-dimensional arrays, always use braces around arrays
+// When using multidimensional arrays, always use braces around arrays
 // when inside of strings
 echo "This works: {$arr['foo'][3]}";
 
-// Works.
-echo "This works: " . $arr['foo'][3];
+echo "This works: {$obj->values[3]->name}";
 
-echo "This works too: {$obj->values[3]->name}";
-
-echo "This is the value of the var named $name: {${$name}}";
-
-echo "This is the value of the var named by the return value of getName(): {${getName()}}";
-
-echo "This is the value of the var named by the return value of \$object->getName(): {${$object->getName()}}";
-
-// Won't work, outputs: This is the return value of getName(): {getName()}
-echo "This is the return value of getName(): {getName()}";
+echo "This works: {$obj->$staticProp}";
 
 // Won't work, outputs: C:\folder\{fantastic}.txt
 echo "C:\folder\{$great}.txt"
@@ -895,82 +980,16 @@ echo "C:\folder\{$great}.txt"
 echo "C:\\folder\\{$great}.txt"
 ?>
 ]]>
-<!-- maybe it's better to leave this out??
-// this works, but i disencourage its use, since this is NOT
-// involving functions, rather than mere variables, arrays and objects.
-$beer = 'Heineken';
-echo "I'd like to have another {${ strrev('reeb') }}, hips";
- -->
      </programlisting>
     </informalexample>
-
-    <para>
-     It is also possible to access class properties using variables
-     within strings using this syntax.
-    </para>
-
-   <informalexample>
-    <programlisting role="php">
-<![CDATA[
-<?php
-class foo {
-    var $bar = 'I am bar.';
-}
-
-$foo = new foo();
-$bar = 'bar';
-$baz = array('foo', 'bar', 'baz', 'quux');
-echo "{$foo->$bar}\n";
-echo "{$foo->{$baz[1]}}\n";
-?>
-]]>
-    </programlisting>
-   &example.outputs;
-   <screen>
-<![CDATA[
-I am bar.
-I am bar.
-]]>
-   </screen>
-   </informalexample>
 
     <note>
-     <para>
-      The value accessed from functions, method calls, static class variables,
-      and class constants inside
-      <literal>{$}</literal> will be interpreted as the name
-      of a variable in the scope in which the string is defined. Using
-      single curly braces (<literal>{}</literal>) will not work for
-      accessing the return values of functions or methods or the
-      values of class constants or static class variables.
-     </para>
+     <simpara>
+      As this syntax allows arbitrary expressions it is possible to use
+      <link linkend="language.variables.variable">variable variables</link>
+      within the advanced syntax.
+     </simpara>
     </note>
-
-    <informalexample>
-     <programlisting role="php">
-<![CDATA[
-<?php
-// Show all errors.
-error_reporting(E_ALL);
-
-class beers {
-    const softdrink = 'rootbeer';
-    public static $ale = 'ipa';
-}
-
-$rootbeer = 'A & W';
-$ipa = 'Alexander Keith\'s';
-
-// This works; outputs: I'd like an A & W
-echo "I'd like an {${beers::softdrink}}\n";
-
-// This works too; outputs: I'd like an Alexander Keith's
-echo "I'd like an {${beers::$ale}}\n";
-?>
-]]>
-     </programlisting>
-    </informalexample>
-
    </sect4>
   </sect3>
 
