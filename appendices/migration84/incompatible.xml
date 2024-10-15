@@ -602,18 +602,61 @@
  <sect2 xml:id="migration84.incompatible.simplexml">
   <title>SimpleXML</title>
 
-  <!-- TODO: Ping niels as I don't understand this -->
   <simpara>
-   Get methods called, or casting to a string on a
-   <classname>SimpleXMLElement</classname> will no longer implicitly reset
-   the iterator data, unless explicitly rewound.
-   For example, casting an element to a &string; within a &foreach; loop would
-   cause an infinite loop because it destroyed the current iterator data.
-   <!--
-   This is no longer the case as a consequence of the bugfixes for GH-12192,
-   GH-12208, #55098.
-   -->
+   <classname>SimpleXMLElement</classname> is not only a representation of an
+   XML element, but it is also a <classname>RecursiveIterator</classname>.
+   Prior to PHP 8.4.0, some of its methods (e.g.
+   <methodname>SimpleXMLElement::asXML</methodname> or
+   <methodname>SimpleXMLElement::getName</methodname>) and casting such
+   instances to &string; would implicitly reset the iterator.
   </simpara>
+  <para>
+   This could cause unexpected infinite loops as the iterator was rewound.
+   For example:
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+$xmlString = "<root><a><b>1</b><b>2</b><b>3</b></a></root>";
+$xml = simplexml_load_string($xmlString);
+
+$nodes = $xml->a->b;
+foreach ($nodes as $nodeData) {
+    echo "nodeData: " . $nodeData . "\n";
+
+    $xml = $nodes->asXml();
+}
+
+]]>
+    </programlisting>
+    would result in an infinite loop.
+    <screen>
+<![CDATA[
+nodeData: 1
+nodeData: 2
+nodeData: 2
+nodeData: 2
+nodeData: 2
+nodeData: 2
+nodeData: 2
+// ...
+]]>
+    </screen>
+    However, this behavior has now been corrected, and a
+    <classname>SimpleXMLElement</classname> will no longer implicitly reset
+    the iterator data, unless explicitly rewound.
+    Meaning the previous example would now result in:
+    <screen>
+<![CDATA[
+nodeData: 1
+nodeData: 2
+nodeData: 3
+]]>
+    </screen>
+   </informalexample>
+  </para>
+  <!-- This is no longer the case as a consequence of the bugfixes for GH-12192,GH-12208, #55098. -->
  </sect2>
 
  <sect2 xml:id="migration84.incompatible.soap">
