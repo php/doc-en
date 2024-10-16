@@ -10,7 +10,7 @@
   &reftitle.description;
   <methodsynopsis>
    <type class="union"><type>int</type><type>false</type></type><methodname>openssl_seal</methodname>
-   <methodparam><type>string</type><parameter>data</parameter></methodparam>
+   <methodparam><modifier role="attribute">#[\SensitiveParameter]</modifier><type>string</type><parameter>data</parameter></methodparam>
    <methodparam><type>string</type><parameter role="reference">sealed_data</parameter></methodparam>
    <methodparam><type>array</type><parameter role="reference">encrypted_keys</parameter></methodparam>
    <methodparam><type>array</type><parameter>public_key</parameter></methodparam>
@@ -18,15 +18,14 @@
    <methodparam choice="opt"><type>string</type><parameter role="reference">iv</parameter><initializer>&null;</initializer></methodparam>
   </methodsynopsis>
   <para>
-   <function>openssl_seal</function> seals (encrypts)
-   <parameter>data</parameter> by using the given <parameter>cipher_algo</parameter> with a randomly generated
-   secret key. The key is encrypted with each of the public keys
-   associated with the identifiers in <parameter>public_key</parameter>
-   and each encrypted key is returned
-   in <parameter>encrypted_keys</parameter>. This means that one can send
-   sealed data to multiple recipients (provided one has obtained their
-   public keys). Each recipient must receive both the sealed data and
-   the envelope key that was encrypted with the recipient's public key.
+   <function>openssl_seal</function> seals (encrypts) <parameter>data</parameter> using the
+   specified <parameter>cipher_algo</parameter> with a randomly generated secret key. The key is
+   then encrypted with each of the public keys in <parameter>public_key</parameter> array,
+   and each encrypted envelope key is returned in <parameter>encrypted_keys</parameter>. This allows
+   sealed data to be sent to multiple recipients (provided their public keys are available). Each
+   recipient must receive both the sealed data and the envelope key that was encrypted with the
+   recipient's public key. The IV (Initialization Vector) is generated, and its value is returned in
+   <parameter>iv</parameter>.
   </para>
  </refsect1>
 
@@ -73,8 +72,9 @@
        The cipher method.
        <caution>
         <simpara>
-         The default value (<literal>'RC4'</literal>) is considered insecure.
-         It is strongly recommended to explicitly specify a secure cipher method.
+         The default value for PHP versions prior to 8.0 is (<literal>'RC4'</literal>) which is
+         considered insecure. It is strongly recommended to explicitly specify a secure cipher
+         method.
         </simpara>
        </caution>
       </para>
@@ -84,8 +84,16 @@
      <term><parameter>iv</parameter></term>
      <listitem>
       <para>
-       The initialization vector.
+       The initialization vector for decryption of <parameter>data</parameter>. It is required if
+       the cipher method requires IV. This can be found out by calling
+       <function>openssl_cipher_iv_length</function> with <parameter>cipher_algo</parameter>.
       </para>
+      <caution>
+       <simpara>
+        The IV cannot be set explicitly. Any value set in it is overwritten by randomly generated
+        value.
+       </simpara>
+      </caution>
      </listitem>
     </varlistentry>
    </variablelist>
@@ -148,25 +156,18 @@
 <![CDATA[
 <?php
 // $data is assumed to contain the data to be sealed
+$data = "test";
 
-// fetch public keys for our recipients, and ready them
-$fp = fopen("/src/openssl-0.9.6/demos/maurice/cert.pem", "r");
-$cert = fread($fp, 8192);
-fclose($fp);
-$pk1 = openssl_get_publickey($cert);
-// Repeat for second recipient
-$fp = fopen("/src/openssl-0.9.6/demos/sign/cert.pem", "r");
-$cert = fread($fp, 8192);
-fclose($fp);
-$pk2 = openssl_get_publickey($cert);
+// fetch public keys
+$pk1 = openssl_get_publickey("file://cert1.pem");
+$pk2 = openssl_get_publickey("file://cert2.pem");
 
 // seal message, only owners of $pk1 and $pk2 can decrypt $sealed with keys
 // $ekeys[0] and $ekeys[1] respectively.
-openssl_seal($data, $sealed, $ekeys, array($pk1, $pk2));
-
-// free the keys from memory
-openssl_free_key($pk1);
-openssl_free_key($pk2);
+if (openssl_seal($data, $sealed, $ekeys, array($pk1, $pk2), 'AES256', $iv) > 0) {
+    // possibly store the $sealed and $iv values and use later in openssl_open
+    echo "success\n";
+}
 ?>
 ]]>
     </programlisting>

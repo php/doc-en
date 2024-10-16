@@ -14,16 +14,19 @@
   &reftitle.description;
   <methodsynopsis>
    <type>string</type><methodname>crypt</methodname>
-   <methodparam><type>string</type><parameter>string</parameter></methodparam>
+   <methodparam><modifier role="attribute">#[\SensitiveParameter]</modifier><type>string</type><parameter>string</parameter></methodparam>
    <methodparam><type>string</type><parameter>salt</parameter></methodparam>
   </methodsynopsis>
   <para>
    <function>crypt</function> will return a hashed string using the
    standard Unix <abbrev>DES</abbrev>-based algorithm or
-   alternative algorithms.
+   alternative algorithms. <function>password_verify</function> is
+   compatible with <function>crypt</function>. Therefore, password
+   hashes created by <function>crypt</function> can be used with
+   <function>password_verify</function>.
   </para>
   <para>
-   The <parameter>salt</parameter> parameter is optional. However, <function>crypt</function> creates a weak hash without the <parameter>salt</parameter>, and raises an <constant>E_NOTICE</constant> error without it. Make sure to specify a strong enough salt for better security. 
+   Prior to PHP 8.0.0, the <parameter>salt</parameter> parameter was optional. However, <function>crypt</function> creates a weak hash without the <parameter>salt</parameter>, and raises an <constant>E_NOTICE</constant> error without it. Make sure to specify a strong enough salt for better security. 
   </para>
   <para>
    <function>password_hash</function> uses a strong hash, generates a strong salt, and applies proper rounds automatically. <function>password_hash</function> is a simple <function>crypt</function> wrapper and compatible with existing password hashes. Use of <function>password_hash</function> is encouraged.
@@ -57,10 +60,10 @@
    <listitem>
     <simpara>
      <constant>CRYPT_EXT_DES</constant> - Extended DES-based hash. The "salt" is a
-     9-character string consisting of an underscore followed by 4 bytes of iteration count and
-     4 bytes of salt. These are encoded as printable characters, 6 bits per character, least
-     significant character first. The values 0 to 63 are encoded as "./0-9A-Za-z". Using invalid
-     characters in the salt will cause crypt() to fail.
+     9-character string consisting of an underscore followed by 4 characters of iteration count
+     and 4 characters of salt. Each of these 4-character strings encode 24 bits, least significant
+     character first. The values <literal>0</literal> to <literal>63</literal> are encoded as
+     <literal>./0-9A-Za-z</literal>. Using invalid characters in the salt will cause crypt() to fail.
     </simpara>
    </listitem>
    <listitem>
@@ -80,9 +83,6 @@
      in range 04-31, values outside this range will cause crypt() to fail.
      "$2x$" hashes are potentially weak; "$2a$" hashes are compatible and
      mitigate this weakness. For new hashes, "$2y$" should be used.
-     Please refer to
-     <link xlink:href="&url.crypt.blowfish;">this document</link> for full
-     details of the related security fix.
     </simpara>
    </listitem>
    <listitem>
@@ -122,7 +122,7 @@
        <para>
         Using the <constant>CRYPT_BLOWFISH</constant> algorithm, will result
         in the <parameter>string</parameter> parameter being truncated to a
-        maximum length of 72 characters.
+        maximum length of 72 bytes.
        </para>
       </caution>
      </listitem>
@@ -131,7 +131,7 @@
      <term><parameter>salt</parameter></term>
      <listitem>
       <para>
-       An optional salt string to base the hashing on. If not provided, the
+       A salt string to base the hashing on. If not provided, the
        behaviour is defined by the algorithm implementation and can lead to
        unexpected results.
       </para>
@@ -187,78 +187,16 @@
     <programlisting role="php">
 <![CDATA[
 <?php
- // let the salt be automatically generated; not recommended
-$hashed_password = crypt('mypassword');
+$user_input = 'rasmuslerdorf';
+$hashed_password = '$6$rounds=1000000$NJy4rIPjpOaU$0ACEYGg/aKCY3v8O8AfyiO7CTfZQ8/W231Qfh2tRLmfdvFD6XfHk12u6hMr9cYIA4hnpjLNSTRtUwYr9km9Ij/';
 
-/* You should pass the entire results of crypt() as the salt for comparing a
-   password, to avoid problems when different hashing algorithms are used. (As
-   it says above, standard DES-based password hashing uses a 2-character salt,
-   but MD5-based hashing uses 12.) */
+// Validate an existing crypt() hash in a way that is compatible with non-PHP software.
 if (hash_equals($hashed_password, crypt($user_input, $hashed_password))) {
    echo "Password verified!";
 }
 ?>
 ]]>
     </programlisting>
-   </example>
-  </para>
-  <para>
-   <example>
-    <title>Using <function>crypt</function> with htpasswd</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-// Set the password
-$password = 'mypassword';
-
-// Get the hash, letting the salt be automatically generated; not recommended
-$hash = crypt($password);
-?>
-]]>
-    </programlisting>
-   </example>
-  </para>
-  <para>
-   <example>
-    <title>Using <function>crypt</function> with different hash types</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-/* These salts are examples only, and should not be used verbatim in your code.
-   You should generate a distinct, correctly-formatted salt for each password.
-*/
-echo 'Standard DES: ',
-    crypt('rasmuslerdorf', 'rl'),
-    "\n";
-echo 'Extended DES: ',
-    crypt('rasmuslerdorf', '_J9..rasm'),
-    "\n";
-echo 'MD5:          ',
-    crypt('rasmuslerdorf', '$1$rasmusle$'),
-    "\n";
-echo 'Blowfish:     ',
-    crypt('rasmuslerdorf', '$2a$07$usesomesillystringforsalt$'),
-    "\n";
-echo 'SHA-256:      ',
-    crypt('rasmuslerdorf', '$5$rounds=5000$usesomesillystringforsalt$'),
-    "\n";
-echo 'SHA-512:      ',
-    crypt('rasmuslerdorf', '$6$rounds=5000$usesomesillystringforsalt$'),
-    "\n";
-?>
-]]>
-    </programlisting>
-    &example.outputs.similar;
-    <screen>
-<![CDATA[
-Standard DES: rl.3StKT.4T8M
-Extended DES: _J9..rasmBYk8r9AiWNc
-MD5:          $1$rasmusle$rISCgZzpwk3UhDidwXvin0
-Blowfish:     $2y$07$usesomesillystringfore2uDLvp1Ii2e./U9C8sBjqp8I90dH6hi
-SHA-256:      $5$rounds=5000$usesomesillystri$KqJWpanXZHKq2BOB43TSaYhEWsQ1Lr5QNyPCDH/Tp.6
-SHA-512:      $6$rounds=5000$usesomesillystri$D4IrlXatmP7rx3P3InaxBeoomnAihCKRVQP22JZ6EY47Wc6BkroIuUUBOov1i.S5KPgErtP/EN5mcO.ChWQW21
-]]>
-    </screen>
    </example>
   </para>
  </refsect1>
@@ -279,7 +217,6 @@ SHA-512:      $6$rounds=5000$usesomesillystri$D4IrlXatmP7rx3P3InaxBeoomnAihCKRVQ
    <simplelist>
     <member><function>hash_equals</function></member>
     <member><function>password_hash</function></member>
-    <member><function>md5</function></member>
     <member>The Unix man page for your crypt function for more information</member>
    </simplelist>
   </para>

@@ -12,17 +12,20 @@
    </simpara>
 
    <para>
-    Variable names follow the same rules as other labels in PHP. A
-    valid variable name starts with a letter or underscore, followed
+    A valid variable name starts with a letter
+    (<literal>A-Z</literal>, <literal>a-z</literal>, or the bytes from 128 through 255)
+    or underscore, followed
     by any number of letters, numbers, or underscores. As a regular
     expression, it would be expressed thus:
     <code>^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$</code>
    </para>
-   
+
    <note>
     <simpara>
-     For our purposes here, a letter is a-z, A-Z, and the bytes
-     from 128 through 255 (<literal>0x80-0xff</literal>).
+     PHP doesn't support Unicode variable names, however, some character
+     encodings (such as UTF-8) encode characters in such a way that all bytes
+     of a multi-byte character fall within the allowed range, thus making it a
+     valid variable name.
     </simpara>
    </note>
 
@@ -38,14 +41,9 @@
 
    &tip.userlandnaming;
 
-   <para>
-    For information on variable related functions, see the
-    <link linkend="ref.var">Variable Functions Reference</link>.
-   </para>
-
-   <para>
-    <informalexample>
-     <programlisting role="php"> 
+   <example>
+    <title>Valid and invalid variable names</title>
+    <programlisting role="php">
 <![CDATA[
 <?php
 $var = 'Bob';
@@ -57,13 +55,39 @@ $_4site = 'not yet';    // valid; starts with an underscore
 $täyte = 'mansikka';    // valid; 'ä' is (Extended) ASCII 228.
 ?>
 ]]>
-     </programlisting>
-    </informalexample>
-   </para>
+    </programlisting>
+   </example>
+
+   <simpara>
+    PHP accepts a sequence of any bytes as a variable name. Variable
+    names that do not follow the above-mentioned naming rules can only be
+    accessed dynamically at runtime. See
+    <link linkend="language.variables.variable">variable variables</link>
+    for information on how to access them.
+   </simpara>
+
+   <example>
+    <title>Accessing obscure variable names</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+${'invalid-name'} = 'bar';
+$name = 'invalid-name';
+echo ${'invalid-name'}, " ", $$name;
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+bar bar
+]]>
+    </screen>
+   </example>
 
    <para>
     By default, variables are always assigned by value. That is to say,
-    when you assign an expression to a variable, the entire value of
+    when an expression is assigned to a variable, the entire value of
     the original expression is copied into the destination
     variable. This means, for instance, that after assigning one
     variable's value to another, changing one of those variables will
@@ -100,7 +124,7 @@ echo $foo;                 // $foo is altered too.
    </para>
 
    <para>
-    One important thing to note is that only named variables may be
+    One important thing to note is that only variables may be
     assigned by reference.
     <informalexample>
      <programlisting role="php">
@@ -115,7 +139,7 @@ function test()
    return 25;
 }
 
-$bar = &test();    // Invalid.
+$bar = &test();    // Invalid because test() doesn't return a variable by reference.
 ?>
 ]]>
      </programlisting>
@@ -123,57 +147,63 @@ $bar = &test();    // Invalid.
    </para>
    
    <para>
-    It is not necessary to initialize variables in PHP however it is a very
-    good practice. Uninitialized variables have a default value of their type depending on the context in which they are used
-    - booleans default to &false;, integers and floats default to zero, strings (e.g. used in <function>echo</function>) are 
-    set as an empty string and arrays become to an empty array.
+    It is not necessary to declare variables in PHP, however, it is a very
+    good practice. Accessing an undefined variable will result in an
+    <constant>E_WARNING</constant> (prior to PHP 8.0.0, <constant>E_NOTICE</constant>).
+    An undefined variable has a default value of &null;.
+    The <function>isset</function> language
+    construct can be used to detect if a variable has already been initialized.
    </para>
    <para>
     <example>
-     <title>Default values of uninitialized variables</title>
+     <title>Default value of an uninitialized variable</title>
      <programlisting role="php">
 <![CDATA[
 <?php
-// Unset AND unreferenced (no use context) variable; outputs NULL
+// Unset AND unreferenced (no use context) variable.
 var_dump($unset_var);
-
-// Boolean usage; outputs 'false' (See ternary operators for more on this syntax)
-echo($unset_bool ? "true\n" : "false\n");
-
-// String usage; outputs 'string(3) "abc"'
-$unset_str .= 'abc';
-var_dump($unset_str);
-
-// Integer usage; outputs 'int(25)'
-$unset_int += 25; // 0 + 25 => 25
-var_dump($unset_int);
-
-// Float/double usage; outputs 'float(1.25)'
-$unset_float += 1.25;
-var_dump($unset_float);
-
-// Array usage; outputs array(1) {  [3]=>  string(3) "def" }
-$unset_arr[3] = "def"; // array() + array(3 => "def") => array(3 => "def")
-var_dump($unset_arr);
-
-// Object usage; creates new stdClass object (see http://www.php.net/manual/en/reserved.classes.php)
-// Outputs: object(stdClass)#1 (1) {  ["foo"]=>  string(3) "bar" }
-$unset_obj->foo = 'bar';
-var_dump($unset_obj);
 ?>
 ]]>
      </programlisting>
+     &example.outputs;
+     <screen>
+<![CDATA[
+Warning: Undefined variable $unset_var in ...
+NULL
+]]>
+     </screen>
     </example>
    </para>
-   <para>
-    Relying on the default value of an uninitialized variable is problematic
-    in the case of including one file into another which uses the same
-    variable name.
-    <link linkend="errorfunc.constants.errorlevels.e-notice">E_NOTICE</link> level error is issued in case of
-    working with uninitialized variables, however not in the case of appending
-    elements to the uninitialized array. <function>isset</function> language
-    construct can be used to detect if a variable has been already initialized.
-   </para>
+
+   <simpara>
+    PHP allows array autovivification (automatic creation of new arrays)
+    from an undefined variable.
+    Appending an element to an undefined variable will create a new array and
+    will not generate a warning.
+   </simpara>
+   <example>
+    <title>Autovivification of an array from an undefined variable</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$unset_array[] = 'value'; // Does not generate a warning.
+?>
+]]>
+    </programlisting>
+   </example>
+
+   <warning>
+    <simpara>
+     Relying on the default value of an uninitialized variable is problematic
+     when including one file in another which uses the same
+     variable name.
+    </simpara>
+   </warning>
+
+   <simpara>
+    For information on variable-related functions, see the
+    <link linkend="ref.var">Variable Functions Reference</link>.
+   </simpara>
   </sect1>
 
   <sect1 xml:id="language.variables.predefined">
@@ -225,8 +255,8 @@ var_dump($unset_obj);
    <simpara>
     The scope of a variable is the context within which it is defined.
     For the most part all PHP variables only have a single scope.
-    This single scope spans included and required files as well.  For
-    example:
+    This single scope spans <function>include</function>d and
+    <function>require</function>d files as well. For example:
    </simpara>
    <informalexample>
     <programlisting role="php">
@@ -264,10 +294,15 @@ test();
    </informalexample>
 
    <simpara>
-    This script will not produce any output because the echo statement
+    This script will generate an undefined variable <constant>E_WARNING</constant>
+    (or a <constant>E_NOTICE</constant> prior to PHP 8.0.0)
+    diagnostic. However, if the
+    <link linkend="ini.display-errors">display_errors</link> INI setting is set to hide
+    such diagnostics then nothing at all will be outputted.
+    This is because the echo statement
     refers to a local version of the <varname>$a</varname> variable,
-    and it has not been assigned a value within this scope.  You may
-    notice that this is a little bit different from the C language in
+    and it has not been assigned a value within this scope.
+    Note that this is a little bit different from the C language in
     that global variables in C are automatically available to
     functions unless specifically overridden by a local definition.
     This can cause some problems in that people may inadvertently
@@ -434,7 +469,7 @@ function test()
     Static variables also provide one way to deal with recursive
     functions. A recursive function is one which calls itself.  Care
     must be taken when writing a recursive function because it is
-    possible to make it recurse indefinitely.  You must make sure you
+    possible to make it recurse indefinitely.  It has to be ensured to
     have an adequate way of terminating the recursion.  The following
     simple function recursively counts to 10, using the static
     variable <varname>$count</varname> to know when to stop:
@@ -463,9 +498,9 @@ function test()
    </para>
 
    <para>
-    Static variables can be assigned values which are the
-    result of constant expressions, but dynamic expressions, such as function
-    calls, will cause a parse error.
+    Prior to PHP 8.3.0, static variables could only be initialized using
+    a constant expression. As of PHP 8.3.0, dynamic expressions
+    (e.g. function calls) are also allowed:
    </para>
    <para>
     <example>
@@ -476,7 +511,7 @@ function test()
 function foo(){
     static $int = 0;          // correct 
     static $int = 1+2;        // correct
-    static $int = sqrt(121);  // wrong  (as it is a function)
+    static $int = sqrt(121);  // correct as of PHP 8.3.0
 
     $int++;
     echo $int;
@@ -485,13 +520,35 @@ function foo(){
 ]]>
      </programlisting>
     </example>
-   </para> 
+   </para>
 
-   <note>
-    <para>
-     Static declarations are resolved in compile-time.
-    </para>
-   </note>
+   <para>
+    As of PHP 8.1.0, when a method using static variables is inherited (but not overridden),
+    the inherited method will now share static variables with the parent method.
+    This means that static variables in methods now behave the same way as static properties.
+   </para>
+
+   <example>
+    <title>Usage of static Variables in Inherited Methods</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class Foo {
+    public static function counter() {
+        static $counter = 0;
+        $counter++;
+        return $counter;
+    }
+}
+class Bar extends Foo {}
+var_dump(Foo::counter()); // int(1)
+var_dump(Foo::counter()); // int(2)
+var_dump(Bar::counter()); // int(3), prior to PHP 8.1.0 int(1)
+var_dump(Bar::counter()); // int(4), prior to PHP 8.1.0 int(2)
+?> 
+]]>
+    </programlisting>
+   </example>
   </sect2>
 
   <sect2 xml:id="language.variables.scope.references">
@@ -513,13 +570,13 @@ function foo(){
 <?php
 function test_global_ref() {
     global $obj;
-    $new = new stdclass;
+    $new = new stdClass;
     $obj = &$new;
 }
 
 function test_global_noref() {
     global $obj;
-    $new = new stdclass;
+    $new = new stdClass;
     $obj = $new;
 }
 
@@ -557,7 +614,7 @@ function &get_instance_ref() {
     echo 'Static object: ';
     var_dump($obj);
     if (!isset($obj)) {
-        $new = new stdclass;
+        $new = new stdClass;
         // Assign a reference to the static variable
         $obj = &$new;
     }
@@ -575,7 +632,7 @@ function &get_instance_noref() {
     echo 'Static object: ';
     var_dump($obj);
     if (!isset($obj)) {
-        $new = new stdclass;
+        $new = new stdClass;
         // Assign the object to the static variable
         $obj = $new;
     }
@@ -612,8 +669,8 @@ Static object: object(stdClass)#3 (1) {
 
    <simpara>
     This example demonstrates that when assigning a reference to a static
-    variable, it's not <emphasis>remembered</emphasis> when you call the
-    <literal>&amp;get_instance_ref()</literal> function a second time.
+    variable, it is not <emphasis>remembered</emphasis> when the
+    <literal>&amp;get_instance_ref()</literal> function is called a second time.
    </simpara>
    </sect2>
   </sect1>
@@ -665,7 +722,7 @@ $$a = 'world';
     <programlisting role="php">
 <![CDATA[
 <?php
-echo "$a ${$a}";
+echo "$a {$$a}";
 ?>
 ]]>
     </programlisting>
@@ -690,11 +747,11 @@ echo "$a $hello";
    </simpara>
 
    <simpara>
-    In order to use variable variables with arrays, you have to
-    resolve an ambiguity problem.  That is, if you write
-    <varname>$$a[1]</varname> then the parser needs to know if you
-    meant to use <varname>$a[1]</varname> as a variable, or if you
-    wanted <varname>$$a</varname> as the variable and then the [1]
+    In order to use variable variables with arrays,
+    an ambiguity problem has to be resolved.  That is, if the parser sees
+    <varname>$$a[1]</varname> then it needs to know if
+    <varname>$a[1]</varname> was meant to be used as a variable, or if
+    <varname>$$a</varname> was wanted as the variable and then the <literal>[1]</literal>
     index from that variable.  The syntax for resolving this ambiguity
     is: <varname>${$a[1]}</varname> for the first case and
     <varname>${$a}[1]</varname> for the second. 
@@ -703,7 +760,7 @@ echo "$a $hello";
    <simpara>
     Class properties may also be accessed using variable property names. The
     variable property name will be resolved within the scope from which the
-    call is made. For instance, if you have an expression such as
+    call is made. For instance, if there is an expression such as
     <varname>$foo->$bar</varname>, then the local scope will be examined for
     <varname>$bar</varname> and its value will be used as the name of the
     property of <varname>$foo</varname>. This is also true if
@@ -796,7 +853,7 @@ I am r.
     </para>
 
     <para>
-     There are only two ways to access data from your HTML forms.
+     There are only two ways to access data from HTML forms.
      Currently available methods are listed below:
     </para>
 
@@ -815,8 +872,8 @@ echo $_REQUEST['username'];
     </para>
 
     <para>
-     Using a GET form is similar except you'll use the appropriate
-     GET predefined variable instead. GET also applies to the
+     Using a GET form is similar except the appropriate
+     GET predefined variable can be used instead. GET also applies to the
      <literal>QUERY_STRING</literal> (the information after the '?' in a URL).  So,
      for example, <literal>http://www.example.com/test.php?id=3</literal>
      contains GET data which is accessible with <varname>$_GET['id']</varname>.
@@ -833,9 +890,9 @@ echo $_REQUEST['username'];
 
     <simpara>
      PHP also understands arrays in the context of form variables 
-     (see the <link linkend="faq.html">related faq</link>).  You may, 
-     for example, group related variables together, or use this 
-     feature to retrieve values from a multiple select input.  For 
+     (see the <link linkend="faq.html">related faq</link>).
+     For example, related variables may be grouped together, or this
+     feature may be used to retrieve values from a multiple select input.  For
      example, let's post a form to itself and upon submission display 
      the data:
     </simpara>
@@ -913,7 +970,7 @@ if ($_POST) {
      PHP transparently supports HTTP cookies as defined by <link
      xlink:href="&url.rfc;6265">RFC 6265</link>.  Cookies are a
      mechanism for storing data in the remote browser and thus
-     tracking or identifying return users.  You can set cookies using
+     tracking or identifying return users.  It is possible to set cookies using
      the <function>setcookie</function> function.  Cookies are part of
      the HTTP header, so the SetCookie function must be called before
      any output is sent to the browser.  This is the same restriction
@@ -932,8 +989,8 @@ if ($_POST) {
     </note>
 
     <simpara>
-     If you wish to assign multiple values to a single cookie variable, you 
-     may assign it as an array.  For example:
+     If multiple values should be assigned to a single cookie variable,
+     they can be assigned as an array.  For example:
     </simpara>
 
     <informalexample>
@@ -949,16 +1006,16 @@ if ($_POST) {
     
     <simpara>
      That will create two separate cookies although <varname>MyCookie</varname> will now 
-     be a single array in your script.  If you want to set just one cookie 
-     with multiple values, consider using <function>serialize</function> or 
+     be a single array in the script.  If just one cookie should be set
+     with multiple values, consider using <function>serialize</function> or
      <function>explode</function> on the value first.
     </simpara>
 
     <simpara>
      Note that a cookie will replace a previous cookie by the same
-     name in your browser unless the path or domain is different.  So,
-     for a shopping cart application you may want to keep a counter
-     and pass this along.  i.e.
+     name in the browser unless the path or domain is different.  So,
+     for a shopping cart application a counter may be kept,
+     and passed along.  I.e.
     </simpara>
 
     <example>

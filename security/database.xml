@@ -146,34 +146,29 @@ if ($row && password_verify($password, $row['pwd'])) {
    <sect1 xml:id="security.database.sql-injection">
     <title>SQL Injection</title>
     <simpara>
-     Many web developers are unaware of how SQL queries can be tampered with,
-     and assume that an SQL query is a trusted command. It means that SQL
-     queries are able to circumvent access controls, thereby bypassing standard
-     authentication and authorization checks, and sometimes SQL queries even
-     may allow access to host operating system level commands.
-    </simpara>
-    <simpara>
-     Direct SQL Command Injection is a technique where an attacker creates or
-     alters existing SQL commands to expose hidden data, or to override valuable
-     ones, or even to execute dangerous system level commands on the database
-     host. This is accomplished by the application taking user input and
-     combining it with static parameters to build an SQL query. The following
-     examples are based on true stories, unfortunately.
+     SQL injection is a technique where an attacker exploits flaws in
+     application code responsible for building dynamic SQL queries.
+     The attacker can gain access to privileged sections of the application,
+     retrieve all information from the database, tamper with existing data,
+     or even execute dangerous system-level commands on the database
+     host. The vulnerability occurs when developers concatenate or
+     interpolate arbitrary input in their SQL statements.
     </simpara>
     <para>
-     Owing to the lack of input validation and connecting to the database on
-     behalf of a superuser or the one who can create users, the attacker
-     may create a superuser in your database.
      <example>
       <title>
        Splitting the result set into pages ... and making superusers
        (PostgreSQL)
       </title>
+      <simpara>
+       In the following example, user input is directly interpolated into the
+       SQL query allowing the attacker to gain a superuser account in the database.
+      </simpara>
       <programlisting role="php">
 <![CDATA[
 <?php
 
-$offset = $argv[0]; // beware, no input validation!
+$offset = $_GET['offset']; // beware, no input validation!
 $query  = "SELECT id, name FROM products ORDER BY name LIMIT 20 OFFSET $offset;";
 $result = pg_query($conn, $query);
 
@@ -183,9 +178,8 @@ $result = pg_query($conn, $query);
      </example>
       Normal users click on the 'next', 'prev' links where the <varname>$offset</varname>
       is encoded into the <acronym>URL</acronym>. The script expects that the incoming
-      <varname>$offset</varname> is a decimal number. However, what if someone tries to
-      break in by appending a <function>urlencode</function>'d form of the
-      following to the <acronym>URL</acronym>
+      <varname>$offset</varname> is a number. However, what if someone tries to
+      break in by appending the following to the <acronym>URL</acronym>
       <informalexample>
        <programlisting role="sql">
 <![CDATA[
@@ -197,13 +191,13 @@ insert into pg_shadow(usename,usesysid,usesuper,usecatupd,passwd)
 ]]>
        </programlisting>
       </informalexample>
-      If it happened, then the script would present a superuser access to him.
+      If it happened, the script would present a superuser access to the attacker.
       Note that <literal>0;</literal> is to supply a valid offset to the
       original query and to terminate it.
     </para>
     <note>
      <para>
-      It is common technique to force the SQL parser to ignore the rest of the
+      It is a common technique to force the SQL parser to ignore the rest of the
       query written by the developer with <literal>--</literal> which is the
       comment sign in SQL.
      </para>
@@ -216,8 +210,8 @@ insert into pg_shadow(usename,usesysid,usesuper,usecatupd,passwd)
      LIMIT</literal> and <literal>OFFSET</literal> clauses in <literal>SELECT</literal>
      statements. If your database supports the <literal>UNION</literal> construct,
      the attacker may try to append an entire query to the original one to list
-     passwords from an arbitrary table. Using encrypted password fields is 
-     strongly encouraged.
+     passwords from an arbitrary table. It is strongly recommended to store only
+     secure hashes of passwords instead of the passwords themselves.
      <example>
       <title>
        Listing out articles ... and some passwords (any database server)
@@ -245,18 +239,10 @@ union select '1', concat(uname||'-'||passwd) as name, '1971-01-01', '0' from use
 ]]>
       </programlisting>
      </informalexample>
-     If this query (playing with the <literal>'</literal> and
-     <literal>--</literal>) were assigned to one of the variables used in
-     <varname>$query</varname>, the query beast awakened.
     </para>
     <para>
-     SQL UPDATE's are also susceptible to attack. These queries are
-     also threatened by chopping and appending an entirely new query to it. But
-     the attacker might fiddle with the <literal>SET</literal> clause. In this
-     case some schema information must be possessed to manipulate the query
-     successfully. This can be acquired by examining the form variable names, or
-     just simply brute forcing. There are not so many naming conventions for
-     fields storing passwords or usernames.
+     <literal>UPDATE</literal> and <literal>INSERT</literal> statements are also
+     susceptible to such attacks.
      <example>
      <title>
       From resetting a password ... to gaining more privileges (any database server)
@@ -269,11 +255,11 @@ $query = "UPDATE usertable SET pwd='$pwd' WHERE uid='$uid';";
 ]]>
       </programlisting>
      </example>
-     But if a malicious user submits the value
+     If a malicious user submits the value
      <literal>' or uid like'%admin%</literal> to <varname>$uid</varname> to
      change the admin's password, or simply sets <varname>$pwd</varname> to
      <literal>hehehe', trusted=100, admin='yes</literal> to gain more 
-     privileges, then, the query will be twisted:
+     privileges, then the query will be twisted:
      <informalexample>
       <programlisting role="php">
 <![CDATA[
@@ -291,11 +277,25 @@ $query = "UPDATE usertable SET pwd='hehehe', trusted=100, admin='yes' WHERE
       </programlisting>
      </informalexample>
     </para>
+    <simpara>
+     While it remains obvious that an attacker must possess at least some
+     knowledge of the database architecture to conduct a successful
+     attack, obtaining this information is often very simple. For example,
+     the code may be part of an open-source software and be publicly available.
+     This information may also be divulged
+     by closed-source code - even if it's encoded, obfuscated, or compiled -
+     and even by your own code through the display of error messages.
+     Other methods include the use of typical table and column names.  For
+     example, a login form that uses a 'users' table with column names
+     'id', 'username', and 'password'.
+    </simpara>
     <para>
-     A frightening example of how operating system level commands can be accessed
-     on some database hosts.
      <example>
-     <title>Attacking the database hosts operating system (MSSQL Server)</title>
+     <title>Attacking the database host operating system (MSSQL Server)</title>
+      <simpara>
+       A frightening example of how operating system-level commands can be
+       accessed on some database hosts.
+      </simpara>
       <programlisting role="php">
 <![CDATA[
 <?php
@@ -326,137 +326,140 @@ $result = mssql_query($query);
      </informalexample>
      MSSQL Server executes the SQL statements in the batch including a command
      to add a new user to the local accounts database. If this application
-     were running as <literal>sa</literal> and the MSSQLSERVER service is
+     were running as <literal>sa</literal> and the MSSQLSERVER service was
      running with sufficient privileges, the attacker would now have an
      account with which to access this machine.
     </para>
     <note>
      <para>
-      Some of the examples above is tied to a specific database server. This
+      Some examples above are tied to a specific database server, but it
       does not mean that a similar attack is impossible against other products.
       Your database server may be similarly vulnerable in another manner.
      </para>
     </note>
     <para>
      <mediaobject>
-      <alt>A worked example of the issues regarding SQL Injection</alt>
+      <alt>A funny example of the issues regarding SQL injection</alt>
       <imageobject>
        <imagedata fileref="en/security/figures/xkcd-bobby-tables.png" format="PNG"/>
       </imageobject>
+      <caption>
+       <simpara>
+        Image courtesy of <link xlink:href="&url.xkcd;327">xkcd</link>
+       </simpara>
+      </caption>
      </mediaobject>
-     Image courtesy of <link xlink:href="&url.xkcd;327">xkcd</link>
     </para>
 
     <sect2 xml:id="security.database.avoiding">
      <title>Avoidance Techniques</title>
-     <simpara>
-      While it remains obvious that an attacker must possess at least some
-      knowledge of the database architecture in order to conduct a successful
-      attack, obtaining this information is often very simple.  For example,
-      if the database is part of an open source or other publicly-available
-      software package with a default installation, this information is
-      completely open and available.  This information may also be divulged
-      by closed-source code - even if it's encoded, obfuscated, or compiled -
-      and even by your very own code through the display of error messages.
-      Other methods include the user of common table and column names.  For
-      example, a login form that uses a 'users' table with column names
-      'id', 'username', and 'password'.
-     </simpara>
-     <simpara>
-      These attacks are mainly based on exploiting the code not being written
-      with security in mind. Never trust any kind of input, especially that
-      which comes from the client side, even though it comes from a select box,
-      a hidden input field or a cookie. The first example shows that such a
-      blameless query can cause disasters.
-     </simpara>
-
-     <itemizedlist>
-      <listitem>
-       <simpara>
-        Never connect to the database as a superuser or as the database owner.
-        Use always customized users with very limited privileges.
-       </simpara>
-      </listitem>
-      <listitem>
-       <simpara>
-        Use prepared statements with bound variables. They are provided 
-        <link linkend="pdo.prepared-statements">by PDO</link>,
-        <link linkend="mysqli.quickstart.prepared-statements">by MySQLi</link>
-        and by other libraries.
-       </simpara>
-      </listitem>
-      <listitem>
-       <simpara>
-        Check if the given input has the expected data type. <acronym>PHP</acronym> has
-        a wide range of input validating functions, from the simplest ones
-        found in <link linkend="ref.var">Variable Functions</link> and
-        in <link linkend="ref.ctype">Character Type Functions</link>
-        (e.g. <function>is_numeric</function>, <function>ctype_digit</function>
-        respectively) and onwards to the
-        <link linkend="ref.pcre">Perl compatible Regular Expressions</link>
-        support.
-       </simpara>
-      </listitem>
-      <listitem>
-       <para>
-        If the application waits for numerical input, consider verifying data
-        with <function>ctype_digit</function>, or silently change its type
-        using <function>settype</function>, or use its numeric representation
-        by <function>sprintf</function>.
-        <example>
-         <title>A more secure way to compose a query for paging</title>
-         <programlisting role="php">
+     <para>
+      The recommended way to avoid SQL injection is by binding all data via
+      prepared statements. Using parameterized queries isn't enough to entirely
+      avoid SQL injection, but it is the easiest and safest way to provide input
+      to SQL statements. All dynamic data literals in <literal>WHERE</literal>,
+      <literal>SET</literal>, and <literal>VALUES</literal> clauses must be
+      replaced with placeholders. The actual data will be bound during the
+      execution and sent separately from the SQL command.
+     </para>
+     <para>
+      Parameter binding can only be used for data. Other dynamic parts of the
+      SQL query must be filtered against a known list of allowed values.
+     </para>
+     <para>
+      <example>
+      <title>Avoiding SQL injection by using PDO prepared statements</title>
+       <programlisting role="php">
 <![CDATA[
 <?php
 
-settype($offset, 'integer');
-$query = "SELECT id, name FROM products ORDER BY name LIMIT 20 OFFSET $offset;";
-
-// please note %d in the format string, using %s would be meaningless
-$query = sprintf("SELECT id, name FROM products ORDER BY name LIMIT 20 OFFSET %d;",
-                 $offset);
+// The dynamic SQL part is validated against expected values
+$sortingOrder = $_GET['sortingOrder'] === 'DESC' ? 'DESC' : 'ASC';
+$productId = $_GET['productId'];
+// The SQL is prepared with a placeholder
+$stmt = $pdo->prepare("SELECT * FROM products WHERE id LIKE ? ORDER BY price {$sortingOrder}");
+// The value is provided with LIKE wildcards
+$stmt->execute(["%{$productId}%"]);
 
 ?>
 ]]>
-         </programlisting>
-        </example>
-       </para>
-      </listitem>
-      <listitem>
-       <simpara>
-        If the database layer doesn't support binding variables then
-        quote each non numeric user supplied value that is passed to the
-        database with the database-specific string escape function (e.g.
-        <function>mysql_real_escape_string</function>,
-        <function>sqlite_escape_string</function>, etc.).
-        Generic functions like <function>addslashes</function> are useful only
-        in a very specific environment (e.g. MySQL in a single-byte character
-        set with disabled <varname>NO_BACKSLASH_ESCAPES</varname>) so it is
-        better to avoid them.
-       </simpara>
-      </listitem>
-      <listitem>
-       <simpara>
-        Do not print out any database specific information, especially
-        about the schema, by fair means or foul. See also <link
-        linkend="security.errors">Error Reporting</link> and <link
-        linkend="ref.errorfunc">Error Handling and Logging Functions</link>.
-       </simpara>
-      </listitem>
-      <listitem>
-       <simpara>
-        You may use stored procedures and previously defined cursors to abstract
-        data access so that users do not directly access tables or views, but
-        this solution has another impacts.
-       </simpara>
-      </listitem>
-     </itemizedlist>
+       </programlisting>
+      </example>
+     </para>
+
+     <simpara>
+      Prepared statements are provided
+      <link linkend="pdo.prepared-statements">by PDO</link>,
+      <link linkend="mysqli.quickstart.prepared-statements">by MySQLi</link>,
+      and by other database libraries.
+     </simpara>
+
+     <simpara>
+      SQL injection attacks are mainly based on exploiting the code not being written
+      with security in mind. Never trust any input, especially
+      from the client side, even though it comes from a select box,
+      a hidden input field, or a cookie. The first example shows that such a
+      simple query can cause disasters.
+     </simpara>
+
+     <para>
+      A defense-in-depth strategy involves several good coding practices:
+      <itemizedlist>
+       <listitem>
+        <simpara>
+         Never connect to the database as a superuser or as the database owner.
+         Use always customized users with minimal privileges.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         Check if the given input has the expected data type. <acronym>PHP</acronym> has
+         a wide range of input validating functions, from the simplest ones
+         found in <link linkend="ref.var">Variable Functions</link> and
+         in <link linkend="ref.ctype">Character Type Functions</link>
+         (e.g. <function>is_numeric</function>, <function>ctype_digit</function>
+         respectively) and onwards to the
+         <link linkend="ref.pcre">Perl Compatible Regular Expressions</link>
+         support.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         If the application expects numerical input, consider verifying data
+         with <function>ctype_digit</function>, silently change its type
+         using <function>settype</function>, or use its numeric representation
+         by <function>sprintf</function>.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         If the database layer doesn't support binding variables then
+         quote each non-numeric user-supplied value that is passed to the
+         database with the database-specific string escape function (e.g.
+         <function>mysql_real_escape_string</function>,
+         <function>sqlite_escape_string</function>, etc.).
+         Generic functions like <function>addslashes</function> are useful only
+         in a very specific environment (e.g. MySQL in a single-byte character
+         set with disabled <varname>NO_BACKSLASH_ESCAPES</varname>), so it is
+         better to avoid them.
+        </simpara>
+       </listitem>
+       <listitem>
+        <simpara>
+         Do not print out any database-specific information, especially
+         about the schema, by fair means or foul. See also <link
+         linkend="security.errors">Error Reporting</link> and <link
+         linkend="ref.errorfunc">Error Handling and Logging Functions</link>.
+        </simpara>
+       </listitem>
+      </itemizedlist>
+     </para>
 
      <simpara>
       Besides these, you benefit from logging queries either within your script
       or by the database itself, if it supports logging. Obviously, the logging is unable
       to prevent any harmful attempt, but it can be helpful to trace back which
-      application has been circumvented. The log is not useful by itself, but
+      application has been circumvented. The log is not useful by itself but
       through the information it contains. More detail is generally better than less.
      </simpara>
     </sect2>

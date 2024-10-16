@@ -138,7 +138,7 @@ class Point {
      </programlisting>
     </example>
     <para>
-     When a constructor argument includes a visibility modifier, PHP will interpret it as
+     When a constructor argument includes a modifier, PHP will interpret it as
      both an object property and a constructor argument, and assign the argument value to
      the property.  The constructor body may then be empty or may contain other statements.
      Any additional statements will be executed after the argument values have been assigned
@@ -150,6 +150,13 @@ class Point {
     </para>
     <note>
      <para>
+      Using a <link linkend="language.oop5.visibility">visibility modifier</link> (<literal>public</literal>,
+      <literal>protected</literal> or <literal>private</literal>) is the most likely way to apply property
+      promotion, but any other single modifier (such as <literal>readonly</literal>) will have the same effect.
+     </para>
+    </note>
+    <note>
+     <para>
       Object properties may not be typed <type>callable</type> due to engine ambiguity that would
       introduce. Promoted arguments, therefore, may not be typed <type>callable</type> either. Any
       other <link linkend="language.types.declarations">type declaration</link> is permitted, however.
@@ -157,12 +164,66 @@ class Point {
     </note>
     <note>
      <para>
+      As promoted properties are desugared to both a property as well as a function parameter, any
+      and all naming restrictions for both properties as well as parameters apply.
+     </para>
+    </note>
+    <note>
+     <para>
       <link linkend="language.attributes">Attributes</link> placed on a
       promoted constructor argument will be replicated to both the property
-      and argument.
+      and argument.  Default values on a promoted constructor argument will be replicated only to the argument and not the property.
      </para>
     </note>
    </sect3>
+
+   <sect3 xml:id="language.oop5.decon.constructor.new">
+    <title>New in initializers</title>
+    <para>
+     As of PHP 8.1.0, objects can be used as default parameter values,
+     static variables, and global constants, as well as in attribute arguments.
+     Objects can also be passed to <function>define</function> now.
+    </para>
+    <note>
+     <para>
+      The use of a dynamic or non-string class name or an anonymous class is not allowed.
+      The use of argument unpacking is not allowed.
+      The use of unsupported expressions as arguments is not allowed.
+     </para>
+    </note>
+    <example>
+     <title>Using new in initializers</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+
+// All allowed:
+static $x = new Foo;
+
+const C = new Foo;
+ 
+function test($param = new Foo) {}
+ 
+#[AnAttribute(new Foo)]
+class Test {
+    public function __construct(
+        public $prop = new Foo,
+    ) {}
+}
+
+// All not allowed (compile-time error):
+function test(
+    $a = new (CLASS_NAME_CONSTANT)(), // dynamic class name
+    $b = new class {}, // anonymous class
+    $c = new A(...[]), // argument unpacking
+    $d = new B($abc), // unsupported constant expression
+) {}
+?>
+]]>
+     </programlisting>
+    </example>
+   </sect3>
+   
    <sect3 xml:id="language.oop5.decon.constructor.static">
     <title>Static creation methods</title>
     <para>
@@ -191,7 +252,7 @@ class Product {
     }
 
     public static function fromJson(string $json): static {
-        $data = json_decode($json);
+        $data = json_decode($json, true);
         return new static($data['id'], $data['name']);
     }
 

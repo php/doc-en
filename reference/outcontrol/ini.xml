@@ -18,34 +18,37 @@
     <tbody>
     <row>
      <entry><link linkend="ini.output-buffering">output_buffering</link></entry>
-     <entry>"0"</entry>
-     <entry>PHP_INI_PERDIR</entry>
+     <entry><literal>"0"</literal></entry>
+     <entry><constant>INI_PERDIR</constant></entry>
      <entry></entry>
     </row>
     <row>
      <entry><link linkend="ini.output-handler">output_handler</link></entry>
-     <entry>NULL</entry>
-     <entry>PHP_INI_PERDIR</entry>
+     <entry>&null;</entry>
+     <entry><constant>INI_PERDIR</constant></entry>
      <entry></entry>
     </row>
     <row>
      <entry><link linkend="ini.implicit-flush">implicit_flush</link></entry>
-     <entry>"0"</entry>
-     <entry>PHP_INI_ALL</entry>
+     <entry><literal>"0"</literal></entry>
+     <entry><constant>INI_ALL</constant></entry>
      <entry></entry>
     </row>
     <row>
      <entry><link linkend="ini.url-rewriter.tags">url_rewriter.tags</link></entry>
-     <entry>"a=href,area=href,frame=src,form=,fieldset="</entry>
-     <entry>PHP_INI_ALL</entry>
-     <entry>Before PHP 7.1.0, this was used to set
-     session's trans sid rewrite. From PHP 7.1.0, it is only used by 
-     <function>output_add_rewrite_var</function>.</entry>
+     <entry><literal>"form="</literal></entry>
+     <entry><constant>INI_ALL</constant></entry>
+     <entry>
+      As of PHP 7.1.0, this INI setting only affects
+      <function>output_add_rewrite_var</function>.
+      Prior to PHP 7.1.0, this INI setting enabled transparent session id support
+      (see <link linkend="ini.session.trans-sid-tags">session.trans_sid_tags</link>).
+     </entry>
     </row>
     <row>
      <entry><link linkend="ini.url-rewriter.hosts">url_rewriter.hosts</link></entry>
      <entry><literal>$_SERVER['HTTP_HOST']</literal> is used as default.</entry>
-     <entry>PHP_INI_ALL</entry>
+     <entry><constant>INI_ALL</constant></entry>
      <entry>Available as of PHP 7.1.0</entry>
     </row>
     </tbody>
@@ -53,9 +56,9 @@
   </table>
    &ini.php.constants;
  </para>
- 
+
  &ini.descriptions.title;
- 
+
  <para>
  <variablelist>
   <varlistentry xml:id="ini.output-buffering">
@@ -65,10 +68,12 @@
    </term>
    <listitem>
     <para>
-     You can enable output buffering for all files by setting this directive
-     to 'On'. If you wish to limit the size of the buffer to a certain size -
-     you can use a maximum number of bytes instead of 'On', as a value for
-     this directive (e.g., output_buffering=4096).
+     Output buffering for all files can be enabled by setting this directive
+     to <literal>"On"</literal>.
+     To limit the size of the buffer, a number/quantity corresponding to the
+     maximum numbers of bytes allowed can be used instead of
+     <literal>"On"</literal> for the value of this directive.
+     For example <literal>output_buffering=4096</literal>.
      This directive is always Off in PHP-CLI.
     </para>
    </listitem>
@@ -81,24 +86,31 @@
    </term>
    <listitem>
     <para>
-     You can redirect all of the output of your scripts to a function. For
-     example, if you set output_handler to
-     <function>mb_output_handler</function>, character encoding will be
-     transparently converted to the specified encoding. Setting any output
-     handler automatically turns on output buffering.
+     The output of scripts can be redirected to a function.
+     For example setting <literal>output_handler</literal>
+     to <function>mb_output_handler</function>, character encoding will be
+     transparently converted to the specified encoding.
+     Setting any output handler automatically turns on output buffering.
     </para>
     <note>
      <para>
-      You cannot use both <function>mb_output_handler</function> with
-      <function>ob_iconv_handler</function> and you cannot use both
-      <function>ob_gzhandler</function> and
-      <link linkend="ini.zlib.output-compression">zlib.output_compression</link>.
+      <function>mb_output_handler</function> and
+      <function>ob_iconv_handler</function> cannot be used together
+      and <function>ob_gzhandler</function> and
+      <link linkend="ini.zlib.output-compression">zlib.output_compression</link>
+      cannot be used with any of the following:
+      <function>mb_output_handler</function>,
+      <function>ob_gzhandler</function>,
+      <link linkend="ini.zlib.output-compression">zlib.output_compression</link>,
+      the 'URL-Rewriter' handler
+      (see <link linkend="ini.session.use-trans-sid">session.use_trans_sid</link>
+      and <function>output_add_rewrite_var</function>).
      </para>
     </note>
     <note>
      <para>
-      Only built-in functions can be used with this directive. For user
-      defined functions, use <function>ob_start</function>.
+      Only built-in functions can be used with this directive.
+      For user defined functions, use <function>ob_start</function>.
      </para>
     </note>
    </listitem>
@@ -115,8 +127,9 @@
      output layer to flush itself automatically after every output block.
      This is equivalent to calling the PHP function
      <function>flush</function> after each and every call to
-     <function>print</function> or <function>echo</function> and each and
-     every <literal>HTML</literal> block.
+     any function producing output (such as
+     <function>print</function> or <function>echo</function>)
+     and each and every HTML block.
     </para>
     <para>
      When using PHP within an web environment, turning
@@ -137,20 +150,26 @@
    </term>
    <listitem>
     <simpara>
-     <literal>url_rewriter.tags</literal> specifies which HTML tags
-     are rewritten by <function>output_add_rewrite_var</function> values.
-     Defaults to
-     <literal>a=href,area=href,frame=src,input=src,form=</literal>
+     <literal>url_rewriter.tags</literal> specifies HTML tags and attributes
+     in which URLs are rewritten by <function>output_add_rewrite_var</function> values.
+     Defaults to <literal>"form="</literal>.
     </simpara>
     <simpara>
-     <literal>form</literal> is special tag. <literal>&lt;input hidden="session_id" name="session_name"&gt;</literal>
-     is added as form variable.
+     Adding <literal>"form="</literal> or any <literal>form</literal> attribute
+     will add a hidden <literal>input</literal> element to the <literal>form</literal>
+     with a name and value attribute for each name-value pair passed to
+     <function>output_add_rewrite_var</function>.
     </simpara>
+    <caution>
+     <simpara>
+      Adding the same tag more than once to <literal>url_rewriter.tags</literal>
+      will only use the first occurence during the URL rewriting process.
+     </simpara>
+    </caution>
     <note>
      <simpara>
-      Before PHP 7.1.0, <link linkend="ini.url-rewriter.tags">url_rewriter.tags</link>
+      Prior to PHP 7.1.0, <link linkend="ini.url-rewriter.tags">url_rewriter.tags</link>
       was used to specify <link linkend="ini.session.trans-sid-tags">session.trans_sid_tags</link>.
-      As of PHP 7.1.0, <literal>fieldset</literal> is no longer considered as special tag.
      </simpara>
     </note>
    </listitem>
@@ -165,9 +184,10 @@
     <simpara>
      <literal>url_rewriter.hosts</literal> specifies which hosts are
      rewritten to include <function>output_add_rewrite_var</function> values.
-     Defaults to <literal>$_SERVER['HTTP_HOST']</literal>. Multiple hosts
-     can be specified by ",", no space is allowed between hosts. e.g.
-     <literal>php.net,wiki.php.net,bugs.php.net</literal>
+     Defaults to <literal>$_SERVER['HTTP_HOST']</literal>.
+     Multiple hosts can be specified by a comma separated list
+     that does not include spaces.
+     For example <literal>"php.net,wiki.php.net,bugs.php.net"</literal>.
     </simpara>
    </listitem>
   </varlistentry>
