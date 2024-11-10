@@ -201,6 +201,11 @@ $unset_array[] = 'value'; // Does not generate a warning.
    </warning>
 
    <simpara>
+    A variable can be destroyed by using the <function>unset</function>
+    language construct.
+   </simpara>
+
+   <simpara>
     For information on variable-related functions, see the
     <link linkend="ref.var">Variable Functions Reference</link>.
    </simpara>
@@ -210,22 +215,12 @@ $unset_array[] = 'value'; // Does not generate a warning.
    <title>Predefined Variables</title>
    
    <para>
-    PHP provides a large number of predefined variables to any script
-    which it runs. Many of these variables, however, cannot be fully
-    documented as they are dependent upon which server is running, the
-    version and setup of the server, and other factors. Some of these
-    variables will not be available when PHP is run on the 
-    <link linkend="features.commandline">command line</link>. 
-    Refer to the <link linkend="reserved.variables">list of predefined variables</link>
-    for details.
-   </para>
-
-   <para>
+    PHP provides a number of
+    <link linkend="reserved.variables">predefined variables</link>.
     PHP also provides an additional set of predefined arrays
     containing variables from the web server (if applicable), the
-    environment, and user input. These arrays are rather special
-    in that they are automatically global - i.e., automatically
-    available in every scope. For this reason, they are often known as
+    environment, and user input. These arrays are automatically available in
+    every scope. For this reason, they are often known as
     "superglobals". (There is no mechanism in PHP for
     user-defined superglobals.) Refer to the
     <link linkend="language.variables.superglobals">list of superglobals</link>
@@ -254,51 +249,53 @@ $unset_array[] = 'value'; // Does not generate a warning.
 
    <simpara>
     The scope of a variable is the context within which it is defined.
-    For the most part all PHP variables only have a single scope.
-    This single scope spans <function>include</function>d and
-    <function>require</function>d files as well. For example:
+    PHP has a function scope and a global scope.
+    Any variable defined outside a function is limited to the global scope.
+    When a file is included, the code it contains inherits the variable scope
+    of the line on which the include occurs.
    </simpara>
-   <informalexample>
+   <example>
+    <title>Example of global variable scope</title>
     <programlisting role="php">
 <![CDATA[
 <?php
 $a = 1;
-include 'b.inc';
+include 'b.inc'; // Variable $a will be available within b.inc
 ?>
 ]]>
     </programlisting>
-   </informalexample>
+   </example>
+
    <simpara>
-    Here the <varname>$a</varname> variable will be available within
-    the included <filename>b.inc</filename> script.  However, within
-    user-defined functions a local function scope is introduced.  Any
-    variable used inside a function is by default limited to the local
-    function scope.  For example:
+    Any variable created inside a named function or an
+    <link linkend="functions.anonymous">anonymous</link> function
+    is limited to the scope of the function body.
+    However, <link linkend="functions.arrow">arrow functions</link>
+    bind variables from the parent scope to make them available inside the body.
+    If a file include occurs inside a function within
+    the calling file, the variables contained in the called file will be
+    available as if they had been defined inside the calling function.
    </simpara>
     
-   <informalexample>
+   <example>
+    <title>Example of local variable scope</title>
     <programlisting role="php"> 
 <![CDATA[
 <?php
-$a = 1; /* global scope */ 
+$a = 1; // global scope
 
 function test()
 { 
-    echo $a; /* reference to local scope variable */ 
-} 
-
-test();
+    echo $a; // Variable $a is undefined as it refers to a local version of $a
+}
 ?>
 ]]>
     </programlisting>
-   </informalexample>
+   </example>
 
    <simpara>
-    This script will generate an undefined variable <constant>E_WARNING</constant>
-    (or a <constant>E_NOTICE</constant> prior to PHP 8.0.0)
-    diagnostic. However, if the
-    <link linkend="ini.display-errors">display_errors</link> INI setting is set to hide
-    such diagnostics then nothing at all will be outputted.
+    The example above will generate an undefined variable <constant>E_WARNING</constant>
+    (or an <constant>E_NOTICE</constant> prior to PHP 8.0.0).
     This is because the echo statement
     refers to a local version of the <varname>$a</varname> variable,
     and it has not been assigned a value within this scope.
@@ -314,7 +311,12 @@ test();
    <sect2 xml:id="language.variables.scope.global">
     <title>The <literal>global</literal> keyword</title>
     <simpara>
-     First, an example use of <literal>global</literal>:
+     The <literal>global</literal> keyword is used to bind a variable
+     from a global scope into a local scope. The keyword can be used with
+     a list of variables or a single variable. A local variable will be created
+     referencing the global variable of the same name. If the global
+     variable does not exist, the variable will be created in global scope and
+     assigned &null;.
     </simpara>
     <para>
      <example>
@@ -337,11 +339,17 @@ echo $b;
 ?>
 ]]>
       </programlisting>
+      &example.outputs;
+      <screen>
+<![CDATA[
+3
+]]>
+      </screen>
      </example>
     </para>
 
    <simpara>
-    The above script will output <literal>3</literal>.  By declaring
+    By declaring
     <varname>$a</varname> and <varname>$b</varname> global within the
     function, all references to either variable will refer to the
     global version.  There is no limit to the number of global
@@ -400,10 +408,10 @@ function test_superglobal()
     </example>
    </para>
    <note>
-    <para>
+    <simpara>
      Using <literal>global</literal> keyword outside a function is not an
      error. It can be used if the file is included from inside a function.
-    </para>
+    </simpara>
    </note>
   </sect2>
  
@@ -467,10 +475,7 @@ function test()
 
    <simpara>
     Static variables also provide one way to deal with recursive
-    functions. A recursive function is one which calls itself.  Care
-    must be taken when writing a recursive function because it is
-    possible to make it recurse indefinitely.  It has to be ensured to
-    have an adequate way of terminating the recursion.  The following
+    functions.  The following
     simple function recursively counts to 10, using the static
     variable <varname>$count</varname> to know when to stop:
    </simpara>
