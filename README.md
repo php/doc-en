@@ -2,7 +2,7 @@
 # PHP Documentation
 
 Please refer to the
-[contribution guidelines](https://github.com/php/doc-base/blob/master/CONTRIBUTING_DOCS.md)
+[contribution guidelines](https://github.com/php/doc-base/blob/master/docs/contributing.md)
 and the [README file](https://github.com/php/doc-base/blob/master/README.md)
 within the [doc-base repository](https://github.com/php/doc-base)
 for details on how to contribute to PHP's documentation.
@@ -12,8 +12,8 @@ The PHP manual is available at [php.net/docs](https://php.net/docs).
 ## Creating this setup
 
 For information related to creating this setup,
-see the [contribution guidelines](https://github.com/php/doc-base/blob/master/CONTRIBUTING_DOCS.md)
-or [this page](http://doc.php.net/tutorial/local-setup.php) on our documentation website.
+see the [contribution guidelines](https://github.com/php/doc-base/blob/master/docs/contributing.md)
+or [this page](https://doc.php.net/tutorial/local-setup.php) on our documentation website.
 
 ## Building With make and Docker
 
@@ -52,4 +52,4 @@ For the translations of this documentation, see:
 ## Documentation pipeline
 
 For more information on the various repositories that make up PHP's documentation pipeline,
-see this [overview](https://github.com/php/doc-base/blob/master/OVERVIEW.md).
+see this [overview](https://github.com/php/doc-base/blob/master/docs/overview.md).
