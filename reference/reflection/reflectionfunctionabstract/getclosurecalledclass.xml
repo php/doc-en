@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<refentry xml:id="reflectionfunctionabstract.getclosurecalledclass" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="reflectionfunctionabstract.getclosurecalledclass" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>ReflectionFunctionAbstract::getClosureCalledClass</refname>
-  <refpurpose>Description</refpurpose>
+  <refpurpose>Returns the class corresponding to $this inside a closure</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -11,91 +11,266 @@
    <modifier>public</modifier> <type class="union"><type>ReflectionClass</type><type>null</type></type><methodname>ReflectionFunctionAbstract::getClosureCalledClass</methodname>
    <void/>
   </methodsynopsis>
-  &warn.undocumented.func;
   <simpara>
-   Description.
+   Returns the class as a <classname>ReflectionClass</classname> that
+   corresponds to <varname>$this</varname> inside the
+   <classname>Closure</classname>.
   </simpara>
  </refsect1>
 
  <refsect1 role="parameters">
   &reftitle.parameters;
-  &no.function.parameters;</refsect1>
+  &no.function.parameters;
+ </refsect1>
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <simpara>
-   Description.
+   Returns a <classname>ReflectionClass</classname> corresponding to the class
+   represented by <varname>$this</varname> in the <classname>Closure</classname>.
+   If the function is not a closure or if there was no enclosing class &null;
+   is returned instead.
   </simpara>
  </refsect1>
 
- <refsect1 role="errors">
-  &reftitle.errors;
-  <simpara>
-   When does this function issue <constant>E_*</constant> level errors,
-   and/or throw <exceptionname>Exception</exceptionname>s.
-  </simpara>
- </refsect1>
-
- <refsect1 role="changelog">
-  &reftitle.changelog;
-  <informaltable>
-   <tgroup cols="2">
-    <thead>
-     <row>
-      <entry>&Version;</entry>
-      <entry>&Description;</entry>
-     </row>
-    </thead>
-    <tbody>
-     <row>
-      <entry>8.X.0</entry>
-      <entry>
-       Description
-      </entry>
-     </row>
-    </tbody>
-   </tgroup>
-  </informaltable>
- </refsect1>
-
- <refsect1 role="examples">
+ <refsect1 role="examples" xml:id="reflectionfunctionabstract.getclosurecalledclass.examples">
   &reftitle.examples;
-  <example xml:id="reflectionfunctionabstract.getclosurecalledclass.example.basic">
-   <title><methodname>ReflectionFunctionAbstract::getClosureCalledClass</methodname> example</title>
-   <simpara>
-    Description.
-   </simpara>
+  <example>
+   <title>
+    Example showcasing difference between
+    <methodname>ReflectionFunctionAbstract::getClosureCalledClass</methodname>,
+    <methodname>ReflectionFunctionAbstract::getClosureScopeClass</methodname>,
+    and <methodname>ReflectionFunctionAbstract::getClosureThis</methodname>
+   </title>
    <programlisting role="php">
 <![CDATA[
 <?php
-echo "Code example";
+
+class A {
+    private function foo() {
+        echo "success!\n";
+    }
+}
+
+class B extends A {}
+
+class C extends A {
+    private function foo() {}
+}
+
+$fn = function () {
+    var_dump($this::class);
+    try {
+        $this->foo();
+    } catch (Throwable $e) {
+        echo $e->getMessage(), PHP_EOL;
+    }
+    var_dump(static::class);
+    try {
+        static::foo();
+    } catch (Throwable $e) {
+        echo $e->getMessage(), PHP_EOL;
+    }
+};
+
+$objects = [
+    new A(),
+    new B(),
+    new C(),
+];
+
+foreach ($objects as $newThis) {
+    foreach ($objects as $newScope) {
+        echo '$fn is bound to ', $newThis::class, ' with scope ', $newScope::class, PHP_EOL;
+        $boundFn = $fn->bindTo($newThis, $newScope);
+        $boundFn();
+        $rfn = new ReflectionFunction($boundFn);
+        echo 'ReflectionFunction($boundFn)->getClosureCalledClass()', PHP_EOL;
+        var_dump($rfn->getClosureCalledClass());
+        echo 'ReflectionFunction($boundFn)->getClosureScopeClass()', PHP_EOL;
+        var_dump($rfn->getClosureScopeClass());
+        echo 'ReflectionFunction($boundFn)->getClosureThis()', PHP_EOL;
+        var_dump($rfn->getClosureThis());
+    }
+}
+
 ?>
 ]]>
    </programlisting>
    &example.outputs;
    <screen>
 <![CDATA[
-Code example
+$fn is bound to A with scope A
+string(1) "A"
+success!
+string(1) "A"
+success!
+ReflectionFunction($boundFn)->getClosureCalledClass()
+object(ReflectionClass)#7 (1) {
+  ["name"]=>
+  string(1) "A"
+}
+ReflectionFunction($boundFn)->getClosureScopeClass()
+object(ReflectionClass)#7 (1) {
+  ["name"]=>
+  string(1) "A"
+}
+ReflectionFunction($boundFn)->getClosureThis()
+object(A)#2 (0) {
+}
+$fn is bound to A with scope B
+string(1) "A"
+Call to private method A::foo() from scope B
+string(1) "A"
+Call to private method A::foo() from scope B
+ReflectionFunction($boundFn)->getClosureCalledClass()
+object(ReflectionClass)#6 (1) {
+  ["name"]=>
+  string(1) "A"
+}
+ReflectionFunction($boundFn)->getClosureScopeClass()
+object(ReflectionClass)#6 (1) {
+  ["name"]=>
+  string(1) "B"
+}
+ReflectionFunction($boundFn)->getClosureThis()
+object(A)#2 (0) {
+}
+$fn is bound to A with scope C
+string(1) "A"
+Call to private method A::foo() from scope C
+string(1) "A"
+Call to private method A::foo() from scope C
+ReflectionFunction($boundFn)->getClosureCalledClass()
+object(ReflectionClass)#9 (1) {
+  ["name"]=>
+  string(1) "A"
+}
+ReflectionFunction($boundFn)->getClosureScopeClass()
+object(ReflectionClass)#9 (1) {
+  ["name"]=>
+  string(1) "C"
+}
+ReflectionFunction($boundFn)->getClosureThis()
+object(A)#2 (0) {
+}
+$fn is bound to B with scope A
+string(1) "B"
+success!
+string(1) "B"
+success!
+ReflectionFunction($boundFn)->getClosureCalledClass()
+object(ReflectionClass)#8 (1) {
+  ["name"]=>
+  string(1) "B"
+}
+ReflectionFunction($boundFn)->getClosureScopeClass()
+object(ReflectionClass)#8 (1) {
+  ["name"]=>
+  string(1) "A"
+}
+ReflectionFunction($boundFn)->getClosureThis()
+object(B)#3 (0) {
+}
+$fn is bound to B with scope B
+string(1) "B"
+Call to private method A::foo() from scope B
+string(1) "B"
+Call to private method A::foo() from scope B
+ReflectionFunction($boundFn)->getClosureCalledClass()
+object(ReflectionClass)#7 (1) {
+  ["name"]=>
+  string(1) "B"
+}
+ReflectionFunction($boundFn)->getClosureScopeClass()
+object(ReflectionClass)#7 (1) {
+  ["name"]=>
+  string(1) "B"
+}
+ReflectionFunction($boundFn)->getClosureThis()
+object(B)#3 (0) {
+}
+$fn is bound to B with scope C
+string(1) "B"
+Call to private method A::foo() from scope C
+string(1) "B"
+Call to private method A::foo() from scope C
+ReflectionFunction($boundFn)->getClosureCalledClass()
+object(ReflectionClass)#5 (1) {
+  ["name"]=>
+  string(1) "B"
+}
+ReflectionFunction($boundFn)->getClosureScopeClass()
+object(ReflectionClass)#5 (1) {
+  ["name"]=>
+  string(1) "C"
+}
+ReflectionFunction($boundFn)->getClosureThis()
+object(B)#3 (0) {
+}
+$fn is bound to C with scope A
+string(1) "C"
+success!
+string(1) "C"
+Call to private method C::foo() from scope A
+ReflectionFunction($boundFn)->getClosureCalledClass()
+object(ReflectionClass)#6 (1) {
+  ["name"]=>
+  string(1) "C"
+}
+ReflectionFunction($boundFn)->getClosureScopeClass()
+object(ReflectionClass)#6 (1) {
+  ["name"]=>
+  string(1) "A"
+}
+ReflectionFunction($boundFn)->getClosureThis()
+object(C)#4 (0) {
+}
+$fn is bound to C with scope B
+string(1) "C"
+Call to private method C::foo() from scope B
+string(1) "C"
+Call to private method C::foo() from scope B
+ReflectionFunction($boundFn)->getClosureCalledClass()
+object(ReflectionClass)#8 (1) {
+  ["name"]=>
+  string(1) "C"
+}
+ReflectionFunction($boundFn)->getClosureScopeClass()
+object(ReflectionClass)#8 (1) {
+  ["name"]=>
+  string(1) "B"
+}
+ReflectionFunction($boundFn)->getClosureThis()
+object(C)#4 (0) {
+}
+$fn is bound to C with scope C
+string(1) "C"
+string(1) "C"
+ReflectionFunction($boundFn)->getClosureCalledClass()
+object(ReflectionClass)#9 (1) {
+  ["name"]=>
+  string(1) "C"
+}
+ReflectionFunction($boundFn)->getClosureScopeClass()
+object(ReflectionClass)#9 (1) {
+  ["name"]=>
+  string(1) "C"
+}
+ReflectionFunction($boundFn)->getClosureThis()
+object(C)#4 (0) {
+}
 ]]>
    </screen>
   </example>
  </refsect1>
 
- <refsect1 role="notes">
-  &reftitle.notes;
-  <note>
-   <simpara>
-    Any notes that don't fit anywhere else should go here.
-   </simpara>
-  </note>
- </refsect1>
-
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
-   <member><methodname>ClassName::otherMethodName</methodname></member>
-   <member><function>some_function</function></member>
-   <member><link linkend="some.id.chunk.to.link">something appendix</link></member>
+   <member><methodname>ReflectionFunctionAbstract::getClosureScopeClass</methodname></member>
+   <member><methodname>ReflectionFunctionAbstract::getClosureThis</methodname></member>
+   <member><xref linkend="language.oop5.late-static-bindings" /></member>
   </simplelist>
  </refsect1>
 
