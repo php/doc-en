@@ -41,58 +41,31 @@
     <methodname>ReflectionFunctionAbstract::getClosureCalledClass</methodname>,
     <methodname>ReflectionFunctionAbstract::getClosureScopeClass</methodname>,
     and <methodname>ReflectionFunctionAbstract::getClosureThis</methodname>
+    with an instance method
    </title>
    <programlisting role="php">
 <![CDATA[
 <?php
 
 class A {
-    private function foo() {
-        echo "success!\n";
+    public function getClosure() {
+        var_dump(self::class, static::class);
+        return function () {
+            
+        };
     }
 }
 
-class B extends A {}
-
-class C extends A {
-    private function foo() {}
+class B extends A {
+    
 }
 
-$fn = function () {
-    var_dump($this::class);
-    try {
-        $this->foo();
-    } catch (Throwable $e) {
-        echo $e->getMessage(), PHP_EOL;
-    }
-    var_dump(static::class);
-    try {
-        static::foo();
-    } catch (Throwable $e) {
-        echo $e->getMessage(), PHP_EOL;
-    }
-};
-
-$objects = [
-    new A(),
-    new B(),
-    new C(),
-];
-
-foreach ($objects as $newThis) {
-    foreach ($objects as $newScope) {
-        echo '$fn is bound to ', $newThis::class, ' with scope ', $newScope::class, PHP_EOL;
-        $boundFn = $fn->bindTo($newThis, $newScope);
-        $boundFn();
-        $rfn = new ReflectionFunction($boundFn);
-        echo 'ReflectionFunction($boundFn)->getClosureCalledClass()', PHP_EOL;
-        var_dump($rfn->getClosureCalledClass());
-        echo 'ReflectionFunction($boundFn)->getClosureScopeClass()', PHP_EOL;
-        var_dump($rfn->getClosureScopeClass());
-        echo 'ReflectionFunction($boundFn)->getClosureThis()', PHP_EOL;
-        var_dump($rfn->getClosureThis());
-    }
-}
+$b = new B();
+$c = $b->getClosure();
+$r = new ReflectionFunction($c);
+var_dump($r->getClosureThis()); // $this === $b
+var_dump($r->getClosureScopeClass()); // self::class
+var_dump($r->getClosureCalledClass()); // static::class
 
 ?>
 ]]>
@@ -100,166 +73,71 @@ foreach ($objects as $newThis) {
    &example.outputs;
    <screen>
 <![CDATA[
-$fn is bound to A with scope A
 string(1) "A"
-success!
-string(1) "A"
-success!
-ReflectionFunction($boundFn)->getClosureCalledClass()
-object(ReflectionClass)#7 (1) {
+string(1) "B"
+object(B)#1 (0) {
+}
+object(ReflectionClass)#4 (1) {
   ["name"]=>
   string(1) "A"
 }
-ReflectionFunction($boundFn)->getClosureScopeClass()
-object(ReflectionClass)#7 (1) {
+object(ReflectionClass)#4 (1) {
   ["name"]=>
-  string(1) "A"
+  string(1) "B"
 }
-ReflectionFunction($boundFn)->getClosureThis()
-object(A)#2 (0) {
+]]>
+   </screen>
+  </example>
+  <example>
+   <title>
+    Example showcasing difference between
+    <methodname>ReflectionFunctionAbstract::getClosureCalledClass</methodname>,
+    <methodname>ReflectionFunctionAbstract::getClosureScopeClass</methodname>,
+    and <methodname>ReflectionFunctionAbstract::getClosureThis</methodname>
+    with a static method
+   </title>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+
+class A {
+    public function getClosure() {
+        var_dump(self::class, static::class);
+        return static function () {
+            
+        };
+    }
 }
-$fn is bound to A with scope B
+
+class B extends A {
+    
+}
+
+$b = new B();
+$c = $b->getClosure();
+$r = new ReflectionFunction($c);
+var_dump($r->getClosureThis()); // NULL
+var_dump($r->getClosureScopeClass()); // self::class
+var_dump($r->getClosureCalledClass()); // static::class
+
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
 string(1) "A"
-Call to private method A::foo() from scope B
-string(1) "A"
-Call to private method A::foo() from scope B
-ReflectionFunction($boundFn)->getClosureCalledClass()
-object(ReflectionClass)#6 (1) {
+string(1) "B"
+NULL
+object(ReflectionClass)#4 (1) {
   ["name"]=>
   string(1) "A"
 }
-ReflectionFunction($boundFn)->getClosureScopeClass()
-object(ReflectionClass)#6 (1) {
+object(ReflectionClass)#4 (1) {
   ["name"]=>
   string(1) "B"
 }
-ReflectionFunction($boundFn)->getClosureThis()
-object(A)#2 (0) {
-}
-$fn is bound to A with scope C
-string(1) "A"
-Call to private method A::foo() from scope C
-string(1) "A"
-Call to private method A::foo() from scope C
-ReflectionFunction($boundFn)->getClosureCalledClass()
-object(ReflectionClass)#9 (1) {
-  ["name"]=>
-  string(1) "A"
-}
-ReflectionFunction($boundFn)->getClosureScopeClass()
-object(ReflectionClass)#9 (1) {
-  ["name"]=>
-  string(1) "C"
-}
-ReflectionFunction($boundFn)->getClosureThis()
-object(A)#2 (0) {
-}
-$fn is bound to B with scope A
-string(1) "B"
-success!
-string(1) "B"
-success!
-ReflectionFunction($boundFn)->getClosureCalledClass()
-object(ReflectionClass)#8 (1) {
-  ["name"]=>
-  string(1) "B"
-}
-ReflectionFunction($boundFn)->getClosureScopeClass()
-object(ReflectionClass)#8 (1) {
-  ["name"]=>
-  string(1) "A"
-}
-ReflectionFunction($boundFn)->getClosureThis()
-object(B)#3 (0) {
-}
-$fn is bound to B with scope B
-string(1) "B"
-Call to private method A::foo() from scope B
-string(1) "B"
-Call to private method A::foo() from scope B
-ReflectionFunction($boundFn)->getClosureCalledClass()
-object(ReflectionClass)#7 (1) {
-  ["name"]=>
-  string(1) "B"
-}
-ReflectionFunction($boundFn)->getClosureScopeClass()
-object(ReflectionClass)#7 (1) {
-  ["name"]=>
-  string(1) "B"
-}
-ReflectionFunction($boundFn)->getClosureThis()
-object(B)#3 (0) {
-}
-$fn is bound to B with scope C
-string(1) "B"
-Call to private method A::foo() from scope C
-string(1) "B"
-Call to private method A::foo() from scope C
-ReflectionFunction($boundFn)->getClosureCalledClass()
-object(ReflectionClass)#5 (1) {
-  ["name"]=>
-  string(1) "B"
-}
-ReflectionFunction($boundFn)->getClosureScopeClass()
-object(ReflectionClass)#5 (1) {
-  ["name"]=>
-  string(1) "C"
-}
-ReflectionFunction($boundFn)->getClosureThis()
-object(B)#3 (0) {
-}
-$fn is bound to C with scope A
-string(1) "C"
-success!
-string(1) "C"
-Call to private method C::foo() from scope A
-ReflectionFunction($boundFn)->getClosureCalledClass()
-object(ReflectionClass)#6 (1) {
-  ["name"]=>
-  string(1) "C"
-}
-ReflectionFunction($boundFn)->getClosureScopeClass()
-object(ReflectionClass)#6 (1) {
-  ["name"]=>
-  string(1) "A"
-}
-ReflectionFunction($boundFn)->getClosureThis()
-object(C)#4 (0) {
-}
-$fn is bound to C with scope B
-string(1) "C"
-Call to private method C::foo() from scope B
-string(1) "C"
-Call to private method C::foo() from scope B
-ReflectionFunction($boundFn)->getClosureCalledClass()
-object(ReflectionClass)#8 (1) {
-  ["name"]=>
-  string(1) "C"
-}
-ReflectionFunction($boundFn)->getClosureScopeClass()
-object(ReflectionClass)#8 (1) {
-  ["name"]=>
-  string(1) "B"
-}
-ReflectionFunction($boundFn)->getClosureThis()
-object(C)#4 (0) {
-}
-$fn is bound to C with scope C
-string(1) "C"
-string(1) "C"
-ReflectionFunction($boundFn)->getClosureCalledClass()
-object(ReflectionClass)#9 (1) {
-  ["name"]=>
-  string(1) "C"
-}
-ReflectionFunction($boundFn)->getClosureScopeClass()
-object(ReflectionClass)#9 (1) {
-  ["name"]=>
-  string(1) "C"
-}
-ReflectionFunction($boundFn)->getClosureThis()
-object(C)#4 (0) {
-}
+
 ]]>
    </screen>
   </example>
