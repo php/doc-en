@@ -303,7 +303,157 @@ class Person {
     elements of the array require special care.
    </para>
   </sect2>
+  <sect2>
+   <title>Inheritance</title>
+   <sect3>
+    <title>Final hooks</title>
+    <para>
+     Hooks may also be declared final, in which case they may not be overridden.
+    </para>
+    <example>
+     <title>Final hooks</title>
+     <programlisting role="php">
+      <![CDATA[
+<?php
+class User
+{
+    public string $username {
+        final set => strtolower($value);
+    }
+}
 
+class Manager extends User
+{
+    public string $username {
+        // This is allowed
+        get => strtoupper($this->username);
+
+        // But this is NOT allowed, because set is final in the parent.
+        set => strtoupper($value);
+    }
+}
+?>
+]]>
+     </programlisting>
+    </example>
+    <para>
+     A property may also be declared <link linkend="language.oop5.final">final</link>.
+     A final property may not be redeclared by a child class in any way, which precludes
+     altering hooks or widening its access.
+    </para>
+    <para>
+     Declaring hooks final on a property that is declared final is redundant,
+     and will be silently ignored. This is the same behavior as final methods.
+    </para>
+   </sect3>
+   <para>
+    A child class may define or redefine individual hooks on a property by redefining the property
+    and just the hooks it wishes to override.  A child class may also add hooks to a property that had none.
+    This is essentially the same as if the hooks were methods.
+   </para>
+   <example>
+    <title>Hook inheritance</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class Point
+{
+    public int $x;
+    public int $y;
+}
+
+class PositivePoint extends Point
+{
+    public int $x {
+        set {
+            if ($value < 0) {
+                throw new \InvalidArgumentException('Too small');
+            }
+            $this->x = $value;
+        }
+    }
+}
+?>
+]]>
+    </programlisting>
+   </example>
+   <para>
+    Each hook overrides parent implementations independently of each other.
+    If a child class adds hooks, any default value set on the property is removed, and must be redeclared.
+    That is the same consistent with how inheritance works on hook-less properties.
+   </para>
+   <sect3>
+    <title>Accessing parent hooks</title>
+    <para>
+     A hook in a child class may access the parent class's property using the <code>parent::$prop</code> keyword,
+     followed by the desired hook. For example, <code>parent::$propName::get()</code>.
+     It may be read as “access the <varname>prop</varname> defined on the parent class,
+     and then run its get operation” (or set operation, as appropriate).
+    </para>
+    <para>
+     If not accessed this way, the parent class's hook is ignored. This behavior is consistent with how all methods work.
+     This also offers a way to access the parent class's storage, if any.
+     If there is no hook on the parent property, its default get/set behavior will be used.
+     Hooks may not access any other hook except their own parent on their own property.
+    </para>
+    <para>
+     The example above could be rewritten more efficiently as follows.
+    </para>
+    <example>
+     <title>Parent hook access (set)</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+class Point
+{
+    public int $x;
+    public int $y;
+}
+
+class PositivePoint extends Point
+{
+    public int $x {
+        set {
+            if ($value < 0) {
+                throw new \InvalidArgumentException('Too small');
+            }
+            $this->x = $value;
+        }
+    }
+}
+?>
+]]>
+     </programlisting>
+    </example>
+    <para>
+     An example of overriding only a get hook could be:
+    </para>
+    <example>
+     <title>Parent hook access (get)</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+class Strings
+{
+    public string $val;
+}
+
+class CaseFoldingStrings extends Strings
+{
+    public bool $uppercase = true;
+
+    public string $val {
+        get => $this->uppercase
+            ? strtoupper(parent::$val::get())
+            : strtolower(parent::$val::get());
+    }
+}
+?>
+]]>
+     </programlisting>
+    </example>
+   </sect3>
+  </sect2>
  </sect1>
 <!-- Keep this comment at the end of the file
 Local variables:
