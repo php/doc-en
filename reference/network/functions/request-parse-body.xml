@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<refentry xml:id="function.http-get-last-response-headers" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<refentry xml:id="function.request-parse-body" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>request_parse_body</refname>
-  <refpurpose>REF PURPOSE FOR request_parse_body</refpurpose>
+  <refpurpose>Read and parse the request body and return the result</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -12,8 +12,37 @@
    <methodparam choice="opt"><type class="union"><type>array</type><type>null</type></type><parameter>options</parameter><initializer>&null;</initializer></methodparam>
   </methodsynopsis>
   <simpara>
-   DESCRIPTION
+    This function reads the request body and parses it according to the
+    <literal>Content-Type</literal> header. Currently, two content types are
+    supported:
   </simpara>
+  <para>
+    <itemizedlist>
+      <listitem>
+      <simpara>
+        <literal>application/x-www-form-urlencoded</literal>
+      </simpara>
+      </listitem>
+      <listitem>
+      <simpara>
+        <literal>multipart/form-data</literal>
+      </simpara>
+      </listitem>
+    </itemizedlist>
+  </para>
+  <simpara>
+    This function is used primarily to parse
+    <literal>multipart/form-data</literal> requests with HTTP verbs other than
+    <literal>POST</literal> which do not automatically populate the
+    <literal>$_POST</literal> and <literal>$_FILES</literal> superglobals.
+  </simpara>
+
+  <caution>
+   <simpara>
+    <function>request_parse_body</function> consumes the request body without
+    buffering it to the <literal>php://input</literal> stream.
+   </simpara>
+  </caution>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -23,7 +52,22 @@
     <term><parameter>options</parameter></term>
     <listitem>
      <simpara>
-      The Internet host name.
+      The <parameter>options</parameter> parameter accepts an associative array
+      to override the following global INI settings for parsing of the request
+      body.
+     </simpara>
+     <para>
+        <itemizedlist>
+          <listitem><simpara><literal>max_file_uploads</literal></simpara></listitem>
+          <listitem><simpara><literal>max_input_vars</literal></simpara></listitem>
+          <listitem><simpara><literal>max_multipart_body_parts</literal></simpara></listitem>
+          <listitem><simpara><literal>post_max_size</literal></simpara></listitem>
+          <listitem><simpara><literal>upload_max_filesize</literal></simpara></listitem>
+        </itemizedlist>
+     </para>
+     <simpara>
+      Providing invalid keys or values will result in a
+      <classname>ValueError</classname>.
      </simpara>
     </listitem>
    </varlistentry>
@@ -33,41 +77,53 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <simpara>
-   DESCRIPTION
-   If there are none, &null; is returned instead.
+    <function>request_parse_body</function> returns an array pair with the
+    equivalent of <literal>$_POST</literal> at index <literal>0</literal> and
+    <literal>$_FILES</literal> at index <literal>1</literal>.
+  </simpara>
+  <simpara>
+    When the request body is invalid, according to the
+    <literal>Content-Type</literal> header, a
+    <classname>RequestParseBodyException</classname> is thrown.
   </simpara>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
-  <example xml:id="function.http-get-last-response-headers.example.basic">
+  <example xml:id="function.request-parse-body.example.basic">
    <title><function>request_parse_body</function> example</title>
-   <simpara>
-    Description.
-   </simpara>
    <programlisting role="php">
 <![CDATA[
 <?php
-CODE
+// Parse request and store result in the $_POST and $_FILES superglobals.
+[$_POST, $_FILES] = request_parse_body();
+// Echo the content of some transferred file
+echo file_get_contents($_FILES['file_name']['tmp_name']);
 ?>
 ]]>
    </programlisting>
-   &example.outputs.similar;
-   <screen>
+  </example>
+  <example xml:id="function.request-parse-body.example.options">
+   <title><function>request_parse_body</function> example with customized options</title>
+   <programlisting role="php">
 <![CDATA[
-OUTPUT
+<?php
+// form.php
+
+assert_logged_in();
+
+// Only for this form, we allow a bigger upload size.
+[$_POST, $_FILES] = request_parse_body([
+    'post_max_size' => '10M',
+    'upload_max_filesize' => '10M',
+]);
+
+// Do something with the uploaded files.
+?>
 ]]>
-   </screen>
+   </programlisting>
   </example>
  </refsect1>
-
- <refsect1 role="seealso">
-  &reftitle.seealso;
-  <simplelist>
-   <member><function>function_name</function></member>
-  </simplelist>
- </refsect1>
-
 </refentry>
 <!-- Keep this comment at the end of the file
 Local variables:
