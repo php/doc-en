@@ -2,7 +2,7 @@
 <refentry xml:id="reflectionproperty.getsettabletype" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>ReflectionProperty::getSettableType</refname>
-  <refpurpose>Description</refpurpose>
+  <refpurpose>Returns the parameter type of a setter hook</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -11,9 +11,10 @@
    <modifier>public</modifier> <type class="union"><type>ReflectionType</type><type>null</type></type><methodname>ReflectionProperty::getSettableType</methodname>
    <void/>
   </methodsynopsis>
-  &warn.undocumented.func;
   <simpara>
-   Description.
+   Returns the parameter type of a <literal>set</literal> hook.
+   If no <literal>set</literal> hook is defined, it behaves identically
+   to <methodname>ReflectionProperty::getType</methodname>.
   </simpara>
  </refsect1>
 
@@ -24,17 +25,24 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <simpara>
-   Description.
-  </simpara>
- </refsect1>
-
- <refsect1 role="errors">
-  &reftitle.errors;
-  <simpara>
-   When does this function issue <constant>E_*</constant> level errors,
-   and/or throw <exceptionname>Exception</exceptionname>s.
-  </simpara>
+  <simplelist>
+   <member>
+    This method returns an instance of <classname>ReflectionType</classname> that matches
+    the settable type for the property.
+   </member>
+   <member>
+    If there is a <literal>set</literal> hook that defines an explicit type, that will be returned.
+   </member>
+   <member>
+    If the hook does not specify a type, or it does not exist, the property type will be
+    returned, identically to <methodname>ReflectionProperty::getType</methodname>.  This value may be &null;
+    if the property is untyped.
+   </member>
+   <member>
+    If the property is virtual and has no <literal>set</literal> hook, a <classname>ReflectionType</classname>
+    instance for <literal>never</literal> will be returned.
+   </member>
+  </simplelist>
  </refsect1>
 
  <refsect1 role="examples">
@@ -47,7 +55,35 @@
    <programlisting role="php">
 <![CDATA[
 <?php
-echo "Code example";
+class Example
+{
+    public string $basic {
+     set => strtolower($value);
+    }
+
+    public string $wider {
+        set(string|Stringable $value) => (string)$value;
+    }
+
+    public string $virtual {
+        get => 'Do not change this';
+    }
+
+    public $untyped = 'silly';
+}
+
+$rClass = new \ReflectionClass(Example::class);
+// No set-type defined, so returns ReflectionType('string')
+$rType = $rClass->getProperty('basic')->getSettableType();
+
+// A set-type is defined, so returns ReflectionUnionType('string|Sstringable')
+$rType = $rClass->getProperty('wider')->getSettableType();
+
+// Virtual property, so returns ReflectionUnionType('never')
+$rType = $rClass->getProperty('virtual')->getSettableType();
+
+// Untyped property, so returns null
+$rType = $rClass->getProperty('untyped')->getSettableType();
 ?>
 ]]>
    </programlisting>
@@ -60,21 +96,10 @@ Code example
   </example>
  </refsect1>
 
- <refsect1 role="notes">
-  &reftitle.notes;
-  <note>
-   <simpara>
-    Any notes that don't fit anywhere else should go here.
-   </simpara>
-  </note>
- </refsect1>
-
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
-   <member><methodname>ClassName::otherMethodName</methodname></member>
-   <member><function>some_function</function></member>
-   <member><link linkend="some.id.chunk.to.link">something appendix</link></member>
+   <member><methodname>ReflectionProperty::getType</methodname></member>
   </simplelist>
  </refsect1>
 
