@@ -199,6 +199,69 @@ class Example
    On a backed property, omitting a <literal>get</literal> or<literal>set</literal>
    hook means the default read or write behavior will be used.
   </simpara>
+  <note>
+   <simpara>
+    Hooks can be defined when using <link linkend="language.oop5.decon.constructor.promotion">constructor
+    property promotion</link>. However, when doing so, values provided
+    to the constructor must match the type associated with the property,
+    regardless of what the <literal>set</literal> hook might allow.
+   </simpara>
+   <simpara>
+    Consider the following:
+   </simpara>
+   <programlisting role="php">
+<![CDATA[
+class Example
+{
+    public function __construct(
+        public private(set) DateTimeInterface $created {
+            set (string|DateTimeInterface $value) {
+                if (is_string($value)) {
+                    $value = new DateTimeImmutable($value);
+                }
+                $this->created = $value;
+            }
+        },
+    ) {
+    }
+}
+]]>
+   </programlisting>
+   <simpara>
+    Internally, the engine decomposes this to the following:
+   </simpara>
+   <programlisting role="php">
+<![CDATA[
+class Example
+{
+    public private(set) DateTimeInterface $created {
+        set (string|DateTimeInterface $value) {
+            if (is_string($value)) {
+                $value = new DateTimeImmutable($value);
+            }
+            $this->created = $value;
+        }
+    }
+
+    public function __construct(
+        DateTimeInterface $created,
+    ) {
+        $this->created = $created;
+    }
+}
+]]>
+   </programlisting>
+   <simpara>
+    Any attempts to set the property outside the constructor will
+    allow either <literal>string</literal> or <literal>DateTimeInterface</literal>
+    values, but the constructor will only allow <literal>DateTimeInterface<literal>,
+    as that is the type associated with the property.
+   </simpara>
+   <simpara>
+    If you need to allow this kind of behavior from the constructor, you
+    cannot use constructor property promotion.
+   </simpara>
+  </note>
  </sect2>
  <sect2 xml:id="language.oop5.property-hooks.virtual">
   <title>Virtual properties</title>
