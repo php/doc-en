@@ -27,6 +27,6 @@ php: .docker/built
 
 build: .docker/built
 
-.docker/built:
+.docker/built: .docker/Dockerfile
 	docker build .docker -t php/doc-en
 	touch .docker/built
