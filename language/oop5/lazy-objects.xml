@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+<sect1 xml:id="language.oop5.lazy-objects" xmlns="http://docbook.org/ns/docbook">
+ <title>Lazy Objects</title>
+
+ <simpara>
+  A lazy object is an object whose initialization is deferred until its
+  state is observed or modified. Some use-case examples include dependency
+  injection components that provide lazy services fully initialized only if
+  needed, <acronym>ORM</acronym>s providing lazy entities that hydrate
+  themselves from the database only when accessed, or a JSON parser that
+  delays parsing until elements are accessed.
+ </simpara>
+
+ <simpara>
+  Two lazy object strategies are supported: Ghost Objects and Virtual
+  Proxies, hereafter referred to as &quot;lazy ghosts&quot; and
+  &quot;lazy proxies&quot;.
+  In both strategies, the lazy object is attached to an initializer or factory
+  that is called automatically when its state is observed or modified for
+  the first time.  From an abstraction point of view, lazy ghost objects are
+  indistinguishable from non-lazy ones: they can be used without knowing they
+  are lazy, allowing them to be passed to and used by code that is unaware of
+  laziness. Lazy proxies are similarly transparent, but care must be taken when
+  their identity is used, as the proxy and its real instance have different
+  identities.
+ </simpara>
+
+ <sect2 xml:id="language.oop5.lazy-objects.creation">
+  <title>Creating Lazy Objects</title>
+
+  <simpara>
+   It is possible to create a lazy instance of any user defined class or the
+   <classname>stdClass</classname> class (other internal classes are not
+   supported), or to reset an instance of these classes to make it lazy.
+   The entry points for creating a lazy object are the
+   <methodname>ReflectionClass::newLazyGhost</methodname> and
+   <methodname>ReflectionClass::newLazyProxy</methodname> methods.
+  </simpara>
+
+  <simpara>
+   Both methods accept a function that is called when the object requires
+   initialization. The function's expected behavior varies depending on the
+   strategy in use, as described in the reference documentation for each method.
+  </simpara>
+
+  <example>
+   <title>Creating a Lazy Ghost</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class Example
+{
+    public function __construct(public int $prop)
+    {
+        echo __METHOD__, "\n";
+    }
+}
+
+$reflector = new ReflectionClass(Example::class);
+$lazyObject = $reflector->newLazyGhost(function (Example $object) {
+    // Initialize object in-place
+    $object->__construct(1);
+});
+
+var_dump($lazyObject);
+var_dump(get_class($lazyObject));
+
+// Triggers initialization
+var_dump($lazyObject->prop);
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+lazy ghost object(Example)#3 (0) {
+["prop"]=>
+uninitialized(int)
+}
+string(7) "Example"
+Example::__construct
+int(1)
+]]>
+   </screen>
+  </example>
+
+  <example>
+   <title>Creating a Lazy Proxy</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class Example
+{
+    public function __construct(public int $prop)
+    {
+        echo __METHOD__, "\n";
+    }
+}
+
+$reflector = new ReflectionClass(Example::class);
+$lazyObject = $reflector->newLazyProxy(function (Example $object) {
+    // Create and return the real instance
+    return new Example(1);
+});
+
+var_dump($lazyObject);
+var_dump(get_class($lazyObject));
+
+// Triggers initialization
+var_dump($lazyObject->prop);
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+lazy proxy object(Example)#3 (0) {
+  ["prop"]=>
+  uninitialized(int)
+}
+string(7) "Example"
+Example::__construct
+int(1)
+]]>
+   </screen>
+  </example>
+
+  <simpara>
+   Any access to properties of a lazy object triggers its initialization
+   (including via <classname>ReflectionProperty</classname>).
+   However, certain properties might be known in advance and should not trigger
+   initialization when accessed:
+  </simpara>
+
+  <example>
+   <title>Initializing Properties Eagerly</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class BlogPost
+{
+    public function __construct(
+        public int $id,
+        public string $title,
+        public string $content,
+    ) { }
+}
+
+$reflector = new ReflectionClass(BlogPost::class);
+
+$post = $reflector->newLazyGhost(function ($post) {
+    $data = fetch_from_store($post->id);
+    $post->__construct($data['id'], $data['title'], $data['content']);
+});
+
+// Without this line, the following call to ReflectionProperty::setValue() would
+// trigger initialization.
+$reflector->getProperty('id')->skipLazyInitialization($post);
+$reflector->getProperty('id')->setValue($post, 123);
+
+// Alternatively, one can use this directly:
+$reflector->getProperty('id')->setRawValueWithoutLazyInitialization($post, 123);
+
+// The id property can be accessed without triggering initialization
+var_dump($post->id);
+?>
+]]>
+   </programlisting>
+  </example>
+
+  <simpara>
+   The <methodname>ReflectionProperty::skipLazyInitialization</methodname> and
+   <methodname>ReflectionProperty::setRawValueWithoutLazyInitialization</methodname>
+   methods offer ways to bypass lazy-initialization when accessing a property.
+  </simpara>
+ </sect2>
+
+ <sect2 xml:id="language.oop5.lazy-objects.patterns">
+  <title>About Lazy Object Strategies</title>
+
+  <simpara>
+   <emphasis>Lazy ghosts</emphasis> are objects that initialize in-place and,
+   once initialized, are indistinguishable from an object that was never lazy.
+   This strategy is suitable when we control both the instantiation and
+   initialization of the object, making it unsuitable if either of these is
+   managed by another party.
+  </simpara>
+
+  <simpara>
+   <emphasis>Lazy proxies</emphasis>, once initialized, act as proxies to
+   a real instance: any operation on an initialized lazy proxy is forwarded
+   to the real instance. The creation of the real instance can be delegated
+   to another party, making this strategy useful in cases where lazy ghosts
+   are unsuitable. Although lazy proxies are nearly as transparent as lazy
+   ghosts, caution is needed when their identity is used, as the proxy and
+   its real instance have distinct identities.
+  </simpara>
+ </sect2>
+
+ <sect2 xml:id="language.oop5.lazy-objects.lifecycle">
+  <title>Lifecycle of Lazy Objects</title>
+
+  <simpara>
+   Objects can be made lazy at instantiation time using
+   <methodname>ReflectionClass::newLazyGhost</methodname> or
+   <methodname>ReflectionClass::newLazyProxy</methodname>, or after
+   instantiation by using
+   <methodname>ReflectionClass::resetAsLazyGhost</methodname> or
+   <methodname>ReflectionClass::resetAsLazyProxy</methodname>. Following this, a
+   lazy object can become initialized through one of the following operations:
+  </simpara>
+
+  <simplelist>
+   <member>
+    Interacting with the object in a way that triggers automatic initialization. See
+    <link linkend="language.oop5.lazy-objects.initialization-triggers">Initialization
+    triggers</link>.
+   </member>
+   <member>
+    Marking all its properties as non-lazy using
+    <methodname>ReflectionProperty::skipLazyInitialization</methodname> or
+    <methodname>ReflectionProperty::setRawValueWithoutLazyInitialization</methodname>.
+   </member>
+   <member>
+    Calling explicitly <methodname>ReflectionClass::initializeLazyObject</methodname>
+    or <methodname>ReflectionClass::markLazyObjectAsInitialized</methodname>.
+   </member>
+  </simplelist>
+
+  <simpara>
+   As lazy objects become initialized when all their properties are marked
+   non-lazy, the above methods will not mark an object as lazy if no properties
+   could be marked as lazy.
+  </simpara>
+ </sect2>
+
+ <sect2 xml:id="language.oop5.lazy-objects.initialization-triggers">
+  <title>Initialization Triggers</title>
+
+  <simpara>
+   Lazy objects are designed to be fully transparent to their consumers,
+   so normal operations that observe or modify the object's state will
+   automatically trigger initialization before the operation is performed. This
+   includes, but is not limited to, the following operations:
+  </simpara>
+
+  <simplelist>
+   <member>
+    Reading or writing a property.
+   </member>
+   <member>
+    Testing if a property is set or unsetting it.
+   </member>
+   <member>
+    Accessing or modifying a property via
+    <methodname>ReflectionProperty::getValue</methodname>,
+    <methodname>ReflectionProperty::getRawValue</methodname>,
+    <methodname>ReflectionProperty::setValue</methodname>,
+    or <methodname>ReflectionProperty::setRawValue</methodname>.
+   </member>
+   <member>
+    Listing properties with
+    <methodname>ReflectionObject::getProperties</methodname>,
+    <methodname>ReflectionObject::getProperty</methodname>,
+    <function>get_object_vars</function>.
+   </member>
+   <member>
+    Iterating over properties of an object that does not implement
+    <interfacename>Iterator</interfacename> or
+    <interfacename>IteratorAggregate</interfacename> using
+    <link linkend="control-structures.foreach">foreach</link>.
+   </member>
+   <member>
+    Serializing the object with <function>serialize</function>,
+    <function>json_encode</function>, etc.
+   </member>
+   <member>
+    <link linkend="language.oop5.lazy-objects.cloning">Cloning</link> the
+    object.
+   </member>
+  </simplelist>
+
+  <simpara>
+   Method calls that do not access the object state will not trigger
+   initialization. Similarly, interactions with the object that invoke magic
+   methods or hook functions will not trigger initialization if these methods
+   or functions do not access the object's state.
+  </simpara>
+
+  <sect3>
+   <title>Non-Triggering Operations</title>
+
+   <simpara>
+    The following specific methods or low-level operations allow access or
+    modification of lazy objects without triggering initialization:
+   </simpara>
+
+   <simplelist>
+    <member>
+     Marking properties as non-lazy with
+     <methodname>ReflectionProperty::skipLazyInitialization</methodname> or
+     <methodname>ReflectionProperty::setRawValueWithoutLazyInitialization</methodname>.
+    </member>
+    <member>
+     Retrieving the internal representation of properties using
+     <function>get_mangled_object_vars</function> or by
+     <link linkend="language.types.array.casting">casting the object to an
+     array</link>.
+    </member>
+    <member>
+     Using <function>serialize</function> when
+     <constant>ReflectionClass::SKIP_INITIALIZATION_ON_SERIALIZE</constant>
+     is set, unless
+     <link linkend="object.serialize">__serialize()</link> or
+     <link linkend="object.sleep">__sleep()</link> trigger initialization.
+    </member>
+    <member>
+     Calling to <methodname>ReflectionObject::__toString</methodname>.
+    </member>
+    <member>
+     Using <function>var_dump</function> or
+     <function>debug_zval_dump</function>, unless
+     <link linkend="object.debuginfo">__debugInfo()</link> triggers
+     initialization.
+    </member>
+   </simplelist>
+  </sect3>
+ </sect2>
+
+ <sect2 xml:id="language.oop5.lazy-objects.initialization-sequence">
+  <title>Initialization Sequence</title>
+
+  <simpara>
+   This section outlines the sequence of operations performed when
+   initialization is triggered, based on the strategy in use.
+  </simpara>
+
+  <sect3>
+   <title>Ghost Objects</title>
+   <simplelist>
+    <member>
+     The object is marked as non-lazy.
+    </member>
+    <member>
+     Properties not initialized with
+     <methodname>ReflectionProperty::skipLazyInitialization</methodname> or
+     <methodname>ReflectionProperty::setRawValueWithoutLazyInitialization</methodname>
+     are set to their default values, if any. At this stage, the object
+     resembles one created with
+     <methodname>ReflectionClass::newInstanceWithoutConstructor</methodname>,
+     except for already initialized properties.
+    </member>
+    <member>
+     The initializer function is then called with the object as its first
+     parameter. The function is expected, but not required, to initialize
+     the object state, and must return &null; or no value. The object is no
+     longer lazy at this point, so the function can access its properties
+     directly.
+    </member>
+   </simplelist>
+   <simpara>
+    After initialization, the object is indistinguishable from an object that
+    was never lazy.
+   </simpara>
+  </sect3>
+
+  <sect3>
+   <title>Proxy Objects</title>
+   <simplelist>
+    <member>
+     The object is marked as non-lazy.
+    </member>
+    <member>
+     Unlike ghost objects, the properties of the object are not modified at
+     this stage.
+    </member>
+    <member>
+     The factory function is called with the object as its first parameter and
+     must return a non-lazy instance of a compatible class (see
+     <methodname>ReflectionClass::newLazyProxy</methodname>).
+    </member>
+    <member>
+     The returned instance is referred to as the <emphasis>real
+     instance</emphasis> and is attached to the proxy.
+    </member>
+    <member>
+     The proxy's property values are discarded as though
+     <function>unset</function> was called.
+    </member>
+   </simplelist>
+   <simpara>
+    After initialization, accessing any property on the proxy will
+    yield the same result as accessing the corresponding property on
+    the real instance; all property accesses on the proxy are forwarded
+    to the real instance, including declared, dynamic, non-existing, or
+    properties marked with
+    <methodname>ReflectionProperty::skipLazyInitialization</methodname> or
+    <methodname>ReflectionProperty::setRawValueWithoutLazyInitialization</methodname>.
+   </simpara>
+   <simpara>
+    The proxy object itself is <emphasis>not</emphasis> replaced or substituted
+    for the real instance.
+   </simpara>
+   <simpara>
+    While the factory receives the proxy as its first parameter, it is
+    not expected to modify it (modifications are allowed but will be lost
+    during the final initialization step). However, the proxy can be used
+    for decisions based on the values of initialized properties, the class,
+    the object itself, or its identity. For instance, the initializer might
+    use an initialized property's value when creating the real instance.
+   </simpara>
+  </sect3>
+
+  <sect3>
+   <title>Common Behavior</title>
+
+   <simpara>
+    The scope and <varname>$this</varname> context of the initializer or factory
+    function remains unchanged, and usual visibility constraints apply.
+   </simpara>
+
+   <simpara>
+    After successful initialization, the initializer or factory function
+    is no longer referenced by the object and may be released if it has no
+    other references.
+   </simpara>
+
+   <simpara>
+    If the initializer throws an exception, the object state is reverted to its
+    pre-initialization state and the object is marked as lazy again. In other
+    words, all effects on the object itself are reverted. Other side effects,
+    such as effects on other objects, are not reverted. This prevents
+    exposing a partially initialized instance in case of failure.
+   </simpara>
+  </sect3>
+ </sect2>
+
+ <sect2 xml:id="language.oop5.lazy-objects.cloning">
+  <title>Cloning</title>
+
+  <simpara>
+   <link linkend="language.oop5.cloning">Cloning</link>
+   a lazy object triggers its initialization before the clone is
+   created, resulting in an initialized object.
+  </simpara>
+
+  <simpara>
+   For proxy objects, both the proxy and its real instance are cloned, and
+   the clone of the proxy is returned.
+   The <link linkend="object.clone"><literal>__clone</literal></link> method
+   is called on the real instance, not on the proxy.
+   The cloned proxy and real instance are linked as they are during
+   initialization, so accesses to the proxy clone are forwarded to the real
+   instance clone.
+  </simpara>
+
+  <simpara>
+   This behavior ensures that the clone and the original object maintain
+   separate states. Changes to the original object or its initializer's state
+   after cloning do not affect the clone. Cloning both the proxy and its real
+   instance, rather than returning a clone of the real instance alone, ensures
+   that the clone operation consistently returns an object of the same class.
+  </simpara>
+ </sect2>
+
+ <sect2 xml:id="language.oop5.lazy-objects.destructors">
+  <title>Destructors</title>
+
+  <simpara>
+   For lazy ghosts, the destructor is only called if the object has been
+   initialized. For proxies, the destructor is only called on the real instance,
+   if one exists.
+  </simpara>
+
+  <simpara>
+   The <methodname>ReflectionClass::resetAsLazyGhost</methodname> and
+   <methodname>ReflectionClass::resetAsLazyProxy</methodname> methods may invoke
+   the destructor of the object being reset.
+  </simpara>
+ </sect2>
+</sect1>

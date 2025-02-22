@@ -42,7 +42,7 @@
    &tip.userlandnaming;
 
    <example>
-    <title>Valid and invalid variable names</title>
+    <title>Valid variable names</title>
     <programlisting role="php">
 <![CDATA[
 <?php
@@ -50,10 +50,19 @@ $var = 'Bob';
 $Var = 'Joe';
 echo "$var, $Var";      // outputs "Bob, Joe"
 
-$4site = 'not yet';     // invalid; starts with a number
 $_4site = 'not yet';    // valid; starts with an underscore
 $täyte = 'mansikka';    // valid; 'ä' is (Extended) ASCII 228.
 ?>
+]]>
+    </programlisting>
+   </example>
+
+   <example>
+    <title>Invalid variable names</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$4site = 'not yet';     // invalid; starts with a number
 ]]>
     </programlisting>
    </example>
@@ -201,6 +210,11 @@ $unset_array[] = 'value'; // Does not generate a warning.
    </warning>
 
    <simpara>
+    A variable can be destroyed by using the <function>unset</function>
+    language construct.
+   </simpara>
+
+   <simpara>
     For information on variable-related functions, see the
     <link linkend="ref.var">Variable Functions Reference</link>.
    </simpara>
@@ -210,22 +224,12 @@ $unset_array[] = 'value'; // Does not generate a warning.
    <title>Predefined Variables</title>
    
    <para>
-    PHP provides a large number of predefined variables to any script
-    which it runs. Many of these variables, however, cannot be fully
-    documented as they are dependent upon which server is running, the
-    version and setup of the server, and other factors. Some of these
-    variables will not be available when PHP is run on the 
-    <link linkend="features.commandline">command line</link>. 
-    Refer to the <link linkend="reserved.variables">list of predefined variables</link>
-    for details.
-   </para>
-
-   <para>
+    PHP provides a number of
+    <link linkend="reserved.variables">predefined variables</link>.
     PHP also provides an additional set of predefined arrays
     containing variables from the web server (if applicable), the
-    environment, and user input. These arrays are rather special
-    in that they are automatically global - i.e., automatically
-    available in every scope. For this reason, they are often known as
+    environment, and user input. These arrays are automatically available in
+    every scope. For this reason, they are often known as
     "superglobals". (There is no mechanism in PHP for
     user-defined superglobals.) Refer to the
     <link linkend="language.variables.superglobals">list of superglobals</link>
@@ -254,51 +258,53 @@ $unset_array[] = 'value'; // Does not generate a warning.
 
    <simpara>
     The scope of a variable is the context within which it is defined.
-    For the most part all PHP variables only have a single scope.
-    This single scope spans <function>include</function>d and
-    <function>require</function>d files as well. For example:
+    PHP has a function scope and a global scope.
+    Any variable defined outside a function is limited to the global scope.
+    When a file is included, the code it contains inherits the variable scope
+    of the line on which the include occurs.
    </simpara>
-   <informalexample>
+   <example>
+    <title>Example of global variable scope</title>
     <programlisting role="php">
 <![CDATA[
 <?php
 $a = 1;
-include 'b.inc';
+include 'b.inc'; // Variable $a will be available within b.inc
 ?>
 ]]>
     </programlisting>
-   </informalexample>
+   </example>
+
    <simpara>
-    Here the <varname>$a</varname> variable will be available within
-    the included <filename>b.inc</filename> script.  However, within
-    user-defined functions a local function scope is introduced.  Any
-    variable used inside a function is by default limited to the local
-    function scope.  For example:
+    Any variable created inside a named function or an
+    <link linkend="functions.anonymous">anonymous</link> function
+    is limited to the scope of the function body.
+    However, <link linkend="functions.arrow">arrow functions</link>
+    bind variables from the parent scope to make them available inside the body.
+    If a file include occurs inside a function within
+    the calling file, the variables contained in the called file will be
+    available as if they had been defined inside the calling function.
    </simpara>
     
-   <informalexample>
+   <example>
+    <title>Example of local variable scope</title>
     <programlisting role="php"> 
 <![CDATA[
 <?php
-$a = 1; /* global scope */ 
+$a = 1; // global scope
 
 function test()
 { 
-    echo $a; /* reference to local scope variable */ 
-} 
-
-test();
+    echo $a; // Variable $a is undefined as it refers to a local version of $a
+}
 ?>
 ]]>
     </programlisting>
-   </informalexample>
+   </example>
 
    <simpara>
-    This script will generate an undefined variable <constant>E_WARNING</constant>
-    (or a <constant>E_NOTICE</constant> prior to PHP 8.0.0)
-    diagnostic. However, if the
-    <link linkend="ini.display-errors">display_errors</link> INI setting is set to hide
-    such diagnostics then nothing at all will be outputted.
+    The example above will generate an undefined variable <constant>E_WARNING</constant>
+    (or an <constant>E_NOTICE</constant> prior to PHP 8.0.0).
     This is because the echo statement
     refers to a local version of the <varname>$a</varname> variable,
     and it has not been assigned a value within this scope.
@@ -306,7 +312,7 @@ test();
     that global variables in C are automatically available to
     functions unless specifically overridden by a local definition.
     This can cause some problems in that people may inadvertently
-    change a global variable.  In PHP global variables must be
+    change a global variable. In PHP global variables must be
     declared global inside a function if they are going to be used in
     that function.
    </simpara>
@@ -314,7 +320,12 @@ test();
    <sect2 xml:id="language.variables.scope.global">
     <title>The <literal>global</literal> keyword</title>
     <simpara>
-     First, an example use of <literal>global</literal>:
+     The <literal>global</literal> keyword is used to bind a variable
+     from a global scope into a local scope. The keyword can be used with
+     a list of variables or a single variable. A local variable will be created
+     referencing the global variable of the same name. If the global
+     variable does not exist, the variable will be created in global scope and
+     assigned &null;.
     </simpara>
     <para>
      <example>
@@ -337,20 +348,26 @@ echo $b;
 ?>
 ]]>
       </programlisting>
+      &example.outputs;
+      <screen>
+<![CDATA[
+3
+]]>
+      </screen>
      </example>
     </para>
 
    <simpara>
-    The above script will output <literal>3</literal>.  By declaring
+    By declaring
     <varname>$a</varname> and <varname>$b</varname> global within the
     function, all references to either variable will refer to the
-    global version.  There is no limit to the number of global
+    global version. There is no limit to the number of global
     variables that can be manipulated by a function.
    </simpara>
 
    <simpara>
     A second way to access variables from the global scope is to use
-    the special PHP-defined <varname>$GLOBALS</varname> array.  The
+    the special PHP-defined <varname>$GLOBALS</varname> array. The
     previous example can be rewritten as:
    </simpara>
    <para>
@@ -400,10 +417,10 @@ function test_superglobal()
     </example>
    </para>
    <note>
-    <para>
+    <simpara>
      Using <literal>global</literal> keyword outside a function is not an
      error. It can be used if the file is included from inside a function.
-    </para>
+    </simpara>
    </note>
   </sect2>
  
@@ -411,9 +428,9 @@ function test_superglobal()
    <title>Using <literal>static</literal> variables</title>
    <simpara>
     Another important feature of variable scoping is the
-    <emphasis>static</emphasis> variable.  A static variable exists
+    <emphasis>static</emphasis> variable. A static variable exists
     only in a local function scope, but it does not lose its value
-    when program execution leaves this scope.  Consider the following
+    when program execution leaves this scope. Consider the following
     example:
    </simpara>
    <para>
@@ -436,9 +453,9 @@ function test()
    <simpara>
     This function is quite useless since every time it is called it
     sets <varname>$a</varname> to <literal>0</literal> and prints
-    <literal>0</literal>.  The <varname>$a</varname>++ which increments the
+    <literal>0</literal>. The <varname>$a</varname>++ which increments the
     variable serves no purpose since as soon as the function exits the
-    <varname>$a</varname> variable disappears.  To make a useful
+    <varname>$a</varname> variable disappears. To make a useful
     counting function which will not lose track of the current count,
     the <varname>$a</varname> variable is declared static:
    </simpara>
@@ -467,10 +484,7 @@ function test()
 
    <simpara>
     Static variables also provide one way to deal with recursive
-    functions. A recursive function is one which calls itself.  Care
-    must be taken when writing a recursive function because it is
-    possible to make it recurse indefinitely.  It has to be ensured to
-    have an adequate way of terminating the recursion.  The following
+    functions. The following
     simple function recursively counts to 10, using the static
     variable <varname>$count</varname> to know when to stop:
    </simpara>
@@ -522,11 +536,45 @@ function foo(){
     </example>
    </para>
 
+   <simpara>
+    Static variables inside anonymous functions persist only within that
+    specific function instance. If the anonymous function is recreated on each
+    call, the static variable will be reinitialized.
+   </simpara>
+   <example>
+    <title>Static variables in anonymous functions</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function exampleFunction($input) {
+    $result = (static function () use ($input) {
+        static $counter = 0;
+        $counter++;
+        return "Input: $input, Counter: $counter\n";
+    });
+
+    return $result();
+}
+
+// Calls to exampleFunction will recreate the anonymous function, so the static
+// variable does not retain its value.
+echo exampleFunction('A'); // Outputs: Input: A, Counter: 1
+echo exampleFunction('B'); // Outputs: Input: B, Counter: 1
+?>
+]]>
+    </programlisting>
+   </example>
+
    <para>
     As of PHP 8.1.0, when a method using static variables is inherited (but not overridden),
     the inherited method will now share static variables with the parent method.
     This means that static variables in methods now behave the same way as static properties.
    </para>
+
+   <simpara>
+    As of PHP 8.3.0, static variables can be initialized with arbitrary expressions.
+    This means that method calls, for example, can be used to initialize static variables.
+   </simpara>
 
    <example>
     <title>Usage of static Variables in Inherited Methods</title>
@@ -680,8 +728,8 @@ Static object: object(stdClass)#3 (1) {
 
    <simpara>
     Sometimes it is convenient to be able to have variable variable
-    names.  That is, a variable name which can be set and used
-    dynamically.  A normal variable is set with a statement such as:
+    names. That is, a variable name which can be set and used
+    dynamically. A normal variable is set with a statement such as:
    </simpara>
 
    <informalexample>
@@ -696,7 +744,7 @@ $a = 'hello';
 
    <simpara>
     A variable variable takes the value of a variable and treats that
-    as the name of a variable.  In the above example,
+    as the name of a variable. In the above example,
     <emphasis>hello</emphasis>, can be used as the name of a variable
     by using two dollar signs. i.e.
    </simpara>
@@ -714,7 +762,7 @@ $$a = 'world';
    <simpara>
     At this point two variables have been defined and stored in the
     PHP symbol tree: <varname>$a</varname> with contents "hello" and
-    <varname>$hello</varname> with contents "world".  Therefore, this
+    <varname>$hello</varname> with contents "world". Therefore, this
     statement:
    </simpara>
 
@@ -748,11 +796,11 @@ echo "$a $hello";
 
    <simpara>
     In order to use variable variables with arrays,
-    an ambiguity problem has to be resolved.  That is, if the parser sees
+    an ambiguity problem has to be resolved. That is, if the parser sees
     <varname>$$a[1]</varname> then it needs to know if
     <varname>$a[1]</varname> was meant to be used as a variable, or if
     <varname>$$a</varname> was wanted as the variable and then the <literal>[1]</literal>
-    index from that variable.  The syntax for resolving this ambiguity
+    index from that variable. The syntax for resolving this ambiguity
     is: <varname>${$a[1]}</varname> for the first case and
     <varname>${$a}[1]</varname> for the second. 
    </simpara>
@@ -768,7 +816,7 @@ echo "$a $hello";
    </simpara>
 
    <simpara>
-    Curly braces may also be used, to clearly delimit the property
+    Curly braces may also be used to clearly delimit the property
     name. They are most useful when accessing values within a property that
     contains an array, when the property name is made of multiple parts,
     or when the property name contains characters that are not
@@ -782,15 +830,15 @@ echo "$a $hello";
       <programlisting role="php">
 <![CDATA[
 <?php
-class foo {
-    var $bar = 'I am bar.';
-    var $arr = array('I am A.', 'I am B.', 'I am C.');
-    var $r   = 'I am r.';
+class Foo {
+    public $bar = 'I am bar.';
+    public $arr = ['I am A.', 'I am B.', 'I am C.'];
+    public $r   = 'I am r.';
 }
 
-$foo = new foo();
+$foo = new Foo();
 $bar = 'bar';
-$baz = array('foo', 'bar', 'baz', 'quux');
+$baz = ['foo', 'bar', 'baz', 'quux'];
 echo $foo->$bar . "\n";
 echo $foo->{$baz[1]} . "\n";
 
@@ -800,16 +848,20 @@ echo $foo->{$start . $end} . "\n";
 
 $arr = 'arr';
 echo $foo->{$arr[1]} . "\n";
+echo $foo->{$arr}[1] . "\n";
 
 ?>
 ]]>
      </programlisting>
      &example.outputs;
      <screen>
+<![CDATA[
 I am bar.
 I am bar.
 I am bar.
 I am r.
+I am B.
+]]>
      </screen>
     </example>
    </para>
@@ -874,7 +926,7 @@ echo $_REQUEST['username'];
     <para>
      Using a GET form is similar except the appropriate
      GET predefined variable can be used instead. GET also applies to the
-     <literal>QUERY_STRING</literal> (the information after the '?' in a URL).  So,
+     <literal>QUERY_STRING</literal> (the information after the '?' in a URL). So,
      for example, <literal>http://www.example.com/test.php?id=3</literal>
      contains GET data which is accessible with <varname>$_GET['id']</varname>.
      See also <varname>$_REQUEST</varname>.
@@ -892,7 +944,7 @@ echo $_REQUEST['username'];
      PHP also understands arrays in the context of form variables 
      (see the <link linkend="faq.html">related faq</link>).
      For example, related variables may be grouped together, or this
-     feature may be used to retrieve values from a multiple select input.  For
+     feature may be used to retrieve values from a multiple select input. For
      example, let's post a form to itself and upon submission display 
      the data:
     </simpara>
@@ -954,7 +1006,7 @@ if ($_POST) {
       form will be transmitted to the server with two additional
       variables, <varname>sub_x</varname> and <varname>sub_y</varname>.
       These contain the coordinates of the
-      user click within the image.  The experienced may note that the
+      user click within the image. The experienced may note that the
       actual variable names sent by the browser contains a period
       rather than an underscore, but PHP converts the period to an
       underscore automatically.
@@ -968,14 +1020,14 @@ if ($_POST) {
 
     <simpara>
      PHP transparently supports HTTP cookies as defined by <link
-     xlink:href="&url.rfc;6265">RFC 6265</link>.  Cookies are a
+     xlink:href="&url.rfc;6265">RFC 6265</link>. Cookies are a
      mechanism for storing data in the remote browser and thus
-     tracking or identifying return users.  It is possible to set cookies using
-     the <function>setcookie</function> function.  Cookies are part of
+     tracking or identifying return users. It is possible to set cookies using
+     the <function>setcookie</function> function. Cookies are part of
      the HTTP header, so the SetCookie function must be called before
-     any output is sent to the browser.  This is the same restriction
-     as for the <function>header</function> function.  Cookie data 
-     is then available in the appropriate cookie data arrays, such 
+     any output is sent to the browser. This is the same restriction
+     as for the <function>header</function> function. Cookie data
+     is then available in the appropriate cookie data arrays, such
      as <varname>$_COOKIE</varname> as well as in <varname>$_REQUEST</varname>.
      See the <function>setcookie</function> manual page for more details and 
      examples.
@@ -990,7 +1042,7 @@ if ($_POST) {
 
     <simpara>
      If multiple values should be assigned to a single cookie variable,
-     they can be assigned as an array.  For example:
+     they can be assigned as an array. For example:
     </simpara>
 
     <informalexample>
@@ -1006,16 +1058,16 @@ if ($_POST) {
     
     <simpara>
      That will create two separate cookies although <varname>MyCookie</varname> will now 
-     be a single array in the script.  If just one cookie should be set
+     be a single array in the script. If just one cookie should be set
      with multiple values, consider using <function>serialize</function> or
      <function>explode</function> on the value first.
     </simpara>
 
     <simpara>
      Note that a cookie will replace a previous cookie by the same
-     name in the browser unless the path or domain is different.  So,
+     name in the browser unless the path or domain is different. So,
      for a shopping cart application a counter may be kept,
-     and passed along.  I.e.
+     and passed along. I.e.
     </simpara>
 
     <example>
@@ -1073,12 +1125,12 @@ $varname.ext;  /* invalid variable name */
     <para>
      Because PHP determines the types of variables and converts them
      (generally) as needed, it is not always obvious what type a given
-     variable is at any one time.  PHP includes several functions
+     variable is at any one time. PHP includes several functions
      which find out what type a variable is, such as:
      <function>gettype</function>, <function>is_array</function>,
      <function>is_float</function>, <function>is_int</function>,
      <function>is_object</function>, and
-     <function>is_string</function>.  See also the chapter on 
+     <function>is_string</function>. See also the chapter on
      <link linkend="language.types">Types</link>.
     </para>
     <para>

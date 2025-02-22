@@ -29,8 +29,11 @@
        Use this parameter to only allow certain functions to be called from XPath.
       </para>
       <para>
-       This parameter can be either a <type>string</type> (a function name) or 
-       an <type>array</type> of function names.
+       This parameter can be one of the following:
+       a <type>string</type> (a function name),
+       an indexed <type>array</type> of function names,
+       or an associative <type>array</type> with keys being the function name
+       and the associated value being the <type>callable</type>.
       </para>
      </listitem>
     </varlistentry>
@@ -43,6 +46,30 @@
   <para>
    &return.void;
   </para>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>8.4.0</entry>
+      <entry>
+       It is now possible to use <type>callable</type>s for callbacks
+       when using <parameter>restrict</parameter> with <type>array</type>
+       entries.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
  </refsect1>
 
  <refsect1 role="examples">
@@ -156,8 +183,45 @@ PHP Basics
     </screen>
    </example>
   </para>
+  <para>
+   <example>
+    <title><methodname>DOMXPath::registerPHPFunctions</methodname> with a <type>callable</type></title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$doc = new DOMDocument;
+$doc->load('book.xml');
+
+$xpath = new DOMXPath($doc);
+
+// Register the php: namespace (required)
+$xpath->registerNamespace("php", "http://php.net/xpath");
+
+// Register PHP functions (has_multiple only)
+$xpath->registerPHPFunctions(["has_multiple" => fn ($nodes) => count($nodes) > 1]);
+
+// Filter books with multiple authors
+$books = $xpath->query('//book[php:function("has_multiple", author)]');
+
+echo "Books with multiple authors:\n";
+foreach ($books as $book) {
+    echo $book->getElementsByTagName("title")->item(0)->nodeValue . "\n";
+}
+
+?>
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+Books with multiple authors:
+PHP Basics
+]]>
+    </screen>
+   </example>
+  </para>
  </refsect1>
- 
+
  <refsect1 role="seealso">
   &reftitle.seealso;
   <para>
@@ -165,6 +229,7 @@ PHP Basics
     <member><methodname>DOMXPath::registerNamespace</methodname></member>
     <member><methodname>DOMXPath::query</methodname></member>
     <member><methodname>DOMXPath::evaluate</methodname></member>
+    <member><methodname>XSLTProcessor::registerPHPFunctions</methodname></member>
    </simplelist>
   </para>
  </refsect1>
