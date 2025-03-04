@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-<phpdoc:exceptionref xml:id="class.errorexception" xmlns:phpdoc="http://php.net/ns/phpdoc" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude">
+<reference xml:id="class.errorexception" role="exception" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude">
  <title>ErrorException</title>
  <titleabbrev>ErrorException</titleabbrev>
  
@@ -19,21 +19,15 @@
    &reftitle.classsynopsis;
  
 <!-- {{{ Synopsis -->
-   <classsynopsis>
+   <classsynopsis class="class">
+    <ooexception>
+     <exceptionname>ErrorException</exceptionname>
+    </ooexception>
+
     <ooclass>
-     <classname>ErrorException</classname>
+     <modifier>extends</modifier>
+     <classname>Exception</classname>
     </ooclass>
-
-    <classsynopsisinfo>
-     <ooclass>
-      <classname>ErrorException</classname>
-     </ooclass>
-
-     <ooclass>
-      <modifier>extends</modifier>
-      <classname>Exception</classname>
-     </ooclass>
-    </classsynopsisinfo>
 
     <classsynopsisinfo role="comment">&Properties;</classsynopsisinfo>
     <fieldsynopsis>
@@ -49,15 +43,15 @@
     </xi:include>
 
     <classsynopsisinfo role="comment">&Methods;</classsynopsisinfo>
-    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('class.errorexception')/db:refentry/db:refsect1[@role='description']/descendant::db:constructorsynopsis[not(@role='procedural')])">
+    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('class.errorexception')/db:refentry/db:refsect1[@role='description']/descendant::db:constructorsynopsis[@role='ErrorException'])">
      <xi:fallback/>
     </xi:include>
-    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('class.errorexception')/db:refentry/db:refsect1[@role='description']/descendant::db:methodsynopsis[not(@role='procedural')])">
+    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('class.errorexception')/db:refentry/db:refsect1[@role='description']/descendant::db:methodsynopsis[@role='ErrorException'])">
      <xi:fallback/>
     </xi:include>
 
     <classsynopsisinfo role="comment">&InheritedMethods;</classsynopsisinfo>
-    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('class.exception')/db:refentry/db:refsect1[@role='description']/descendant::db:methodsynopsis[not(@role='procedural')])">
+    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('class.exception')/db:refentry/db:refsect1[@role='description']/descendant::db:methodsynopsis[@role='Exception'])">
      <xi:fallback/>
     </xi:include>
    </classsynopsis>
@@ -83,33 +77,42 @@
    &reftitle.examples;
    <para>
     <example xml:id="errorexception.example.error-handler"><!-- {{{ -->
-     <title>Use <function>set_error_handler</function> to change error messages into ErrorException.</title>
+     <title>Use <function>set_error_handler</function> to change error messages into ErrorException</title>
      <programlisting role="php">
  <![CDATA[
 <?php
-function exception_error_handler($severity, $message, $file, $line) {
-    if (!(error_reporting() & $severity)) {
-        // This error code is not included in error_reporting
+
+set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline) {
+    if (!(error_reporting() & $errno)) {
+        // This error code is not included in error_reporting.
         return;
     }
-    throw new ErrorException($message, 0, $severity, $file, $line);
-}
-set_error_handler("exception_error_handler");
 
-/* Trigger exception */
-strpos();
+    if ($errno === E_DEPRECATED || $errno === E_USER_DEPRECATED) {
+        // Do not throw an Exception for deprecation warnings as new or unexpected
+        // deprecations would break the application.
+        return;
+    }
+
+    throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
+});
+
+// Unserializing broken data triggers a warning which will be turned into an
+// ErrorException by the error handler.
+unserialize('broken data');
+
 ?>
 ]]>
      </programlisting>
      &example.outputs.similar;
      <screen>
 <![CDATA[
-Fatal error: Uncaught exception 'ErrorException' with message 'strpos() expects at least 2 parameters, 0 given' in /home/bjori/tmp/ex.php:12
+Fatal error: Uncaught ErrorException: unserialize(): Error at offset 0 of 11 bytes in test.php:16
 Stack trace:
-#0 [internal function]: exception_error_handler(2, 'strpos() expect...', '/home/bjori/php...', 12, Array)
-#1 /home/bjori/php/cleandocs/test.php(12): strpos()
+#0 [internal function]: {closure}(2, 'unserialize(): ...', 'test.php', 16)
+#1 test.php(16): unserialize('broken data')
 #2 {main}
-  thrown in /home/bjori/tmp/ex.php on line 12
+  thrown in test.php on line 16
 ]]>
      </screen>
     </example><!-- }}} -->
@@ -121,7 +124,7 @@ Stack trace:
  &language.predefined.errorexception.construct;
  &language.predefined.errorexception.getseverity;
  
-</phpdoc:exceptionref>
+</reference>
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

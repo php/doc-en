@@ -10,29 +10,30 @@
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>abstract</modifier> <modifier>public</modifier> <type class="union"><type>array</type><type>object</type></type><methodname>MongoDB\BSON\Serializable::bsonSerialize</methodname>
+   <modifier>abstract</modifier> <modifier>public</modifier> <type class="union"><type>array</type><type>stdClass</type><type>MongoDB\BSON\Document</type><type>MongoDB\BSON\PackedArray</type></type><methodname>MongoDB\BSON\Serializable::bsonSerialize</methodname>
    <void />
   </methodsynopsis>
   <para>
    Called during serialization of the object to BSON. The method must return an
-   <type>array</type> or <classname>stdClass</classname>.
+   <type>array</type>, <classname>stdClass</classname>, <classname>MongoDB\BSON\Document</classname>,
+   or <classname>MongoDB\BSON\PackedArray</classname>.
   </para>
   <para>
    Root documents (e.g. a
    <interfacename>MongoDB\BSON\Serializable</interfacename> passed to
-   <function>MongoDB\BSON\fromPHP</function>) will always be serialized as a
-   BSON document. For field values, associative arrays and
+   <methodname>MongoDB\BSON\Document::fromPHP</methodname>) will always be
+   serialized as a BSON document. For field values, associative arrays and
    <classname>stdClass</classname> instances will be serialized as a BSON
    document and sequential arrays (i.e. sequential, numeric indexes starting at
    <literal>0</literal>) will be serialized as a BSON array.
   </para>
   <para>
    Users are encouraged to include an <property>_id</property> property (e.g. a
-   <classname>MongoDB\BSON\ObjectId</classname> initialized in your constructor)
-   when returning data for a BSON root document; otherwise, the driver or
-   database will need to generate a
-   <classname>MongoDB\BSON\ObjectId</classname> when inserting or upserting the
-   document, respectively.
+   <classname>MongoDB\BSON\ObjectId</classname> initialized in the constructor)
+   when returning data for a BSON root document. In the absence of an
+   <property>_id</property> property, the extension or server will generate a
+   <classname>MongoDB\BSON\ObjectId</classname> for insert or upsert
+   operations, respectively.
   </para>
  </refsect1>
 
@@ -44,8 +45,47 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   An <type>array</type> or <classname>stdClass</classname> to be serialized as
-   a BSON array or document.
+   An <type>array</type>, <classname>stdClass</classname>, <classname>MongoDB\BSON\Document</classname>,
+   or <classname>MongoDB\BSON\PackedArray</classname> to be serialized as a BSON
+   array or document.
+  </para>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>PECL mongodb 1.17.0</entry>
+       <entry>
+        <para>
+         The return type was changed from <type class="union"><type>array</type><type>object</type></type>.
+         Instead of <type>object</type>, the return type now specifies <classname>stdClass</classname>.
+         Classes that implement this interface must be changed to no longer
+         declare an <type>object</type> return type. As the return type is
+         tentative, a deprecation warning is emitted on PHP 8.1 and newer.
+        </para>
+        <para>
+         In addition to the changes above, the extension now also supports
+         returning instances of <classname>MongoDB\BSON\Document</classname>
+         and <classname>MongoDB\BSON\PackedArray</classname>. Please note that
+         any <classname>MongoDB\BSON\PackedArray</classname> instances returned
+         are silently converted to objects when stored as root documents. They
+         are stored as arrays when used as an embedded field value.
+        </para>
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
   </para>
  </refsect1>
 
@@ -73,8 +113,7 @@ class MyDocument implements MongoDB\BSON\Serializable
     }
 }
 
-$bson = MongoDB\BSON\fromPHP(new MyDocument);
-echo MongoDB\BSON\toJSON($bson), "\n";
+echo MongoDB\BSON\Document::fromPHP(new MyDocument)->toRelaxedExtendedJSON(), "\n";
 
 ?>
 ]]>
@@ -101,8 +140,7 @@ class MyArray implements MongoDB\BSON\Serializable
     }
 }
 
-$bson = MongoDB\BSON\fromPHP(new MyArray);
-echo MongoDB\BSON\toJSON($bson), "\n";
+echo MongoDB\BSON\Document::fromPHP(new MyArray)->toRelaxedExtendedJSON(), "\n";
 
 ?>
 ]]>
@@ -130,8 +168,8 @@ class MyDocument implements MongoDB\BSON\Serializable
 }
 
 $value = ['document' => new MyDocument];
-$bson = MongoDB\BSON\fromPHP($value);
-echo MongoDB\BSON\toJSON($bson), "\n";
+
+echo MongoDB\BSON\Document::fromPHP($value)->toRelaxedExtendedJSON(), "\n";
 
 ?>
 ]]>
@@ -159,8 +197,8 @@ class MyArray implements MongoDB\BSON\Serializable
 }
 
 $value = ['array' => new MyArray];
-$bson = MongoDB\BSON\fromPHP($value);
-echo MongoDB\BSON\toJSON($bson), "\n";
+
+echo MongoDB\BSON\Document::fromPHP($value)->toRelaxedExtendedJSON(), "\n";
 
 ?>
 ]]>

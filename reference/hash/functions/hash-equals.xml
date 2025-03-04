@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-
 <refentry xml:id="function.hash-equals" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>hash_equals</refname>
@@ -11,16 +10,26 @@
   &reftitle.description;
   <methodsynopsis>
    <type>bool</type><methodname>hash_equals</methodname>
-   <methodparam><type>string</type><parameter>known_string</parameter></methodparam>
-   <methodparam><type>string</type><parameter>user_string</parameter></methodparam>
+   <methodparam><modifier role="attribute">#[\SensitiveParameter]</modifier><type>string</type><parameter>known_string</parameter></methodparam>
+   <methodparam><modifier role="attribute">#[\SensitiveParameter]</modifier><type>string</type><parameter>user_string</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Compares two strings using the same time whether they're equal or not.
+   Checks whether two strings are equal without leaking information about the
+   contents of <parameter>known_string</parameter> via the execution time.
   </para>
   <para>
-   This function should be used to mitigate timing attacks; for instance,
-   when testing <function>crypt</function> password hashes.
+   This function can be used to mitigate timing attacks. Performing a regular
+   comparison with <code>===</code> will take more or less time to execute
+   depending on whether the two values are different or not and at which
+   position the first difference can be found, thus leaking information about
+   the contents of the secret <parameter>known_string</parameter>.
   </para>
+  <caution>
+   <para>
+    It is important to provide the user-supplied string as the second
+    parameter, rather than the first.
+   </para>
+  </caution>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -30,7 +39,7 @@
     <term><parameter>known_string</parameter></term>
     <listitem>
      <para>
-       The <type>string</type> of known length to compare against
+       The known &string; that must be kept secret.
      </para>
     </listitem>
    </varlistentry>
@@ -38,7 +47,7 @@
     <term><parameter>user_string</parameter></term>
     <listitem>
      <para>
-      The user-supplied string
+      The user-supplied &string; to compare against.
      </para>
     </listitem>
    </varlistentry>
@@ -60,20 +69,25 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-$expected  = crypt('12345', '$2a$07$usesomesillystringforsalt$');
-$correct   = crypt('12345', '$2a$07$usesomesillystringforsalt$');
-$incorrect = crypt('apple', '$2a$07$usesomesillystringforsalt$');
+$secretKey = '8uRhAeH89naXfFXKGOEj';
 
-var_dump(hash_equals($expected, $correct));
-var_dump(hash_equals($expected, $incorrect));
+// Value and signature are provided by the user, e.g. within the URL
+// and retrieved using $_GET.
+$value = 'username=rasmuslerdorf';
+$signature = '8c35009d3b50caf7f5d2c1e031842e6b7823a1bb781d33c5237cd27b57b5f327';
+
+if (hash_equals(hash_hmac('sha256', $value, $secretKey), $signature)) {
+    echo "The value is correctly signed.", PHP_EOL;
+} else {
+    echo "The value was tampered with.", PHP_EOL;
+}
 ?>
 ]]>
     </programlisting>
     &example.outputs;
     <screen>
 <![CDATA[
-bool(true)
-bool(false)
+The value is correctly signed.
 ]]>
     </screen>
    </example>
@@ -89,16 +103,17 @@ bool(false)
     the length of the known string may be leaked in case of a timing attack.
    </para>
   </note>
-  <note>
-   <para>
-    It is important to provide the user-supplied string as the second
-    parameter, rather than the first.
-   </para>
-  </note>
  </refsect1>
 
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><function>hash_hmac</function></member>
+   </simplelist>
+  </para>
+ </refsect1>
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

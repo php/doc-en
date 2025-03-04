@@ -1,0 +1,602 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sect1 xml:id="migration83.other-changes" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Other Changes</title>
+
+ <sect2 xml:id="migration83.other-changes.core">
+  <title>Core changes</title>
+
+  <sect3 xml:id="migration83.other-changes.core.ffi">
+   <title>FFI</title>
+
+   <para>
+    <methodname>FFI::load</methodname> is now allowed during preloading
+    when <link linkend="ini.opcache.preload-user">opcache.preload_user</link>
+    is the current system user. Previously,
+    calling <methodname>FFI::load</methodname> was not possible
+    during preloading if the
+    <link linkend="ini.opcache.preload-user">opcache.preload_user</link>
+    directive was set.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.core.fpm">
+   <title>FPM</title>
+
+   <para>
+    FPM CLI test now fails if the socket path is longer than supported by the OS.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.core.opcache">
+   <title>Opcache</title>
+
+   <para>
+    In the CLI and phpdbg SAPIs, preloading does not require the
+    <link linkend="ini.opcache.preload-user">opcache.preload_user</link>
+    directive to be set anymore when running as root.
+    In other SAPIs, this directive is required when running as root because
+    preloading is done before the SAPI switches to an unprivileged user.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.core.streams">
+   <title>Streams</title>
+
+   <para>
+    Blocking <function>fread</function> on a socket connection returns
+    immediately if there are any buffered data instead of waiting for more data.
+   </para>
+
+   <para>
+    A memory stream no longer fails if the seek offset is past the end.
+    Instead, the memory will be increased on the next write and the data between
+    the old end and the offset is filled with zero bytes, similar to how files work.
+   </para>
+
+   <para>
+    <function>stat</function> access operations like
+    <function>file_exists</function> and similar will now use real
+    path instead of the actual stream path. This is consistent with stream
+    opening.
+   </para>
+  </sect3>
+ </sect2>
+
+ <sect2 xml:id="migration83.other-changes.sapi">
+  <title>Changes in SAPI Modules</title>
+
+  <sect3 xml:id="migration83.other-changes.sapi.cli">
+   <title>CLI</title>
+
+   <para>
+    The <constant>STDOUT</constant>, <constant>STDERR</constant> and
+    <constant>STDIN</constant> streams are no longer closed on resource
+    destruction which is mostly when the CLI finishes.
+    It is however still possible to explicitly close those streams using
+    <function>fclose</function> and similar.
+   </para>
+  </sect3>
+ </sect2>
+
+ <sect2 xml:id="migration83.other-changes.functions">
+  <title>Changed Functions</title>
+
+  <sect3 xml:id="migration83.other-changes.functions.core">
+   <title>Core</title>
+
+   <para>
+    <function>gc_status</function> has added the following 8 fields:
+
+    <simplelist>
+     <member><literal>"running"</literal> => bool</member>
+     <member><literal>"protected"</literal> => bool</member>
+     <member><literal>"full"</literal> => bool</member>
+     <member><literal>"buffer_size"</literal> => int</member>
+     <member><literal>"application_time"</literal> => float: Total application
+     time, in seconds (including collector_time)</member>
+     <member><literal>"collector_time"</literal> => float: Time spent collecting
+     cycles, in seconds (including destructor_time and free_time)</member>
+     <member><literal>"destructor_time"</literal> => float: Time spent executing
+     destructors during cycle collection, in seconds</member>
+     <member><literal>"free_time"</literal> => float: Time spent freeing values
+     during cycle collection, in seconds</member>
+    </simplelist>
+   </para>
+
+   <para>
+    <function>class_alias</function> now supports creating an alias of an
+    internal class.
+   </para>
+
+   <para>
+    Setting <link linkend="ini.open-basedir">open_basedir</link> at runtime
+    using <code>ini_set('open_basedir', ...);</code> no longer accepts paths
+    containing the parent directory (<literal>..</literal>). Previously,
+    only paths starting with <literal>..</literal> were disallowed. This could
+    easily be circumvented by prepending <literal>./</literal> to the path.
+   </para>
+
+   <para>
+    User exception handlers now catch exceptions during shutdown.
+   </para>
+
+   <para>
+    The resultant HTML of <function>highlight_string</function> and
+    <function>highlight_file</function> has changed.
+    Whitespace between outer HTML tags is removed. Newlines and spaces
+    are no longer converted to HTML entities. The whole HTML is now wrapped in a
+    <literal>&lt;pre&gt;</literal> tag. The outer <literal>&lt;span&gt;</literal>
+    tag has been merged with the <literal>&lt;code&gt;</literal> tag.
+   </para>
+
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.functions.calendar">
+   <title>Calendar</title>
+
+   <para>
+    <function>easter_date</function> now supports years from 1970 to
+    2,000,000,000 on 64-bit systems, previously it only supported years in the
+    range from 1970 to 2037.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.functions.curl">
+   <title>Curl</title>
+
+   <para>
+    <function>curl_getinfo</function> now supports two new constants:
+    <constant>CURLINFO_CAPATH</constant> and
+    <constant>CURLINFO_CAINFO</constant>. If option is &null;, the following
+    two additional keys are present:
+    <literal>"capath"</literal> and <literal>"cainfo"</literal>.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.functions.dom">
+   <title>DOM</title>
+
+   <para>
+    Changed <methodname>DOMCharacterData::appendData</methodname> tentative
+    return type to <type>true</type>.
+   </para>
+
+   <para>
+    <methodname>DOMDocument::loadHTML</methodname>,
+    <methodname>DOMDocument::loadHTMLFile</methodname>, and
+    <methodname>DOMDocument::loadXML</methodname> now have a tentative
+    return type of <type>bool</type>. Previously, this was documented as having a return
+    type of <code>DOMDocument|bool</code>, but, as of PHP 8.0.0,
+    <classname>DOMDocument</classname>
+    cannot be returned as it is no longer statically callable.
+   </para>
+
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.functions.gd">
+   <title>Gd</title>
+
+   <para>
+    The signature of <function>imagerotate</function> has changed.
+    The <parameter>$ignore_transparent</parameter> parameter has been removed,
+    as it was ignored since PHP 5.5.0.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.functions.intl">
+   <title>Intl</title>
+
+   <para>
+    <function>datefmt_set_timezone</function> (and its alias
+    <methodname>IntlDateformatter::setTimeZone</methodname>)
+    now returns &true; on success, previously &null; was returned.
+   </para>
+
+   <para>
+    <methodname>IntlBreakiterator::setText</methodname> now returns &false;
+    on failure, previously &null; was returned.
+    It now returns &true; on success, previously &null; was returned.
+   </para>
+
+   <para>
+    <methodname>IntlChar::enumCharNames</methodname> is now returning a boolean.
+    Previously it returned &null; on success and &false; on failure.
+   </para>
+
+   <para>
+    <methodname>IntlDateFormatter::__construct</methodname> throws an <constant>U_ILLEGAL_ARGUMENT_ERROR</constant>
+    exception when an invalid locale had been set.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.functions.mbstring">
+   <title>MBString</title>
+
+   <para>
+    <function>mb_strtolower</function> and <function>mb_convert_case</function>
+    implement conditional casing rules for the Greek letter sigma.
+    For <function>mb_convert_case</function>,
+    conditional casing only applies to <constant>MB_CASE_LOWER</constant>
+    and <constant>MB_CASE_TITLE</constant> modes, not to
+    <constant>MB_CASE_LOWER_SIMPLE</constant> and
+    <constant>MB_CASE_TITLE_SIMPLE</constant>.
+   </para>
+
+   <para>
+    <function>mb_decode_mimeheader</function> interprets underscores in
+    QPrint-encoded MIME encoded words as required by RFC 2047; they are
+    converted to spaces.
+    Underscores must be encoded as <literal>"=5F"</literal> in such MIME
+    encoded words.
+   </para>
+
+   <para>
+    In rare cases, <function>mb_encode_mimeheader</function> will transfer-encode
+    its input string where it would pass it through as raw ASCII in PHP 8.2.
+   </para>
+
+   <para>
+    <function>mb_encode_mimeheader</function> no longer drops NUL (zero)
+    bytes when QPrint-encoding the input string.
+    This previously caused strings in certain text encodings, especially
+    UTF-16 and UTF-32, to be corrupted by mb_encode_mimeheader.
+   </para>
+
+   <para>
+    <function>mb_detect_encoding</function>'s "non-strict" mode now behaves
+    as described in the documentation.
+    Previously, it would return &false; if the same byte (for example, the first
+    byte) of the input string was invalid in all candidate encodings.
+    More generally, it would eliminate candidate encodings from consideration
+    when an invalid byte was seen, and if the same input byte eliminated all
+    remaining encodings still under consideration, it would return &false;.
+    On the other hand, if all candidate encodings but one were eliminated
+    from consideration, it would return the last remaining one without regard
+    for how many encoding errors might be encountered later in the string.
+    This is different from the behavior described in the documentation, which
+    says: "If strict is set to false, the closest matching encoding will be
+    returned."
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.functions.mysqli">
+   <title>mysqli</title>
+
+   <para>
+    <function>mysqli_fetch_object</function> now raises a
+    <classname>ValueError</classname> instead of an <classname>Exception</classname>
+    when the <parameter>$constructor_args</parameter> argument is non empty with
+    the class not having constructor.
+   </para>
+
+   <para>
+    <function>mysqli_poll</function> now raises a <classname>ValueError</classname>
+    when neither the <parameter>$read</parameter>
+    nor the <parameter>$error</parameter> arguments are passed.
+   </para>
+
+   <para>
+    <function>mysqli_field_seek</function> and
+    <methodname>mysqli_result::field_seek</methodname> now specify the return
+    type as <type>true</type> instead of <type>bool</type>.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.functions.odbc">
+   <title>ODBC</title>
+
+   <para>
+    <function>odbc_autocommit</function> now accepts &null; for the
+    <parameter>$enable</parameter> parameter.
+    Passing &null; has the same behaviour as passing only 1 parameter,
+    namely indicating if the autocommit feature is enabled or not.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.functions.pgsql">
+   <title>PGSQL</title>
+
+   <para>
+    <function>pg_fetch_object</function> now raises a
+    <classname>ValueError</classname> instead of an <classname>Exception</classname>
+    when the <parameter>$constructor_args</parameter> argument is non empty with
+    the class not having constructor.
+   </para>
+
+   <para>
+    <function>pg_insert</function> now raises a <classname>ValueError</classname>
+    instead of a <constant>E_WARNING</constant> when the table specified is invalid.
+   </para>
+
+   <para>
+    <function>pg_insert</function> and <function>pg_convert</function> raises
+    a <classname>ValueError</classname> or a <classname>TypeError</classname>
+    instead of a <constant>E_WARNING</constant> when the value/type of a field
+    does not match properly with a PostgreSQL's type.
+   </para>
+
+   <para>
+    The <parameter>$row</parameter> parameter of
+    <function>pg_fetch_result</function>,
+    <function>pg_field_prtlen</function>, and
+    <function>pg_field_is_null</function> is now nullable.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.functions.random">
+   <title>Random</title>
+
+   <para>
+    Changed <function>mt_srand</function> and <function>srand</function> to
+    not check the number of arguments to determine whether a random seed should
+    be used. Passing &null; will generate a random seed, <literal>0</literal>
+    will use zero as the seed. The functions are now consistent with
+    <methodname>Random\Engine\Mt19937::__construct</methodname>.
+   </para>
+
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.functions.reflection">
+   <title>Reflection</title>
+
+   <para>
+    Return type of <methodname>ReflectionClass::getStaticProperties</methodname>
+    is no longer nullable.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.functions.standard">
+   <title>Standard</title>
+
+   <para>
+    <constant>E_NOTICE</constant>s emitted by <function>unserialize</function>
+    have been promoted to <constant>E_WARNING</constant>.
+    <!-- RFC: https://wiki.php.net/rfc/improve_unserialize_error_handling -->
+   </para>
+
+   <para>
+    <function>unserialize</function> now emits a new <constant>E_WARNING</constant>
+    if the input contains unconsumed bytes.
+    <!-- RFC: https://wiki.php.net/rfc/unserialize_warn_on_trailing_data -->
+   </para>
+
+   <para>
+    <function>array_pad</function> is now only limited by the maximum number of
+    elements an array can have. Before, it was only possible to add at most 1048576
+    elements at a time.
+   </para>
+
+   <para>
+    <function>strtok</function> raises an <constant>E_WARNING</constant> in the
+    case token is not provided when starting tokenization.
+   </para>
+
+   <para>
+    <function>password_hash</function> will now chain the underlying
+    <classname>Random\RandomException</classname>
+    as the <classname>ValueError</classname>'s <parameter>$previous</parameter>
+    <classname>Exception</classname> when salt generation fails.
+   </para>
+
+   <para>
+    If using an array as the <parameter>$command</parameter>
+    for <function>proc_open</function>, it must now have at least one
+    non empty element. Otherwise a <classname>ValueError</classname>
+    is thrown.
+   </para>
+
+   <para>
+    <function>proc_open</function> returns &false; if <parameter>$command</parameter>
+    array is invalid command instead of resource object that produces warning later.
+    This was already the case for Windows but it is now also the case if a posix_spawn
+    implementation is in use (most Linux, BSD and MacOS platforms). There are still
+    some old platforms where this behavior is not changed as posix_spawn is not
+    supported there.
+   </para>
+
+   <para>
+    <function>array_sum</function> and <function>array_product</function> now
+    warn when values in the array cannot be converted to int/float.
+    Previously arrays and objects where ignored whilst every other value was
+    cast to int. Moreover, objects that define a numeric cast (e.g.
+    <link linkend="book.gmp">GMP</link>) are now casted instead of ignored.
+    <!-- RFC: https://wiki.php.net/rfc/saner-array-sum-product -->
+   </para>
+
+   <para>
+    The <parameter>$decimals</parameter> of <function>number_format</function>
+    now properly handles negative integers.
+    Rounding with a negative value for <parameter>$decimals</parameter> means
+    that <parameter>$num</parameter> is rounded to <parameter>$decimals</parameter>
+    significant digits before the decimal point.
+    Previously negative <parameter>$decimals</parameter> were silently
+    ignored and the number got rounded to zero decimal places.
+   </para>
+
+   <para>
+    A new <parameter>$before_needle</parameter> argument has been added to
+    <function>strrchr</function>. It behaves like its counterpart in the
+    <function>strstr</function> or <function>stristr</function> functions.
+   </para>
+
+   <para>
+    <function>str_getcsv</function> and <function>fgetcsv</function> now return
+    an empty string instead of a string with a single null byte for the last field
+    which only contains an unterminated enclosure.
+   </para>
+  </sect3>
+
+ </sect2>
+
+ <sect2 xml:id="migration83.other-changes.extensions">
+  <title>Other Changes to Extensions</title>
+
+  <sect3 xml:id="migration83.other-changes.extensions.core">
+   <title>Core</title>
+
+   <para>
+    Using the <link linkend="language.operators.increment">increment/decrement</link>
+    operators (<literal>++</literal>/<literal>--</literal>) on values of type
+    <type>bool</type> now emit warnings.
+    This is because it currently has no effect, but will behave like
+    <code>$bool += 1</code> in the future.
+   </para>
+
+   <para>
+    Using the <link linkend="language.operators.increment">decrement</link>
+    operator (<literal>--</literal>) on values of type <type>null</type> now emit warnings.
+    This is because it currently has no effect, but will behave like
+    <code>$null -= 1</code> in the future.
+   </para>
+
+   <para>
+    Internal objects that implement an _IS_NUMBER cast but not a do_operator
+    handler that overrides addition and subtraction now can be incremented
+    and decrement as if one would do <code>$o += 1</code> or <code>$o -= 1</code>
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.extensions.dom">
+   <title>DOM</title>
+
+   <para>
+    The DOM lifetime mechanism has been reworked such that implicitly removed
+    nodes can still be fetched. Previously this resulted in an exception.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.extensions.sqlite3">
+   <title>SQLite3</title>
+
+   <para>
+    The <classname>SQLite3</classname> class now throws
+    <classname>SQLite3Exception</classname> (extends
+    <classname>Exception</classname>) instead of <classname>Exception</classname>.
+   </para>
+
+   <para>
+    The SQLite error code is now passed in the exception error code instead of
+    being included in the error message.
+   </para>
+
+  </sect3>
+ </sect2>
+
+ <sect2 xml:id="migration83.other-changes.ini">
+  <title>Changes to INI File Handling</title>
+
+  <itemizedlist>
+   <listitem>
+    <para>
+     The <literal>assert.*</literal> INI settings have been deprecated.
+     This comprises the following INI settings:
+     <simplelist>
+      <member><link linkend="ini.assert.active">assert.active</link></member>
+      <member><link linkend="ini.assert.bail">assert.bail</link></member>
+      <member><link linkend="ini.assert.callback">assert.callback</link></member>
+      <member><link linkend="ini.assert.exception">assert.exception</link></member>
+      <member><link linkend="ini.assert.warning">assert.warning</link></member>
+     </simplelist>
+     If the value of the setting is equal to the default value, no deprecation
+     notice is emitted.
+     The <link linkend="ini.zend.assertions">zend.assertions</link> INI setting
+     should be used instead.
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     <link linkend="ini.zend.max-allowed-stack-size">zend.max_allowed_stack_size</link>
+    is a new INI directive to set the maximum allowed stack size.
+    Possible values are <literal>0</literal> (detect the process or thread maximum stack size),
+    <literal>-1</literal> (no limit), or a positive number of bytes.
+    The default is <literal>0</literal>.
+    When it is not possible to detect the process or thread maximum stack
+    size, a known system default is used.
+    Setting this value too high has the same effect as disabling the stack size limit.
+    Fibers use
+    <link linkend="ini.fiber.stack-size">fiber.stack_size</link>
+    as maximum allowed stack size.
+    An <classname>Error</classname> is thrown when the process call stack exceeds
+    <link linkend="ini.zend.max-allowed-stack-size">zend.max_allowed_stack_size</link>-<link linkend="ini.zend.reserved-stack-size">zend.reserved_stack_size</link>
+    bytes, to prevent stack-overflow-induced segmentation faults, with
+    the goal of making debugging easier.
+    The stack size increases during uncontrolled recursions involving internal functions
+    or the magic methods
+    <link linkend="object.tostring">__toString()</link>,
+    <link linkend="object.clone">__clone()</link>,
+    <link linkend="object.sleep">__sleep()</link>,
+    <link linkend="object.destruct">__destruct()</link>.
+    This is not related to stack buffer overflows, and is not a security feature.
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     <link linkend="ini.zend.reserved-stack-size">zend.reserved_stack_size</link>
+     is a new INI directive to set the reserved stack size, in bytes.
+     This is subtracted from the max allowed stack size,
+     as a buffer, when checking the stack size.
+    </para>
+   </listitem>
+   </itemizedlist>
+ </sect2>
+
+ <sect2 xml:id="migration83.other-changes.performance">
+  <title>Performance</title>
+
+  <sect3 xml:id="migration83.other-changes.performance.dom">
+   <title>DOM</title>
+
+   <para>
+    Looping over a <classname>DOMNodeList</classname> now uses caching. Therefore
+    requesting items no longer takes quadratic time by default.
+   </para>
+
+   <para>
+    Getting text content from nodes now avoids an allocation, resulting in a
+    performance gain.
+   </para>
+
+   <para>
+    <methodname>DOMChildNode::remove</methodname> now runs in O(1) performance.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.performance.standard">
+   <title>Standard</title>
+
+   <para>
+    The <function>file</function> flags error check is now about 7% faster.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration83.other-changes.performance.spl">
+   <title>SPL</title>
+
+   <para>
+    <classname>RecursiveDirectoryIterator</classname> now performs less I/O
+    when looping over a directory.
+   </para>
+  </sect3>
+ </sect2>
+
+</sect1>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

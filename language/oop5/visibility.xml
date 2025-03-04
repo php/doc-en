@@ -20,10 +20,9 @@
     protected. Properties declared without any explicit visibility
     keyword are defined as public.
    </para>
-   <para>
-    <example>
-     <title>Property declaration</title>
-     <programlisting role="php">
+   <example>
+    <title>Property declaration</title>
+    <programlisting role="php">
 <![CDATA[
 <?php
 /**
@@ -75,9 +74,135 @@ $obj2->printHello(); // Shows Public2, Protected2, Undefined
 
 ?> 
 ]]>
+    </programlisting>
+   </example>
+   <sect3 xml:id="language.oop5.visibility-members-aviz">
+    <title>Asymmetric Property Visibility</title>
+    <simpara>
+     As of PHP 8.4, properties may also have their
+     visibility set asymmetrically, with a different scope for
+     reading (<literal>get</literal>) and writing (<literal>set</literal>).
+     Specifically, the <literal>set</literal> visibility may be
+     specified separately, provided it is not more permissive than the
+     default visibility.
+    </simpara>
+    <example>
+     <title>Asymmetric Property visibility</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+class Book
+{
+    public function __construct(
+        public private(set) string $title,
+        public protected(set) string $author,
+        protected private(set) int $pubYear,
+    ) {}
+}
+
+class SpecialBook extends Book
+{
+    public function update(string $author, int $year): void
+    {
+        $this->author = $author; // OK
+        $this->pubYear = $year; // Fatal Error
+    }
+}
+
+$b = new Book('How to PHP', 'Peter H. Peterson', 2024);
+
+echo $b->title; // Works
+echo $b->author; // Works
+echo $b->pubYear; // Fatal Error
+
+$b->title = 'How not to PHP'; // Fatal Error
+$b->author = 'Pedro H. Peterson'; // Fatal Error
+$b->pubYear = 2023; // Fatal Error
+?>
+]]>
      </programlisting>
     </example>
-   </para>
+    <para>There are a few caveats regarding asymmetric visibility:</para>
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       Only typed properties may have a separate <literal>set</literal> visibility.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       The <literal>set</literal> visibility must be the same
+       as <literal>get</literal> or more restrictive. That is,
+       <code>public protected(set)</code> and <code>protected protected(set)</code>
+       are allowed, but <code>protected public(set)</code> will cause a syntax error.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       If a property is <literal>public</literal>, then the main visibility may be
+       omitted.  That is, <code>public private(set)</code> and <code>private(set)</code>
+       will have the same result.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       A property with <literal>private(set)</literal> visibility
+       is automatically <literal>final</literal>, and may not be redeclared in a child class.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Obtaining a reference to a property follows <literal>set</literal> visibility, not <literal>get</literal>.
+       That is because a reference may be used to modify the property value.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Similarly, trying to write to an array property involves both a <literal>get</literal> and
+       <literal>set</literal> operation internally, and therefore will follow the <literal>set</literal>
+       visibility, as that is always the more restrictive.
+      </simpara>
+     </listitem>
+    </itemizedlist>
+    <note>
+     <simpara>
+      Spaces are not allowed in the set-visibility declaration.
+      <literal>private(set)</literal> is correct.
+      <literal>private( set )</literal> is not correct and will result in a parse error.
+     </simpara>
+    </note>
+    <simpara>
+     When a class extends another, the child class may redefine
+     any property that is not <literal>final</literal>.  When doing so,
+     it may widen either the main visibility or the <literal>set</literal>
+     visibility, provided that the new visibility is the same or wider
+     than the parent class.  However, be aware that if a <literal>private</literal>
+     property is overridden, it does not actually change the parent's property
+     but creates a new property with a different internal name.
+    </simpara>
+    <example>
+     <title>Asymmetric Property inheritance</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+class Book
+{
+    protected string $title;
+    public protected(set) string $author;
+    protected private(set) int $pubYear;
+}
+
+class SpecialBook extends Book
+{
+    public protected(set) $title; // OK, as reading is wider and writing the same.
+    public string $author; // OK, as reading is the same and writing is wider.
+    public protected(set) int $pubYear; // Fatal Error. private(set) properties are final.
+}
+?>
+]]>
+     </programlisting>
+    </example>
+   </sect3>
   </sect2>
 
   <sect2 xml:id="language.oop5.visiblity-methods">
@@ -87,10 +212,9 @@ $obj2->printHello(); // Shows Public2, Protected2, Undefined
     protected. Methods declared without any explicit visibility
     keyword are defined as public.
    </para>
-   <para>
-    <example>
-     <title>Method Declaration</title>
-     <programlisting role="php">
+   <example>
+    <title>Method Declaration</title>
+    <programlisting role="php">
 <![CDATA[
 <?php
 /**
@@ -176,9 +300,8 @@ $myFoo->test(); // Bar::testPrivate
                 // Foo::testPublic
 ?>
 ]]>
-     </programlisting>
-    </example>
-   </para>
+    </programlisting>
+   </example>
   </sect2>
 
   <sect2 xml:id="language.oop5.visiblity-constants">
@@ -188,10 +311,9 @@ $myFoo->test(); // Bar::testPrivate
     protected. Constants declared without any explicit visibility
     keyword are defined as public.
    </para>
-   <para>
-    <example>
-     <title>Constant Declaration as of PHP 7.1.0</title>
-     <programlisting role="php">
+   <example>
+    <title>Constant Declaration as of PHP 7.1.0</title>
+    <programlisting role="php">
 <![CDATA[
 <?php
 /**
@@ -242,9 +364,8 @@ echo MyClass2::MY_PUBLIC; // Works
 $myclass2->foo2(); // Public and Protected work, not Private
 ?>
 ]]>
-     </programlisting>
-    </example>
-   </para>
+    </programlisting>
+   </example>
   </sect2>
 
   <sect2 xml:id="language.oop5.visibility-other-objects">

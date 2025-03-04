@@ -138,7 +138,7 @@ class Point {
      </programlisting>
     </example>
     <para>
-     When a constructor argument includes a visibility modifier, PHP will interpret it as
+     When a constructor argument includes a modifier, PHP will interpret it as
      both an object property and a constructor argument, and assign the argument value to
      the property.  The constructor body may then be empty or may contain other statements.
      Any additional statements will be executed after the argument values have been assigned
@@ -150,6 +150,13 @@ class Point {
     </para>
     <note>
      <para>
+      Using a <link linkend="language.oop5.visibility">visibility modifier</link> (<literal>public</literal>,
+      <literal>protected</literal> or <literal>private</literal>) is the most likely way to apply property
+      promotion, but any other single modifier (such as <literal>readonly</literal>) will have the same effect.
+     </para>
+    </note>
+    <note>
+     <para>
       Object properties may not be typed <type>callable</type> due to engine ambiguity that would
       introduce. Promoted arguments, therefore, may not be typed <type>callable</type> either. Any
       other <link linkend="language.types.declarations">type declaration</link> is permitted, however.
@@ -157,9 +164,15 @@ class Point {
     </note>
     <note>
      <para>
+      As promoted properties are desugared to both a property as well as a function parameter, any
+      and all naming restrictions for both properties as well as parameters apply.
+     </para>
+    </note>
+    <note>
+     <para>
       <link linkend="language.attributes">Attributes</link> placed on a
       promoted constructor argument will be replicated to both the property
-      and argument.
+      and argument.  Default values on a promoted constructor argument will be replicated only to the argument and not the property.
      </para>
     </note>
    </sect3>
@@ -239,7 +252,7 @@ class Product {
     }
 
     public static function fromJson(string $json): static {
-        $data = json_decode($json);
+        $data = json_decode($json, true);
         return new static($data['id'], $data['name']);
     }
 
@@ -329,6 +342,26 @@ $obj = new MyDestructableClass();
     The destructor will be called even if script execution is stopped using
     <function>exit</function>. Calling <function>exit</function> in a destructor
     will prevent the remaining shutdown routines from executing.
+   </para>
+   <para>
+    If a destructor creates new references to its object, it will not be called
+    a second time when the reference count reaches zero again or during the
+    shutdown sequence.
+   </para>
+   <para>
+    As of PHP 8.4.0, when
+    <link linkend="features.gc.collecting-cycles">cycle collection</link>
+    occurs during the execution of a
+    <link linkend="language.fibers">Fiber</link>, the destructors of objects
+    scheduled for collection are executed in a separate Fiber, called the
+    <literal>gc_destructor_fiber</literal>.
+    If this Fiber is suspended, a new one will be created to execute any
+    remaining destructors.
+    The previous <literal>gc_destructor_fiber</literal> will no longer be
+    referenced by the garbage collector and may be collected if it is not
+    referenced elsewhere.
+    Objects whose destructor are suspended will not be collected until the
+    destructor returns or the Fiber itself is collected.
    </para>
    <note>
     <para>

@@ -7,7 +7,7 @@
    Creates a PHP value from a stored representation
   </refpurpose>
  </refnamediv>
- 
+
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
@@ -17,7 +17,7 @@
   </methodsynopsis>
   <simpara>
    <function>unserialize</function> takes a single serialized variable and
-   converts it back into a PHP value.  
+   converts it back into a PHP value.
   </simpara>
   <warning>
    <para>
@@ -48,21 +48,22 @@
        The serialized string.
       </para>
       <para>
-       If the variable being unserialized is an object, after successfully 
+       If the variable being unserialized is an object, after successfully
        reconstructing the object PHP will automatically attempt to call the
        <link linkend="object.unserialize">__unserialize()</link> or <link linkend="object.wakeup">__wakeup()</link> methods (if one exists).
       </para>
       <para>
        <note>
-        <title>unserialize_callback_func directive</title>
+        <title>
+         <link linkend="ini.unserialize-callback-func">unserialize_callback_func</link>
+          directive
+        </title>
         <para>
-         It's possible to set a callback-function which will be called,
-         if an undefined class should be instantiated during unserializing.
-         (to prevent getting an incomplete <type>object</type> "__PHP_Incomplete_Class".)
-         Use your &php.ini;, <function>ini_set</function> or &htaccess; 
-         to define <link linkend="ini.unserialize-callback-func">unserialize_callback_func</link>.
-         Everytime an undefined class should be instantiated, it'll be called.  To disable this feature just
-         empty this setting.
+         The callback specified in the
+         <link linkend="ini.unserialize-callback-func">unserialize_callback_func</link>
+         directive is called when an undefined class is unserialized.
+         If no callback is specified, the object will be instantiated as
+         <classname>__PHP_Incomplete_Class</classname>.
         </para>
        </note>
       </para>
@@ -88,7 +89,7 @@
         <tbody>
          <row>
           <entry><literal>allowed_classes</literal></entry>
-          <entry><type>mixed</type></entry>
+          <entry><type class="union"><type>array</type><type>bool</type></type></entry>
           <entry>
            <simpara>
             Either an <type>array</type> of class names which should be
@@ -134,15 +135,21 @@
   </para>
   <para>
    In case the passed string is not unserializeable, &false; is returned and
-   <constant>E_NOTICE</constant> is issued.
+   <constant>E_WARNING</constant> is issued.
   </para>
  </refsect1>
 
  <refsect1 role="errors">
   &reftitle.errors;
-  <para>
+  <simpara>
    Objects may throw <classname>Throwable</classname>s in their unserialization handlers.
-  </para>
+  </simpara>
+  <simpara>
+   As of PHP 8.4.0, if the <literal>allowed_classes</literal> element of
+   <parameter>options</parameter> is not an <type>array</type> of class names,
+   <function>unserialize</function> throws <exceptionname>TypeError</exceptionname>s
+   and <exceptionname>ValueError</exceptionname>s.
+  </simpara>
  </refsect1>
 
  <refsect1 role="changelog">
@@ -158,6 +165,27 @@
      </thead>
      <tbody>
       <row>
+       <entry>8.4.0</entry>
+       <entry>
+        Now throws <exceptionname>TypeError</exceptionname>s and
+        <exceptionname>ValueError</exceptionname>s if the <literal>allowed_classes</literal>
+        element of <parameter>options</parameter> is not an <type>array</type> of class names.
+       </entry>
+      </row>
+      <row>
+       <entry>8.3.0</entry>
+       <entry>
+        Now emits <constant>E_WARNING</constant> when the input string has unconsumed data.
+       </entry>
+      </row>
+      <row>
+       <entry>8.3.0</entry>
+       <entry>
+        Now emits <constant>E_WARNING</constant> when the passed string is not unserializeable;
+        previously <constant>E_NOTICE</constant> was emitted.
+       </entry>
+      </row>
+      <row>
        <entry>7.4.0</entry>
        <entry>
         Added the <literal>max_depth</literal> element of
@@ -168,7 +196,7 @@
        <entry>7.1.0</entry>
        <entry>
         The <literal>allowed_classes</literal> element of
-        <parameter>options</parameter>) is now strictly typed, i.e. if anything
+        <parameter>options</parameter> is now strictly typed, i.e. if anything
         other than an <type>array</type> or a <type>bool</type> is given,
         <function>unserialize</function> returns &false; and issues an
         <constant>E_WARNING</constant>.
@@ -221,7 +249,7 @@ $serialized_object='O:1:"a":1:{s:5:"value";s:3:"100";}';
 
 ini_set('unserialize_callback_func', 'mycallback'); // set your callback_function
 
-function mycallback($classname) 
+function mycallback($classname)
 {
     // just include a file containing your class definition
     // you get $classname to figure out which class definition is required

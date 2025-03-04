@@ -5,7 +5,7 @@
  <titleabbrev>Command line usage</titleabbrev>
  
  <!--Introduction: {{{-->
- <section xml:id="features.commandline.introduction">
+ <section xml:id="features.commandline.introduction" annotations="chunk:false">
   <title>Introduction</title>
   
   <para>
@@ -36,7 +36,7 @@
    <option role="configure">--disable-cgi</option> option is used, the &cli; is
    copied to <filename>{PREFIX}/bin/php</filename> during
    <command>make install</command> otherwise the <acronym>CGI</acronym> is placed
-   there. So, for example, if <option role="configure">--with-apxs </option> is
+   there. So, for example, if <option role="configure">--with-apxs</option> is
    in your configure line then the &cli; is copied to <filename>{PREFIX}/bin/php
    </filename> during <command>make install</command>. If you want to override
    the installation of the <acronym>CGI</acronym> binary, use <command>make
@@ -182,6 +182,27 @@
            also be found in the <varname>$_SERVER</varname> array, for example:
            <varname>$_SERVER['argv']</varname>.
           </para>
+          <warning>
+           <para>
+            The presence of <varname>$argv</varname> or <varname>$_SERVER['argv']</varname>
+            is not a reliable indication that a script is being run from the
+            command line because they may be set in other contexts when
+            <link linkend="ini.register-argc-argv">register_argc_argv</link> is enabled.
+            The value returned by <function>php_sapi_name</function> should be checked
+            instead.
+            <informalexample>
+             <programlisting role="php">
+<![CDATA[
+<?php
+
+if (php_sapi_name() === 'cli') {
+    echo "This is being run from the command line!\n";
+}
+]]>
+             </programlisting>
+            </informalexample>
+           </para>
+          </warning>
           </entry>
          </row>
          <row>
@@ -462,6 +483,7 @@ $ php -c /custom/directory/custom-file.ini my_script.php
          </screen>
         </para>
         <para><example>
+         <title>Example of using <literal>-d</literal> to set an INI setting</title>
          <screen>
 <![CDATA[
 # Omitting the value part will set the given configuration directive to "1"
@@ -533,19 +555,28 @@ string(15) "doesntmakesense"
        <entry>--syntax-check</entry>
        <entry>
         <para>
-         Provides a convenient way to perform only a syntax check
-         on the given PHP code. On success, the text
+         Syntax check but do not execute the given PHP code.
+         The input from standard input will be processed if no filenames are specified,
+         otherwise each filename will be checked.
+         On success, the text
          <literal>No syntax errors detected in &lt;filename&gt;</literal> is
-         written to standard output and the shell return code is
-         <literal>0</literal>. On failure, the text <literal>Errors parsing
-         &lt;filename&gt;</literal> in addition to the internal parser error
-         message is written to standard output and the shell return code is set
-         to <literal>-1</literal>.
+         written to standard output.
+         On failure, the text <literal>Errors parsing &lt;filename&gt;</literal>
+         is written to standard output in addition to the internal parser error.
+         If any failures are found in the specified files (or standard input),
+         the shell return code is set to <literal>-1</literal>, otherwise the
+         shell return code is set to <literal>0</literal>.
         </para>
         <para>
-         This option won't find fatal errors (like undefined functions). Use
-         the <option>-f</option> to test for fatal errors too.
+         This option won't find fatal errors (like undefined functions) that
+         require executing the code.
         </para>
+        <note>
+         <para>
+          Prior to PHP 8.3.0, it was only possible to specify one filename to
+          be checked.
+         </para>
+        </note>
         <note>
          <para>
           This option does not work together with the <option>-r</option>
@@ -1095,7 +1126,7 @@ $ some_application | some_filter | php | sort -u > final_output.txt
    command line. Note that, if the code is executed in-line using the command
    line switch <option>-r</option>, the value of <varname>$argv[0]</varname>
    will be <literal>"Standard input code"</literal>; prior to PHP 7.2.0, it was a dash (<literal>"-"</literal>) instead. The same is true if the code is
-   executed via a pipe from <literal>STDIN</literal>.
+   executed via a pipe from <constant>STDIN</constant>.
   </para>
 
   <para>
@@ -1251,7 +1282,7 @@ This is a command line PHP script with one option.
   <para>
    <example>
     <title>Batch file to run a command line PHP script (script.bat)</title>
-    <programlisting role="shell">
+    <programlisting role="winbat">
 <![CDATA[
 @echo OFF
 "C:\php\php.exe" script.php %*
@@ -1469,11 +1500,13 @@ php > $foo[TAB]ThisIsAReallyLongVariableName
    </programlisting>
   </example>
 
-  <para>
+  <simpara>
    The interactive shell stores your history which can be accessed using the up
    and down keys. The history is saved in the
    <filename>~/.php_history</filename> file.
-  </para>
+   As of PHP 8.4.0, the path to the history file can be set using the
+   <envar>PHP_HISTFILE</envar> environment variable.
+  </simpara>
 
   <para>
    The &cli.sapi; provides
@@ -1588,8 +1621,17 @@ php >
     If the readline extension is not available, prior to PHP 8.1.0, invoking the &cli.sapi; with the
     <option>-a</option> option provided the interactive mode. In this mode, a
     complete PHP script is supposed to be given via STDIN, and after termination
-    with <literal>CRTL+d</literal> (POSIX) or <literal>CTRL+z</literal>
-    followed by <literal>ENTER</literal> (Windows), this script is evaluated.
+    with
+    <keycombo action='simul'>
+     <keycap>CTRL</keycap>
+     <keycap>D</keycap>
+    </keycombo>
+    (POSIX) or
+    <keycombo action='simul'>
+     <keycap>CTRL</keycap>
+     <keycap>Z</keycap>
+    </keycombo>
+    followed by <keycap>ENTER</keycap> (Windows), this script is evaluated.
     This is basically the same as invoking the &cli.sapi; without the <option>-a</option>
     option.
    </para>
@@ -1644,95 +1686,82 @@ php >
   </para>
 
   <para>
-    Standard MIME types are returned for files with extensions: .3gp,
-    .apk, .avi, .bmp, .css, .csv, .doc, .docx, .flac, .gif, .gz,
-    .gzip, .htm, .html, .ics, .jpe, .jpeg, .jpg, .js, .kml, .kmz,
-    .m4a, .mov, .mp3, .mp4, .mpeg, .mpg, .odp, .ods, .odt, .oga, .ogg,
-    .ogv, .pdf, .pdf, .png, .pps, .pptx, .qt, .svg, .swf, .tar, .text,
-    .tif, .txt, .wav, .webm, .wmv, .xls, .xlsx, .xml, .xsl, .xsd, and .zip.
+   Standard MIME types are returned for files with extensions:
+   <simplelist type="inline">
+    <member><literal>.3gp</literal></member>
+    <member><literal>.apk</literal></member>
+    <member><literal>.avi</literal></member>
+    <member><literal>.bmp</literal></member>
+    <member><literal>.css</literal></member>
+    <member><literal>.csv</literal></member>
+    <member><literal>.doc</literal></member>
+    <member><literal>.docx</literal></member>
+    <member><literal>.flac</literal></member>
+    <member><literal>.gif</literal></member>
+    <member><literal>.gz</literal></member>
+    <member><literal>.gzip</literal></member>
+    <member><literal>.htm</literal></member>
+    <member><literal>.html</literal></member>
+    <member><literal>.ics</literal></member>
+    <member><literal>.jpe</literal></member>
+    <member><literal>.jpeg</literal></member>
+    <member><literal>.jpg</literal></member>
+    <member><literal>.js</literal></member>
+    <member><literal>.kml</literal></member>
+    <member><literal>.kmz</literal></member>
+    <member><literal>.m4a</literal></member>
+    <member><literal>.mov</literal></member>
+    <member><literal>.mp3</literal></member>
+    <member><literal>.mp4</literal></member>
+    <member><literal>.mpeg</literal></member>
+    <member><literal>.mpg</literal></member>
+    <member><literal>.odp</literal></member>
+    <member><literal>.ods</literal></member>
+    <member><literal>.odt</literal></member>
+    <member><literal>.oga</literal></member>
+    <member><literal>.ogg</literal></member>
+    <member><literal>.ogv</literal></member>
+    <member><literal>.pdf</literal></member>
+    <member><literal>.png</literal></member>
+    <member><literal>.pps</literal></member>
+    <member><literal>.pptx</literal></member>
+    <member><literal>.qt</literal></member>
+    <member><literal>.svg</literal></member>
+    <member><literal>.swf</literal></member>
+    <member><literal>.tar</literal></member>
+    <member><literal>.text</literal></member>
+    <member><literal>.tif</literal></member>
+    <member><literal>.txt</literal></member>
+    <member><literal>.wav</literal></member>
+    <member><literal>.webm</literal></member>
+    <member><literal>.wmv</literal></member>
+    <member><literal>.xls</literal></member>
+    <member><literal>.xlsx</literal></member>
+    <member><literal>.xml</literal></member>
+    <member><literal>.xsl</literal></member>
+    <member><literal>.xsd</literal></member>
+    <member><literal>.zip</literal></member>
+   </simplelist>
+   .
   </para>
 
-
-  <table>
-   <title>Changelog: Supported MIME Types (file extensions)</title>
-   <tgroup cols="2">
-    <thead>
-     <row>
-      <entry>&Version;</entry>
-      <entry>&Description;</entry>
-     </row>
-    </thead>
-    <tbody>
-     <row>
-      <entry>5.5.12</entry>
-      <entry>
-       .xml, .xsl, and .xsd
-      </entry>
-     </row>
-     <row>
-      <entry>5.5.7</entry>
-      <entry>
-       .3gp, .apk, .avi, .bmp, .csv, .doc, .docx, .flac, .gz, .gzip,
-       .ics, .kml, .kmz, .m4a, .mp3, .mp4, .mpg, .mpeg, .mov, .odp, .ods,
-       .odt, .oga, .pdf, .pptx, .pps, .qt, .swf, .tar, .text, .tif, .wav,
-       .wmv, .xls, .xlsx, and .zip
-      </entry>
-     </row>
-     <row>
-      <entry>5.5.5</entry>
-      <entry>
-       .pdf
-      </entry>
-     </row>
-     <row>
-      <entry>5.4.11</entry>
-      <entry>
-       .ogg, .ogv, and .webm
-      </entry>
-     </row>
-     <row>
-      <entry>5.4.4</entry>
-      <entry>
-        .htm and .svg
-      </entry>
-     </row>
-    </tbody>
-   </tgroup>
-  </table>
-
-
-  <table>
-   <title>Changelog</title>
-   <tgroup cols="2">
-    <thead>
-     <row>
-      <entry>&Version;</entry>
-      <entry>&Description;</entry>
-     </row>
-    </thead>
-    <tbody>
-     <row>
-      <entry>7.4.0</entry>
-      <entry>
-       You can configure the built-in webserver to fork multiple workers
-       in order to test code that requires multiple concurrent requests to
-       the built-in webserver. Set the <envar>PHP_CLI_SERVER_WORKERS</envar>
-       environment variable to the number of desired workers before starting
-       the server.
-       This is not supported on Windows.
-       <warning>
-        <para>
-         This <emphasis>experimental</emphasis> feature is <emphasis>not</emphasis>
-         intended for production usage. Generally, the built-in Web Server is
-         <emphasis>not</emphasis> intended for production usage.
-        </para>
-       </warning>
-      </entry>
-     </row>
-    </tbody>
-   </tgroup>
-  </table>
-
+  <simpara>
+   As of PHP 7.4.0, the built-in webserver can be configured to fork multiple
+   workers in order to test code that requires multiple concurrent requests
+   to the built-in webserver.
+   Set the <envar>PHP_CLI_SERVER_WORKERS</envar> environment variable to the
+   number of desired workers before starting the server.
+  </simpara>
+  <note>
+   <simpara>This feature is not supported on Windows.</simpara>
+  </note>
+  <warning>
+   <para>
+    This <emphasis>experimental</emphasis> feature is <emphasis>not</emphasis>
+    intended for production usage. Generally, the built-in Web Server is
+    <emphasis>not</emphasis> intended for production usage.
+   </para>
+  </warning>
 
   <example>
    <title>Starting the web server</title> 
@@ -1907,7 +1936,7 @@ $ php -S 0.0.0.0:8000
        <row>
         <entry><link linkend="ini.cli-server.color">cli_server.color</link></entry>
         <entry>"0"</entry>
-        <entry>PHP_INI_ALL</entry>
+        <entry><constant>INI_ALL</constant></entry>
         <entry></entry>
        </row>
       </tbody>

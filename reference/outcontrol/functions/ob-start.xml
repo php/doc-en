@@ -5,47 +5,33 @@
   <refname>ob_start</refname>
   <refpurpose>Turn on output buffering</refpurpose>
  </refnamediv>
- 
+
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
    <type>bool</type><methodname>ob_start</methodname>
-   <methodparam choice="opt"><type>callable</type><parameter>callback</parameter><initializer>&null;</initializer></methodparam>
+   <methodparam choice="opt"><type class="union"><type>callable</type><type>null</type></type><parameter>callback</parameter><initializer>&null;</initializer></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>chunk_size</parameter><initializer>0</initializer></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>flags</parameter><initializer><constant>PHP_OUTPUT_HANDLER_STDFLAGS</constant></initializer></methodparam>
   </methodsynopsis>
   <para>
-   This function will turn output buffering on. While output buffering is
-   active no output is sent from the script (other than headers), instead the
-   output is stored in an internal buffer.
+   This function will turn output buffering on.
+   While output buffering is active no output is sent from the script,
+   instead the output is stored in an internal buffer.
+   See <xref linkend="outcontrol.what-output-is-buffered"/>
+   on exactly what output is affected.
   </para>
   <para>
-   The contents of this internal buffer may be copied into a string variable
-   using <function>ob_get_contents</function>.  To output what is stored in
-   the internal buffer, use <function>ob_end_flush</function>. Alternatively,
-   <function>ob_end_clean</function> will silently discard the buffer
-   contents.
-  </para>
-  <warning>
-   <para>
-    Some web servers (e.g. Apache) change the working directory of a script
-    when calling the callback function. You can change it back by e.g.
-    <literal>chdir(dirname($_SERVER['SCRIPT_FILENAME']))</literal> in the
-    callback function.
-   </para>
-  </warning>
-  <para>
-   Output buffers are stackable, that is, you may call
-   <function>ob_start</function> while another
-   <function>ob_start</function> is active. Just make
-   sure that you call <function>ob_end_flush</function>
-   the appropriate number of times. If multiple output callback
-   functions are active, output is being filtered sequentially
+   Output buffers are stackable, that is,
+   <function>ob_start</function> may be called while another buffer is active.
+   If multiple output buffers are active,
+   output is being filtered sequentially
    through each of them in nesting order.
+   See <xref linkend="outcontrol.nesting-output-buffers"/> for more details.
   </para>
   <para>
-   If output buffering is still active when the script ends, PHP outputs the
-   contents automatically.
+   See <xref linkend="outcontrol.user-level-output-buffers"/>
+   for a detailed description of output buffers.
   </para>
  </refsect1>
 
@@ -57,19 +43,16 @@
      <term><parameter>callback</parameter></term>
      <listitem>
       <para>
-       An optional <parameter>callback</parameter> function may be
-       specified. This function takes a string as a parameter and should
-       return a string. The function will be called when
-       the output buffer is flushed (sent) or cleaned (with
-       <function>ob_flush</function>, <function>ob_clean</function> or similar
-       function) or when the output buffer
-       is flushed to the browser at the end of the request.  When
-       <parameter>callback</parameter> is called, it will receive the
-       contents of the output buffer as its parameter and is expected to
-       return a new output buffer as a result, which will be sent to the
-       browser. If the <parameter>callback</parameter> is not a
-       callable function, this function will return &false;.
-       This is the callback signature:
+       An optional <parameter>callback</parameter> <type>callable</type> may be
+       specified. It can also be bypassed by passing &null;.
+      </para>
+      <para>
+       <parameter>callback</parameter> is invoked when the output buffer is
+       flushed (sent), cleaned, or when the output buffer is flushed
+       at the end of the script.
+      </para>
+      <para>
+       The signature of the <parameter>callback</parameter> is as follows:
       </para>
       <para>
        <methodsynopsis>
@@ -90,52 +73,52 @@
          <term><parameter>phase</parameter></term>
          <listitem>
           <simpara>
-           Bitmask of <link linkend="outcontrol.constants"><constant>PHP_OUTPUT_HANDLER_*</constant> constants</link>.
+           Bitmask of
+           <link linkend="constant.php-output-handler-start">
+            <constant>PHP_OUTPUT_HANDLER_<replaceable>*</replaceable></constant>
+            constants
+           </link>.
+           See <xref linkend="outcontrol.flags-passed-to-output-handlers"/>
+           for more details.
           </simpara>
          </listitem>
         </varlistentry>
        </variablelist>
       </para>
       <para>
-       If <parameter>callback</parameter> returns &false; original
-       input is sent to the browser.
+       If <parameter>callback</parameter> returns &false;
+       the contents of the buffer are returned.
+       See <xref linkend="outcontrol.output-handler-return-values"/>
+       for more details.
       </para>
+      <warning>
+       <simpara>
+        Calling any of the following functions from within an output handler
+        will result in a fatal error:
+        <function>ob_clean</function>, <function>ob_end_clean</function>,
+        <function>ob_end_flush</function>, <function>ob_flush</function>,
+        <function>ob_get_clean</function>, <function>ob_get_flush</function>,
+        <function>ob_start</function>.
+       </simpara>
+      </warning>
       <para>
-       The <parameter>callback</parameter> parameter may be bypassed
-       by passing a &null; value.
+       See <xref linkend="outcontrol.output-handlers"/>
+       and <xref linkend="outcontrol.working-with-output-handlers"/>
+       for more details on <parameter>callback</parameter>s (output handlers).
       </para>
-      <para>
-       <function>ob_end_clean</function>, <function>ob_end_flush</function>,
-       <function>ob_clean</function>, <function>ob_flush</function> and
-       <function>ob_start</function> may not be called from a callback
-       function. If you call them from callback function, the behavior is
-       undefined. If you would like to delete the contents of a buffer,
-       return "" (a null string) from callback function.
-       You can't even call functions using the output buffering functions like
-       <literal>print_r($expression, true)</literal> or
-       <literal>highlight_file($filename, true)</literal> from a callback
-       function.
-      </para>
-      <note>
-       <para>
-        <function>ob_gzhandler</function> function exists to
-        facilitate sending gz-encoded data to web browsers that support
-        compressed web pages.  <function>ob_gzhandler</function> determines
-        what type of content encoding the browser will accept and will return
-        its output accordingly.
-       </para>
-      </note>
      </listitem>
     </varlistentry>
     <varlistentry>
      <term><parameter>chunk_size</parameter></term>
      <listitem>
       <para>
-       If the optional parameter <parameter>chunk_size</parameter> is passed, the
-       buffer will be flushed after any output call which causes the buffer's
-       length to equal or exceed <parameter>chunk_size</parameter>. The default
-       value <literal>0</literal> means that the output function will only be
-       called when the output buffer is closed.
+       If the optional parameter <parameter>chunk_size</parameter> is passed,
+       the buffer will be flushed after any block of code resulting in output
+       that causes the buffer's length to equal
+       or exceed <parameter>chunk_size</parameter>.
+       The default value <literal>0</literal> means
+       that all output is buffered until the buffer is turned off.
+       See <xref linkend="outcontrol.buffer-size"/> for more details.
       </para>
      </listitem>
     </varlistentry>
@@ -146,11 +129,12 @@
        The <parameter>flags</parameter> parameter is a bitmask that controls
        the operations that can be performed on the output buffer. The default
        is to allow output buffers to be cleaned, flushed and removed, which
-       can be set explicitly via
-       <constant>PHP_OUTPUT_HANDLER_CLEANABLE</constant> |
-       <constant>PHP_OUTPUT_HANDLER_FLUSHABLE</constant> |
-       <constant>PHP_OUTPUT_HANDLER_REMOVABLE</constant>, or
-       <constant>PHP_OUTPUT_HANDLER_STDFLAGS</constant> as shorthand.
+       can be set explicitly via the
+       <link linkend="outcontrol.constants.buffer-control-flags">
+        buffer control flags
+       </link>.
+       See <xref linkend="outcontrol.operations-on-buffers"/>
+       for more details.
       </para>
       <para>
        Each flag controls access to a set of functions, as described below:
@@ -166,30 +150,33 @@
           <row>
            <entry><constant>PHP_OUTPUT_HANDLER_CLEANABLE</constant></entry>
            <entry>
-            <function>ob_clean</function>,
-            <function>ob_end_clean</function>, and
-            <function>ob_get_clean</function>.
+            <function>ob_clean</function>
            </entry>
           </row>
           <row>
            <entry><constant>PHP_OUTPUT_HANDLER_FLUSHABLE</constant></entry>
            <entry>
-            <function>ob_end_flush</function>,
-            <function>ob_flush</function>, and
-            <function>ob_get_flush</function>.
+            <function>ob_flush</function>
            </entry>
           </row>
           <row>
            <entry><constant>PHP_OUTPUT_HANDLER_REMOVABLE</constant></entry>
            <entry>
             <function>ob_end_clean</function>,
-            <function>ob_end_flush</function>, and
-            <function>ob_get_flush</function>.
+            <function>ob_end_flush</function>,
+            <function>ob_get_clean</function>,
+            <function>ob_get_flush</function>
            </entry>
           </row>
          </tbody>
         </tgroup>
        </informaltable>
+       <note>
+        <simpara>
+         Prior to PHP 8.4.0, the flags parameter could set
+         the <link linkend="outcontrol.constants.flags-returned-by-handler">output handler status flags</link> as well.
+        </simpara>
+       </note>
       </para>
      </listitem>
     </varlistentry>
@@ -277,7 +264,7 @@ ob_start(null, 0, PHP_OUTPUT_HANDLER_STDFLAGS ^ PHP_OUTPUT_HANDLER_REMOVABLE);
     <member><function>ob_tidyhandler</function></member>
    </simplelist>
   </para>
- </refsect1>  
+ </refsect1>
 
 </refentry>
 <!-- Keep this comment at the end of the file

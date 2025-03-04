@@ -11,21 +11,20 @@
   <methodsynopsis>
    <type>bool</type><methodname>openssl_open</methodname>
    <methodparam><type>string</type><parameter>data</parameter></methodparam>
-   <methodparam><type>string</type><parameter role="reference">output</parameter></methodparam>
+   <methodparam><modifier role="attribute">#[\SensitiveParameter]</modifier><type>string</type><parameter role="reference">output</parameter></methodparam>
    <methodparam><type>string</type><parameter>encrypted_key</parameter></methodparam>
-   <methodparam><type class="union"><type>OpenSSLAsymmetricKey</type><type>OpenSSLCertificate</type><type>array</type><type>string</type></type><parameter>private_key</parameter></methodparam>
+   <methodparam><modifier role="attribute">#[\SensitiveParameter]</modifier><type class="union"><type>OpenSSLAsymmetricKey</type><type>OpenSSLCertificate</type><type>array</type><type>string</type></type><parameter>private_key</parameter></methodparam>
    <methodparam><type>string</type><parameter>cipher_algo</parameter></methodparam>
    <methodparam choice="opt"><type class="union"><type>string</type><type>null</type></type><parameter>iv</parameter><initializer>&null;</initializer></methodparam>
   </methodsynopsis>
   <para>
-   <function>openssl_open</function> opens (decrypts)
-   <parameter>data</parameter> using the private key associated with
-   the key identifier <parameter>private_key</parameter> and the envelope key
-   <parameter>encrypted_key</parameter>, and fills
-   <parameter>output</parameter> with the decrypted data.
-   The envelope key is generated when the
-   data are sealed and can only be used by one specific private key. See
-   <function>openssl_seal</function> for more information.
+   <function>openssl_open</function> opens (decrypts) <parameter>data</parameter> using an envelope
+   key that is decrypted from <parameter>encrypted_key</parameter> using
+   <parameter>private_key</parameter>. The decryption is done using
+   <parameter>cipher_algo</parameter> and <parameter>iv</parameter>. The IV is required only if the
+   cipher method requires it. The function fills <parameter>output</parameter> with the decrypted
+   data. The envelope key is usually generated when the data are sealed using a public key that is
+   associated with the private key. See <function>openssl_seal</function> for more information.
   </para>
  </refsect1>
 
@@ -37,6 +36,7 @@
      <term><parameter>data</parameter></term>
      <listitem>
       <para>
+       The sealed data.
       </para>
      </listitem>
     </varlistentry>
@@ -44,8 +44,7 @@
      <term><parameter>output</parameter></term>
      <listitem>
       <para>
-       If the call is successful the opened data is returned in this
-       parameter.
+       If the call is successful the opened data is returned in this parameter.
       </para>
      </listitem>
     </varlistentry>
@@ -53,6 +52,7 @@
      <term><parameter>encrypted_key</parameter></term>
      <listitem>
       <para>
+       The encrypted symmetric key that can be decrypted using <parameter>private_key</parameter>.
       </para>
      </listitem>
     </varlistentry>
@@ -60,6 +60,7 @@
      <term><parameter>private_key</parameter></term>
      <listitem>
       <para>
+       The private key used for decrypting <parameter>encrypted_key</parameter>.
       </para>
      </listitem>
     </varlistentry>
@@ -67,11 +68,12 @@
      <term><parameter>cipher_algo</parameter></term>
      <listitem>
       <para>
-       The cipher method.
+       The cipher method used for decryption of <parameter>data</parameter>.
        <caution>
         <simpara>
-         The default value (<literal>'RC4'</literal>) is considered insecure.
-         It is strongly recommended to explicitly specify a secure cipher method.
+         The default value for PHP versions prior to 8.0 is (<literal>'RC4'</literal>) which is
+         considered insecure. It is strongly recommended to explicitly specify a secure cipher
+         method.
         </simpara>
        </caution>
       </para>
@@ -81,7 +83,9 @@
      <term><parameter>iv</parameter></term>
      <listitem>
       <para>
-       The initialization vector.
+       The initialization vector used for decryption of <parameter>data</parameter>. It is required
+       if the cipher method requires IV. This can be found out by calling
+       <function>openssl_cipher_iv_length</function> with <parameter>cipher_algo</parameter>.
       </para>
      </listitem>
     </varlistentry>
@@ -135,24 +139,20 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-// $sealed and $env_key are assumed to contain the sealed data
-// and our envelope key, both given to us by the sealer.
 
-// fetch private key from file and ready it
-$fp = fopen("/src/openssl-0.9.6/demos/sign/key.pem", "r");
-$priv_key = fread($fp, 8192);
-fclose($fp);
-$pkeyid = openssl_get_privatekey($priv_key);
+// $sealed, $env_key and $iv are assumed to contain the sealed data, our
+// envelope key and IV. All given to us by the sealer.
 
-// decrypt the data and store it in $open
-if (openssl_open($sealed, $open, $env_key, $pkeyid)) {
-    echo "here is the opened data: ", $open;
+// Fetch private key from file located in private_key.pem
+$pkey = openssl_get_privatekey("file://private_key.pem");
+
+// Decrypt the data and store it in $open
+if (openssl_open($sealed, $open, $env_key, $pkey, 'AES256', $iv)) {
+    echo "Here is the opened data: ", $open;
 } else {
-    echo "failed to open data";
+    echo "Failed to open data";
 }
 
-// free the private key from memory
-openssl_free_key($pkeyid);
 ?>
 ]]>
     </programlisting>

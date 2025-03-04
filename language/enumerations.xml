@@ -6,15 +6,15 @@
    <?phpdoc print-version-for="enumerations"?>
 
    <para>
-    Enumerations, or "Enums" allow a developer to define a custom type that is limited to one
-    of a discrete number of possible values.  That can be especially helpful when defining a
+    Enumerations, or "Enums", allow a developer to define a custom type that is limited to one
+    of a discrete number of possible values. That can be especially helpful when defining a
     domain model, as it enables "making invalid states unrepresentable."
    </para>
 
    <para>
     Enums appear in many languages with a variety of different features. In PHP,
-    Enums are a special kind of object.  The Enum itself is a class, and its possible
-    cases are all single-instance objects of that class.  That means Enum cases are
+    Enums are a special kind of object. The Enum itself is a class, and its possible
+    cases are all single-instance objects of that class. That means Enum cases are
     valid objects and may be used anywhere an object may be used, including type checks.
    </para>
 
@@ -37,6 +37,7 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+
 enum Suit
 {
     case Hearts;
@@ -59,14 +60,20 @@ enum Suit
    <programlisting role="php">
 <![CDATA[
 <?php
-function pick_a_card(Suit $suit) { ... }
+
+function pick_a_card(Suit $suit)
+{
+    /* ... */
+}
 
 $val = Suit::Diamonds;
 
 // OK
 pick_a_card($val);
+
 // OK
 pick_a_card(Suit::Clubs);
+
 // TypeError: pick_a_card(): Argument #1 ($suit) must be of type Suit, string given
 pick_a_card('Spades');
 ?>
@@ -91,6 +98,7 @@ pick_a_card('Spades');
    <programlisting role="php">
 <![CDATA[
 <?php
+
 $a = Suit::Spades;
 $b = Suit::Spades;
 
@@ -103,7 +111,7 @@ $a instanceof Suit;  // true
 
    <para>
     It also means that enum values are never <literal>&lt;</literal> or <literal>&gt;</literal> each other,
-    since those comparisons are not meaningful on objects.  Those comparisons will always return
+    since those comparisons are not meaningful on objects. Those comparisons will always return
     &false; when working with enum values.
    </para>
 
@@ -113,7 +121,7 @@ $a instanceof Suit;  // true
    </para>
 
    <para>
-    All Pure Cases are implemented as instances of their enum type.  The enum type is represented internally as a class.
+    All Pure Cases are implemented as instances of their enum type. The enum type is represented internally as a class.
    </para>
 
    <para>
@@ -124,11 +132,19 @@ $a instanceof Suit;  // true
    <programlisting role="php">
 <![CDATA[
 <?php
+
 print Suit::Spades->name;
 // prints "Spades"
 ?>
 ]]>
    </programlisting>
+
+   <para>
+    It is also possible to use the <function>defined</function> and <function>constant</function>
+    functions to check for the existence of or read an enum case if the name is obtained dynamically.
+    This is, however, discouraged as using <link linkend="language.enumerations.backed">Backed enums</link>
+    should work for most use cases.
+   </para>
 
   </sect1>
 
@@ -147,6 +163,7 @@ print Suit::Spades->name;
   <programlisting role="php">
 <![CDATA[
 <?php
+
 enum Suit: string
 {
     case Hearts = 'H';
@@ -160,23 +177,25 @@ enum Suit: string
 
   <para>
    A case that has a scalar equivalent is called a Backed Case, as it is "Backed"
-   by a simpler value.  An Enum that contains all Backed Cases is called a "Backed Enum."
-   A Backed Enum may contain only Backed Cases.  A Pure Enum may contain only Pure Cases.
+   by a simpler value. An Enum that contains all Backed Cases is called a "Backed Enum."
+   A Backed Enum may contain only Backed Cases. A Pure Enum may contain only Pure Cases.
   </para>
 
   <para>
    A Backed Enum may be backed by types of <literal>int</literal> or <literal>string</literal>,
    and a given enumeration supports only a single type at a time (that is, no union of <literal>int|string</literal>).
    If an enumeration is marked as having a scalar equivalent, then all cases must have a unique
-   scalar equivalent defined explicitly.  There are no auto-generated scalar equivalents
-   (e.g., sequential integers).  Backed cases must be unique; two backed enum cases may
-   not have the same scalar equivalent.  However, a constant may refer to a case, effectively
-   creating an alias.  See <link linkend="language.enumerations.constants">Enumeration constants</link>.
+   scalar equivalent defined explicitly. There are no auto-generated scalar equivalents
+   (e.g., sequential integers). Backed cases must be unique; two backed enum cases may
+   not have the same scalar equivalent. However, a constant may refer to a case, effectively
+   creating an alias. See <link linkend="language.enumerations.constants">Enumeration constants</link>.
   </para>
 
   <para>
-   Equivalent values must be literals or literal expressions. Constants and constant expressions
-   are not supported.  That is, <literal>1 + 1</literal> is allowed, but <literal>1 + SOME_CONST</literal>
+   The equivalent values may be a constant scalar expression.
+   Prior to PHP 8.2.0, the equivalent values had to be literals or literal expressions.
+   This means that constants and constant expressions were not supported.
+   That is, <code>1 + 1</code> was allowed, but not <code>1 + SOME_CONST</code>.
    is not.
   </para>
 
@@ -188,6 +207,7 @@ enum Suit: string
   <programlisting role="php">
 <![CDATA[
 <?php
+
 print Suit::Clubs->value;
 // Prints "C"
 ?>
@@ -196,12 +216,13 @@ print Suit::Clubs->value;
 
   <para>
    In order to enforce the <literal>value</literal> property as read-only, a variable cannot
-   be assigned as a reference to it.  That is, the following throws an error:
+   be assigned as a reference to it. That is, the following throws an error:
   </para>
 
   <programlisting role="php">
 <![CDATA[
 <?php
+
 $suit = Suit::Clubs;
 $ref = &$suit->value;
 // Error: Cannot acquire reference to property Suit::$value
@@ -217,13 +238,13 @@ $ref = &$suit->value;
   <simplelist>
    <member>
     <literal>from(int|string): self</literal> will take a scalar and return the corresponding
-    Enum Case.  If one is not found, it will throw a <classname>ValueError</classname>.  This is mainly
+    Enum Case. If one is not found, it will throw a <classname>ValueError</classname>. This is mainly
     useful in cases where the input scalar is trusted and a missing enum value should be
     considered an application-stopping error.
    </member>
    <member>
     <literal>tryFrom(int|string): ?self</literal> will take a scalar and return the
-    corresponding Enum Case.  If one is not found, it will return <literal>null</literal>.
+    corresponding Enum Case. If one is not found, it will return <literal>null</literal>.
     This is mainly useful in cases where the input scalar is untrusted and the caller wants
     to implement their own error handling or default-value logic.
    </member>
@@ -231,17 +252,18 @@ $ref = &$suit->value;
 
   <para>
    The <literal>from()</literal> and <literal>tryFrom()</literal> methods follow standard
-   weak/strong typing rules.  In weak typing mode, passing an integer or string is acceptable
-   and the system will coerce the value accordingly.  Passing a float will also work and be
-   coerced.  In strict typing mode, passing an integer to <literal>from()</literal> on a
+   weak/strong typing rules. In weak typing mode, passing an integer or string is acceptable
+   and the system will coerce the value accordingly. Passing a float will also work and be
+   coerced. In strict typing mode, passing an integer to <literal>from()</literal> on a
    string-backed enum (or vice versa) will result in a <classname>TypeError</classname>,
-   as will a float in all circumstances.  All other parameter types will throw a TypeError
+   as will a float in all circumstances. All other parameter types will throw a TypeError
    in both modes.
   </para>
 
   <programlisting role="php">
 <![CDATA[
 <?php
+
 $record = get_stuff_from_database($id);
 print $record['suit'];
 
@@ -272,6 +294,7 @@ print $suit->value;
   <programlisting role="php">
 <![CDATA[
 <?php
+
 interface Colorful
 {
     public function color(): string;
@@ -300,7 +323,10 @@ enum Suit implements Colorful
     }
 }
 
-function paint(Colorful $c) { ... }
+function paint(Colorful $c)
+{
+   /* ... */
+}
 
 paint(Suit::Clubs);  // Works
 
@@ -311,7 +337,7 @@ print Suit::Diamonds->shape(); // prints "Rectangle"
 
   <para>
    In this example, all four instances of <literal>Suit</literal> have two methods,
-   <literal>color()</literal> and <literal>shape()</literal>.  As far as calling code
+   <literal>color()</literal> and <literal>shape()</literal>. As far as calling code
    and type checks are concerned, they behave exactly the same as any other object instance.
   </para>
 
@@ -322,6 +348,7 @@ print Suit::Diamonds->shape(); // prints "Rectangle"
   <programlisting role="php">
    <![CDATA[
 <?php
+
 interface Colorful
 {
     public function color(): string;
@@ -353,7 +380,7 @@ enum Suit: string implements Colorful
 
   <para>
    Methods may be arbitrarily complex, but in practice will usually return a static value or
-   <link linkend="control-structures.match">match</link> on <literal>$this</literal> to provide
+   &match; on <literal>$this</literal> to provide
    different results for different cases.
   </para>
 
@@ -371,6 +398,7 @@ enum Suit: string implements Colorful
   <programlisting role="php">
 <![CDATA[
 <?php
+
 interface Colorful
 {
     public function color(): string;
@@ -419,25 +447,26 @@ final class Suit implements UnitEnum, Colorful
   <title>Enumeration static methods</title>
 
   <para>
-   Enumerations may also have static methods.  The use for static methods on the
-   enumeration itself is primarily for alternative constructors.  E.g.:
+   Enumerations may also have static methods. The use for static methods on the
+   enumeration itself is primarily for alternative constructors. E.g.:
   </para>
 
   <programlisting role="php">
 <![CDATA[
 <?php
+
 enum Size
 {
     case Small;
     case Medium;
     case Large;
 
-    public static function fromLength(int $cm): static
+    public static function fromLength(int $cm): self
     {
         return match(true) {
-            $cm < 50 => static::Small,
-            $cm < 100 => static::Medium,
-            default => static::Large,
+            $cm < 50 => self::Small,
+            $cm < 100 => self::Medium,
+            default => self::Large,
         };
     }
 }
@@ -465,6 +494,7 @@ enum Size
   <programlisting role="php">
 <![CDATA[
 <?php
+
 enum Size
 {
     case Small;
@@ -483,13 +513,14 @@ enum Size
 
   <para>Enumerations may leverage traits, which will behave the same as on classes.
    The caveat is that traits <literal>use</literal>d in an enum must not contain properties.
-   They may only include methods and static methods.  A trait with properties will
+   They may only include methods, static methods, and constants. A trait with properties will
    result in a fatal error.
   </para>
 
   <programlisting role="php">
 <![CDATA[
 <?php
+
 interface Colorful
 {
     public function color(): string;
@@ -544,30 +575,49 @@ enum Suit implements Colorful
   <programlisting role="php">
 <![CDATA[
 <?php
+
 // This is an entirely legal Enum definition.
 enum Direction implements ArrayAccess
 {
     case Up;
     case Down;
 
-    public function offsetGet($val) { ... }
-    public function offsetExists($val) { ... }
-    public function offsetSet($val) { throw new Exception(); }
-    public function offsetUnset($val) { throw new Exception(); }
+    public function offsetExists($offset): bool
+    {
+        return false;
+    }
+
+    public function offsetGet($offset): mixed
+    {
+        return null;
+    }
+
+    public function offsetSet($offset, $value): void
+    {
+        throw new Exception();
+    }
+
+    public function offsetUnset($offset): void
+    {
+        throw new Exception();
+    }
 }
 
 class Foo
 {
     // This is allowed.
-    const Bar = Direction::Down;
+    const DOWN = Direction::Down;
 
     // This is disallowed, as it may not be deterministic.
-    const Bar = Direction::Up['short'];
+    const UP = Direction::Up['short'];
     // Fatal error: Cannot use [] on enums in constant expression
 }
 
 // This is entirely legal, because it's not a constant expression.
 $x = Direction::Up['short'];
+var_dump("\$x is " . var_export($x, true));
+
+$foo = new Foo();
 ?>
 ]]>
   </programlisting>
@@ -599,8 +649,8 @@ $x = Direction::Up['short'];
    <member>Enums may implement any number of interfaces.</member>
    <member>
     Enums and cases may have <link linkend="language.attributes">attributes</link> attached
-    to them.  The <constant>TARGET_CLASS</constant> target
-    filter includes Enums themselves.  The <constant>TARGET_CLASS_CONST</constant> target filter
+    to them. The <constant>TARGET_CLASS</constant> target
+    filter includes Enums themselves. The <constant>TARGET_CLASS_CONST</constant> target filter
     includes Enum Cases.
    </member>
    <member>
@@ -612,21 +662,23 @@ $x = Direction::Up['short'];
 
   <para>
    The <literal>::class</literal> magic constant on an Enum type evaluates to the type
-   name including any namespace, exactly the same as an object.  The <literal>::class</literal>
+   name including any namespace, exactly the same as an object. The <literal>::class</literal>
    magic constant on a Case instance also evaluates to the Enum type, as it is an
    instance of that type.
   </para>
 
   <para>
    Additionally, enum cases may not be instantiated directly with <literal>new</literal>, nor with
-   <methodname>ReflectionClass::newInstanceWithoutConstructor</methodname> in reflection.  Both will result in an error.
+   <methodname>ReflectionClass::newInstanceWithoutConstructor</methodname> in reflection. Both will result in an error.
   </para>
 
   <programlisting role="php">
 <![CDATA[
 <?php
+
 $clovers = new Suit();
 // Error: Cannot instantiate enum Suit
+
 $horseshoes = (new ReflectionClass(Suit::class))->newInstanceWithoutConstructor()
 // Error: Cannot instantiate enum Suit
 ?>
@@ -639,7 +691,7 @@ $horseshoes = (new ReflectionClass(Suit::class))->newInstanceWithoutConstructor(
 
   <para>
    Both Pure Enums and Backed Enums implement an internal interface named
-   <interfacename>UnitEnum</interfacename>.  <literal>UnitEnum</literal> includes a static method
+   <interfacename>UnitEnum</interfacename>. <literal>UnitEnum</literal> includes a static method
    <literal>cases()</literal>. <literal>cases()</literal> returns a packed array of
    all defined Cases in the order of declaration.
   </para>
@@ -647,6 +699,7 @@ $horseshoes = (new ReflectionClass(Suit::class))->newInstanceWithoutConstructor(
   <programlisting role="php">
 <![CDATA[
 <?php
+
 Suit::cases();
 // Produces: [Suit::Hearts, Suit::Diamonds, Suit::Clubs, Suit::Spades]
 ?>
@@ -660,14 +713,15 @@ Suit::cases();
   <title>Serialization</title>
 
   <para>
-   Enumerations are serialized differently from objects.  Specifically, they have a new serialization code,
-   <literal>"E"</literal>, that specifies the name of the enum case.  The deserialization routine is then
-   able to use that to set a variable to the existing singleton value.  That ensures that:
+   Enumerations are serialized differently from objects. Specifically, they have a new serialization code,
+   <literal>"E"</literal>, that specifies the name of the enum case. The deserialization routine is then
+   able to use that to set a variable to the existing singleton value. That ensures that:
   </para>
 
   <programlisting role="php">
 <![CDATA[
 <?php
+
 Suit::Hearts === unserialize(serialize(Suit::Hearts));
 
 print serialize(Suit::Hearts);
@@ -678,12 +732,12 @@ print serialize(Suit::Hearts);
 
   <para>
    On deserialization, if an enum and case cannot be found to match a serialized
-   value a warning will be issued and <literal>false</literal> returned.</para>
+   value a warning will be issued and &false; returned.</para>
 
   <para>
-   If a Pure Enum is serialized to JSON, an error will be thrown.  If a Backed Enum
-   is serialized to JSON, it will be represented by its value scalar only, in the
-   appropriate type.  The behavior of both may be overridden by implementing
+   If a Pure Enum is serialized to JSON, an error will be thrown. If a Backed Enum
+   is serialized to JSON, it will be represented by its scalar value only, in the
+   appropriate type. The behavior of both may be overridden by implementing
    <classname>JsonSerializable</classname>.
   </para>
 
@@ -694,6 +748,7 @@ print serialize(Suit::Hearts);
   <programlisting role="php">
 <![CDATA[
 <?php
+
 enum Foo {
     case Bar;
 }
@@ -720,6 +775,105 @@ Baz Enum:int {
   </programlisting>
  </sect1>
 
+ <sect1 xml:id="language.enumerations.object-differences.inheritance">
+
+  <title>Why enums aren't extendable</title>
+
+  <simpara>
+   Classes have contracts on their methods:
+  </simpara>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+class A {}
+class B extends A {}
+
+function foo(A $a) {}
+
+function bar(B $b) {
+    foo($b);
+}
+?>
+]]>
+ </programlisting>
+
+  <simpara>
+   This code is type-safe, as B follows the contract of A, and through the magic of
+   co/contra-variance, any expectation one may have of the methods will be
+   preserved, exceptions excepted.
+  </simpara>
+
+  <simpara>
+   Enums have contracts on their cases, not methods:
+  </simpara>
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+enum ErrorCode {
+    case SOMETHING_BROKE;
+}
+
+function quux(ErrorCode $errorCode)
+{
+    // When written, this code appears to cover all cases
+    match ($errorCode) {
+        ErrorCode::SOMETHING_BROKE => true,
+    };
+}
+
+?>
+]]>
+  </programlisting>
+
+  <simpara>
+   The &match; statement in the function <code>quux</code> can be static analyzed to cover
+   all of the cases in ErrorCode.
+  </simpara>
+
+  <simpara>
+   But imagine it was allowed to extend enums:
+  </simpara>
+
+
+  <programlisting role="php">
+<![CDATA[
+<?php
+
+// Thought experiment code where enums are not final.
+// Note, this won't actually work in PHP.
+enum MoreErrorCode extends ErrorCode {
+    case PEBKAC;
+}
+
+function fot(MoreErrorCode $errorCode) {
+    quux($errorCode);
+}
+
+fot(MoreErrorCode::PEBKAC);
+
+?>
+]]>
+ </programlisting>
+
+  <simpara>
+   Under normal inheritance rules, a class that extends another will pass
+   the type check.
+  </simpara>
+
+  <simpara>
+   The problem would be that the &match; statement in <code>quux()</code> no longer covers all
+   the cases. Because it doesn't know about <code>MoreErrorCode::PEBKAC</code> the match will throw an exception.
+  </simpara>
+
+  <simpara>
+   Because of this enums are final and can't be extended.
+  </simpara>
+ </sect1>
+
  <sect1 xml:id="language.enumerations.examples">
   &reftitle.examples;
 
@@ -729,20 +883,24 @@ Baz Enum:int {
     <programlisting role="php">
 <![CDATA[
 <?php
+
 enum SortOrder
 {
     case Asc;
     case Desc;
 }
 
-function query($fields, $filter, SortOrder $order = SortOrder::Asc) { ... }
+function query($fields, $filter, SortOrder $order = SortOrder::Asc)
+{
+     /* ... */
+}
 ?>
 ]]>
     </programlisting>
     <para>
      The <literal>query()</literal> function can now proceed safe in the knowledge that
      <literal>$order</literal> is guaranteed to be either <literal>SortOrder::Asc</literal>
-     or <literal>SortOrder::Desc</literal>.  Any other value would have resulted in a
+     or <literal>SortOrder::Desc</literal>. Any other value would have resulted in a
      <classname>TypeError</classname>, so no further error checking or testing is needed.
     </para>
    </example>
@@ -756,6 +914,7 @@ function query($fields, $filter, SortOrder $order = SortOrder::Asc) { ... }
     <programlisting role="php">
 <![CDATA[
 <?php
+
 enum UserStatus: string
 {
     case Pending = 'P';
@@ -766,10 +925,10 @@ enum UserStatus: string
     public function label(): string
     {
         return match($this) {
-            static::Pending => 'Pending',
-            static::Active => 'Active',
-            static::Suspended => 'Suspended',
-            static::CanceledByUser => 'Canceled by user',
+            self::Pending => 'Pending',
+            self::Active => 'Active',
+            self::Suspended => 'Suspended',
+            self::CanceledByUser => 'Canceled by user',
         };
     }
 }
@@ -780,7 +939,7 @@ enum UserStatus: string
     <para>
      In this example, a user's status may be one of, and exclusively, <literal>UserStatus::Pending</literal>,
      <literal>UserStatus::Active</literal>, <literal>UserStatus::Suspended</literal>, or
-     <literal>UserStatus::CanceledByUser</literal>.  A function can type a parameter against
+     <literal>UserStatus::CanceledByUser</literal>. A function can type a parameter against
      <literal>UserStatus</literal> and then only accept those four values, period.
     </para>
 
@@ -793,6 +952,7 @@ enum UserStatus: string
     <programlisting role="php">
 <![CDATA[
 <?php
+
 foreach (UserStatus::cases() as $case) {
     printf('<option value="%s">%s</option>\n', $case->value, $case->label());
 }
