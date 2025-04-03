@@ -1,7 +1,7 @@
 ---
 name: "Documentation Improvement"
 about: "Suggest an improvement for the PHP documentation"
-title: "[Docs] Improve ..."
+title: "Improve ..."
 labels: "enhancement"
 assignees: ""
 ---

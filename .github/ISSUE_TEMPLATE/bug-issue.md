@@ -1,7 +1,7 @@
 ---
 name: "Bug Report"
 about: "Report an issue with the PHP documentation"
-title: "[Bug] Issue with ..."
+title: "Issue with ..."
 labels: "bug"
 assignees: ""
 ---
