@@ -65,26 +65,55 @@
 <![CDATA[
 <?php
 
-class myClass {
-    public $mine;
-    private $xpto;
-    static protected $test;
+#[AllowDynamicProperties]
+class MyClass {
+    public $public;
+    private $private;
+    static protected $protectedStatic;
 
-    static function test() {
-        var_dump(property_exists('myClass', 'xpto')); //true
+    // ignored by property_exists
+    public function __isset(string $name) {
+        return true;
+    }
+
+    // ignored by property_exists
+    public function __get(string $name) {
+        return '';
     }
 }
 
-var_dump(property_exists('myClass', 'mine'));   //true
-var_dump(property_exists(new myClass, 'mine')); //true
-var_dump(property_exists('myClass', 'xpto'));   //true
-var_dump(property_exists('myClass', 'bar'));    //false
-var_dump(property_exists('myClass', 'test'));   //true
-myClass::test();
+$instance = new MyClass();
+$instance->instanced = 'abc';
+
+foreach (['$instance' => $instance, 'MyClass::class' => MyClass::class] as $type => $value) {
+    foreach (['public', 'protectedStatic', 'private', 'undefined', 'instanced'] as $property) {
+        printf(
+            "property_exists(%s, %s) === %s\n",
+            $type,
+            var_export($property, true),
+            var_export(property_exists($value, $property), true),
+        );
+    }
+}
 
 ?>
 ]]>
     </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+property_exists($instance, 'public') === true
+property_exists($instance, 'protectedStatic') === true
+property_exists($instance, 'private') === true
+property_exists($instance, 'undefined') === false
+property_exists($instance, 'instanced') === true
+property_exists(MyClass::class, 'public') === true
+property_exists(MyClass::class, 'protectedStatic') === true
+property_exists(MyClass::class, 'private') === true
+property_exists(MyClass::class, 'undefined') === false
+property_exists(MyClass::class, 'instanced') === false
+]]>
+    </screen>
    </example>
   </para>
  </refsect1>
