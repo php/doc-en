@@ -43,6 +43,14 @@
   operation in addition to altering its behavior, use
   <link linkend="language.oop5.visibility-members-aviz">asymmetric property visibility</link>.
  </simpara>
+
+ <note>
+  <title>Version Information</title>
+  <simpara>
+   Property hooks were introduced in PHP 8.4.
+  </simpara>
+ </note>
+
  <sect2>
   <title>Basic Hook Syntax</title>
   <simpara>
@@ -196,9 +204,77 @@ class Example
    or a short-set with an explicit type, or so on is all valid.
   </simpara>
   <simpara>
-   On a backed property, omitting a <literal>get</literal> or<literal>set</literal>
+   On a backed property, omitting a <literal>get</literal> or <literal>set</literal>
    hook means the default read or write behavior will be used.
   </simpara>
+  <note>
+   <simpara>
+    Hooks can be defined when using
+    <link linkend="language.oop5.decon.constructor.promotion">constructor property promotion</link>.
+    However, when doing so, values provided
+    to the constructor must match the type associated with the property,
+    regardless of what the <literal>set</literal> hook might allow.
+   </simpara>
+   <simpara>
+    Consider the following:
+   </simpara>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class Example
+{
+    public function __construct(
+        public private(set) DateTimeInterface $created {
+            set (string|DateTimeInterface $value) {
+                if (is_string($value)) {
+                    $value = new DateTimeImmutable($value);
+                }
+                $this->created = $value;
+            }
+        },
+    ) {
+    }
+}
+]]>
+   </programlisting>
+   <simpara>
+    Internally, the engine decomposes this to the following:
+   </simpara>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class Example
+{
+    public private(set) DateTimeInterface $created {
+        set (string|DateTimeInterface $value) {
+            if (is_string($value)) {
+                $value = new DateTimeImmutable($value);
+            }
+            $this->created = $value;
+        }
+    }
+
+    public function __construct(
+        DateTimeInterface $created,
+    ) {
+        $this->created = $created;
+    }
+}
+]]>
+   </programlisting>
+   <simpara>
+    Any attempts to set the property outside the constructor will
+    allow either <type>string</type> or <interfacename>DateTimeInterface</interfacename>
+    values, but the constructor will only allow <interfacename>DateTimeInterface</interfacename>.
+    This is because the defined type for the property (<interfacename>DateTimeInterface</interfacename>)
+    is used as the parameter type within the constructor signature, regardless of what
+    the <literal>set</literal> hook allows.
+   </simpara>
+   <simpara>
+    If this kind of behavior is needed from the constructor, constructor
+    property promotion cannot be used.
+   </simpara>
+  </note>
  </sect2>
  <sect2 xml:id="language.oop5.property-hooks.virtual">
   <title>Virtual properties</title>
@@ -239,7 +315,7 @@ class Example
    <programlisting role="php">
 <![CDATA[
 <?php
-readonly class Rectangle
+class Rectangle
 {
     // A virtual property.
     public int $area {
@@ -432,7 +508,10 @@ class PositivePoint extends Point
     Hooks may not access any other hook except their own parent on their own property.
    </simpara>
    <simpara>
-    The example above could be rewritten more efficiently as follows.
+    The example above could be rewritten as follows, which would allow for the
+    <literal>Point</literal> class to add its own <literal>set</literal> hook
+    in the future without issue.  (In the previous example, a hook added to
+    the parent class would be ignored in the child.)
    </simpara>
    <example>
     <title>Parent hook access (set)</title>
@@ -452,7 +531,7 @@ class PositivePoint extends Point
             if ($value < 0) {
                 throw new \InvalidArgumentException('Too small');
             }
-            $this->x = $value;
+            parent::$x::set($value);
         }
     }
 }

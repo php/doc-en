@@ -220,7 +220,7 @@ Hello World!
       to be able to use B's bigTalk implementation under an additional alias
       <literal>talk</literal>.
     </para>
-    <programlisting role="php">
+    <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 trait A {
@@ -269,7 +269,7 @@ class Aliased_Talker {
    </para>
    <example xml:id="language.oop5.traits.visibility.ex1">
     <title>Changing Method Visibility</title>
-    <programlisting role="php">
+    <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 trait HelloWorld {
@@ -420,12 +420,21 @@ class C2
     use Counter;
 }
 
-$o = new C1(); $o->inc(); // echo 1
-$p = new C2(); $p->inc(); // echo 1
+$o = new C1();
+$o->inc();
+$p = new C2();
+$p->inc();
 
 ?>
 ]]>
     </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+1
+1
+]]>
+    </screen>
    </example>
    <example xml:id="language.oop5.traits.static.ex2">
     <title>Static Methods</title>
@@ -446,41 +455,67 @@ class Example
     use StaticExample;
 }
 
-Example::doSomething();
+echo Example::doSomething();
 
 ?>
 ]]>
     </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Doing something
+]]>
+    </screen>
    </example>
    <example xml:id="language.oop5.traits.static.ex3">
     <title>Static Properties</title>
     <caution>
      <simpara>
-      Prior to PHP 8.3.0, static properties defined in a trait were shared across a single hierarchy of classes
-      which use the trait. As of PHP 8.3.0, the static property of the trait inserted in the child class
-      overrides the static property that the child class inherited from the parent class defined in conjunction with
-      the same trait.
+      Prior to PHP 8.3.0, static properties defined in a trait were shared
+      across all classes in the same inheritance hierarchy which used that trait.
+      As of PHP 8.3.0, if a child class uses a trait with a static property,
+      it will be considered distinct from the one defined in the parent class.
      </simpara>
     </caution>
     <programlisting role="php">
      <![CDATA[
 <?php
 
-trait StaticExample
+trait T
 {
-    public static $static = 'foo';
+    public static $counter = 1;
 }
 
-class Example
+class A
 {
-    use StaticExample;
+    use T;
+
+    public static function incrementCounter()
+    {
+        static::$counter++;
+    }
 }
 
-echo Example::$static;
+class B extends A
+{
+    use T;
+}
+
+A::incrementCounter();
+
+echo A::$counter, "\n";
+echo B::$counter, "\n";
 
 ?>
 ]]>
     </programlisting>
+    &example.outputs.83;
+    <screen>
+<![CDATA[
+2
+1
+]]>
+    </screen>
    </example>
   </sect2>
 
@@ -562,10 +597,16 @@ class ConstantsExample {
 }
 
 $example = new ConstantsExample;
-echo $example::FLAG_MUTABLE; // 1
+echo $example::FLAG_MUTABLE;
 ?>
 ]]>
    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+1
+]]>
+    </screen>
   </example>
   <para>
    If a trait defines a constant then a class can not define a constant with
@@ -596,8 +637,10 @@ class ConstantsExample {
   <title>Final methods</title>
   <simpara>
    As of PHP 8.3.0, the <link linkend="language.oop5.final">final</link>
-   modifier can be applied to methods imported from traits by using the <literal>as</literal> operator,
-   which permits modifying the method visibility originating from a trait in the class the trait is used in.
+   modifier can be applied using the <literal>as</literal> operator
+   to methods imported from traits. This can be used to prevent child classes
+   from overriding the method. However, the class that uses the trait can still
+   override the method.
   </simpara>
   <example xml:id="language.oop5.traits.final-methods.example">
    <title>Defining a method coming from a trait as <literal>final</literal></title>
@@ -616,20 +659,24 @@ trait CommonTrait
 class FinalExampleA
 {
     use CommonTrait {
-        CommonTrait::method as final; // The 'final' will prevents child classes
-                                      // from overriding a method
+        CommonTrait::method as final; // The 'final' prevents child classes from overriding the method
     }
 }
 
 class FinalExampleB extends FinalExampleA
 {
-     public function method() {} // Fatal error: Cannot override final method
-                                 // FinalExampleA::method()
+    public function method() {}
 }
 
 ?>
 ]]>
    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+Fatal error: Cannot override final method FinalExampleA::method() in ...
+]]>
+    </screen>
   </example>
  </sect2>
 
