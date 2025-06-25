@@ -45,7 +45,7 @@
   <para>
    <example>
     <title>Property declarations</title>
-    <programlisting role="php">
+    <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 class SimpleClass
@@ -192,10 +192,16 @@ Fatal error: Uncaught Error: Typed property Shape::$numberOfSides must not be ac
   <sect2 xml:id="language.oop5.properties.readonly-properties">
    <title>Readonly properties</title>
    <para>
-    As of PHP 8.1.0, a property can be declared with the <code>readonly</code> modifier, which prevents modification of the property after initialization.
+    As of PHP 8.1.0, a property can be declared with the <literal>readonly</literal> modifier,
+    which prevents modification of the property after initialization.  Prior to PHP 8.4.0
+    a <literal>readonly</literal> property is implicitly private-set, and may only be written to
+    from the same class.  As of PHP 8.4.0, <literal>readonly</literal> properties are implicitly
+    <link linkend="language.oop5.visibility-members-aviz"><literal>protected(set)</literal></link>,
+    so may be set from child classes.  That may be overridden
+    explicitly if desired.
     <example>
      <title>Example of readonly properties</title>
-     <programlisting role="php">
+     <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 
@@ -235,7 +241,7 @@ $test->prop = "foobar";
     A readonly property can only be initialized once, and only from the scope where it has been declared. Any other assignment or modification of the property will result in an <classname>Error</classname> exception.
     <example>
      <title>Illegal initialization of readonly properties</title>
-     <programlisting role="php">
+     <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 class Test1 {
@@ -255,7 +261,7 @@ $test1->prop = "foobar";
     <para>
      Specifying an explicit default value on readonly properties is not allowed, because a readonly property with a default value is essentially the same as a constant, and thus not particularly useful.
      <informalexample>
-      <programlisting role="php">
+      <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 
@@ -277,7 +283,7 @@ class Test {
    <para>
     Modifications are not necessarily plain assignments, all of the following will also result in an <classname>Error</classname> exception:
     <informalexample>
-     <programlisting role="php">
+     <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 
@@ -306,7 +312,7 @@ foreach ($test as &$prop);
    <para>
     However, readonly properties do not preclude interior mutability. Objects (or resources) stored in readonly properties may still be modified internally:
     <informalexample>
-     <programlisting role="php">
+     <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 
@@ -323,6 +329,36 @@ $test->obj = new stdClass;
 ]]>
      </programlisting>
     </informalexample>
+   </para>
+   <para>
+    As of PHP 8.3.0, readonly properties can be reinitialized when cloning an object
+    using the <link linkend="object.clone">__clone()</link> method.
+    <example>
+     <title>Readonly properties and cloning</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+class Test1 {
+    public readonly ?string $prop;
+
+    public function __clone() {
+        $this->prop = null;
+    }
+
+    public function setProp(string $prop): void {
+        $this->prop = $prop;
+    }
+}
+
+$test1 = new Test1;
+$test1->setProp('foobar');
+
+$test2 = clone $test1;
+var_dump($test2->prop); // NULL
+?>
+]]>
+     </programlisting>
+    </example>
    </para>
   </sect2>
 

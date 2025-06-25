@@ -19,10 +19,10 @@ ifneq ($(wildcard ../phd/LICENSE),)
 endif
 
 xhtml: .docker/built
-	docker run ${PATHS} -w /var/www -u ${CURRENT_UID}:${CURRENT_GID} php/doc-en
+	docker run --rm ${PATHS} -w /var/www -u ${CURRENT_UID}:${CURRENT_GID} php/doc-en
 
 php: .docker/built
-	docker run ${PATHS} -w /var/www -u ${CURRENT_UID}:${CURRENT_GID} \
+	docker run --rm ${PATHS} -w /var/www -u ${CURRENT_UID}:${CURRENT_GID} \
 		-e FORMAT=php php/doc-en
 
 build: .docker/built
