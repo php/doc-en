@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-<refentry xml:id="function.filter-input-array" xmlns="http://docbook.org/ns/docbook">
+<refentry xml:id="function.filter-input-array" xmlns="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
  <refnamediv>
   <refname>filter_input_array</refname>
   <refpurpose>Gets external variables and optionally filters them</refpurpose>
  </refnamediv>
+
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
@@ -18,147 +19,59 @@
    repetitively calling <function>filter_input</function>.
   </para>
  </refsect1>
+
  <refsect1 role="parameters">
   &reftitle.parameters;
-  <para>
-   <variablelist>
-    <varlistentry>
-     <term><parameter>type</parameter></term>
-     <listitem>
-      <para>
-       One of <constant>INPUT_GET</constant>, <constant>INPUT_POST</constant>,
-       <constant>INPUT_COOKIE</constant>, <constant>INPUT_SERVER</constant>, or
-       <constant>INPUT_ENV</constant>.
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry>
-     <term><parameter>options</parameter></term>
-     <listitem>
-      <para>
-       An array defining the arguments. A valid key is a <type>string</type>
-       containing a variable name and a valid value is either a <link
-       linkend="filter.filters">filter type</link>, or an <type>array</type>
-       optionally specifying the filter, flags and options. If the value is an
-       array, valid keys are <literal>filter</literal> which specifies the
-       <link linkend="filter.filters">filter type</link>,
-       <literal>flags</literal> which specifies any flags that apply to the
-       filter, and <literal>options</literal> which specifies any options that
-       apply to the filter. See the example below for a better understanding.
-      </para>
-      <para>
-       This parameter can be also an integer holding a <link
-       linkend="filter.constants">filter constant</link>. Then all values in the
-       input array are filtered by this filter.
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry>
-     <term><parameter>add_empty</parameter></term>
-     <listitem>
-      <para>
-       Add missing keys as &null; to the return value.
-      </para>
-     </listitem>
-    </varlistentry>
-   </variablelist>
-  </para>
+  <variablelist>
+   <varlistentry>
+    <term><parameter>type</parameter></term>
+    <listitem>
+     <simpara>
+      One of the <constant>INPUT_<replaceable>*</replaceable></constant> constants.
+     </simpara>
+     <warning>
+      <simpara>
+       The content of the superglobal that is being filtered is the original
+       "raw" content provided by the <acronym>SAPI</acronym>,
+       prior to any user modification to the superglobal.
+       To filter a modified superglobal use
+       <function>filter_var_array</function> instead.
+      </simpara>
+     </warning>
+    </listitem>
+   </varlistentry>
+   <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('function.filter-var-array')/db:refsect1[@role='parameters']//db:varlistentry[db:term[db:parameter[text()='options']]]/.)">
+    <xi:fallback/>
+   </xi:include>
+   <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('function.filter-var-array')/db:refsect1[@role='parameters']//db:varlistentry[db:term[db:parameter[text()='add_empty']]]/.)">
+    <xi:fallback/>
+   </xi:include>
+  </variablelist>
  </refsect1>
+
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-   An array containing the values of the requested variables on success.
-   If the input array designated by <parameter>type</parameter> is not populated,
-   the function returns &null; if the <constant>FILTER_NULL_ON_FAILURE</constant>
-   flag is not given, or &false; otherwise. For other failures, &false; is returned.
-  </para>
-  <para>
-   An array value will be &false; if the filter fails, or &null; if 
-   the variable is not set. Or if the flag <constant>FILTER_NULL_ON_FAILURE</constant>
-   is used, it returns &false; if the variable is not set and &null; if the filter 
-   fails. If the <parameter>add_empty</parameter> parameter is &false;, no array
-   element will be added for unset variables.
-  </para>
- </refsect1>
-
- <refsect1 role="examples">
-  &reftitle.examples;
-  <para>
-   <example>
-    <title>A <function>filter_input_array</function> example</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-
-/* data actually came from POST
-$_POST = array(
-    'product_id' => 'libgd<script>',
-    'component'  => array('10'),
-    'version'    => '2.0.33',
-    'testarray'  => array('2', '23', '10', '12'),
-    'testscalar' => '2',
-);
-*/
-
-$args = array(
-    'product_id'   => FILTER_SANITIZE_ENCODED,
-    'component'    => array('filter'    => FILTER_VALIDATE_INT,
-                            'flags'     => FILTER_REQUIRE_ARRAY, 
-                            'options'   => array('min_range' => 1, 'max_range' => 10)
-                           ),
-    'version'      => FILTER_SANITIZE_ENCODED,
-    'doesnotexist' => FILTER_VALIDATE_INT,
-    'testscalar'   => array(
-                            'filter' => FILTER_VALIDATE_INT,
-                            'flags'  => FILTER_REQUIRE_SCALAR,
-                           ),
-    'testarray'    => array(
-                            'filter' => FILTER_VALIDATE_INT,
-                            'flags'  => FILTER_REQUIRE_ARRAY,
-                           )
-
-);
-
-$myinputs = filter_input_array(INPUT_POST, $args);
-
-var_dump($myinputs);
-echo "\n";
-?>
-]]>
-    </programlisting>
-    &example.outputs;
-    <screen>
-<![CDATA[
-array(6) {
-  ["product_id"]=>
-  string(17) "libgd%3Cscript%3E"
-  ["component"]=>
-  array(1) {
-    [0]=>
-    int(10)
-  }
-  ["version"]=>
-  string(6) "2.0.33"
-  ["doesnotexist"]=>
-  NULL
-  ["testscalar"]=>
-  int(2)
-  ["testarray"]=>
-  array(4) {
-    [0]=>
-    int(2)
-    [1]=>
-    int(23)
-    [2]=>
-    int(10)
-    [3]=>
-    int(12)
-  }
-}
-]]>
-    </screen>
-   </example>
-  </para>
+  <simpara>
+   On success, an &array; containing the values of the requested variables.
+  </simpara>
+  <simpara>
+   On failure, &false; is returned.
+   Except if the failure is that the input array designated by
+   <parameter>type</parameter> is not populated where &null; is returned
+   if the <constant>FILTER_NULL_ON_FAILURE</constant> flag is used.
+  </simpara>
+  <simpara>
+   Missing entries from the input array will be populated into the returned
+   &array; if <parameter>add_empty</parameter> is &true;.
+   In which case, missing entries will be set to &null;,
+   unless the <constant>FILTER_NULL_ON_FAILURE</constant> flag is used,
+   in which case it will be &false;.
+  </simpara>
+  <simpara>
+   An entry of the returned &array; will be &false; if the filter fails,
+   unless the <constant>FILTER_NULL_ON_FAILURE</constant> flag is used,
+   in which case it will be &null;.
+  </simpara>
  </refsect1>
 
  <refsect1 role="notes">
@@ -174,13 +87,19 @@ array(6) {
 
  <refsect1 role="seealso">
   &reftitle.seealso;
-  <para>
-   <simplelist>
-    <member><function>filter_input</function></member>
-    <member><function>filter_var_array</function></member>
-    <member><xref linkend="filter.filters"/></member>
-   </simplelist>
-  </para>
+  <simplelist>
+   <member><function>filter_input</function></member>
+   <member><function>filter_var</function></member>
+   <member><function>filter_var_array</function></member>
+   <member>
+    Validation filters
+    <constant>FILTER_VALIDATE_<replaceable>*</replaceable></constant>
+   </member>
+   <member>
+    Sanitization filters
+    <constant>FILTER_SANITIZE_<replaceable>*</replaceable></constant>
+   </member>
+  </simplelist>
  </refsect1>
 
 </refentry>

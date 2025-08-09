@@ -1,103 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
 
-<book xml:id="mongodb.architecture" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<chapter xml:id="mongodb.architecture" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <titleabbrev>Driver Architecture and Internals</titleabbrev>
  <title>Explains the driver architecture, and special features</title>
 
- <article xml:id="mongodb.overview">
+ <section xml:id="mongodb.overview">
   <titleabbrev>Architecture</titleabbrev>
   <title>Architecture Overview</title>
 
   <para>
-   This section explains how all the different parts of the driver fit
-   together. From the different language runtimes, through the extension and
-   to the PHP libraries on top. This new architecture has replaced the old
-   <code>mongo</code> extension. We refer to the new one
-   as the <code>mongodb</code> extension.
+   This article explains how all the different components of the PHP driver fit
+   together, from base system libraries, through the extension, and to the PHP
+   libraries on top.
   </para>
 
   <para>
    <mediaobject>
-    <alt>Architecture Diagram</alt>
+    <alt>
+     MongoDB PHP Driver Architecture Diagram. The lowest level of the driver is
+     our system libraries: libmongoc, libbson, and libmongocrypt. The middle
+     level is the MongoDB PHP extension. The upper level is PHP userland and
+     includes the MongoDB PHP library and higher-level packages such as
+     framework integrations and applications.
+    </alt>
     <imageobject>
-     <imagedata fileref="en/reference/mongodb/images/driver_arch.png"/>
+     <imagedata fileref="en/reference/mongodb/images/driver_arch.svg" width="625" depth="450" format="SVG" />
     </imageobject>
    </mediaobject>
   </para>
 
   <para>
-   At the top of this stack sits a pure
-   <link xlink:href="&url.mongodb.library;">PHP library</link>, which we will
-   distribute as a Composer package. This library will provide an API similar
-   to what users have come to expect from the old mongo driver (e.g. CRUD methods,
-   database and collection objects, command helpers) and we expect it to be a
-   common dependency for most applications built with MongoDB. This library
-   will also implement common
-   <link xlink:href="&url.mongodb.specs;">specifications</link>, in the
-   interest of improving API consistency across all of the
-   <link xlink:href="&url.mongodb.drivers;">drivers</link> maintained by
-   MongoDB (and hopefully some community drivers, too).
+   At the top of this stack sits a
+   <link xlink:href="&url.mongodb.library;">PHP library</link>,
+   which is distributed as a
+   <link xlink:href="&url.packagist.package;/mongodb/mongodb">Composer package</link>.
+   This library provides an API consistent with other MongoDB
+   <link xlink:href="&url.mongodb.drivers;">drivers</link>
+   and implements various cross-driver
+   <link xlink:href="&url.mongodb.specs;">specifications</link>.
+   While the extension can be used directly, the library has minimal overhead and
+   should be a common dependency for most applications built with MongoDB.
   </para>
 
   <para>
-   Sitting below that library we have the lower level driver.
-   This extension will effectively form the glue between PHP and our
-   system libraries (<link xlink:href="&url.mongodb.libmongoc;">libmongoc</link> and
-   <link xlink:href="&url.mongodb.libbson;">libbson</link>). This extension
-   will expose an identical public API for the most essential and
-   performance-sensitive functionality:
+   Sitting below that library is a PHP extension, which is distributed through
+   <link xlink:href="&url.pecl.package;mongodb">PECL</link>.
+   The extension forms the glue between PHP and our system libraries
+   (<link xlink:href="&url.mongodb.libmongoc;">libmongoc</link>,
+   <link xlink:href="&url.mongodb.libbson;">libbson</link>, and
+   <link xlink:href="&url.mongodb.libmongocrypt;">libmongocrypt</link>).
+   Its public API provides only the most essential functionality:
 
    <simplelist>
     <member>Connection management</member>
     <member>BSON encoding and decoding</member>
     <member>Object document serialization (to support ODM libraries)</member>
-    <member>Executing commands and write operations</member>
-    <member>Handling queries and cursors</member>
+    <member>Executing commands, queries, and write operations</member>
+    <member>Handling cursors for command and query results</member>
    </simplelist>
   </para>
 
   <para>
-   By decoupling the driver internals and a high-level API into an extension and
-   PHP libraries, respectively, we hope to reduce our maintainence burden and
-   allow for faster iteration on new features. As a welcome side effect, this
-   also makes it easier for anyone to contribute to the driver. Additionally,
-   an identical public API will make it that much easier to port an
-   application across PHP runtimes, whether the application uses the low-level
-   driver directly or a higher-level PHP library.
-  </para>
-  <para>
-   <link xlink:href="&url.mongodb.docs.gridfs;">GridFS</link> is a great example
-   of why we chose this direction.
-   Although we implemented GridFS in C for our old mongo driver, it is actually
-   quite a high-level specification. Its API is just an abstraction for
-   accessing two collections: files (i.e. metadata) and chunks (i.e. blocks of
-   data). Likewise, all of the syntactic sugar found in the old mongo driver,
-   such as processing uploaded files or exposing GridFS files as PHP streams,
-   can be implemented in pure PHP. Provided we have performant methods for
-   reading from and writing to GridFS' collections – and thanks to our low
-   level extensions, we will – shifting this API to PHP is win-win.
-  </para>
-  <para>
-   Earlier I mentioned that we expect the PHP library to be a common
-   dependency for <emphasis>most</emphasis> applications, but not
-   <emphasis>all</emphasis>. Some users may prefer to stick to the no-frills
-   API offered by the extensions, or create their own high-level abstraction
-   (akin to <link xlink:href="&url.mongodb.doctrine;">Doctrine MongoDB</link> for
-   the old mongo driver). Future libraries could include a PHP library geared
-   for MongoDB administration, which provides an API for various user
-   management and ops commands. The next major version of
-   <link xlink:href="&url.mongodb.doctrine-odm;">Doctrine MongoDB ODM</link> will
-   likely also sit directly atop the extensions.
-  </para>
-  <para>
-   While we will continue to maintain and support the old mongo driver and its
-   users for the foreseeable future, we invite everyone to use the
-   next-generation driver and consider it for any new projects going forward.
-   You can find all of the essential components across GitHub and JIRA:
-
    <table>
-    <title>Driver Source Code and JIRA Locations</title>
+    <title>Driver Source Code and JIRA Projects</title>
     <tgroup cols="3">
      <thead>
       <row>
@@ -113,7 +79,7 @@
        <entry><link xlink:href="&url.mongodb.jira.phplib;">PHPLIB</link></entry>
       </row>
       <row>
-       <entry>PHP 5 and PHP 7 Driver (phongo)</entry>
+       <entry>PHP Extension</entry>
        <entry><link xlink:href="&url.mongodb.github.phpc;">mongodb/mongo-php-driver</link></entry>
        <entry><link xlink:href="&url.mongodb.jira.phpc;">PHPC</link></entry>
       </row>
@@ -121,16 +87,9 @@
     </tgroup>
    </table>
   </para>
+ </section>
 
-  <para>
-   The existing <link xlink:href="&url.mongodb.jira;">PHP</link> project in JIRA
-   will remain open for reporting bugs against the old mongo driver, but we
-   would ask that you use the new projects above for anything pertaining to
-   our next-generation drivers.
-  </para>
- </article>
-
- <article xml:id="mongodb.connection-handling">
+ <section xml:id="mongodb.connection-handling">
   <titleabbrev>Connections</titleabbrev>
   <title>Connection handling and persistence</title>
 
@@ -140,7 +99,7 @@
    <title>Connection and topology persistence (PHP version since 1.2.0)</title>
 
    <para>
-    All versions of the driver since 1.2.0 persist the
+    All versions of the extension since 1.2.0 persist the
     <link xlink:href="&url.mongodb.libmongoc;">libmongoc</link> client object in
     the PHP worker process, which allows it to re-use database connections,
     authentication states, <emphasis>and</emphasis> topology information across
@@ -150,16 +109,17 @@
    <para>
     When <methodname>MongoDB\Driver\Manager::__construct</methodname> is
     invoked, a hash is created from its arguments (i.e. URI string and array
-    options). The driver will attempt to find a previously persisted
+    options). The extension will attempt to find a previously persisted
     <link xlink:href="&url.mongodb.libmongoc;">libmongoc</link> client object for
     that hash. If an existing client cannot be found for the hash, a new client
-    will be created (and persisted for future use).
+    will be created and persisted for future use. This behavior can be disabled
+    via the <literal>"disableClientPersistence"</literal> driver option.
    </para>
 
    <para>
     Each client contains its own database connections and a view of the server
     topology (e.g. standalone, replica set, shard cluster). By persisting the
-    client between PHP requests, the driver is able to re-use established
+    client between PHP requests, the extension is able to re-use established
     database connections and remove the need for
     <link xlink:href="&url.mongodb.sdam;">discovering the server topology</link>
     on each request.
@@ -196,16 +156,16 @@ foreach ($managers as $manager) {
     PHP worker executing this script will open two connections to
     <literal>127.0.0.1</literal> and one connection to each of
     <literal>rs1.example.com</literal> and <literal>rs2.example.com</literal>.
-    If the driver discovers additional members of the replica set after issuing
-    <literal>hello</literal> commands, it will open additional connections to
-    those servers as well.
+    If the extension discovers additional members of the replica set after
+    issuing <literal>hello</literal> commands, it will open additional
+    connections to those servers as well.
    </para>
 
    <para>
     If the same worker executes the script again in a second request, the three
-    clients will be re-used and no new connections should be made. Depending on
-    how long ago the previous request was served, the driver may need to issue
-    additional <literal>hello</literal> commands to update its view of the
+    clients will be re-used and no new connections will be made. Depending on
+    how long ago the previous request was served, the extension may need to
+    issue additional <literal>hello</literal> commands to update its view of the
     topologies.
    </para>
   </section>
@@ -214,14 +174,14 @@ foreach ($managers as $manager) {
    <title>Socket persistence (PHP versions before 1.2.0)</title>
 
    <para>
-    Versions of the PHP driver before 1.2.0 utilize PHP&apos;s Streams API for
+    Versions of the extension before 1.2.0 utilize PHP&apos;s Streams API for
     database connections, using an API within
     <link xlink:href="&url.mongodb.libmongoc;">libmongoc</link> to designate
     custom handlers for socket communication; however, a new libmongoc client is
     created for each <classname>MongoDB\Driver\Manager</classname>. As a result,
-    the driver persists individual database connections but not authentication
-    state or topology information. This means that the driver needs to issue
-    commands at the start of each request to authenticate and
+    the extension persists individual database connections but not
+    authentication state or topology information. This means that the extension
+    needs to issue commands at the start of each request to authenticate and
     <link xlink:href="&url.mongodb.sdam;">discover the server topology</link>.
    </para>
 
@@ -234,7 +194,7 @@ foreach ($managers as $manager) {
 
    <note>
     <simpara>
-     Versions of the driver &gt;= 1.1.8 and &lt; 1.2.0 do not persist sockets
+     Versions of the extension &gt;= 1.1.8 and &lt; 1.2.0 do not persist sockets
      for SSL connections. See
      <link xlink:href="&url.mongodb.jira.phpc;-720">PHPC-720</link> for
      additional information.
@@ -243,21 +203,20 @@ foreach ($managers as $manager) {
 
    <para>
     Despite its shortcomings with persisting SSL connections when and topology
-    information, this version of the driver supports all
+    information, this version of the extension supports all
     <link linkend="context.ssl">SSL context options</link> since it uses
     PHP&apos;s Streams API.
    </para>
   </section>
- </article>
+ </section>
 
- <article xml:id="mongodb.persistence">
+ <section xml:id="mongodb.persistence">
   <titleabbrev>Persisting Data</titleabbrev>
   <title>Serialization and deserialization of PHP variables into MongoDB</title>
 
   <para>
-   This document discusses the methods how compound structures (documents,
-   arrays, objects) are persisted through the drivers. And how they are brought
-   back into PHP land.
+   This document discusses how compound structures (i.e. documents, arrays, and
+   objects) are converted between BSON and PHP values.
   </para>
 
   <section xml:id="mongodb.persistence.serialization">
@@ -427,83 +386,152 @@ foreach ($managers as $manager) {
 <![CDATA[
 <?php
 
-class stdClass {
-  public $foo = 42;
-} // => { "foo" : 42 }
+class stdClass
+{
+    public $foo = 42;
+} // => {"foo": 42}
 
-class MyClass {
-  public $foo = 42;
-  protected $prot = "wine";
-  private $fpr = "cheese";
-} // => { "foo" : 42 }
+class MyClass
+{
+    public $foo = 42;
+    protected $prot = 'wine';
+    private $fpr = 'cheese';
+} // => {"foo": 42}
 
-class AnotherClass1 implements MongoDB\BSON\Serializable {
-  public $foo = 42;
-  protected $prot = "wine";
-  private $fpr = "cheese";
-  function bsonSerialize(): array {
-      return [ 'foo' => $this->foo, 'prot' => $this->prot ];
-  }
-} // => { "foo" : 42, "prot" : "wine" }
+class AnotherClass1 implements MongoDB\BSON\Serializable
+{
+    public $foo = 42;
+    protected $prot = 'wine';
+    private $fpr = 'cheese';
 
-class AnotherClass2 implements MongoDB\BSON\Serializable {
-  public $foo = 42;
-  function bsonSerialize(): self {
-      return $this;
-  }
+    public function bsonSerialize(): array
+    {
+        return ['foo' => $this->foo, 'prot' => $this->prot];
+    }
+} // => {"foo": 42, "prot": "wine"}
+
+class AnotherClass2 implements MongoDB\BSON\Serializable
+{
+    public $foo = 42;
+
+    public function bsonSerialize(): self
+    {
+        return $this;
+    }
 } // => MongoDB\Driver\Exception\UnexpectedValueException("bsonSerialize() did not return an array or stdClass")
 
-class AnotherClass3 implements MongoDB\BSON\Serializable {
-  private $elements = [ 'foo', 'bar' ];
-  function bsonSerialize(): array {
-      return $this->elements;
-  }
-} // => { "0" : "foo", "1" : "bar" }
+class AnotherClass3 implements MongoDB\BSON\Serializable
+{
+    private $elements = ['foo', 'bar'];
 
-class ContainerClass implements MongoDB\BSON\Serializable {
-  public $things = AnotherClass4 implements MongoDB\BSON\Serializable {
-    private $elements = [ 0 => 'foo', 2 => 'bar' ];
-    function bsonSerialize(): array {
-      return $this->elements;
+    public function bsonSerialize(): array
+    {
+        return $this->elements;
     }
-  }
-  function bsonSerialize(): array {
-      return [ 'things' => $this->things ];
-  }
-} // => { "things" : { "0" : "foo", "2" : "bar" } }
+} // => {"0": "foo", "1": "bar"}
 
-class ContainerClass implements MongoDB\BSON\Serializable {
-  public $things = AnotherClass5 implements MongoDB\BSON\Serializable {
-    private $elements = [ 0 => 'foo', 2 => 'bar' ];
-    function bsonSerialize(): array {
-      return array_values($this->elements);
+/**
+ * Nesting Serializable classes
+ */
+
+class AnotherClass4 implements MongoDB\BSON\Serializable
+{
+    private $elements = [0 => 'foo', 2 => 'bar'];
+
+    public function bsonSerialize(): array
+    {
+        return $this->elements;
     }
-  }
-  function bsonSerialize(): array {
-      return [ 'things' => $this->things ];
-  }
-} // => { "things" : [ "foo", "bar" ] }
+} // => {"0": "foo", "2": "bar"}
 
-class ContainerClass implements MongoDB\BSON\Serializable {
-  public $things = AnotherClass6 implements MongoDB\BSON\Serializable {
-    private $elements = [ 'foo', 'bar' ];
-    function bsonSerialize(): array {
-      return (object) $this->elements;
+class ContainerClass1 implements MongoDB\BSON\Serializable
+{
+    public $things;
+
+    public function __construct()
+    {
+        $this->things = new AnotherClass4();
     }
-  }
-  function bsonSerialize(): array {
-      return [ 'things' => $this->things ];
-  }
-} // => { "things" : { "0" : "foo", "1" : "bar" } }
 
-class UpperClass implements MongoDB\BSON\Persistable {
-  public $foo = 42;
-  protected $prot = "wine";
-  private $fpr = "cheese";
-  function bsonSerialize(): array {
-      return [ 'foo' => $this->foo, 'prot' => $this->prot ];
-  }
-} // => { "foo" : 42, "prot" : "wine", "__pclass" : { "$type" : "80", "$binary" : "VXBwZXJDbGFzcw==" } }
+    function bsonSerialize(): array
+    {
+        return ['things' => $this->things];
+    }
+} // => {"things": {"0": "foo", "2": "bar"}}
+
+
+class AnotherClass5 implements MongoDB\BSON\Serializable
+{
+    private $elements = [0 => 'foo', 2 => 'bar'];
+
+    public function bsonSerialize(): array
+    {
+        return array_values($this->elements);
+    }
+} // => {"0": "foo", "1": "bar"} as a root class
+  //    ["foo", "bar"] as a nested value
+
+class ContainerClass2 implements MongoDB\BSON\Serializable
+{
+    public $things;
+
+    public function __construct()
+    {
+        $this->things = new AnotherClass5();
+    }
+
+    public function bsonSerialize(): array
+    {
+        return ['things' => $this->things];
+    }
+} // => {"things": ["foo", "bar"]}
+
+
+class AnotherClass6 implements MongoDB\BSON\Serializable
+{
+    private $elements = ['foo', 'bar'];
+
+    function bsonSerialize(): object
+    {
+        return (object) $this->elements;
+    }
+} // => {"0": "foo", "1": "bar"}
+
+class ContainerClass3 implements MongoDB\BSON\Serializable
+{
+    public $things;
+
+    public function __construct()
+    {
+        $this->things = new AnotherClass6();
+    }
+
+    public function bsonSerialize(): array
+    {
+        return ['things' => $this->things];
+    }
+} // => {"things": {"0": "foo", "1": "bar"}}
+
+class UpperClass implements MongoDB\BSON\Persistable
+{
+    public $foo = 42;
+    protected $prot = 'wine';
+    private $fpr = 'cheese';
+
+    private $data;
+
+    public function bsonUnserialize(array $data): void
+    {
+        $this->data = $data;
+    }
+
+    public function bsonSerialize(): array
+    {
+        return ['foo' => $this->foo, 'prot' => $this->prot];
+    }
+} // => {"foo": 42, "prot": "wine", "__pclass": {"$type": "80", "$binary": "VXBwZXJDbGFzcw=="}}
+
+?>
 ]]>
      </programlisting>
     </section>
@@ -521,9 +549,9 @@ class UpperClass implements MongoDB\BSON\Persistable {
     convenient to work with, this behavior was problematic because different
     BSON types could deserialize to the same PHP value (e.g.
     <literal>{"0": "foo"}</literal> and <literal>["foo"]</literal>) and make it
-    impossible to infer the original BSON type. By default, the current driver
-    addresses this concern by ensuring that BSON arrays and documents are
-    converted to PHP arrays and objects, respectively.
+    impossible to infer the original BSON type. By default, the
+    <code>mongodb</code> extension addresses this concern by ensuring that BSON
+    arrays and documents are converted to PHP arrays and objects, respectively.
    </para>
    <para>
     For compound types, there are three data types:
@@ -678,6 +706,24 @@ class UpperClass implements MongoDB\BSON\Persistable {
      </varlistentry>
 
      <varlistentry>
+      <term><literal>"bson"</literal></term>
+      <listitem>
+       <para>
+        Turns a BSON array into a <classname>MongoDB\BSON\PackedArray</classname>
+        and a BSON document into a <classname>MongoDB\BSON\Document</classname>,
+        regardless of whether the BSON document has a <property>__pclass</property>
+        property <footnoteref linkend="mongodb.pclass"/>.
+       </para>
+       <note>
+        <simpara>
+         The <literal>bson</literal> value is only available for the three root
+         types, not in the field specific mappings.
+        </simpara>
+       </note>
+      </listitem>
+     </varlistentry>
+
+     <varlistentry>
       <term>any other string</term>
       <listitem>
        <para>
@@ -722,7 +768,9 @@ class UpperClass implements MongoDB\BSON\Persistable {
       <methodname>MongoDB\Driver\Cursor::setTypeMap</methodname> method on a
       <classname>MongoDB\Driver\Cursor</classname> object, or the
       <literal>$typeMap</literal> argument of
-      <function>MongoDB\BSON\toPHP</function>. Each of the three
+      <function>MongoDB\BSON\toPHP</function>,
+      <methodname>MongoDB\BSON\Document::toPHP</methodname>, and
+      <methodname>MongoDB\BSON\PackedArray::toPHP</methodname>. Each of the three
       classes (<emphasis>root</emphasis>, <emphasis>document</emphasis>, and
       <emphasis>array</emphasis>) can be individually set, in addition to the
       field specific types.
@@ -784,7 +832,7 @@ class UpperClass implements MongoDB\BSON\Persistable {
       The <methodname>MongoDB\BSON\Unserializable::bsonUnserialize</methodname>
       method of YourClass, OurClass, TheirClass iterate over the array and set
       the properties without modifications. It <emphasis>also</emphasis> sets
-      the <literal>$unserialized</literal> property to <literal>true</literal>:
+      the <literal>$unserialized</literal> property to &true;:
 
       <programlisting role="php">
 <![CDATA[
@@ -919,8 +967,8 @@ function bsonUnserialize( array $map )
    </section>
   </section>
 
- </article>
-</book>
+ </section>
+</chapter>
 
 <!-- Keep this comment at the end of the file
 Local variables:

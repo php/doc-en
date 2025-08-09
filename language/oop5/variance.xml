@@ -10,7 +10,7 @@
  </para>
  <para>
   Covariance allows a child's method to return a more specific type than the return type
-  of its parent's method. Whereas, contravariance allows a parameter type to be less 
+  of its parent's method. Contravariance allows a parameter type to be less
   specific in a child method, than that of its parent.
  </para>
  <para>
@@ -225,7 +225,7 @@ Mavrick eats Food
    </screen>
 
    <para>
-    But what happens if <varname>$kitty</varname> tries to <varname>eat</varname> the
+    But what happens if <varname>$kitty</varname> tries to <methodname>eat</methodname> the
     <varname>$banana</varname>?
    </para>
 
@@ -241,6 +241,61 @@ Fatal error: Uncaught TypeError: Argument 1 passed to Animal::eat() must be an i
 ]]>
    </screen>
   </informalexample>
+ </sect2>
+ <sect2>
+  <title>Property variance</title>
+  <simpara>
+   By default, properties are neither covariant nor contravariant, hence invariant.
+   That is, their type may not change in a child class at all.
+   The reason for that is "get" operations must be covariant,
+   and "set" operations must be contravariant.
+   The only way for a property to satisfy both requirements is to be invariant.
+  </simpara>
+  <simpara>
+   As of PHP 8.4.0, with the addition of abstract properties (on an interface or abstract class) and
+   <link linkend="language.oop5.property-hooks.virtual">virtual properties</link>,
+   it is possible to declare a property that has only a get or set operation.
+   As a result, abstract properties or virtual properties that have only a "get" operation required may be covariant.
+   Similarly, an abstract property or virtual property that has only a "set" operation required may be contravariant.
+  </simpara>
+  <simpara>
+   Once a property has both a get and set operation, however,
+   it is no longer covariant or contravariant for further extension.
+   That is, it is now invariant.
+  </simpara>
+  <example>
+   <title>Property type variance</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class Animal {}
+class Dog extends Animal {}
+class Poodle extends Dog {}
+
+interface PetOwner
+{
+    // Only a get operation is required, so this may be covariant.
+    public Animal $pet { get; }
+}
+
+class DogOwner implements PetOwner
+{
+    // This may be a more restrictive type since the "get" side
+    // still returns an Animal.  However, as a native property
+    // children of this class may not change the type anymore.
+    public Dog $pet;
+}
+
+class PoodleOwner extends DogOwner
+{
+    // This is NOT ALLOWED, because DogOwner::$pet has both
+    // get and set operations defined and required.
+    public Poodle $pet;
+}
+?>
+]]>
+   </programlisting>
+  </example>
  </sect2>
 </sect1>
 <!-- Keep this comment at the end of the file

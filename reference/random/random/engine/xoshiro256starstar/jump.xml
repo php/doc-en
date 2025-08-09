@@ -7,9 +7,9 @@
 
  <refsect1 role="description">
   &reftitle.description;
-  <methodsynopsis>
+  <methodsynopsis role="Random\\Engine\\Xoshiro256StarStar">
    <modifier>public</modifier> <type>void</type><methodname>Random\Engine\Xoshiro256StarStar::jump</methodname>
-   <void />
+   <void/>
   </methodsynopsis>
   <para>
    Moves the algorithm’s state ahead by 2<superscript>128</superscript> steps, as if
@@ -44,16 +44,65 @@
    <programlisting role="php">
 <![CDATA[
 <?php
+use Random\Engine\Xoshiro256StarStar;
+use Random\Randomizer;
 
-/* ... */
+$blueprintRng = new Xoshiro256StarStar(0);
 
+$fibers = [];
+for ($i = 0; $i < 8; $i++) {
+    $fiberRng = clone $blueprintRng;
+    $blueprintRng->jump();
+
+    $fiber = new Fiber(static function () use ($fiberRng, $i): void {
+        $randomizer = new Randomizer($fiberRng);
+
+        while (true) {
+            Fiber::suspend();
+
+            echo "{$i}: ", $randomizer->getInt(0, 100), "\n";
+        }
+    });
+    $fiber->start();
+
+    $fibers[] = $fiber;
+}
+
+// Even though the fibers execute in a random order, they will print the same value
+// each time, because each has its own unique instance of the RNG.
+$randomizer = new Randomizer();
+
+$fibers = $randomizer->shuffleArray($fibers);
+foreach ($fibers as $fiber) {
+    $fiber->resume();
+}
+
+$fibers = $randomizer->shuffleArray($fibers);
+foreach ($fibers as $fiber) {
+    $fiber->resume();
+}
 ?>
 ]]>
    </programlisting>
    &example.outputs.similar;
    <screen>
 <![CDATA[
-...
+4: 89
+3: 10
+2: 63
+1: 75
+6: 41
+5: 56
+0: 16
+7: 60
+7: 34
+6: 58
+1: 74
+4: 63
+3: 3
+5: 42
+2: 45
+0: 86
 ]]>
    </screen>
   </example>

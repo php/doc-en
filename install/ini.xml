@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-<chapter xml:id="configuration" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+<chapter xml:id="configuration" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude">
  <title>Runtime Configuration</title>
- 
+
  <sect1 xml:id="configuration.file">
   <title>The configuration file</title>
-  
+
   <simpara>
    The configuration file (&php.ini;)
    is read when PHP starts up. For the server module versions of PHP,
@@ -88,20 +88,23 @@
     PHP to attempt to read &php.ini; from the root filesystem if it exists.
    </para>
   </note>
-  <para>
-   Using environment variables can be used in &php.ini; as shown below.
-  </para>
-  <para>
-   <example>
-    <title>&php.ini; Environment Variables</title>
-     <programlisting role="ini">
+  <simpara>
+   Environment variables can be referenced within configuration values
+   in &php.ini; as shown below. As of PHP 8.3.0, a fallback value can
+   be specified that will be used when the referenced variable is not
+   defined.
+  </simpara>
+  <example>
+   <title>&php.ini; Environment Variables</title>
+    <programlisting role="ini">
 <![CDATA[
 ; PHP_MEMORY_LIMIT is taken from environment
 memory_limit = ${PHP_MEMORY_LIMIT}
+; If PHP_MAX_EXECUTION_TIME is not defined, it will fall back to 30
+max_execution_time = ${PHP_MAX_EXECUTION_TIME:-30}
 ]]>
-     </programlisting>
-    </example>
-  </para>
+   </programlisting>
+  </example>
   <para>
    The &php.ini; directives handled by extensions are documented
    on the respective pages of the extensions themselves. A <link linkend="ini">list of
@@ -146,7 +149,7 @@ include_path = ".;c:\php\lib"
    <para>
     It is possible to configure PHP to scan for .ini files in a directory
     after reading &php.ini;. This can be done at compile time by setting the
-    <option role="configure">--with-config-file-scan-dir</option> option. 
+    <option role="configure">--with-config-file-scan-dir</option> option.
     The scan directory can then be overridden at run time
     by setting the <varname>PHP_INI_SCAN_DIR</varname> environment variable.
    </para>
@@ -194,10 +197,10 @@ $ PHP_INI_SCAN_DIR=/usr/local/etc/php.d: php
    </informalexample>
   </sect2>
  </sect1>
- 
+
  <sect1 xml:id="configuration.file.per-user">
   <title>.user.ini files</title>
-  
+
   <simpara>
    PHP includes support for configuration INI files on a
    per-directory basis. These files are processed <emphasis>only</emphasis> by
@@ -205,7 +208,7 @@ $ PHP_INI_SCAN_DIR=/usr/local/etc/php.d: php
    extension. If you are running PHP as Apache module, use &htaccess; files for the same
    effect.
   </simpara>
-  
+
   <simpara>
    In addition to the main &php.ini; file, PHP scans for INI files in each
    directory, starting with the directory of the requested PHP file, and
@@ -215,33 +218,33 @@ $ PHP_INI_SCAN_DIR=/usr/local/etc/php.d: php
   </simpara>
   <simpara>
    Only INI settings with the
-   modes <constant>PHP_INI_PERDIR</constant> and
-   <constant>PHP_INI_USER</constant> will be recognized in .user.ini-style INI
+   modes <constant>INI_PERDIR</constant> and
+   <constant>INI_USER</constant> will be recognized in .user.ini-style INI
    files.
   </simpara>
-  
+
   <simpara>
    Two new INI directives,
    <link linkend="ini.user-ini.filename">user_ini.filename</link> and
    <link linkend="ini.user-ini.cache-ttl">user_ini.cache_ttl</link>
    control the use of user INI files.
   </simpara>
-  
+
   <simpara>
    <link linkend="ini.user-ini.filename">user_ini.filename</link> sets the name of the file PHP looks for
    in each directory; if set to an empty string, PHP doesn't scan at all. The
    default is <literal>.user.ini</literal>.
   </simpara>
-  
+
   <simpara>
    <link linkend="ini.user-ini.cache-ttl">user_ini.cache_ttl</link> controls how often user INI files are
    re-read. The default is 300 seconds (5 minutes).
   </simpara>
  </sect1>
- 
+
  <sect1 xml:id="configuration.changes.modes">
   <title>Where a configuration setting may be set</title>
-  
+
   <para>
    These modes determine when and where a PHP directive may or may not
    be set, and each directive within the manual refers to one of these
@@ -249,59 +252,81 @@ $ PHP_INI_SCAN_DIR=/usr/local/etc/php.d: php
    using <function>ini_set</function>, whereas others may require
    &php.ini; or &httpd.conf;.
   </para>
-  
+
   <para>
    For example, the
    <link linkend="ini.output-buffering">output_buffering</link> setting
-   is <literal>PHP_INI_PERDIR</literal> therefore it may not be set using
+   is <constant>INI_PERDIR</constant> therefore it may not be set using
    <function>ini_set</function>. However, the
    <link linkend="ini.display-errors">display_errors</link> directive is
-   <literal>PHP_INI_ALL</literal> therefore it may be set anywhere,
+   <constant>INI_ALL</constant> therefore it may be set anywhere,
    including with <function>ini_set</function>.
   </para>
-  
+
   <para>
-   <table>
-    <title>Definition of PHP_INI_* modes</title>
-    <tgroup cols="2">
-     <thead>
-      <row>
-       <entry>Mode</entry>
-       <entry>Meaning</entry>
-      </row>
-     </thead>
-     <tbody>
-      <row>
-       <entry><literal>PHP_INI_USER</literal></entry>
-       <entry>
-        Entry can be set in user scripts (like with <function>ini_set</function>)
-        or in the <link linkend="configuration.changes.windows">Windows registry</link>.
-        Entry can be set in &user-ini;
-       </entry>
-      </row>
-      <row>
-       <entry><literal>PHP_INI_PERDIR</literal></entry>
-       <entry>
-        Entry can be set in &php.ini;, &htaccess;, &httpd.conf; or &user-ini;
-       </entry>
-      </row>
-      <row>
-       <entry><literal>PHP_INI_SYSTEM</literal></entry>
-       <entry>Entry can be set in &php.ini; or &httpd.conf;</entry>
-      </row>
-      <row>
-       <entry><literal>PHP_INI_ALL</literal></entry>
-       <entry>Entry can be set anywhere</entry>
-      </row>
-     </tbody>
-    </tgroup>
-   </table>
+   <variablelist>
+<!--
+Replace everything inside the <variablelist> element with an <xi:include>
+once libxml2 gets XInclude 1.1 attribute copying support.
+The below <xi:include> will include the appropriate elements
+but needs all top-level xml:id's removed (see XInclude 1.1 set-xml-id).
+
+    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('constant.ini-mode')/*)"><xi:fallback/></xi:include>
+-->
+    <title>INI mode constants</title>
+    <varlistentry>
+     <term>
+      <constant>INI_USER</constant>
+      (<type>int</type>)
+     </term>
+     <listitem>
+      <simpara>
+       Entry can be set in user scripts (like with <function xmlns="http://docbook.org/ns/docbook">ini_set</function>)
+       or in the <link xmlns="http://docbook.org/ns/docbook" linkend="configuration.changes.windows">Windows registry</link>.
+       Entry can be set in &user-ini;
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term>
+      <constant>INI_PERDIR</constant>
+      (<type>int</type>)
+     </term>
+     <listitem>
+      <simpara>
+       Entry can be set in &php.ini;, &htaccess;, &httpd.conf; or &user-ini;
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term>
+      <constant>INI_SYSTEM</constant>
+      (<type>int</type>)
+     </term>
+     <listitem>
+      <simpara>
+       Entry can be set in &php.ini; or &httpd.conf;
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term>
+      <constant>INI_ALL</constant>
+      (<type>int</type>)
+     </term>
+     <listitem>
+      <simpara>
+       Entry can be set anywhere
+      </simpara>
+     </listitem>
+    </varlistentry>
+   </variablelist>
   </para>
  </sect1>
- 
+
  <sect1 xml:id="configuration.changes">
   <title>How to change configuration settings</title>
-  
+
   <sect2 xml:id="configuration.changes.apache">
    <title>Running PHP as an Apache module</title>
    <simpara>
@@ -310,16 +335,16 @@ $ PHP_INI_SCAN_DIR=/usr/local/etc/php.d: php
     files (e.g. &httpd.conf;) and &htaccess; files. You will need
     "AllowOverride Options" or "AllowOverride All" privileges to do so.
    </simpara>
-   
+
    <para>
     There are several Apache directives that allow you
     to change the PHP configuration from within the Apache configuration
     files.  For a listing of which directives are
-    <constant>PHP_INI_ALL</constant>, <constant>PHP_INI_PERDIR</constant>,
-    or <constant>PHP_INI_SYSTEM</constant>, have a look at the
+    <constant>INI_ALL</constant>, <constant>INI_PERDIR</constant>,
+    or <constant>INI_SYSTEM</constant>, have a look at the
     <link linkend="ini.list">List of php.ini directives</link> appendix.
    </para>
-   
+
    <para>
     <variablelist>
      <varlistentry>
@@ -331,7 +356,7 @@ $ PHP_INI_SCAN_DIR=/usr/local/etc/php.d: php
       <listitem>
        <para>
         Sets the value of the specified directive.
-        Can be used only with <constant>PHP_INI_ALL</constant> and <constant>PHP_INI_PERDIR</constant> type directives.
+        Can be used only with <constant>INI_ALL</constant> and <constant>INI_PERDIR</constant> type directives.
         To clear a previously set value use <literal>none</literal> as the value.
        </para>
        <note>
@@ -351,8 +376,8 @@ $ PHP_INI_SCAN_DIR=/usr/local/etc/php.d: php
       <listitem>
        <para>
         Used to set a boolean configuration directive.
-        Can be used only with <constant>PHP_INI_ALL</constant> and
-        <constant>PHP_INI_PERDIR</constant> type directives.
+        Can be used only with <constant>INI_ALL</constant> and
+        <constant>INI_PERDIR</constant> type directives.
        </para>
       </listitem>
      </varlistentry>
@@ -418,7 +443,7 @@ $ PHP_INI_SCAN_DIR=/usr/local/etc/php.d: php
     </para>
    </caution>
   </sect2>
-  
+
   <sect2 xml:id="configuration.changes.windows">
    <title>Changing PHP configuration via the Windows registry</title>
    <simpara>
@@ -435,12 +460,12 @@ $ PHP_INI_SCAN_DIR=/usr/local/etc/php.d: php
     should have the name of the PHP configuration directive and the
     string value. PHP constants in the values are not parsed.
     However, only configuration values changeable in
-    <constant>PHP_INI_USER</constant> can be set
-    this way, <constant>PHP_INI_PERDIR</constant> values can not,
+    <constant>INI_USER</constant> can be set
+    this way, <constant>INI_PERDIR</constant> values can not,
     because these configuration values are re-read for each request.
    </simpara>
   </sect2>
-  
+
   <sect2 xml:id="configuration.changes.other">
    <title>Other interfaces to PHP</title>
    <para>
@@ -458,7 +483,7 @@ $ PHP_INI_SCAN_DIR=/usr/local/etc/php.d: php
    </para>
   </sect2>
  </sect1>
- 
+
 </chapter>
 
 <!-- Keep this comment at the end of the file

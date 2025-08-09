@@ -1,0 +1,634 @@
+<?xml version="1.0" encoding="utf-8"?>
+<chapter xml:id="outcontrol.user-level-output-buffers" xmlns="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+ <title>User-Level Output Buffers</title>
+ <para>
+  User-level output buffers can be started, manipulated
+  and terminated from PHP code.
+  Each of these buffers includes an output buffer
+  and an associated output handler function.
+ </para>
+
+ <section xml:id="outcontrol.what-output-is-buffered">
+  <title>What Output Is Buffered?</title>
+  <para>
+   PHP's user-level output buffers buffer all output after they are started
+   until they are turned off or the script ends.
+   Output in the context of PHP's user-level output buffer
+   is everything that PHP would display or send back to the browser.
+   In practical terms, output is non-zero length data that is:
+   <itemizedlist>
+    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('outputcontrol.what-is-output')/*)"><xi:fallback/></xi:include>
+   </itemizedlist>
+  </para>
+  <note>
+   <simpara>
+    Data that is written directly to <literal>stdout</literal>
+    or passed to an SAPI function with a similar functionality
+    will not be captured by user-level output buffers.
+    This includes
+    writing data to <literal>stdout</literal> with <function>fwrite</function>
+    or sending headers using <function>header</function>
+    or <function>setcookie</function>.
+   </simpara>
+  </note>
+ </section>
+
+ <section>
+  <title>Turning Output Buffering On</title>
+  <para>
+   Output buffering can be turned on by using
+   the <function>ob_start</function> function or by setting
+   the <link linkend="ini.output-buffering">output_buffering</link>
+   and <link linkend="ini.output-handler">output_handler</link>
+   &php.ini; settings.
+   While both can create output buffers,
+   <function>ob_start</function> is more flexible
+   as it accepts user-defined functions as output handlers
+   and the operations allowed on the buffer (flush, clean, remove)
+   can be set as well.
+   Buffers started with <function>ob_start</function> will be active
+   from the line the function was called,
+   while those started with
+   <link linkend="ini.output-buffering">output_buffering</link>
+   will be buffering output from the first line of the script.
+  </para>
+  <para>
+   PHP is also shipped with a built-in <literal>"URL-Rewriter"</literal>
+   output handler which starts its own output buffer and only allows
+   up to two instances of it running at any time
+   (one for user-level URL-rewriting
+   and one for transparent session id support).
+   These buffers can be started by calling
+   the <function>output_add_rewrite_var</function> function
+   and/or by enabling the
+   <link linkend="ini.session.use-trans-sid">session.use_trans_sid</link>
+   &php.ini; setting.
+  </para>
+  <para>
+   The bundled <literal>zlib</literal> extension has its own
+   output buffer which can be enabled by using the
+   <link linkend="ini.zlib.output-compression">zlib.output_compression</link>
+   &php.ini; setting.
+  </para>
+  <note>
+   <simpara>
+    While <literal>"URL-Rewriter"</literal> is special
+    in that it only allows up to two instances of it running at any one time,
+    all user-level output buffers use the same underlying buffers
+    used by <function>ob_start</function>
+    with their functionality implemented by a custom output handler function.
+    As such, all of their functionality can be emulated by userland code.
+   </simpara>
+  </note>
+ </section>
+
+ <section xml:id="outcontrol.nesting-output-buffers">
+  <title>Nesting Output Buffers</title>
+  <para>
+   If there is an output buffer active when a new buffer is started,
+   the new buffer will be nested inside the previously active buffer.
+   The inner buffer will behave the same way regardless whether it is nested
+   but output buffered by it will not be buffered by the outer buffer.
+   Only output flushed by the inner buffer will be buffered by the outer buffer.
+  </para>
+  <para>
+   Most <literal>ob_<replaceable>*</replaceable></literal> functions only work
+   with the active output buffer (the last one started)
+   therefore only the active buffer can be flushed, cleaned and turned off.
+   The functions that work with other buffers are
+   <function>ob_list_handlers</function>
+   which returns the list of all output handlers in use
+   and <function>ob_get_status</function>
+   which can return information on the active buffer only
+   or on all buffers in use.
+  </para>
+  <para>
+   Calling <function>ob_get_level</function>
+   or <function>ob_get_status</function> will return
+   the nesting level of the active output buffer.
+  </para>
+  <caution>
+   <simpara>
+    The value for identical levels between <function>ob_get_level</function>
+    and <function>ob_get_status</function> is off by one.
+    For <function>ob_get_level</function>
+    the first level is <literal>1</literal>,
+    whereas for <function>ob_get_status</function>
+    the first level is <literal>0</literal>.
+   </simpara>
+  </caution>
+ </section>
+
+ <section xml:id="outcontrol.buffer-size">
+  <title>Buffer Size</title>
+  <para>
+   Buffer sizes are expressed by integers
+   and represent the number of bytes the buffer can store without flushing.
+   When the size of output in the buffer exceeds the size of the buffer,
+   the contents of the buffer are sent to the output handler,
+   its return value is flushed and the buffer is cleared.
+  </para>
+  <para>
+   With the exception of <literal>"URL-Rewriter"</literal>,
+   the size of output buffers can be set when the buffer is started.
+   If set to <literal>0</literal>,
+   the output buffer is only limited by the memory available to PHP.
+   If set to <literal>1</literal>,
+   the buffer is flushed after every block of code producing
+   any non-zero length output.
+  </para>
+  <para>
+   The size of output buffers can be retrieved by calling
+   <function>ob_get_status</function>.
+  </para>
+  <para>
+   Output buffers started with <function>ob_start</function>
+   will have their buffer sizes set to the integer value passed to
+   the function's second <parameter>chunk_size</parameter> parameter.
+   If omitted, it is set to <literal>0</literal>.
+  </para>
+  <para>
+   The output buffer started with
+   <link linkend="ini.output-buffering">output_buffering</link>
+   set to <literal>"On"</literal> will have its buffer size set to 0.
+   If set to an integer than buffer size will correspond to that number.
+  </para>
+  <para>
+   <literal>"URL-Rewriter"</literal>'s buffer size is set to <literal>0</literal>,
+   therefore it is only limited by the memory available to PHP.
+  </para>
+  <para>
+   The size of <literal>zlib</literal>'s output buffer is controlled by the
+   <link linkend="ini.zlib.output-compression">zlib.output_compression</link>
+   &php.ini; setting.
+   If set to <literal>"On"</literal> the buffer size will be
+   <literal>"16K"</literal>/<literal>16384</literal>.
+   If set to an integer then buffer size will correspond to that number in bytes.
+  </para>
+ </section>
+
+ <section xml:id="outcontrol.operations-on-buffers">
+  <title>Operations Allowed On Buffers</title>
+  <para>
+   The operations allowed on buffers can be controlled
+   by passing one of the
+   <link linkend="outcontrol.constants.buffer-control-flags">buffer control flags</link>
+   to <function>ob_start</function>'s third
+   <parameter>flags</parameter> parameter.
+   If omitted, all operations are allowed by default.
+   If <literal>0</literal> is used instead,
+   the buffer cannot be flushed, cleaned or removed
+   but it's contents can still be retrieved.
+  </para>
+  <para>
+   <constant>PHP_OUTPUT_HANDLER_CLEANABLE</constant> allows
+   <function>ob_clean</function> to clean the contents of the buffer.
+  </para>
+  <warning>
+   <simpara>
+    The absence of the <constant>PHP_OUTPUT_HANDLER_CLEANABLE</constant> flag
+    will not prevent <function>ob_end_clean</function>
+    or <function>ob_get_clean</function> from clearing the contents of the buffer.
+   </simpara>
+  </warning>
+  <para>
+   <constant>PHP_OUTPUT_HANDLER_FLUSHABLE</constant> allows
+   <function>ob_flush</function> to flush the contents of the buffer.
+  </para>
+  <warning>
+   <simpara>
+    The absence of the <constant>PHP_OUTPUT_HANDLER_FLUSHABLE</constant> flag
+    will not prevent <function>ob_end_flush</function>
+    or <function>ob_get_flush</function> from flushing the contents of the buffer.
+   </simpara>
+  </warning>
+  <para>
+   <constant>PHP_OUTPUT_HANDLER_REMOVABLE</constant> allows
+   <function>ob_end_clean</function>, <function>ob_end_flush</function>,
+   <function>ob_get_clean</function> or <function>ob_get_flush</function>
+   to turn off the buffer.
+  </para>
+  <para>
+   <constant>PHP_OUTPUT_HANDLER_STDFLAGS</constant>,
+   the combination of the three flags will allow each of the three operations
+   to be performed on the buffer.
+  </para>
+ </section>
+
+ <section>
+  <title>Flushing, Accessing And Cleaning Buffer Contents</title>
+  <para>
+   Flushing sends and discards the contents of the active buffer.
+   Output buffers get flushed when the size of the output
+   exceeds the size of the buffer; the script ends or
+   <function>ob_flush</function>, <function>ob_end_flush</function>
+   or <function>ob_get_flush</function> is called.
+  </para>
+  <caution>
+   <simpara>
+    Calling <function>ob_end_flush</function>
+    or <function>ob_get_flush</function> will turn off the active buffer.
+   </simpara>
+  </caution>
+  <caution>
+   <simpara>
+    Flushing buffers will flush the return value of the output handler
+    which can differ from the contents of the buffer.
+    For example, using <function>ob_gzhandler</function> will compress
+    the output and flush the compressed output.
+   </simpara>
+  </caution>
+  <para>
+   The contents of the active buffer can be retrieved by calling
+   <function>ob_get_contents</function>, <function>ob_get_clean</function>
+   or <function>ob_get_flush</function>.
+  </para>
+  <para>
+   If only the length of the buffer's contents are needed,
+   <function>ob_get_length</function> or <function>ob_get_status</function>
+   will return the length of the contents in bytes.
+  </para>
+  <caution>
+   <simpara>
+    Calling <function>ob_get_clean</function>
+    or <function>ob_get_flush</function> will turn off the active buffer
+    after returning the its contents.
+   </simpara>
+  </caution>
+  <para>
+   The contents of the active buffer can be cleaned by calling
+   <function>ob_clean</function>, <function>ob_end_clean</function>
+   or <function>ob_get_clean</function>.
+  </para>
+  <caution>
+   <simpara>
+    Calling <function>ob_end_clean</function>
+    or <function>ob_get_clean</function> will turn off the active buffer.
+   </simpara>
+  </caution>
+ </section>
+
+ <section>
+  <title>Turning Buffers Off</title>
+  <para>
+   Output buffers can be turned off by calling
+   <function>ob_end_clean</function>, <function>ob_end_flush</function>,
+   <function>ob_get_flush</function> or <function>ob_get_clean</function>.
+  </para>
+  <warning>
+   <simpara>
+    Output buffers started without the
+    <constant>PHP_OUTPUT_HANDLER_REMOVABLE</constant> flag
+    cannot be turned off and may generate an <constant>E_NOTICE</constant>.
+   </simpara>
+  </warning>
+  <para>
+   Every output buffer that has not been closed by the end of the script
+   or when <function>exit</function> is called will be flushed
+   and turned off by PHP's shutdown process.
+   The buffers will be flushed and turned off in reverse order
+   of their starting up.
+   The last buffered started will be first,
+   the first buffer started will be last to be flushed and turned off.
+  </para>
+  <caution>
+   <simpara>
+    If flushing of the buffer's contents is not desired,
+    a custom output handler should be used to prevent flushing during shutdown.
+   </simpara>
+  </caution>
+ </section>
+
+ <section xml:id="outcontrol.output-handlers">
+  <title>Output Handlers</title>
+  <para>
+   Output handlers are <type>callable</type>s associated with output buffers
+   that are invoked by calling <function>ob_clean</function>,
+   <function>ob_flush</function>, <function>ob_end_flush</function>,
+   <function>ob_get_flush</function>, <function>ob_end_clean</function>,
+   <function>ob_get_clean</function> or during PHP's shutdown process.
+  </para>
+  <note>
+   <simpara>
+    The shutdown process will flush the return value of the handler.
+   </simpara>
+  </note>
+  <para>
+   If omitted or &null; when starting the output buffer
+   the internal <literal>"default output handler"</literal> will be used
+   which returns the unmodified contents of the buffer when invoked.
+   Output handlers can be used to return a modified version
+   of the buffer's contents and/or have side-effects (e.g. send headers).
+  </para>
+  <para>
+   PHP comes with two internal output handlers:
+   <literal>"default output handler"</literal>
+   and <literal>"URL-Rewriter"</literal> (which is integrated into
+   its own output buffer and only up to two instances of it can be started).
+  </para>
+  <para>
+   The bundled extensions include four additional output handlers:
+   <function>mb_output_handler</function>, <function>ob_gzhandler</function>,
+   <function>ob_iconv_handler</function>, <function>ob_tidyhandler</function>.
+  </para>
+ </section>
+
+ <section xml:id="outcontrol.working-with-output-handlers">
+  <title>Working With Output Handlers</title>
+  <para>
+   When invoked, output handlers are passed the contents of the buffer
+   and a bitmask indicating the status of output buffering.
+  </para>
+  <para>
+   <methodsynopsis>
+    <type>string</type>
+    <methodname>
+     <replaceable>handler</replaceable>
+    </methodname>
+    <methodparam>
+     <type>string</type>
+     <parameter>buffer</parameter>
+    </methodparam>
+    <methodparam choice="opt">
+     <type>int</type>
+     <parameter>phase</parameter>
+    </methodparam>
+   </methodsynopsis>
+   <variablelist>
+    <varlistentry>
+     <term><parameter>buffer</parameter></term>
+     <listitem>
+      <simpara>
+       Contents of the output buffer.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><parameter>phase</parameter></term>
+     <listitem>
+      <simpara>
+       Bitmask of
+       <link linkend="constant.php-output-handler-start">
+        <constant>PHP_OUTPUT_HANDLER_<replaceable>*</replaceable></constant>
+        constants
+       </link>.
+      </simpara>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </para>
+  <warning>
+   <simpara>
+    Calling any of the following functions from within an output handler
+    will result in a fatal error:
+    <function>ob_clean</function>, <function>ob_end_clean</function>,
+    <function>ob_end_flush</function>, <function>ob_flush</function>,
+    <function>ob_get_clean</function>, <function>ob_get_flush</function>,
+    <function>ob_start</function>.
+   </simpara>
+  </warning>
+  <note>
+   <simpara>
+    If the <constant>PHP_OUTPUT_HANDLER_DISABLED</constant> of a handler is set,
+    the handler will not be invoked by calling
+    <function>ob_end_clean</function>, <function>ob_end_flush</function>,
+    <function>ob_get_clean</function>, <function>ob_get_flush</function>,
+    <function>ob_clean</function>,
+    <function>ob_flush</function>
+    or during PHP's shutdown process.
+    Prior to PHP 8.4.0, this flag had no effect when calling <function>ob_clean</function>
+    or <function>ob_flush</function>.
+   </simpara>
+  </note>
+  <note>
+   <simpara>
+    The working directory of the script can change inside the shutdown function
+    under some web servers, e.g. Apache or the built-in web server.
+   </simpara>
+  </note>
+ </section>
+
+ <section xml:id="outcontrol.flags-passed-to-output-handlers">
+  <title>Flags Passed To Output Handlers</title>
+  <para>
+   The bitmask passed to the second <parameter>phase</parameter> parameter
+   of the output handler provides information on the invocation of the handler.
+  </para>
+  <note>
+   <simpara>
+    The bitmask can include more than one flag
+    and the bitwise <literal>&amp;</literal> operator should be used
+    to check whether a flag is set.
+   </simpara>
+  </note>
+  <warning>
+   <simpara>
+    The value of <constant>PHP_OUTPUT_HANDLER_WRITE</constant> and its alias
+    <constant>PHP_OUTPUT_HANDLER_CONT</constant> is <literal>0</literal>
+    therefore whether it is set can only be determined
+    by using an
+    <link linkend="language.operators.comparison">equality operator</link>
+    (<literal>==</literal> or <literal>===</literal>).
+   </simpara>
+  </warning>
+  <para>
+   The following flags are set in a specific phase of the handler's lifecycle:
+   <constant>PHP_OUTPUT_HANDLER_START</constant> is set
+   when a handler is invoked for the first time.
+   <constant>PHP_OUTPUT_HANDLER_FINAL</constant>
+   or its alias <constant>PHP_OUTPUT_HANDLER_END</constant>
+   is set when a handler is invoked for the last time,
+   i.e. it is being turned off. This flag is also set
+   when buffers are being turned off by PHP's shutdown process.
+  </para>
+  <para>
+   The following flags are set by a specific invocation of the handler:
+   <constant>PHP_OUTPUT_HANDLER_FLUSH</constant> is set
+   when the handler is invoked by calling <function>ob_flush</function>.
+   <constant>PHP_OUTPUT_HANDLER_WRITE</constant>
+   or its alias <constant>PHP_OUTPUT_HANDLER_CONT</constant>
+   is set when the size of its contents equals or exceeds the size of the buffer
+   and the handler is invoked while the buffer is being automatically flushed.
+   <constant>PHP_OUTPUT_HANDLER_FLUSH</constant> is set
+   when the handler is invoked by calling <function>ob_clean</function>,
+   <function>ob_end_clean</function> or <function>ob_get_clean</function>.
+   When <function>ob_end_clean</function> or <function>ob_get_clean</function>
+   is called, <constant>PHP_OUTPUT_HANDLER_FINAL</constant> is set as well.
+  </para>
+  <note>
+   <simpara>
+    When <function>ob_end_flush</function> or <function>ob_get_flush</function>
+    is called, <constant>PHP_OUTPUT_HANDLER_FINAL</constant> is set
+    but <constant>PHP_OUTPUT_HANDLER_FLUSH</constant> is not.
+   </simpara>
+  </note>
+ </section>
+
+ <section xml:id="outcontrol.output-handler-return-values">
+  <title>Output Handler Return Values</title>
+  <para>
+   The return value of the output handler is internally coerced into a string
+   following standard PHP type semantics, with two exceptions:
+   <type>array</type>s and <type>bool</type>eans.
+  </para>
+  <para>
+   Arrays are converted into the string <literal>"Array"</literal>
+   but the <literal>Array to string conversion</literal> warning
+   is not triggered.
+  </para>
+  <para>
+   If the handler returns &false; the contents of the buffer are returned.
+   If the handler returns &true; an empty string is returned.
+  </para>
+  <note>
+   <simpara>
+    If a handler returns &false; or throws an exception
+    its <constant>PHP_OUTPUT_HANDLER_DISABLED</constant> status flag is set.
+   </simpara>
+  </note>
+ </section>
+
+ <section>
+  <title>Exceptions Thrown In Output Handlers</title>
+  <para>
+   If an uncaught exception is thrown in an output handler
+   the program terminates and the handler is invoked
+   by the shutdown process after which
+   the <literal>"Uncaught Exception"</literal> error message is flushed.
+  </para>
+  <para>
+   If the uncaught exception is thrown in a handler
+   invoked by <function>ob_flush</function>,
+   <function>ob_end_flush</function> or <function>ob_get_flush</function>,
+   the contents of the buffer are flushed before the error message.
+  </para>
+  <para>
+   If an uncaught exception is thrown in an output handler during shutdown,
+   the handler is terminated and neither the contents of the buffer
+   nor the error message is flushed.
+  </para>
+  <note>
+   <simpara>
+    If a handler throws an exception
+    its <constant>PHP_OUTPUT_HANDLER_DISABLED</constant> status flag is set.
+   </simpara>
+  </note>
+ </section>
+
+ <section>
+  <title>Errors Raised In Output Handlers</title>
+  <para>
+   If a non-fatal error is raised in an output handler
+   the program continues execution.
+  </para>
+  <para>
+   If the non-fatal error is raised in a handler invoked by
+   <function>ob_flush</function>, <function>ob_end_flush</function>
+   or <function>ob_get_flush</function>,
+   the buffer flushes certain data depending on the return value of the handler.
+   If the handler returns &false; the buffer and the error message are flushed.
+   If the returns anything else the handler return value is flushed
+   but not the error message.
+  </para>
+  <note>
+   <simpara>
+    If a handler returns &false;
+    its <constant>PHP_OUTPUT_HANDLER_DISABLED</constant> status flag is set.
+   </simpara>
+  </note>
+  <para>
+   If a fatal error is raised in an output handler
+   the program terminates and the handler is invoked
+   by the shutdown process after which the error message is flushed.
+  </para>
+  <para>
+   If the fatal error is raised in a handler
+   invoked by <function>ob_flush</function>,
+   <function>ob_end_flush</function> or <function>ob_get_flush</function>,
+   the contents of the buffers are flushed before the error message.
+  </para>
+  <para>
+   If a fatal error is raised in an output handler during shutdown
+   the program terminates without flushing the buffer or the error message.
+  </para>
+ </section>
+
+ <section>
+  <title>Output In Output Handlers</title>
+  <para>
+   In specific circumstances, output produced in the handler is flushed
+   along with the contents of the buffer.
+   This output is not appended to the buffer and is not part of the string
+   returned by <function>ob_get_flush</function>.
+  </para>
+  <para>
+   During flush operations (calling <function>ob_flush</function>,
+   <function>ob_end_flush</function>, <function>ob_get_flush</function>
+   and during shutdown)
+   if the return value of a handler is &false;
+   the contents of the buffer are flushed followed by the output.
+   If the handler is not invoked during shutdown
+   the handler throwing an exception or <function>exit</function> being called
+   results in the same behavior.
+  </para>
+  <note>
+   <simpara>
+    If a handler returns &false;
+    its <constant>PHP_OUTPUT_HANDLER_DISABLED</constant> status flag is set.
+   </simpara>
+  </note>
+ </section>
+
+ <section>
+  <title>Output Handler Status Flags</title>
+  <para>
+   The
+   <link linkend="outcontrol.constants.flags-returned-by-handler">
+    handler status flags
+   </link> of the buffer's <literal>flags</literal> bitmask
+   are set every time to the output handler is invoked
+   and are part of the <literal>flags</literal> returned by
+   <function>ob_get_status</function>.
+   If the handler successfully executes and does not return &false;,
+   <constant>PHP_OUTPUT_HANDLER_STARTED</constant> and
+   <constant>PHP_OUTPUT_HANDLER_PROCESSED</constant> is set.
+   If the handler returns &false; or throws an exception while executing,
+   <constant>PHP_OUTPUT_HANDLER_STARTED</constant> and
+   <constant>PHP_OUTPUT_HANDLER_DISABLED</constant> is set.
+  </para>
+  <note>
+   <simpara>
+    If the <constant>PHP_OUTPUT_HANDLER_DISABLED</constant> of a handler is set,
+    the handler will not be invoked by calling
+    <function>ob_end_clean</function>, <function>ob_end_flush</function>,
+    <function>ob_get_clean</function>, <function>ob_get_flush</function>,
+    <function>ob_clean</function>,
+    <function>ob_flush</function>
+    or during PHP's shutdown process.
+    Prior to PHP 8.4.0, this flag had no effect when calling <function>ob_clean</function>
+    or <function>ob_flush</function>.
+   </simpara>
+  </note>
+ </section>
+
+</chapter>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

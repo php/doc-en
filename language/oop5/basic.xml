@@ -14,10 +14,12 @@
    </para>
    <para>
     The class name can be any valid label, provided it is not a
-    PHP <link linkend="reserved">reserved word</link>. A valid class
-    name starts with a letter or underscore, followed by any number of
-    letters, numbers, or underscores. As a regular expression, it
-    would be expressed thus:
+    PHP <link linkend="reserved">reserved word</link>.
+    As of PHP 8.4.0, using a single underscore <literal>_</literal> as a
+    class name is deprecated.
+    A valid class name starts with a letter or underscore,
+    followed by any number of letters, numbers, or underscores.
+    As a regular expression, it would be expressed thus:
     <code>^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$</code>.
    </para>
    <para>
@@ -139,11 +141,11 @@ Stack trace:
      <classname>AllowDynamicProperties</classname> attribute. Attempting to do so
      will trigger a compile-time error.
     </para>
-    <example>
+    <informalexample>
      <programlisting role="php">
 <![CDATA[
 <?php
-#[AllowDynamicProperties]
+#[\AllowDynamicProperties]
 readonly class Foo {
 }
 
@@ -151,14 +153,14 @@ readonly class Foo {
 ?>
 ]]>
      </programlisting>
-    </example>
+    </informalexample>
 
     <para>
-     As neither untyped, nor static properties can be marked with the
+     As neither untyped nor static properties can be marked with the
      <literal>readonly</literal> modifier, readonly classes cannot declare
      them either:
     </para>
-    <example>
+    <informalexample>
      <programlisting role="php">
 <![CDATA[
 <?php
@@ -183,7 +185,7 @@ readonly class Foo
 ?>
 ]]>
      </programlisting>
-    </example>
+    </informalexample>
     <para>
      A <modifier>readonly</modifier> class can be
      <link linkend="language.oop5.basic.extends">extended</link>
@@ -204,7 +206,7 @@ readonly class Foo
     requirement).
    </para>
    <para>
-    If a <type>string</type> containing the name of a class is used with
+    If a variable containing a <type>string</type> with the name of a class is used with
     <literal>new</literal>, a new instance of that class will be created. If
     the class is in a namespace, its fully qualified name must be used when
     doing this.
@@ -222,11 +224,16 @@ readonly class Foo
     <programlisting role="php">
 <![CDATA[
 <?php
+class SimpleClass {
+}
+
 $instance = new SimpleClass();
+var_dump($instance);
 
 // This can also be done with a variable:
 $className = 'SimpleClass';
 $instance = new $className(); // new SimpleClass()
+var_dump($instance);
 ?>
 ]]>
     </programlisting>
@@ -294,6 +301,9 @@ object(ClassD)#1 (0) {
     <programlisting role="php">
 <![CDATA[
 <?php
+class SimpleClass {
+    public string $var;
+}
 
 $instance = new SimpleClass();
 
@@ -330,26 +340,27 @@ object(SimpleClass)#1 (1) {
     <programlisting role="php">
 <![CDATA[
 <?php
+
 class Test
 {
-    static public function getNew()
+    public static function getNew()
     {
-        return new static;
+        return new static();
     }
 }
 
-class Child extends Test
-{}
+class Child extends Test {}
 
-$obj1 = new Test();
-$obj2 = new $obj1;
+$obj1 = new Test(); // By the class name
+$obj2 = new $obj1(); // Through the variable containing an object
 var_dump($obj1 !== $obj2);
 
-$obj3 = Test::getNew();
+$obj3 = Test::getNew(); // By the class method
 var_dump($obj3 instanceof Test);
 
-$obj4 = Child::getNew();
+$obj4 = Child::getNew(); // Through a child class method
 var_dump($obj4 instanceof Child);
+
 ?>
 ]]>
     </programlisting>
@@ -372,14 +383,18 @@ bool(true)
     <programlisting role="php">
 <![CDATA[
 <?php
-echo (new DateTime())->format('Y');
+echo (new DateTime())->format('Y'), PHP_EOL;
+
+// surrounding parentheses are optional as of PHP 8.4.0
+echo new DateTime()->format('Y'), PHP_EOL;
 ?>
 ]]>
     </programlisting>
     &example.outputs.similar;
     <screen>
 <![CDATA[
-2016
+2025
+2025
 ]]>
     </screen>
    </example>
@@ -493,6 +508,14 @@ echo ($obj->bar)(), PHP_EOL;
     <programlisting role="php">
 <![CDATA[
 <?php
+class SimpleClass
+{
+    function displayVar()
+    {
+        echo "Parent class\n";
+    }
+}
+
 class ExtendClass extends SimpleClass
 {
     // Redefine the parent method
@@ -525,7 +548,8 @@ a default value
      <constant>E_WARNING</constant> level error is generated.
      A signature is compatible if it respects the
      <link linkend="language.oop5.variance">variance</link> rules, makes a
-     mandatory parameter optional, and if any new parameters are optional.
+     mandatory parameter optional, adds only optional new parameters and
+     doesn't restrict but only relaxes the visibility.
      This is known as the Liskov Substitution Principle, or LSP for short.
      The <link linkend="language.oop5.decon.constructor">constructor</link>,
      and <literal>private</literal> methods are exempt from these signature
@@ -739,7 +763,7 @@ Does\Not\Exist
     </example>
    </note>
    <para>
-    As of PHP 8.0.0, the <literal>::class</literal> constant may also be used on
+    As of PHP 8.0.0, <literal>::class</literal> may also be used on
     objects. This resolution happens at runtime, not compile time. Its effect is
     the same as calling <function>get_class</function> on the object.
    </para>
@@ -751,9 +775,10 @@ Does\Not\Exist
 namespace NS {
     class ClassName {
     }
+
+    $c = new ClassName();
+    print $c::class;
 }
-$c = new ClassName();
-print $c::class;
 ?>
 ]]>
     </programlisting>
@@ -782,7 +807,7 @@ NS\ClassName
   <para>
    <example>
     <title>Nullsafe Operator</title>
-    <programlisting role="php">
+    <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 

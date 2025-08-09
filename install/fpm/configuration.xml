@@ -210,8 +210,8 @@
       <listitem>
        <para>
         Specify the event mechanism FPM will use.
-        The following is available: select, pool, epoll, kqueue (*BSD), port (Solaris).
-        Default value: not set (auto detection).
+        The following is available: epoll, kqueue (*BSD), port (Solaris), poll, select.
+        Default value: not set (auto detection preferring epoll and kqueue).
        </para>
       </listitem>
      </varlistentry>
@@ -421,8 +421,7 @@
        <para>
         The number of child processes created on startup.
         Used only when <literal>pm</literal> is set to <literal>dynamic</literal>.
-        Default Value: min_spare_servers + (max_spare_servers -
-        min_spare_servers) / 2.
+        Default Value: (min_spare_servers + max_spare_servers) / 2.
        </para>
       </listitem>
      </varlistentry>
@@ -805,111 +804,173 @@
           <tbody>
            <row>
             <entry>
-             <constant>%C</constant>
+             <literal>%%</literal>
             </entry>
-            <entry>%CPU</entry>
+            <entry>The <literal>%</literal> character</entry>
            </row>
            <row>
             <entry>
-             <constant>%d</constant>
+             <literal>%C</literal>
             </entry>
-            <entry>duration µs</entry>
+            <entry>
+             %CPU used by the request. It can accept the following format:
+             <literal>%{user}C</literal> for user CPU only,
+             <literal>%{system}C</literal> for system CPU only,
+             <literal>%{total}C</literal> for user + system CPU (default)
+            </entry>
            </row>
            <row>
             <entry>
-             <constant>%e</constant>
+             <literal>%d</literal>
             </entry>
-            <entry>fastcgi env</entry>
+            <entry>
+             Time taken to serve the request.
+             It can accept the following formats for precision:
+             <literal>%{seconds}d</literal> (default), <literal>%{milliseconds}d</literal>,
+             <literal>%{microseconds}d</literal>
+            </entry>
            </row>
            <row>
             <entry>
-             <constant>%f</constant>
+             <literal>%{<replaceable>name</replaceable>}e</literal>
             </entry>
-            <entry>script</entry>
+            <entry>
+             An environment variable (same as <varname>$_ENV</varname> or <varname>$_SERVER</varname>).
+             A variable name must be specified within curly brackets to specify the name of the env variable.
+             For example, server specifics like <literal>%{REQUEST_METHOD}e</literal> or
+             <literal>%{SERVER_PROTOCOL}e</literal>, HTTP headers like
+             <literal>%{HTTP_HOST}e</literal> or <literal>%{HTTP_USER_AGENT}e</literal>
+            </entry>
            </row>
            <row>
             <entry>
-             <constant>%l</constant>
+             <literal>%f</literal>
             </entry>
-            <entry>content length</entry>
+            <entry>Script filename</entry>
            </row>
            <row>
             <entry>
-             <constant>%m</constant>
+             <literal>%l</literal>
             </entry>
-            <entry>method</entry>
+            <entry>
+             <literal>Content-Length</literal> of the request (for HTTP POST request only)
+            </entry>
            </row>
            <row>
             <entry>
-             <constant>%M</constant>
+             <literal>%m</literal>
             </entry>
-            <entry>memory</entry>
+            <entry>Request HTTP method</entry>
            </row>
            <row>
             <entry>
-             <constant>%n</constant>
+             <literal>%M</literal>
             </entry>
-            <entry>pool name</entry>
+            <entry>
+             Peak of memory allocated by PHP.
+             It can accept the following format:
+             <literal>%{bytes}M</literal> (default), <literal>%{kilobytes}M</literal>
+             <literal>%{kilo}M</literal>, <literal>%{megabytes}M</literal>,
+             <literal>%{mega}M</literal>
+            </entry>
            </row>
            <row>
             <entry>
-             <constant>%o</constant>
+             <literal>%n</literal>
             </entry>
-            <entry>header output</entry>
+            <entry>Pool name</entry>
            </row>
            <row>
             <entry>
-             <constant>%p</constant>
+             <literal>%{<replaceable>name</replaceable>}o</literal>
             </entry>
-            <entry>PID</entry>
+            <entry>
+             Output header. The header name must be specified within curly brackets.
+             For example: <literal>%{Content-Type}o</literal>,
+             <literal>%{X-Powered-By}o</literal>, <literal>%{Transfer-Encoding}o</literal>
+            </entry>
            </row>
            <row>
             <entry>
-             <constant>%q</constant>
+             <literal>%p</literal>
             </entry>
-            <entry>query string</entry>
+            <entry>PID of the child that serviced the request</entry>
            </row>
            <row>
             <entry>
-             <constant>%Q</constant>
+             <literal>%P</literal>
             </entry>
-            <entry>the glue between %q and %r</entry>
+            <entry>PID of the parent of the child that serviced the request</entry>
            </row>
            <row>
             <entry>
-             <constant>%r</constant>
+             <literal>%q</literal>
             </entry>
-            <entry>request URI</entry>
+            <entry>Query string</entry>
            </row>
            <row>
             <entry>
-             <constant>%R</constant>
+             <literal>%Q</literal>
             </entry>
-            <entry>remote IP address</entry>
+            <entry>
+             The <literal>'?'</literal> character, or glue between <literal>%q</literal> and <literal>%r</literal>,
+             if query string exists
+            </entry>
            </row>
            <row>
             <entry>
-             <constant>%s</constant>
+             <literal>%r</literal>
             </entry>
-            <entry>status</entry>
+            <entry>
+             Request URI without the query string,
+             see <literal>%q</literal> and <literal>%Q</literal>
+            </entry>
            </row>
            <row>
             <entry>
-             <constant>%T</constant>
+             <literal>%R</literal>
             </entry>
-            <entry>time</entry>
+            <entry>Remote IP address</entry>
            </row>
            <row>
             <entry>
-             <constant>%t</constant>
+             <literal>%s</literal>
             </entry>
-            <entry>time</entry>
+            <entry>Status (response code)</entry>
            </row>
            <row>
             <entry>
-             <constant>%u</constant>
+             <literal>%t</literal>
             </entry>
-            <entry>remote user</entry>
+            <entry>
+             Server time the request was received. It can
+             accept a <literal>strftime(3)</literal> format:
+             <literal>%d/%b/%Y:%H:%M:%S %z</literal> (default)
+             The <literal>strftime(3)</literal> format must be encapsulated in
+             a <literal>%{&lt;strftime_format&gt;}t</literal> tag, e.g. for a ISO8601
+             formatted timestring, use:
+             <literal>%{%Y-%m-%dT%H:%M:%S%z}t</literal>
+            </entry>
+           </row>
+           <row>
+            <entry>
+             <literal>%T</literal>
+            </entry>
+            <entry>
+             Time the log was written (when the request finished). It can accept a
+             <literal>strftime(3)</literal> format:
+             <literal>%d/%b/%Y:%H:%M:%S %z</literal> (default).
+             The <literal>strftime(3)</literal> format must be encapsulated in a
+             <literal>%{&lt;strftime_format&gt;}T</literal> tag, e.g. for a ISO8601
+             formatted timestring, use:
+             <literal>%{%Y-%m-%dT%H:%M:%S%z}T</literal>
+            </entry>
+           </row>
+           <row>
+            <entry>
+             <literal>%u</literal>
+            </entry>
+            <entry>Basic access authentication user, if specified in <literal>Authorization</literal> header</entry>
            </row>
           </tbody>
          </tgroup>
