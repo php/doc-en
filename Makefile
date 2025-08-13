@@ -20,10 +20,16 @@ endif
 
 xhtml: .docker/built
 	docker run --rm ${PATHS} -w /var/www -u ${CURRENT_UID}:${CURRENT_GID} php/doc-en
+	if [ -n "${BUILD_ENV}" ] && [ "${BUILD_ENV}" = "devcontainer" ]; then \
+		.devcontainer/configure-apache.sh "${PWD}/output/php-chunked-xhtml"; \
+	fi
 
 php: .docker/built
 	docker run --rm ${PATHS} -w /var/www -u ${CURRENT_UID}:${CURRENT_GID} \
 		-e FORMAT=php php/doc-en
+	if [ -n "${BUILD_ENV}" ] && [ "${BUILD_ENV}" = "devcontainer" ]; then \
+		.devcontainer/configure-apache.sh "${PWD}/output/php-web"; \
+	fi
 
 build: .docker/built
 
