@@ -1,0 +1,73 @@
+name: PR Metrics Collector
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  collect-metrics:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout (not strictly needed)
+      uses: actions/checkout@v4
+
+    - name: Get PR info from context
+      id: prinfo
+      run: |
+        echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+        echo "pr_merged_at=${{ github.event.pull_request.merged_at }}" >> $GITHUB_OUTPUT
+
+    - name: Get commits in PR (earliest commit)
+      id: commits
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const core = require('@actions/core');
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+          const prNumber = context.payload.pull_request.number;
+          const resp = await github.rest.pulls.listCommits({
+            owner,
+            repo,
+            pull_number: prNumber,
+            per_page: 100
+          });
+          if (!resp || !resp.data || resp.data.length === 0) {
+            core.setFailed("No commits found in PR");
+          }
+          // find earliest commit by commit.commit.author.date
+          let earliest = resp.data[0];
+          for (const c of resp.data) {
+            const cdate = new Date(c.commit.author.date);
+            const edate = new Date(earliest.commit.author.date);
+            if (cdate < edate) earliest = c;
+          }
+          // set outputs
+          core.setOutput('sha', earliest.sha);
+          core.setOutput('author', (earliest.author && earliest.author.login) ? earliest.author.login : (earliest.commit && earliest.commit.author && earliest.commit.author.name ? earliest.commit.author.name : 'unknown'));
+          core.setOutput('commit_date', earliest.commit.author.date);
+
+    - name: Send metrics to Google Sheet (Apps Script)
+      env:
+        WEBAPP_URL: ${{ secrets.SHEETS_WEBAPP_URL }}
+        SHARED_SECRET: ${{ secrets.SHEETS_SHARED_SECRET }}
+      run: |
+        # Build JSON payload
+        payload=$(jq -n \
+          --arg sha "${{ steps.commits.outputs.sha }}" \
+          --arg author "${{ steps.commits.outputs.author }}" \
+          --arg commit_ts "${{ steps.commits.outputs.commit_date }}" \
+          --arg pr "${{ github.event.pull_request.number }}" \
+          --arg merged_ts "${{ github.event.pull_request.merged_at }}" \
+          --arg secret "$SHARED_SECRET" \
+          '{commit_hash:$sha, author:$author, commit_timestamp:$commit_ts, pr_number:$pr, pr_merged_timestamp:$merged_ts, secret:$secret}')
+        echo "Payload: $payload"
+        # Post to Apps Script
+        resp=$(curl -s -X POST -H "Content-Type: application/json" -d "$payload" "$WEBAPP_URL")
+        echo "Response: $resp"
