@@ -54,3 +54,5 @@ For the translations of this documentation, see:
 
 For more information on the various repositories that make up PHP's documentation pipeline,
 see this [overview](https://github.com/php/doc-base/blob/master/docs/overview.md).
+
+Or you can DM some of the authors, which is very bad by the way, but who can blame you? Right? No, actually it is bad don't do it!
