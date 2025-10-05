@@ -22,7 +22,7 @@
    do <emphasis>not</emphasis> give you an ability to build up a
    transaction efficiently, and they don't do a whole lot of other
    things. In fact, to be extremely clear about the subject,
-   persistent connections don't give you<emphasis>any</emphasis>
+   persistent connections don't give you <emphasis>any</emphasis>
    functionality that wasn't possible with their non-persistent
    brothers.
   </simpara>
@@ -31,8 +31,8 @@
  <simplesect xml:id="persistent-connections.web">
   <title>Web Requests</title>
   <simpara>
-   This has to do with the way web servers work. There are three ways
-   in which your web server can utilize PHP to generate web pages.
+   There are two ways in which your web server can utilize PHP to generate
+   web pages:
   </simpara>
   <simpara>
    The first method is to use PHP as a CGI "wrapper". When run this
@@ -44,9 +44,9 @@
    to use persistent connections -- they simply don't persist.
   </simpara>
   <simpara>
-   The second, and most popular, method is to run PHP as a module in a
-   multiprocess web server, which currently only includes Apache, or PHP-FPM.
-   A multiprocess server typically has one process (the parent) which
+   The second, and most popular, method is to run PHP-FPM, or PHP as a module
+   in a multiprocess web server, which currently only includes Apache.
+   These setups typically have one process (the parent) which
    coordinates a set of processes (its children) who actually do the
    work of serving up web pages. When a request comes in from a
    client, it is handed off to one of the children that is not already
@@ -56,24 +56,17 @@
    every following page requesting SQL services can reuse the same
    established connection to the SQL server.
   </simpara>
-  <simpara>
-   The last method is to use PHP as a plug-in for a multithreaded web server.
-   Currently PHP has support for WSAPI, and NSAPI (on Windows), which all
-   allow PHP to be used as a plug-in on multithreaded servers like Microsoft's
-   Internet Information Server (IIS). The behavior is essentially the same as
-   for the multiprocess model described before.
-  </simpara>
  </simplesect>
 
  <simplesect xml:id="persistent-connections.cli">
-  <title>Commandline Processes</title>
+  <title>Command-line Processes</title>
   <simpara>
-   As commandline PHP uses a new process for each script, persistent
-   connections are not shared between commandline scripts, so there is no
-   value in using them in (short-lived) scripts such as crons or commands.
-   However, they may be useful if you're writing a long-running application
-   server that serves many requests (or other connections) and each may need
-   their own database connection.
+   As command-line PHP uses a new process for each script, persistent
+   connections are not shared between command-line scripts, so there is no
+   value in using them in transient scripts such as crons or commands.
+   However, they may be useful if, for example, you're writing a long-running
+   application server that serves many requests (or other connections) and each
+   may need their own database connection.
   </simpara>
  </simplesect>
 
@@ -114,22 +107,23 @@
  </simplesect>
 
  <simplesect xml:id="persistent-connections.drawbacks.state">
-  <title>Potential Drawbacks: Cleanup / State Management</title>
+  <title>Potential Drawbacks: Maintaining Connection State</title>
   <simpara>
-   Depending on your application and the database / extension you're using you
-   may need to ensure that the state of connections is cleaned up. Changes
-   that may leave connections in an unexpected state include:
+   Depending on your application and the database or extension you're using you
+   may need to ensure that the state of connections is cleaned up before the
+   script exits. Changes that may leave connections in an unexpected state
+   include:
   </simpara>
   <simplelist>
    <member>Selected / default database</member>
    <member>Table locks</member>
-   <member>Unclosed transactions</member>
+   <member>Uncommitted transactions</member>
    <member>Temporary tables</member>
    <member>Connection specific settings or features such as profiling</member>
   </simplelist>
   <simpara>
    Table locks and transactions that are not cleaned up or closed may cause
-   other queries to be blocked indefinitely and / or cause subsequent reuse of
+   other queries to be blocked indefinitely and/or cause subsequent reuse of
    the connection to cause unexpected changes.
   </simpara>
   <simpara>
