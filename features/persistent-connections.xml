@@ -15,16 +15,22 @@
    the same username and the same password (where applicable).
   </simpara>
   <simpara>
-   People who aren't thoroughly familiar with the way web servers work
-   and distribute the load may mistake persistent connects for what
-   they're not. In particular, they do <emphasis>not</emphasis> give
-   you an ability to open 'user sessions' on the same link, they
-   do <emphasis>not</emphasis> give you an ability to build up a
-   transaction efficiently, and they don't do a whole lot of other
-   things. In fact, to be extremely clear about the subject,
-   persistent connections don't give you <emphasis>any</emphasis>
-   functionality that wasn't possible with their non-persistent
-   brothers.
+   There's no method of requesting a specific connection, or guaranteeing
+   whether you get an existing connection or a brand new one (if all existing
+   connections are in use, or the request is being served by a different worker,
+   which has a separate pool of connections).
+  </simpara>
+  <simpara>
+   This means that you cannot use PHP's persistent connections to, for example:
+  </simpara>
+  <simplelist>
+   <member>assign a specific database session to a specific web user</member>
+   <member>create a large transaction across multiple requests</member>
+   <member>initiate a query on one request and collect the results on another</member>
+  </simplelist>
+  <simpara>
+   Persistent connections do not give you <emphasis>any</emphasis>
+   functionality that wasn't possible with non-persistent connections.
   </simpara>
  </simplesect>
 
@@ -41,7 +47,7 @@
    Because it is destroyed after every request, any resources that it
    acquires (such as a link to an SQL database server) are closed when
    it is destroyed. In this case, you do not gain anything from trying
-   to use persistent connections -- they simply don't persist.
+   to use persistent connections - they simply don't persist.
   </simpara>
   <simpara>
    The second, and most popular, method is to run PHP-FPM, or PHP as a module
@@ -56,6 +62,18 @@
    every following page requesting SQL services can reuse the same
    established connection to the SQL server.
   </simpara>
+  <note>
+   <para>
+   You can check which method your web requests use by checking the value of
+   "Server API" in the output of <function>phpinfo</function> or the value of
+   <constant>PHP_SAPI</constant>, run from a web request.
+   </para>
+   <para>
+    If the Server API is "Apache 2 Handler" or "FPM/FastCGI", then persistent
+    connections will be used across requests served by the same worker. For any
+    other value, persistent connections will not persist after each request.
+   </para>
+  </note>
  </simplesect>
 
  <simplesect xml:id="persistent-connections.cli">
@@ -65,8 +83,8 @@
    connections are not shared between command-line scripts, so there is no
    value in using them in transient scripts such as crons or commands.
    However, they may be useful if, for example, you're writing a long-running
-   application server that serves many requests (or other connections) and each
-   may need their own database connection.
+   application server that serves many requests or tasks and each may need
+   their own database connection.
   </simpara>
  </simplesect>
 
@@ -101,18 +119,35 @@
    threads attempt to connect, one will not be able to. If there are
    bugs in your scripts which do not allow the connections to shut
    down (such as infinite loops), the database with only 16 connections
-   may be rapidly swamped. Check your database documentation for
-   information on handling abandoned or idle connections (timeouts).
+   may be rapidly swamped.
+  </simpara>
+  <simpara>
+   Persistent connections will usually increase the number of connections open
+   at any given time because idle workers will still hold the connections for
+   the previous requests they served. If a large number of workers is spun up to
+   handle an influx of requests, the connections they opened will remain until
+   the worker is killed or the database server closes the connection.
+  </simpara>
+  <simpara>
+   Ensure that the maximum number of connections allowed by the database server
+   is greater than the maximum number of web request workers (plus any other
+   usage such as crons or administrative connections).
+  </simpara>
+  <simpara>
+   Check your database documentation for information on handling abandoned or
+   idle connections (timeouts). Long timeouts may significantly increase the
+   number of persistent connections open at any one time.
   </simpara>
  </simplesect>
 
  <simplesect xml:id="persistent-connections.drawbacks.state">
   <title>Potential Drawbacks: Maintaining Connection State</title>
   <simpara>
-   Depending on your application and the database or extension you're using you
-   may need to ensure that the state of connections is cleaned up before the
-   script exits. Changes that may leave connections in an unexpected state
-   include:
+   Some database extensions perform automatic cleanup when the connection is
+   reused; others leave this task at the discretion of the application developer.
+   Depending on the chosen database extension and the application design, manual
+   cleanup may be needed before the script exits. Changes that may leave
+   connections in an unexpected state include:
   </simpara>
   <simplelist>
    <member>Selected / default database</member>
@@ -140,6 +175,25 @@
    <function>register_shutdown_function</function>. You may also want to
    consider dedicated connection pooling proxies that include this as part of
    their functionality.
+  </simpara>
+ </simplesect>
+
+ <simplesect xml:id="persistent-connections.final-words">
+  <title>Final Words</title>
+  <simpara>
+   Given their behavior and potential drawbacks described above, you should not
+   use persistent connections without careful consideration. They should not be
+   used without implementing additional changes to your application and careful
+   configuration of your database server and web server and/or PHP-FPM.
+  </simpara>
+  <simpara>
+   Consider alternative solutions such as investigating and fixing the causes of
+   connection creation overheads (for example, disabling reverse DNS lookups on
+   the database server), or dedicated connection pooling proxies.
+  </simpara>
+  <simpara>
+   For high volume web APIs, consider using alternative runtimes or long-running
+   application servers.
   </simpara>
  </simplesect>
 
