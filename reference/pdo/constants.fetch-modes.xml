@@ -93,7 +93,7 @@
      </row>
      <row>
       <entry>
-       PDO::FETCH_FUNC
+       <constant>PDO::FETCH_FUNC</constant>
       </entry>
       <entry>
        Use a function to create the return value.
@@ -422,14 +422,22 @@ Array
    the same name, all values are returned as a list.
   </para>
   <para>
-   For more information on handling of duplicated column names, see the
-   <link linkend="pdo.fetch-modes.duplicate-names">handling of duplicated names
-   section</link> above.
+   For more information on handling of duplicated column names and alternatives,
+   see the <link linkend="pdo.fetch-modes.duplicate-names">handling of
+   duplicated names section</link> above.
+  </para>
+  <para>
+   The order in which duplicated values are returned should be considered
+   undefined. There's no way to tell where each value came from.
   </para>
   <informalexample>
    <programlisting role="php">
     <![CDATA[
-$stmt = $pdo->query("SELECT userid, name, name, country FROM users LIMIT 1");
+$stmt = $pdo->query(
+    "SELECT users.*, referrer.name
+     FROM users
+     JOIN users AS referrer ON users.referred_by = referrer.userid
+     WHERE userid = 109");
 $row = $stmt->fetch(\PDO::FETCH_NUM);
 print_r($row);
     ]]>
@@ -439,13 +447,14 @@ print_r($row);
     <![CDATA[
 Array
 (
-    [userid] => 104
+    [userid] => 109
     [name] => Array
         (
-            [0] => Sam
+            [0] => Toni
             [1] => Sam
         )
-    [country] => Ukraine
+    [country] => Palestine
+    [referred_by] = 104
 )
     ]]>
    </screen>
@@ -589,6 +598,80 @@ Array
     [Robin] => Palestine
 )
 ]]>
+   </screen>
+  </informalexample>
+ </section>
+
+ <section xml:id="pdo.constants.fetch-func" annotations="chunk:false">
+  <title>PDO::FETCH_FUNC (<type>int</type>)</title>
+  <para>
+   Specify a function to create the returned value. This mode can only be used
+   with <function>PDOStatement::fetchAll</function>.
+  </para>
+  <para>
+   The function received the values as parameters. There's no way to retrieve
+   the column a given value was associated with. You must make sure the column
+   order in the query matches that expected by the function.
+  </para>
+  <note>
+   <para>
+    The effects of <constant>PDO::FETCH_GROUP</constant> and
+    <constant>PDO::FETCH_UNIQUE</constant> are applied to results before the
+    function is called.
+   </para>
+  </note>
+  <informalexample>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+function valueCreator($col1, $col2, $col3)
+{
+    $col2 = strtoupper($col2);
+    return [
+        'col1' => $col1,
+        'col2' => strtoupper($col2),
+        'col3' => $col3,
+        'customKey' => 'customValue',
+    ];
+}
+
+
+$stmt = $pdo->query("SELECT userid, name, country FROM users LIMIT 3");
+$row = $stmt->fetchAll(\PDO::FETCH_FUNC, valueCreator(...));
+print_r($row);
+    ]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+    <![CDATA[
+Array
+(
+    [0] => Array
+        (
+            [col1] => 104
+            [col2] => SAM
+            [col3] => Ukraine
+            [customKey] => customValue
+        )
+
+    [1] => Array
+        (
+            [col1] => 105
+            [col2] => JAMIE
+            [col3] => United Kingdom
+            [customKey] => customValue
+        )
+
+    [2] => Array
+        (
+            [col1] => 107
+            [col2] => ROBIN
+            [col3] => Palestine
+            [customKey] => customValue
+        )
+
+)
+    ]]>
    </screen>
   </informalexample>
  </section>
@@ -889,7 +972,7 @@ Array
     </simpara>
    </listitem>
    </varlistentry>
-   <varlistentry xml:id="pdo.constants.fetch-func">
+   <varlistentry>
    <term>
     <constant>PDO::FETCH_FUNC</constant>
     (<type>int</type>)
