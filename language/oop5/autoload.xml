@@ -14,23 +14,26 @@
    if they are currently not defined. By registering autoloaders, PHP is given
    a last chance to load the class or interface before it fails with an error.
   </para>
-  <tip>
+  <para>
+   Any class-like construct may be autoloaded the same way. That includes classes,
+   interfaces, traits, and enumerations.
+  </para>
+  <caution>
    <para>
-    Although the <function>__autoload</function> function can also be used for
-    autoloading classes and interfaces, it's preferred to use the
-    <function>spl_autoload_register</function> function. This is because it is
-    a more flexible alternative (enabling for any number of autoloaders to be
-    specified in the application, such as in third party libraries). For this
-    reason, using <function>__autoload</function> is discouraged and deprecated
-    as of PHP 7.2.0.
+    Prior to PHP 8.0.0, it was possible to use <function>__autoload</function>
+    to autoload classes and interfaces. However, it is a less flexible
+    alternative to <function>spl_autoload_register</function> and
+    <function>__autoload</function> is deprecated as of PHP 7.2.0, and removed
+    as of PHP 8.0.0.
    </para>
-  </tip>
+  </caution>
   <note>
    <para>
-    If the class name is used e.g. in <function>call_user_func</function> then
-    it can contain some dangerous characters such as <literal>../</literal>.
-    It is recommended to not use the user-input in such functions or at least
-    verify the input in <function>__autoload</function>.
+    <function>spl_autoload_register</function> may be called multiple times in order
+    to register multiple autoloaders. Throwing an exception from an autoload function,
+    however, will interrupt that process and not allow further autoload functions to
+    run. For that reason, throwing exceptions from an autoload function is strongly
+    discouraged.
    </para>
   </note>
   <para>
@@ -41,7 +44,7 @@
      and <literal>MyClass2</literal> from the files <filename>MyClass1.php</filename>
      and <filename>MyClass2.php</filename> respectively.
     </para>
-    <programlisting role="php">
+    <programlisting role="php" annotations="interactive">
 <![CDATA[
 <?php
 spl_autoload_register(function ($class_name) {
@@ -80,64 +83,24 @@ Fatal error: Interface 'ITest' not found in ...
     </programlisting>
    </example>
    <example>
-    <title>Autoloading with exception handling</title>
-    <para>
-     This example throws an exception and demonstrates the try/catch block.
-    </para>
-    <programlisting role="php">
+    <title>Using Composer's autoloader</title>
+    <simpara>
+     &link.composer; generates a <literal>vendor/autoload.php</literal>
+     which is set up to automatically load packages that are being managed
+     by Composer. By including this file, those packages can be used without
+     any additional work.
+    </simpara>
+    <programlisting role="php" annotations="interactive">
 <![CDATA[
 <?php
-spl_autoload_register(function ($name) {
-    echo "Want to load $name.\n";
-    throw new Exception("Unable to load $name.");
-});
+require __DIR__ . '/vendor/autoload.php';
 
-try {
-    $obj = new NonLoadableClass();
-} catch (Exception $e) {
-    echo $e->getMessage(), "\n";
-}
+$uuid = Ramsey\Uuid\Uuid::uuid7();
+
+echo "Generated new UUID -> ", $uuid->toString(), "\n";
 ?>
 ]]>
     </programlisting>
-    &example.outputs;
-    <screen>
-<![CDATA[
-Want to load NonLoadableClass.
-Unable to load NonLoadableClass.
-]]>
-    </screen>
-   </example>
-   <example>
-    <title>Autoloading with exception handling - Missing custom exception</title>
-    <para>
-     This example throws an exception for a non-loadable, custom exception.
-    </para>
-    <programlisting role="php">
-<![CDATA[
-<?php
-spl_autoload_register(function ($name) {
-    echo "Want to load $name.\n";
-    throw new MissingException("Unable to load $name.");
-});
-
-try {
-    $obj = new NonLoadableClass();
-} catch (Exception $e) {
-    echo $e->getMessage(), "\n";
-}
-?>
-]]>
-    </programlisting>
-    &example.outputs;
-    <screen>
-<![CDATA[
-Want to load NonLoadableClass.
-Want to load MissingException.
-
-Fatal error: Class 'MissingException' not found in testMissingException.php on line 4
-]]>
-    </screen>
    </example>
   </para>
 
@@ -147,6 +110,7 @@ Fatal error: Class 'MissingException' not found in testMissingException.php on l
     <simplelist>
      <member><function>unserialize</function></member>
      <member><link linkend="ini.unserialize-callback-func">unserialize_callback_func</link></member>
+     <member><link linkend="ini.unserialize-max-depth">unserialize_max_depth</link></member>
      <member><function>spl_autoload_register</function></member>
      <member><function>spl_autoload</function></member>
      <member><function>__autoload</function></member>

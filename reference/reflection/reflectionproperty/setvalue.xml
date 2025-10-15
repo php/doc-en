@@ -9,9 +9,9 @@
  
  <refsect1 role="description">
   &reftitle.description;
-  <methodsynopsis>
+  <methodsynopsis role="ReflectionProperty">
    <modifier>public</modifier> <type>void</type><methodname>ReflectionProperty::setValue</methodname>
-   <methodparam><type>object</type><parameter>object</parameter></methodparam>
+   <methodparam><type class="union"><type>object</type><type>null</type></type><parameter>object</parameter></methodparam>
    <methodparam><type>mixed</type><parameter>value</parameter></methodparam>
   </methodsynopsis>
   <methodsynopsis>
@@ -21,6 +21,11 @@
   <para>
    Sets (changes) the property's value.
   </para>
+  <note>
+   <simpara>
+    To set static property values, use <literal>ReflectionProperty::setValue(null, $value)</literal>.
+   </simpara>
+  </note>
  </refsect1>
  
  <refsect1 role="parameters">
@@ -31,9 +36,8 @@
      <term><parameter>object</parameter></term>
      <listitem>
       <para>
-       If the property is non-static an object must be provided to change
-       the property on. If the property is static this parameter is left
-       out and only <parameter>value</parameter> needs to be provided.
+       For static properties, pass in &null;.
+       For non-static properties, pass in the object.
       </para>
      </listitem>
     </varlistentry>
@@ -56,15 +60,40 @@
   </para>
  </refsect1>
  
- <refsect1 role="errors">
-  &reftitle.errors;
-  <para>
-   Throws a <classname>ReflectionException</classname> if the property is inaccessible.
-   You can make a protected or private property accessible using
-   <methodname>ReflectionProperty::setAccessible</methodname>.
-  </para>
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>8.3.0</entry>
+      <entry>
+       Calling this method with a single argument is deprecated,
+       instead use <literal>ReflectionProperty::setValue(null, $value)</literal>
+       for static properties.
+      </entry>
+     </row>
+     <row>
+      <entry>8.1.0</entry>
+      <entry>
+       Private and protected properties can be accessed by
+       <methodname>ReflectionProperty::setValue</methodname> right away.
+       Previously, they needed to be made accessible by calling
+       <methodname>ReflectionProperty::setAccessible</methodname>; otherwise
+       a <classname>ReflectionException</classname> was thrown.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
  </refsect1>
- 
+
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
@@ -82,7 +111,10 @@ class Foo {
 
 $reflectionClass = new ReflectionClass('Foo');
 
-$reflectionClass->getProperty('staticProperty')->setValue('foo');
+// As of PHP 8.3, passing in null as the first argument is required
+// to access static properties.
+$reflectionProperty = $reflectionClass->getProperty('staticProperty');
+$reflectionProperty->setValue(null, 'foo');
 var_dump(Foo::$staticProperty);
 
 $foo = new Foo;
@@ -91,7 +123,7 @@ $reflectionClass->getProperty('property')->setValue($foo, 'bar');
 var_dump($foo->property);
 
 $reflectionProperty = $reflectionClass->getProperty('privateProperty');
-$reflectionProperty->setAccessible(true);
+$reflectionProperty->setAccessible(true); // only required prior to PHP 8.1.0
 $reflectionProperty->setValue($foo, 'foobar');
 var_dump($reflectionProperty->getValue($foo));
 ?>

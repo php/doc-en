@@ -7,37 +7,26 @@
    <?phpdoc print-version-for="attributes"?>
 
    <para>
-    Attributes offer the ability to add structured, machine-readable metadata information
-    on declarations in code: Classes, methods, functions, parameters,
-    properties and class constants can be the target of an attribute. The metadata
-    defined by attributes can then be inspected at runtime using the
-    <link linkend="book.reflection">Reflection
-     APIs</link>. Attributes could therefore be thought of as a configuration
-    language embedded directly into code.
+    PHP attributes provide structured, machine-readable metadata for classes, methods,
+    functions, parameters, properties, and constants. They can be inspected at runtime
+    via the <link linkend="book.reflection">Reflection API</link>, enabling dynamic
+    behavior without modifying code. Attributes provide a declarative way to annotate
+    code with metadata.
    </para>
-
    <para>
-    With attributes the generic implementation of a
-    feature and its concrete use in an application can be decoupled. In a way it is
-    comparable to interfaces and their implementations. But where
-    interfaces and implementations are about code, attributes are about
-    annotating extra information and configuration. Interfaces can
-    be implemented by classes, yet attributes can also be declared
-    on methods, functions, parameters, properties and class constants.
-    As such they are more flexible than interfaces.
+    Attributes enable the decoupling of a feature's implementation from its usage. While
+    interfaces define structure by enforcing methods, attributes provide metadata across multiple 
+    elements, including methods, functions, properties, and constants. Unlike interfaces,
+    which enforce method implementations, attributes annotate code without altering its structure.
    </para>
-
-    <para>
-     A simple example of attribute usage is to convert an interface
-     that has optional methods to use attributes. Lets assume an
-     <literal>ActionHandler</literal>
-      interface representing an operation in an application, where some
-      implementations of an action handler require setup and others do not. Instead of requiring all classes
-      that implement <literal>ActionHandler</literal> to implement
-       a method <literal>setUp()</literal>,
-        an attribute can be used. One benefit
-        of this approach is that we can use the attribute several times.
-    </para>
+   <para>
+    Attributes can complement or replace optional interface methods by providing metadata instead of 
+    enforced structure. Consider an <literal>ActionHandler</literal> interface that represents an 
+    operation in an application. Some implementations may require a setup step while others do not. 
+    Instead of forcing all classes implementing <literal>ActionHandler</literal> to define a 
+    <literal>setUp()</literal> method, an attribute can indicate setup requirements. This approach
+    increases flexibility, allowing attributes to be applied multiple times when necessary.
+   </para>
 
    <example>
     <title>Implementing optional methods of an interface with Attributes</title>
@@ -68,7 +57,11 @@ class CopyFile implements ActionHandler
     #[SetUp]
     public function targetDirectoryExists()
     {
-        mkdir($this->targetDirectory);
+        if (!file_exists($this->targetDirectory)) {
+            mkdir($this->targetDirectory);
+        } elseif (!is_dir($this->targetDirectory)) {
+            throw new RuntimeException("Target directory $this->targetDirectory is not a directory");
+        }
     }
 
     public function execute()
@@ -108,21 +101,21 @@ executeAction($copyAction);
    <title>Attribute syntax</title>
 
    <para>
-    There are several parts to the attributes syntax. First, an attribute
-    declaration is always enclosed with a starting
-    <literal>#[</literal> and a corresponding ending
-    <literal>]</literal>. Inside, one or many attributes are listed,
-    separated by comma. The attribute name is an unqualified, qualified
-    or fully-qualified name as described in <link linkend="language.namespaces.basics">Using Namespaces Basics</link>.
-    Arguments to the attribute are optional, but are enclosed in the usual parenthesis <literal>()</literal>.
-    Arguments to attributes can only be literal values or constant expressions. Both positional and
-    named arguments syntax can be used.
+    Attribute syntax consists of several key components. An attribute
+    declaration starts with <literal>#[</literal> and ends with
+    <literal>]</literal>. Inside, one or more attributes can be listed,
+    separated by commas. The attribute name can be unqualified, qualified,
+    or fully-qualified, as described in <link linkend="language.namespaces.basics">Using Namespaces Basics</link>.
+    Arguments to the attribute are optional and enclosed in parentheses
+    <literal>()</literal>. Arguments can only be literal values or constant
+    expressions. Both positional and named argument syntax are supported.
    </para>
 
    <para>
-    Attribute names and their arguments are resolved to a class and the arguments are passed to its constructor,
-    when an instance of the attribute is requested through the Reflection API. As such
-    a class should be introduced for each attribute.
+    Attribute names and their arguments are resolved to a class, and the arguments
+    are passed to its constructor when an instance of the attribute is requested
+    through the Reflection API. Therefore, it is recommended to introduce a class
+    for each attribute.
    </para>
 
    <example>
@@ -180,17 +173,19 @@ class AnotherThing
    <title>Reading Attributes with the Reflection API</title>
 
    <para>
-    To access attributes from classes, methods, functions, parameters, properties and class constants,
-    the Reflection API provides the method <function>getAttributes</function> on each of the corresponding
-    Reflection objects. This method returns an array of <classname>ReflectionAttribute</classname> instances
-    that can be queried for attribute name, arguments and to instantiate an instance of the represented attribute.
+    To access attributes from classes, methods, functions, parameters, properties,
+    and class constants, use the <function>getAttributes</function> method provided
+    by the Reflection API. This method returns an array of <classname>ReflectionAttribute</classname>
+    instances. These instances can be queried for the attribute name, arguments, and
+    can be used to instantiate an instance of the represented attribute.
    </para>
 
    <para>
-    This separation of reflected attribute representation from actual instance increases control of the programmer
-    to handle errors regarding missing attribute classes, mistyped or missing arguments. Only after
-    calling <function>newInstance</function>, objects of the attribute class are instantiated and the correct matching of arguments
-    is validated, not earlier.
+    Separating the reflected attribute representation from its actual instance provides more
+    control over error handling, such as missing attribute classes, mistyped arguments,
+    or missing values. Objects of the attribute class are instantiated only after calling
+    <function>ReflectionAttribute::newInstance</function>, ensuring that argument validation
+    occurs at that point.
    </para>
 
    <example>
@@ -244,9 +239,9 @@ object(MyAttribute)#3 (1) {
    </example>
 
    <para>
-    Instead of iterating all attributes on the reflection instance, only those
-    of a particular attribute class can be
-    retrieved by passing the searched attribute class name as argument.
+    Instead of iterating over all attributes on the reflection instance,
+    you can retrieve only those of a specific attribute class by passing
+    the attribute class name as an argument.
    </para>
 
    <example>
@@ -266,7 +261,7 @@ function dumpMyAttributeData($reflection) {
     }
 }
 
-dumpAttributeData(new ReflectionClass(Thing::class));
+dumpMyAttributeData(new ReflectionClass(Thing::class));
 ]]>
      </programlisting>
     </example>
@@ -276,13 +271,14 @@ dumpAttributeData(new ReflectionClass(Thing::class));
    <title>Declaring Attribute Classes</title>
 
    <para>
-    While not strictly required it is recommended to create an actual class for every attribute.
-    In the most simple case only an empty class is needed with the <literal>#[Attribute]</literal> attribute declared
-    that can be imported from the global namespace with a use statement.
+    It is recommended to define a separate class for each attribute. In the simplest
+    case, an empty class with the <literal>#[Attribute]</literal> declaration is sufficient.
+    The attribute can be imported from the global namespace using a <literal>use</literal>
+    statement.
    </para>
 
   <example>
-   <title>Using target specification to restrict where attributes can be used</title>
+   <title>Simple Attribute Class</title>
 
    <programlisting role="php">
 <![CDATA[
@@ -301,12 +297,13 @@ class MyAttribute
   </example>
 
   <para>
-   To restrict the type of declaration an attribute can be assigned to, a bitmask can be passed as the first
-   argument to the <literal>#[Attribute]</literal> declaration.
+   To restrict the types of declarations an attribute can be applied to,
+   pass a bitmask as the first argument to the <literal>#[Attribute]</literal>
+   declaration.
   </para>
 
   <example>
-   <title>Simple Attribute Class</title>
+   <title>Using target specification to restrict where attributes can be used</title>
 
    <programlisting role="php">
 <![CDATA[
@@ -329,9 +326,23 @@ class MyAttribute
     </para>
    </example>
 
+   <para>The following targets can be specified:</para>
+   
+   <simplelist>
+    <member><constant>Attribute::TARGET_CLASS</constant></member>
+    <member><constant>Attribute::TARGET_FUNCTION</constant></member>
+    <member><constant>Attribute::TARGET_METHOD</constant></member>
+    <member><constant>Attribute::TARGET_PROPERTY</constant></member>
+    <member><constant>Attribute::TARGET_CLASS_CONSTANT</constant></member>
+    <member><constant>Attribute::TARGET_PARAMETER</constant></member>
+    <member><constant>Attribute::TARGET_ALL</constant></member>
+   </simplelist>
+
    <para>
-    By default an attribute can only be used once per declaration. If the attribute should be repeatable on declarations it must
-    be specified as part of the bitmask to the <literal>#[Attribute]</literal> declaration.
+    By default, an attribute can only be used once per declaration. To allow
+    an attribute to be repeatable, specify it in the bitmask of the
+    <literal>#[Attribute]</literal> declaration using the
+    <constant>Attribute::IS_REPEATABLE</constant> flag.
    </para>
 
    <example>

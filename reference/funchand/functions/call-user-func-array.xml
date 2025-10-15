@@ -35,7 +35,23 @@
      <term><parameter>args</parameter></term>
      <listitem>
       <para>
-       The parameters to be passed to the callback, as an indexed array.
+       The parameters to be passed to the callback, as an array.
+      </para>
+      <para>
+        If the keys of <parameter>args</parameter> are all numeric,
+        the keys are ignored and each element will be passed to
+        <parameter>callback</parameter> as a positional argument, in
+        order.
+      </para>
+      <para>
+        If any keys of <parameter>args</parameter> are strings,
+        those elements will be passed to <parameter>callback</parameter>
+        as named arguments, with the name given by the key.
+      </para>
+      <para>
+        It is a fatal error to have a numeric key in <parameter>args</parameter>
+        appear after a string key, or to have a string key that does not
+        match the name of any parameter of <parameter>callback</parameter>.
       </para>
      </listitem>
     </varlistentry>
@@ -47,6 +63,30 @@
   &reftitle.returnvalues;
   <para>
    Returns the return value of the callback, or &false; on error.
+  </para>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>8.0.0</entry>
+       <entry>
+        <parameter>args</parameter> keys will now be interpreted as parameter names, instead of being silently ignored.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
   </para>
  </refsect1>
 
@@ -99,10 +139,8 @@ class Foo {
     }
 }
 
-// As of PHP 5.3.0
 call_user_func_array(__NAMESPACE__ .'\Foo::test', array('Hannes'));
 
-// As of PHP 5.3.0
 call_user_func_array(array(__NAMESPACE__ .'\Foo', 'test'), array('Philip'));
 
 ?>
@@ -126,7 +164,7 @@ $func = function($arg1, $arg2) {
     return $arg1 * $arg2;
 };
 
-var_dump(call_user_func_array($func, array(2, 4))); /* As of PHP 5.3.0 */
+var_dump(call_user_func_array($func, array(2, 4)));
 
 ?>
 ]]>
@@ -163,29 +201,42 @@ global $bar=55
 ]]>
     </screen>
    </example>
+   <example>
+    <title><function>call_user_func_array</function> using named arguments</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function foobar($first, $second) {
+    echo __FUNCTION__, " got $first and $second\n";
+}
+
+// Call the foobar() function with named arguments in non-positional order
+call_user_func_array("foobar", array("second" => "two", "first" => "one"));
+
+// Call the foobar() function with one named argument
+call_user_func_array("foobar", array("foo", "second" => "bar"));
+
+// Fatal error: Cannot use positional argument after named argument
+call_user_func_array("foobar", array("first" => "one", "bar"));
+
+?>
+]]>
+    </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+foobar got one and two
+foobar got foo and bar
+
+Fatal error: Uncaught Error: Cannot use positional argument after named argument
+]]>
+    </screen>
+   </example>
   </para>
  </refsect1>
 
  <refsect1 role="notes">
   &reftitle.notes;
-  <note>
-   <para>
-    Before PHP 5.4, referenced variables in <parameter>args</parameter>
-    are passed to the function by reference, regardless of whether the function
-    expects the respective parameter to be passed by reference. This form of
-    call-time pass by reference does not emit a deprecation notice, but it is
-    nonetheless deprecated, and has been removed in PHP 5.4.
-    Furthermore, this does not apply to internal functions, for which
-    the function signature is honored. Passing by value when the function
-    expects a parameter by reference results in a warning and having
-    <function>call_user_func</function> return &false; (there is, however, an
-    exception for passed values with reference count = 1, such as in literals,
-    as these can be turned into references without ill effects — but also
-    without writes to that value having any effect —; do not rely
-    in this behavior, though, as the reference count is an implementation
-    detail and the soundness of this behavior is questionable).
-   </para>
-  </note>
   &note.func-callback-exceptions;
  </refsect1>
 

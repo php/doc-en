@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision$ --> 
+<!-- $Revision$ -->
 
 <refentry xml:id="mongodb-driver-manager.construct" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
@@ -11,9 +11,9 @@
   &reftitle.description;
   <methodsynopsis>
    <modifier>final</modifier> <modifier>public</modifier> <methodname>MongoDB\Driver\Manager::__construct</methodname>
-   <methodparam choice="opt"><type>string</type><parameter>uri</parameter><initializer>"mongodb://127.0.0.1/"</initializer></methodparam>
-   <methodparam choice="opt"><type>array</type><parameter>uriOptions</parameter><initializer>array()</initializer></methodparam>
-   <methodparam choice="opt"><type>array</type><parameter>driverOptions</parameter><initializer>array()</initializer></methodparam>
+   <methodparam choice="opt"><type class="union"><type>string</type><type>null</type></type><parameter>uri</parameter><initializer>&null;</initializer></methodparam>
+   <methodparam choice="opt"><type class="union"><type>array</type><type>null</type></type><parameter>uriOptions</parameter><initializer>&null;</initializer></methodparam>
+   <methodparam choice="opt"><type class="union"><type>array</type><type>null</type></type><parameter>driverOptions</parameter><initializer>&null;</initializer></methodparam>
   </methodsynopsis>
   <para>
    Constructs a new <classname>MongoDB\Driver\Manager</classname> object with the specified options.
@@ -28,7 +28,7 @@
   <note>
    <simpara>
     When specifying any SSL or TLS URI options via the connection string or
-    <parameter>uriOptions</parameter> parameter, the driver will implicitly
+    <parameter>uriOptions</parameter> parameter, the extension will implicitly
     enable TLS for its connections. To avoid this, either explicitly disable the
     <literal>tls</literal> option or don't specify any TLS options.
    </simpara>
@@ -51,11 +51,14 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
       </programlisting>
      </para>
      <para>
+      Defaults to <literal>"mongodb://127.0.0.1:27017"</literal> if unspecified.
+     </para>
+     <para>
       For details on supported URI options, see
       <link xlink:href="&url.mongodb.docs;reference/connection-string/#connections-connection-options">Connection String Options</link>
       in the MongoDB manual.
       <link xlink:href="&url.mongodb.docs;reference/connection-string/#connection-pool-options">Connection pool options</link>
-      are not supported, as the PHP driver does not implement connection pools.
+      are not supported, as the extension does not implement connection pools.
      </para>
      <para>
       The <parameter>uri</parameter> is a URL, hence any special characters in
@@ -165,24 +168,6 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           </entry>
          </row>
          <row>
-          <entry>canonicalizeHostname</entry>
-          <entry><type>bool</type></entry>
-          <entry>
-           <para>
-            If &true;, the driver will resolve the real hostname for the server
-            IP address before authenticating via SASL. Some underlying GSSAPI
-            layers already do this, but the functionality may be disabled in
-            their config (e.g. <literal>krb.conf</literal>). Defaults to
-            &false;.
-           </para>
-           <para>
-            This option is a deprecated alias for the
-            <literal>"CANONICALIZE_HOST_NAME"</literal> property of the
-            <literal>"authMechanismProperties"</literal> URI option.
-           </para>
-          </entry>
-         </row>
-         <row>
           <entry>compressors</entry>
           <entry><type>string</type></entry>
           <entry>
@@ -225,24 +210,6 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           </entry>
          </row>
          <row>
-          <entry>gssapiServiceName</entry>
-          <entry><type>string</type></entry>
-          <entry>
-           <para>
-            Set the Kerberos service name when connecting to Kerberized MongoDB
-            instances. This value must match the service name set on MongoDB
-            instances (i.e.
-            <link xlink:href="&url.mongodb.docs;reference/parameters/#param.saslServiceName">saslServiceName</link>
-            server parameter). Defaults to <literal>"mongodb"</literal>.
-           </para>
-           <para>
-            This option is a deprecated alias for the
-            <literal>"SERVICE_NAME"</literal> property of the
-            <literal>"authMechanismProperties"</literal> URI option.
-           </para>
-          </entry>
-         </row>
-         <row>
           <entry>heartbeatFrequencyMS</entry>
           <entry><type>int</type></entry>
           <entry>
@@ -269,6 +236,20 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
             require acknowledgement from MongoDB that the operation has been
             written to the journal. For details, see
             <classname>MongoDB\Driver\WriteConcern</classname>.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>loadBalanced</entry>
+          <entry><type>bool</type></entry>
+          <entry>
+           <para>
+            Specifies whether the driver is connecting to a MongoDB cluster
+            through a load balancer. If &true;, the driver may only connect to a
+            single host (specified by either the connection string or SRV
+            lookup), the <literal>"directConnection"</literal> URI option
+            cannot be &true;, and the <literal>"replicaSet"</literal> URI option
+            must be omitted. Defaults to &false;.
            </para>
           </entry>
          </row>
@@ -395,21 +376,6 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
            </para>
           </entry>
          </row>
-         <row>
-          <entry>safe</entry>
-          <entry><type>bool</type></entry>
-          <entry>
-           <para>
-            If &true;, specifies <literal>1</literal> for the default write
-            concern's <parameter>w</parameter> parameter. If &false;,
-            <literal>0</literal> is specified. For details, see
-            <classname>MongoDB\Driver\WriteConcern</classname>.
-           </para>
-           <para>
-            This option is deprecated and should not be used.
-           </para>
-          </entry>
-         </row>
          <row xml:id="mongodb-driver-manager.construct-urioptions.serverselectiontimeoutms">
           <entry>serverSelectionTimeoutMS</entry>
           <entry><type>int</type></entry>
@@ -435,26 +401,12 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           </entry>
          </row>
          <row>
-          <entry>slaveOk</entry>
-          <entry><type>bool</type></entry>
-          <entry>
-           <para>
-            Specifies <literal>"secondaryPreferred"</literal> for the read
-            preference mode if &true;. For details, see
-            <classname>MongoDB\Driver\ReadPreference</classname>.
-           </para>
-           <para>
-            This option is deprecated and should not be used.
-           </para>
-          </entry>
-         </row>
-         <row>
           <entry>socketCheckIntervalMS</entry>
           <entry><type>int</type></entry>
           <entry>
            <para>
             If a socket has not been used recently, the driver must check it via
-            an <literal>isMaster</literal> command before using it for any
+            a <literal>hello</literal> command before using it for any
             operation. Defaults to 5,000 milliseconds.
            </para>
           </entry>
@@ -471,16 +423,23 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           </entry>
          </row>
          <row>
-          <entry>ssl</entry>
-          <entry><type>bool</type></entry>
+          <entry>srvMaxHosts</entry>
+          <entry><type>int</type></entry>
           <entry>
            <para>
-            Initiates the connection with TLS/SSL if &true;. Defaults to
-            &false;.
+            The maximum number of SRV results to randomly select when initially
+            populating the seedlist or, during SRV polling, adding new hosts to
+            the topology. Defaults to <literal>0</literal> (i.e. no maximum).
            </para>
+          </entry>
+         </row>
+         <row>
+          <entry>srvServiceName</entry>
+          <entry><type>string</type></entry>
+          <entry>
            <para>
-            This option is a deprecated alias for the <literal>"tls"</literal>
-            URI option.
+            The service name to use for SRV lookup in initial DNS seedlist
+            discovery and SRV polling. Defaults to <literal>"mongodb"</literal>.
            </para>
           </entry>
          </row>
@@ -672,105 +631,33 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
         </thead>
         <tbody>
          <row>
-          <entry>allow_invalid_hostname</entry>
-          <entry><type>bool</type></entry>
-          <entry>
-           <para>
-            Disables hostname validation if &true;. Defaults to &false;.
-           </para>
-           <para>
-            Allowing invalid hostnames may expose the driver to a
-            <link xlink:href="&url.mongodb.wiki.mitm;">man-in-the-middle attack</link>.
-           </para>
-           <para>
-            This option is a deprecated alias for the
-            <literal>"tlsAllowInvalidHostnames"</literal> URI option.
-           </para>
-          </entry>
-         </row>
-         <row>
           <entry>autoEncryption</entry>
           <entry><type>array</type></entry>
           <entry>
            <para>
-            Provides options to enable automatic client-side field level encryption.
-            The following options are supported:
-
-            <table>
-             <title>Options for automatic encryption</title>
-             <tgroup cols="3">
-              <thead>
-               <row>
-                <entry>Option</entry>
-                <entry>Type</entry>
-                <entry>Description</entry>
-               </row>
-              </thead>
-              <tbody>
-               &mongodb.option.encryption.keyVaultClient;
-               &mongodb.option.encryption.keyVaultNamespace;
-               &mongodb.option.encryption.kmsProviders;
-               <row>
-                <entry>schemaMap</entry>
-                <entry><type>array</type></entry>
-                <entry>
-                 <para>
-                  Allows specifying a local JSON schema that is used to configure encryption.
-                 </para>
-                 <note>
-                  <simpara>
-                   Supplying a <literal>schemaMap</literal> provides more
-                   security than relying on JSON schemas obtained from the
-                   server. It protects against a malicious server advertising a
-                   false JSON schema, which could trick the client into sending
-                   unencrypted data that should be encrypted.
-                  </simpara>
-                 </note>
-                 <note>
-                  <simpara>
-                   Schemas supplied in the <literal>schemaMap</literal> only
-                   apply to configuring automatic encryption for client side
-                   encryption. Other validation rules in the JSON schema will
-                   not be enforced by the driver and will result in an error.
-                  </simpara>
-                 </note>
-                </entry>
-               </row>
-               <row>
-                <entry>bypassAutoEncryption</entry>
-                <entry><type>bool</type></entry>
-                <entry>
-                 With this option set to &true;, <literal>mongocryptd</literal>
-                 will not be spawned automatically. This is used to disable
-                 automatic encryption.
-                </entry>
-               </row>
-               <row>
-                <entry>extraOptions</entry>
-                <entry><type>array</type></entry>
-                <entry>
-                 The <literal>extraOptions</literal> relate to the
-                 <literal>mongocryptd</literal> process. See the
-                 <link xlink:href="&url.mongodb.specs;/blob/master/source/client-side-encryption/client-side-encryption.rst#extraoptions">Client-Side Encryption Specification</link>
-                 for more information.
-                </entry>
-               </row>
-              </tbody>
-             </tgroup>
-            </table>
+            Provides options to enable automatic client-side field level
+            encryption. The list of options is described in the <link linkend="mongodb-driver-manager.construct-autoencryption">table below</link>.
            </para>
-
            <note>
-            <simpara>
-             Automatic encryption is an enterprise only feature that only
+            <para>
+             Automatic encryption is an enterprise-only feature that only
              applies to operations on a collection. Automatic encryption is not
              supported for operations on a database or view, and operations that
-             are not bypassed will result in error. To bypass automatic
-             encryption for all operations, set <literal>bypassAutoEncryption=true</literal>
-             in <literal>autoEncryption</literal>. For more information on
-             whitelisted operations, see the
-             <link xlink:href="&url.mongodb.specs;/blob/master/source/client-side-encryption/client-side-encryption.rst#libmongocrypt-auto-encryption-whitelist">Client-Side Encryption Specification</link>.
-            </simpara>
+             are not bypassed will result in error (see
+             <link xlink:href="&url.mongodb.libmongocrypt.allow.list;">libmongocrypt: Auto Encryption Allow-List</link>). To bypass automatic encryption
+             for all operations, set <literal>bypassAutoEncryption</literal> to
+             &true;.
+            </para>
+            <para>
+             Automatic encryption requires the authenticated user to have the
+             <link xlink:href="&url.mongodb.docs;reference/command/listCollections/#required-access">listCollections</link>
+             privilege action.
+            </para>
+            <para>
+             Explicit encryption/decryption and automatic decryption is a
+             community feature. The driver can still automatically decrypt when
+             <literal>bypassAutoEncryption</literal> is &true;.
+            </para>
            </note>
           </entry>
          </row>
@@ -785,141 +672,196 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
           </entry>
          </row>
          <row>
-          <entry>ca_file</entry>
-          <entry><type>string</type></entry>
-          <entry>
-           <para>
-            Path to file with either a single or bundle of certificate
-            authorities to be considered trusted when making a TLS connection.
-            The system certificate store will be used by default.
-           </para>
-           <para>
-            This option is a deprecated alias for the
-            <literal>"tlsCAFile"</literal> URI option.
-           </para>
-          </entry>
-         </row>
-         <row>
-          <entry>context</entry>
-          <entry><type>resource</type></entry>
-          <entry>
-           <para>
-            <link linkend="context.ssl">SSL context options</link> to be used as
-            fallbacks if a driver option or its equivalent URI option, if any,
-            is not specified. Note that the driver does not consult the default
-            stream context (i.e.
-            <function>stream_context_get_default</function>). The following
-            context options are supported:
-           </para>
-
-           <table>
-            <title>SSL context option fallbacks</title>
-            <tgroup cols="2">
-             <thead>
-              <row>
-               <entry>Driver option</entry>
-               <entry>Context option (fallback)</entry>
-              </row>
-             </thead>
-             <tbody>
-              <row>
-               <entry>ca_dir</entry>
-               <entry>capath</entry>
-              </row>
-              <row>
-               <entry>ca_file</entry>
-               <entry>cafile</entry>
-              </row>
-              <row>
-               <entry>pem_file</entry>
-               <entry>local_cert</entry>
-              </row>
-              <row>
-               <entry>pem_pwd</entry>
-               <entry>passphrase</entry>
-              </row>
-              <row>
-               <entry>weak_cert_validation</entry>
-               <entry>allow_self_signed</entry>
-              </row>
-             </tbody>
-            </tgroup>
-           </table>
-           <para>
-            This option is supported for backwards compatibility, but should be
-            considered deprecated.
-           </para>
-          </entry>
-         </row>
-         <row>
           <entry>crl_file</entry>
           <entry><type>string</type></entry>
           <entry>Path to a certificate revocation list file.</entry>
+         </row>
+         <row>
+          <entry>disableClientPersistence</entry>
+          <entry><type>bool</type></entry>
+          <entry>
+           <para>
+            If &true;, this Manager will use a new libmongoc client, which will
+            not be persisted or shared with other Manager objects. When this
+            Manager object is freed, its client will be destroyed and any
+            connections will be closed. Defaults to &false;.
+           </para>
+           <note>
+            <simpara>
+             Disabling client persistence is not generally recommended.
+            </simpara>
+           </note>
+          </entry>
          </row>
          <row>
           <entry>driver</entry>
           <entry><type>array</type></entry>
           <entry>
            <para>
-            Allows custom drivers to append their own metadata to the server
-            handshake. By default, the driver submits its own name, version, and
-            platform (i.e. PHP version) in the handshake. Custom drivers can
-            specify strings for the <literal>"name"</literal>,
-            <literal>"version"</literal>, and
-            <literal>"platform"</literal> keys of this array, which will be
-            appended to the respective field(s) in the handshake document.
+            Allows a higher level library to append its own metadata to the
+            server handshake. By default, the extension submits its own name,
+            version, and platform (i.e. PHP version) in the handshake. Strings
+            can be specified for the <literal>"name"</literal>,
+            <literal>"version"</literal>, and <literal>"platform"</literal> keys
+            of this array, and will be appended to the respective field(s) in
+            the handshake document.
            </para>
            <note>
             <simpara>
-             Handshake information is limited to 512 bytes. The driver will
-             truncate handshake data to fit within this 512-byte string. Drivers
-             and ODMs are encouraged to keep their own metadata concise.
+             Handshake information is limited to 512 bytes. The extension will
+             truncate handshake data to fit within this 512-byte string. Higher
+             level libraries are encouraged to keep their own metadata concise.
             </simpara>
            </note>
           </entry>
          </row>
          <row>
-          <entry>pem_file</entry>
-          <entry><type>string</type></entry>
+          <entry>serverApi</entry>
+          <entry><classname>MongoDB\Driver\ServerApi</classname></entry>
           <entry>
            <para>
-            Path to a PEM encoded certificate to use for client authentication.
-           </para>
-           <para>
-            This option is a deprecated alias for the
-            <literal>"tlsCertificateKeyFile"</literal> URI option.
-           </para>
-          </entry>
-         </row>
-         <row>
-          <entry>pem_pwd</entry>
-          <entry><type>string</type></entry>
-          <entry>
-           <para>
-            Passphrase for the PEM encoded certificate (if applicable).
-           </para>
-           <para>
-            This option is a deprecated alias for the
-            <literal>"tlsCertificateKeyFilePassword"</literal> URI option.
-           </para>
-          </entry>
-         </row>
-         <row>
-          <entry>weak_cert_validation</entry>
-          <entry><type>bool</type></entry>
-          <entry>
-           <para>
-            Disables certificate validation if &true;. Defaults to &false;
-           </para>
-           <para>
-            This option is a deprecated alias for the
-            <literal>"tlsAllowInvalidHostnames"</literal> URI option.
+            This option is used to declare a server API version for the manager.
+            If omitted, no API version is declared.
            </para>
           </entry>
          </row>
         </tbody>
        </tgroup>
       </table>
+     </para>
+     <para xml:id="mongodb-driver-manager.construct-autoencryption">
+      Options supported by automatic encryption through the <literal>autoEncryption</literal> driver option:
+      <table>
+       <title>autoEncryption</title>
+       <tgroup cols="3">
+        <thead>
+         <row>
+          <entry>Option</entry>
+          <entry>Type</entry>
+          <entry>Description</entry>
+         </row>
+        </thead>
+        <tbody>
+         &mongodb.option.encryption.keyVaultClient;
+         &mongodb.option.encryption.keyVaultNamespace;
+         &mongodb.option.encryption.kmsProviders;
+         &mongodb.option.encryption.tlsOptions;
+         <row>
+          <entry>schemaMap</entry>
+          <entry><type class="union"><type>array</type><type>object</type></type></entry>
+          <entry>
+           <para>
+            Map of collection namespaces to a local JSON schema. This is
+            used to configure automatic encryption. See
+            <link xlink:href="&url.mongodb.docs;reference/security-client-side-automatic-json-schema/">Automatic Encryption Rules</link>
+            in the MongoDB manual for more information. It is an error to
+            specify a collection in both <literal>schemaMap</literal> and
+            <literal>encryptedFieldsMap</literal>.
+           </para>
+           <note>
+            <simpara>
+             Supplying a <literal>schemaMap</literal> provides more
+             security than relying on JSON schemas obtained from the
+             server. It protects against a malicious server advertising a
+             false JSON schema, which could trick the client into sending
+             unencrypted data that should be encrypted.
+            </simpara>
+           </note>
+           <note>
+            <simpara>
+             Schemas supplied in the <literal>schemaMap</literal> only
+             apply to configuring automatic encryption for client side
+             encryption. Other validation rules in the JSON schema will
+             not be enforced by the driver and will result in an error.
+            </simpara>
+           </note>
+          </entry>
+         </row>
+         <row>
+          <entry>bypassAutoEncryption</entry>
+          <entry><type>bool</type></entry>
+          <entry>
+           If &true;, <literal>mongocryptd</literal> will not be spawned
+           automatically. This is used to disable automatic encryption.
+           Defaults to &false;.
+          </entry>
+         </row>
+         <row>
+          <entry>bypassQueryAnalysis</entry>
+          <entry><type>bool</type></entry>
+          <entry>
+           <para>
+            If &true;, automatic analysis of outgoing commands will be
+            disabled and <literal>mongocryptd</literal> will not be
+            spawned automatically. This enables the use case of explicit
+            encryption for querying indexed fields without requiring the
+            enterprise licensed <literal>crypt_shared</literal> library or
+            <literal>mongocryptd</literal> process. Defaults to &false;.
+           </para>
+          </entry>
+         </row>
+         <row>
+          <entry>encryptedFieldsMap</entry>
+          <entry><type class="union"><type>array</type><type>object</type></type></entry>
+          <entry>
+           <para>
+            Map of collection namespaces to an
+            <literal>encryptedFields</literal> document. This is used to
+            configure queryable encryption. See
+            <link xlink:href="&url.mongodb.docs;core/queryable-encryption/fundamentals/encrypt-and-query/">Field Encryption and Queryability</link>
+            in the MongoDB manual for more information. It is an error to
+            specify a collection in both
+            <literal>encryptedFieldsMap</literal> and
+            <literal>schemaMap</literal>.
+           </para>
+           <note>
+            <simpara>
+             Supplying an <literal>encryptedFieldsMap</literal> provides
+             more security than relying on an
+             <literal>encryptedFields</literal> obtained from the server.
+             It protects against a malicious server advertising a false
+             <literal>encryptedFields</literal>.
+            </simpara>
+           </note>
+          </entry>
+         </row>
+         <row>
+          <entry>extraOptions</entry>
+          <entry><type>array</type></entry>
+          <entry>
+           <para>
+            The <literal>extraOptions</literal> relate to the
+            <literal>mongocryptd</literal> process. The following options
+            are supported:
+           </para>
+           <simplelist>
+            <member><literal>mongocryptdURI</literal> (<type>string</type>): URI to connect to an existing <literal>mongocryptd</literal> process. Defaults to <literal>"mongodb://localhost:27020"</literal>.</member>
+            <member><literal>mongocryptdBypassSpawn</literal> (<type>bool</type>): If &true;, prevent the driver from spawning <literal>mongocryptd</literal>. Defaults to &false;.</member>
+            <member><literal>mongocryptdSpawnPath</literal> (<type>string</type>): Absolute path to search for <literal>mongocryptd</literal> binary. Defaults to empty string and consults system paths.</member>
+            <member><literal>mongocryptdSpawnArgs</literal> (<type>array</type>): Array of string arguments to pass to <literal>mongocryptd</literal> when spawning. Defaults to <literal>["--idleShutdownTimeoutSecs=60"]</literal>.</member>
+            <member><literal>cryptSharedLibPath</literal> (<type>string</type>): Absolute path to <literal>crypt_shared</literal> shared library. Defaults to empty string and consults system paths.</member>
+            <member><literal>cryptSharedLibRequired</literal> (<type>bool</type>): If &true;, require the driver to load <literal>crypt_shared</literal>. Defaults to &false;.</member>
+           </simplelist>
+           <para>
+            See the <link xlink:href="&url.mongodb.specs;/blob/master/source/client-side-encryption/client-side-encryption.rst#extraoptions">Client-Side Encryption Specification</link> for more information.
+           </para>
+          </entry>
+         </row>
+        </tbody>
+       </tgroup>
+      </table>
+      <note>
+       <simpara>
+        Automatic encryption is an enterprise only feature that only
+        applies to operations on a collection. Automatic encryption is not
+        supported for operations on a database or view, and operations that
+        are not bypassed will result in error. To bypass automatic
+        encryption for all operations, set <literal>bypassAutoEncryption=true</literal>
+        in <literal>autoEncryption</literal>. For more information on
+        allowed operations, see the
+        <link xlink:href="&url.mongodb.specs;/blob/master/source/client-side-encryption/client-side-encryption.rst#libmongocrypt-auto-encryption-whitelist">Client-Side Encryption Specification</link>.
+       </simpara>
+      </note>
      </para>
     </listitem>
    </varlistentry>
@@ -946,6 +888,147 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
       </row>
      </thead>
      <tbody>
+      <row>
+       <entry>PECL mongodb 2.0.0</entry>
+       <entry>
+        <para>
+         The <literal>"canonicalizeHostname"</literal> URI option was removed.
+         Use the <literal>"CANONICALIZE_HOST_NAME"</literal> property of the
+         <literal>"authMechanismProperties"</literal> URI option instead.
+        </para>
+        <para>
+         The <literal>"gssapiServiceName"</literal> URI option was removed.
+         Use the <literal>"SERVICE_NAME"</literal> property of the
+         <literal>"authMechanismProperties"</literal> URI option instead.
+        </para>
+        <para>
+         The <literal>"safe"</literal> URI option was removed. Use the
+         <literal>"w"</literal> and <literal>"wTimeoutMS"</literal> URI options
+         instead.
+        </para>
+        <para>
+         The <literal>"ssl"</literal> URI option was removed. Use the
+         <literal>"tls"</literal> URI option instead.
+        </para>
+        <para>
+         The <literal>"allow_invalid_hostname"</literal> driver option was
+         removed. Use the <literal>"tlsAllowInvalidHostnames"</literal> URI
+         option instead.
+        </para>
+        <para>
+         The <literal>"ca_file"</literal> driver option was removed. Use the
+         <literal>"tlsCAFile"</literal> URI option instead.
+        </para>
+        <para>
+         The <literal>"context"</literal> driver option was removed. All context
+         options were deprecated in favor of the various URI options related to
+         TLS.
+        </para>
+        <para>
+         The <literal>"pem_file"</literal> driver option was removed. Use the
+         <literal>"tlsCertificateKeyFile"</literal> URI option instead.
+        </para>
+        <para>
+         The <literal>"pem_pwd"</literal> driver option was removed. Use the
+         <literal>"tlsCertificateKeyFilePassword"</literal> URI option instead.
+        </para>
+        <para>
+         The <literal>"weak_cert_validation"</literal> driver option was removed.
+         Use the <literal>"tlsAllowInvalidCertificates"</literal> URI option
+         instead.
+        </para>
+       </entry>
+      </row>
+      <row>
+       <entry>PECL mongodb 1.16.0</entry>
+       <entry>
+        <para>
+         The AWS KMS provider for client-side encryption now accepts a
+         <literal>"sessionToken"</literal> option, which can be used to
+         authenticate with temporary AWS credentials.
+        </para>
+        <para>
+         Added <literal>"tlsDisableOCSPEndpointCheck"</literal> to the
+         <literal>"tlsOptions"</literal> field of the
+         <literal>"autoEncryption"</literal> driver option.
+        </para>
+        <para>
+         If an empty document is specified for the <literal>"azure"</literal> or
+         <literal>"gcp"</literal> KMS provider, the driver will attempt to
+         configure the provider using
+         <link xlink:href="&url.mongodb.specs;/blob/master/source/client-side-encryption/client-side-encryption.rst#automatic-credentials">Automatic Credentials</link>.
+        </para>
+       </entry>
+      </row>
+      <row>
+       <entry>PECL mongodb 1.15.0</entry>
+       <entry>
+        <para>
+         If an empty document is specified for the <literal>"aws"</literal> KMS
+         provider, the driver will attempt to configure the provider using
+         <link xlink:href="&url.mongodb.specs;/blob/master/source/client-side-encryption/client-side-encryption.rst#automatic-credentials">Automatic Credentials</link>.
+        </para>
+       </entry>
+      </row>
+      <row>
+       <entry>PECL mongodb 1.14.0</entry>
+       <entry>
+        <para>
+         Added the <literal>"bypassQueryAnalysis"</literal> and
+         <literal>"encryptedFieldsMap"</literal> auto encryption options.
+         Additional options pertaining to <literal>crypt_shared</literal> are
+         now supported in the <literal>"extraOptions"</literal> auto encryption
+         option.
+        </para>
+       </entry>
+      </row>
+      <row>
+       <entry>PECL mongodb 1.13.0</entry>
+       <entry>
+        <para>
+         Added the <literal>"srvMaxHosts"</literal> and
+         <literal>"srvServiceName"</literal> URI options.
+        </para>
+       </entry>
+      </row>
+      <row>
+       <entry>PECL mongodb 1.12.0</entry>
+       <entry>
+        <para>
+         KMIP is now supported as a KMS provider for client-side encryption and
+         may be configured in the <literal>"kmsProviders"</literal> field of the
+         <literal>"autoEncryption"</literal> driver option. Additionally, TLS
+         options for KMS providers may now be configured in the
+         <literal>"tlsOptions"</literal> field of the
+         <literal>"autoEncryption"</literal> driver option.
+        </para>
+       </entry>
+      </row>
+      <row>
+       <entry>PECL mongodb 1.11.0</entry>
+       <entry>
+        <para>
+         Added the <literal>"loadBalanced"</literal> URI option.
+        </para>
+       </entry>
+      </row>
+      <row>
+       <entry>PECL mongodb 1.10.0</entry>
+       <entry>
+        <para>
+         Added the <literal>"disableClientPersistence"</literal> driver option.
+        </para>
+        <para>
+         Azure and GCP are now supported as KMS providers for client-side
+         encryption and may be configured in the
+         <literal>"kmsProviders"</literal> field of the
+         <literal>"autoEncryption"</literal> driver option. Base64-encoded
+         strings are now accepted as an alternative to
+         <classname>MongoDB\BSON\Binary</classname> for options within
+         <literal>"kmsProviders"</literal>.
+        </para>
+       </entry>
+      </row>
       <row>
        <entry>PECL mongodb 1.8.0</entry>
        <entry>
@@ -1052,8 +1135,8 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
          <literal>"connectTimeoutMS"</literal> URI option now defaults to 10
          seconds instead of
          <link linkend="ini.default-socket-timeout">default_socket_timeout</link>
-         in previous versions. Additionally, the driver no longer supports all
-         <link linkend="context.ssl">SSL context options</link> via the
+         in previous versions. Additionally, the extension no longer supports
+         all <link linkend="context.ssl">SSL context options</link> via the
          <literal>"context"</literal> driver option.
         </para>
        </entry>

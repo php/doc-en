@@ -3,68 +3,139 @@
 <refentry xml:id="function.exit" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>exit</refname>
-  <refpurpose>Output a message and terminate the current script</refpurpose>
+  <refpurpose>Terminate the current script with a status code or message</refpurpose>
  </refnamediv>
- 
+
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <type>void</type><methodname>exit</methodname>
-   <methodparam choice="opt"><type>string</type><parameter>status</parameter></methodparam>
+   <type>never</type><methodname>exit</methodname>
+   <methodparam choice="opt"><type class="union"><type>string</type><type>int</type></type><parameter>status</parameter><initializer>0</initializer></methodparam>
   </methodsynopsis>
-  <methodsynopsis>
-   <type>void</type><methodname>exit</methodname>
-   <methodparam><type>int</type><parameter>status</parameter></methodparam>
-  </methodsynopsis>
-  <para>
+  <simpara>
    Terminates execution of the script.
    <link linkend="function.register-shutdown-function">Shutdown functions</link>
    and <link linkend="language.oop5.decon.destructor">object destructors</link>
-   will always be executed even if <literal>exit</literal> is called.
-  </para>
-  <para>
-   <literal>exit</literal> is a language construct and it can be called
-   without parentheses if no <parameter>status</parameter> is passed.
-  </para>
+   will always be executed even if <function>exit</function> is called.
+   However, &finally; blocks are never executed.
+  </simpara>
+  <simpara>
+   An exit code of <literal>0</literal> is used to indicate that the program
+   succeeded in its tasks.
+   Any other value indicates some sort of error occurred during execution.
+  </simpara>
+  <simpara>
+   <function>exit</function> is a special function,
+   because it has a dedicated token in the parser,
+   as such it can be used like a statement (i.e. without parentheses) to
+   terminate the script with the default status code.
+  </simpara>
+  <caution>
+   <simpara>
+    It is not possible to disable, or create a namespaced function shadowing
+    the global <function>exit</function> function.
+   </simpara>
+  </caution>
  </refsect1>
 
  <refsect1 role="parameters">
   &reftitle.parameters;
-  <para>
-   <variablelist>
-    <varlistentry>
-     <term><parameter>status</parameter></term>
-     <listitem>
-      <para>
-       If <parameter>status</parameter> is a string, this function prints the
-       <parameter>status</parameter> just before exiting.
-      </para>
-      <para>
-       If <parameter>status</parameter> is an <type>int</type>, that
-       value will be used as the exit status and not printed. Exit statuses should be in
-       the range 0 to 254, the exit status 255 is reserved by PHP and shall
-       not be used. The status 0 is used to terminate the program
-       successfully.
-      </para>
-     </listitem>
-    </varlistentry>
-   </variablelist>
-  </para>
+  <variablelist>
+   <varlistentry>
+    <term><parameter>status</parameter></term>
+    <listitem>
+     <simpara>
+      If <parameter>status</parameter> is a string,
+      this function prints the <parameter>status</parameter> just before exiting.
+      The exit code returned by PHP is <literal>0</literal>.
+     </simpara>
+     <para>
+      If <parameter>status</parameter> is an <type>int</type>,
+      the exit code returned by PHP will be <parameter>status</parameter>.
+      <note>
+       <simpara>
+        Exit codes should be in the range <literal>0</literal> to <literal>254</literal>,
+        the exit code <literal>255</literal> is reserved by PHP and should not be used.
+       </simpara>
+      </note>
+     </para>
+     <warning>
+      <simpara>
+       Prior to PHP 8.4.0, <function>exit</function> did not follow PHP's standard
+       <link linkend="language.types.type-juggling.function">type juggling semantics</link>,
+       nor respect the
+       <link linkend="language.types.declarations.strict"><literal>strict_types</literal></link>
+       declare.
+      </simpara>
+      <simpara>
+       Any value not of type <type>int</type> was cast to <type>string</type>
+       including <type>resource</type> and <type>array</type> values.
+       As of PHP 8.4.0, it follows the usual type juggling semantics and throws a
+       <exceptionname>TypeError</exceptionname> on invalid values.
+      </simpara>
+     </warning>
+    </listitem>
+   </varlistentry>
+  </variablelist>
  </refsect1>
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-   &return.void;
-  </para>
+  <simpara>
+   As this terminates the PHP script, no value is returned.
+  </simpara>
+ </refsect1>
+
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>8.4.0</entry>
+      <entry>
+       <function>exit</function> is now a proper function,
+       therefore it follows the usual
+       <link linkend="language.types.type-juggling.function">type juggling semantics</link>
+       is affected by the
+       <link linkend="language.types.declarations.strict"><literal>strict_types</literal></link>
+       declare, can be called with named arguments, and be a
+       <link linkend="functions.variable-functions">variable functions</link>.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
-  <para>
-   <example>
-    <title><literal>exit</literal> example</title>
-    <programlisting role="php">
+  <example>
+   <title>Basic <function>exit</function> example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// exit program normally
+exit();
+exit(0);
+
+// exit with an error code
+exit(1);
+
+?>
+]]>
+   </programlisting>
+  </example>
+  <example>
+   <title><function>exit</function> example with a <type>string</type></title>
+   <programlisting role="php">
 <![CDATA[
 <?php
 
@@ -74,34 +145,11 @@ $file = fopen($filename, 'r')
 
 ?>
 ]]>
-    </programlisting>
-   </example>
-  </para>
-  <para>
-   <example>
-    <title><literal>exit</literal> status example</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-
-//exit program normally
-exit;
-exit();
-exit(0);
-
-//exit with an error code
-exit(1);
-exit(0376); //octal
-
-?>
-]]>
-    </programlisting>
-   </example>
-  </para>
-  <para>
-   <example>
-    <title>Shutdown functions and destructors run regardless</title>
-    <programlisting role="php">
+   </programlisting>
+  </example>
+  <example>
+   <title>Shutdown functions and destructors run regardless</title>
+   <programlisting role="php">
 <![CDATA[
 <?php
 class Foo
@@ -124,41 +172,52 @@ exit();
 echo 'This will not be output.';
 ?>
 ]]>
-    </programlisting>
-    &example.outputs;
-    <screen>
- <![CDATA[
- Shutdown: shutdown()
- Destruct: Foo::__destruct()
- ]]>
-    </screen>
-   </example>
-  </para>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+Shutdown: shutdown()
+Destruct: Foo::__destruct()
+]]>
+   </screen>
+  </example>
+  <example>
+   <title><function>exit</function> as a statement</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// exit program normally with exit code 0
+exit;
+
+?>
+]]>
+   </programlisting>
+  </example>
  </refsect1>
 
  <refsect1 role="notes">
   &reftitle.notes;
-  
-  &note.language-construct;
-
-  <note>
-   <para>
-    This language construct is equivalent to <function>die</function>.
-   </para>
-  </note>
+  <warning>
+   <simpara>
+    Prior to PHP 8.4.0, <function>exit</function> was a language construct
+    and not a function, therefore it was not possible to call it using
+    <link linkend="functions.variable-functions">variable functions</link>,
+    or <link linkend="functions.named-arguments">named arguments</link>.
+   </simpara>
+  </warning>
  </refsect1>
 
  <refsect1 role="seealso">
   &reftitle.seealso;
-  <para>
-   <simplelist>
-    <member><function>register_shutdown_function</function></member>
-   </simplelist>
-  </para>
+  <simplelist>
+   <member><function>register_shutdown_function</function></member>
+   <member><link linkend="function.register-shutdown-function">Shutdown functions</link></member>
+   <member><link linkend="language.oop5.decon.destructor">object destructors</link></member>
+  </simplelist>
  </refsect1>
 
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

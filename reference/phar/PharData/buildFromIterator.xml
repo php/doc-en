@@ -8,10 +8,10 @@
 
  <refsect1 role="description">
   &reftitle.description;
-  <methodsynopsis>
+  <methodsynopsis role="PharData">
    <modifier>public</modifier> <type>array</type><methodname>PharData::buildFromIterator</methodname>
-   <methodparam><type>Iterator</type><parameter>iter</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>base_directory</parameter></methodparam>
+   <methodparam><type>Traversable</type><parameter>iterator</parameter></methodparam>
+   <methodparam choice="opt"><type class="union"><type>string</type><type>null</type></type><parameter>baseDirectory</parameter><initializer>&null;</initializer></methodparam>
   </methodsynopsis>
   <para>
    Populate a tar or zip archive from an iterator.  Two styles of iterators are supported,
@@ -21,105 +21,13 @@
    parameter is required.
   </para>
  </refsect1>
- <refsect1 role="examples">
-  &reftitle.examples;
-   <example>
-    <title>A <function>PharData::buildFromIterator</function> with SplFileInfo</title>
-  <para>
-   For most tar/zip archives, the archive will reflect an actual directory layout, and
-   the second style is the most useful.  For instance, to create a tar/zip archive
-   containing the files in this sample directory layout:
-  </para>
-  <para>
-   <screen>
-    <![CDATA[
-/path/to/project/
-                 config/
-                        dist.xml
-                        debug.xml
-                 lib/
-                     file1.php
-                     file2.php
-                 src/
-                     processthing.php
-                 www/
-                     index.php
-                 cli/
-                     index.php
-    ]]>
-   </screen>
-  </para>
-  <para>
-   This code could be used to add these files to the &quot;project.tar&quot; tar archive:
-  </para>
-  <para>
-   <programlisting role="php">
-    <![CDATA[
-<?php
-$phar = new PharData('project.tar');
-$phar->buildFromIterator(
-    new RecursiveIteratorIterator(
-     new RecursiveDirectoryIterator('/path/to/project')),
-    '/path/to/project');
-?>
-    ]]>
-   </programlisting>
-  </para>
-  <para>
-   The file <literal>project.tar</literal> can then be used immediately.  <function>PharData::buildFromIterator</function> does not
-   set values such as compression, metadata, and this can be done after creating the
-   tar/zip archive.
-  </para>
-  <para>
-   As an interesting note, <function>PharData::buildFromIterator</function> can also be used to
-   copy the contents of an existing phar, tar or zip archive, as the PharData object descends
-   from <classname>DirectoryIterator</classname>:
-  </para>
-  <para>
-   <programlisting role="php">
-    <![CDATA[
-<?php
-$phar = new PharData('project.tar');
-$phar->buildFromIterator(
-    new RecursiveIteratorIterator(
-     new Phar('/path/to/anotherphar.phar')),
-    'phar:///path/to/anotherphar.phar/path/to/project');
-$phar->setStub($phar->createDefaultStub('cli/index.php', 'www/index.php'));
-?>
-    ]]>
-   </programlisting>
-  </para>
-  </example>
-  <example>
-    <title>A <function>PharData::buildFromIterator</function> with other iterators</title>
-  <para>
-   The second form of the iterator can be used with any iterator that returns
-   a key => value mapping, such as an <classname>ArrayIterator</classname>:
-  </para>
-  <para>
-   <programlisting role="php">
-    <![CDATA[
-<?php
-$phar = new PharData('project.tar');
-$phar->buildFromIterator(
-    new ArrayIterator(
-     array(
-        'internal/file.php' => dirname(__FILE__) . '/somefile.php',
-        'another/file.jpg' => fopen('/path/to/bigfile.jpg', 'rb'),
-     )));
-?>
-    ]]>
-   </programlisting>
-  </para>
-  </example>
- </refsect1>
 
  <refsect1 role="parameters">
   &reftitle.parameters;
   <para>
    <variablelist>
     <varlistentry>
-     <term><parameter>iter</parameter></term>
+     <term><parameter>iterator</parameter></term>
      <listitem>
       <para>
        Any iterator that either associatively maps tar/zip file to location or
@@ -128,7 +36,7 @@ $phar->buildFromIterator(
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>base_directory</parameter></term>
+     <term><parameter>baseDirectory</parameter></term>
      <listitem>
       <para>
        For iterators that return SplFileInfo objects, the portion of each
@@ -155,12 +63,133 @@ $phar->buildFromIterator(
    This method returns <classname>UnexpectedValueException</classname> when the
    iterator returns incorrect values, such as an integer key instead of a
    string, a <classname>BadMethodCallException</classname> when an
-   SplFileInfo-based iterator is passed without a <parameter>base_directory</parameter>
+   SplFileInfo-based iterator is passed without a <parameter>baseDirectory</parameter>
    parameter, or a <classname>PharException</classname> if there were errors
    saving the phar archive.
   </para>
  </refsect1>
 
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>&Version;</entry>
+      <entry>&Description;</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>8.1.0</entry>
+      <entry>
+       <methodname>PharData::buildFromIterator</methodname> no longer returns &false;.
+      </entry>
+     </row>
+     <row>
+      <entry>8.0.0</entry>
+      <entry>
+       <parameter>baseDirectory</parameter> is now nullable.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title>A <function>PharData::buildFromIterator</function> with SplFileInfo</title>
+   <para>
+    For most tar/zip archives, the archive will reflect an actual directory layout, and
+    the second style is the most useful.  For instance, to create a tar/zip archive
+    containing the files in this sample directory layout:
+   </para>
+   <para>
+    <screen>
+     <![CDATA[
+/path/to/project/
+                 config/
+                        dist.xml
+                        debug.xml
+                 lib/
+                     file1.php
+                     file2.php
+                 src/
+                     processthing.php
+                 www/
+                     index.php
+                 cli/
+                     index.php
+    ]]>
+    </screen>
+   </para>
+   <para>
+    This code could be used to add these files to the &quot;project.tar&quot; tar archive:
+   </para>
+   <para>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+$phar = new PharData('project.tar');
+$phar->buildFromIterator(
+    new RecursiveIteratorIterator(
+     new RecursiveDirectoryIterator('/path/to/project')),
+    '/path/to/project');
+?>
+    ]]>
+    </programlisting>
+   </para>
+   <para>
+    The file <literal>project.tar</literal> can then be used immediately.  <function>PharData::buildFromIterator</function> does not
+    set values such as compression, metadata, and this can be done after creating the
+    tar/zip archive.
+   </para>
+   <para>
+    As an interesting note, <function>PharData::buildFromIterator</function> can also be used to
+    copy the contents of an existing phar, tar or zip archive, as the PharData object descends
+    from <classname>DirectoryIterator</classname>:
+   </para>
+   <para>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+$phar = new PharData('project.tar');
+$phar->buildFromIterator(
+    new RecursiveIteratorIterator(
+     new Phar('/path/to/anotherphar.phar')),
+    'phar:///path/to/anotherphar.phar/path/to/project');
+$phar->setStub($phar->createDefaultStub('cli/index.php', 'www/index.php'));
+?>
+    ]]>
+    </programlisting>
+   </para>
+  </example>
+  <example>
+   <title>A <function>PharData::buildFromIterator</function> with other iterators</title>
+   <para>
+    The second form of the iterator can be used with any iterator that returns
+    a key =&gt; value mapping, such as an <classname>ArrayIterator</classname>:
+   </para>
+   <para>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+$phar = new PharData('project.tar');
+$phar->buildFromIterator(
+    new ArrayIterator(
+     array(
+        'internal/file.php' => dirname(__FILE__) . '/somefile.php',
+        'another/file.jpg' => fopen('/path/to/bigfile.jpg', 'rb'),
+     )));
+?>
+    ]]>
+    </programlisting>
+   </para>
+  </example>
+ </refsect1>
+ 
  <refsect1 role="seealso">
   &reftitle.seealso;
   <para>
@@ -171,7 +200,6 @@ $phar->buildFromIterator(
  </refsect1>
 
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

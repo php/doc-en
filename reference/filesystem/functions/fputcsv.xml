@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-<refentry xmlns="http://docbook.org/ns/docbook" xml:id="function.fputcsv">
+<refentry xml:id="function.fputcsv" xmlns="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
  <refnamediv>
   <refname>fputcsv</refname>
   <refpurpose>Format line as CSV and write to file pointer</refpurpose>
@@ -10,16 +10,18 @@
   &reftitle.description;
   <methodsynopsis>
    <type class="union"><type>int</type><type>false</type></type><methodname>fputcsv</methodname>
-   <methodparam><type>resource</type><parameter>handle</parameter></methodparam>
+   <methodparam><type>resource</type><parameter>stream</parameter></methodparam>
    <methodparam><type>array</type><parameter>fields</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>delimiter</parameter><initializer>","</initializer></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>enclosure</parameter><initializer>'"'</initializer></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>escape_char</parameter><initializer>"\\"</initializer></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>separator</parameter><initializer>","</initializer></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>enclosure</parameter><initializer>"\""</initializer></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>escape</parameter><initializer>"\\"</initializer></methodparam>
+   <methodparam choice="opt"><type>string</type><parameter>eol</parameter><initializer>"\n"</initializer></methodparam>
   </methodsynopsis>
   <para>
    <function>fputcsv</function> formats a line (passed as a
-   <parameter>fields</parameter> array) as CSV and writes it (terminated by a
-   newline) to the specified file <parameter>handle</parameter>. 
+   <parameter>fields</parameter> array) as <acronym>CSV</acronym> and writes it
+   (terminated by a <parameter>eol</parameter>) to the specified
+   <parameter>stream</parameter>.
   </para>
  </refsect1>
 
@@ -28,7 +30,7 @@
   <para>
    <variablelist>
     <varlistentry>
-     <term><parameter>handle</parameter></term>
+     <term><parameter>stream</parameter></term>
      <listitem>
       &fs.validfp.all;
      </listitem>
@@ -41,41 +43,32 @@
       </para>
      </listitem>
     </varlistentry>
+    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('function.fgetcsv')/db:refsect1[@role='parameters']//db:varlistentry[db:term[db:parameter[text()='separator']]]/.)">
+     <xi:fallback/>
+    </xi:include>
+    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('function.fgetcsv')/db:refsect1[@role='parameters']//db:varlistentry[db:term[db:parameter[text()='enclosure']]]/.)">
+     <xi:fallback/>
+    </xi:include>
+    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('function.fgetcsv')/db:refsect1[@role='parameters']//db:varlistentry[db:term[db:parameter[text()='escape']]]/.)">
+     <xi:fallback/>
+    </xi:include>
     <varlistentry>
-     <term><parameter>delimiter</parameter></term>
+     <term><parameter>eol</parameter></term>
      <listitem>
       <para>
-       The optional <parameter>delimiter</parameter> parameter sets the field
-       delimiter (one character only).
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry>
-     <term><parameter>enclosure</parameter></term>
-     <listitem>
-      <para>
-       The optional <parameter>enclosure</parameter> parameter sets the field
-       enclosure (one character only).
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry>
-     <term><parameter>escape_char</parameter></term>
-     <listitem>
-      <para>
-       The optional <parameter>escape_char</parameter> parameter sets the
-       escape character (at most one character).
-       An empty string (<literal>""</literal>) disables the proprietary escape mechanism.
+       The optional <parameter>eol</parameter> parameter sets
+       a custom End of Line sequence.
       </para>
      </listitem>
     </varlistentry>
    </variablelist>
   </para>
+  &warning.csv.escape-parameter;
   <note>
    <para>
     If an <parameter>enclosure</parameter> character is contained in a field,
     it will be escaped by doubling it, unless it is immediately preceded by an
-    <parameter>escape_char</parameter>.
+    <parameter>escape</parameter>.
    </para>
   </note> 
  </refsect1>
@@ -86,6 +79,10 @@
    Returns the length of the written string &return.falseforfailure;.
   </para>
  </refsect1>
+
+ <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('function.fgetcsv')/db:refsect1[@role='errors']/.)">
+  <xi:fallback/>
+ </xi:include>
 
  <refsect1 role="changelog">
   &reftitle.changelog;
@@ -99,17 +96,20 @@
       </row>
      </thead>
      <tbody>
+      <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('function.fgetcsv')/db:refsect1[@role='changelog']//db:row[db:entry[text()='8.4.0']]/.)">
+       <xi:fallback/>
+      </xi:include>
       <row>
-       <entry>7.4.0</entry>
+       <entry>8.1.0</entry>
        <entry>
-        The <parameter>escape_char</parameter> parameter now also accepts an empty
-        string to disable the proprietary escape mechanism.
+        The optional <parameter>eol</parameter> parameter has been added.
        </entry>
       </row>
       <row>
-       <entry>5.5.4</entry>
+       <entry>7.4.0</entry>
        <entry>
-        The <parameter>escape_char</parameter> parameter was added
+        The <parameter>escape</parameter> parameter now also accepts an empty
+        string to disable the proprietary escape mechanism.
        </entry>
       </row>
      </tbody>
@@ -127,16 +127,16 @@
 <![CDATA[
 <?php
 
-$list = array (
-    array('aaa', 'bbb', 'ccc', 'dddd'),
-    array('123', '456', '789'),
-    array('"aaa"', '"bbb"')
-);
+$list = [
+    ['aaa', 'bbb', 'ccc', 'dddd'],
+    ['123', '456', '789'],
+    ['"aaa"', '"bbb"']
+];
 
 $fp = fopen('file.csv', 'w');
 
 foreach ($list as $fields) {
-    fputcsv($fp, $fields);
+    fputcsv($fp, $fields, ',', '"', '');
 }
 
 fclose($fp);
@@ -156,22 +156,19 @@ aaa,bbb,ccc,dddd
   </para>
  </refsect1>
 
- <refsect1 role="notes">
-  &reftitle.notes;
-  &note.line-endings;
- </refsect1>
-
  <refsect1 role="seealso">
   &reftitle.seealso;
-  <para>
-   <simplelist>
-    <member><function>fgetcsv</function></member>
-   </simplelist>
-  </para>
+  <simplelist>
+   <member><function>fgetcsv</function></member>
+   <member><function>str_getcsv</function></member>
+   <member><methodname>SplFileObject::fgetcsv</methodname></member>
+   <member><methodname>SplFileObject::fputcsv</methodname></member>
+   <member><methodname>SplFileObject::setCsvControl</methodname></member>
+   <member><methodname>SplFileObject::getCsvControl</methodname></member>
+  </simplelist>
  </refsect1>
 
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

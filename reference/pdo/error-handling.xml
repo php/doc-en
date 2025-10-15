@@ -13,13 +13,13 @@
     <constant>PDO::ERRMODE_SILENT</constant>
    </para>
    <para>
-     This is the default mode. PDO will simply set the error code for you
-     to inspect using the <function>PDO::errorCode</function> and
-     <function>PDO::errorInfo</function> methods on both the
+     Prior to PHP 8.0.0, this was the default mode. PDO will simply set the error code for you
+     to inspect using the <methodname>PDO::errorCode</methodname> and
+     <methodname>PDO::errorInfo</methodname> methods on both the
      statement and database objects; if the error resulted from a call on a
      statement object, you would invoke the
-     <function>PDOStatement::errorCode</function> or
-     <function>PDOStatement::errorInfo</function>
+     <methodname>PDOStatement::errorCode</methodname> or
+     <methodname>PDOStatement::errorInfo</methodname>
      method on that object. If the error resulted from a call on the
      database object, you would invoke those methods on the database object
      instead.
@@ -41,6 +41,7 @@
      <constant>PDO::ERRMODE_EXCEPTION</constant>
     </para>
     <para>
+     As of PHP 8.0.0, this is the default mode.
      In addition to setting the error code, PDO will throw a
      <classname>PDOException</classname>
      and set its properties to reflect the error code and error
@@ -65,10 +66,10 @@
  <para>
   PDO standardizes on using SQL-92 SQLSTATE error code strings; individual
   PDO drivers are responsible for mapping their native codes to the
-  appropriate SQLSTATE codes.   The <function>PDO::errorCode</function>
+  appropriate SQLSTATE codes.   The <methodname>PDO::errorCode</methodname>
   method returns a single SQLSTATE code. If you need more specific
   information about an error, PDO also offers an
-  <function>PDO::errorInfo</function> method which returns an array
+  <methodname>PDO::errorInfo</methodname> method which returns an array
   containing the SQLSTATE code, the driver specific error code and driver
   specific error string.
  </para>
@@ -83,22 +84,29 @@ $dsn = 'mysql:dbname=testdb;host=127.0.0.1';
 $user = 'dbuser';
 $password = 'dbpass';
 
-try {
-    $dbh = new PDO($dsn, $user, $password);
-    $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    echo 'Connection failed: ' . $e->getMessage();
-}
+$dbh = new PDO($dsn, $user, $password);
+$dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-?>
+// This will cause PDO to throw a PDOException (when the table doesn't exist)
+$dbh->query("SELECT wrongcolumn FROM wrongtable");
 ]]>
    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Fatal error: Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'testdb.wrongtable' doesn't exist in /tmp/pdo_test.php:10
+Stack trace:
+#0 /tmp/pdo_test.php(10): PDO->query('SELECT wrongcol...')
+#1 {main}
+  thrown in /tmp/pdo_test.php on line 10
+]]>
+    </screen>
   </example>
  </para>
  <note>
   <para>
-   <function>PDO::__construct</function> will always throw a <classname>PDOException</classname> if the connection fails
-   regardless of which <constant>PDO::ATTR_ERRMODE</constant> is currently set. Uncaught Exceptions are fatal.
+   <methodname>PDO::__construct</methodname> will always throw a <classname>PDOException</classname> if the connection fails
+   regardless of which <constant>PDO::ATTR_ERRMODE</constant> is currently set.
   </para>
  </note>
  <para>
@@ -111,27 +119,17 @@ $dsn = 'mysql:dbname=test;host=127.0.0.1';
 $user = 'googleguy';
 $password = 'googleguy';
 
-/*
-    Using try/catch around the constructor is still valid even though we set the ERRMODE to WARNING since
-    PDO::__construct will always throw a PDOException if the connection fails.
-*/
-try {
-    $dbh = new PDO($dsn, $user, $password, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING));
-} catch (PDOException $e) {
-    echo 'Connection failed: ' . $e->getMessage();
-    exit;
-}
+$dbh = new PDO($dsn, $user, $password, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING));
 
 // This will cause PDO to throw an error of level E_WARNING instead of an exception (when the table doesn't exist)
 $dbh->query("SELECT wrongcolumn FROM wrongtable");
-?>
 ]]>
    </programlisting>
     &example.outputs;
     <screen>
 <![CDATA[
 Warning: PDO::query(): SQLSTATE[42S02]: Base table or view not found: 1146 Table 'test.wrongtable' doesn't exist in
-/tmp/pdo_test.php on line 18
+/tmp/pdo_test.php on line 9
 ]]>
     </screen>
   </example>

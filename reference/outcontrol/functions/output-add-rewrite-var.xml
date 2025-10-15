@@ -5,7 +5,7 @@
   <refname>output_add_rewrite_var</refname>
   <refpurpose>Add URL rewriter values</refpurpose>
  </refnamediv>
- 
+
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
@@ -14,27 +14,44 @@
    <methodparam><type>string</type><parameter>value</parameter></methodparam>
   </methodsynopsis>
   <para>
-   This function adds another name/value pair to the URL rewrite mechanism.
-   The name and value will be added to URLs (as GET parameter) and forms
-   (as hidden input fields) the same way as the session ID when transparent
-   URL rewriting is enabled with <link
-    linkend="ini.session.use-trans-sid">session.use_trans_sid</link>. 
+   This function starts the <literal>'URL-Rewriter'</literal> output buffer handler
+   if it is not active,
+   stores the <parameter>name</parameter> and <parameter>value</parameter> parameters,
+   and when the buffer is flushed rewrites the <acronym>URL</acronym>s
+   and forms based on the applicable ini settings.
+   Subsequent calls to this function will store all additional name/value pairs
+   until the handler is turned off.
   </para>
   <para>
-   This function's behaviour is controlled by the <link
-    linkend="ini.url-rewriter.tags">url_rewriter.tags</link> and
-    <link linkend="ini.url-rewriter.hosts">url_rewriter.hosts</link> &php.ini;
-   parameters.
+   When the output buffer is flushed
+   (by calling <function>ob_flush</function>, <function>ob_end_flush</function>,
+   <function>ob_get_flush</function> or at the end of the script)
+   the <literal>'URL-Rewriter'</literal> handler adds the name/value pairs
+   as query parameters to <acronym>URL</acronym>s in attributes of HTML tags
+   and adds hidden fields to forms based on the values of the
+   <link linkend="ini.url-rewriter.tags">url_rewriter.tags</link> and
+   <link linkend="ini.url-rewriter.hosts">url_rewriter.hosts</link>
+   configuration directives.
   </para>
   <para>
-   Note that this function can be successfully called at most once per request.
+   Each name/value pair added to the <literal>'URL-Rewriter'</literal> handler
+   is added to the <acronym>URL</acronym>s and/or forms
+   even if this results in duplicate <acronym>URL</acronym> query parameters
+   or elements with the same name attributes.
   </para>
   <note>
    <simpara>
-    Calling this function will implicitly start output buffering if it is
-    not active already.
+    Once the <literal>'URL-Rewriter'</literal> handler has been turned off
+    it cannot be started again.
    </simpara>
   </note>
+  <warning>
+   <simpara>
+    Prior to PHP 8.4.0, the hosts to be rewritten were set in
+    <link linkend="ini.session.trans-sid-hosts">session.trans_sid_hosts</link>
+    instead of <link linkend="ini.url-rewriter.hosts">url_rewriter.hosts</link>.
+   </simpara>
+  </warning>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -83,11 +100,13 @@
       <row>
        <entry>7.1.0</entry>
        <entry>
-        Before PHP 7.1.0, rewrite vars set by <function>output_add_rewrite_var</function>
-        use the same Session module trans sid output buffer. Since PHP 7.1.0,
-        dedicated output buffer is used, <link linkend="ini.url-rewriter.tags">
-        url_rewriter.tags</link> is used solely for output functions, <link 
-        linkend="ini.url-rewriter.tags">url_rewriter.hosts</link> is added.
+        As of PHP 7.1.0, a dedicated output buffer is used,
+        <link linkend="ini.url-rewriter.tags">url_rewriter.tags</link>
+        is used solely for output functions and
+        <link linkend="ini.url-rewriter.tags">url_rewriter.hosts</link> is available.
+        Prior to PHP 7.1.0, rewrite variables set by <function>output_add_rewrite_var</function>
+        shared an output buffer with transparent session id support
+        (see <link linkend="ini.session.trans-sid-tags">session.trans_sid_tags</link>).
        </entry>
       </row>
      </tbody>
@@ -104,6 +123,8 @@
     <programlisting role="php">
 <![CDATA[
 <?php
+ini_set('url_rewriter.tags', 'a=href,form=');
+
 output_add_rewrite_var('var', 'value');
 
 // some links
@@ -149,11 +170,9 @@ Array
     <member><function>ob_list_handlers</function></member>
     <member><link linkend="ini.url-rewriter.tags">url_rewriter.tags</link></member>
     <member><link linkend="ini.url-rewriter.hosts">url_rewriter.hosts</link></member>
-    <member><link linkend="ini.session.trans-sid-tags">session.trans_sid_tags</link></member>
-    <member><link linkend="ini.session.trans-sid-hosts">session.trans_sid_hosts</link></member>
    </simplelist>
   </para>
- </refsect1>  
+ </refsect1>
 
 </refentry>
 

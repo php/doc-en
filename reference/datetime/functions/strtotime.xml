@@ -18,10 +18,13 @@
    and will try to parse that format into a Unix timestamp (the number of
    seconds since January 1 1970 00:00:00 UTC), relative to the timestamp given
    in <parameter>baseTimestamp</parameter>, or the current time if
-   <parameter>baseTimestamp</parameter> is not supplied.
+   <parameter>baseTimestamp</parameter> is not supplied.  The date string parsing
+   is defined in <link linkend="datetime.formats">Date and Time Formats</link>, and
+   has several subtle considerations.  Reviewing the full details there is strongly
+   recommended.
   </simpara>
   <warning>
-  <para>
+   <para>
     The Unix timestamp that this function returns does not contain information
     about time zones. In order to do calculations with date/time information,
     you should use the more capable <classname>DateTimeImmutable</classname>.
@@ -125,7 +128,6 @@ echo strtotime("last Monday"), "\n";
 <?php
 $str = 'Not Good';
 
-// previous to PHP 5.1.0 you would compare with -1, instead of false
 if (($timestamp = strtotime($str)) === false) {
     echo "The string ($str) is bogus";
 } else {
@@ -142,6 +144,18 @@ if (($timestamp = strtotime($str)) === false) {
   &reftitle.notes;
   <note>
    <para>
+    "Relative" date in this case also means that if a particular component
+    of the date/time stamp is not provided, it will be taken verbatim from
+    the <parameter>baseTimestamp</parameter>.  That is, <code>strtotime('February')</code>,
+    if run on the 31st of May 2022, will be interpreted as <literal>31 February 2022</literal>,
+    which will overflow into a timestamp on <literal>3 March</literal>.
+    (In a leap year, it would be <literal>2 March</literal>.)  Using
+    <code>strtotime('1 February')</code> or <code>strtotime('first day of February')</code>
+    would avoid that problem.
+   </para>
+  </note>
+  <note>
+   <para>
     If the number of the year is specified in a two digit format, the values
     between 00-69 are mapped to 2000-2069 and 70-99 to 1970-1999. See the notes
     below for possible differences on 32bit systems (possible dates might end on 
@@ -156,12 +170,6 @@ if (($timestamp = strtotime($str)) === false) {
     a 32-bit signed integer.)
    </para>
    <para>
-    Prior to PHP 5.1.0, not all platforms support negative timestamps, therefore
-    your date range may be limited to no earlier than the Unix epoch. This
-    means that e.g. dates prior to Jan 1, 1970 will not work on Windows,
-    some Linux distributions, and a few other operating systems.
-   </para>
-   <para>
     For 64-bit versions of PHP, the valid range of a timestamp is effectively
     infinite, as 64 bits can represent approximately 293 billion years in either
     direction.
@@ -169,28 +177,9 @@ if (($timestamp = strtotime($str)) === false) {
   </note>
   <note>
    <para>
-    Dates in the <literal>m/d/y</literal> or <literal>d-m-y</literal> formats
-    are disambiguated by looking at the separator between the various
-    components: if the separator is a slash (<literal>/</literal>), then the
-    American <literal>m/d/y</literal> is assumed; whereas if the separator is a
-    dash (<literal>-</literal>) or a dot (<literal>.</literal>), then the
-    European <literal>d-m-y</literal> format is assumed.
-    If, however, the year is given in a two digit format and the separator is a
-    dash (<literal>-</literal>), the date string is parsed as
-    <literal>y-m-d</literal>.
-   </para>
-   <para>
-    To avoid potential ambiguity, it's best to use ISO 8601
-    (<literal>YYYY-MM-DD</literal>) dates or
-    <methodname>DateTime::createFromFormat</methodname> when possible.
-   </para>
-  </note>
-  <note>
-   <para>
     Using this function for mathematical operations is not advisable.
     It is better to use <methodname>DateTime::add</methodname> and
-    <methodname>DateTime::sub</methodname> in PHP 5.3 and later, or
-    <methodname>DateTime::modify</methodname> in PHP 5.2.
+    <methodname>DateTime::sub</methodname>.
    </para>
   </note>
  </refsect1>
@@ -199,8 +188,9 @@ if (($timestamp = strtotime($str)) === false) {
   &reftitle.seealso;
   <para>
    <simplelist>
+    <member><classname>DateTimeImmutable</classname></member>
+    <member><methodname>DateTimeImmutable::createFromFormat</methodname></member>
     <member><link linkend="datetime.formats">Date and Time Formats</link></member>
-    <member><methodname>DateTime::createFromFormat</methodname></member>
     <member><function>checkdate</function></member>
     <member><function>strptime</function></member>
    </simplelist>

@@ -73,41 +73,61 @@
    <example>
     <title><function>curl_multi_exec</function> example</title>
     <para>
-     This example will create two cURL handles, add them to a multi
+     This example will create curl handles for a list of URLs, add them to a multi
      handle, and process them asynchronously.
     </para>
     <programlisting role="php">
 <![CDATA[
 <?php
-// create both cURL resources
-$ch1 = curl_init();
-$ch2 = curl_init();
 
-// set URL and other appropriate options
-curl_setopt($ch1, CURLOPT_URL, "http://example.com/");
-curl_setopt($ch1, CURLOPT_HEADER, 0);
-curl_setopt($ch2, CURLOPT_URL, "http://www.php.net/");
-curl_setopt($ch2, CURLOPT_HEADER, 0);
+$urls = [
+    "https://www.php.net/",
+    "https://www.example.com/",
+];
 
-//create the multiple cURL handle
 $mh = curl_multi_init();
+$map = new WeakMap();
 
-//add the two handles
-curl_multi_add_handle($mh,$ch1);
-curl_multi_add_handle($mh,$ch2);
+foreach ($urls as $url) {
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_multi_add_handle($mh, $ch);
+    $map[$ch] = $url;
+}
 
-//execute the multi handle
 do {
-    $status = curl_multi_exec($mh, $active);
-    if ($active) {
-        // Wait a short time for more activity
-        curl_multi_select($mh);
+    $status = curl_multi_exec($mh, $unfinishedHandles);
+    if ($status !== CURLM_OK) {
+        throw new \Exception(curl_multi_strerror(curl_multi_errno($mh)));
     }
-} while ($active && $status == CURLM_OK);
 
-//close the handles
-curl_multi_remove_handle($mh, $ch1);
-curl_multi_remove_handle($mh, $ch2);
+    while (($info = curl_multi_info_read($mh)) !== false) {
+        if ($info['msg'] === CURLMSG_DONE) {
+            $handle = $info['handle'];
+            curl_multi_remove_handle($mh, $handle);
+            $url = $map[$handle];
+
+            if ($info['result'] === CURLE_OK) {
+                $statusCode = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+
+                echo "Request to {$url} finished with HTTP status {$statusCode}:", PHP_EOL;
+                echo curl_multi_getcontent($handle);
+                echo PHP_EOL, PHP_EOL;
+            } else {
+                echo "Request to {$url} failed with error: ", PHP_EOL;
+                echo curl_strerror($info['result']);
+                echo PHP_EOL, PHP_EOL;
+            }
+        }
+    }
+
+    if ($unfinishedHandles) {
+        if (($updatedHandles = curl_multi_select($mh)) === -1) {
+            throw new \Exception(curl_multi_strerror(curl_multi_errno($mh)));
+        }
+    }
+} while ($unfinishedHandles);
+
 curl_multi_close($mh);
 
 ?>

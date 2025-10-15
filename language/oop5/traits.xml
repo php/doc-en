@@ -25,23 +25,43 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-trait ezcReflectionReturnInfo {
-    function getReturnType() { /*1*/ }
-    function getReturnDescription() { /*2*/ }
+
+trait TraitA {
+    public function sayHello() {
+        echo 'Hello';
+    }
 }
 
-class ezcReflectionMethod extends ReflectionMethod {
-    use ezcReflectionReturnInfo;
-    /* ... */
+trait TraitB {
+    public function sayWorld() {
+        echo 'World';
+    }
 }
 
-class ezcReflectionFunction extends ReflectionFunction {
-    use ezcReflectionReturnInfo;
-    /* ... */
+class MyHelloWorld
+{
+    use TraitA, TraitB; // A class can use multiple traits
+
+    public function sayHelloWorld() {
+        $this->sayHello();
+        echo ' ';
+        $this->sayWorld();
+        echo "!\n";
+    }
 }
+
+$myHelloWorld = new MyHelloWorld();
+$myHelloWorld->sayHelloWorld();
+
 ?>
 ]]>
     </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Hello World!
+]]>
+    </screen>
    </example>
 
   <sect2 xml:id="language.oop5.traits.precedence">
@@ -127,7 +147,7 @@ Hello Universe!
   <sect2 xml:id="language.oop5.traits.multiple">
    <title>Multiple Traits</title>
    <para>
-    Multiple Traits can be inserted into a class by listing them in the use
+    Multiple Traits can be inserted into a class by listing them in the <literal>use</literal>
     statement, separated by commas.
    </para>
    <example xml:id="language.oop5.traits.multiple.ex1">
@@ -200,7 +220,7 @@ Hello World!
       to be able to use B's bigTalk implementation under an additional alias
       <literal>talk</literal>.
     </para>
-    <programlisting role="php">
+    <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 trait A {
@@ -249,7 +269,7 @@ class Aliased_Talker {
    </para>
    <example xml:id="language.oop5.traits.visibility.ex1">
     <title>Changing Method Visibility</title>
-    <programlisting role="php">
+    <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 trait HelloWorld {
@@ -325,12 +345,14 @@ Hello World!
    <title>Abstract Trait Members</title>
    <para>
     Traits support the use of abstract methods in order to impose requirements
-    upon the exhibiting class.
+    upon the exhibiting class. Public, protected, and private methods are supported.
+    Prior to PHP 8.0.0, only public and protected abstract methods were supported.
    </para>
    <caution>
     <simpara>
-     A concrete class fulfills this requirement by defining a concrete method
-     with the same name; its signature may be different.
+     As of PHP 8.0.0, the signature of a concrete method must follow the
+     <link linkend="language.oop.lsp">signature compatibility rules</link>.
+     Previously, its signature might be different.
     </simpara>
    </caution>
    <example xml:id="language.oop5.traits.abstract.ex1">
@@ -364,54 +386,136 @@ class MyHelloWorld {
   <sect2 xml:id="language.oop5.traits.static">
    <title>Static Trait Members</title>
    <para>
-    Traits can define both static members and static methods.
+    Traits can define static variables, static methods and static properties.
    </para>
+   <note>
+    <para>
+     As of PHP 8.1.0, calling a static method, or accessing a static property directly on a trait is deprecated.
+     Static methods and properties should only be accessed on a class using the trait.
+    </para>
+   </note>
    <example xml:id="language.oop5.traits.static.ex1">
     <title>Static Variables</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-trait Counter {
-    public function inc() {
+
+trait Counter
+{
+    public function inc()
+    {
         static $c = 0;
         $c = $c + 1;
         echo "$c\n";
     }
 }
 
-class C1 {
+class C1
+{
     use Counter;
 }
 
-class C2 {
+class C2
+{
     use Counter;
 }
 
-$o = new C1(); $o->inc(); // echo 1
-$p = new C2(); $p->inc(); // echo 1
+$o = new C1();
+$o->inc();
+$p = new C2();
+$p->inc();
+
 ?>
 ]]>
     </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+1
+1
+]]>
+    </screen>
    </example>
    <example xml:id="language.oop5.traits.static.ex2">
     <title>Static Methods</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-trait StaticExample {
-    public static function doSomething() {
+
+trait StaticExample
+{
+    public static function doSomething()
+    {
         return 'Doing something';
     }
 }
 
-class Example {
+class Example
+{
     use StaticExample;
 }
 
-Example::doSomething();
+echo Example::doSomething();
+
 ?>
 ]]>
     </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Doing something
+]]>
+    </screen>
+   </example>
+   <example xml:id="language.oop5.traits.static.ex3">
+    <title>Static Properties</title>
+    <caution>
+     <simpara>
+      Prior to PHP 8.3.0, static properties defined in a trait were shared
+      across all classes in the same inheritance hierarchy which used that trait.
+      As of PHP 8.3.0, if a child class uses a trait with a static property,
+      it will be considered distinct from the one defined in the parent class.
+     </simpara>
+    </caution>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+
+trait T
+{
+    public static $counter = 1;
+}
+
+class A
+{
+    use T;
+
+    public static function incrementCounter()
+    {
+        static::$counter++;
+    }
+}
+
+class B extends A
+{
+    use T;
+}
+
+A::incrementCounter();
+
+echo A::$counter, "\n";
+echo B::$counter, "\n";
+
+?>
+]]>
+    </programlisting>
+    &example.outputs.83;
+    <screen>
+<![CDATA[
+2
+1
+]]>
+    </screen>
    </example>
   </sect2>
 
@@ -425,24 +529,28 @@ Example::doSomething();
     <programlisting role="php">
 <![CDATA[
 <?php
-trait PropertiesTrait {
+
+trait PropertiesTrait
+{
     public $x = 1;
 }
 
-class PropertiesExample {
+class PropertiesExample
+{
     use PropertiesTrait;
 }
 
-$example = new PropertiesExample;
+$example = new PropertiesExample();
 $example->x;
+
 ?>
 ]]>
     </programlisting>
    </example>
    <para>
     If a trait defines a property then a class can not define a property with
-    the same name unless it is compatible (same visibility and initial value),
-    otherwise a fatal error is issued.
+    the same name unless it is compatible (same visibility and type,
+    readonly modifier, and initial value), otherwise a fatal error is issued.
    </para>
    <example xml:id="language.oop5.traits.properties.conflicts">
     <title>Conflict Resolution</title>
@@ -451,19 +559,126 @@ $example->x;
 <?php
 trait PropertiesTrait {
     public $same = true;
-    public $different = false;
+    public $different1 = false;
+    public bool $different2;
+    public bool $different3;
 }
 
 class PropertiesExample {
     use PropertiesTrait;
-    public $same = true; // Allowed as of PHP 7.0.0; E_STRICT notice formerly
-    public $different = true; // Fatal error
+    public $same = true;
+    public $different1 = true; // Fatal error
+    public string $different2; // Fatal error
+    readonly protected bool $different3; // Fatal error
 }
 ?>
 ]]>
     </programlisting>
    </example>
   </sect2>
+
+ <sect2 xml:id="language.oop5.traits.constants">
+  <title>&Constants;</title>
+  <para>
+   Traits can, as of PHP 8.2.0, also define constants.
+  </para>
+  <example xml:id="language.oop5.traits.constants.example">
+   <title>Defining Constants</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+trait ConstantsTrait {
+    public const FLAG_MUTABLE = 1;
+    final public const FLAG_IMMUTABLE = 5;
+}
+
+class ConstantsExample {
+    use ConstantsTrait;
+}
+
+$example = new ConstantsExample;
+echo $example::FLAG_MUTABLE;
+?>
+]]>
+   </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+1
+]]>
+    </screen>
+  </example>
+  <para>
+   If a trait defines a constant then a class can not define a constant with
+   the same name unless it is compatible (same visibility, initial value, and
+   finality), otherwise a fatal error is issued.
+  </para>
+  <example xml:id="language.oop5.traits.constants.conflicts">
+   <title>Conflict Resolution</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+trait ConstantsTrait {
+    public const FLAG_MUTABLE = 1;
+    final public const FLAG_IMMUTABLE = 5;
+}
+
+class ConstantsExample {
+    use ConstantsTrait;
+    public const FLAG_IMMUTABLE = 5; // Fatal error
+}
+?>
+]]>
+   </programlisting>
+  </example>
+ </sect2>
+
+ <sect2 xml:id="language.oop5.traits.final-methods">
+  <title>Final methods</title>
+  <simpara>
+   As of PHP 8.3.0, the <link linkend="language.oop5.final">final</link>
+   modifier can be applied using the <literal>as</literal> operator
+   to methods imported from traits. This can be used to prevent child classes
+   from overriding the method. However, the class that uses the trait can still
+   override the method.
+  </simpara>
+  <example xml:id="language.oop5.traits.final-methods.example">
+   <title>Defining a method coming from a trait as <literal>final</literal></title>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+
+trait CommonTrait
+{
+    public function method()
+    {
+        echo 'Hello';
+    }
+}
+
+class FinalExampleA
+{
+    use CommonTrait {
+        CommonTrait::method as final; // The 'final' prevents child classes from overriding the method
+    }
+}
+
+class FinalExampleB extends FinalExampleA
+{
+    public function method() {}
+}
+
+?>
+]]>
+   </programlisting>
+    &example.outputs.similar;
+    <screen>
+<![CDATA[
+Fatal error: Cannot override final method FinalExampleA::method() in ...
+]]>
+    </screen>
+  </example>
+ </sect2>
 
  </sect1>
 <!-- Keep this comment at the end of the file

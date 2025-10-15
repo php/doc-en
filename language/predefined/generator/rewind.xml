@@ -1,22 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-
 <refentry xml:id="generator.rewind" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Generator::rewind</refname>
-  <refpurpose>Rewind the iterator</refpurpose>
+  <refpurpose>Rewind the generator to the first yield</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
-  <methodsynopsis>
+  <methodsynopsis role="Generator">
    <modifier>public</modifier> <type>void</type><methodname>Generator::rewind</methodname>
-   <void />
+   <void/>
   </methodsynopsis>
   <para>
-   If iteration has already begun, this will throw an exception.
+   The method rewinds the generator back to the point before the first &yield;.
+   If the generator is not at a first &yield; expression when this method is called,
+   it will first be let to advance to the first &yield; expression before rewinding.
+   If the generator has already at the point of beginning of the second &yield;,
+   this will throw an <classname>Exception</classname>.
   </para>
-
+  <note>
+   <para>
+    This is the <emphasis>first</emphasis> method called when starting a
+    &foreach; loop. It will <emphasis>not</emphasis> be
+    executed <emphasis>after</emphasis> &foreach; loops.
+   </para>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -31,9 +40,80 @@
   </para>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><methodname>Generator::rewind</methodname> example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+function generator(): Generator
+{
+    echo "I'm a generator!\n";
+
+    for ($i = 1; $i <= 3; $i++) {
+        yield $i;
+    }
+}
+
+// Initialize the generator
+$generator = generator();
+
+// Rewind the generator to the beginning of the first yield expression,
+// if it's not already there
+$generator->rewind(); // I'm a generator!
+
+// Nothing happens here; the generator is already rewound
+$generator->rewind(); // No output (NULL)
+
+// This rewinds the generator to the first yield expression,
+// if it's not already there, and iterates over the generator
+foreach ($generator as $value) {
+    // After yielding the first value, the generator remains at
+    // the first yield expression until it resumes execution and advances to the next yield
+    echo $value, PHP_EOL; // 1
+
+    break;
+}
+
+// Resume and rewind again. No error occurs because the generator has not advanced beyond the first yield
+$generator->rewind();
+
+echo $generator->current(), PHP_EOL; // 1
+
+// No error occurs, the generator is still at the first yield
+$generator->rewind();
+
+// This advances the generator to the second yield expression
+$generator->next();
+
+try {
+    // This will throw an Exception,
+    // because the generator has already advanced to the second yield
+    $generator->rewind(); // Fatal error: Uncaught Exception: Cannot rewind a generator that was already run
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
+
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+I'm a generator!
+1
+1
+Cannot rewind a generator that was already run
+]]>
+    </screen>
+   </example>
+  </para>
+ </refsect1>
 
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml

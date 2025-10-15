@@ -138,7 +138,7 @@ class Point {
      </programlisting>
     </example>
     <para>
-     When a constructor argument includes a visibility modifier, PHP will interpret it as
+     When a constructor argument includes a modifier, PHP will interpret it as
      both an object property and a constructor argument, and assign the argument value to
      the property.  The constructor body may then be empty or may contain other statements.
      Any additional statements will be executed after the argument values have been assigned
@@ -150,6 +150,13 @@ class Point {
     </para>
     <note>
      <para>
+      Using a <link linkend="language.oop5.visibility">visibility modifier</link> (<literal>public</literal>,
+      <literal>protected</literal> or <literal>private</literal>) is the most likely way to apply property
+      promotion, but any other single modifier (such as <literal>readonly</literal>) will have the same effect.
+     </para>
+    </note>
+    <note>
+     <para>
       Object properties may not be typed <type>callable</type> due to engine ambiguity that would
       introduce. Promoted arguments, therefore, may not be typed <type>callable</type> either. Any
       other <link linkend="language.types.declarations">type declaration</link> is permitted, however.
@@ -157,12 +164,66 @@ class Point {
     </note>
     <note>
      <para>
-      <!-- This should be linked once attributes are documented. -->
-      Attributes placed on a promoted constructor argument will be replicated to both the property
-      and argument.
+      As promoted properties are desugared to both a property as well as a function parameter, any
+      and all naming restrictions for both properties as well as parameters apply.
+     </para>
+    </note>
+    <note>
+     <para>
+      <link linkend="language.attributes">Attributes</link> placed on a
+      promoted constructor argument will be replicated to both the property
+      and argument.  Default values on a promoted constructor argument will be replicated only to the argument and not the property.
      </para>
     </note>
    </sect3>
+
+   <sect3 xml:id="language.oop5.decon.constructor.new">
+    <title>New in initializers</title>
+    <para>
+     As of PHP 8.1.0, objects can be used as default parameter values,
+     static variables, and global constants, as well as in attribute arguments.
+     Objects can also be passed to <function>define</function> now.
+    </para>
+    <note>
+     <para>
+      The use of a dynamic or non-string class name or an anonymous class is not allowed.
+      The use of argument unpacking is not allowed.
+      The use of unsupported expressions as arguments is not allowed.
+     </para>
+    </note>
+    <example>
+     <title>Using new in initializers</title>
+     <programlisting role="php" annotations="non-interactive">
+<![CDATA[
+<?php
+
+// All allowed:
+static $x = new Foo;
+
+const C = new Foo;
+ 
+function test($param = new Foo) {}
+ 
+#[AnAttribute(new Foo)]
+class Test {
+    public function __construct(
+        public $prop = new Foo,
+    ) {}
+}
+
+// All not allowed (compile-time error):
+function test(
+    $a = new (CLASS_NAME_CONSTANT)(), // dynamic class name
+    $b = new class {}, // anonymous class
+    $c = new A(...[]), // argument unpacking
+    $d = new B($abc), // unsupported constant expression
+) {}
+?>
+]]>
+     </programlisting>
+    </example>
+   </sect3>
+   
    <sect3 xml:id="language.oop5.decon.constructor.static">
     <title>Static creation methods</title>
     <para>
@@ -175,6 +236,9 @@ class Point {
      <programlisting role="php">
 <![CDATA[
 <?php
+$some_json_string = '{ "id": 1004, "name": "Elephpant" }';
+$some_xml_string = "<animal><id>1005</id><name>Elephpant</name></animal>";
+
 class Product {
 
     private ?int $id;
@@ -191,16 +255,15 @@ class Product {
     }
 
     public static function fromJson(string $json): static {
-        $data = json_decode($json);
+        $data = json_decode($json, true);
         return new static($data['id'], $data['name']);
     }
 
     public static function fromXml(string $xml): static {
-        // Put your own logic here.
-        $data = convert_xml_to_array($xml);
+        $data = simplexml_load_string($xml);
         $new = new static();
-        $new->id = $data['id'];
-        $new->name = $data['name'];
+        $new->id = (int) $data->id;
+        $new->name = $data->name;
         return $new;
     }
 }
@@ -208,6 +271,8 @@ class Product {
 $p1 = Product::fromBasicData(5, 'Widget');
 $p2 = Product::fromJson($some_json_string);
 $p3 = Product::fromXml($some_xml_string);
+
+var_dump($p1, $p2, $p3);
 ]]>
      </programlisting>
     </example>
@@ -281,6 +346,26 @@ $obj = new MyDestructableClass();
     The destructor will be called even if script execution is stopped using
     <function>exit</function>. Calling <function>exit</function> in a destructor
     will prevent the remaining shutdown routines from executing.
+   </para>
+   <para>
+    If a destructor creates new references to its object, it will not be called
+    a second time when the reference count reaches zero again or during the
+    shutdown sequence.
+   </para>
+   <para>
+    As of PHP 8.4.0, when
+    <link linkend="features.gc.collecting-cycles">cycle collection</link>
+    occurs during the execution of a
+    <link linkend="language.fibers">Fiber</link>, the destructors of objects
+    scheduled for collection are executed in a separate Fiber, called the
+    <literal>gc_destructor_fiber</literal>.
+    If this Fiber is suspended, a new one will be created to execute any
+    remaining destructors.
+    The previous <literal>gc_destructor_fiber</literal> will no longer be
+    referenced by the garbage collector and may be collected if it is not
+    referenced elsewhere.
+    Objects whose destructor are suspended will not be collected until the
+    destructor returns or the Fiber itself is collected.
    </para>
    <note>
     <para>

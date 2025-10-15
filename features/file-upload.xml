@@ -132,6 +132,15 @@
        </para>
       </listitem>
      </varlistentry>
+     <varlistentry>
+      <term><varname>$_FILES['userfile']['full_path']</varname></term>
+      <listitem>
+       <para>
+        The full path as submitted by the browser. This value does not always contain a real directory structure, and cannot be trusted.
+        Available as of PHP 8.1.0.
+       </para>
+      </listitem>
+     </varlistentry>
     </variablelist>
    </para>
 
@@ -252,80 +261,11 @@ foreach ($_FILES["pictures"]["error"] as $key => $error) {
     during the file upload by PHP. In other words, the error might be 
     found in <varname>$_FILES['userfile']['error']</varname>.
    </simpara>
-   <para>
-    <variablelist>
-     <varlistentry>
-      <term><constant>UPLOAD_ERR_OK</constant></term>
-      <listitem>
-       <para>
-        Value: 0; There is no error, the file uploaded with success.
-       </para>
-      </listitem>
-     </varlistentry>
-     <varlistentry>
-      <term><constant>UPLOAD_ERR_INI_SIZE</constant></term>
-      <listitem>
-       <para>
-        Value: 1; The uploaded file exceeds the
-        <link linkend="ini.upload-max-filesize">upload_max_filesize</link> 
-        directive in &php.ini;.
-       </para>
-      </listitem>
-     </varlistentry>
-     <varlistentry>
-      <term><constant>UPLOAD_ERR_FORM_SIZE</constant></term>
-      <listitem>
-       <para>
-        Value: 2; The uploaded file exceeds the <emphasis>MAX_FILE_SIZE</emphasis> 
-        directive that was specified in the HTML form.
-       </para>
-      </listitem>
-     </varlistentry>
-     <varlistentry>
-      <term><constant>UPLOAD_ERR_PARTIAL</constant></term>
-      <listitem>
-       <para>
-        Value: 3; The uploaded file was only partially uploaded.
-       </para>
-      </listitem>
-     </varlistentry>
-     <varlistentry>
-      <term><constant>UPLOAD_ERR_NO_FILE</constant></term>
-      <listitem>
-       <para>
-        Value: 4; No file was uploaded.
-       </para>
-      </listitem>
-     </varlistentry>
-     <varlistentry>
-      <term><constant>UPLOAD_ERR_NO_TMP_DIR</constant></term>
-      <listitem>
-       <para>
-        Value: 6; Missing a temporary folder. Introduced in PHP 5.0.3.
-       </para>
-      </listitem>
-     </varlistentry>
-     <varlistentry>
-      <term><constant>UPLOAD_ERR_CANT_WRITE</constant></term>
-      <listitem>
-       <para>
-        Value: 7; Failed to write file to disk. Introduced in PHP 5.1.0.
-       </para>
-      </listitem>
-     </varlistentry>
-     <varlistentry>
-       <term><constant>UPLOAD_ERR_EXTENSION</constant></term>
-       <listitem>
-         <para>
-           Value: 8; A PHP extension stopped the file upload. PHP does not 
-           provide a way to ascertain which extension caused the file upload to 
-           stop; examining the list of loaded extensions with <function>phpinfo</function> may help. 
-           Introduced in PHP 5.2.0.
-         </para>
-       </listitem>
-     </varlistentry>
-    </variablelist>
-   </para>
+   <simpara>
+    The value of this error code is one of the
+    <constant>UPLOAD_ERR_<replaceable>*</replaceable></constant>
+    constants.
+   </simpara>
   </sect1>
 
   <sect1 xml:id="features.file-upload.common-pitfalls">
@@ -363,7 +303,7 @@ foreach ($_FILES["pictures"]["error"] as $key => $error) {
      <link linkend="ini.max-input-time">max_input_time</link> sets the maximum
      time, in seconds, the script is allowed to receive input; this includes
      file uploads.  For large or multiple files, or users on slower connections,
-     the default of <literal>60 seconds</literal> may be exceeded.
+     the default of <literal>60</literal> seconds may be exceeded.
     </simpara>
    </warning>
    <simpara>
@@ -372,7 +312,7 @@ foreach ($_FILES["pictures"]["error"] as $key => $error) {
     <literal>post_max_size</literal> large enough.
    </simpara>
    <simpara>
-    As of PHP 5.2.12, the
+    The
     <link linkend="ini.max-file-uploads">max_file_uploads</link> configuration
     setting controls the maximum number of files that can uploaded in one
     request. If more files are uploaded than the limit, then
@@ -385,12 +325,6 @@ foreach ($_FILES["pictures"]["error"] as $key => $error) {
    <simpara>
     Not validating which file you operate on may mean that users can access
     sensitive information in other directories.
-   </simpara>
-   <simpara>
-    Please note that the <productname>CERN httpd</productname> seems to strip off everything
-    starting at the first whitespace in the content-type mime header
-    it gets from the client.  As long as this is the case, <productname>CERN httpd</productname>
-    will not support the file upload feature.
    </simpara>
    <simpara>
     Due to the large amount of directory listing styles we cannot guarantee
@@ -435,10 +369,6 @@ foreach ($_FILES["pictures"]["error"] as $key => $error) {
     <varname>$_FILES['userfile']['name']</varname>, and
     <varname>$_FILES['userfile']['size']</varname> will be
     initialized.
-    When
-    <link linkend="ini.register-globals">register_globals</link> is on, globals for uploaded
-    files are also initialized. Each of these will be a numerically
-    indexed array of the appropriate values for the submitted files.
    </simpara>
    <simpara>
     For instance, assume that the filenames
@@ -460,13 +390,49 @@ foreach ($_FILES["pictures"]["error"] as $key => $error) {
    </simpara>
    <warning>
     <simpara>
-     As of PHP 5.2.12, the
+     The
      <link linkend="ini.max-file-uploads">max_file_uploads</link>
      configuration setting acts as a limit on the number of files that can be
      uploaded in one request. You will need to ensure that your form does not
      try to upload more files in one request than this limit.
     </simpara>
    </warning>
+   <para>
+    <example>
+     <title>Uploading an entire directory</title>
+     <simpara>
+      In HTML file upload fields, it is possible to upload an entire directory with the <literal>webkitdirectory</literal> attribute.
+      This feature is supported in most modern browsers.
+     </simpara>
+     <simpara>
+      With the <literal>full_path</literal> information, it is possible to store the relative paths,
+      or reconstruct the same directory in the server.
+     </simpara>
+     <programlisting role="html">
+<![CDATA[
+<form action="file-upload.php" method="post" enctype="multipart/form-data">
+  Send this directory:<br />
+  <input name="userfile[]" type="file" webkitdirectory multiple />
+  <input type="submit" value="Send files" />
+</form>
+]]>
+     </programlisting>
+    </example>
+
+    <warning>
+     <simpara>
+      The <literal>webkitdirectory</literal> attribute is non-standard and is not on a standards track.
+      Do not use it on production sites facing the Web: it will not work for every user.
+      There may also be large incompatibilities between implementations and the behavior may change in the future.
+     </simpara>
+     <simpara>
+      PHP only parses the relative path information submitted by the browser/user-agent,
+      and passes that information to the <varname>$_FILES</varname> array.
+      There is no guarantee that the values in the <literal>full_path</literal> array contains a real directory structure,
+      and the PHP application must not trust this information.
+     </simpara>
+    </warning>
+   </para>
   </sect1>
 
   <sect1 xml:id="features.file-upload.put-method">
@@ -506,7 +472,7 @@ Script PUT /put.php
    <simpara>
     This tells Apache to send all PUT requests for URIs that match the
     context in which you put this line to the <filename>put.php</filename> script. This
-    assumes, of course, that you have PHP enabled for the <filename>.php</filename>
+    assumes, of course, that you have PHP enabled for the <filename class="extension">.php</filename>
     extension and PHP is active. The destination resource for all PUT 
     requests to this script has to be the script itself, not a filename the
     uploaded file should have.

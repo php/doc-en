@@ -9,16 +9,13 @@
   &reftitle.description;
   <methodsynopsis>
    <type>bool</type><methodname>imagefilter</methodname>
-   <methodparam><type>resource</type><parameter>image</parameter></methodparam>
-   <methodparam><type>int</type><parameter>filtertype</parameter></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>arg1</parameter></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>arg2</parameter></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>arg3</parameter></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter>arg4</parameter></methodparam>
+   <methodparam><type>GdImage</type><parameter>image</parameter></methodparam>
+   <methodparam><type>int</type><parameter>filter</parameter></methodparam>
+   <methodparam rep="repeat"><type class="union"><type>array</type><type>int</type><type>float</type><type>bool</type></type><parameter>args</parameter></methodparam>
   </methodsynopsis>
   <para>
    <function>imagefilter</function> applies the given filter
-   <parameter>filtertype</parameter> on the <parameter>image</parameter>.
+   <parameter>filter</parameter> on the <parameter>image</parameter>.
   </para>
  </refsect1>
  <refsect1 role="parameters">
@@ -27,10 +24,10 @@
    <variablelist>
     &gd.image.description;
     <varlistentry>
-     <term><parameter>filtertype</parameter></term>
+     <term><parameter>filter</parameter></term>
      <listitem>
       <para>
-       <parameter>filtertype</parameter> can be one of the following:
+       <parameter>filter</parameter> can be one of the following:
        <itemizedlist>
         <listitem>
          <simpara>
@@ -50,14 +47,14 @@
         <listitem>
          <simpara>
           <constant>IMG_FILTER_BRIGHTNESS</constant>: Changes the brightness
-          of the image. Use <parameter>arg1</parameter> to set the level of
+          of the image. Use <parameter>args</parameter> to set the level of
           brightness. The range for the brightness is -255 to 255.
          </simpara>
         </listitem>
         <listitem>
          <simpara>
           <constant>IMG_FILTER_CONTRAST</constant>: Changes the contrast of
-          the image. Use <parameter>arg1</parameter> to set the level of
+          the image. Use <parameter>args</parameter> to set the level of
           contrast.
          </simpara>
         </listitem>
@@ -65,7 +62,7 @@
          <simpara>
           <constant>IMG_FILTER_COLORIZE</constant>: Like
           <constant>IMG_FILTER_GRAYSCALE</constant>, except you can specify the
-          color. Use <parameter>arg1</parameter>, <parameter>arg2</parameter> and
+          color. Use <parameter>args</parameter>, <parameter>arg2</parameter> and
           <parameter>arg3</parameter> in the form of
           <parameter>red</parameter>, <parameter>green</parameter>,
           <parameter>blue</parameter> and <parameter>arg4</parameter> for the
@@ -103,20 +100,20 @@
         <listitem>
          <simpara>
           <constant>IMG_FILTER_SMOOTH</constant>: Makes the image smoother.
-          Use <parameter>arg1</parameter> to set the level of smoothness.
+          Use <parameter>args</parameter> to set the level of smoothness.
          </simpara>
         </listitem>
         <listitem>
          <simpara>
           <constant>IMG_FILTER_PIXELATE</constant>: Applies pixelation effect 
-          to the image, use <parameter>arg1</parameter> to set the block size 
+          to the image, use <parameter>args</parameter> to set the block size 
           and <parameter>arg2</parameter> to set the pixelation effect mode.
          </simpara>
         </listitem>
         <listitem>
          <simpara>
           <constant>IMG_FILTER_SCATTER</constant>: Applies scatter effect 
-          to the image, use <parameter>arg1</parameter> and 
+          to the image, use <parameter>args</parameter> and 
           <parameter>arg2</parameter> to define the effect strength and 
           additionally <parameter>arg3</parameter> to only apply the 
           on select pixel colors.
@@ -127,7 +124,7 @@
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>arg1</parameter></term>
+     <term><parameter>args</parameter></term>
      <listitem>
       <para>
        <itemizedlist>
@@ -237,6 +234,16 @@
    &return.success;
   </para>
  </refsect1>
+
+ <refsect1 role="errors">
+  &reftitle.errors;
+  <simpara>
+   Throws a <classname>ValueError</classname>
+   if <parameter>sub</parameter> or <parameter>plus</parameter> would cause over-/underflow
+   with the <constant>IMG_FILTER_SCATTER</constant> <parameter>filter</parameter>.
+  </simpara>
+ </refsect1>
+
  <refsect1 role="changelog">
   &reftitle.changelog;
   <para>
@@ -249,6 +256,15 @@
       </row>
      </thead>
      <tbody>
+      <row>
+       <entry>8.4.0</entry>
+       <entry>
+        Now throws a <classname>ValueError</classname>
+        if <parameter>sub</parameter> or <parameter>plus</parameter> would cause over-/underflow
+        with the <constant>IMG_FILTER_SCATTER</constant> <parameter>filter</parameter>.
+       </entry>
+      </row>
+      &gd.changelog.image-param;
       <row>
        <entry>7.4.0</entry>
        <entry>
@@ -280,8 +296,6 @@ else
 {
     echo 'Conversion to grayscale failed.';
 }
-
-imagedestroy($im);
 ?>
 ]]>
     </programlisting>
@@ -300,7 +314,6 @@ if($im && imagefilter($im, IMG_FILTER_BRIGHTNESS, 20))
     echo 'Image brightness changed.';
 
     imagepng($im, 'sean.png');
-    imagedestroy($im);
 }
 else
 {
@@ -325,7 +338,6 @@ if($im && imagefilter($im, IMG_FILTER_COLORIZE, 0, 255, 0))
     echo 'Image successfully shaded green.';
 
     imagepng($im, 'philip.png');
-    imagedestroy($im);
 }
 else
 {
@@ -373,7 +385,6 @@ if($im && negate($im))
     echo 'Image successfully converted to negative colors.';
 
     imagejpeg($im, 'kalle.jpg', 100);
-    imagedestroy($im);
 }
 else
 {
@@ -407,13 +418,10 @@ imagefilter($logo2, IMG_FILTER_PIXELATE, 3, true);
 // Merge the differences onto the output image
 imagecopy($output, $logo1, 0, 0, 0, 0, imagesx($logo1) - 1, imagesy($logo1) - 1);
 imagecopy($output, $logo2, imagesx($logo2), 0, 0, 0, imagesx($logo2) - 1, imagesy($logo2) - 1);
-imagedestroy($logo1);
-imagedestroy($logo2);
 
 // Output the differences
 header('Content-Type: image/png');
 imagepng($output);
-imagedestroy($output);
 ?>
 ]]>
     </programlisting>
@@ -441,7 +449,6 @@ imagefilter($logo, IMG_FILTER_SCATTER, 3, 5);
 // Output the image with the scatter effect
 header('Content-Type: image/png');
 imagepng($logo);
-imagedestroy($logo);
 ?>
 ]]>
     </programlisting>
@@ -470,7 +477,6 @@ imagedestroy($logo);
   </simplelist>
  </refsect1>
 </refentry>
-
 <!-- Keep this comment at the end of the file
 Local variables:
 mode: sgml
