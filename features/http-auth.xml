@@ -13,8 +13,8 @@
    <varname>PHP_AUTH_USER</varname>, <varname>PHP_AUTH_PW</varname>, 
    and <varname>AUTH_TYPE</varname> set to the user name, password and 
    authentication type respectively.  These predefined variables are found 
-   in the <varname>$_SERVER</varname> array. <emphasis>Only</emphasis> "Basic" and "Digest"
-   authentication methods are supported. See the
+   in the <varname>$_SERVER</varname> array. <emphasis>Only</emphasis>
+   the "Basic" authentication method is supported. See the
    <function>header</function> function for more information.
   </simpara>
 
@@ -43,73 +43,6 @@ if (!isset($_SERVER['PHP_AUTH_USER'])) {
    </example>
   </para>
 
-  <para>
-   <example>
-    <title>Digest HTTP Authentication example</title>
-    <para>
-     This example shows you how to implement a simple Digest HTTP
-     authentication script. For more information read the <link
-      xlink:href="&url.rfc;2617">RFC 2617</link>.
-    </para>
-    <programlisting role="php">
-<![CDATA[
-<?php
-$realm = 'Restricted area';
-
-//user => password
-$users = array('admin' => 'mypass', 'guest' => 'guest');
-
-
-if (empty($_SERVER['PHP_AUTH_DIGEST'])) {
-    header('HTTP/1.1 401 Unauthorized');
-    header('WWW-Authenticate: Digest realm="'.$realm.
-           '",qop="auth",nonce="'.uniqid().'",opaque="'.md5($realm).'"');
-
-    die('Text to send if user hits Cancel button');
-}
-
-
-// analyze the PHP_AUTH_DIGEST variable
-if (!($data = http_digest_parse($_SERVER['PHP_AUTH_DIGEST'])) ||
-    !isset($users[$data['username']]))
-    die('Wrong Credentials!');
-
-
-// generate the valid response
-$A1 = md5($data['username'] . ':' . $realm . ':' . $users[$data['username']]);
-$A2 = md5($_SERVER['REQUEST_METHOD'].':'.$data['uri']);
-$valid_response = md5($A1.':'.$data['nonce'].':'.$data['nc'].':'.$data['cnonce'].':'.$data['qop'].':'.$A2);
-
-if ($data['response'] != $valid_response)
-    die('Wrong Credentials!');
-
-// ok, valid username & password
-echo 'You are logged in as: ' . $data['username'];
-
-
-// function to parse the http auth header
-function http_digest_parse($txt)
-{
-    // protect against missing data
-    $needed_parts = array('nonce'=>1, 'nc'=>1, 'cnonce'=>1, 'qop'=>1, 'username'=>1, 'uri'=>1, 'response'=>1);
-    $data = array();
-    $keys = implode('|', array_keys($needed_parts));
-
-    preg_match_all('@(' . $keys . ')=(?:([\'"])([^\2]+?)\2|([^\s,]+))@', $txt, $matches, PREG_SET_ORDER);
-
-    foreach ($matches as $m) {
-        $data[$m[1]] = $m[3] ? $m[3] : $m[4];
-        unset($needed_parts[$m[1]]);
-    }
-
-    return $needed_parts ? false : $data;
-}
-?>
-]]>
-    </programlisting>
-   </example>
-  </para>
-
   <note>
    <title>Compatibility Note</title>
    <para>
@@ -118,7 +51,7 @@ function http_digest_parse($txt)
     uppercase "B", the realm string must be enclosed in double (not single) quotes,
     and exactly one space should precede the <emphasis>401</emphasis> code in the 
     <emphasis>HTTP/1.0 401</emphasis> header line. Authentication parameters have
-    to be comma-separated as seen in the digest example above.
+    to be comma-separated.
    </para>
   </note>
 

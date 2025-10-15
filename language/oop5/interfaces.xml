@@ -3,9 +3,9 @@
  <sect1 xml:id="language.oop5.interfaces" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
   <title>Object Interfaces</title>
   <para>
-   Object interfaces allow you to create code which specifies which methods a
-   class must implement, without having to define how these methods are
-   implemented.  Interfaces share a namespace with classes and traits, so they may
+   Object interfaces allow you to create code which specifies which methods and properties a
+   class must implement, without having to define how these methods or properties are
+   implemented.  Interfaces share a namespace with classes, traits, and enumerations, so they may
    not use the same name.
   </para>
   <para>
@@ -58,12 +58,6 @@
    </para>
    <warning>
     <para>
-     A class can implement two interfaces which define a method with the
-     same name, only if the method declaration in both interfaces is identical.
-    </para>
-   </warning>
-   <warning>
-    <para>
      A class that implements an interface may use a different name for its parameters than
      the interface.  However, as of PHP 8.0 the language supports <link linkend="functions.named-arguments">named arguments</link>, which means
      callers may rely on the parameter name in the interface.  For that reason, it is strongly
@@ -79,18 +73,106 @@
    <note>
     <para>
      The class implementing the interface must declare all methods in the interface
-     with a <link linkend="language.oop.lsp">compatible signature</link>.
+     with a <link linkend="language.oop.lsp">compatible signature</link>. A class can implement multiple interfaces
+     which declare a method with the same name. In this case, the implementation must follow the
+     <link linkend="language.oop.lsp">signature compatibility rules</link> for all the interfaces. So
+     <link linkend="language.oop5.variance">covariance and contravariance</link> can be applied.
     </para>
    </note>
   </sect2>
  <!-- Move this to OOP constants page? -->
   <sect2 xml:id="language.oop5.interfaces.constants">
-   <title><literal>Constants</literal></title>
+   <title>Constants</title>
    <para>
     It's possible for interfaces to have constants. Interface constants work exactly 
     like <link linkend="language.oop5.constants">class constants</link>.
     Prior to PHP 8.1.0, they cannot be overridden by a class/interface that inherits them.
    </para>
+  </sect2>
+  <sect2 xml:id="language.oop5.interfaces.properties">
+   <title>Properties</title>
+   <simpara>
+    As of PHP 8.4.0, interfaces may also declare properties.
+    If they do, the declaration must specify if the property is to be readable,
+    writeable, or both.
+    The interface declaration applies only to public read and write access.
+   </simpara>
+   <simpara>
+    A class may satisfy an interface property in multiple ways.
+    It may define a public property.
+    It may define a public
+    <link linkend="language.oop5.property-hooks.virtual">virtual property</link>
+    that implements only the corresponding hook.
+    Or a read property may be satisfied by a <literal>readonly</literal> property.
+    However, an interface property that is settable may not be <literal>readonly</literal>.
+   </simpara>
+   <example>
+    <title>Interface properties example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+interface I
+{
+    // An implementing class MUST have a publicly-readable property,
+    // but whether or not it's publicly settable is unrestricted.
+    public string $readable { get; }
+
+    // An implementing class MUST have a publicly-writeable property,
+    // but whether or not it's publicly readable is unrestricted.
+    public string $writeable { set; }
+
+    // An implementing class MUST have a property that is both publicly
+    // readable and publicly writeable.
+    public string $both { get; set; }
+}
+
+// This class implements all three properties as traditional, un-hooked
+// properties. That's entirely valid.
+class C1 implements I
+{
+    public string $readable;
+
+    public string $writeable;
+
+    public string $both;
+}
+
+// This class implements all three properties using just the hooks
+// that are requested.  This is also entirely valid.
+class C2 implements I
+{
+    private string $written = '';
+    private string $all = '';
+
+    // Uses only a get hook to create a virtual property.
+    // This satisfies the "public get" requirement.
+    // It is not writeable, but that is not required by the interface.
+    public string $readable { get => strtoupper($this->writeable); }
+
+    // The interface only requires the property be settable,
+    // but also including get operations is entirely valid.
+    // This example creates a virtual property, which is fine.
+    public string $writeable {
+        get => $this->written;
+        set {
+            $this->written = $value;
+        }
+    }
+
+    // This property requires both read and write be possible,
+    // so we need to either implement both, or allow it to have
+    // the default behavior.
+    public string $both {
+        get => $this->all;
+        set {
+            $this->all = strtoupper($value);
+        }
+    }
+}
+?>
+]]>
+    </programlisting>
+   </example>
   </sect2>
   <sect2 xml:id="language.oop5.interfaces.examples">
    &reftitle.examples;
@@ -180,6 +262,33 @@ class D implements B
 
     public function baz(Foo $foo)
     {
+    }
+}
+?>
+]]>
+     </programlisting>
+   </example>
+   <example xml:id="language.oop5.interfaces.examples.variance.multiple.interfaces">
+    <title>Variance compatibility with multiple interfaces</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+class Foo {}
+class Bar extends Foo {}
+
+interface A {
+    public function myfunc(Foo $arg): Foo;
+}
+
+interface B {
+    public function myfunc(Bar $arg): Bar;
+}
+
+class MyClass implements A, B
+{
+    public function myfunc(Foo $arg): Bar
+    {
+        return new Bar();
     }
 }
 ?>

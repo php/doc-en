@@ -96,10 +96,15 @@
      Use <link linkend="object.serialize">__serialize()</link> instead.
     </para>
    </note>
+   <note>
+    <para>
+     As of PHP 8.0.0, returning a value which is not an array from <link linkend="object.sleep">__sleep()</link> generates a warning. Previously, it generated a notice.
+    </para>
+   </note>
    <para>
     The intended use of <link linkend="object.sleep">__sleep()</link> is to commit pending
     data or perform similar cleanup tasks. Also, the function is
-    useful if a very large objects doesn't need to be saved completely.
+    useful if a very large object doesn't need to be saved completely.
    </para>
    <para>
     Conversely, <function>unserialize</function> checks for the
@@ -271,6 +276,13 @@ class Connection
      is disabled.
     </para>
     <para>
+     A <interfacename>Stringable</interfacename> object will
+     <emphasis>not</emphasis> be accepted by a <type>string</type> type declaration if
+     <link linkend="language.types.declarations.strict">strict typing</link>
+     is enabled. If such behaviour is wanted the type declaration must accept
+     <interfacename>Stringable</interfacename> and <type>string</type> via a union type.
+    </para>
+    <para>
      As of PHP 8.0.0, any class that contains a <link linkend="object.tostring">__toString()</link>
      method will also implicitly implement the <interfacename>Stringable</interfacename> interface, and will
      thus pass type checks for that interface.  Explicitly implementing the interface anyway is
@@ -361,6 +373,96 @@ var_dump(is_callable($obj));
 <![CDATA[
 int(5)
 bool(true)
+]]>
+    </screen>
+   </example>
+   <example>
+    <title>Using <link linkend="object.invoke">__invoke()</link></title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class Sort
+{
+    private $key;
+
+    public function __construct(string $key)
+    {
+        $this->key = $key;
+    }
+
+    public function __invoke(array $a, array $b): int
+    {
+        return $a[$this->key] <=> $b[$this->key];
+    }
+}
+
+$customers = [
+    ['id' => 1, 'first_name' => 'John', 'last_name' => 'Do'],
+    ['id' => 3, 'first_name' => 'Alice', 'last_name' => 'Gustav'],
+    ['id' => 2, 'first_name' => 'Bob', 'last_name' => 'Filipe']
+];
+
+// sort customers by first name
+usort($customers, new Sort('first_name'));
+print_r($customers);
+
+// sort customers by last name
+usort($customers, new Sort('last_name'));
+print_r($customers);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Array
+(
+    [0] => Array
+        (
+            [id] => 3
+            [first_name] => Alice
+            [last_name] => Gustav
+        )
+
+    [1] => Array
+        (
+            [id] => 2
+            [first_name] => Bob
+            [last_name] => Filipe
+        )
+
+    [2] => Array
+        (
+            [id] => 1
+            [first_name] => John
+            [last_name] => Do
+        )
+
+)
+Array
+(
+    [0] => Array
+        (
+            [id] => 1
+            [first_name] => John
+            [last_name] => Do
+        )
+
+    [1] => Array
+        (
+            [id] => 2
+            [first_name] => Bob
+            [last_name] => Filipe
+        )
+
+    [2] => Array
+        (
+            [id] => 3
+            [first_name] => Alice
+            [last_name] => Gustav
+        )
+
+)
 ]]>
     </screen>
    </example>

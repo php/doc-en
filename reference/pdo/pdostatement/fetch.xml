@@ -9,7 +9,7 @@
  </refnamediv>
  <refsect1 role="description">
   &reftitle.description;
-  <methodsynopsis>
+  <methodsynopsis role="PDOStatement">
    <modifier>public</modifier> <type>mixed</type><methodname>PDOStatement::fetch</methodname>
    <methodparam choice="opt"><type>int</type><parameter>mode</parameter><initializer>PDO::FETCH_DEFAULT</initializer></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>cursorOrientation</parameter><initializer>PDO::FETCH_ORI_NEXT</initializer></methodparam>
@@ -48,18 +48,23 @@
         <listitem><para>
          <literal>PDO::FETCH_BOUND</literal>: returns &true; and assigns the
          values of the columns in your result set to the PHP variables to which
-         they were bound with the <function>PDOStatement::bindColumn</function>
+         they were bound with the <methodname>PDOStatement::bindColumn</methodname>
          method
         </para></listitem>
         <listitem><para>
          <literal>PDO::FETCH_CLASS</literal>: returns a new instance of the
-         requested class, mapping the columns of the result set to named
-         properties in the class, and calling the constructor afterwards, unless
-         <literal>PDO::FETCH_PROPS_LATE</literal> is also given.
-         If <parameter>mode</parameter>
-         includes PDO::FETCH_CLASSTYPE (e.g. <literal>PDO::FETCH_CLASS |
-         PDO::FETCH_CLASSTYPE</literal>) then the name of the class is
-         determined from a value of the first column.
+         requested class. The object is initialized by mapping the columns of
+         the result set to properties in the class. This occurs before the
+         constructor is called, allowing properties to be populated regardless
+         of their visibility or whether they are marked as <literal>readonly</literal>.
+         If a property does not exist in the class, the magic <link linkend="object.set">__set()</link>
+         method will be invoked if it exists; otherwise, a dynamic public
+         property will be created. However, when <constant>PDO::FETCH_PROPS_LATE</constant>
+         is also given, the constructor is called <emphasis>before</emphasis>
+         the properties are populated. If <parameter>mode</parameter> includes
+         <constant>PDO::FETCH_CLASSTYPE</constant> (e.g.
+         <literal>PDO::FETCH_CLASS | PDO::FETCH_CLASSTYPE</literal>), the name
+         of the class is determined from the value of the first column.
         </para></listitem>
         <listitem><para>
          <literal>PDO::FETCH_INTO</literal>: updates an existing instance
@@ -69,7 +74,8 @@
         <listitem><para>
          <literal>PDO::FETCH_LAZY</literal>: combines
          <literal>PDO::FETCH_BOTH</literal> and <literal>PDO::FETCH_OBJ</literal>,
-         creating the object variable names as they are accessed
+         and is returning a <classname>PDORow</classname> object
+         which is creating the object property names as they are accessed.
         </para></listitem>
         <listitem><para>
          <literal>PDO::FETCH_NAMED</literal>: returns an array with the same
@@ -108,25 +114,25 @@
        scrollable cursor for your PDOStatement object, you must set the
        <literal>PDO::ATTR_CURSOR</literal> attribute to
        <literal>PDO::CURSOR_SCROLL</literal> when you prepare the SQL
-       statement with <function>PDO::prepare</function>.
+       statement with <methodname>PDO::prepare</methodname>.
       </para>
      </listitem>
     </varlistentry>
     <varlistentry>
-     <term><parameter>offset</parameter></term>
+     <term><parameter>cursorOffset</parameter></term>
      <listitem>
-      <para> 
+      <para>
        For a PDOStatement object representing a scrollable cursor for which
-       the <literal>cursor_orientation</literal> parameter is set to
+       the <parameter>cursorOrientation</parameter> parameter is set to
        <literal>PDO::FETCH_ORI_ABS</literal>, this value specifies the
        absolute number of the row in the result set that shall be fetched.
       </para>
       <para>
        For a PDOStatement object representing a scrollable cursor for which
-       the <literal>cursor_orientation</literal> parameter is set to
+       the <parameter>cursorOrientation</parameter> parameter is set to
        <literal>PDO::FETCH_ORI_REL</literal>, this value specifies the
        row to fetch relative to the cursor position before
-       <function>PDOStatement::fetch</function> was called.
+       <methodname>PDOStatement::fetch</methodname> was called.
       </para>
      </listitem>
     </varlistentry>
@@ -142,6 +148,11 @@
   </para>
  </refsect1>
 
+ <refsect1 role="errors">
+  &reftitle.errors;
+  &pdo.errors;
+ </refsect1>
+
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
@@ -153,29 +164,29 @@ $sth = $dbh->prepare("SELECT name, colour FROM fruit");
 $sth->execute();
 
 /* Exercise PDOStatement::fetch styles */
-print("PDO::FETCH_ASSOC: ");
-print("Return next row as an array indexed by column name\n");
+print "PDO::FETCH_ASSOC: ";
+print "Return next row as an array indexed by column name\n";
 $result = $sth->fetch(PDO::FETCH_ASSOC);
 print_r($result);
-print("\n");
+print "\n";
 
-print("PDO::FETCH_BOTH: ");
-print("Return next row as an array indexed by both column name and number\n");
+print "PDO::FETCH_BOTH: ";
+print "Return next row as an array indexed by both column name and number\n";
 $result = $sth->fetch(PDO::FETCH_BOTH);
 print_r($result);
-print("\n");
+print "\n";
 
-print("PDO::FETCH_LAZY: ");
-print("Return next row as an anonymous object with column names as properties\n");
+print "PDO::FETCH_LAZY: ";
+print "Return next row as a PDORow object with column names as properties\n";
 $result = $sth->fetch(PDO::FETCH_LAZY);
 print_r($result);
-print("\n");
+print "\n";
 
-print("PDO::FETCH_OBJ: ");
-print("Return next row as an anonymous object with column names as properties\n");
+print "PDO::FETCH_OBJ: ";
+print "Return next row as an anonymous object with column names as properties\n";
 $result = $sth->fetch(PDO::FETCH_OBJ);
 print $result->name;
-print("\n");
+print "\n";
 ?>
 ]]>
     </programlisting>
@@ -198,7 +209,7 @@ Array
     [1] => yellow
 )
 
-PDO::FETCH_LAZY: Return next row as an anonymous object with column names as properties
+PDO::FETCH_LAZY: Return next row as a PDORow object with column names as properties
 PDORow Object
 (
     [name] => orange
@@ -260,11 +271,11 @@ Reading backwards:
 
    <example><title>Construction order</title>
     <simpara>
-     When objects are fetched via <literal>PDO::FETCH_CLASS</literal> the object
+     When objects are fetched via <constant>PDO::FETCH_CLASS</constant>, the object
      properties are assigned first, and then the constructor of the class is
-     invoked. If <literal>PDO::FETCH_PROPS_LATE</literal> is also given, this
-     order is reversed, i.e. first the constructor is called, and afterwards the
-     properties are assigned.
+     invoked. However, when <constant>PDO::FETCH_PROPS_LATE</constant> is also given,
+     this order is reversed, i.e. first the constructor is called, and
+     afterwards the properties are assigned.
     </simpara>
     <programlisting role="php">
 <![CDATA[
@@ -315,12 +326,12 @@ I am Bob.
   &reftitle.seealso;
   <para>
    <simplelist>
-    <member><function>PDO::prepare</function></member>
-    <member><function>PDOStatement::execute</function></member>
-    <member><function>PDOStatement::fetchAll</function></member>
-    <member><function>PDOStatement::fetchColumn</function></member>
-    <member><function>PDOStatement::fetchObject</function></member>
-    <member><function>PDOStatement::setFetchMode</function></member>
+    <member><methodname>PDO::prepare</methodname></member>
+    <member><methodname>PDOStatement::execute</methodname></member>
+    <member><methodname>PDOStatement::fetchAll</methodname></member>
+    <member><methodname>PDOStatement::fetchColumn</methodname></member>
+    <member><methodname>PDOStatement::fetchObject</methodname></member>
+    <member><methodname>PDOStatement::setFetchMode</methodname></member>
    </simplelist>
   </para>
  </refsect1>

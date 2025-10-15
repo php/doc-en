@@ -3,7 +3,7 @@
 <refentry xml:id="function.parse-str" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>parse_str</refname>
-  <refpurpose>Parses the string into variables</refpurpose>
+  <refpurpose>Parse a string as a URL query string</refpurpose>
  </refnamediv>
  
  <refsect1 role="description">
@@ -15,8 +15,9 @@
   </methodsynopsis>
   <para>
    Parses <parameter>string</parameter> as if it were the query string
-   passed via a URL and sets variables in the current scope (or in the array
-   if <parameter>result</parameter> is provided).
+   passed via a URL and sets keys in the provided <parameter>result</parameter>
+   array. If no <parameter>result</parameter> is passed, values are instead
+   set as variables in the current scope.
   </para>
  </refsect1>
 
@@ -36,14 +37,17 @@
      <term><parameter>result</parameter></term>
      <listitem>
       <para>
-       If the second parameter <parameter>result</parameter> is present,
-       variables are stored in this variable as array elements instead.
+       A variable passed by reference, which will be set to an array
+       containing the key-value pairs extracted from <parameter>string</parameter>.
+       If the <parameter>result</parameter> parameter is not passed,
+       a separate variable is set in the local scope for each key.
       </para>
 
       <warning>
        <para>
         Using this function without the <parameter>result</parameter> parameter is highly
         <emphasis>DISCOURAGED</emphasis> and <emphasis>DEPRECATED</emphasis> as of PHP 7.2.
+        As of PHP 8.0.0, the <parameter>result</parameter> parameter is <emphasis>mandatory</emphasis>.
        </para>
       </warning>
      </listitem>
@@ -102,33 +106,25 @@ $str = "first=value&arr[]=foo+bar&arr[]=baz";
 
 // Recommended
 parse_str($str, $output);
-echo $output['first'];  // value
-echo $output['arr'][0]; // foo bar
-echo $output['arr'][1]; // baz
-
-// DISCOURAGED
-parse_str($str);
-echo $first;  // value
-echo $arr[0]; // foo bar
-echo $arr[1]; // baz
+echo $output['first'], PHP_EOL;  // value
+echo $output['arr'][0], PHP_EOL; // foo bar
+echo $output['arr'][1], PHP_EOL; // baz
 ?>
 ]]>
     </programlisting>
    </example>
   </para>
   <para>
-   Because variables in PHP can't have dots and spaces in their names,
-   those are converted to underscores. Same applies to naming of
-   respective key names in case of using this function with
+   Any spaces and dots in parameter names are converted to underscores
+   when creating array keys or local variables.
+   This is because variable names in PHP are not allowed to contain spaces
+   or dots, but applies even when using this function with the recommended
    <parameter>result</parameter> parameter.   
    <example>
     <title><function>parse_str</function> name mangling</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-parse_str("My Value=Something");
-echo $My_Value; // Something
-
 parse_str("My Value=Something", $output);
 echo $output['My_Value']; // Something
 ?>
@@ -143,13 +139,23 @@ echo $output['My_Value']; // Something
 
   <note>
    <para>
-    All variables created (or values returned into array if second parameter is set)
-    are already <function>urldecode</function>d.
+    <function>parse_str</function> is affected by the <link linkend="ini.max-input-vars">max_input_vars</link>
+    directive. Exceeding this limit triggers an <constant>E_WARNING</constant>,
+    and any variables beyond the limit are not added to the result array.
+    The default is 1000; adjust <link linkend="ini.max-input-vars">max_input_vars</link> as needed.
+   </para>
+  </note>
+
+  <note>
+   <para>
+    All values populated in the <parameter>result</parameter> array
+    (or variables created if second parameter is not set)
+    are already URL-decoded using the same rules as <function>urldecode</function>.
    </para>
   </note>
   <note>
    <para>
-    To get the current <literal>QUERY_STRING</literal>, you may use the variable
+    To get the query string of the current request, you may use the variable
     <varname>$_SERVER['QUERY_STRING']</varname>.
     Also, you may want to read the section on
     <link linkend="language.variables.external">variables from external

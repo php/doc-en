@@ -32,6 +32,9 @@
   <literal>protected</literal> method can be marked as
   <literal>public</literal>, but they cannot be restricted, e.g.
   marking a <literal>public</literal> property as <literal>private</literal>.
+  An exception are constructors, whose visibility can be restricted, e.g.
+  a <literal>public</literal> constructor can be marked as <literal>private</literal>
+  in a child class.
  </para>
 
   <note>
@@ -45,7 +48,7 @@
   <note>
    <para>
     It is not allowed to override a read-write property with a <link linkend="language.oop5.properties.readonly-properties">readonly property</link> or vice versa.
-    <example>
+    <informalexample>
      <programlisting role="php">
 <![CDATA[
 <?php
@@ -60,14 +63,13 @@ class B extends A {
 ?>
 ]]>
      </programlisting>
-    </example>
+    </informalexample>
    </para>
   </note>
 
-  <sect2 xml:id="language.oop5.inheritance.examples">
-   <example xml:id="language.oop5.inheritance.examples.ex1">
-    <title>Inheritance Example</title>
-     <programlisting role="php">
+ <example>
+  <title>Inheritance Example</title>
+  <programlisting role="php">
 <![CDATA[
 <?php
 
@@ -101,8 +103,82 @@ $bar->printPHP();       // Output: 'PHP is great'
 
 ?>
 ]]>
+  </programlisting>
+ </example>
+
+  <sect2 xml:id="language.oop5.inheritance.internal-classes">
+   <title>Return Type Compatibility with Internal Classes</title>
+ 
+   <para>
+    Prior to PHP 8.1, most internal classes or methods didn't declare their return types,
+    and any return type was allowed when extending them.
+   </para>
+ 
+   <para>
+    As of PHP 8.1.0, most internal methods started to "tentatively" declare their return type,
+    in that case the return type of methods should be compatible with the parent being extended;
+    otherwise, a deprecation notice is emitted.
+    Note that lack of an explicit return declaration is also considered a signature mismatch,
+    and thus results in the deprecation notice.
+   </para>
+ 
+   <para>
+    If the return type cannot be declared for an overriding method due to PHP cross-version compatibility concerns,
+    a <classname>ReturnTypeWillChange</classname> attribute can be added to silence the deprecation notice.
+   </para>
+ 
+   <example>
+    <title>The overriding method does not declare any return type</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class MyDateTime extends DateTime
+{
+    public function modify(string $modifier) { return false; }
+}
+ 
+// "Deprecated: Return type of MyDateTime::modify(string $modifier) should either be compatible with DateTime::modify(string $modifier): DateTime|false, or the #[\ReturnTypeWillChange] attribute should be used to temporarily suppress the notice" as of PHP 8.1.0
+?> 
+]]>
     </programlisting>
    </example>
+ 
+   <example>
+    <title>The overriding method declares a wrong return type</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class MyDateTime extends DateTime
+{
+    public function modify(string $modifier): ?DateTime { return null; }
+}
+ 
+// "Deprecated: Return type of MyDateTime::modify(string $modifier): ?DateTime should either be compatible with DateTime::modify(string $modifier): DateTime|false, or the #[\ReturnTypeWillChange] attribute should be used to temporarily suppress the notice" as of PHP 8.1.0
+?> 
+]]>
+    </programlisting>
+   </example>
+ 
+   <example>
+    <title>The overriding method declares a wrong return type without a deprecation notice</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class MyDateTime extends DateTime
+{
+    /**
+     * @return DateTime|false
+     */
+    #[\ReturnTypeWillChange]
+    public function modify(string $modifier) { return false; }
+}
+ 
+// No notice is triggered 
+?> 
+]]>
+    </programlisting>
+   </example>
+ 
   </sect2>
 
  </sect1>
