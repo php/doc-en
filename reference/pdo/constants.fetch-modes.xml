@@ -140,7 +140,7 @@
      </row>
      <row>
       <entry>
-       PDO::FETCH_LAZY
+       <constant>PDO::FETCH_LAZY</constant>
       </entry>
       <entry>
        Lazy fetch via <classname>PDORow</classname> for array- and object-like
@@ -211,7 +211,7 @@
   <title><constant>PDO::FETCH_CLASS</constant> options</title>
 
   <para>
-   There modes are used to implement options when using
+   These modes are used to implement options when using
    <constant>PDO::FETCH_CLASS</constant>.
   </para>
 
@@ -733,7 +733,6 @@ while ($stmt->fetch(\PDO::FETCH_BOUND)) {
 
  <section xml:id="pdo.constants.fetch-into" annotations="chunk:false">
   <title>PDO::FETCH_INTO (<type>int</type>)</title>
-
   <para>
    This fetch mode can not be used with
    <function>PDOStatement::fetchAll</function>.
@@ -797,6 +796,66 @@ object(TestEntity)#3 (4) {
     ]]>
    </screen>
   </informalexample>
+ </section>
+
+ <section xml:id="pdo.constants.fetch-lazy" annotations="chunk:false">
+  <title>PDO::FETCH_LAZY (<type>int</type>)</title>
+  <para>
+   This fetch mode can not be used with
+   <function>PDOStatement::fetchAll</function>.
+  </para>
+  <para>
+   This fetch mode returns a <classname>PDORow</classname> object which provides
+   both array- and object-like access to values (i.e. combines the behavior of
+   <constant>PDO::FETCH_BOTH</constant> and
+   <constant>PDO::FETCH_OBJ</constant>), retrieved in a lazy manner.
+  </para>
+  <para>
+   This can provide memory efficient access (on the PHP side) to unbuffered
+   results on the database server. Whether PDO uses client-side buffering for
+   results depends on the database-specific driver used (and its configuration).
+  </para>
+  <caution>
+   <para>
+    <classname>PDORow</classname> will return <literal>NULL</literal> without
+    any error or warning when accessing properties or keys that are not defined.
+    This can make errors such as typos or queries not returning expected data
+    harder to spot and debug.
+   </para>
+  </caution>
+  <caution>
+   <para>
+    The returned <classname>PDORow</classname> object is updated each time a
+    result is retrieved.
+   </para>
+  </caution>
+  <programlisting role="php">
+   <![CDATA[
+<?php
+$stmt = $db->query("SELECT userid, name, country, referred_by_userid FROM users LIMIT 3");
+$result = $stmt->fetch(\PDO::FETCH_LAZY);
+
+print "ID: ". $result[0] ."\n";
+print "Name: {$result->name}\n";
+print "Country: " . $result['country'] ."\n";
+print "Does not exist: " . ($result->does_not_exist ?? "NULL") . "\n";
+
+$differentResult = $stmt->fetch(\PDO::FETCH_LAZY);
+// The previously retrieved PDORow now points to the newly retrieved result
+print "ID: ". $result[0] ."\n";
+
+   ]]>
+  </programlisting>
+  &example.outputs;
+  <screen>
+   <![CDATA[
+ID: 104
+Name: Chris
+Country: Ukraine
+Does not exist: NULL
+ID: 105
+   ]]>
+  </screen>
  </section>
 
  <!-- TODO Redo section from scratch -->
@@ -1012,7 +1071,7 @@ Array
      </simpara>
     </listitem>
    </varlistentry>
-   <varlistentry xml:id="pdo.constants.fetch-lazy">
+   <varlistentry>
    <term>
     <constant>PDO::FETCH_LAZY</constant>
     (<type>int</type>)
