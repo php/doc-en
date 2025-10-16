@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<section xml:id="pdo.constants.fetch-modes">
+<section xmlns="http://docbook.org/ns/docbook" xml:id="pdo.constants.fetch-modes">
  <title>Fetch Modes</title>
 
  <para>
@@ -124,7 +124,7 @@
     <tbody>
      <row>
       <entry>
-       PDO::FETCH_BOUND
+       <constant>PDO::FETCH_BOUND</constant>
       </entry>
       <entry>
        Bind values to specified variables.
@@ -433,10 +433,11 @@ Array
   <informalexample>
    <programlisting role="php">
     <![CDATA[
+<?php
 $stmt = $pdo->query(
     "SELECT users.*, referrer.name
      FROM users
-     JOIN users AS referrer ON users.referred_by = referrer.userid
+     LEFT JOIN users AS referrer ON users.referred_by = referrer.userid
      WHERE userid = 109");
 $row = $stmt->fetch(\PDO::FETCH_NUM);
 print_r($row);
@@ -676,6 +677,60 @@ Array
   </informalexample>
  </section>
 
+ <section  xml:id="pdo.constants.fetch-bound" annotations="chunk:false">
+  <title>PDO::FETCH_BOUND (<type>int</type>)</title>
+  <para>
+   This fetch mode can not be used with
+   <function>PDOStatement::fetchAll</function>.
+  </para>
+  <para>
+   This fetch mode does not directly return a result, but binds values to
+   variables specified with <function>PDOStatement::bindParam</function> or
+   <function>PDOStatement::bindColumn</function>. The called fetch method
+   returns <literal>TRUE</literal>.
+  </para>
+  <note>
+   <para>
+    When using prepared statements, to work correctly, variables must be bound
+    after the query is executed.
+   </para>
+  </note>
+  <programlisting role="php">
+   <![CDATA[
+<?php
+$query = "SELECT users.userid, users.name, users.country, referrer.name
+    FROM users
+    LEFT JOIN users AS referrer ON users.referred_by_userid = referrer.userid";
+$stmt = $db->prepare($query);
+$stmt->execute();
+
+$stmt->bindColumn('userid', $userId);
+$stmt->bindColumn('name', $name);
+$stmt->bindColumn('country', $country);
+// Bind by column position to resolve duplicated column name
+// To avoid this breaking if the query is changed, use an SQL alias instead
+// For example: referrer.name AS referrer_name
+$stmt->bindColumn(4, $referrerName);
+
+print "\nfetch:\n";
+while ($stmt->fetch(\PDO::FETCH_BOUND)) {
+    print join("\t", [$userId, $name, $country, ($referrerName ?? 'NULL')]) ."\n";
+}
+   ]]>
+  </programlisting>
+  &example.outputs;
+  <screen>
+   <![CDATA[
+104	Sam	Ukraine	NULL
+105	Jamie	United Kingdom	NULL
+107	Robin	Palestine	Sam
+108	Max	Ukraine	NULL
+109	Toni	Palestine	NULL
+110	Toni	Palestine	NULL
+   ]]>
+  </screen>
+ </section>
+
  <!-- TODO Redo section from scratch -->
  <section xml:id="pdo.constants.fetch-group" annotations="chunk:false">
   <title>PDO::FETCH_GROUP (<type>int</type>)</title>
@@ -874,7 +929,7 @@ Array
    </section>
  <!-- ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ -->
 
- <section annotations="chunk:false">
+ <section xml:id="ajb-old-content" annotations="chunk:false">
   <title>Old content</title>
 
   <variablelist role="constant_list">
@@ -920,7 +975,7 @@ Array
     </simpara>
    </listitem>
    </varlistentry>
-   <varlistentry xml:id="pdo.constants.fetch-bound">
+   <varlistentry>
    <term>
     <constant>PDO::FETCH_BOUND</constant>
     (<type>int</type>)
