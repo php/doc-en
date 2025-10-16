@@ -1,25 +1,124 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
 <sect1 xml:id="language.types.callable">
- <title>Callbacks / Callables</title>
+ <title>Callbacks and Callables</title>
 
  <para>
+  A callback is a reference to a function or method that is passed to
+  another function as an argument.
   Callbacks can be denoted by the <type>callable</type> type declaration.
  </para>
+ <informalexample>
+  <programlisting role="php" annotations="non-interactive">
+<![CDATA[
+<?php
+function foo(callable $callback) {
+    $callback();
+}
+?>
+]]>
+  </programlisting>
+ </informalexample>
 
  <para>
   Some functions like <function>call_user_func</function> or
   <function>usort</function> accept user-defined callback functions as a
-  parameter. Callback functions can not only be simple functions, but also
-  <type>object</type> methods, including static class methods.
+  parameter.
  </para>
 
  <sect2 xml:id="language.types.callable.passing">
-  <title>Passing</title>
+  <title>Creation of callables</title>
 
   <para>
-   A PHP function is passed by either its name as a <type>string</type> or by
-   a <link linkend="functions.first_class_callable_syntax">first-class callable</link>.
+   A callable is a type that represents something that can be invoked.
+   Callables can be passed as arguments to functions or methods which
+   expect a callback parameter or they can be invoked directly. The callable
+   type cannot be used as a type declaration for class properties.
+  </para>
+
+  <para>
+   Callables can be created in several different ways:
+  </para>
+
+  <itemizedlist>
+   <listitem>
+    <simpara><classname>Closure</classname> object</simpara>
+   </listitem>
+   <listitem>
+    <simpara>String containing the name of a function or a method</simpara>
+   </listitem>
+   <listitem>
+    <simpara>Array containing an <type>object</type> or class name
+    in index 0 and the method name in index 1</simpara>
+   </listitem>
+   <listitem>
+    <simpara>Object implementing <link linkend="object.invoke">__invoke()</link></simpara>
+   </listitem>
+  </itemizedlist>
+
+  <para>
+   A <classname>Closure</classname> object can be created using
+   <link linkend="functions.anonymous">anonymous function</link> syntax,
+   <link linkend="functions.arrow">arrow function</link> syntax,
+   <link linkend="functions.first_class_callable_syntax">first-class callable
+   syntax</link>, or the <methodname>Closure::fromCallable</methodname> method.
+  </para>
+
+  <note>
+   <para>
+    The <link linkend="functions.first_class_callable_syntax">first-class
+    callable syntax</link> is only available as of PHP 8.1.0.
+   </para>
+  </note>
+
+  <example>
+   <title>
+    Callback example using a <classname>Closure</classname>
+   </title>
+  <programlisting role="php">
+<![CDATA[
+<?php
+// Using anonymous function syntax
+$double1 = function($a) {
+    return $a * 2;
+};
+
+// Using first-class callable syntax
+function double_function($a) {
+    return $a * 2;
+}
+$double2 = double_function(...);
+
+// Using Closure::fromCallable
+$double3 = Closure::fromCallable('double_function');
+
+// Use the closure as a callback here to
+// double the size of each element in our range
+$new_numbers = array_map($double1, range(1, 5));
+print implode(' ', $new_numbers) . "\n";
+
+$new_numbers = array_map($double2, range(1, 5));
+print implode(' ', $new_numbers) . "\n";
+
+$new_numbers = array_map($double3, range(1, 5));
+print implode(' ', $new_numbers);
+
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+2 4 6 8 10
+2 4 6 8 10
+2 4 6 8 10
+]]>
+   </screen>
+  </example>
+
+  <para>
+   A callable can also be a string containing the name of a function or
+   a static method.
    Any built-in or user-defined function can be used, except language constructs
    such as: <function>array</function>, <function>echo</function>,
    <function>empty</function>, <function>eval</function>,
@@ -29,55 +128,76 @@
   </para>
 
   <para>
-   A method of an instantiated <type>object</type> is passed as an
-   <type>array</type> containing an <type>object</type> at index 0 and the
-   method name at index 1. Accessing protected and private methods from
-   within a class is allowed.
+   Static class methods can be used without instantiating an
+   <type>object</type> of that class by either, creating an array with
+   the class name at index 0 and the method name at index 1, or by using
+   the special syntax with the scope resolution operator
+   <literal>::</literal>, as in <literal>'ClassName::methodName'</literal>.
   </para>
 
   <para>
-   Static class methods can also be passed without instantiating an
-   <type>object</type> of that class by either, passing the class name
-   instead of an <type>object</type> at index 0, or passing
-   <literal>'ClassName::methodName'</literal>.
+   A method of an instantiated <type>object</type> can be a callable
+   when provided as an array with the <type>object</type> at index 0 and
+   the method name at index 1.
   </para>
 
   <para>
-   Apart from common user-defined function,
-   <link linkend="functions.anonymous">anonymous functions</link> and
-   <link linkend="functions.arrow">arrow functions</link> can also be
-   passed to a callback parameter.
+   The main difference between a <classname>Closure</classname> object and the
+   callable type is that a <classname>Closure</classname> object is
+   scope-independent and can always be invoked, whereas a callable type may be
+   scope-dependent and may not be directly invoked.
+   <classname>Closure</classname> is the preferred way to create callables.
   </para>
 
   <note>
    <para>
-    As of PHP 8.1.0, anonymous functions can also be created using the <link linkend="functions.first_class_callable_syntax">first class callable syntax</link>.
+    While <classname>Closure</classname> objects are bound to the scope
+    where they are created, callables referencing class methods as strings
+    or arrays are resolved in the scope where they are called.
+    To create a callable from a private or protected method, which can then be
+    invoked from outside the class scope, use
+    <methodname>Closure::fromCallable</methodname> or the
+    <link linkend="functions.first_class_callable_syntax">first-class callable
+    syntax</link>.
    </para>
   </note>
 
   <para>
-   Generally, any object implementing <link linkend="object.invoke">__invoke()</link> can also
-   be passed to a callback parameter.
+   PHP allows the creation of callables which can be used as a callback argument
+   but cannot be called directly.
+   These are context-dependent callables which reference a class method in the
+   inheritance hierarchy of a class, e.g.
+   <literal>'parent::method'</literal> or <literal>["static", "method"]</literal>.
   </para>
 
-  <para>
-   <example>
-    <title>
-     Callback function examples
-    </title>
-    <programlisting role="php">
+  <note>
+   <para>
+    As of PHP 8.2.0, context-dependent callables
+    are deprecated. Remove the context dependency by replacing
+    <literal>'parent::method'</literal> with
+    <literal>parent::class . '::method'</literal> or use the
+    <link linkend="functions.first_class_callable_syntax">first-class callable
+    syntax</link>.
+   </para>
+  </note>
+
+  <example>
+   <title>
+    Callback function examples
+   </title>
+   <programlisting role="php">
 <![CDATA[
 <?php
 
 // An example callback function
 function my_callback_function() {
-    echo 'hello world!', PHP_EOL;
+    echo 'hello world!', "\n";
 }
 
 // An example callback method
 class MyClass {
     static function myCallbackMethod() {
-        echo 'Hello World!', PHP_EOL;
+        echo 'Hello World!', "\n";
     }
 }
 
@@ -85,11 +205,11 @@ class MyClass {
 call_user_func('my_callback_function');
 
 // Type 2: Static class method call
-call_user_func(array('MyClass', 'myCallbackMethod'));
+call_user_func(['MyClass', 'myCallbackMethod']);
 
 // Type 3: Object method call
 $obj = new MyClass();
-call_user_func(array($obj, 'myCallbackMethod'));
+call_user_func([$obj, 'myCallbackMethod']);
 
 // Type 4: Static class method call
 call_user_func('MyClass::myCallbackMethod');
@@ -97,22 +217,22 @@ call_user_func('MyClass::myCallbackMethod');
 // Type 5: Relative static class method call
 class A {
     public static function who() {
-        echo 'A', PHP_EOL;
+        echo 'A', "\n";
     }
 }
 
 class B extends A {
     public static function who() {
-        echo 'B', PHP_EOL;
+        echo 'B', "\n";
     }
 }
 
-call_user_func(array('B', 'parent::who')); // A, deprecated as of PHP 8.2.0
+call_user_func(['B', 'parent::who']); // deprecated as of PHP 8.2.0
 
 // Type 6: Objects implementing __invoke can be used as callables
 class C {
     public function __invoke($name) {
-        echo 'Hello ', $name, PHP_EOL;
+        echo 'Hello ', $name;
     }
 }
 
@@ -120,42 +240,21 @@ $c = new C();
 call_user_func($c, 'PHP!');
 ?>
 ]]>
-    </programlisting>
-   </example>
-  </para>
-  <para>
-   <example>
-    <title>
-     Callback example using a <classname>Closure</classname>
-    </title>
-   <programlisting role="php">
+   </programlisting>
+   &example.outputs;
+   <screen>
 <![CDATA[
-<?php
-// Our closure
-$double = function($a) {
-    return $a * 2;
-};
+hello world!
+Hello World!
+Hello World!
+Hello World!
 
-// This is our range of numbers
-$numbers = range(1, 5);
-
-// Use the closure as a callback here to
-// double the size of each element in our
-// range
-$new_numbers = array_map($double, $numbers);
-
-print implode(' ', $new_numbers);
-?>
+Deprecated: Callables of the form ["B", "parent::who"] are deprecated in script on line 41
+A
+Hello PHP!
 ]]>
-    </programlisting>
-    &example.outputs;
-    <screen>
-<![CDATA[
-2 4 6 8 10
-]]>
-    </screen>
-   </example>
-  </para>
+   </screen>
+  </example>
 
   &note.func-callback-exceptions;
  </sect2>
