@@ -31,9 +31,17 @@
   <para>
    A method of an instantiated <type>object</type> is passed as an
    <type>array</type> containing an <type>object</type> at index 0 and the
-   method name at index 1. Accessing protected and private methods from
-   within a class is allowed.
+   method name at index 1. Passing protected and private methods
+   with the <type>callable</type> syntax is allowed.
   </para>
+
+  <note>
+   <para>
+    If a callable of a protected or a private method is invoked from outside the class
+    with no visibility of said methods (e.g. being called from a POSIX signal handler),
+    a runtime error is thrown because the callable is invalid at the time of invocation.
+   </para>
+  </note>
 
   <para>
    Static class methods can also be passed without instantiating an
@@ -152,6 +160,80 @@ print implode(' ', $new_numbers);
     <screen>
 <![CDATA[
 2 4 6 8 10
+]]>
+    </screen>
+   </example>
+  </para>
+
+  <para>
+   <example>
+    <title>
+     Manually invoking callbacks
+    </title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+// define a callback handler that executes the callable (no parameters)
+function invokeCallback(callable $theCallback) {
+    $theCallback();
+}
+
+// prints "42"
+invokeCallback(function () {
+    echo "42" . PHP_EOL;
+});
+
+// define a callback handler that executes the callable with a parameter
+function processNumber(callable $processor, int $theNumber) {
+    // process a number, and print its result
+    $result = $processor($theNumber);
+    echo $result . PHP_EOL;
+}
+
+// prints "72"
+processNumber(fn ($x) => $x * 3, 24);
+
+// define a class implementing the __invoke method
+class NumberTripler
+{
+    public function __invoke($x)
+    {
+        return $x * 3;
+    }
+}
+
+// prints "15"
+$tripler = new NumberTripler();
+processNumber($tripler, 5);
+
+// define a class with a private instance method, to be called with the callable syntax
+class HiddenFactory
+{
+    private function hiddenWork()
+    {
+        echo "256" . PHP_EOL;
+    }
+
+    public function getProof()
+    {
+        return Closure::fromCallable([$this, 'hiddenWork']);
+    }
+}
+
+// prints "256"
+$factory = new HiddenFactory();
+$theProof = $factory->getProof();
+invokeCallback($theProof);
+?>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+42
+72
+15
+256
 ]]>
     </screen>
    </example>
