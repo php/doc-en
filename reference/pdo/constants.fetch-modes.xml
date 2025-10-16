@@ -105,7 +105,7 @@
   </informaltable>
  </section>
 
- <section xml:id="pdo.fetch-modes.class-flags">
+ <section xml:id="pdo.fetch-modes.class-flags" annotations="chunk:false">
   <title><constant>PDO::FETCH_CLASS</constant> options</title>
 
   <para>
@@ -140,7 +140,7 @@
      </row>
      <row>
       <entry>
-       PDO::FETCH_SERIALIZE
+       <constant>PDO::FETCH_SERIALIZE</constant>
       </entry>
       <entry>
        Use PHP serialized data. Deprecated as of PHP 8.1.0.
@@ -872,7 +872,122 @@ object(TestEntity)#3 (4) {
   </informalexample>
  </section>
 
- <section  xml:id="pdo.constants.fetch-bound" annotations="chunk:false">
+ <section xml:id="pdo.constants.fetch-serialize" annotations="chunk:false">
+  <title>PDO::FETCH_SERIALIZE (<type>int</type>)</title>
+  <warning>
+   <simpara>
+    This feature has been <emphasis>DEPRECATED</emphasis> as of PHP 8.1.0.
+    Relying on this feature is highly discouraged.
+   </simpara>
+  </warning>
+  <para>
+   This fetch mode can only be used combined with
+   <constant>PDO::FETCH_CLASS</constant> (and
+   <link linkend="pdo.fetch-modes.class-flags">its other options</link>).
+  </para>
+  <para>
+   When this fetch mode is used, the specified class must be
+   <interfacename>Serializable</interfacename>.
+  </para>
+  <caution>
+   <para>
+    This feature does not support a string that contains a complete serialized
+    object (with <function>serialize</function>).
+   </para>
+  </caution>
+  <caution>
+   <para>
+    This fetch mode does not call the constructor.
+   </para>
+  </caution>
+  <informalexample>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+class TestEntity implements Serializable
+{
+    public $userid;
+
+    public $name;
+
+    public $country;
+
+    public $referred_by_userid;
+
+    public function __construct()
+    {
+        print "Constructor called with ". count(func_get_args()) ." args\n";
+        print "Properties set when constructor called? ". (isset($this->name) ? 'Yes' : 'No') . "\n";
+    }
+
+    public function serialize() {
+         return join("|", [$this->userid, $this->name, $this->country, $this->referred_by_userid]);
+    }
+
+    public function unserialize(string $data) {
+        $parts = explode("|", $data);
+        $this->userid = (int) $parts[0];
+        $this->name = $parts[1];
+        $this->country = $parts[2];
+
+        $refId = $parts[3];
+        $this->referred_by_userid = ($refId === "" ? null : (int) $refId);
+    }
+}
+
+print "Set up record (constructor called manually):\n";
+$db->exec(
+    "CREATE TABLE serialize (
+        sdata TEXT
+    )"
+);
+
+$origObj = new TestEntity();
+$origObj->userid = 200;
+$origObj->name = 'Seri';
+$origObj->country = 'Syria';
+$origObj->referred_by_userid = null;
+
+$insert = $db->prepare("INSERT INTO serialize (sdata) VALUES (:sdata)");
+$insert->execute(['sdata' => $origObj->serialize()]);
+
+print "\nRetrieve result:\n"
+$query = "SELECT sdata FROM serialize LIMIT 1";
+$stmt = $db->query($query);
+// NOTE: Constructor is never called!
+$stmt->setFetchMode(PDO::FETCH_CLASS | PDO::FETCH_SERIALIZE, TestEntity::class);
+$result = $stmt->fetch();
+var_dump($result);
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+    <![CDATA[
+Deprecated: TestEntity implements the Serializable interface, which is deprecated. Implement __serialize() and __unserialize() instead (or in addition, if support for old PHP versions is necessary) in Standard input code on line 2
+Set up record (constructor called manually):
+Constructor called with 0 args
+Properties set when constructor called? No
+
+Retrieve result:
+Deprecated: PDOStatement::setFetchMode(): The PDO::FETCH_SERIALIZE mode is deprecated in Standard input code on line 58
+
+Deprecated: PDOStatement::fetch(): The PDO::FETCH_SERIALIZE mode is deprecated in Standard input code on line 59
+object(TestEntity)#5 (4) {
+  ["userid"]=>
+  int(200)
+  ["name"]=>
+  string(4) "Seri"
+  ["country"]=>
+  string(5) "Syria"
+  ["referred_by_userid"]=>
+  NULL
+}
+   ]]>
+   </screen>
+  </informalexample>
+ </section>
+
+ <section xml:id="pdo.constants.fetch-bound" annotations="chunk:false">
   <title>PDO::FETCH_BOUND (<type>int</type>)</title>
   <para>
    This fetch mode can not be used with
@@ -1397,7 +1512,7 @@ Array
     </simpara>
    </listitem>
    </varlistentry>
-   <varlistentry xml:id="pdo.constants.fetch-serialize">
+   <varlistentry>
    <term>
     <constant>PDO::FETCH_SERIALIZE</constant>
     (<type>int</type>)
