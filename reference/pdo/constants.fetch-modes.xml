@@ -61,22 +61,6 @@
      </row>
      <row>
       <entry>
-       <constant>PDO::FETCH_OBJ</constant>
-      </entry>
-      <entry>
-       Anonymous (<classname>stdClass</classname>) object.
-      </entry>
-     </row>
-     <row>
-      <entry>
-       PDO::FETCH_CLASS
-      </entry>
-      <entry>
-       An object of a specified class.
-      </entry>
-     </row>
-     <row>
-      <entry>
        <constant>PDO::FETCH_COLUMN</constant>
       </entry>
       <entry>
@@ -98,6 +82,68 @@
       <entry>
        Use a function to create the return value.
        (<function>PDOStatement::fetchAll</function> only)
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <constant>PDO::FETCH_OBJ</constant>
+      </entry>
+      <entry>
+       Anonymous (<classname>stdClass</classname>) object.
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <constant>PDO::FETCH_CLASS</constant>
+      </entry>
+      <entry>
+       An object of a specified class.
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
+ </section>
+
+ <section xml:id="pdo.fetch-modes.class-flags">
+  <title><constant>PDO::FETCH_CLASS</constant> options</title>
+
+  <para>
+   These modes are used to implement options when using
+   <constant>PDO::FETCH_CLASS</constant>.
+  </para>
+
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Fetch Mode</entry>
+      <entry>Summary</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry>
+       <constant>PDO::FETCH_CLASSTYPE</constant>
+      </entry>
+      <entry>
+       Use the first column as the class name.
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <constant>PDO::FETCH_PROPS_LATE</constant>
+      </entry>
+      <entry>
+       Call the constructor before setting properties.
+      </entry>
+     </row>
+     <row>
+      <entry>
+       PDO::FETCH_SERIALIZE
+      </entry>
+      <entry>
+       Use PHP serialized data. Deprecated as of PHP 8.1.0.
       </entry>
      </row>
     </tbody>
@@ -202,52 +248,6 @@
       </entry>
      </row>
      -->
-    </tbody>
-   </tgroup>
-  </informaltable>
- </section>
-
- <section xml:id="pdo.fetch-modes.class-flags">
-  <title><constant>PDO::FETCH_CLASS</constant> options</title>
-
-  <para>
-   These modes are used to implement options when using
-   <constant>PDO::FETCH_CLASS</constant>.
-  </para>
-
-  <informaltable>
-   <tgroup cols="2">
-    <thead>
-     <row>
-      <entry>Fetch Mode</entry>
-      <entry>Summary</entry>
-     </row>
-    </thead>
-    <tbody>
-     <row>
-      <entry>
-       PDO::FETCH_CLASSTYPE
-      </entry>
-      <entry>
-       Use the first column as the class name.
-      </entry>
-     </row>
-     <row>
-      <entry>
-       PDO::FETCH_PROPS_LATE
-      </entry>
-      <entry>
-       Call the constructor before setting properties.
-      </entry>
-     </row>
-     <row>
-      <entry>
-       PDO::FETCH_SERIALIZE
-      </entry>
-      <entry>
-       Use PHP serialized data. Deprecated as of PHP 8.1.0.
-      </entry>
-     </row>
     </tbody>
    </tgroup>
   </informaltable>
@@ -499,57 +499,29 @@ Array
   </informalexample>
  </section>
 
- <section xml:id="pdo.constants.fetch-obj" annotations="chunk:false">
-  <title>PDO::FETCH_OBJ (<type>int</type>)</title>
-  <para>
-   <constant>PDO::FETCH_OBJ</constant> returns a <classname>stdClass</classname>
-   object.
-  </para>
-  <para>
-   See also <function>PDOStatement::fetchObject</function>.
-  </para>
-  <informalexample>
-   <programlisting role="php">
-    <![CDATA[
-<?php
-$stmt = $pdo->query("SELECT userid, name, country FROM users LIMIT 1");
-$row = $stmt->fetch(\PDO::FETCH_OBJ);
-print_r($row);
-]]>
-   </programlisting>
-   &example.outputs;
-   <screen>
-    <![CDATA[
-stdClass Object
-(
-    [userid] => 104
-    [name] => Chris
-    [country] => Ukraine
-)
-]]>
-   </screen>
-  </informalexample>
- </section>
-
- <!-- TODO Explain how the argument works -->
  <!-- TODO Behavior when combined with GROUP or UNIQUE -->
  <section xml:id="pdo.constants.fetch-column" annotations="chunk:false">
   <title>PDO::FETCH_COLUMN (<type>int</type>)</title>
   <para>
-   <constant>PDO::FETCH_COLUMN</constant> returns an array of values from a
-   single column.
+   <constant>PDO::FETCH_COLUMN</constant> returns values from a single column.
+   Use the second argument for <function>PDOStatement::setFetchMode</function>
+   or <function>PDOStatement::fetchAll</function> to specify which column is
+   returned.
   </para>
-  <note>
-   <para>
-    If the results contain multiple columns, only the first is returned.
-   </para>
-  </note>
+  <para>
+   If the specified column does not exist a <classname>ValueError</classname>
+   will be thrown.
+  </para>
   <informalexample>
    <programlisting role="php">
     <![CDATA[
 <?php
 $stmt = $pdo->query("SELECT name, country FROM users LIMIT 3");
 $row = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+print_r($row);
+
+$stmt = $pdo->query("SELECT name, country FROM users LIMIT 3");
+$row = $stmt->fetchAll(\PDO::FETCH_COLUMN, 1);
 print_r($row);
 ]]>
    </programlisting>
@@ -561,6 +533,13 @@ Array
     [0] => Chris
     [1] => Jamie
     [2] => Robin
+)
+
+Array
+(
+    [0] => Ukraine
+    [1] => England
+    [2] => Germany
 )
 ]]>
    </screen>
@@ -636,7 +615,6 @@ function valueCreator($col1, $col2, $col3)
     ];
 }
 
-
 $stmt = $pdo->query("SELECT userid, name, country FROM users LIMIT 3");
 $row = $stmt->fetchAll(\PDO::FETCH_FUNC, valueCreator(...));
 print_r($row);
@@ -672,6 +650,223 @@ Array
         )
 
 )
+    ]]>
+   </screen>
+  </informalexample>
+ </section>
+
+ <section xml:id="pdo.constants.fetch-obj" annotations="chunk:false">
+  <title>PDO::FETCH_OBJ (<type>int</type>)</title>
+  <para>
+   <constant>PDO::FETCH_OBJ</constant> returns a <classname>stdClass</classname>
+   object.
+  </para>
+  <para>
+   See also <function>PDOStatement::fetchObject</function> and
+   <constant>PDO::FETCH_CLASS</constant>.
+  </para>
+  <informalexample>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+$stmt = $pdo->query("SELECT userid, name, country FROM users LIMIT 1");
+$row = $stmt->fetch(\PDO::FETCH_OBJ);
+print_r($row);
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+    <![CDATA[
+stdClass Object
+(
+    [userid] => 104
+    [name] => Chris
+    [country] => Ukraine
+)
+]]>
+   </screen>
+  </informalexample>
+ </section>
+
+ <section xml:id="pdo.constants.fetch-class" annotations="chunk:false">
+  <title>PDO::FETCH_CLASS (<type>int</type>)</title>
+  <para>
+   Returns an object of a specified class. For additional behaviors see the
+   <link linkend="pdo.fetch-modes.class-flags">option flags</link>.
+  </para>
+  <para>
+   If a property does not exist with the name of a returned column, it will be
+   dynamically declared. This behavior is deprecated and will cause an error
+   from PHP 9.0.
+  </para>
+  <para>
+   See also <function>PDOStatement::fetchObject</function>.
+  </para>
+  <informalexample>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+class TestEntity
+{
+    public $userid;
+
+    public $name;
+
+    public $country;
+
+    public $referred_by_userid;
+
+    public function __construct()
+    {
+        print "Constructor called with ". count(func_get_args()) ." args\n";
+        print "Properties set when constructor called? "
+            . (isset($this->name) ? 'Yes' : 'No') . "\n";
+    }
+}
+
+$stmt = $db->query("SELECT userid, name, country, referred_by_userid FROM users LIMIT 3");
+$stmt->setFetchMode(PDO::FETCH_CLASS, TestEntity::class);
+$result = $stmt->fetch();
+var_dump($result);
+    ]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+    <![CDATA[
+Constructor called with 0 args
+Properties set when constructor called? Yes
+object(TestEntity)#3 (4) {
+  ["userid"]=>
+  int(104)
+  ["name"]=>
+  string(5) "Chris"
+  ["country"]=>
+  string(7) "Ukraine"
+  ["referred_by_userid"]=>
+  NULL
+}
+    ]]>
+   </screen>
+  </informalexample>
+ </section>
+
+ <section xml:id="pdo.constants.fetch-classtype" annotations="chunk:false">
+  <title>PDO::FETCH_CLASSTYPE (<type>int</type>)</title>
+  <para>
+   This fetch mode can only be used combined with
+   <constant>PDO::FETCH_CLASS</constant> (and
+   <link linkend="pdo.fetch-modes.class-flags">its other options</link>).
+  </para>
+  <para>
+   When this fetch mode is used, PDO will use the first returned column as the
+   name of the class to return.
+  </para>
+  <para>
+   If the specified class cannot be found, a <classname>stdClass</classname>
+   object will be returned, without warning or error.
+  </para>
+  <informalexample>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+class TestEntity
+{
+    public $userid;
+
+    public $name;
+
+    public $country;
+
+    public $referred_by_userid;
+
+    public function __construct()
+    {
+        print "Constructor called with ". count(func_get_args()) ." args\n";
+        print "Properties set when constructor called? "
+            . (isset($this->name) ? 'Yes' : 'No') . "\n";
+    }
+}
+
+$stmt = $db->query("SELECT 'TestEntity', userid, name, country, referred_by_userid FROM users LIMIT 3");
+$stmt->setFetchMode(PDO::FETCH_CLASS | PDO::FETCH_CLASSTYPE);
+$result = $stmt->fetch();
+var_dump($result);
+    ]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+    <![CDATA[
+Constructor called with 0 args
+Properties set when constructor called? Yes
+object(TestEntity)#3 (4) {
+  ["userid"]=>
+  int(104)
+  ["name"]=>
+  string(5) "Chris"
+  ["country"]=>
+  string(7) "Ukraine"
+  ["referred_by_userid"]=>
+  NULL
+}
+    ]]>
+   </screen>
+  </informalexample>
+ </section>
+
+ <section xml:id="pdo.constants.fetch-props-late" annotations="chunk:false">
+  <title>PDO::FETCH_PROPS_LATE (<type>int</type>)</title>
+  <para>
+   This fetch mode can only be used combined with
+   <constant>PDO::FETCH_CLASS</constant> (and
+   <link linkend="pdo.fetch-modes.class-flags">its other options</link>).
+  </para>
+  <para>
+   When this fetch mode is used, the constructor will be called before the
+   properties are set.
+  </para>
+  <informalexample>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+class TestEntity
+{
+    public $userid;
+
+    public $name;
+
+    public $country;
+
+    public $referred_by_userid;
+
+    public function __construct()
+    {
+        print "Constructor called with ". count(func_get_args()) ." args\n";
+        print "Properties set when constructor called? "
+            . (isset($this->name) ? 'Yes' : 'No') . "\n";
+    }
+}
+
+$stmt = $db->query("SELECT userid, name, country, referred_by_userid FROM users LIMIT 3");
+$stmt->setFetchMode(PDO::FETCH_CLASS | PDO::FETCH_PROPS_LATE, TestEntity::class);
+$result = $stmt->fetch();
+var_dump($result);
+    ]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+    <![CDATA[
+Constructor called with 0 args
+Properties set when constructor called? No
+object(TestEntity)#3 (4) {
+  ["userid"]=>
+  int(104)
+  ["name"]=>
+  string(5) "Chris"
+  ["country"]=>
+  string(7) "Ukraine"
+  ["referred_by_userid"]=>
+  NULL
+}
     ]]>
    </screen>
   </informalexample>
@@ -1116,7 +1311,7 @@ Array
     </simpara>
    </listitem>
    </varlistentry>
-   <varlistentry xml:id="pdo.constants.fetch-class">
+   <varlistentry>
    <term>
     <constant>PDO::FETCH_CLASS</constant>
     (<type>int</type>)
@@ -1191,7 +1386,7 @@ Array
    </listitem>
    </varlistentry>
 
-   <varlistentry xml:id="pdo.constants.fetch-classtype">
+   <varlistentry>
    <term>
     <constant>PDO::FETCH_CLASSTYPE</constant>
     (<type>int</type>)
@@ -1215,7 +1410,7 @@ Array
     </simpara>
    </listitem>
    </varlistentry>
-   <varlistentry xml:id="pdo.constants.fetch-props-late">
+   <varlistentry>
    <term>
     <constant>PDO::FETCH_PROPS_LATE</constant>
     (<type>int</type>)
