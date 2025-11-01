@@ -12,24 +12,35 @@
    <void/>
   </methodsynopsis>
   <para>
-   <function>session_gc</function> is used to perform session data
-   GC (garbage collection). PHP does probability based session GC by
-   default.
+   By default, PHP uses <link linkend="ini.session.gc-probability">session.gc_probability</link>
+   to run the session garbage collector probabilistically on each
+   request. There are some limitations with this approach:
   </para>
   <para>
-   Probability based GC works somewhat but it has few problems. 1) Low
-   traffic sites' session data may not be deleted within the preferred
-   duration. 2) High traffic sites' GC may be too frequent GC. 3) GC is
-   performed on the user's request and the user will experience a GC
-   delay.
+   <simplelist>
+    <member>Low traffic sites may not have their session data deleted within the preferred duration.</member>
+    <member>High traffic sites may have the garbage collector run too frequently, performing unnecessary extra work.</member>
+    <member>Garbage collection is performed on the user's request, and the user may experience a delay.</member>
+   </simplelist>
   </para>
   <para>
-   Therefore, it is recommended to execute GC periodically for
-   production systems using, e.g., "cron" for UNIX-like systems.
-   Make sure to disable probability based GC by setting 
-   <link linkend="ini.session.gc-probability">session.gc_probability</link> 
-   to 0.
+   For production systems, it is recommended to disable the
+   probability-based garbage collection by setting
+   <link linkend="ini.session.gc-probability">session.gc_probability</link> to 0
+   and explicitly trigger the garbage collector periodically, for example by using "cron" on
+   UNIX-like systems to run a script that calls <function>session_gc</function>.
   </para>
+  
+  <note>
+   <para>
+    When calling <function>session_gc</function> from a command-line php script,
+    the <link linkend="ini.session.save-path">session.save_path</link> must be set
+    to the same value as web requests, and the script must have access and delete
+    permissions for the session files. This may be affected by the user the script runs as,
+    and container or sandboxing features such as systemd's <literal>PrivateTmp=</literal>
+    option.
+   </para>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -40,14 +51,16 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   <function>session_gc</function> returns number of deleted session
-   data for success, &false; for failure.
+   <function>session_gc</function> returns the number of deleted session
+   entries on success, &false; for failure.
   </para>
-  <para>
-   Old save handlers do not return number of deleted session data, but 
-   only success/failure flag. If this is the case, number of deleted
-   session data became 1 regardless of actually deleted data.
-  </para>
+  <note>
+   <para>
+    Old session save handlers do not return number of deleted session data, but 
+    rather only a success/failure flag. If this is the case, 1 is returned regardless of
+    how many session entries are actually deleted.
+   </para>
+  </note>
  </refsect1>
 
  <refsect1 role="examples">
@@ -66,7 +79,7 @@ session_start();
 // Executes GC immediately
 session_gc();
 
-// Clean up session ID created by session_gc()
+// Clean up session ID created by session_start()
 session_destroy();
 ?>
 ]]>
@@ -77,7 +90,7 @@ session_destroy();
     <programlisting role="php">
 <![CDATA[
 <?php
-// Note: session_gc() is recommended to be used by task manager script, but
+// Note: session_gc() is recommended to be used by a task manager script, but
 // it may be used as follows.
 
 // Used for last GC time check
