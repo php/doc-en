@@ -28,5 +28,7 @@ php: .docker/built
 build: .docker/built
 
 .docker/built:
-	docker build .docker -t php/doc-en
+	docker build\
+		--build-arg UID=${CURRENT_UID} --build-arg GID=${CURRENT_GID}\
+		.docker -t php/doc-en
 	touch .docker/built
