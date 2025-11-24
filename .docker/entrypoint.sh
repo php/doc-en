@@ -10,33 +10,6 @@ FORMAT=${2:-xhtml}
 PACKAGE=${PACKAGE:-PHP}
 MANUAL_PATH="/var/www/$LANGUAGE/.manual.xml"
 
-# 🧩 Step 1. Verify prerequisites (avoid silent empty mounts)
-echo "🔍 Checking required documentation repositories..."
-
-# Check doc-base presence (must contain configure.php)
-if [ ! -f /var/www/doc-base/configure.php ]; then
-  echo "❌ doc-base is missing or incomplete!"
-  echo "👉 Please clone it before running Docker:"
-  echo "   git clone https://github.com/php/doc-base ../doc-base"
-  echo ""
-  exit 1
-fi
-
-# Check language documentation presence
-if [ ! -d "/var/www/$LANGUAGE" ] || [ ! -f "/var/www/$LANGUAGE/sources.xml" ]; then
-  echo "❌ doc-${LANGUAGE} is missing or incomplete!"
-  echo "👉 Please clone it before running Docker:"
-  echo "   git clone https://github.com/php/doc-${LANGUAGE} ../doc-${LANGUAGE}"
-  echo ""
-  echo "💡 Tip: remove any empty folders and rebuild containers with '--force-recreate'."
-  exit 1
-fi
-
-done
-echo "✅ All prerequisites found."
-echo ""
-
-echo "🧩 Building PHP documentation..."
 echo "Language: $LANGUAGE"
 echo "Format:   $FORMAT"
 echo "Docbook:  $MANUAL_PATH"
