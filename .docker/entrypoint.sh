@@ -30,6 +30,7 @@ fi
 if [ ! -f "$LANG_DIR/language-defs.ent" ]; then
   echo "The documentation for language '$LANGUAGE' is missing."
   echo "Please clone https://github.com/php/doc-$LANGUAGE next to doc-en before running this script."
+  echo "💡 Tip: remove any empty folders and rebuild containers with '--force-recreate'."
   exit 1
 fi
 
