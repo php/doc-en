@@ -43,6 +43,14 @@ if [ -f "$MANUAL_PATH" ]; then
   rm -f "$MANUAL_PATH" || true
 fi
 
+if [ -d "/var/www/doc-en" ]; then
+  # Make sure that doc-en is mounted
+  if [ ! -d "/var/www/en" ] && [ ! -L "/var/www/en" ]; then
+    ln -s /var/www/doc-en /var/www/en
+    echo "🩹 Created symlink for English: /var/www/en -> /var/www/doc-en"
+  fi
+fi
+
 echo "ℹ️ Generating .manual.xml for $LANGUAGE..."
 cd /var/www/doc-base
 php configure.php \
