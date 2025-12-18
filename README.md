@@ -31,6 +31,50 @@ already exist.
 You can also build the `web` version of the documentation with `make php`
 and the output will be placed in output/php-web
 
+### 🐋 Building with Docker Compose (alternative modern setup)
+
+A `compose.yaml` file is available for contributors who prefer a simple,
+cross-platform Docker workflow instead of `make`.
+
+It builds and serves the PHP manual locally in any translation
+(English by default, or another language via `LANGUAGE`).
+
+#### Prerequisites
+
+- Docker ≥ 24 and Docker Compose ([install guide](https://docs.docker.com/get-docker/))
+- Local clone structure:
+```
+php-doc/
+├─ doc-base/ ← common build files, scripts, entities, configure.php
+├─ doc-en/ ← English manual (contains this Docker setup)
+└─ doc-fr/ ← French manual or your official language repository (doc-es, doc-ja...)
+```
+
+#### Usage
+
+From inside `php-doc/doc-en/`:
+
+```bash
+# Default build (English)
+docker compose up --build
+```
+To build another translation:
+**Linux / macOS**
+```
+LANGUAGE=fr docker compose up --build
+```
+**Windows PowerShell**
+```bash
+$env:LANGUAGE="fr"; docker compose up --build
+
+Remove-Item Env:LANGUAGE # Revert back to English
+```
+The process will:
+
+1. Build a minimal PHP 8.2 environment with PhD.
+2. Generate `.manual.xml` and render the manual in HTML (php-chunked-xhtml).
+3. Start a local PHP web server on http://localhost:8000 where you can view the documentation.
+
 ## Translations
 
 For the translations of this documentation, see:
