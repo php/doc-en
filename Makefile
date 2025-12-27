@@ -10,7 +10,7 @@ CURRENT_GID := $(shell id -g)
 # volumes to our Docker runs.
 #
 
-PATHS := -v .:/var/www/en
+PATHS := -v ${PWD}:/var/www/en
 ifneq ($(wildcard ../doc-base/LICENSE),)
 	PATHS += -v ${PWD}/../doc-base:/var/www/doc-base
 endif
@@ -28,5 +28,7 @@ php: .docker/built
 build: .docker/built
 
 .docker/built:
-	docker build .docker -t php/doc-en
+	docker build\
+		--build-arg UID=${CURRENT_UID} --build-arg GID=${CURRENT_GID}\
+		.docker -t php/doc-en
 	touch .docker/built
