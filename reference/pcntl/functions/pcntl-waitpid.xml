@@ -130,6 +130,20 @@
       </para>
      </listitem>
     </varlistentry>
+    <varlistentry>
+     <term><parameter>resource_usage</parameter></term>
+     <listitem>
+      <para>
+       The <parameter>resource_usage</parameter> parameter is set to an
+       associative <type>array</type> containing resource usage statistics
+       from the child process.
+
+       This is supported either if the wait6 system call is available
+       (e.g. on FreeBSD), or on Linux through the raw waitid system call. For
+       information on the contents see <function>getrusage</function>.
+      </para>
+     </listitem>
+    </varlistentry>
    </variablelist>
   </para>
  </refsect1>
@@ -143,12 +157,71 @@
   </para>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>pcntl_waitpid</function> example</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function checkChild(int $pid, bool $wait): void
+{
+    $flags = ($wait ? 0 : WNOHANG);
+    $deadPid = pcntl_waitpid($pid, $status, $flags, $rusage);
+    if ($deadPid === -1) {
+        $errNo = pcntl_get_last_error();
+        $errMsg = pcntl_strerror($errNo);
+        print "PARENT pcntl_waitpid FAILED ({$deadPid}): {$errMsg}\n";
+    } elseif ($deadPid === 0) {
+        print "PARENT pcntl_waitpid: No exited children.\n";
+    } else {
+        print "PARENT pcntl_waitpid: Child PID {$deadPid} exited with status: "
+            . pcntl_wexitstatus($status) ."\n";
+        var_dump($rusage);
+    }
+}
+
+$parentPid = getmypid();
+$forkedPid = pcntl_fork();
+if ($forkedPid == -1) {
+    die('Could not fork');
+} else if ($forkedPid) {
+    // Parent process
+    print "PARENT {$parentPid} has forked {$forkedPid}\n";
+
+    print "PARENT is checking for exited children\n";
+    checkChild($forkedPid, false);
+
+    // Prevents children remaining as a "zombie process"
+    print "PARENT is waiting for a child to exit\n";
+    checkChild($forkedPid, true);
+
+    print "PARENT is checking for exited children\n";
+    checkChild($forkedPid, false);
+
+    print "PARENT is exiting\n";
+} else {
+    // Child process
+    $pid = getmypid();
+    print "CHILD {$pid} is sleeping\n";
+    sleep(10);
+    print "CHILD is exiting\n";
+    exit(7);
+}
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </refsect1>
+
  <refsect1 role="seealso">
   &reftitle.seealso;
   <para>
    <simplelist>
     <member><function>pcntl_fork</function></member>
     <member><function>pcntl_signal</function></member>
+    <member><function>pcntl_wait</function></member>
     <member><function>pcntl_wifexited</function></member>
     <member><function>pcntl_wifstopped</function></member>
     <member><function>pcntl_wifsignaled</function></member>
