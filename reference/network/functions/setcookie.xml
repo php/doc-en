@@ -28,8 +28,8 @@
   <simpara>
    <function>setcookie</function> defines a cookie to be sent along with the
    rest of the HTTP headers. Like other headers, cookies must be sent
-   <emphasis>before</emphasis> any output from your script (this is a
-   protocol restriction). This requires that you place calls to this function
+   <emphasis>before</emphasis> any output from the script (this is a
+   protocol restriction). This requires that this function is called
    prior to any output, including <literal>&lt;html&gt;</literal> and
    <literal>&lt;head&gt;</literal> tags as well as any whitespace.
   </simpara>
@@ -83,9 +83,9 @@
       </simpara>
       <note>
        <simpara>
-        You may notice the <parameter>expires_or_options</parameter> parameter takes on a
+        The <parameter>expires_or_options</parameter> parameter takes a
         Unix timestamp, as opposed to the date format <literal>Wdy, DD-Mon-YYYY
-        HH:MM:SS GMT</literal>, this is because PHP does this conversion
+        HH:MM:SS GMT</literal>, because PHP does this conversion
         internally.
        </simpara>
       </note>
@@ -176,7 +176,7 @@
       </note>
       <note>
        <simpara>
-        If <literal>samesite</literal> is <literal>None</literal> then
+        If <literal>samesite</literal> is <literal>"None"</literal> then
         <literal>secure</literal> must also be enabled or the cookie will be
         blocked by the client.
        </simpara>
@@ -231,18 +231,23 @@
  <refsect1 role="examples">
   &reftitle.examples;
   <simpara>
-   The following examples demonstrate some ways to send cookies.
+   The effects of the following examples can be observed using the browser 
+   developer tools cookie list (usually in the Storage or Application tab).
   </simpara>
   <example>
    <title><function>setcookie</function> send example</title>
    <programlisting role="php">
-    <![CDATA[
+<![CDATA[
 <?php
 
 $value = 'something from somewhere';
 
+// Set a "session cookie" that expires when the browser is closed
 setcookie("TestCookie", $value);
-setcookie("TestCookie", $value, time()+3600);  /* expire in 1 hour */
+// Set a cookie that expires in 1 hour
+setcookie("TestCookie", $value, time()+3600);
+// Set a cookie that applies only to a specific path on a specific domain
+// Note that the domain used should match the site domain
 setcookie("TestCookie", $value, time()+3600, "/~rasmus/", "example.com", true);
 
 ?>
@@ -251,16 +256,16 @@ setcookie("TestCookie", $value, time()+3600, "/~rasmus/", "example.com", true);
   </example>
   <simpara>
    Note that the value portion of the cookie will automatically be
-   urlencoded when you send the cookie, and when it is received, it
-   is automatically decoded and assigned to a variable by the same
-   name as the cookie name. If you don't want this, you can use
-   <function>setrawcookie</function> instead. To see
-   the contents of our test cookie in a script, simply use one of the
-   following examples:
+   urlencoded and decoded by PHP. This can be avoided by using
+   <function>setrawcookie</function> instead.
+  </simpara>
+  <simpara>
+   To see the contents of the cookies set in the above example on a later
+   request:
   </simpara>
   <informalexample>
    <programlisting role="php">
-    <![CDATA[
+<![CDATA[
 <?php
 // Print an individual cookie
 echo $_COOKIE["TestCookie"];
@@ -274,12 +279,14 @@ print_r($_COOKIE);
   <example>
    <title><function>setcookie</function> delete example</title>
    <simpara>
-    When deleting a cookie you should assure that the expiration date
-    is in the past, to trigger the removal mechanism in your browser.
-    Examples follow how to delete cookies sent in previous example:
+    To delete a cookie set the expiration date to a value in the past
+    (but not zero, which is reserved for session cookies).
+   </simpara>
+   <simpara>
+    To delete the cookies set in previous example:
    </simpara>
    <programlisting role="php">
-    <![CDATA[
+<![CDATA[
 <?php
 // set the expiration date to one hour ago
 setcookie("TestCookie", "", time() - 3600);
@@ -291,14 +298,14 @@ setcookie("TestCookie", "", time() - 3600, "/~rasmus/", "example.com", 1);
   <example>
    <title><function>setcookie</function> and arrays</title>
    <simpara>
-    You may also set array cookies by using array notation in the
+    An "array of cookies" can be set by using array notation in the
     cookie name. This has the effect of setting as many cookies as
-    you have array elements, but when the cookie is received by your
+    there are array elements, but when the cookie is received by the
     script, the values are all placed in an array with the cookie's
     name:
    </simpara>
    <programlisting role="php">
-    <![CDATA[
+<![CDATA[
 <?php
 // set the cookies
 setcookie("cookie[three]", "cookiethree");
@@ -318,7 +325,7 @@ if (isset($_COOKIE['cookie'])) {
    </programlisting>
    &example.outputs;
    <screen>
-    <![CDATA[
+<![CDATA[
 three : cookiethree
 two : cookietwo
 one : cookieone
@@ -338,12 +345,12 @@ one : cookieone
   &reftitle.notes;
   <note>
    <simpara>
-    You can use output buffering to send output prior to the
-    call of this function, with the overhead of all of your output to the
-    browser being buffered in the server until you send it. You can do this
+    Output buffering can be used to allow script output prior to the
+    call of this function. All output will be buffered until it is flushed 
+    (either explicitly or at the end of the script execution). This is done
     by calling <function>ob_start</function> and
-    <function>ob_end_flush</function> in your script, or setting the
-    <literal>output_buffering</literal> configuration directive on in your
+    <function>ob_end_flush</function> in the script, or setting the
+    <literal>output_buffering</literal> configuration directive on in the
     &php.ini; or server configuration files.
    </simpara>
   </note>
@@ -373,18 +380,17 @@ one : cookieone
     <listitem>
      <simpara>
       Because setting a cookie with a value of &false; will try to delete the cookie,
-      you should not use boolean values. Instead, use <emphasis>0</emphasis> for &false;
+      boolean values should not be used. Instead, use <emphasis>0</emphasis> for &false;
       and <emphasis>1</emphasis> for &true;.
      </simpara>
     </listitem>
     <listitem>
      <simpara>
-      Cookies names can be set as array names and will be available to your
-      PHP scripts as arrays but separate cookies are stored on the user's
-      system. Consider <function>explode</function> to set one cookie with
-      multiple names and values. It is not recommended to use
-      <function>serialize</function> for this purpose, because it can result
-      in security holes.
+      Cookies names can be set as array names and will be available to the
+      PHP scripts as arrays but separate cookies are stored by the browser.
+      Consider <function>json_encode</function> to set one cookie with multiple 
+      names and values. It is not recommended to use <function>serialize</function> 
+      for this purpose because it can result in security holes.
      </simpara>
     </listitem>
    </itemizedlist>
