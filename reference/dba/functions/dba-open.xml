@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-<refentry xml:id="function.dba-open" xmlns="http://docbook.org/ns/docbook">
+<refentry xmlns="http://docbook.org/ns/docbook" xml:id="function.dba-open">
  <refnamediv>
   <refname>dba_open</refname>
   <refpurpose>Open database</refpurpose>
@@ -25,186 +25,184 @@
 
  <refsect1 role="parameters">
   &reftitle.parameters;
-  <para>
-   <variablelist>
-    <varlistentry>
-     <term><parameter>path</parameter></term>
-     <listitem>
+  <variablelist>
+   <varlistentry>
+    <term><parameter>path</parameter></term>
+    <listitem>
+     <para>
+      Commonly a regular path in your filesystem.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>mode</parameter></term>
+    <listitem>
+     <para>
+      It is <literal>r</literal> for read access, <literal>w</literal> for
+      read/write access to an already existing database, <literal>c</literal>
+      for read/write access and database creation if it doesn't currently exist,
+      and <literal>n</literal> for create, truncate and read/write access.
+      The database is created in BTree mode, other modes (like Hash or Queue)
+      are not supported.
+     </para>
+     <para>
+      Additionally you can set the database lock method with the next char.
+      Use <literal>l</literal> to lock the database with a <filename>.lck</filename>
+      file or <literal>d</literal> to lock the databasefile itself. It is
+      important that all of your applications do this consistently.
+     </para>
+     <para>
+      If you want to test the access and do not want to wait for the lock
+      you can add <literal>t</literal> as third character. When you are
+      absolutely sure that you do not require database locking you can do
+      so by using <literal>-</literal> instead of <literal>l</literal> or
+      <literal>d</literal>. When none of <literal>d</literal>,
+      <literal>l</literal> or <literal>-</literal> is used, dba will lock
+      on the database file as it would with <literal>d</literal>.
+     </para>
+     <note>
       <para>
-       Commonly a regular path in your filesystem.
+       There can only be one writer for one database file. When you use dba on
+       a web server and more than one request requires write operations they can
+       only be done one after another. Also read during write is not allowed.
+       The dba extension uses locks to prevent this. See the following table:
+       <table>
+        <title>DBA locking</title>
+        <tgroup cols="9">
+         <thead>
+          <row>
+           <entry>already open</entry>
+           <entry><parameter>mode</parameter> = "rl"</entry>
+           <entry><parameter>mode</parameter> = "rlt"</entry>
+           <entry><parameter>mode</parameter> = "wl"</entry>
+           <entry><parameter>mode</parameter> = "wlt"</entry>
+           <entry><parameter>mode</parameter> = "rd"</entry>
+           <entry><parameter>mode</parameter> = "rdt"</entry>
+           <entry><parameter>mode</parameter> = "wd"</entry>
+           <entry><parameter>mode</parameter> = "wdt"</entry>
+          </row>
+         </thead>
+         <tbody>
+          <row>
+           <entry>not open</entry>
+           <entry>ok</entry>
+           <entry>ok</entry>
+           <entry>ok</entry>
+           <entry>ok</entry>
+           <entry>ok</entry>
+           <entry>ok</entry>
+           <entry>ok</entry>
+           <entry>ok</entry>
+          </row>
+          <row>
+           <entry><parameter>mode</parameter> = "rl"</entry>
+           <entry>ok</entry>
+           <entry>ok</entry>
+           <entry>wait</entry>
+           <entry>false</entry>
+           <entry>illegal</entry>
+           <entry>illegal</entry>
+           <entry>illegal</entry>
+           <entry>illegal</entry>
+          </row>
+          <row>
+           <entry><parameter>mode</parameter> = "wl"</entry>
+           <entry>wait</entry>
+           <entry>false</entry>
+           <entry>wait</entry>
+           <entry>false</entry>
+           <entry>illegal</entry>
+           <entry>illegal</entry>
+           <entry>illegal</entry>
+           <entry>illegal</entry>
+          </row>
+          <row>
+           <entry><parameter>mode</parameter> = "rd"</entry>
+           <entry>illegal</entry>
+           <entry>illegal</entry>
+           <entry>illegal</entry>
+           <entry>illegal</entry>
+           <entry>ok</entry>
+           <entry>ok</entry>
+           <entry>wait</entry>
+           <entry>false</entry>
+          </row>
+          <row>
+           <entry><parameter>mode</parameter> = "wd"</entry>
+           <entry>illegal</entry>
+           <entry>illegal</entry>
+           <entry>illegal</entry>
+           <entry>illegal</entry>
+           <entry>wait</entry>
+           <entry>false</entry>
+           <entry>wait</entry>
+           <entry>false</entry>
+          </row>
+         </tbody>
+        </tgroup>
+       </table>
+       <simplelist>
+        <member>ok: the second call will be successful.</member>
+        <member>wait: the second call waits until <function>dba_close</function> is called for the first.</member>
+        <member>false: the second call returns false.</member>
+        <member>illegal: you must not mix <literal>"l"</literal> and <literal>"d"</literal> modifiers for <parameter>mode</parameter> parameter.</member>
+       </simplelist>
       </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry>
-     <term><parameter>mode</parameter></term>
-     <listitem>
-      <para>
-       It is <literal>r</literal> for read access, <literal>w</literal> for
-       read/write access to an already existing database, <literal>c</literal>
-       for read/write access and database creation if it doesn't currently exist,
-       and <literal>n</literal> for create, truncate and read/write access.
-       The database is created in BTree mode, other modes (like Hash or Queue)
-       are not supported.
-      </para>
-      <para>
-       Additionally you can set the database lock method with the next char. 
-       Use <literal>l</literal> to lock the database with a <filename>.lck</filename>
-       file or <literal>d</literal> to lock the databasefile itself. It is 
-       important that all of your applications do this consistently.
-      </para>
-      <para>
-       If you want to test the access and do not want to wait for the lock 
-       you can add <literal>t</literal> as third character. When you are 
-       absolutely sure that you do not require database locking you can do 
-       so by using <literal>-</literal> instead of <literal>l</literal> or
-       <literal>d</literal>. When none of <literal>d</literal>, 
-       <literal>l</literal> or <literal>-</literal> is used, dba will lock
-       on the database file as it would with <literal>d</literal>.
-      </para>
-      <note>
-       <para>
-        There can only be one writer for one database file. When you use dba on 
-        a web server and more than one request requires write operations they can
-        only be done one after another. Also read during write is not allowed.
-        The dba extension uses locks to prevent this. See the following table:
-        <table>
-         <title>DBA locking</title>
-         <tgroup cols="9">
-          <thead>
-           <row>
-            <entry>already open</entry>
-            <entry><parameter>mode</parameter> = "rl"</entry>
-            <entry><parameter>mode</parameter> = "rlt"</entry>
-            <entry><parameter>mode</parameter> = "wl"</entry>
-            <entry><parameter>mode</parameter> = "wlt"</entry>
-            <entry><parameter>mode</parameter> = "rd"</entry>
-            <entry><parameter>mode</parameter> = "rdt"</entry>
-            <entry><parameter>mode</parameter> = "wd"</entry>
-            <entry><parameter>mode</parameter> = "wdt"</entry>
-           </row>
-          </thead>
-          <tbody>
-           <row>
-            <entry>not open</entry>
-            <entry>ok</entry>
-            <entry>ok</entry>
-            <entry>ok</entry>
-            <entry>ok</entry>
-            <entry>ok</entry>
-            <entry>ok</entry>
-            <entry>ok</entry>
-            <entry>ok</entry>
-           </row>
-           <row>
-            <entry><parameter>mode</parameter> = "rl"</entry>
-            <entry>ok</entry>
-            <entry>ok</entry>
-            <entry>wait</entry>
-            <entry>false</entry>
-            <entry>illegal</entry>
-            <entry>illegal</entry>
-            <entry>illegal</entry>
-            <entry>illegal</entry>
-           </row>
-           <row>
-            <entry><parameter>mode</parameter> = "wl"</entry>
-            <entry>wait</entry>
-            <entry>false</entry>
-            <entry>wait</entry>
-            <entry>false</entry>
-            <entry>illegal</entry>
-            <entry>illegal</entry>
-            <entry>illegal</entry>
-            <entry>illegal</entry>
-           </row>
-           <row>
-            <entry><parameter>mode</parameter> = "rd"</entry>
-            <entry>illegal</entry>
-            <entry>illegal</entry>
-            <entry>illegal</entry>
-            <entry>illegal</entry>
-            <entry>ok</entry>
-            <entry>ok</entry>
-            <entry>wait</entry>
-            <entry>false</entry>
-           </row>
-           <row>
-            <entry><parameter>mode</parameter> = "wd"</entry>
-            <entry>illegal</entry>
-            <entry>illegal</entry>
-            <entry>illegal</entry>
-            <entry>illegal</entry>
-            <entry>wait</entry>
-            <entry>false</entry>
-            <entry>wait</entry>
-            <entry>false</entry>
-           </row>
-          </tbody>
-         </tgroup>
-        </table>
-        <simplelist>
-         <member>ok: the second call will be successful.</member>
-         <member>wait: the second call waits until <function>dba_close</function> is called for the first.</member>
-         <member>false: the second call returns false.</member>
-         <member>illegal: you must not mix <literal>"l"</literal> and <literal>"d"</literal> modifiers for <parameter>mode</parameter> parameter.</member>
-        </simplelist>
-       </para>
-      </note>
-     </listitem>
-    </varlistentry>
-    <varlistentry>
-     <term><parameter>handler</parameter></term>
-     <listitem>
-      <para>
-       The name of the <link linkend="dba.requirements">handler</link> which
-       shall be used for accessing <parameter>path</parameter>. It is passed
-       all optional parameters given to <function>dba_open</function> and
-       can act on behalf of them. If <parameter>handler</parameter> is &null;,
-       then the default handler is invoked.
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry>
-     <term><parameter>permission</parameter></term>
-     <listitem>
-      <para>
-       Optional &integer; parameter which is passed to the driver. It has the same meaning as
-       the <parameter>permissions</parameter> parameter of <function>chmod</function>,
-       and defaults to <literal>0644</literal>.
-      </para>
-      <para>
-       The <literal>db1</literal>, <literal>db2</literal>, <literal>db3</literal>,
-       <literal>db4</literal>, <literal>dbm</literal>, <literal>gdbm</literal>,
-       <literal>ndbm</literal>, and <literal>lmdb</literal> drivers support the
-       <parameter>permission</parameter> parameter.
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry>
-     <term><parameter>map_size</parameter></term>
-     <listitem>
-      <para>
-       Optional &integer; parameter which is passed to the driver. Its value should be a multiple of the
-       page size of the OS, or zero, to use the default map size.
-      </para>
-      <para>
-       Only the <literal>lmdb</literal> driver accepts the <parameter>map_size</parameter> parameter.
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry>
-     <term><parameter>flags</parameter></term>
-     <listitem>
-      <para>
-       Flags to pass to the database drivers. If &null; the default flags will be provided.
-       Currently, only the LMDB driver supports the following flags
-       <constant>DBA_LMDB_USE_SUB_DIR</constant> and
-       <constant>DBA_LMDB_NO_SUB_DIR</constant>.
-      </para>
-     </listitem>
-    </varlistentry>
-   </variablelist>
-  </para>
+     </note>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>handler</parameter></term>
+    <listitem>
+     <para>
+      The name of the <link linkend="dba.requirements">handler</link> which
+      shall be used for accessing <parameter>path</parameter>. It is passed
+      all optional parameters given to <function>dba_open</function> and
+      can act on behalf of them. If <parameter>handler</parameter> is &null;,
+      then the default handler is invoked.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>permission</parameter></term>
+    <listitem>
+     <para>
+      Optional &integer; parameter which is passed to the driver. It has the same meaning as
+      the <parameter>permissions</parameter> parameter of <function>chmod</function>,
+      and defaults to <literal>0644</literal>.
+     </para>
+     <para>
+      The <literal>db1</literal>, <literal>db2</literal>, <literal>db3</literal>,
+      <literal>db4</literal>, <literal>dbm</literal>, <literal>gdbm</literal>,
+      <literal>ndbm</literal>, and <literal>lmdb</literal> drivers support the
+      <parameter>permission</parameter> parameter.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>map_size</parameter></term>
+    <listitem>
+     <para>
+      Optional &integer; parameter which is passed to the driver. Its value should be a multiple of the
+      page size of the OS, or zero, to use the default map size.
+     </para>
+     <para>
+      Only the <literal>lmdb</literal> driver accepts the <parameter>map_size</parameter> parameter.
+     </para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>flags</parameter></term>
+    <listitem>
+     <para>
+      Flags to pass to the database drivers. If &null; the default flags will be provided.
+      Currently, only the LMDB driver supports the following flags
+      <constant>DBA_LMDB_USE_SUB_DIR</constant> and
+      <constant>DBA_LMDB_NO_SUB_DIR</constant>.
+     </para>
+    </listitem>
+   </varlistentry>
+  </variablelist>
  </refsect1>
 
  <refsect1 role="returnvalues">
@@ -266,12 +264,10 @@
 
  <refsect1 role="seealso">
   &reftitle.seealso;
-  <para>
-   <simplelist>
-    <member><function>dba_popen</function></member>
-    <member><function>dba_close</function></member>
-   </simplelist>
-  </para>
+  <simplelist>
+   <member><function>dba_popen</function></member>
+   <member><function>dba_close</function></member>
+  </simplelist>
  </refsect1>
 </refentry>
 <!-- Keep this comment at the end of the file
