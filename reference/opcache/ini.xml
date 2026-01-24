@@ -590,10 +590,169 @@
    <listitem>
     <simpara>
      A bitmask that controls which optimisation passes are executed.
-     The default is to apply all safe optimizations.
-     Changing the default is mostly useful for debugging/developing the optimizer
-     (see also <link linkend="ini.opcache.opt_debug_level">opcache.opt_debug_level</link>).
+     The default value is <literal>0x7FFEBFFF</literal>, which enables all
+     safe optimizations. Disabling optimizations or enabling unsafe optimizations
+     is mostly useful for debugging/developing the optimizer.
     </simpara>
+    <simpara>
+     Each bit in the bitmask enables a specific optimization pass:
+    </simpara>
+    <table>
+     <title>Optimization Pass Bitmask</title>
+     <tgroup cols="4">
+      <thead>
+       <row>
+        <entry>Bit</entry>
+        <entry>Pass Name</entry>
+        <entry>&Description;</entry>
+        <entry>Default</entry>
+       </row>
+      </thead>
+      <tbody>
+       <row>
+        <entry>0</entry>
+        <entry>PASS_1</entry>
+        <entry>Simple peephole optimizations</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>1</entry>
+        <entry>PASS_2</entry>
+        <entry>Unused (got merged into PASS_1)</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>2</entry>
+        <entry>PASS_3</entry>
+        <entry>Simple jump optimization</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>3</entry>
+        <entry>PASS_4</entry>
+        <entry>Call optimization</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>4</entry>
+        <entry>PASS_5</entry>
+        <entry>Control Flow Graph based optimization</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>5</entry>
+        <entry>PASS_6</entry>
+        <entry>Data Flow Analysis based optimization</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>6</entry>
+        <entry>PASS_7</entry>
+        <entry>Whether call graph should be used for SSA-based optimizations</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>7</entry>
+        <entry>PASS_8</entry>
+        <entry>Sparse conditional constant propagation</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>8</entry>
+        <entry>PASS_9</entry>
+        <entry>Temporary variable optimization</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>9</entry>
+        <entry>PASS_10</entry>
+        <entry>Removal of NOP opcodes</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>10</entry>
+        <entry>PASS_11</entry>
+        <entry>Literal compaction</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>11</entry>
+        <entry>PASS_12</entry>
+        <entry>Pre-compute call stack size</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>12</entry>
+        <entry>PASS_13</entry>
+        <entry>Unused variable removal</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>13</entry>
+        <entry>PASS_14</entry>
+        <entry>Dead code elimination</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>14</entry>
+        <entry>PASS_15</entry>
+        <entry>Collect and substitute constant declarations (unsafe)</entry>
+        <entry><emphasis>Off</emphasis></entry>
+       </row>
+       <row>
+        <entry>15</entry>
+        <entry>PASS_16</entry>
+        <entry>Trivial function inlining (part of call optimization)</entry>
+        <entry>On</entry>
+       </row>
+       <row>
+        <entry>16</entry>
+        <entry>(Flag)</entry>
+        <entry>Ignore possibility of operator overloading (unsafe)</entry>
+        <entry><emphasis>Off</emphasis></entry>
+       </row>
+      </tbody>
+     </tgroup>
+    </table>
+    <note>
+     <title>Safe vs Unsafe Optimizations</title>
+     <simpara>
+      <emphasis>Safe optimizations</emphasis> (enabled by default) preserve the exact
+      behavior of PHP code while improving performance. They include dead code elimination,
+      constant folding, and jump optimization.
+     </simpara>
+     <simpara>
+      <emphasis>Unsafe optimizations</emphasis> (disabled by default) may alter behavior
+      in edge cases:
+     </simpara>
+     <itemizedlist>
+      <listitem>
+       <simpara>
+        <emphasis>Bit 14</emphasis>: Collecting constants. Constants are substituted
+        at compile-time, ignoring runtime declaration order:
+       </simpara>
+       <informalexample>
+        <programlisting role="php">
+<![CDATA[
+<?php
+echo getA();         // Outputs: "hello" instead of throwing an Error
+const A = "hello";
+function getA() { return A; }
+]]>
+        </programlisting>
+       </informalexample>
+      </listitem>
+      <listitem>
+       <simpara>
+        <emphasis>Bit 16</emphasis>: Ignoring operator overloading.
+        Unsafe when using classes with <literal>do_operation</literal>
+        (e.g. <link linkend="book.gmp">GMP</link>,
+        <link linkend="book.bc">BCMath</link>) in arithmetic operations.
+        With type declarations, the optimizer can apply the same optimizations safely.
+       </simpara>
+      </listitem>
+     </itemizedlist>
+    </note>
    </listitem>
   </varlistentry>
   <varlistentry xml:id="ini.opcache.inherited-hack">
