@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<reference xml:id="class.nodiscard" role="class" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude">
+ <title>The NoDiscard attribute</title>
+ <titleabbrev>NoDiscard</titleabbrev>
+
+ <partintro>
+
+  <section xml:id="nodiscard.intro">
+   &reftitle.intro;
+   <simpara>
+    This attribute can be used to indicate that the return value of a function
+    or a method should not be discarded. If the return value is not used in any
+    way, a warning will be emitted.
+   </simpara>
+   <simpara>
+    This is useful for functions where not checking the return value is likely
+    to be a bug.
+   </simpara>
+   <simpara>
+    To intentionally discard the return value of such a function, use (void)
+    cast to suppress the warning.
+   </simpara>
+   <note>
+    <simpara>
+     Since attributes are designed to be backwards compatible,
+     <code>#[\NoDiscard]</code> can be added to functions and methods
+     even when PHP 8.4 or below are supported, it just won't do anything.
+     On PHP 8.5 and above a warning will be emitted if the result is unused.
+     To suppress the warning without using <code>(void)</code>,
+     which is not supported before PHP 8.5,
+     consider using a variable like <code>$_</code>.
+    </simpara>
+   </note>
+  </section>
+
+  <section xml:id="nodiscard.synopsis">
+   &reftitle.classsynopsis;
+
+   <classsynopsis class="class">
+    <ooclass>
+     <modifier>final</modifier>
+     <classname>NoDiscard</classname>
+    </ooclass>
+
+    <classsynopsisinfo role="comment">&Properties;</classsynopsisinfo>
+    <fieldsynopsis>
+     <modifier>public</modifier>
+     <modifier>readonly</modifier>
+     <type class="union"><type>string</type><type>null</type></type>
+     <varname linkend="nodiscard.props.message">message</varname>
+    </fieldsynopsis>
+
+    <classsynopsisinfo role="comment">&Methods;</classsynopsisinfo>
+    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('class.nodiscard')/db:refentry/db:refsect1[@role='description']/descendant::db:constructorsynopsis[@role='NoDiscard'])">
+     <xi:fallback/>
+    </xi:include>
+   </classsynopsis>
+
+  </section>
+
+  <section xml:id="nodiscard.props">
+   &reftitle.properties;
+   <variablelist>
+    <varlistentry xml:id="nodiscard.props.message">
+     <term><varname>message</varname></term>
+     <listitem>
+      <simpara>
+       An optional message explaining why the return value should not be discarded.
+      </simpara>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </section>
+
+  <section>
+   &reftitle.examples;
+   <example>
+    <title>Basic usage</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+/**
+ * Processes all the given items and returns an array with the results of the
+ * operation for each item. `null` indicates success and an Exception indicates
+ * an error. The keys of the result array match the keys of the $items array.
+ *
+ * @param array<string> $items
+ * @return array<null|Exception>
+ */
+#[\NoDiscard("as processing might fail for individual items")]
+function bulk_process(array $items): array {
+	$results = [];
+
+	foreach ($items as $key => $item) {
+		if (\random_int(0, 9999) < 9999) {
+			// Pretend to do something useful with $item,
+			// which will succeed in 99.99% of cases.
+			echo "Processing {$item}", PHP_EOL;
+			$error = null;
+		} else {
+			$error = new \Exception("Failed to process {$item}.");
+		}
+
+		$results[$key] = $error;
+	}
+
+	return $results;
+}
+
+bulk_process($items);
+
+?>
+]]>
+    </programlisting>
+    &example.outputs.85.similar;
+    <screen>
+<![CDATA[
+Warning: The return value of function bulk_process() should either be used or intentionally ignored by casting it as (void), as processing might fail for individual items
+]]>
+    </screen>
+   </example>
+   <example>
+    <title>Intentionally discarding the return value</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+#[\NoDiscard]
+function some_command(): int {
+    return 1;
+}
+
+// Suppress the warning using (void) - PHP 8.5+
+(void) some_command();
+
+// For compatibility with PHP versions before 8.5, use a temporary variable
+$_ = some_command();
+
+?>
+]]>
+    </programlisting>
+   </example>
+  </section>
+
+  <section xml:id="nodiscard.seealso">
+   &reftitle.seealso;
+   <simplelist>
+    <member><link linkend="language.attributes">Attributes overview</link></member>
+   </simplelist>
+  </section>
+
+ </partintro>
+
+ &language.predefined.attributes.nodiscard.construct;
+
+</reference>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
