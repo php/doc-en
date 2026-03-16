@@ -24,10 +24,10 @@
    <link linkend="object.set">__set()</link>,
    <link linkend="object.isset">__isset()</link>,
    <link linkend="object.unset">__unset()</link>,
-   <link linkend="object.sleep">__sleep()</link>,
-   <link linkend="object.wakeup">__wakeup()</link>,
    <link linkend="object.serialize">__serialize()</link>,
    <link linkend="object.unserialize">__unserialize()</link>,
+   <link linkend="object.sleep">__sleep()</link>,
+   <link linkend="object.wakeup">__wakeup()</link>,
    <link linkend="object.tostring">__toString()</link>,
    <link linkend="object.invoke">__invoke()</link>,
    <link linkend="object.set-state">__set_state()</link>,
@@ -63,98 +63,6 @@
     otherwise a fatal error is emitted.
    </para>
   </warning>
- 
-  <sect2 xml:id="language.oop5.magic.sleep">
-   <title>
-    <link linkend="object.sleep">__sleep()</link> and
-    <link linkend="object.wakeup">__wakeup()</link>
-   </title>
-   
-   <methodsynopsis xml:id="object.sleep">
-    <modifier>public</modifier> <type>array</type><methodname>__sleep</methodname>
-    <void/>
-   </methodsynopsis>
-   <methodsynopsis xml:id="object.wakeup">
-    <modifier>public</modifier> <type>void</type><methodname>__wakeup</methodname>
-    <void/>
-   </methodsynopsis>
-   
-   <para>
-    <function>serialize</function> checks if the class has a function with
-    the magic name <link linkend="object.sleep">__sleep()</link>. If so, that function is
-    executed prior to any serialization. It can clean up the object
-    and is supposed to return an array with the names of all variables
-    of that object that should be serialized.
-    If the method doesn't return anything then &null; is serialized and
-    <constant>E_NOTICE</constant> is issued.
-   </para>
-   <note>
-    <para>
-     It is not possible for <link linkend="object.sleep">__sleep()</link> to return names of
-     private properties in parent classes. Doing this will result in an
-     <constant>E_NOTICE</constant> level error.
-     Use <link linkend="object.serialize">__serialize()</link> instead.
-    </para>
-   </note>
-   <note>
-    <para>
-     As of PHP 8.0.0, returning a value which is not an array from <link linkend="object.sleep">__sleep()</link> generates a warning. Previously, it generated a notice.
-    </para>
-   </note>
-   <para>
-    The intended use of <link linkend="object.sleep">__sleep()</link> is to commit pending
-    data or perform similar cleanup tasks. Also, the function is
-    useful if a very large object doesn't need to be saved completely.
-   </para>
-   <para>
-    Conversely, <function>unserialize</function> checks for the
-    presence of a function with the magic name 
-    <link linkend="object.wakeup">__wakeup()</link>. If present, this function can
-    reconstruct any resources that the object may have.
-   </para>
-   <para>
-    The intended use of <link linkend="object.wakeup">__wakeup()</link> is to
-    reestablish any database connections that may have been lost
-    during serialization and perform other reinitialization
-    tasks.
-   </para>
-   <example>
-    <title>Sleep and wakeup</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-class Connection
-{
-    protected $link;
-    private $dsn, $username, $password;
-    
-    public function __construct($dsn, $username, $password)
-    {
-        $this->dsn = $dsn;
-        $this->username = $username;
-        $this->password = $password;
-        $this->connect();
-    }
-    
-    private function connect()
-    {
-        $this->link = new PDO($this->dsn, $this->username, $this->password);
-    }
-    
-    public function __sleep()
-    {
-        return array('dsn', 'username', 'password');
-    }
-    
-    public function __wakeup()
-    {
-        $this->connect();
-    }
-}?>
-]]>
-    </programlisting>
-   </example>
-  </sect2>
 
   <sect2 xml:id="language.oop5.magic.serialize">
    <title>
@@ -256,6 +164,109 @@ class Connection
     </programlisting>
    </example>
   </sect2>
+
+ <sect2 xml:id="language.oop5.magic.sleep">
+  <title>
+   <link linkend="object.sleep">__sleep()</link> and
+   <link linkend="object.wakeup">__wakeup()</link>
+  </title>
+  
+  <warning>
+   <simpara>
+    This serialization mechanism is soft-deprecated as of PHP 8.5.0.
+    It is maintained for backward compatibility.
+    However, new and existing code should be migrated to use the
+    <link linkend="object.serialize">__serialize()</link> and
+    <link linkend="object.unserialize">__unserialize()</link>
+    magic methods instead.
+   </simpara>
+  </warning>
+
+  <methodsynopsis xml:id="object.sleep">
+   <modifier>public</modifier> <type>array</type><methodname>__sleep</methodname>
+   <void/>
+  </methodsynopsis>
+  <methodsynopsis xml:id="object.wakeup">
+   <modifier>public</modifier> <type>void</type><methodname>__wakeup</methodname>
+   <void/>
+  </methodsynopsis>
+
+  <para>
+   <function>serialize</function> checks if the class has a function with
+   the magic name <link linkend="object.sleep">__sleep()</link>. If so, that function is
+   executed prior to any serialization. It can clean up the object
+   and is supposed to return an array with the names of all variables
+   of that object that should be serialized.
+   If the method doesn't return anything then &null; is serialized and
+   <constant>E_NOTICE</constant> is issued.
+  </para>
+  <note>
+   <para>
+    It is not possible for <link linkend="object.sleep">__sleep()</link> to return names of
+    private properties in parent classes. Doing this will result in an
+    <constant>E_NOTICE</constant> level error.
+    Use <link linkend="object.serialize">__serialize()</link> instead.
+   </para>
+  </note>
+  <note>
+   <para>
+    As of PHP 8.0.0, returning a value which is not an array from <link linkend="object.sleep">__sleep()</link> generates a warning. Previously, it generated a notice.
+   </para>
+  </note>
+  <para>
+   The intended use of <link linkend="object.sleep">__sleep()</link> is to commit pending
+   data or perform similar cleanup tasks. Also, the function is
+   useful if a very large object doesn't need to be saved completely.
+  </para>
+  <para>
+   Conversely, <function>unserialize</function> checks for the
+   presence of a function with the magic name
+   <link linkend="object.wakeup">__wakeup()</link>. If present, this function can
+   reconstruct any resources that the object may have.
+  </para>
+  <para>
+   The intended use of <link linkend="object.wakeup">__wakeup()</link> is to
+   reestablish any database connections that may have been lost
+   during serialization and perform other reinitialization
+   tasks.
+  </para>
+  <example>
+   <title>Sleep and wakeup</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class Connection
+{
+    protected $link;
+    private $dsn, $username, $password;
+    
+    public function __construct($dsn, $username, $password)
+    {
+        $this->dsn = $dsn;
+        $this->username = $username;
+        $this->password = $password;
+        $this->connect();
+    }
+    
+    private function connect()
+    {
+        $this->link = new PDO($this->dsn, $this->username, $this->password);
+    }
+    
+    public function __sleep()
+    {
+        return array('dsn', 'username', 'password');
+    }
+    
+    public function __wakeup()
+    {
+        $this->connect();
+    }
+}?>
+]]>
+   </programlisting>
+  </example>
+ </sect2>
 
   <sect2 xml:id="language.oop5.magic.tostring">
    <title><link linkend="object.tostring">__toString()</link></title>
