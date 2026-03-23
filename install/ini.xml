@@ -6,81 +6,76 @@
  <sect1 xml:id="configuration.file">
   <title>The configuration file</title>
 
-  <simpara>
-   The configuration file (&php.ini;)
-   is read when PHP starts up. For the server module versions of PHP,
-   this happens only once when the web server is started. For the
-   <acronym>CGI</acronym> and <acronym>CLI</acronym> versions, it happens on
-   every invocation.
-  </simpara>
   <para>
-   &php.ini; is searched for in these locations (in order):
-   <itemizedlist>
-    <listitem>
-     <simpara>
-      SAPI module specific location (<literal>PHPIniDir</literal> directive
-      in Apache 2, <literal>-c</literal> command line option in CGI and CLI)
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      The <varname>PHPRC</varname> environment variable.
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      The location of the <literal>php.ini</literal> file
-      can be set for different versions of PHP. The root of the registry keys depends on 32- or 64-bitness of the installed OS and PHP.
-      For 32-bit PHP on a 32-bit OS or a 64-bit PHP on a 64-bit OS use <literal>[(HKEY_LOCAL_MACHINE\SOFTWARE\PHP]</literal> for 32-bit version of PHP on a 64-bit OS use <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\PHP]</literal>] instead.
-      For same bitness installation the following registry keys
-      are examined in order:
-      <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\PHP\x.y.z]</literal>,
-      <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\PHP\x.y]</literal> and
-      <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\PHP\x]</literal>, where
-      x, y and z mean the PHP major, minor and release versions.
-      For 32 bit versions of PHP on a 64 bit OS the following registry keys are examined in order:
-      <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6421Node\PHP\x.y.z]</literal>,
-      <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6421Node\PHP\x.y]</literal> and
-      <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6421Node\PHP\x]</literal>, where
-      x, y and z mean the PHP major, minor and release versions.
-      If there is a
-      value for <literal>IniFilePath</literal> in any of these keys, the first
-      one found will be used as the location of the <literal>php.ini</literal>
-      (Windows only).
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\PHP]</literal> or
-      <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\PHP]</literal>, value of
-      <literal>IniFilePath</literal> (Windows only).
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      Current working directory (except CLI).
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      The web server's directory (for SAPI modules), or directory of PHP
-      (otherwise in Windows).
-     </simpara>
-    </listitem>
-    <listitem>
-     <simpara>
-      Windows directory (<filename class="directory">C:\windows</filename>
-      or <filename class="directory">C:\winnt</filename>) (for Windows), or
-      <literal>--with-config-file-path</literal> compile time option.
-     </simpara>
-    </listitem>
-   </itemizedlist>
+   The primary configuration file (&php.ini;) is read when PHP starts up.
+   For the server module versions of PHP, this happens only once when the
+   web server is started. For the <acronym>CGI</acronym> and
+   <acronym>CLI</acronym> versions, it happens on every invocation.
   </para>
   <para>
-   If <filename>php-SAPI.ini</filename> exists (where SAPI is the SAPI in use,
-   so, for example, <filename>php-cli.ini</filename> or
-   <filename>php-apache.ini</filename>), it is used instead of &php.ini;.
-   The SAPI name can be determined with <function>php_sapi_name</function>.
+   PHP locates the primary configuration file as follows:
+   <orderedlist>
+    <listitem>
+     <simpara>
+      If the active SAPI provides a specific &php.ini; path override, that
+      is used (for example, the <literal>PHPIniDir</literal> directive in
+      Apache 2, or the <literal>-c</literal> command line option in
+      <acronym>CGI</acronym> and <acronym>CLI</acronym>).
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      Otherwise, PHP builds a search path from the following locations:
+     </simpara>
+     <itemizedlist>
+      <listitem>
+       <simpara>
+        The <varname>PHPRC</varname> environment variable.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        On Windows, the path configured in the registry
+        (<literal>IniFilePath</literal>).
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        The current working directory, except for SAPIs that disable this,
+        such as <acronym>CLI</acronym>.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        The directory of the PHP executable or SAPI module.
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        The directory specified by the
+        <literal>--with-config-file-path</literal> compile time option, or
+        the Windows directory (<filename class="directory">C:\windows</filename>
+        or <filename class="directory">C:\winnt</filename>) on Windows.
+       </simpara>
+      </listitem>
+     </itemizedlist>
+    </listitem>
+    <listitem>
+     <simpara>
+      PHP then looks for <filename>php-SAPI.ini</filename> in that search
+      path, and if that is not found, for &php.ini;. The SAPI name can be
+      determined with <function>php_sapi_name</function>.
+     </simpara>
+    </listitem>
+   </orderedlist>
+  </para>
+  <para>
+   After the primary configuration file step, PHP may additionally scan for
+   <literal>.ini</literal> files in the path specified by the
+   <varname>PHP_INI_SCAN_DIR</varname> environment variable, or, if that is
+   not set, by the
+   <option role="configure">--with-config-file-scan-dir</option> compile time
+   option.
   </para>
   <note>
    <para>
@@ -88,6 +83,79 @@
     PHP to attempt to read &php.ini; from the root filesystem if it exists.
    </para>
   </note>
+  <sect2 xml:id="configuration.file.windows">
+   <title>Windows registry location</title>
+
+   <para>
+    On Windows, PHP may obtain the location of the primary configuration
+    file from the registry using the <literal>IniFilePath</literal> value.
+   </para>
+
+   <para>
+    The exact registry keys examined depend on the PHP version and whether
+    PHP and Windows are 32-bit or 64-bit.
+   </para>
+
+   <para>
+    For 32-bit PHP on a 32-bit OS, or 64-bit PHP on a 64-bit OS, the
+    following registry keys are examined in order:
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\PHP\x.y.z]</literal>
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\PHP\x.y]</literal>
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\PHP\x]</literal>
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\PHP]</literal>
+      </simpara>
+     </listitem>
+    </itemizedlist>
+    In these keys, <literal>x</literal>, <literal>y</literal>, and
+    <literal>z</literal> refer to the PHP major, minor, and release
+    versions. If any of these keys contains an
+    <literal>IniFilePath</literal> value, the first one found is used.
+   </para>
+
+   <para>
+    For 32-bit PHP on a 64-bit OS, the following registry keys are
+    examined in order:
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\PHP\x.y.z]</literal>
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\PHP\x.y]</literal>
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\PHP\x]</literal>
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       <literal>[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\PHP]</literal>
+      </simpara>
+     </listitem>
+    </itemizedlist>
+    If any of these keys contains an <literal>IniFilePath</literal> value,
+    the first one found is used.
+   </para>
+  </sect2>
   <simpara>
    Environment variables can be referenced within configuration values
    in &php.ini; as shown below. As of PHP 8.3.0, a fallback value can
