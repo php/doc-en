@@ -1,0 +1,39 @@
+name: check-attribute-order
+
+# Warn when xml:id appears before xmlns declarations in XML tags.
+# Per the style guide, namespace declarations (xmlns, xmlns:xlink, xmlns:xi)
+# should come before xml:id on root/top-level elements.
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  check-attr-order:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Get changed XML files
+        id: changed
+        run: |
+          files=$(git diff --name-only --diff-filter=ACMR ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- '*.xml')
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$files" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Check xml:id before xmlns
+        if: steps.changed.outputs.files != ''
+        run: |
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            [ ! -f "$file" ] && continue
+            grep -n 'xml:id="[^"]*".*xmlns=' "$file" | while IFS=: read -r line _; do
+              echo "::warning file=$file,line=$line::xml:id should be placed after xmlns declarations (see docs/style.md)"
+            done
+          done <<< "${{ steps.changed.outputs.files }}"
