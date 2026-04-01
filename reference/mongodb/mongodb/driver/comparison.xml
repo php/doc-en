@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<refentry xml:id="mongodb-driver-object.comparison" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <refnamediv>
+  <refname>MongoDB type comparison</refname>
+  <refpurpose>Compares two instances of various types specific to the MongoDB driver</refpurpose>
+ </refnamediv>
+
+ <refsect1 role="description">
+  &reftitle.description;
+  <para>
+   This section describes the comparison of various types specific to the MongoDB driver using the standard comparison 
+   operators (e.g. <code>&lt;</code>, <code>&gt;</code>, <code>==</code>, etc.). The comparison of two instances of a 
+   given type is based on the properties of that type, and may not be consistent across all types.
+   
+   For example, `MongoDB\BSON\Binary` comparison is based on the length of its data, while `MongoDB\BSON\Int64` 
+   comparison is based on its integer value. Certain types, such as `MongoDB\Driver\WriteConcern`, are considered to 
+   have an arbitrary sort order and are only compared for equality. In such cases, two instances are considered equal 
+   if all of their properties are equal, and not equal otherwise (where $a will always be considered greater than $b, 
+   regardless of its properties).
+   
+   If comparison between instances of two different types is attempted, then a fallback object comparison is performed
+   based on the size of the instances.
+  </para>
+ </refsect1>
+ 
+ <refsect1 role="description">
+  <title>Comparison properties per type</title>
+  <para>
+   The following table lists the properties used when comparing two instances of the same type,
+   in the order they are evaluated. Types marked as equality-only do not support a meaningful sort
+   order: the left-hand operand is always considered greater than the right-hand operand when the
+   instances are not equal, regardless of their actual property values.
+  </para>
+  <table>
+   <title>Properties used for comparison per type</title>
+   <tgroup cols="3">
+    <thead>
+     <row>
+      <entry>Type</entry>
+      <entry>Properties used for comparison (in order)</entry>
+      <entry>Equality only</entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry><classname>MongoDB\BSON\Binary</classname></entry>
+      <entry>data length, type, data</entry>
+      <entry>&false;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\BSON\DBPointer</classname></entry>
+      <entry>ref, id</entry>
+      <entry>&false;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\BSON\Document</classname></entry>
+      <entry>raw BSON bytes</entry>
+      <entry>&false;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\BSON\Int64</classname></entry>
+      <entry>integer value</entry>
+      <entry>&false;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\BSON\Javascript</classname></entry>
+      <entry>code (scope is not considered)</entry>
+      <entry>&false;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\BSON\MaxKey</classname></entry>
+      <entry>(none; all instances are equal)</entry>
+      <entry>&true;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\BSON\MinKey</classname></entry>
+      <entry>(none; all instances are equal)</entry>
+      <entry>&true;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\BSON\ObjectId</classname></entry>
+      <entry>OID bytes</entry>
+      <entry>&false;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\BSON\PackedArray</classname></entry>
+      <entry>raw BSON bytes</entry>
+      <entry>&false;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\BSON\Regex</classname></entry>
+      <entry>pattern, flags</entry>
+      <entry>&false;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\BSON\Symbol</classname></entry>
+      <entry>value</entry>
+      <entry>&false;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\BSON\Timestamp</classname></entry>
+      <entry>timestamp, increment</entry>
+      <entry>&false;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\BSON\Undefined</classname></entry>
+      <entry>(none; all instances are equal)</entry>
+      <entry>&true;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\BSON\UTCDateTime</classname></entry>
+      <entry>milliseconds since Unix epoch</entry>
+      <entry>&false;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\Driver\ReadConcern</classname></entry>
+      <entry>level</entry>
+      <entry>&false;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\Driver\ReadPreference</classname></entry>
+      <entry>mode, tag sets, maxStalenessSeconds</entry>
+      <entry>&true;</entry>
+     </row>
+     <row>
+      <entry><classname>MongoDB\Driver\WriteConcern</classname></entry>
+      <entry>w, journal</entry>
+      <entry>&true;</entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </table>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title>MongoDB type comparison examples</title>
+   <programlisting role="php">
+    <![CDATA[
+<?php
+
+var_dump(new ReadConcern(ReadConcern::LOCAL) == new ReadConcern(ReadConcern::LOCAL));
+// Order determined by string comparison of levels
+var_dump(new ReadConcern(ReadConcern::LOCAL) < new ReadConcern(ReadConcern::AVAILABLE));
+
+// Order is arbitrary; left-hand value will always be considered greater. Only equality checks are meaningful.
+var_dump(new WriteConcern("majority") < new ReadConcern("default"));
+var_dump(new WriteConcern("default") < new ReadConcern("majority"));
+
+// Order is determined by data length
+var_dump(new Binary("foo", 1) < new Binary("foobar", 1));
+
+// Order is determined by object size
+var_dump(new BSON\Binary("foo", 1) < new BSON\Int(1));
+
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+    <![CDATA[
+bool true
+bool true
+bool false
+bool false
+bool true
+bool false
+]]>
+   </screen>
+  </example>
+ </refsect1>
