@@ -8,11 +8,11 @@
   <simpara>
    Persistent connections are links that do not close when the
    execution of your script ends. When a persistent connection is
-   requested, PHP checks if there's already an identical persistent
-   connection (that remained open from earlier) - and if it exists, it
-   uses it. If it does not exist, it creates the link. An 'identical'
-   connection is a connection that was opened to the same host, with
-   the same username and the same password (where applicable).
+   requested, PHP checks whether an identical persistent
+   connection (that remained open from earlier) already exists; if one does,
+   it is reused, and if not, a new link is created. An 'identical'
+   connection is one opened to the same host with
+   the same username and password (where applicable).
   </simpara>
   <simpara>
    There's no method of requesting a specific connection, or guaranteeing
@@ -51,16 +51,16 @@
   </simpara>
   <simpara>
    The second, and most popular, method is to run PHP-FPM, or PHP as a module
-   in a multiprocess web server, which currently only includes Apache.
+   in a multiprocess web server (currently only Apache).
    These setups typically have one process (the parent) which
-   coordinates a set of processes (its children) who actually do the
+   coordinates a set of processes (its children) that actually do the
    work of serving up web pages. When a request comes in from a
    client, it is handed off to one of the children that is not already
    serving another client. This means that when the same client makes
    a second request to the server, it may be served by a different
-   child process than the first time. When opening a persistent connection,
-   every following page requesting SQL services can reuse the same
-   established connection to the SQL server.
+   child process than the first time. Once a persistent connection has been
+   opened, any subsequent page served by the same child process can reuse the
+   already established connection to the SQL server.
   </simpara>
   <note>
    <para>
@@ -91,42 +91,39 @@
  <simplesect xml:id="persistent-connections.why">
   <title>Why Use Them?</title>
   <simpara>
-   Persistent connections are good if the overhead to create a link to your
-   SQL server is high. Whether or not this overhead is really high depends
-   on many factors. Like, what kind of database it is, whether or not
-   it sits on the same computer on which your web server sits, how
-   loaded the machine the SQL server sits on is and so forth. The
-   bottom line is that if that connection overhead is high, persistent
-   connections help you considerably. They cause the child process to
-   simply connect only once for its entire lifespan, instead of every
-   time it processes a page that requires connecting to the SQL
-   server. This means that for every child that opened a persistent
-   connection will have its own open persistent connection to the
-   server. For example, if you had 20 different child processes that
-   ran a script that made a persistent connection to your SQL server,
-   you'd have 20 different connections to the SQL server, one from
-   each child.
+   Persistent connections are beneficial when the overhead of creating a link
+   to an SQL server is high. Whether this overhead is significant depends on
+   many factors, such as the type of database, whether it resides on the same
+   machine as the web server, and how loaded that machine is. When the
+   connection overhead is high, persistent connections can help considerably:
+   each child process connects only once for its entire lifespan, rather than
+   every time it processes a page that requires a connection to the SQL
+   server. This means every child that opens a persistent connection will
+   maintain its own connection to the server. For example, if 20 different
+   child processes each run a script that makes a persistent connection to
+   the SQL server, there will be 20 separate connections to that server, one
+   from each child.
   </simpara>
  </simplesect>
 
  <simplesect xml:id="persistent-connections.drawbacks.conn-limits">
   <title>Potential Drawbacks: Connection Limits</title>
   <simpara>
-   Note, however, that this can have some drawbacks if you are using a
+   Note, however, that this can have drawbacks if you are using a
    database with connection limits that are exceeded by persistent
    child connections. If your database has a limit of 16 simultaneous
-   connections, and in the course of a busy server session, 17 child
-   threads attempt to connect, one will not be able to. If there are
-   bugs in your scripts which do not allow the connections to shut
-   down (such as infinite loops), the database with only 16 connections
+   connections, and during a busy server session 17 child
+   processes attempt to connect, one of them will fail. If there are
+   bugs in your scripts that prevent connections from shutting
+   down (such as infinite loops), a database with only 16 connections
    may be rapidly swamped.
   </simpara>
   <simpara>
    Persistent connections will usually increase the number of connections open
-   at any given time because idle workers will still hold the connections for
-   the previous requests they served. If a large number of workers is spun up to
-   handle an influx of requests, the connections they opened will remain until
-   the worker is killed or the database server closes the connection.
+   at any given time, because idle workers still hold on to the connections they
+   opened for previous requests. If a large number of workers are spun up to
+   handle a spike in traffic, the connections they opened will remain until
+   the worker is terminated or the database server closes the connection.
   </simpara>
   <simpara>
    Ensure that the maximum number of connections allowed by the database server
