@@ -1,0 +1,79 @@
+name: DocBook Lint
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  docbook-cs:
+    name: DocBook Style Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout doc-en
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: en
+          fetch-depth: 0
+
+      - name: Checkout php/doc-base
+        uses: actions/checkout@v4
+        with:
+          path: doc-base
+          repository: php/doc-base
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: dom, libxml, simplexml
+
+      - name: Build documentation
+        run: php doc-base/configure.php --disable-libxml-check --enable-xml-details --redirect-stderr-to-stdout --with-lang=en
+
+      - name: Install docbook-cs
+        working-directory: en
+        run: composer require jordikroon/docbook-cs
+
+      - name: Fetch base branch
+        working-directory: en
+        run: git fetch origin ${{ github.base_ref }} --depth=1
+
+      - name: Run docbook-cs with diff
+        working-directory: en
+        run: |
+          set -o pipefail
+          git diff origin/${{ github.base_ref }}...HEAD | vendor/bin/docbook-cs \
+            --report=checkstyle \
+            --diff \
+            --no-colors > docbook-report.xml
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docbook-report
+          path: en/docbook-report.xml
+
+      - name: Setup reviewdog
+        if: always()
+        uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: latest
+
+      - name: Report violations via reviewdog
+        if: always()
+        working-directory: en
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat docbook-report.xml | reviewdog \
+            -f=checkstyle \
+            -name="docbook-cs" \
+            -reporter=github-pr-check \
+            -level=error \
+            -fail-level=any \
+            -filter-mode=nofilter
