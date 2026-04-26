@@ -552,6 +552,194 @@ probe process("sapi/cli/php").provider("php").mark("request__startup") {
    </para>
   </sect2>
  </sect1>
+ <sect1 xml:id="features.dtrace.bpftrace">
+  <title>Using bpftrace with PHP DTrace Static Probes</title>
+  <simpara>
+   On Linux distributions with a kernel that supports eBPF, the
+   bpftrace utility can attach to PHP's DTrace USDT probes directly,
+   without requiring SystemTap.
+  </simpara>
+  <sect2 xml:id="features.dtrace.bpftrace-install">
+   <title>Installing bpftrace</title>
+   <para>
+    Install bpftrace using the distribution's package manager. For
+    example, on Oracle Linux, RHEL, or Fedora:
+    <informalexample>
+     <programlisting role="shell">
+<![CDATA[
+# dnf install bpftrace
+]]>
+     </programlisting>
+    </informalexample>
+    Or, on Debian or Ubuntu:
+    <informalexample>
+     <programlisting role="shell">
+<![CDATA[
+# apt install bpftrace
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+   <simpara>
+    The examples below assume the target PHP binary is installed at
+    <filename>/usr/bin/php</filename>.
+   </simpara>
+   <simpara>
+    The same USDT probes are also exposed by other SAPIs built from the same source tree, so the
+    probe target may instead be the Apache module
+    (<filename>libphp.so</filename>) or the FastCGI Process Manager
+    binary (<filename>php-fpm</filename>); substitute the appropriate
+    path or attach by PID with <literal>-p</literal> as needed.
+   </simpara>
+   <simpara>
+    Make sure the target binary is built with DTrace and that the environment is configured properly.
+    See <link linkend="features.dtrace.install">Configuring PHP for DTrace Static Probes</link> for details.
+   </simpara>
+   <para>
+    The static probes in PHP can be listed using
+    <filename>bpftrace</filename>:
+    <informalexample>
+     <programlisting>
+<![CDATA[
+# bpftrace -l 'usdt:/usr/bin/php:php:*'
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+
+   <para>
+    This outputs:
+    <informalexample>
+     <programlisting>
+<![CDATA[
+usdt:/usr/bin/php:php:compile__file__entry
+usdt:/usr/bin/php:php:compile__file__return
+usdt:/usr/bin/php:php:error
+usdt:/usr/bin/php:php:exception__caught
+usdt:/usr/bin/php:php:exception__thrown
+usdt:/usr/bin/php:php:execute__entry
+usdt:/usr/bin/php:php:execute__return
+usdt:/usr/bin/php:php:function__entry
+usdt:/usr/bin/php:php:function__return
+usdt:/usr/bin/php:php:request__shutdown
+usdt:/usr/bin/php:php:request__startup
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+
+   <para>
+    <example>
+     <title><filename>all_probes.bt</filename> for tracing all PHP Static Probes with bpftrace</title>
+     <programlisting role="shell">
+<![CDATA[
+#!/usr/bin/env bpftrace
+
+usdt:/usr/bin/php:php:compile__file__entry
+{
+    printf("Probe compile__file__entry\n");
+    printf("  compile_file %s\n", str(arg0));
+    printf("  compile_file_translated %s\n", str(arg1));
+}
+usdt:/usr/bin/php:php:compile__file__return
+{
+    printf("Probe compile__file__return\n");
+    printf("  compile_file %s\n", str(arg0));
+    printf("  compile_file_translated %s\n", str(arg1));
+}
+usdt:/usr/bin/php:php:error
+{
+    printf("Probe error\n");
+    printf("  errormsg %s\n", str(arg0));
+    printf("  request_file %s\n", str(arg1));
+    printf("  lineno %d\n", (int32)arg2);
+}
+usdt:/usr/bin/php:php:exception__caught
+{
+    printf("Probe exception__caught\n");
+    printf("  classname %s\n", str(arg0));
+}
+usdt:/usr/bin/php:php:exception__thrown
+{
+    printf("Probe exception__thrown\n");
+    printf("  classname %s\n", str(arg0));
+}
+usdt:/usr/bin/php:php:execute__entry
+{
+    printf("Probe execute__entry\n");
+    printf("  request_file %s\n", str(arg0));
+    printf("  lineno %d\n", (int32)arg1);
+}
+usdt:/usr/bin/php:php:execute__return
+{
+    printf("Probe execute__return\n");
+    printf("  request_file %s\n", str(arg0));
+    printf("  lineno %d\n", (int32)arg1);
+}
+usdt:/usr/bin/php:php:function__entry
+{
+    printf("Probe function__entry\n");
+    printf("  function_name %s\n", str(arg0));
+    printf("  request_file %s\n", str(arg1));
+    printf("  lineno %d\n", (int32)arg2);
+    printf("  classname %s\n", str(arg3));
+    printf("  scope %s\n", str(arg4));
+}
+usdt:/usr/bin/php:php:function__return
+{
+    printf("Probe function__return\n");
+    printf("  function_name %s\n", str(arg0));
+    printf("  request_file %s\n", str(arg1));
+    printf("  lineno %d\n", (int32)arg2);
+    printf("  classname %s\n", str(arg3));
+    printf("  scope %s\n", str(arg4));
+}
+usdt:/usr/bin/php:php:request__shutdown
+{
+    printf("Probe request__shutdown\n");
+    printf("  file %s\n", str(arg0));
+    printf("  request_uri %s\n", str(arg1));
+    printf("  request_method %s\n", str(arg2));
+}
+usdt:/usr/bin/php:php:request__startup
+{
+    printf("Probe request__startup\n");
+    printf("  file %s\n", str(arg0));
+    printf("  request_uri %s\n", str(arg1));
+    printf("  request_method %s\n", str(arg2));
+}
+]]>
+     </programlisting>
+    </example>
+   </para>
+
+   <para>
+    The above script will trace all core PHP static probe points
+    throughout the duration of a running PHP script. bpftrace requires
+    root privileges:
+    <informalexample>
+     <programlisting>
+<![CDATA[
+# USE_ZEND_DTRACE=1 bpftrace -c '/usr/bin/php test.php' all_probes.bt
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+
+   <para>
+    To trace an already-running PHP process (for instance, a
+    <filename>php-fpm</filename> worker or an Apache process loading
+    <filename>libphp.so</filename>), attach by PID:
+    <informalexample>
+     <programlisting>
+<![CDATA[
+# bpftrace -p $PID all_probes.bt
+]]>
+     </programlisting>
+    </informalexample>
+   </para>
+  </sect2>
+ </sect1>
 </chapter>
 
 <!-- Keep this comment at the end of the file
