@@ -18,8 +18,6 @@ RUN echo 'memory_limit = 512M' >> /usr/local/etc/php/conf.d/local.ini
 
 ENV FORMAT=xhtml
 
-ENV FORMAT=xhtml
-
 CMD ["sh", "-c", "\
 php doc-base/configure.php && \
 exec php phd/render.php \
