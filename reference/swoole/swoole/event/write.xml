@@ -1,23 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-
 <refentry xml:id="swoole-event.write" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Swoole\Event::write</refname>
-  <refpurpose>Write data to the socket.</refpurpose>
+  <refpurpose>Write data to socket asynchronously</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <modifier>static</modifier> <type>void</type><methodname>Swoole\Event::write</methodname>
-   <methodparam><type>string</type><parameter>fd</parameter></methodparam>
-   <methodparam><type>string</type><parameter>data</parameter></methodparam>
+   <modifier>public</modifier> <modifier>static</modifier> <type>bool</type><methodname>Swoole\Event::write</methodname>
+   <methodparam><type>mixed</type><parameter>fd</parameter></methodparam>
+   <methodparam><type>mixed</type><parameter>data</parameter></methodparam>
   </methodsynopsis>
   <para>
-
+   Makes data sending asynchronous for stream/sockets resources.
   </para>
-
+  <note>
+   <simpara>
+    If data is continuously written to a socket but the peer cannot read fast enough, the socket buffer
+    will eventually fill up. In this case, the Swoole underlying layer will store the excess data
+    in an in-memory buffer and wait for the writable event to trigger before attempting to write
+    to the socket again. However, if the in-memory buffer also becomes full, Swoole will throw a
+    "pipe buffer overflow, reactor will block" error and switch to blocking mode, pausing further
+    writes until space becomes available.
+   </simpara>
+  </note>
+  <note>
+   <simpara>
+    The buffer-full return of false is an atomic operation—it guarantees
+    either complete success (all data written) or total failure (nothing written).
+   </simpara>
+  </note>
+  <warning>
+   <simpara>
+    Event::write cannot be used with SSL/TLS-encrypted streams or sockets (tunneled connections).
+   </simpara>
+  </warning>
+  <warning>
+   <simpara>
+    Upon successful execution, Event::write will automatically switch the $socket to non-blocking mode.
+   </simpara>
+  </warning>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -27,7 +51,7 @@
     <term><parameter>fd</parameter></term>
     <listitem>
      <para>
-      
+      File descriptor (stream/socket resource, integer, or object).
      </para>
     </listitem>
    </varlistentry>
@@ -35,7 +59,7 @@
     <term><parameter>data</parameter></term>
     <listitem>
      <para>
-      
+      Data to send (length must not exceed socket buffer size).
      </para>
     </listitem>
    </varlistentry>
@@ -45,11 +69,32 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <para>
-   
+   &return.success;
   </para>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <para>
+   <example>
+    <title><function>Swoole\Event::write</function> example</title>
+    <programlisting role="php">
+     <![CDATA[
+<?php
+use Swoole\Event;
 
+$fp = stream_socket_client('tcp://127.0.0.1:9501');
+$data = str_repeat('A', 1024 * 1024*2);
+Event::add($fp, function($fp) {
+     echo fread($fp);
+});
+Event::write($fp, $data);
+?>
+]]>
+    </programlisting>
+   </example>
+  </para>
+ </refsect1>
 </refentry>
 
 <!-- Keep this comment at the end of the file
