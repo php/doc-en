@@ -4,7 +4,7 @@
  <refnamediv>
   <refname>mysqli::change_user</refname>
   <refname>mysqli_change_user</refname>
-  <refpurpose>Changes the user of the specified database connection</refpurpose>
+  <refpurpose>Changes the user of the database connection</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -13,7 +13,7 @@
   <methodsynopsis role="mysqli">
    <modifier>public</modifier> <type>bool</type><methodname>mysqli::change_user</methodname>
    <methodparam><type>string</type><parameter>username</parameter></methodparam>
-   <methodparam><type>string</type><parameter>password</parameter></methodparam>
+   <methodparam><modifier role="attribute">#[\SensitiveParameter]</modifier><type>string</type><parameter>password</parameter></methodparam>
    <methodparam><type class="union"><type>string</type><type>null</type></type><parameter>database</parameter></methodparam>
   </methodsynopsis>
   <para>&style.procedural;</para>
@@ -21,12 +21,15 @@
    <type>bool</type><methodname>mysqli_change_user</methodname>
    <methodparam><type>mysqli</type><parameter>mysql</parameter></methodparam>
    <methodparam><type>string</type><parameter>username</parameter></methodparam>
-   <methodparam><type>string</type><parameter>password</parameter></methodparam>
+   <methodparam><modifier role="attribute">#[\SensitiveParameter]</modifier><type>string</type><parameter>password</parameter></methodparam>
    <methodparam><type class="union"><type>string</type><type>null</type></type><parameter>database</parameter></methodparam>
   </methodsynopsis>
   <para>
-   Changes the user of the specified database connection and sets the current
-   database.
+   Attempts to connect to the specified database using the provided credentials.
+  </para>
+  <para>
+   In comparison to <methodname>mysqli::connect</methodname>, this method will
+   not disconnect the current connection if the new connection cannot be opened.
   </para>
   <para>
    In order to successfully change users a valid <parameter>username</parameter> and
@@ -61,12 +64,8 @@
      <term><parameter>database</parameter></term>
      <listitem>
       <para>
-       The database to change to.
-      </para>
-      <para>
-       If desired, the &null; value may be passed resulting in only changing
-       the user and not selecting a database. To select a database in this
-       case use the <function>mysqli_select_db</function> function.
+       The database name. If &null; or an empty string is passed,
+       the connection to the server will be opened with no default database.
       </para>
      </listitem>
     </varlistentry>
@@ -89,82 +88,51 @@
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><methodname>mysqli::change_user</methodname> example</title>
+   <title>Resetting the connection session</title>
    <para>&style.oop;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
 
-/* connect database test */
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $mysqli = new mysqli("localhost", "my_user", "my_password", "test");
 
-/* check connection */
-if (mysqli_connect_errno()) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
-/* Set Variable a */
 $mysqli->query("SET @a:=1");
 
-/* reset all and select a new database */
 $mysqli->change_user("my_user", "my_password", "world");
 
-if ($result = $mysqli->query("SELECT DATABASE()")) {
-    $row = $result->fetch_row();
-    printf("Default database: %s\n", $row[0]);
-    $result->close();
-}
+$result = $mysqli->query("SELECT DATABASE()");
+$row = $result->fetch_row();
+printf("Default database: %s\n", $row[0]);
 
-if ($result = $mysqli->query("SELECT @a")) {
-    $row = $result->fetch_row();
-    if ($row[0] === NULL) {
-        printf("Value of variable a is NULL\n");
-    }
-    $result->close();
+$result = $mysqli->query("SELECT @a");
+$row = $result->fetch_row();
+if ($row[0] === null) {
+    printf("Value of variable a is NULL\n");
 }
-
-/* close connection */
-$mysqli->close();
-?>
 ]]>
    </programlisting>
    <para>&style.procedural;</para>
    <programlisting role="php">
 <![CDATA[
 <?php
-/* connect database test */
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $link = mysqli_connect("localhost", "my_user", "my_password", "test");
 
-/* check connection */
-if (!$link) {
-    printf("Connect failed: %s\n", mysqli_connect_error());
-    exit();
-}
-
-/* Set Variable a */
 mysqli_query($link, "SET @a:=1");
 
-/* reset all and select a new database */
 mysqli_change_user($link, "my_user", "my_password", "world");
 
-if ($result = mysqli_query($link, "SELECT DATABASE()")) {
-    $row = mysqli_fetch_row($result);
-    printf("Default database: %s\n", $row[0]);
-    mysqli_free_result($result);
-}
+$result = mysqli_query($link, "SELECT DATABASE()");
+$row = mysqli_fetch_row($result);
+printf("Default database: %s\n", $row[0]);
 
-if ($result = mysqli_query($link, "SELECT @a")) {
-    $row = mysqli_fetch_row($result);
-    if ($row[0] === NULL) {
-        printf("Value of variable a is NULL\n");
-    }
-    mysqli_free_result($result);
+$result = mysqli_query($link, "SELECT @a");
+$row = mysqli_fetch_row($result);
+if ($row[0] === null) {
+    printf("Value of variable a is NULL\n");
 }
-
-/* close connection */
-mysqli_close($link);
-?>
 ]]>
    </programlisting>
    &examples.outputs;
@@ -172,6 +140,30 @@ mysqli_close($link);
 <![CDATA[
 Default database: world
 Value of variable a is NULL
+]]>
+   </screen>
+  </example>
+  <example>
+   <title>If <parameter>database</parameter> is &null; the connection is opened without selecting any default database</title>
+   <para>&style.oop;</para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = new mysqli("localhost", "my_user", "my_password", "test");
+
+$mysqli->change_user("my_user", "my_password", null);
+
+$result = $mysqli->query("SELECT DATABASE()");
+$row = $result->fetch_row();
+printf("Default database: %s\n", $row[0]);
+]]>
+   </programlisting>
+   &examples.outputs;
+   <screen>
+<![CDATA[
+Default database:
 ]]>
    </screen>
   </example>

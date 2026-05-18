@@ -4,7 +4,7 @@
  <refnamediv>
   <refname>is_callable</refname>
   <refpurpose>
-   Verify that a value can be called as a function from the current scope.
+   Verify that a value can be called as a function from the current scope
   </refpurpose>
  </refnamediv>
 
@@ -17,7 +17,9 @@
    <methodparam choice="opt"><type>string</type><parameter role="reference">callable_name</parameter><initializer>&null;</initializer></methodparam>
   </methodsynopsis>
   <para>
-   Verify that a value is a <type>callable</type>.
+   Verifies that <parameter>value</parameter> is a <type>callable</type>,
+   or that it can be called using the
+   <function>call_user_func</function> function.
   </para>
  </refsect1>
 
@@ -29,7 +31,7 @@
      <term><parameter>value</parameter></term>
      <listitem>
       <para>
-       The value to check
+       The value to be checked.
       </para>
      </listitem>
     </varlistentry>
@@ -38,10 +40,11 @@
      <listitem>
       <para>
        If set to &true; the function only verifies that
-       <parameter>value</parameter> might be a function or method. It will only
-       reject simple variables that are not strings, or an array that does
-       not have a valid structure to be used as a callback. The valid ones
-       are supposed to have only 2 entries, the first of which is an object
+       <parameter>value</parameter> might be a function or method. It will
+       reject any values that are not <link linkend="object.invoke">invokable</link> objects,
+       <classname>Closure</classname>, &string;s, or &array;s that do not have
+       a valid structure to be used as a callback. A valid callable array
+       has 2 entries, the first of which is an object
        or a string, and the second a string.
       </para>
      </listitem>
@@ -50,10 +53,10 @@
      <term><parameter>callable_name</parameter></term>
      <listitem>
       <para>
-       Receives the "callable name".  In the example below it is
-       "someClass::someMethod".  Note, however, that despite the implication
-       that someClass::SomeMethod() is a callable static method, this is not
-       the case.
+       Receives the "callable name", e.g.
+       <literal>"SomeClass::someMethod"</literal>. Note, however, that despite
+       the implication that <literal>SomeClass::someMethod()</literal> is a
+       callable static method, this is not the case.
       </para>
      </listitem>
     </varlistentry>
@@ -73,56 +76,68 @@
   &reftitle.examples;
   <para>
    <example>
-    <title><function>is_callable</function> example</title>
+    <title>Checking whether a string can be called as a function</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-//  How to check a variable to see if it can be called
-//  as a function.
 
-//
-//  Simple variable containing a function
-//
-
-function someFunction() 
-{
-}
+function someFunction() {}
 
 $functionVariable = 'someFunction';
 
-var_dump(is_callable($functionVariable, false, $callable_name));  // bool(true)
+var_dump(is_callable($functionVariable, false, $callable_name));
 
-echo $callable_name, "\n";  // someFunction
-
-//
-//  Array containing a method
-//
-
-class someClass {
-
-  function someMethod() 
-  {
-  }
-
-}
-
-$anObject = new someClass();
-
-$methodVariable = array($anObject, 'someMethod');
-
-var_dump(is_callable($methodVariable, true, $callable_name));  //  bool(true)
-
-echo $callable_name, "\n";  //  someClass::someMethod
+var_dump($callable_name);
 
 ?>
 ]]>
     </programlisting>
-   </example>   
+    &example.outputs;
+    <screen>
+<![CDATA[
+bool(true)
+string(12) "someFunction"
+]]>
+    </screen>
+   </example>
+   <example>
+    <title>Checking whether an array can be called as a function</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+class SomeClass
+{
+    public function someMethod() {}
+}
+
+$anObject = new SomeClass();
+
+$methodVariable = [$anObject, 'someMethod'];
+
+var_dump(is_callable($methodVariable, true, $callable_name));
+
+var_dump($callable_name);
+
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+bool(true)
+string(21) "SomeClass::someMethod"
+]]>
+    </screen>
+   </example>
    <example>
     <title><function>is_callable</function> and constructors</title>
     <simpara>
-     <function>is_callable</function> reports constructors as
-     not being callable.
+     Despite the fact that constructors are the methods that are called when
+     an object is created, they are not static methods and
+     <function>is_callable</function> will return &false; for them. It's not
+     possible to use <function>is_callable</function> to check if a class can
+     be instantiated from the current scope.
     </simpara>
     <programlisting role="php">
 <![CDATA[
@@ -131,13 +146,19 @@ echo $callable_name, "\n";  //  someClass::someMethod
 class Foo
 {
     public function __construct() {}
+
     public function foo() {}
 }
 
 var_dump(
-    is_callable(array('Foo', '__construct')),
-    is_callable(array('Foo', 'foo'))
+    is_callable(['Foo', '__construct']),
+    is_callable(['Foo', 'foo'])
 );
+
+$foo = new Foo();
+var_dump(is_callable([$foo, '__construct']));
+
+?>
 ]]>
     </programlisting>
     &example.outputs;
@@ -145,6 +166,7 @@ var_dump(
 <![CDATA[
 bool(false)
 bool(false)
+bool(true)
 ]]>
     </screen>
    </example>
@@ -175,6 +197,7 @@ bool(false)
   &reftitle.seealso;
   <para>
    <simplelist>
+    <member><function>call_user_func</function></member>
     <member><function>function_exists</function></member>
     <member><function>method_exists</function></member>
    </simplelist>
