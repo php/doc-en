@@ -1,0 +1,792 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sect1 xml:id="migration84.other-changes">
+ <title>Other Changes</title>
+
+ <sect2 xml:id="migration84.other-changes.core">
+  <title>Core changes</title>
+
+  <sect3 xml:id="migration84.other-changes.core.closures">
+   <title>Closures</title>
+
+   <simpara>
+    Closure names have been adjusted to include the parent function's name
+    and the line of definition to make them easier to distinguish, for example
+    within stack traces.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.core.fibers">
+   <title>Fibers</title>
+
+   <simpara>
+    Fiber switching during destructor execution is now allowed. It was previously
+    blocked due to conflicts with garbage collection.
+   </simpara>
+
+   <simpara>
+    Destructors may now be executed in a separate Fiber:
+   </simpara>
+
+   <simpara>
+    When garbage collection is triggered in a Fiber,
+    destructors called by the GC are executed in a separate Fiber:
+    the gc_destructor_fiber.
+    If this Fiber suspends, a new one is created to execute the remaining
+    destructors.
+    The previous gc_destructor_fiber is not referenced anymore by the GC
+    and may be collected if it's not referenced anywhere else.
+    Objects whose destructor is suspended will not be collected until the
+    destructor returns or the <classname>Fiber</classname> is collected.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.core.output">
+   <title>Output Handlers</title>
+
+   <simpara>
+    Output handler status flags passed to the <parameter>flags</parameter>
+    parameter of <function>ob_start</function> are now cleared.
+   </simpara>
+
+   <simpara>
+    <function>output_add_rewrite_var</function> now uses
+    <link linkend="ini.url-rewriter.hosts"><literal>url_rewriter.hosts</literal></link>
+    instead of
+    <link linkend="ini.session.trans-sid-hosts"><literal>session.trans_sid_hosts</literal></link>
+    for selecting hosts that will be rewritten.
+   </simpara>
+  </sect3>
+ </sect2>
+
+ <sect2 xml:id="migration84.other-changes.sapi">
+  <title>Changes in SAPI Modules</title>
+
+  <sect3 xml:id="migration84.other-changes.sapi.apache">
+   <title>apache2handler</title>
+
+   <simpara>
+    Support for EOL Apache 2.0 and 2.2 has been removed.
+    Minimum required Apache version is now 2.4.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.sapi.cli">
+   <title>CLI</title>
+
+   <simpara>
+    The builtin server looks for an index file recursively by traversing parent
+    directories in case the specified file cannot be located.
+    This process was previously skipped if the path looked like it was
+    referring to a file, i.e. if the last path component contained a period.
+    In that case, a 404 error was returned.
+    The behavior has been changed to look for an index file in all cases.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.sapi.fpm">
+   <title>FPM</title>
+
+   <simpara>
+    Flushing headers without a body will now succeed.
+    <!-- See GH-12785. -->
+   </simpara>
+
+   <simpara>
+    Status page has a new field to display a memory peak.
+   </simpara>
+
+   <simpara>
+    <!-- TODO Does this need a link? -->
+    The <filename>/dev/poll</filename> <literal>events.mechanism</literal>
+    setting for Solaris/Illumos had been retired.
+   </simpara>
+  </sect3>
+ </sect2>
+
+ <sect2 xml:id="migration84.other-changes.functions">
+  <title>Changed Functions</title>
+
+  <sect3 xml:id="migration84.other-changes.functions.core">
+   <title>Core</title>
+
+   <simpara>
+    <function>trigger_error</function> and <function>user_error</function>
+    now have a return type of <type>true</type> instead of <type>bool</type>.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.dom">
+   <title>DOM</title>
+
+   <simpara>
+    <methodname>DOMDocument::registerNodeClass</methodname>
+    now has a tentative return type of <type>true</type> instead of
+    <type>bool</type>.
+    It could only ever return &true; in practice.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.hash">
+   <title>Hash</title>
+
+   <simpara>
+    <function>hash_update</function>
+    now has a tentative return type of <type>true</type> instead of
+    <type>bool</type>.
+    It could only ever return &true; in practice.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.intl">
+   <title>Intl</title>
+
+   <simpara>
+    <constant>NumberFormatter::ROUND_TOWARD_ZERO</constant> and
+    <constant>NumberFormatter::ROUND_AWAY_FROM_ZERO</constant>
+    have been added as aliases for
+    <constant>NumberFormatter::ROUND_DOWN</constant> and
+    <constant>NumberFormatter::ROUND_UP</constant>
+    to be consistent with the new
+    <constant>PHP_ROUND_<replaceable>*</replaceable></constant> modes.
+   </simpara>
+
+   <simpara>
+    <methodname>ResourceBundle::get</methodname>
+    <!-- TODO Use a proper union type for the return type -->
+    now has a tentative return type of <literal>ResourceBundle|array|string|int|null</literal>.
+   </simpara>
+
+   <simpara>
+    The <function>idn_to_ascii</function> and <function>idn_to_utf8</function>
+    functions now always throw <exceptionname>ValueError</exceptionname>s
+    if the <parameter>domain</parameter> name is empty or too long.
+   </simpara>
+
+   <simpara>
+    The <function>idn_to_ascii</function> and <function>idn_to_utf8</function>
+    functions now always throw <exceptionname>ValueError</exceptionname>
+    if the <parameter>variant</parameter> parameter is not
+    <constant>INTL_IDNA_VARIANT_UTS46</constant>.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.libxml">
+   <title>LibXML</title>
+
+   <simpara>
+    <function>libxml_set_streams_context</function> now immediately throws a
+    <exceptionname>TypeError</exceptionname> when a non-stream-context
+    resource is passed to the function,
+    instead of throwing later when the stream context is used.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.mbstring">
+   <title>MBString</title>
+
+   <simpara>
+    The behavior of <function>mb_strcut</function> is more consistent
+    now on invalid UTF-8 and UTF-16 strings.
+    There is no behavioural change for valid UTF-8 and UTF-16 strings.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.odbc">
+   <title>ODBC</title>
+
+   <simpara>
+    The <parameter>row</parameter> of
+    <function>odbc_fetch_object</function>,
+    <function>odbc_fetch_array</function>, and
+    <function>odbc_fetch_into</function> now have a default value of &null;,
+    consistent with <function>odbc_fetch_row</function>.
+    Previously, the default values were
+    <literal>-1</literal>,
+    <literal>-1</literal>,
+    and <literal>0</literal>,
+    respectively.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.openssl">
+   <title>OpenSSL</title>
+
+   <simpara>
+    The <parameter>extra_attributes</parameter> in
+    <function>openssl_csr_new</function> sets the <acronym>CSR</acronym>
+    attributes instead of subject DN, which incorrectly done previously.
+   </simpara>
+
+   <simpara>
+    The <parameter>dn</parameter> in
+    <function>openssl_csr_new</function> allows setting an <type>array</type>
+    of values for a single entry.
+   </simpara>
+
+   <simpara>
+    New <parameter>serial_hex</parameter> added to
+    <function>openssl_csr_sign</function> to allow setting serial numbers
+    in the hexadecimal format.
+   </simpara>
+
+   <simpara>
+    Parsing ASN.1 UTCTime with <function>openssl_x509_parse</function>
+    fails if seconds are omitted for OpenSSL version below 3.2
+    (<literal>-1</literal> is returned for such fields).
+    OpenSSL version above 3.3 did not load such certificates already.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.pdo">
+   <title>PDO</title>
+
+   <simpara>
+    It is now possible to fetch the value of the
+    <constant>PDO::ATTR_STRINGIFY_FETCHES</constant> attribute with
+    <methodname>PDO::getAttribute</methodname>.
+   </simpara>
+
+   <simpara>
+    A new <constant>PDO::PGSQL_ATTR_RESULT_MEMORY_SIZE</constant>
+    has been added to retrieve the memory usage of query results with
+    <methodname>PDO::getAttribute</methodname> for drivers that support it.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.pdo-firebird">
+   <title>PDO_FIREBIRD</title>
+
+   <simpara>
+    It is now possible to fetch the value of the
+    <!-- TODO Is this a class constant of the driver class? -->
+    <constant>FB_ATTR_DATE_FORMAT</constant>,
+    <constant>FB_ATTR_TIME_FORMAT</constant>,
+    <constant>FB_ATTR_TIMESTAMP_FORMAT</constant>,
+    attributes with
+    <!-- TODO Only for the specific driver class? -->
+    <methodname>PDO::getAttribute</methodname>.
+   </simpara>
+
+   <para>
+    Added new attributes to specify transaction isolation level and access mode.
+    Five constants relating to this functionality have been added:
+
+    <simplelist>
+     <member><constant>Pdo\Firebird::TRANSACTION_ISOLATION_LEVEL</constant></member>
+     <member><constant>Pdo\Firebird::READ_COMMITTED</constant></member>
+     <member><constant>Pdo\Firebird::REPEATABLE_READ</constant></member>
+     <member><constant>Pdo\Firebird::SERIALIZABLE</constant></member>
+     <member><constant>Pdo\Firebird::WRITABLE_TRANSACTION</constant></member>
+    </simplelist>
+   </para>
+
+   <simpara>
+    When using persistent connections, there is now a liveliness check in the
+    constructor.
+   </simpara>
+
+   <simpara>
+    The content that is built changes depending on the value of
+    <constant>FB_API_VER</constant> in
+    <filename class="headerfile">ibase.h</filename>.
+    A new static method <methodname>Pdo\Firebird::getApiVersion</methodname>
+    can be used to obtain this information.
+    This information is also now referenced in <function>phpinfo</function>.
+   </simpara>
+
+   <para>
+    Five new data types are now available:
+    <simplelist type="inline">
+     <member><literal>INT128</literal></member>
+     <member><literal>DEC16</literal></member>
+     <member><literal>DEC34</literal></member>
+     <member><literal>TIMESTAMP_TZ</literal></member>
+     <member><literal>TIME_TZ</literal></member>
+    </simplelist>
+    .
+    These are available starting with Firebird 4.0.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.pdo-mysql">
+   <title>PDO_MYSQL</title>
+
+   <simpara>
+    It is now possible to fetch the value of the
+    <constant>PDO::ATTR_FETCH_TABLE_NAMES</constant> attribute with
+    <!-- TODO Only for the specific driver class? -->
+    <methodname>PDO::getAttribute</methodname>.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.pdo-pgsql">
+   <title>PDO_PGSQL</title>
+
+   <simpara>
+    Support retrieving the memory usage of queries for
+    <constant>PDO::PGSQL_ATTR_RESULT_MEMORY_SIZE</constant>.
+   </simpara>
+
+   <simpara>
+    If the column is of type <literal>FLOAT4OID</literal> or
+    <literal>FLOAT8OID</literal> the value will now be returned as a
+    <type>float</type> instead of a <type>string</type>.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.pgsql">
+   <title>PGSQL</title>
+
+   <simpara>
+    The <parameter>conditions</parameter> parameter of
+    <function>pg_select</function> is now optional and accepts an empty array.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.phar">
+   <title>Phar</title>
+
+   <para>
+    The
+    <simplelist type="inline">
+     <member><methodname>Phar::setAlias</methodname></member>
+     <member><methodname>Phar::setDefaultStub</methodname></member>
+    </simplelist>
+    methods now have a tentative return type of <type>true</type>
+    instead of <type>bool</type>.
+   </para>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.posix">
+   <title>POSIX</title>
+
+   <simpara>
+    <function>posix_isatty</function> now sets the error number when the
+    file descriptor/stream argument is invalid.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.reflection">
+   <title>Reflection</title>
+
+   <simpara>
+    <methodname>ReflectionGenerator::getFunction</methodname>
+    may now be called after the generator finished executing.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.sockets">
+   <title>Sockets</title>
+
+   <simpara>
+    The <parameter>backlog</parameter> parameter of
+    <function>socket_create_listen</function> now has a default value of
+    <constant>SOMAXCONN</constant>.
+    Previously, it was <literal>128</literal>.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.sodium">
+   <title>Sodium</title>
+
+   <simpara>
+    The <function>sodium_crypto_aead_aes256gcm_<replaceable>*</replaceable></function>
+    functions are now available on aarch64 CPUs with the ARM cryptographic
+    extensions.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.spl">
+   <title>SPL</title>
+
+   <para>
+    The
+    <simplelist type="inline">
+     <member><methodname>SplPriorityQueue::insert</methodname></member>
+     <member><methodname>SplPriorityQueue::recoverFromCorruption</methodname></member>
+     <member><methodname>SplHeap::insert</methodname></member>
+     <member><methodname>SplHeap::recoverFromCorruption</methodname></member>
+    </simplelist>
+    methods now have a tentative return type of <type>true</type>
+    instead of <type>bool</type>.
+   </para>
+
+   <simpara>
+    <classname>SplObjectStorage</classname> now implements
+    <interfacename>SeekableIterator</interfacename>.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.functions.standard">
+   <title>Standard</title>
+
+   <simpara>
+
+    The default <literal>'cost'</literal> value for the <constant>PASSWORD_BCRYPT</constant>
+    hashing algorithm for <function>password_hash</function> has been increased from
+    <literal>10</literal> to <literal>12</literal>.
+    <!-- RFC: https://wiki.php.net/rfc/bcrypt_cost_2023 -->
+   </simpara>
+
+   <simpara>
+    <function>debug_zval_dump</function> now indicates whether an array is packed.
+   </simpara>
+
+   <simpara>
+    <function>long2ip</function> now has a return type of <type>string</type>
+    <!-- TODO Proper union type -->
+    instead of <literal>string|false</literal>.
+   </simpara>
+
+   <simpara>
+    <!-- TODO Proper union type -->
+    <function>highlight_string</function> now has a return type of
+    <type>string|true</type> instead of <literal>string|bool</literal>.
+   </simpara>
+
+   <simpara>
+    <!-- TODO Proper union type -->
+    <function>print_r</function> now has a return type of
+    <type>string|true</type> instead of <literal>string|bool</literal>.
+   </simpara>
+
+   <!-- TODO: Someone else take care of this - Girgias -->
+   <sect4>
+    <title>Rounding with <function>round</function></title>
+
+    <simpara>
+     The <parameter>mode</parameter> parameter of the
+     <function>round</function> function has been widened to
+     <!-- TODO Proper union type -->
+     <literal>RoundingMode|int</literal>,
+     <!-- TODO should be <enumname> ? -->
+     accepting instances of a new <classname>RoundingMode</classname> enum.
+     <!-- RFC: https://wiki.php.net/rfc/correctly_name_the_rounding_mode_and_make_it_an_enum -->
+    </simpara>
+
+    <para>
+     Four new modes have been added to the <function>round</function> function:
+     <simplelist type="inline">
+      <member><!-- <enumidentifier> -->RoundingMode::PositiveInfinity<!-- </enumidentifier> --></member>
+      <member><!-- <enumidentifier> -->RoundingMode::NegativeInfinity<!-- </enumidentifier> --></member>
+      <member><!-- <enumidentifier> -->RoundingMode::TowardsZero<!-- </enumidentifier> --></member>
+      <member><!-- <enumidentifier> -->RoundingMode::AwayFromZero<!-- </enumidentifier> --></member>
+     </simplelist>
+     <!-- RFC: https://wiki.php.net/rfc/new_rounding_modes_to_round_function -->
+    </para>
+
+    <simpara>
+     The internal implementation for rounding to integers has been rewritten
+     to be easier to verify for correctness and to be easier to maintain.
+     Some rounding bugs have been fixed as a result of the rewrite.
+     For example previously rounding <literal>0.49999999999999994</literal>
+     to the nearest integer would have resulted in <literal>1.0</literal>
+     instead of the correct result <literal>0.0</literal>.
+     Additional inputs might also be affected and result in different outputs
+     compared to earlier PHP versions.
+    </simpara>
+
+    <simpara>
+     Fixed a bug caused by "pre-rounding" of the <function>round</function> function.
+     Previously, using "pre-rounding" to treat a value like <literal>0.285</literal>
+     (actually <literal>0.28499999999999998</literal>) as a decimal number
+     and round it to <literal>0.29</literal>.
+     However, "pre-rounding" incorrectly rounds certain numbers,
+     so this fix removes "pre-rounding" and changes the way numbers are compared,
+     so that the values are correctly rounded as decimal numbers.
+    </simpara>
+
+    <simpara>
+     The maximum precision that can be handled by <function>round</function>
+     has been extended by one digit.
+     For example, <code>round(4503599627370495.5)</code> returned in
+     <literal>4503599627370495.5</literal>,
+     but now returns <literal>4503599627370496</literal>.
+    </simpara>
+
+   </sect4>
+  </sect3>
+
+ </sect2>
+
+ <sect2 xml:id="migration84.other-changes.extensions">
+  <title>Other Changes to Extensions</title>
+
+  <sect3 xml:id="migration84.other-changes.extensions.curl">
+   <title>cURL</title>
+
+   <simpara>
+    The minimum libcurl version required is now 7.61.0.
+   </simpara>
+
+   <simpara>
+    The <constant>CURLOPT_DNS_USE_GLOBAL_CACHE</constant> option no longer
+    has any effect, and is silently ignored.
+    This underlying feature was deprecated in libcurl 7.11.1,
+    and removed in libcurl 7.62.0.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.extensions.gmp">
+   <title>GMP</title>
+
+   <!-- RFC: https://wiki.php.net/rfc/fix_up_bcmath_number_class -->
+   <simpara>
+    Casting a <classname>GMP</classname> object to <type>bool</type> is now
+    possible instead of emitting a <constant>E_RECOVERABLE_ERROR</constant>.
+    The casting behaviour is overloaded such that a <classname>GMP</classname>
+    object representing the value <literal>0</literal> is cast to &false;.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.extensions.libxml">
+   <title>LibXML</title>
+
+   <simpara>
+    The minimum libxml2 version required is now 2.9.4.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.extensions.intl">
+   <title>Intl</title>
+
+   <simpara>
+    The behaviour of Intl class has been normalized to always throw
+    <exceptionname>Error</exceptionname> exceptions when attempting to use
+    a non-initialized object, or when cloning fails.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.extensions.mbstring">
+   <title>MBString</title>
+
+   <simpara>
+    Unicode data tables have been updated to Unicode 16.0.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.extensions.mysqlnd">
+   <title>MySQLnd</title>
+
+   <simpara>
+    Support for the new VECTOR data type from MySQL 9.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.extensions.openssl">
+   <title>OpenSSL</title>
+
+   <simpara>
+    The minimum OpenSSL version required is now 1.1.1.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.extensions.pdo-pgsql">
+   <title>PDO_PGSQL</title>
+
+   <simpara>
+    The minimum libpq version required is now 10.0.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.extensions.pgsql">
+   <title>PGSQL</title>
+
+   <simpara>
+    The minimum libpq version required is now 10.0.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.extensions.spl">
+   <title>SPL</title>
+
+   <simpara>
+    Out of bounds accesses in <classname>SplFixedArray</classname> now throw
+    exceptions of type <exceptionname>OutOfBoundsException</exceptionname>
+    instead of <exceptionname>RuntimeException</exceptionname>.
+    Because <exceptionname>OutOfBoundsException</exceptionname> is a child
+    class of <exceptionname>RuntimeException</exceptionname> no behavioural
+    changes are exhibited when attempting to catch those exceptions.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.extensions.xsl">
+   <title>XSL</title>
+
+   <simpara>
+    The typed properties <property>XSLTProcessor::$cloneDocument</property>
+    and <property>XSLTProcessor::$doXInclude</property> are now declared.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.extensions.zlib">
+   <title>Zlib</title>
+
+   <simpara>
+    The minimum zlib version required is now 1.2.11.
+   </simpara>
+  </sect3>
+ </sect2>
+
+ <sect2 xml:id="migration84.other-changes.performance">
+  <title>Performance</title>
+
+  <sect3 xml:id="migration84.other-changes.performance.core">
+   <title>Core</title>
+
+   <simpara>
+    Improved the performance of floating point number parsing and formatting in
+    ZTS builds under highly concurrent loads.
+    This affects the <function>printf</function> family of functions as well
+    as serialization functions such as <function>json_encode</function>,
+    or <function>serialize</function>.
+   </simpara>
+
+   <simpara>
+    <function>sprintf</function> using only <literal>%s</literal> and
+    <literal>%d</literal> specifiers will be compiled into the equivalent
+    string interpolation, avoiding the overhead of a function call and
+    repeatedly parsing the format string.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.performance.bcmath">
+   <title>BCMath</title>
+
+   <simpara>
+    Improved performance of number conversions and operations.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.performance.dom">
+   <title>DOM</title>
+
+   <simpara>
+    The performance of <methodname>DOMNode::C14N</methodname> is greatly
+    improved for the case without an xpath query.
+    This can give a time improvement of easily two order of
+    magnitude for documents with tens of thousands of nodes.
+   </simpara>
+
+   <simpara>
+    Improved performance and reduce memory consumption of XML serialization.
+   </simpara>
+
+   <simpara>
+    Reduced memory usage of node classes.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.performance.ftp">
+   <title>FTP</title>
+
+   <simpara>
+    Improved the performance of FTP uploads up to a factor of 10x for large
+    uploads.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.performance.hash">
+   <title>Hash</title>
+
+   <simpara>
+    Added SSE2 and SHA-NI implementations of SHA-256.
+    This improves the performance on supported CPUs by ~1.3x (SSE2),
+    and 3x - 5x (SHA-NI).
+    Credit to Colin Percival / Tarsnap for this optimization.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.performance.mbstring">
+   <title>MBString</title>
+
+   <simpara>
+    <function>mb_strcut</function> is much faster now for UTF-8
+    and UTF-16 strings.
+   </simpara>
+
+   <simpara>
+    Looking up mbstring encoding names is much faster now.
+   </simpara>
+
+   <simpara>
+    The performance of converting SJIS-win to Unicode is greatly improved.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.performance.mysqlnd">
+   <title>MySQLnd</title>
+
+   <simpara>
+    Improved the performance of MySQLnd quoting.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.performance.pcre">
+   <title>PCRE</title>
+
+   <simpara>
+    Improved the performance of named capture groups.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.performance.random">
+   <title>Random</title>
+
+   <simpara>
+    Improved the performance of <classname>Random\Randomizer</classname>,
+    with a specific focus on the
+    <methodname>Random\Randomizer::getBytes</methodname>,
+    and <methodname>Random\Randomizer::getBytesFromString</methodname> methods.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.performance.simplexml">
+   <title>SimpleXML</title>
+
+   <simpara>
+    Improved performance and reduce memory consumption of XML serialization.
+   </simpara>
+  </sect3>
+
+  <sect3 xml:id="migration84.other-changes.performance.standard">
+   <title>Standard</title>
+
+   <simpara>
+    The performance of <function>strspn</function> and
+    <function>strcspn</function> is greatly improved.
+    They now run in linear time instead of being bounded by quadratic time.
+   </simpara>
+
+   <simpara>
+    Improved the performance of <function>strpbrk</function>.
+   </simpara>
+
+   <simpara>
+    <function>get_browser</function> is much faster now,
+    up to 1.5x - 2.5x for some test cases.
+   </simpara>
+  </sect3>
+ </sect2>
+
+</sect1>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

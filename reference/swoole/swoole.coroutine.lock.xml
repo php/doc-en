@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<reference xml:id="class.swoole-coroutine-lock" role="class" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude">
+
+ <title>The Swoole\Coroutine\Lock class</title>
+ <titleabbrev>Swoole\Coroutine\Lock</titleabbrev>
+
+ <partintro>
+
+<!-- {{{ Swoole\Coroutine\Lock intro -->
+  <section xml:id="swoole-coroutine-lock.intro">
+   &reftitle.intro;
+   <para>
+    Swoole 6.0.1 introduced a coroutine lock that supports inter-process and inter-thread sharing.
+    This lock is designed with non-blocking behavior and enables efficient coroutine synchronization
+    in multi-process and multi-thread environments.
+   </para>
+   <para>
+    When compiled with the <literal>--enable-iouring</literal> option and the Linux kernel supports
+    the <literal>io_uring futex</literal> feature, Swoole's coroutine lock implements synchronization
+    using <literal>io_uring futex</literal>. In this case, coroutines wait for lock wakeups using
+    an efficient queuing mechanism, significantly improving performance.
+   </para>
+   <para>
+    Without <literal>io_uring futex</literal>, the coroutine lock falls back to an exponential backoff
+    sleep mechanism, where the wait time increases by 2^n milliseconds (n being the number of failures)
+    after each failed attempt to acquire the lock. While this approach avoids busy waiting, it introduces
+    additional CPU scheduling overhead and latency.
+   </para>
+   <para>
+    The coroutine lock is reentrant, allowing the currently holding coroutine to safely perform
+    multiple lock operations.
+   </para>
+   <warning>
+    <para>
+     Do not create locks in callback functions like <literal>onReceive</literal>, as this will cause
+     continuous memory growth and lead to memory leaks.
+    </para>
+   </warning>
+   <warning>
+    <para>
+     Locking and unlocking must be performed in the same coroutine, otherwise it will break
+     static conditions.
+    </para>
+   </warning>
+  </section>
+<!-- }}} -->
+
+  <section xml:id="swoole-coroutine-lock.synopsis">
+   &reftitle.classsynopsis;
+
+<!-- {{{ Synopsis -->
+   <classsynopsis>
+    <ooclass><classname>Swoole\Coroutine\Lock</classname></ooclass>
+
+<!-- {{{ Class synopsis -->
+    <classsynopsisinfo>
+     <ooclass>
+      <classname>Swoole\Coroutine\Lock</classname>
+     </ooclass>
+    </classsynopsisinfo>
+<!-- }}} -->
+
+    <classsynopsisinfo role="comment">&Methods;</classsynopsisinfo>
+    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('class.swoole-coroutine-lock')/db:refentry/db:refsect1[@role='description']/descendant::db:methodsynopsis[not(@role='procedural')])" />
+   </classsynopsis>
+<!-- }}} -->
+
+  </section>
+
+  <section xml:id="swoole-coroutine-lock.examples">
+   &reftitle.examples;
+   <example xml:id="swoole-coroutine-lock.example.basic">
+    <title>Basic usage</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+use Swoole\Coroutine\Lock;
+use Swoole\Coroutine\WaitGroup;
+use function Swoole\Coroutine\go;
+use function Swoole\Coroutine\run;
+
+$lock = new Lock();
+$waitGroup = new WaitGroup();
+
+run(function() use ($lock, $waitGroup) {
+    go(function() use ($lock, $waitGroup) {
+        $waitGroup->add();
+        $lock->lock();
+        sleep(1);
+        $lock->unlock();
+        $waitGroup->done();
+    });
+
+    go(function() use ($lock, $waitGroup) {
+        $waitGroup->add();
+        $lock->lock(); // Wait for the holding coroutine to unlock
+        sleep(1);
+        $lock->unlock();
+        $waitGroup->done();
+    });
+
+    echo 'Lock does not block the process';
+    $waitGroup->wait();
+});
+]]>
+    </programlisting>
+   </example>
+  </section>
+
+ </partintro>
+
+ &reference.swoole.swoole.coroutine.entities.lock;
+</reference>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
