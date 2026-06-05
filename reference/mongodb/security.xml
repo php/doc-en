@@ -6,67 +6,67 @@
 
  <section xml:id="mongodb.security.request_injection">
   <title>Request Injection Attacks</title>
-  <para>
+  <simpara>
    If you are passing <literal>$_GET</literal> (or <literal>$_POST</literal>)
    parameters to your queries, make sure that they are cast to strings first.
    Users can insert associative arrays in GET and POST requests, which could
    then become unwanted $-queries.
-  </para>
+  </simpara>
 
-  <para>
+  <simpara>
    A fairly innocuous example: suppose you are looking up a user's information
    with the request <emphasis>http://www.example.com?username=bob</emphasis>.
    Your application creates the query
    <literal>$q = new \MongoDB\Driver\Query( [ 'username' => $_GET['username'] ])</literal>.
-  </para>
+  </simpara>
 
-  <para>
+  <simpara>
    Someone could subvert this by getting
    <emphasis>http://www.example.com?username[$ne]=foo</emphasis>, which PHP
    will magically turn into an associative array, turning your query into
    <literal>$q = new \MongoDB\Driver\Query( [ 'username' => [ '$ne' => 'foo' ] ] )</literal>,
    which will return all users not named "foo" (all of your users, probably).
-  </para>
+  </simpara>
 
-  <para>
+  <simpara>
    This is a fairly easy attack to defend against: make sure $_GET and $_POST
    parameters are the type you expect before you send them to the database.
    PHP has the <function>filter_var</function> function to assist with this.
-  </para>
+  </simpara>
 
-  <para>
+  <simpara>
    Note that this type of attack can be used with any database interaction that
    locates a document, including updates, upserts, deletes, and findAndModify
    commands.
-  </para>
+  </simpara>
 
-  <para>
+  <simpara>
    See <link xlink:href="&url.mongodb.dochub.security;">the main documentation</link>
    for more information about SQL-injection-like issues with MongoDB.
-  </para>
+  </simpara>
  </section>
 
  <section xml:id="mongodb.security.script_injection">
   <title>Script Injection Attacks</title>
-  <para>
+  <simpara>
    If you are using JavaScript, make sure that any variables that cross the PHP-
    to-JavaScript boundry are passed in the <literal>scope</literal> field of
    <classname>MongoDB\BSON\Javascript</classname>, not interpolated into the
    JavaScript string. This can come up when using <literal>$where</literal>
    clauses in queries, mapReduce and group commands, and any other time you may
    pass JavaScript into the database.
-  </para>
-  <para>
+  </simpara>
+  <simpara>
    For example, suppose we have some JavaScript to greet a user in the database
    logs.  We could do:
-  </para>
+  </simpara>
   <programlisting role="php">
 <![CDATA[
 <?php
 $m = new MongoDB\Driver\Manager;
 
 // Don't do this!!!
-$username = $_GET['field']; 
+$username = $_GET['field'];
 
 $cmd = new \MongoDB\Driver\Command( [
     'eval' => "print('Hello, $username!');"
@@ -76,16 +76,16 @@ $r = $m->executeCommand( 'dramio', $cmd );
 ?>
 ]]>
   </programlisting>
-  <para>
+  <simpara>
    However, what if a malicious user passes in some JavaScript?
-  </para>
+  </simpara>
   <programlisting role="php">
 <![CDATA[
 <?php
 $m = new MongoDB\Driver\Manager;
 
 // Don't do this!!!
-$username = $_GET['field']; 
+$username = $_GET['field'];
 // $username is set to "'); db.users.drop(); print('"
 
 $cmd = new \MongoDB\Driver\Command( [
@@ -96,12 +96,12 @@ $r = $m->executeCommand( 'dramio', $cmd );
 ?>
 ]]>
   </programlisting>
-  <para>
+  <simpara>
    Now MongoDB executes the JavaScript string
    <literal>"print('Hello, '); db.users.drop(); print('!');"</literal>.
    This attack is easy to avoid: use <literal>args</literal> to pass
    variables from PHP to JavaScript:
-  </para>
+  </simpara>
   <programlisting role="php">
 <![CDATA[
 <?php
@@ -119,30 +119,30 @@ $r = $m->executeCommand( 'dramio', $cmd );
 ?>
 ]]>
   </programlisting>
-  <para>
+  <simpara>
    This adds an argument to the JavaScript scope, which gets used as argument
    for the <literal>greet</literal> function. Now if
    someone tries to send malicious code, MongoDB will harmlessly print
    <literal>Hello, '); db.dropDatabase(); print('!</literal>.
-  </para>
+  </simpara>
 
-  <para>
+  <simpara>
    Using arguments helps to prevent malicious input from being executed by the
    database.  However, you must make sure that your code does not turn around
    and execute the input anyway! It is best to avoid executing
    <emphasis>any</emphasis> JavaScript on the server in the first place.
-  </para>
+  </simpara>
 
-  <para>
+  <simpara>
    You are strongly recommended to stay clear of the <link
    xlink:href="&url.mongodb.docs;reference/operator/query/where/#considerations">$where
    clause</link> with queries, as it impacts performance significantly. Where
    possible, use either normal query operators, or the <link
    xlink:href="&url.mongodb.docs;core/aggregation-pipeline">Aggregation
    Framework</link>.
-  </para>
+  </simpara>
 
-  <para>
+  <simpara>
    As alternative to <link
    xlink:href="&url.mongodb.dochub.mapreduce;">MapReduce</link>, which uses
    JavaScript, consider using the <link
@@ -150,13 +150,13 @@ $r = $m->executeCommand( 'dramio', $cmd );
    Framework</link>. Unlike Map/Reduce, it uses an idiomatic language to
    construct queries, without having to write, and use, the slower JavaScript
    approach that Map/Reduce requires.
-  </para>
+  </simpara>
 
-  <para>
+  <simpara>
    The <link
    xlink:href="&url.mongodb.docs;reference/command/eval/">eval command</link>
    has been deprecated since MongoDB 3.0, and should also be avoided.
-  </para>
+  </simpara>
  </section>
 </chapter>
 
