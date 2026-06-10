@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-<chapter xml:id="language.exceptions" xmlns="http://docbook.org/ns/docbook">
+<chapter xml:id="language.exceptions" xmlns="http://docbook.org/ns/docbook" annotations="interactive">
  <title>Exceptions</title>
+ <note>
+  <simpara>See also the <exceptionname>Exception</exceptionname> class</simpara>
+ </note>
  <para>
   PHP has an exception model similar to that of other programming
-  languages.  An exception can be &throw;n, and caught ("&catch;ed") within
+  languages. An exception can be &throw;n, and caught ("&catch;ed") within
   PHP. Code may be surrounded in a &try; block, to facilitate the catching
   of potential exceptions. Each &try; must have at least one corresponding
   &catch; or &finally; block.
@@ -12,7 +15,7 @@
  <para>
   If an exception is thrown and its current function scope has no &catch;
   block, the exception will "bubble up" the call stack to the calling
-  function until it finds a matching &catch; block.  All &finally; blocks it encounters
+  function until it finds a matching &catch; block. All &finally; blocks it encounters
   along the way will be executed. If the call stack is unwound all the way to the
   global scope without encountering a matching &catch; block, the program will
   terminate with a fatal error unless a global exception handler has been set.
@@ -29,7 +32,7 @@
   <sect1 annotations="chunk:false" xml:id="language.exceptions.catch">
    <title><literal>catch</literal></title>
    <para>
-    A &catch; block defines how to respond to a thrown exception.  A &catch;
+    A &catch; block defines how to respond to a thrown exception. A &catch;
     block defines one or more types of exception or error it can handle, and
     optionally a variable to which to assign the exception. (The variable was
     required prior to PHP 8.0.0.)  The first &catch; block a thrown exception
@@ -79,15 +82,21 @@
     is executed. Additionally, if the &finally; block also contains a &return; statement,
     the value from the &finally; block is returned.
    </para>
+   <para>
+    Another notable interaction is between an exception thrown from within a &try; block,
+    and an exception thrown from within a &finally; block. If both blocks throw an exception,
+    then the exception thrown from the &finally; block will be the one that is propagated,
+    and the exception thrown from the &try; block will be used as its previous exception.
+   </para>
   </sect1>
 
  <sect1 annotations="chunk:false" xml:id="language.exceptions.exception-handler">
   <title>Global exception handler</title>
   <para>
    If an exception is allowed to bubble up to the global scope, it may be caught
-   by a global exception handler if set.  The <function>set_exception_handler</function>
+   by a global exception handler if set. The <function>set_exception_handler</function>
    function can set a function that will be called in place of a &catch; block if no
-   other block is invoked.  The effect is essentially the same as if the entire program
+   other block is invoked. The effect is essentially the same as if the entire program
    were wrapped in a &try;-&catch; block with that function as the &catch;.
   </para>
  </sect1>
@@ -106,7 +115,7 @@
     </para>
     <example>
      <title>Converting error reporting to exceptions</title>
-     <programlisting role="php">
+     <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 function exceptions_error_handler($severity, $message, $filename, $lineno) {
@@ -114,7 +123,6 @@ function exceptions_error_handler($severity, $message, $filename, $lineno) {
 }
 
 set_error_handler('exceptions_error_handler');
-?>
 ]]>
      </programlisting>
     </example>
@@ -152,7 +160,6 @@ try {
 
 // Continue execution
 echo "Hello World\n";
-?>
 ]]>
     </programlisting>
     &example.outputs;
@@ -194,7 +201,6 @@ try {
 
 // Continue execution
 echo "Hello World\n";
-?>
 ]]>
     </programlisting>
     &example.outputs;
@@ -225,7 +231,6 @@ function test() {
 }
 
 echo test();
-?>
 ]]>
     </programlisting>
     &example.outputs;
@@ -260,8 +265,6 @@ class Test {
 
 $foo = new Test;
 $foo->testing();
-
-?>
 ]]>
     </programlisting>
     &example.outputs;
@@ -293,8 +296,6 @@ class Test {
 
 $foo = new Test;
 $foo->testing();
-
-?>
 ]]>
     </programlisting>
     &example.outputs;
@@ -322,9 +323,14 @@ try {
 } catch (SpecificException) {
     print "A SpecificException was thrown, but we don't care about the details.";
 }
-?>
 ]]>
     </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+A SpecificException was thrown, but we don't care about the details.
+]]>
+    </screen>
    </example>
    <example>
     <title>Throw as an expression</title>
@@ -337,14 +343,55 @@ function test() {
     do_something_risky() or throw new Exception('It did not work');
 }
 
+function do_something_risky() {
+    return false; // Simulate failure
+}
+
 try {
     test();
 } catch (Exception $e) {
     print $e->getMessage();
 }
-?>
 ]]>
     </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+It did not work
+]]>
+    </screen>
+   </example>
+   <example>
+    <title>Exception in try and in finally</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+try {
+    try {
+        throw new Exception(message: 'Third', previous: new Exception('Fourth'));
+    } finally {
+        throw new Exception(message: 'First', previous: new Exception('Second'));
+    }
+} catch (Exception $e) {
+    var_dump(
+        $e->getMessage(),
+        $e->getPrevious()->getMessage(),
+        $e->getPrevious()->getPrevious()->getMessage(),
+        $e->getPrevious()->getPrevious()->getPrevious()->getMessage(),
+    );
+}
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+string(5) "First"
+string(6) "Second"
+string(5) "Third"
+string(6) "Fourth"
+]]>
+    </screen>
    </example>
   </sect1>
 
@@ -352,12 +399,12 @@ try {
   <title>Extending Exceptions</title>
   <para>
    A User defined Exception class can be defined by extending the built-in
-   Exception class. The members and properties below, show what is accessible
+   <exceptionname>Exception</exceptionname> class. The members and properties below, show what is accessible
    within the child class that derives from the built-in Exception class.
   </para>
   <example>
    <title>The Built in Exception class</title>
-   <programlisting role="php">
+   <programlisting role="php" annotations="non-interactive">
     <![CDATA[
 <?php
 class Exception implements Throwable
@@ -370,7 +417,7 @@ class Exception implements Throwable
     private   $trace;                           // backtrace
     private   $previous;                        // previous exception if nested exception
 
-    public function __construct($message = '', $code = 0, Throwable $previous = null);
+    public function __construct($message = '', $code = 0, ?Throwable $previous = null);
 
     final private function __clone();           // Inhibits cloning of exceptions.
 
@@ -382,15 +429,14 @@ class Exception implements Throwable
     final public  function getPrevious();       // previous exception
     final public  function getTraceAsString();  // formatted string of trace
 
-    // Overrideable
+    // Overridable
     public function __toString();               // formatted string for display
 }
-?>
 ]]>
    </programlisting>
   </example>
   <para>
-   If a class extends the built-in Exception class and re-defines the <link
+   If a class extends the built-in <exceptionname>Exception</exceptionname> class and re-defines the <link
    linkend="language.oop5.decon">constructor</link>, it is highly recommended
    that it also call <link
    linkend="language.oop5.paamayim-nekudotayim">parent::__construct()</link>
@@ -416,7 +462,7 @@ class Exception implements Throwable
 class MyException extends Exception
 {
     // Redefine the exception so message isn't optional
-    public function __construct($message, $code = 0, Throwable $previous = null) {
+    public function __construct($message, $code = 0, ?Throwable $previous = null) {
         // some code
 
         // make sure everything is assigned properly
@@ -467,7 +513,7 @@ class TestException
 }
 
 
-// Example 1
+echo "# Example 1\n";
 try {
     $o = new TestException(TestException::THROW_CUSTOM);
 } catch (MyException $e) {      // Will be caught
@@ -479,10 +525,9 @@ try {
 
 // Continue execution
 var_dump($o); // Null
-echo "\n\n";
 
 
-// Example 2
+echo "\n\n# Example 2\n";
 try {
     $o = new TestException(TestException::THROW_DEFAULT);
 } catch (MyException $e) {      // Doesn't match this type
@@ -494,10 +539,9 @@ try {
 
 // Continue execution
 var_dump($o); // Null
-echo "\n\n";
 
 
-// Example 3
+echo "\n\n# Example 3\n";
 try {
     $o = new TestException(TestException::THROW_CUSTOM);
 } catch (Exception $e) {        // Will be caught
@@ -506,10 +550,9 @@ try {
 
 // Continue execution
 var_dump($o); // Null
-echo "\n\n";
 
 
-// Example 4
+echo "\n\n# Example 4\n";
 try {
     $o = new TestException();
 } catch (Exception $e) {        // Skipped, no exception
@@ -518,8 +561,6 @@ try {
 
 // Continue execution
 var_dump($o); // TestException
-echo "\n\n";
-?>
 ]]>
    </programlisting>
   </example>
