@@ -21,7 +21,7 @@ php ../doc-base/configure.php \
     --redirect-stderr-to-stdout \
     --with-lang=en
 
-php ../phd/render.php \
+php -d memory_limit=512M ../phd/render.php \
     --docbook ../doc-base/.manual.xml \
     --output ./output \
     --package PHP \

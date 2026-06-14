@@ -13,6 +13,9 @@ OWNER="$(stat -c '%U' "$WORKSPACE")"
 # doc-base's configure.php looks for the language source as a sibling directory
 [ -e "$PARENT/en" ] || sudo -u "$OWNER" ln -s "$WORKSPACE" "$PARENT/en"
 
+# Xdebug degrades performance and is not needed for the build, so disable it by default.
+rm -f /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+
 # Pre-create the served directory
 sudo -u "$OWNER" mkdir -p "$WORKSPACE/output/php-chunked-xhtml"
 
