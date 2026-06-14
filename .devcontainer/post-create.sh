@@ -20,9 +20,9 @@ cat <<'EOF'
 
   Devcontainer ready.
 
-  Build the docs:    make                (chunked HTML, served at :8080)
-                     make php            (PHP web format)
-  Serve them:        F5 > "Serve docs"   (Run and Debug panel)
+  Build & serve:     F5                  ("Build XHTML & serve" in Run and Debug)
+                                         "Build PHP web & serve" for php format
+                                         "Serve only (no build)" to skip rebuild
   View them:         http://localhost:8080
 
 EOF
