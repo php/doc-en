@@ -2,13 +2,10 @@
 
 if [ -z "$1" ] || [ ! -d "$1" ]; then
   echo "Usage: $0 <path-to-web-root-directory>"
-  exit
+  exit 1
 fi
 
 sudo rm -rf /var/www/html
 sudo chmod a+x "$1"
 sudo ln -s "$1" /var/www/html && \
-  echo "Apache web root directory set to $1"
-if ! pgrep -x "apache2" > /dev/null; then
-  sudo apache2ctl start
-fi
+  echo "Now serving $1 at http://localhost:8080"

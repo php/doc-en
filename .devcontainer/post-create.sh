@@ -1,9 +1,20 @@
 #!/usr/bin/env bash
 
-# Apache: listen on 8080 so non-root tooling can interact. The web root is
-# linked in by .devcontainer/configure-apache.sh after the first `make` build.
-sed -i 's/Listen 80$//' /etc/apache2/ports.conf
-sed -i 's/<VirtualHost \*:80>/ServerName 127.0.0.1\n<VirtualHost \*:8080>/' /etc/apache2/sites-enabled/000-default.conf
+set -e
+
+. /etc/os-release
+curl -fsSL https://packages.sury.org/php/apt.gpg | gpg --dearmor -o /usr/share/keyrings/sury-php.gpg
+echo "deb [signed-by=/usr/share/keyrings/sury-php.gpg] https://packages.sury.org/php/ $VERSION_CODENAME main" \
+  > /etc/apt/sources.list.d/sury-php.list
+apt-get update
+apt-get install -y --no-install-recommends php8.4-cli
+
+mkdir -p /var/www/html
+cat >/var/www/html/index.html <<'HTML'
+<!doctype html>
+<title>PHP Docs devcontainer</title>
+<p>No build yet. Run <code>make</code> or <code>make php</code>.</p>
+HTML
 
 cat <<'EOF'
 
