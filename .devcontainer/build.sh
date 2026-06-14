@@ -10,6 +10,11 @@ case "$FORMAT" in
   *)     echo "Usage: $0 [xhtml|php]" >&2; exit 1 ;;
 esac
 
+ # doc-base invokes `java -jar jing.jar` with no flags, so the only handle on
+ # the JAXP entity-size limit is the JVM env vars. The PHP manual is well past
+ # the 100k default and we have no other way to lift the limit.
+ export _JAVA_OPTIONS='-Djdk.xml.totalEntitySizeLimit=0 -Djdk.xml.entityExpansionLimit=0 -Djdk.xml.maxGeneralEntitySizeLimit=0'
+
 php ../doc-base/configure.php \
     --disable-libxml-check \
     --enable-xml-details \
