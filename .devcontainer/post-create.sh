@@ -14,7 +14,7 @@ OWNER="$(stat -c '%U' "$WORKSPACE")"
 [ -e "$PARENT/en" ] || sudo -u "$OWNER" ln -s "$WORKSPACE" "$PARENT/en"
 
 # Xdebug degrades performance and is not needed for the build, so disable it by default.
-rm -f /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+rm -f /usr/local/etc/php/conf.d/xdebug.ini
 
 # Pre-create the served directory
 sudo -u "$OWNER" mkdir -p "$WORKSPACE/output/php-chunked-xhtml"
