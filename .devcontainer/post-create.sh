@@ -22,6 +22,7 @@ cat <<'EOF'
 
   Build the docs:    make                (chunked HTML, served at :8080)
                      make php            (PHP web format)
+  Serve them:        F5 > "Serve docs"   (Run and Debug panel)
   View them:         http://localhost:8080
 
 EOF
