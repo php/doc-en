@@ -10,6 +10,9 @@ OWNER="$(stat -c '%U' "$WORKSPACE")"
 [ -d "$PARENT/doc-base" ] || sudo -u "$OWNER" git -C "$PARENT" clone --depth 1 https://github.com/php/doc-base.git
 [ -d "$PARENT/phd" ]      || sudo -u "$OWNER" git -C "$PARENT" clone --depth 1 https://github.com/php/phd.git
 
+# doc-base's configure.php looks for the language source as a sibling directory
+[ -e "$PARENT/en" ] || sudo -u "$OWNER" ln -s "$WORKSPACE" "$PARENT/en"
+
 # Pre-create the served directory
 sudo -u "$OWNER" mkdir -p "$WORKSPACE/output/php-chunked-xhtml"
 
