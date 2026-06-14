@@ -2,27 +2,23 @@
 
 set -e
 
-. /etc/os-release
-curl -fsSL https://packages.sury.org/php/apt.gpg | gpg --dearmor -o /usr/share/keyrings/sury-php.gpg
-echo "deb [signed-by=/usr/share/keyrings/sury-php.gpg] https://packages.sury.org/php/ $VERSION_CODENAME main" \
-  > /etc/apt/sources.list.d/sury-php.list
-apt-get update
-apt-get install -y --no-install-recommends php8.4-cli
+WORKSPACE="$(cd "$(dirname "$0")/.." && pwd)"
+PARENT="$(dirname "$WORKSPACE")"
+OWNER="$(stat -c '%U' "$WORKSPACE")"
 
-mkdir -p /var/www/html
-cat >/var/www/html/index.html <<'HTML'
-<!doctype html>
-<title>PHP Docs devcontainer</title>
-<p>No build yet. Run <code>make</code> or <code>make php</code>.</p>
-HTML
+# Clone doc-base and phd as siblings of doc-en
+[ -d "$PARENT/doc-base" ] || sudo -u "$OWNER" git -C "$PARENT" clone --depth 1 https://github.com/php/doc-base.git
+[ -d "$PARENT/phd" ]      || sudo -u "$OWNER" git -C "$PARENT" clone --depth 1 https://github.com/php/phd.git
+
+# Pre-create the served directory
+sudo -u "$OWNER" mkdir -p "$WORKSPACE/output/php-chunked-xhtml"
 
 cat <<'EOF'
 
   Devcontainer ready.
 
-  Build & serve:     F5                  ("Build XHTML & serve" in Run and Debug)
-                                         "Build PHP web & serve" for php format
-                                         "Serve only (no build)" to skip rebuild
+  Build & serve:     F5 > "Build XHTML & serve"   (or "Build PHP web & serve")
+
   View them:         http://localhost:8080
 
 EOF
