@@ -20,3 +20,12 @@ chown -R "$OWNER:$OWNER" "$WORKSPACE/output"
 chmod a+x "$WORKSPACE"
 rm -rf /var/www/html
 ln -s "$WORKSPACE/output/php-chunked-xhtml" /var/www/html
+
+cat <<'EOF'
+
+  Devcontainer ready.
+
+  Build the docs:    .devcontainer/build.sh
+  View them:         http://localhost:8080            (forwarded port 8080)
+
+EOF
