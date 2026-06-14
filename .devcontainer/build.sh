@@ -10,7 +10,12 @@ case "$FORMAT" in
   *)     echo "Usage: $0 [xhtml|php]" >&2; exit 1 ;;
 esac
 
-php ../doc-base/configure.php --with-lang=en
+php ../doc-base/configure.php \
+    --disable-libxml-check \
+    --enable-xml-details \
+    --redirect-stderr-to-stdout \
+    --with-lang=en
+
 php ../phd/render.php \
     --docbook ../doc-base/.manual.xml \
     --output ./output \
