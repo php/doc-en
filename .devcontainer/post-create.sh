@@ -6,10 +6,6 @@ set -e
 sed -i 's/Listen 80$//' /etc/apache2/ports.conf
 sed -i 's/<VirtualHost \*:80>/ServerName 127.0.0.1\n<VirtualHost \*:8080>/' /etc/apache2/sites-enabled/000-default.conf
 
-# Install dependencies
-apt-get update
-apt-get install -y --no-install-recommends default-jre-headless
-
 WORKSPACE="$(cd "$(dirname "$0")/.." && pwd)"
 PARENT="$(dirname "$WORKSPACE")"
 OWNER="$(stat -c '%U' "$WORKSPACE")"
