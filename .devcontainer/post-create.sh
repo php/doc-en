@@ -10,6 +10,9 @@ OWNER="$(stat -c '%U' "$WORKSPACE")"
 [ -d "$PARENT/doc-base" ] || sudo -u "$OWNER" git -C "$PARENT" clone --depth 1 https://github.com/php/doc-base.git
 [ -d "$PARENT/phd" ]      || sudo -u "$OWNER" git -C "$PARENT" clone --depth 1 https://github.com/php/phd.git
 
+# doc-base's configure.php looks for the language source as a sibling directory
+[ -e "$PARENT/en" ] || sudo -u "$OWNER" ln -s "$WORKSPACE" "$PARENT/en"
+
 # Xdebug degrades performance and is not needed for the build, so disable it by default.
 rm -f /usr/local/etc/php/conf.d/xdebug.ini
 
