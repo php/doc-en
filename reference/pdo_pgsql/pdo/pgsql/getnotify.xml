@@ -9,7 +9,7 @@
   &reftitle.description;
   <methodsynopsis role="Pdo\\Pgsql">
    <modifier>public</modifier> <type class="union"><type>array</type><type>false</type></type><methodname>Pdo\Pgsql::getNotify</methodname>
-   <methodparam choice="opt"><type>int</type><parameter>fetchMode</parameter><initializer>PDO::FETCH_DEFAULT</initializer></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>fetchMode</parameter><initializer><constant>PDO::FETCH_DEFAULT</constant></initializer></methodparam>
    <methodparam choice="opt"><type>int</type><parameter>timeoutMilliseconds</parameter><initializer>0</initializer></methodparam>
   </methodsynopsis>
   <simpara>
@@ -49,9 +49,13 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <simpara>
-   If one or more notifications is pending, returns a single row,
-   with fields <literal>message</literal> and <literal>pid</literal>,
-   otherwise returns &false;.
+   If a notification is pending, returns a single row, otherwise returns
+   &false;. The row has a <literal>message</literal> field (the channel name)
+   and a <literal>pid</literal> field (the process ID of the notifying backend).
+   If the notification carries a non-empty payload, the row also has a
+   <literal>payload</literal> field. With <constant>PDO::FETCH_NUM</constant>,
+   these fields are at indexes <literal>0</literal>, <literal>1</literal>, and
+   <literal>2</literal>.
   </simpara>
  </refsect1>
 
@@ -75,30 +79,40 @@
   </simpara>
  </refsect1>
 
- <!-- TODO?
  <refsect1 role="examples">
   &reftitle.examples;
   <example xml:id="pdo-pgsql.getnotify.example.basic">
    <title><methodname>Pdo\Pgsql::getNotify</methodname> example</title>
    <simpara>
-    Description.
+    Subscribe to a channel with <literal>LISTEN</literal>, then read the next
+    pending notification with a one-second timeout.
    </simpara>
    <programlisting role="php">
 <![CDATA[
 <?php
-echo "Code example";
+$db = new Pdo\Pgsql('pgsql:dbname=test host=localhost', $user, $pass);
+$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+$db->exec('LISTEN messages');
+$db->exec("NOTIFY messages, 'hello'");
+
+$notification = $db->getNotify(PDO::FETCH_ASSOC, 1000);
+var_export($notification);
 ?>
 ]]>
    </programlisting>
-   &example.outputs;
+   &example.outputs.similar;
    <screen>
 <![CDATA[
-Code example
+array (
+  'message' => 'messages',
+  'pid' => 1928,
+  'payload' => 'hello',
+)
 ]]>
    </screen>
   </example>
  </refsect1>
- -->
 
  <refsect1 role="seealso">
   &reftitle.seealso;
