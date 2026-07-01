@@ -7,21 +7,21 @@
   <title>What are Persistent Connections?</title>
   <simpara>
    Persistent connections are links that do not close when the
-   execution of your script ends. When a persistent connection is
-   requested, PHP checks if there's already an identical persistent
-   connection (that remained open from earlier) - and if it exists, it
-   uses it. If it does not exist, it creates the link. An 'identical'
-   connection is a connection that was opened to the same host, with
-   the same username and the same password (where applicable).
+   execution of the script ends. When a persistent connection is
+   requested, PHP checks whether an identical persistent
+   connection (that remained open from earlier) already exists; if one does,
+   it is reused, and if not, a new link is created. An 'identical'
+   connection is one opened to the same host with
+   the same username and password (where applicable).
   </simpara>
   <simpara>
-   There's no method of requesting a specific connection, or guaranteeing
-   whether you get an existing connection or a brand new one (if all existing
-   connections are in use, or the request is being served by a different worker,
-   which has a separate pool of connections).
+   There is no way to request a specific connection, or to guarantee
+   whether the returned connection will be an existing one or a brand new
+   one (if all existing connections are in use, or the request is being
+   served by a different worker, which has a separate pool of connections).
   </simpara>
   <simpara>
-   This means that you cannot use PHP's persistent connections to, for example:
+   PHP's persistent connections therefore cannot be used to, for example:
   </simpara>
   <simplelist>
    <member>assign a specific database session to a specific web user</member>
@@ -29,42 +29,42 @@
    <member>initiate a query on one request and collect the results on another</member>
   </simplelist>
   <simpara>
-   Persistent connections do not give you <emphasis>any</emphasis>
-   functionality that wasn't possible with non-persistent connections.
+   Persistent connections do not provide <emphasis>any</emphasis>
+   functionality that was not possible with non-persistent connections.
   </simpara>
  </simplesect>
 
  <simplesect xml:id="persistent-connections.web">
   <title>Web Requests</title>
   <simpara>
-   There are two ways in which your web server can utilize PHP to generate
+   There are two ways in which a web server can utilize PHP to generate
    web pages:
   </simpara>
   <simpara>
    The first method is to use PHP as a CGI "wrapper". When run this
    way, an instance of the PHP interpreter is created and destroyed
-   for every page request (for a PHP page) to your web server.
+   for every page request (for a PHP page) to the web server.
    Because it is destroyed after every request, any resources that it
    acquires (such as a link to an SQL database server) are closed when
-   it is destroyed. In this case, you do not gain anything from trying
-   to use persistent connections - they simply don't persist.
+   it is destroyed. In this case, there is nothing to be gained from
+   using persistent connections - they simply do not persist.
   </simpara>
   <simpara>
    The second, and most popular, method is to run PHP-FPM, or PHP as a module
-   in a multiprocess web server, which currently only includes Apache.
+   in a multiprocess web server (currently only Apache).
    These setups typically have one process (the parent) which
-   coordinates a set of processes (its children) who actually do the
+   coordinates a set of processes (its children) that actually do the
    work of serving up web pages. When a request comes in from a
    client, it is handed off to one of the children that is not already
    serving another client. This means that when the same client makes
    a second request to the server, it may be served by a different
-   child process than the first time. When opening a persistent connection,
-   every following page requesting SQL services can reuse the same
-   established connection to the SQL server.
+   child process than the first time. Once a persistent connection has been
+   opened, any subsequent page served by the same child process can reuse the
+   already established connection to the SQL server.
   </simpara>
   <note>
    <para>
-   You can check which method your web requests use by checking the value of
+   The method in use can be checked by looking at the value of
    "Server API" in the output of <function>phpinfo</function> or the value of
    <constant>PHP_SAPI</constant>, run from a web request.
    </para>
@@ -82,51 +82,48 @@
    As command-line PHP uses a new process for each script, persistent
    connections are not shared between command-line scripts, so there is no
    value in using them in transient scripts such as crons or commands.
-   However, they may be useful if, for example, you're writing a long-running
-   application server that serves many requests or tasks and each may need
-   their own database connection.
+   However, they may be useful, for example, in a long-running application
+   server that serves many requests or tasks, each of which may need its
+   own database connection.
   </simpara>
  </simplesect>
 
  <simplesect xml:id="persistent-connections.why">
   <title>Why Use Them?</title>
   <simpara>
-   Persistent connections are good if the overhead to create a link to your
-   SQL server is high. Whether or not this overhead is really high depends
-   on many factors. Like, what kind of database it is, whether or not
-   it sits on the same computer on which your web server sits, how
-   loaded the machine the SQL server sits on is and so forth. The
-   bottom line is that if that connection overhead is high, persistent
-   connections help you considerably. They cause the child process to
-   simply connect only once for its entire lifespan, instead of every
-   time it processes a page that requires connecting to the SQL
-   server. This means that for every child that opened a persistent
-   connection will have its own open persistent connection to the
-   server. For example, if you had 20 different child processes that
-   ran a script that made a persistent connection to your SQL server,
-   you'd have 20 different connections to the SQL server, one from
-   each child.
+   Persistent connections are beneficial when the overhead of creating a link
+   to an SQL server is high. Whether this overhead is significant depends on
+   many factors, such as the type of database, whether it resides on the same
+   machine as the web server, and how loaded that machine is. When the
+   connection overhead is high, persistent connections can help considerably:
+   each child process connects only once for its entire lifespan, rather than
+   every time it processes a page that requires a connection to the SQL
+   server. This means every child that opens a persistent connection will
+   maintain its own connection to the server. For example, if 20 different
+   child processes each run a script that makes a persistent connection to
+   the SQL server, there will be 20 separate connections to that server, one
+   from each child.
   </simpara>
  </simplesect>
 
  <simplesect xml:id="persistent-connections.drawbacks.conn-limits">
   <title>Potential Drawbacks: Connection Limits</title>
   <simpara>
-   Note, however, that this can have some drawbacks if you are using a
+   Note, however, that this can have drawbacks when using a
    database with connection limits that are exceeded by persistent
-   child connections. If your database has a limit of 16 simultaneous
-   connections, and in the course of a busy server session, 17 child
-   threads attempt to connect, one will not be able to. If there are
-   bugs in your scripts which do not allow the connections to shut
-   down (such as infinite loops), the database with only 16 connections
+   child connections. If the database has a limit of 16 simultaneous
+   connections, and during a busy server session 17 child
+   processes attempt to connect, one of them will fail. If there are
+   bugs in the scripts that prevent connections from shutting
+   down (such as infinite loops), a database with only 16 connections
    may be rapidly swamped.
   </simpara>
   <simpara>
    Persistent connections will usually increase the number of connections open
-   at any given time because idle workers will still hold the connections for
-   the previous requests they served. If a large number of workers is spun up to
-   handle an influx of requests, the connections they opened will remain until
-   the worker is killed or the database server closes the connection.
+   at any given time, because idle workers still hold on to the connections they
+   opened for previous requests. If a large number of workers are spun up to
+   handle a spike in traffic, the connections they opened will remain until
+   the worker is terminated or the database server closes the connection.
   </simpara>
   <simpara>
    Ensure that the maximum number of connections allowed by the database server
@@ -134,7 +131,7 @@
    usage such as crons or administrative connections).
   </simpara>
   <simpara>
-   Check your database documentation for information on handling abandoned or
+   Check the database documentation for information on handling abandoned or
    idle connections (timeouts). Long timeouts may significantly increase the
    number of persistent connections open at any one time.
   </simpara>
@@ -171,20 +168,20 @@
    to recreate the same table.
   </simpara>
   <simpara>
-   You can implement cleanup using class destructors or
-   <function>register_shutdown_function</function>. You may also want to
-   consider dedicated connection pooling proxies that include this as part of
-   their functionality.
+   Cleanup can be implemented using class destructors or
+   <function>register_shutdown_function</function>. Dedicated connection
+   pooling proxies that include this as part of their functionality may
+   also be considered.
   </simpara>
  </simplesect>
 
  <simplesect xml:id="persistent-connections.final-words">
   <title>Final Words</title>
   <simpara>
-   Given their behavior and potential drawbacks described above, you should not
-   use persistent connections without careful consideration. They should not be
-   used without implementing additional changes to your application and careful
-   configuration of your database server and web server and/or PHP-FPM.
+   Given their behavior and potential drawbacks described above, persistent
+   connections should not be used without careful consideration. They should
+   not be used without implementing additional changes to the application and
+   careful configuration of the database server and web server and/or PHP-FPM.
   </simpara>
   <simpara>
    Consider alternative solutions such as investigating and fixing the causes of
