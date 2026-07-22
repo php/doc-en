@@ -29,8 +29,8 @@
 <![CDATA[
 <?php
 if (!isset($_SERVER['PHP_AUTH_USER'])) {
+    header('HTTP/1.1 401 Unauthorized');
     header('WWW-Authenticate: Basic realm="My Realm"');
-    header('HTTP/1.0 401 Unauthorized');
     echo 'Text to send if user hits Cancel button';
     exit;
 } else {
@@ -44,13 +44,13 @@ if (!isset($_SERVER['PHP_AUTH_USER'])) {
   </para>
 
   <note>
-   <title>Compatibility Note</title>
+   <title>Compatibility</title>
    <para>
     Please be careful when coding the HTTP header lines. In order to guarantee maximum
     compatibility with all clients, the keyword "Basic" should be written with an
     uppercase "B", the realm string must be enclosed in double (not single) quotes,
     and exactly one space should precede the <emphasis>401</emphasis> code in the 
-    <emphasis>HTTP/1.0 401</emphasis> header line. Authentication parameters have
+    <emphasis>HTTP/1.1 401</emphasis> header line. Authentication parameters have
     to be comma-separated.
    </para>
   </note>
@@ -63,16 +63,8 @@ if (!isset($_SERVER['PHP_AUTH_USER'])) {
    user in a dbm file.
   </para>
 
-  <para>
-   Watch out for buggy Internet Explorer browsers out there.  They
-   seem very picky about the order of the headers.  Sending the
-   <emphasis>WWW-Authenticate</emphasis> header before the
-   <literal>HTTP/1.0 401</literal> header seems to do the trick
-   for now.
-  </para>
-
   <note>
-   <title>Configuration Note</title>
+   <title>Apache Configuration</title>
    <para>
     PHP uses the presence of an <literal>AuthType</literal> directive
     to determine whether external authentication is in effect.
@@ -84,65 +76,32 @@ if (!isset($_SERVER['PHP_AUTH_USER'])) {
    controls a non-authenticated URL from stealing passwords from
    authenticated URLs on the same server.
   </simpara>
-  <simpara>
-   Both Netscape Navigator and Internet Explorer will clear the local browser
-   window's authentication cache for the realm upon receiving a
-   server response of 401. This can effectively "log out" a user,
-   forcing them to re-enter their username and password. Some people
-   use this to "time out" logins, or provide a "log-out" button.
-  </simpara>
-  <para>
-   <example>
-    <title>HTTP Authentication example forcing a new name/password</title>
-    <programlisting role="php">
-<![CDATA[
-<?php
-function authenticate() {
-    header('WWW-Authenticate: Basic realm="Test Authentication System"');
-    header('HTTP/1.0 401 Unauthorized');
-    echo "You must enter a valid login ID and password to access this resource\n";
-    exit;
-}
- 
-if (!isset($_SERVER['PHP_AUTH_USER']) ||
-    ($_POST['SeenBefore'] == 1 && $_POST['OldAuth'] == $_SERVER['PHP_AUTH_USER'])) {
-    authenticate();
-} else {
-    echo "<p>Welcome: " . htmlspecialchars($_SERVER['PHP_AUTH_USER']) . "<br />";
-    echo "Old: " . htmlspecialchars($_REQUEST['OldAuth']);
-    echo "<form action='' method='post'>\n";
-    echo "<input type='hidden' name='SeenBefore' value='1' />\n";
-    echo "<input type='hidden' name='OldAuth' value=\"" . htmlspecialchars($_SERVER['PHP_AUTH_USER']) . "\" />\n";
-    echo "<input type='submit' value='Re Authenticate' />\n";
-    echo "</form></p>\n";
-}
-?>
-]]>
-    </programlisting>
-   </example>
-  </para>
-  <simpara>
-   This behavior is not required by the <literal>HTTP Basic</literal>
-   authentication standard, so you should never depend on this. Testing with
-   <literal>Lynx</literal> has shown that <literal>Lynx</literal> does not clear
-   the authentication credentials with a 401 server response, so pressing back
-   and then forward again will open the resource as long as the credential
-   requirements haven't changed. The user can press the
-   <literal>'_'</literal> key to clear their authentication information, however.
-  </simpara>
-  <simpara>
-   In order to get HTTP Authentication to work using IIS server with the CGI version
-   of PHP you must edit your IIS configuration "<literal>Directory Security</literal>".
-   Click on "<literal>Edit</literal>" and only check
-   "<literal>Anonymous Access</literal>", all other fields
-   should be left unchecked.
-  </simpara>
+
   <note>
-   <title>IIS Note:</title>
+   <title>Browser behavior</title>
    <simpara>
-    For HTTP Authentication to work with IIS, the PHP directive
-    <link linkend="ini.cgi.rfc2616-headers">cgi.rfc2616_headers</link> must
-    be set to <literal>0</literal> (the default value).
+    HTTP Basic authentication really is basic, and it wasn't designed to support
+    logouts. Because HTTP is a stateless protocol, most browsers will cache the
+    provided credentials as soon as a <literal>2xx</literal> status code is seen,
+    and will send them in every request, until the browser is closed. There is no
+    defined way for a server to request a new prompt for credentials.
+
+    Over the years, various workarounds for this have spread as advice on the internet,
+    but they all depend on how different browsers have chosen to handle undefined edge
+    cases (or even violations of the HTTP standard). It is best to avoid such
+    workarounds and not use Basic authentication for anything serious.
+   </simpara>
+  </note>
+
+  <note>
+   <title>IIS Configuration</title>
+   <simpara>
+    In order to get HTTP Authentication to work on IIS server with the CGI version of
+    PHP, the php.ini directive <link linkend="ini.cgi.rfc2616-headers">cgi.rfc2616_headers</link>
+    must be set to <literal>0</literal> (the default value), and you must edit your IIS
+    configuration "<literal>Directory Security</literal>".
+    Click on "<literal>Edit</literal>" and only check "<literal>Anonymous Access</literal>",
+    all other fields should be left unchecked.
    </simpara>
   </note>
 

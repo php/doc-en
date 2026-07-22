@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
- <chapter xml:id="language.variables" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <chapter xml:id="language.variables" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
+  annotations="interactive">
   <title>Variables</title>
   
   <sect1 xml:id="language.variables.basics">
@@ -43,7 +44,7 @@
 
    <example>
     <title>Valid variable names</title>
-    <programlisting role="php">
+    <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 $var = 'Bob';
@@ -52,7 +53,6 @@ echo "$var, $Var";      // outputs "Bob, Joe"
 
 $_4site = 'not yet';    // valid; starts with an underscore
 $täyte = 'mansikka';    // valid; 'ä' is (Extended) ASCII 228.
-?>
 ]]>
     </programlisting>
    </example>
@@ -83,7 +83,6 @@ $4site = 'not yet';     // invalid; starts with a number
 ${'invalid-name'} = 'bar';
 $name = 'invalid-name';
 echo ${'invalid-name'}, " ", $$name;
-?>
 ]]>
     </programlisting>
     &example.outputs;
@@ -124,9 +123,8 @@ bar bar
 $foo = 'Bob';              // Assign the value 'Bob' to $foo
 $bar = &$foo;              // Reference $foo via $bar.
 $bar = "My name is $bar";  // Alter $bar...
-echo $bar;
-echo $foo;                 // $foo is altered too.
-?>
+echo $bar . PHP_EOL;
+echo $foo . PHP_EOL;       // $foo is altered too.
 ]]>
      </programlisting>
     </informalexample>
@@ -139,17 +137,37 @@ echo $foo;                 // $foo is altered too.
      <programlisting role="php">
 <![CDATA[
 <?php
-$foo = 25;
-$bar = &$foo;      // This is a valid assignment.
-$bar = &(24 * 7);  // Invalid; references an unnamed expression.
-
+$original = 25;
+$ref1 = &$original;        // This is a valid assignment.
+$ref2 = &(24 * 7);         // Invalid; references an unnamed expression.
+]]>
+     </programlisting>
+    </informalexample>
+    <informalexample>
+     <programlisting role="php">
+<![CDATA[
+<?php
+// Note the lack of & indicating a returned reference in the function declaration.
+// i.e. the function does not return a reference, so the result cannot be assigned by reference
 function test()
 {
-   return 25;
+   $original = 25;
+   return $original;
 }
 
-$bar = &test();    // Invalid because test() doesn't return a variable by reference.
-?>
+// Note: A notice is issued, but the non-reference value is assigned
+$result1 = &test();        // Invalid because test() doesn't return a variable by reference.
+var_dump($result1);
+
+// This function is defined as returning a reference, but does not return a variable
+function &test2()
+{
+    return 26;             // Invalid because the returned value isn't a variable reference.
+}
+
+// Note: The non-reference value is assigned
+$result2 = &test2();
+var_dump($result2);
 ]]>
      </programlisting>
     </informalexample>
@@ -171,7 +189,6 @@ $bar = &test();    // Invalid because test() doesn't return a variable by refere
 <?php
 // Unset AND unreferenced (no use context) variable.
 var_dump($unset_var);
-?>
 ]]>
      </programlisting>
      &example.outputs;
@@ -196,7 +213,7 @@ NULL
 <![CDATA[
 <?php
 $unset_array[] = 'value'; // Does not generate a warning.
-?>
+var_dump($unset_array);
 ]]>
     </programlisting>
    </example>
@@ -265,12 +282,11 @@ $unset_array[] = 'value'; // Does not generate a warning.
    </simpara>
    <example>
     <title>Example of global variable scope</title>
-    <programlisting role="php">
+    <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 $a = 1;
 include 'b.inc'; // Variable $a will be available within b.inc
-?>
 ]]>
     </programlisting>
    </example>
@@ -295,9 +311,10 @@ $a = 1; // global scope
 
 function test()
 { 
-    echo $a; // Variable $a is undefined as it refers to a local version of $a
+    var_dump($a); // Variable $a is undefined as it refers to a local version of $a
 }
-?>
+
+test();
 ]]>
     </programlisting>
    </example>
@@ -345,7 +362,6 @@ function Sum()
 
 Sum();
 echo $b;
-?>
 ]]>
       </programlisting>
       &example.outputs;
@@ -386,7 +402,6 @@ function Sum()
 
 Sum();
 echo $b;
-?>
 ]]>
      </programlisting>
     </example>
@@ -404,14 +419,13 @@ echo $b;
    <para>
     <example>
      <title>Example demonstrating superglobals and scope</title>
-     <programlisting role="php">
+     <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 function test_superglobal()
 {
     echo $_POST['name'];
 }
-?>
 ]]>
      </programlisting>
     </example>
@@ -442,10 +456,13 @@ function test_superglobal()
 function test()
 {
     $a = 0;
-    echo $a;
+    echo $a . PHP_EOL;
     $a++;
 }
-?>
+
+test();
+test();
+test();
 ]]>
      </programlisting>
     </example>
@@ -468,10 +485,13 @@ function test()
 function test()
 {
     static $a = 0;
-    echo $a;
+    echo $a . PHP_EOL;
     $a++;
 }
-?>
+
+test();
+test();
+test();
 ]]>
      </programlisting>
     </example>
@@ -499,13 +519,14 @@ function test()
     static $count = 0;
 
     $count++;
-    echo $count;
+    echo $count . PHP_EOL;
     if ($count < 10) {
         test();
     }
     $count--;
 }
-?>
+
+test();
 ]]>
      </programlisting>
     </example>
@@ -519,7 +540,7 @@ function test()
    <para>
     <example>
      <title>Declaring static variables</title>
-     <programlisting role="php">
+     <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 function foo(){
@@ -530,7 +551,6 @@ function foo(){
     $int++;
     echo $int;
 }
-?>
 ]]>
      </programlisting>
     </example>
@@ -560,7 +580,6 @@ function exampleFunction($input) {
 // variable does not retain its value.
 echo exampleFunction('A'); // Outputs: Input: A, Counter: 1
 echo exampleFunction('B'); // Outputs: Input: B, Counter: 1
-?>
 ]]>
     </programlisting>
    </example>
@@ -593,7 +612,6 @@ var_dump(Foo::counter()); // int(1)
 var_dump(Foo::counter()); // int(2)
 var_dump(Bar::counter()); // int(3), prior to PHP 8.1.0 int(1)
 var_dump(Bar::counter()); // int(4), prior to PHP 8.1.0 int(2)
-?> 
 ]]>
     </programlisting>
    </example>
@@ -632,20 +650,19 @@ test_global_ref();
 var_dump($obj);
 test_global_noref();
 var_dump($obj);
-?>
 ]]>
     </programlisting>
-   </informalexample>
 
-   &example.outputs;
+    &example.outputs;
 
-   <screen>
+    <screen>
 <![CDATA[
 NULL
 object(stdClass)#1 (0) {
 }
 ]]>
-   </screen>
+    </screen>
+   </informalexample>
 
    <simpara>
     A similar behaviour applies to the <literal>static</literal> statement.
@@ -697,12 +714,10 @@ $still_obj1 = get_instance_ref();
 echo "\n";
 $obj2 = get_instance_noref();
 $still_obj2 = get_instance_noref();
-?>
 ]]>
     </programlisting>
-   </informalexample>
-   &example.outputs;
-   <screen>
+    &example.outputs;
+    <screen>
 <![CDATA[
 Static object: NULL
 Static object: NULL
@@ -713,7 +728,8 @@ Static object: object(stdClass)#3 (1) {
   int(1)
 }
 ]]>
-   </screen>
+    </screen>
+   </informalexample>
 
    <simpara>
     This example demonstrates that when assigning a reference to a static
@@ -737,7 +753,7 @@ Static object: object(stdClass)#3 (1) {
 <![CDATA[
 <?php
 $a = 'hello';
-?>
+var_dump($a);
 ]]>
     </programlisting>
    </informalexample>
@@ -753,8 +769,9 @@ $a = 'hello';
     <programlisting role="php">
 <![CDATA[
 <?php
+$a = 'hello';
 $$a = 'world';
-?>
+var_dump($hello);
 ]]>
     </programlisting>
    </informalexample>
@@ -770,8 +787,9 @@ $$a = 'world';
     <programlisting role="php">
 <![CDATA[
 <?php
+$a = 'hello';
+$$a = 'world';
 echo "$a {$$a}";
-?>
 ]]>
     </programlisting>
    </informalexample>
@@ -784,8 +802,9 @@ echo "$a {$$a}";
     <programlisting role="php">
 <![CDATA[
 <?php
+$a = 'hello';
+$$a = 'world';
 echo "$a $hello";
-?>
 ]]>
     </programlisting>
    </informalexample>
@@ -849,8 +868,6 @@ echo $foo->{$start . $end} . "\n";
 $arr = 'arr';
 echo $foo->{$arr[1]} . "\n";
 echo $foo->{$arr}[1] . "\n";
-
-?>
 ]]>
      </programlisting>
      &example.outputs;
@@ -912,12 +929,11 @@ I am B.
     <para>
      <example>
       <title>Accessing data from a simple POST HTML form</title>
-      <programlisting role="php">
+      <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 echo $_POST['username'];
 echo $_REQUEST['username'];
-?>
 ]]>
       </programlisting>
      </example>
@@ -952,7 +968,7 @@ echo $_REQUEST['username'];
     <para>
      <example>
       <title>More complex form variables</title>
-      <programlisting role="php">
+      <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 if ($_POST) {
@@ -1046,12 +1062,11 @@ if ($_POST) {
     </simpara>
 
     <informalexample>
-     <programlisting role="php">
+     <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
-  setcookie("MyCookie[foo]", 'Testing 1', time()+3600);
-  setcookie("MyCookie[bar]", 'Testing 2', time()+3600);
-?>
+setcookie("MyCookie[foo]", 'Testing 1', time()+3600);
+setcookie("MyCookie[bar]", 'Testing 2', time()+3600);
 ]]>
      </programlisting>
     </informalexample>
@@ -1072,7 +1087,7 @@ if ($_POST) {
 
     <example>
      <title>A <function>setcookie</function> example</title>
-     <programlisting role="php">
+     <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 if (isset($_COOKIE['count'])) {
@@ -1082,7 +1097,6 @@ if (isset($_COOKIE['count'])) {
 }
 setcookie('count', $count, time()+3600);
 setcookie("Cart[$count]", $item, time()+3600);
-?>
 ]]>
      </programlisting>
     </example>
@@ -1097,11 +1111,10 @@ setcookie("Cart[$count]", $item, time()+3600);
      are passed into a script. However, it should be noted that the
      dot (period, full stop) is not a valid character in a PHP
      variable name. For the reason, look at it:
-     <programlisting role="php">
+     <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 $varname.ext;  /* invalid variable name */
-?>
 ]]>
      </programlisting>
      Now, what the parser sees is a variable named

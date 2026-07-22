@@ -1,0 +1,109 @@
+# https://docs.github.com/en/actions
+
+name: "DocBook Lint"
+
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+    branches:
+      - "master"
+
+permissions:
+  contents: "read"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  docbook-cs:
+    name: "DocBook Style Check"
+    runs-on: "ubuntu-latest"
+
+    env:
+      # Base commit to diff against: PR base on pull_request, pre-push tip on push.
+      BASE_SHA: |-
+        ${{
+          case(
+            github.event_name == 'pull_request', github.event.pull_request.base.sha,
+            github.event_name == 'push', github.event.before,
+            'INVALID'
+          )
+        }}
+
+    strategy:
+      matrix:
+        language:
+          - "en"
+
+    steps:
+      - name: "Checkout php/doc-${{ matrix.language }}"
+        uses: "actions/checkout@v7"
+        with:
+          ref: "${{ github.event.pull_request.head.sha }}"
+          path: "${{ matrix.language }}"
+          fetch-depth: 50
+
+      - name: "Checkout php/doc-base"
+        uses: "actions/checkout@v7"
+        with:
+          path: "doc-base"
+          repository: "php/doc-base"
+
+      - name: "Checkout php/docbook-cs"
+        uses: "actions/checkout@v7"
+        with:
+          path: "docbook-cs"
+          repository: "php/docbook-cs"
+
+      - name: "Fetch diff base"
+        working-directory: "${{ matrix.language }}"
+        run: |
+          git fetch origin "$BASE_SHA" --depth=50
+          # Deepen until the merge-base is reachable (long-lived branches)
+          for i in 1 2 3 4 5; do
+            git merge-base "$BASE_SHA" HEAD >/dev/null 2>&1 && break
+            git fetch --deepen=100 origin "$BASE_SHA"
+          done
+
+      - name: "Setup PHP"
+        uses: "shivammathur/setup-php@v2"
+        with:
+          php-version: "8.5"
+          extensions: "dom, libxml, simplexml"
+          tools: composer, cs2pr
+
+      - name: "Build documentation"
+        run: |
+          php doc-base/configure.php \
+            --disable-libxml-check \
+            --enable-xml-details \
+            --redirect-stderr-to-stdout \
+            --with-lang=${{ matrix.language }}
+
+      - name: "Install docbook-cs"
+        working-directory: "docbook-cs"
+        run: composer install --no-interaction --no-progress
+
+      - name: "Run docbook-cs with diff"
+        working-directory: "${{ matrix.language }}"
+        run: |
+          set -o pipefail
+          git diff "$BASE_SHA"...HEAD | php ../docbook-cs/bin/docbook-cs \
+            --report=checkstyle \
+            --diff \
+            --no-colors > docbook-report.xml
+
+      - name: "Upload report"
+        if: ${{ ! cancelled() }}
+        uses: "actions/upload-artifact@v7"
+        with:
+          name: "docbook-report"
+          path: "${{ matrix.language }}/docbook-report.xml"
+
+      - name: "Annotate PR with violations"
+        if: ${{ ! cancelled() }}
+        working-directory: "${{ matrix.language }}"
+        run: cs2pr docbook-report.xml --colorize --prepend-filename
