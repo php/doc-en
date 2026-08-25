@@ -48,7 +48,7 @@
      </simpara>
      <simpara>
       The option array is an associative array where the key corresponds
-      to a key in the data <parameter>array</parameter> and the associated
+      to a key in the input array and the associated
       value is either the filter to apply to this entry,
       or an associative array describing how and which filter should be
       applied to this entry.
@@ -62,7 +62,7 @@
       <constant>FILTER_UNSAFE_RAW</constant>, or
       <constant>FILTER_CALLBACK</constant> constants.
       It can optionally contain the <literal>'flags'</literal> key
-      which specifies and flags that apply to the filter,
+      which specifies any flags that apply to the filter,
       and the <literal>'options'</literal> key which specifies any options
       that apply to the filter.
      </simpara>
@@ -81,17 +81,39 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-   An array containing the values of the requested variables on success, or &false;
-   on failure. An array value will be &false; if the filter fails, or &null; if
-   the variable is not set.
-  </para>
+  <simpara>
+   On success, an &array; containing the values of the requested variables.
+  </simpara>
+  <simpara>
+   On failure, &false; is returned.
+  </simpara>
+  <simpara>
+   Missing entries from the input array are added to the returned &array; as
+   &null; if <parameter>add_empty</parameter> is &true;,
+   and are omitted entirely if it is &false;.
+  </simpara>
+  <simpara>
+   An entry of the returned &array; will be &false; if the filter fails,
+   unless the <constant>FILTER_NULL_ON_FAILURE</constant> flag is used,
+   in which case it will be &null;.
+   With the <constant>FILTER_FORCE_ARRAY</constant> flag,
+   that failure value is wrapped in a one element &array;
+   like any other result.
+  </simpara>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
    <title>A <function>filter_var_array</function> example</title>
+   <simpara>
+    Entries are filtered as scalars unless
+    <constant>FILTER_REQUIRE_ARRAY</constant> or
+    <constant>FILTER_FORCE_ARRAY</constant> is used.
+    The <constant>FILTER_REQUIRE_SCALAR</constant> flag on
+    <literal>testscalar</literal> below therefore only states that default
+    explicitly.
+   </simpara>
    <programlisting role="php">
 <![CDATA[
 <?php
@@ -155,6 +177,78 @@ array(6) {
   }
   ["doesnotexist"]=>
   NULL
+}
+]]>
+   </screen>
+  </example>
+  <example>
+   <title>Applying a single filter to all values</title>
+   <simpara>
+    When <parameter>options</parameter> is an &integer;, the same filter
+    is applied to every entry in the array.
+   </simpara>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$data = [
+    'name'  => '<b>John</b>',
+    'email' => 'john@example<script>.com',
+    'bio'   => 'Developer & writer',
+];
+
+var_dump(filter_var_array($data, FILTER_SANITIZE_SPECIAL_CHARS));
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+array(3) {
+  ["name"]=>
+  string(27) "&#60;b&#62;John&#60;/b&#62;"
+  ["email"]=>
+  string(32) "john@example&#60;script&#62;.com"
+  ["bio"]=>
+  string(22) "Developer &#38; writer"
+}
+]]>
+   </screen>
+  </example>
+  <example>
+   <title>Using <constant>FILTER_CALLBACK</constant></title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$data = [
+    'name'  => '  John Doe  ',
+    'city'  => '  New York  ',
+];
+
+$options = [
+    'name' => [
+        'filter'  => FILTER_CALLBACK,
+        'options' => 'trim',
+    ],
+    'city' => [
+        'filter'  => FILTER_CALLBACK,
+        'options' => function ($value) {
+            return strtoupper(trim($value));
+        },
+    ],
+];
+
+var_dump(filter_var_array($data, $options));
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+array(2) {
+  ["name"]=>
+  string(8) "John Doe"
+  ["city"]=>
+  string(8) "NEW YORK"
 }
 ]]>
    </screen>
