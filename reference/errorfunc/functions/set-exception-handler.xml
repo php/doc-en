@@ -19,6 +19,32 @@
    try/catch block. Execution will stop after the
    <parameter>callback</parameter> is called.
   </para>
+
+  <note>
+   <simpara>
+    While an exception handler is running, no exception handler is active: as of
+    PHP 8.3.0 the engine unsets it before invoking it, so that an exception
+    thrown by the handler is not passed back to it. Called from within a handler,
+    <function>set_exception_handler</function> therefore reports no previously
+    defined handler.
+   </simpara>
+   <simpara>
+    As of PHP 8.3.5 the engine also pushes the handler it is about to invoke onto
+    the handler stack, so <function>restore_exception_handler</function> called
+    from within a handler re-installs the handler that is currently running
+    rather than the one that was active before it.
+   </simpara>
+   <simpara>
+    The running handler is re-installed automatically when it returns, but only
+    if no exception handler is active at that point. As soon as the handler calls
+    <function>set_exception_handler</function> or
+    <function>restore_exception_handler</function>, this automatic restoration is
+    skipped and the active handler is whatever the handler itself left in place.
+   </simpara>
+   <simpara>
+    Modifying the exception handler from within itself is therefore discouraged.
+   </simpara>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -59,6 +85,40 @@
   </para>
  </refsect1>
 
+ <refsect1 role="changelog">
+  &reftitle.changelog;
+  <para>
+   <informaltable>
+    <tgroup cols="2">
+     <thead>
+      <row>
+       <entry>&Version;</entry>
+       <entry>&Description;</entry>
+      </row>
+     </thead>
+     <tbody>
+      <row>
+       <entry>8.3.5</entry>
+       <entry>
+        The exception handler being invoked is now pushed onto the handler stack
+        and re-installed once it returns, unless the handler modified the stack
+        itself.
+       </entry>
+      </row>
+      <row>
+       <entry>8.3.0</entry>
+       <entry>
+        The active exception handler is now unset while it runs, so
+        <function>set_exception_handler</function> called from within a handler
+        reports no previously defined handler.
+       </entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </informaltable>
+  </para>
+ </refsect1>
+
  <refsect1 role="examples">
   &reftitle.examples;
   <para>
@@ -84,15 +144,13 @@ echo "Not Executed\n";
 
  <refsect1 role="seealso"><!-- {{{ -->
   &reftitle.seealso;
-  <para>
-   <simplelist>
-    <member><function>get_exception_handler</function></member>
-    <member><function>restore_exception_handler</function></member>
-    <member><function>restore_error_handler</function></member>
-    <member><function>error_reporting</function></member>
-    <member><link linkend="language.exceptions">Exceptions</link></member>
-   </simplelist>
-  </para>
+  <simplelist>
+   <member><function>get_exception_handler</function></member>
+   <member><function>restore_exception_handler</function></member>
+   <member><function>restore_error_handler</function></member>
+   <member><function>error_reporting</function></member>
+   <member><link linkend="language.exceptions">Exceptions</link></member>
+  </simplelist>
  </refsect1><!-- }}} -->
 
 </refentry>
