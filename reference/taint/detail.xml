@@ -1,319 +1,275 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision$ --> 
+<!-- $Revision$ -->
 
 <chapter xml:id="taint.detail" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
- <title>More Details</title>
+ <title>Propagation and Checked Sinks</title>
 
  <section xml:id="taint.detail.basic">
-  <title>Functions and Statements which will spread the tainted mark of a
-   tainted string</title>
+  <title>How the taint mark is propagated</title>
+  <simpara>
+   The taint mark is a single bit stored on the string itself, not on the
+   variable holding it. Assigning, passing or otherwise sharing a tainted
+   string keeps the mark. String concatenation and interpolation propagate
+   it as well:
+  </simpara>
   <para>
    <table>
-    <title></title>
-    <tgroup cols="2">
-      <colspec colname="name"/>
-      <colspec colname="version"/>
-     <thead>
-      <row>
-       <entry>Function/Statement</entry>
-       <entry>Since</entry>
-      </row>
-     </thead>
+    <title>Operators which propagate the taint mark</title>
+    <tgroup cols="1">
      <tbody>
       <row>
-       <entry>= (assign)</entry>
-       <entry>0.1.0</entry>
+       <entry><literal>=</literal> (assignment, including <literal>list()</literal>/<literal>array destructuring</literal>)</entry>
       </row>
       <row>
-       <entry>. (concat)</entry>
-       <entry>0.1.0</entry>
+       <entry><literal>.</literal> (concatenation)</entry>
       </row>
       <row>
-       <entry>"{$var}" (variable substitution)</entry>
-       <entry>0.1.0</entry>
+       <entry><literal>.=</literal> (concatenating assignment)</entry>
       </row>
       <row>
-       <entry>.= (assign concat)</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>strval</entry>
-       <entry>0.3.0</entry>
-      </row>
-      <row>
-       <entry>explode/split</entry>
-       <entry>0.3.0</entry>
-      </row>
-      <row>
-       <entry>implode/join</entry>
-       <entry>0.3.0</entry>
-      </row>
-      <row>
-       <entry>sprintf</entry>
-       <entry>0.3.0</entry>
-      </row>
-      <row>
-       <entry>vsprintf</entry>
-       <entry>0.3.0</entry>
-      </row>
-      <row>
-       <entry>trim</entry>
-       <entry>0.4.0</entry>
-      </row>
-      <row>
-       <entry>rtrim</entry>
-       <entry>0.4.0</entry>
-      </row>
-      <row>
-       <entry>ltrim</entry>
-       <entry>0.4.0</entry>
-      </row>
-      <row>
-       <entry>strstr</entry>
-       <entry>0.5.0</entry>
-      </row>
-      <row>
-       <entry>str_pad</entry>
-       <entry>0.5.0</entry>
-      </row>
-      <row>
-       <entry>str_replace</entry>
-       <entry>0.5.0</entry>
-      </row>
-      <row>
-       <entry>substr</entry>
-       <entry>0.5.0</entry>
-      </row>
-      <row>
-       <entry>strtolower</entry>
-       <entry>0.5.0</entry>
-      </row>
-      <row>
-       <entry>strtoupper</entry>
-       <entry>0.5.0</entry>
+       <entry><literal>"{$var}"</literal> (string interpolation, including the <literal>ROPE</literal> fast path)</entry>
       </row>
      </tbody>
     </tgroup>
    </table>
   </para>
- </section>
-
- <section xml:id="taint.detail.taint">
-  <title>Functions and statements which will check tainted string</title>
+  <simpara>
+   In addition, taint understands a fixed set of string functions: when any
+   of the relevant string arguments is tainted, the returned string is
+   marked tainted too. Both the regular call and, on PHP 8.4+, the
+   frameless fast-path call are covered.
+  </simpara>
   <para>
    <table>
-    <title></title>
-    <tgroup cols="2">
-      <colspec colname="name"/>
-      <colspec colname="version"/>
-     <thead>
-      <row>
-       <entry>Function/Statement</entry>
-       <entry>Since</entry>
-      </row>
-     </thead>
+    <title>Functions which propagate the taint mark</title>
+    <tgroup cols="1">
      <tbody>
       <row>
-       <entry namest="name" nameend="version">Basic statments</entry>
+       <entry><function>trim</function>, <function>rtrim</function>, <function>ltrim</function></entry>
       </row>
       <row>
-       <entry>eval</entry>
-       <entry>0.1.0</entry>
+       <entry><function>substr</function>, <function>strstr</function></entry>
       </row>
       <row>
-       <entry>include/include_once</entry>
-       <entry>0.1.0</entry>
+       <entry><function>str_replace</function>, <function>str_ireplace</function></entry>
       </row>
       <row>
-       <entry>require/require_once</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <!--end basic -->
-
-      <row>
-       <entry namest="name" nameend="version">Outputing Functions</entry>
+       <entry><function>str_pad</function>, <function>strtolower</function>, <function>strtoupper</function>, <function>strval</function></entry>
       </row>
       <row>
-       <entry>echo</entry>
-       <entry>0.1.0</entry>
+       <entry><function>explode</function> (every element of the resulting array)</entry>
       </row>
       <row>
-       <entry>print</entry>
-       <entry>0.1.0</entry>
+       <entry><function>implode</function>/<function>join</function> (a tainted separator taints the result as well)</entry>
       </row>
       <row>
-       <entry>printf</entry>
-       <entry>0.1.0</entry>
+       <entry><function>sprintf</function>, <function>vsprintf</function> (only the <literal>%s</literal> specifier carries the mark; <literal>sprintf("%d", $t)</literal> returns a clean string)</entry>
       </row>
       <row>
-       <entry>file_put_contents</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <!-- end outputing -->
-      <row>
-       <entry namest="name" nameend="version">File System Functions</entry>
-      </row>
-      <row>
-       <entry>fopen</entry>
-       <entry>0.2.0</entry>
-      </row>
-      <row>
-       <entry>opendir</entry>
-       <entry>0.2.0</entry>
-      </row>
-      <row>
-       <entry>basename</entry>
-       <entry>0.2.0</entry>
-      </row>
-      <row>
-       <entry>dirname</entry>
-       <entry>0.2.0</entry>
-      </row>
-      <row>
-       <entry>file</entry>
-       <entry>0.2.0</entry>
-      </row>
-      <row>
-       <entry>pathinfo</entry>
-       <entry>0.2.0</entry>
-      </row>
-      <!-- end file system -->
-      <row>
-       <entry namest="name" nameend="version">Database relevant Functions</entry>
-      </row>
-      <row>
-       <entry>mysql_query</entry>
-       <entry>0.2.0</entry>
-      </row>
-      <row>
-       <entry>mysqli_query/MySQLi::query</entry>
-       <entry>0.2.0</entry>
-      </row>
-      <row>
-       <entry>sqlite_query/SqliteDataBase::query</entry>
-       <entry>0.3.0</entry>
-      </row>
-      <row>
-       <entry>sqlite_single_query/SqliteDataBase::singleQuery</entry>
-       <entry>0.3.0</entry>
-      </row>
-      <row>
-       <entry>oci_parse</entry>
-       <entry>0.3.0</entry>
-      </row>
-      <row>
-       <entry>PDO::query</entry>
-       <entry>0.3.0</entry>
-      </row>
-      <row>
-       <entry>PDO::prepare</entry>
-       <entry>0.3.0</entry>
-      </row>
-      <row>
-       <entry>SQLite3::query</entry>
-       <entry>2.0.1</entry>
-      </row>
-      <row>
-       <entry>SQLite3::prepare</entry>
-       <entry>2.0.1</entry>
-      </row>
-      <!-- end database -->
-      <row>
-       <entry namest="name" nameend="version">Command Line relevant Functions</entry>
-      </row>
-      <row>
-       <entry>system</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>exec</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>proc_open</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>passthru</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>shell_exec</entry>
-       <entry>0.3.0</entry>
-      </row>
-      <!-- end command line -->
-
-     </tbody>
-    </tgroup>
-   </table>
-  </para>
- </section>
-
- <section xml:id="taint.detail.untaint">
-  <title>Functions which untaint the tainted string</title>
-  <para>
-   <table>
-    <title></title>
-    <tgroup cols="2">
-      <colspec colname="name"/>
-      <colspec colname="version"/>
-     <thead>
-      <row>
-       <entry>Function</entry>
-       <entry>Since</entry>
-      </row>
-     </thead>
-     <tbody>
-      <row>
-       <entry>addslashes</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>addcslashes</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>htmlspecialchars</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>htmlentities</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>escapeshellcmd</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>mysql_escape_string</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>mysql_real_escape_string</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>mysqli_escape_string/MySQLi::escape_string</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>mysqli_real_escape_string/MySQLi::real_escape_string</entry>
-       <entry>0.1.0</entry>
-      </row>
-      <row>
-       <entry>sqlite_escape_string/SqliteDataBase::escapeString</entry>
-       <entry>0.3.0</entry>
-      </row>
-      <row>
-       <entry>PDO::quote</entry>
-       <entry>0.3.0</entry>
+       <entry><function>dirname</function>, <function>basename</function>, <function>pathinfo</function></entry>
       </row>
      </tbody>
     </tgroup>
    </table>
   </para>
-
+  <simpara>
+   Any function taint does not explicitly understand returns a fresh,
+   unmarked string — including escaping helpers such as
+   <function>htmlspecialchars</function>, <function>htmlentities</function> or
+   <function>mysqli_real_escape_string</function>. This is deliberate: taint
+   over-reports rather than trying to decide whether a value is
+   <quote>safe</quote> for a particular output context. Use
+   <function>untaint</function> to clear the mark on values you have validated
+   yourself.
+  </simpara>
  </section>
+
+ <section xml:id="taint.detail.sinks">
+  <title>Where taint raises warnings</title>
+  <simpara>
+   When a tainted string reaches one of the sinks below, taint raises a
+   warning (by default an <constant>E_USER_WARNING</constant>; the level is
+   configurable via <link linkend="ini.taint.error-level">taint.error_level</link>).
+   Only top-level string arguments are inspected; dumping an array that
+   merely contains tainted values does not warn.
+  </simpara>
+  <para>
+   <table>
+    <title>Output sinks</title>
+    <tgroup cols="2">
+     <thead>
+      <row><entry>Sink</entry><entry>Checked</entry></row>
+     </thead>
+     <tbody>
+      <row>
+       <entry><literal>echo</literal>, <literal>print</literal></entry>
+       <entry>the echoed/printed expression</entry>
+      </row>
+      <row>
+       <entry><function>printf</function>, <function>vprintf</function></entry>
+       <entry>the format string and the substituted values</entry>
+      </row>
+      <row>
+       <entry><function>print_r</function>, <function>var_dump</function>, <function>var_export</function></entry>
+       <entry>the value being dumped, when it is a string</entry>
+      </row>
+      <row>
+       <entry><literal>exit</literal>/<literal>die</literal> with a message</entry>
+       <entry>the message</entry>
+      </row>
+      <row>
+       <entry><function>file_put_contents</function>, <function>fwrite</function>, <function>fputs</function> to <literal>php://output</literal></entry>
+       <entry>the data being written</entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </table>
+  </para>
+  <para>
+   <table>
+    <title>Filesystem sinks</title>
+    <tgroup cols="2">
+     <thead>
+      <row><entry>Sink</entry><entry>Checked</entry></row>
+     </thead>
+     <tbody>
+      <row>
+       <entry><function>fopen</function>, <function>opendir</function>, <function>unlink</function></entry>
+       <entry>the path</entry>
+      </row>
+      <row>
+       <entry><function>file</function>, <function>readfile</function>, <function>file_get_contents</function>, <function>highlight_file</function>/<function>show_source</function></entry>
+       <entry>the path</entry>
+      </row>
+      <row>
+       <entry><function>copy</function>, <function>rename</function>, <function>move_uploaded_file</function></entry>
+       <entry>both the source and destination paths</entry>
+      </row>
+      <row>
+       <entry><function>mkdir</function>, <function>rmdir</function>, <function>touch</function></entry>
+       <entry>the path</entry>
+      </row>
+      <row>
+       <entry><literal>include</literal>, <literal>include_once</literal>, <literal>require</literal>, <literal>require_once</literal></entry>
+       <entry>the file path</entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </table>
+  </para>
+  <para>
+   <table>
+    <title>SQL sinks</title>
+    <tgroup cols="2">
+     <thead>
+      <row><entry>Sink</entry><entry>Checked</entry></row>
+     </thead>
+     <tbody>
+      <row>
+       <entry><function>mysqli_query</function>, <function>mysqli_prepare</function>, <function>mysqli_real_query</function>, <function>mysqli_multi_query</function></entry>
+       <entry>the query string</entry>
+      </row>
+      <row>
+       <entry><function>mysql_query</function>, <function>sqlite_query</function>, <function>sqlite_single_query</function>, <function>oci_parse</function>, <function>pg_query</function>, <function>pg_send_query</function></entry>
+       <entry>the query string</entry>
+      </row>
+      <row>
+       <entry><methodname>mysqli::query</methodname>, <methodname>mysqli::prepare</methodname>, <methodname>mysqli::real_query</methodname>, <methodname>mysqli::multi_query</methodname></entry>
+       <entry>the query string</entry>
+      </row>
+      <row>
+       <entry><methodname>PDO::query</methodname>, <methodname>PDO::prepare</methodname>, <methodname>PDO::exec</methodname></entry>
+       <entry>the query string</entry>
+      </row>
+      <row>
+       <entry><methodname>SQLite3::query</methodname>, <methodname>SQLite3::prepare</methodname>, <methodname>SQLite3::exec</methodname>, <methodname>SQLiteDatabase::query</methodname>, <methodname>SQLiteDatabase::singleQuery</methodname></entry>
+       <entry>the query string</entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </table>
+  </para>
+  <para>
+   <table>
+    <title>Command execution sinks</title>
+    <tgroup cols="2">
+     <thead>
+      <row><entry>Sink</entry><entry>Checked</entry></row>
+     </thead>
+     <tbody>
+      <row>
+       <entry><function>exec</function>, <function>system</function>, <function>passthru</function>, <function>shell_exec</function> (including the backtick operator)</entry>
+       <entry>the command string</entry>
+      </row>
+      <row>
+       <entry><function>proc_open</function>, <function>popen</function></entry>
+       <entry>the command string</entry>
+      </row>
+      <row>
+       <entry><literal>eval</literal></entry>
+       <entry>the evaluated code</entry>
+      </row>
+      <row>
+       <entry>dynamic calls such as <literal>$func()</literal>, <literal>$obj-&gt;$method()</literal>, <function>call_user_func</function>, array callables</entry>
+       <entry>the function/method/class name being resolved</entry>
+      </row>
+      <row>
+       <entry><function>preg_match</function>, <function>preg_match_all</function>, <function>preg_replace</function>, <function>preg_split</function>, <function>preg_grep</function>, <function>preg_replace_callback</function></entry>
+       <entry>the pattern (and the callback name for <function>preg_replace_callback</function>)</entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </table>
+  </para>
+  <para>
+   <table>
+    <title>Header and cookie sinks</title>
+    <tgroup cols="2">
+     <thead>
+      <row><entry>Sink</entry><entry>Checked</entry></row>
+     </thead>
+     <tbody>
+      <row>
+       <entry><function>header</function></entry>
+       <entry>the header string</entry>
+      </row>
+      <row>
+       <entry><function>setcookie</function>, <function>setrawcookie</function></entry>
+       <entry>the cookie name and value</entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </table>
+  </para>
+  <para>
+   <table>
+    <title>Other sinks</title>
+    <tgroup cols="2">
+     <thead>
+      <row><entry>Sink</entry><entry>Checked</entry></row>
+     </thead>
+     <tbody>
+      <row>
+       <entry><function>unserialize</function></entry>
+       <entry>the serialized string</entry>
+      </row>
+      <row>
+       <entry><function>mail</function></entry>
+       <entry>to, subject, additional parameters and additional headers (the message body is content and is not checked)</entry>
+      </row>
+     </tbody>
+    </tgroup>
+   </table>
+  </para>
+  <simpara>
+   Warnings follow the format
+   <literal>function_name() [sink]: message</literal>, where
+   <literal>sink</literal> identifies the checked operation (for example
+   <literal>echo</literal>, <literal>include</literal> or the function name) and
+   the message describes what was found to be possibly tainted.
+  </simpara>
+ </section>
+
 </chapter>
 
 <!-- Keep this comment at the end of the file
