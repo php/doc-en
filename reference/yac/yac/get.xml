@@ -11,31 +11,41 @@
   &reftitle.description;
   <methodsynopsis>
    <modifier>public</modifier> <type>mixed</type><methodname>Yac::get</methodname>
-   <methodparam><type class="union"><type>string</type><type>array</type></type><parameter>key</parameter></methodparam>
-   <methodparam choice="opt"><type>int</type><parameter role="reference">cas</parameter><initializer>&null;</initializer></methodparam>
+   <methodparam><type class="union"><type>string</type><type>array</type></type><parameter>keys</parameter></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>default</parameter><initializer>&null;</initializer></methodparam>
   </methodsynopsis>
-  <para>
+  <simpara>
     Retrieve values from cache
-  </para>
+  </simpara>
  </refsect1>
 
  <refsect1 role="parameters">
   &reftitle.parameters;
   <variablelist>
    <varlistentry>
-    <term><parameter>key</parameter></term>
+    <term><parameter>keys</parameter></term>
     <listitem>
-     <para>
-      &string; keys, or &array; of multiple keys.
-     </para>
+     <simpara>
+      A <type>string</type> key, or an <type>array</type> of keys.
+     </simpara>
     </listitem>
    </varlistentry>
    <varlistentry>
-    <term><parameter>cas</parameter></term>
+    <term><parameter>default</parameter></term>
     <listitem>
-     <para>
-      if not &null;, it will be set to the retrieved item's cas.
-     </para>
+     <simpara>
+      The value to return when the requested key (or keys) is not
+      present in the cache, available as of yac 2.4.0. When omitted, a
+      miss returns &false;.
+     </simpara>
+     <note>
+      <simpara>
+       Before yac 2.4.0, this argument slot held a by-reference
+       <literal>$cas</literal> token rather than a default value. Code
+       that passed or relied on that token must be updated when
+       upgrading to 2.4.0.
+      </simpara>
+     </note>
     </listitem>
    </varlistentry>
   </variablelist>
@@ -43,11 +53,61 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-   mixed on success, false on failure
-  </para>
+  <simpara>
+   For a <type>string</type> key, returns the cached value on a hit,
+   otherwise the <parameter>default</parameter> (or &false; when no default
+   was given).
+  </simpara>
+  <simpara>
+   For an <type>array</type> of keys, returns an array containing the
+   found values indexed by their keys. Keys that are not present in
+   the cache are omitted from the result as of yac 2.4.0, or filled
+   with the <parameter>default</parameter> when one was given; before
+   2.4.0, a &false; placeholder was inserted for every missing key.
+  </simpara>
  </refsect1>
 
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title><methodname>Yac::get</methodname> example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$yac = new Yac();
+
+$yac->set("foo", "bar");
+var_dump($yac->get("foo"));                 // string(3) "bar"
+var_dump($yac->get("missing"));             // bool(false): a miss
+
+// a miss and a stored false are indistinguishable without a default;
+// a sentinel default (available as of yac 2.4.0) tells them apart
+$yac->set("flag", false);
+var_dump($yac->get("flag"));                // bool(false): the stored value
+var_dump($yac->get("missing", false));      // bool(false): a miss, same shape
+var_dump($yac->get("flag", "__NONE__"));    // bool(false): the stored value
+var_dump($yac->get("missing", "__NONE__")); // string(8) "__NONE__": a miss
+
+// with an array of keys, only the found keys are present in the result
+$yac->set("foo2", "bar2");
+var_dump($yac->get(array("foo", "foo2", "missing")));
+// array(2) { ["foo"]=> string(3) "bar" ["foo2"]=> string(4) "bar2" }
+?>
+]]>
+   </programlisting>
+  </example>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><methodname>Yac::set</methodname></member>
+    <member><methodname>Yac::__get</methodname></member>
+   </simplelist>
+  </para>
+ </refsect1>
 
 </refentry>
 
