@@ -4,7 +4,7 @@
 <refentry xml:id="yaconf.get" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Yaconf::get</refname>
-  <refpurpose>Retrieve a item</refpurpose>
+  <refpurpose>Retrieve a configuration value by name</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -12,11 +12,19 @@
   <methodsynopsis>
    <modifier>public</modifier> <modifier>static</modifier> <type>mixed</type><methodname>Yaconf::get</methodname>
    <methodparam><type>string</type><parameter>name</parameter></methodparam>
-   <methodparam choice="opt"><type>mixed</type><parameter>default_value</parameter><initializer>NULL</initializer></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>default</parameter><initializer>&null;</initializer></methodparam>
   </methodsynopsis>
-  <para>
-
-  </para>
+  <simpara>
+   Retrieves the configuration value stored under
+   <parameter>name</parameter>. Names use dot notation to traverse
+   nested keys: <literal>"app"</literal> addresses the whole parsed
+   <filename>app.ini</filename> file,
+   <literal>"app.name"</literal> a key inside it, and since Yaconf
+   1.2.0 <literal>"users.database.master"</literal> a key in the
+   file <filename>database.ini</filename> placed in the
+   <filename>users/</filename> sub-directory. The dot notation
+   supports up to 64 levels of nesting.
+  </simpara>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -25,17 +33,22 @@
    <varlistentry>
     <term><parameter>name</parameter></term>
     <listitem>
-     <para>
-      Configuration key, the key looks like "filename.key", or "filename.sectionName,key".
-     </para>
+     <simpara>
+      The configuration name to look up, using dot notation to
+      traverse nested keys, for example
+      <literal>"app.name"</literal>, <literal>"app.features.1"</literal>
+      or, since Yaconf 1.2.0, <literal>"users.database.master"</literal>
+      for files in sub-directories.
+     </simpara>
     </listitem>
    </varlistentry>
    <varlistentry>
-    <term><parameter>default_value</parameter></term>
+    <term><parameter>default</parameter></term>
     <listitem>
-     <para>
-      if the key doesn't exists, Yaconf::get will return this as result.
-     </para>
+     <simpara>
+      The value to return when <parameter>name</parameter> is not
+      found. When omitted, &null; is returned.
+     </simpara>
     </listitem>
    </varlistentry>
   </variablelist>
@@ -43,50 +56,69 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-   Returns configuration result(string or array) if the key exists,
-   return default_value if not.
-  </para>
+  <simpara>
+   The stored configuration value, a <type>string</type> or an
+   <type>array</type>, when <parameter>name</parameter> exists;
+   otherwise the <parameter>default</parameter> (or &null; when no
+   default was given).
+  </simpara>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
-  <example>
-   <title><function>INI</function>example</title>
-   <programlisting role="ini">
+  <simpara>
+   The examples below assume the following two files placed in the
+   directory configured with <literal>yaconf.directory</literal>.
+  </simpara>
+  <programlisting role="ini">
 <![CDATA[
-;filenmame foo.ini, placed in directory which is yaconf.directoy
-[SectionA]
-;key value pair
-key=val
-;hash[a]=val
-hash.a=val
-;arr[0]=val
-arr.0=val
-;or
-arr[]=val
+; app.ini
+name="shop"                     ; scalar value
+debug=0                         ; number
+features[]="checkout"           ; array entries, both notations
+features.1="wishlist"
+]]>
+  </programlisting>
+  <programlisting role="ini">
+<![CDATA[
+; users/database.ini, in a sub-directory (Yaconf 1.2.0+)
+master="192.168.0.10"
+replica="192.168.0.20"
+]]>
+  </programlisting>
+  <example>
+   <title><methodname>Yaconf::get</methodname> example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+// fetch a whole parsed file as an array
+var_dump(Yaconf::get("app"));
 
-;SectionB inherits SectionA
-[SectionB:SectionA]
-;override configuration key in SectionA
-key=new_val
+// dot notation traverses nested keys
+var_dump(Yaconf::get("app.name"));           // string(4) "shop"
+var_dump(Yaconf::get("app.features.1"));     // string(8) "wishlist"
+
+// since 1.2.0: files in sub-directories are namespaced by the
+// directory name
+var_dump(Yaconf::get("users.database.master")); // string(12) "192.168.0.10"
+
+// when the key is missing, the default is returned
+var_dump(Yaconf::get("app.missing"));             // NULL
+var_dump(Yaconf::get("app.missing", "fallback")); // string(8) "fallback"
+?>
 ]]>
    </programlisting>
-   &example.outputs.similar;
-   <screen>
-<![CDATA[
-php7 -r 'var_dump(Yaconf::get("foo.SectionA.key"));'
-//string(3) "val"
-
-php7 -r 'var_dump(Yaconf::get("foo.SectionB.key"));'
-//string(7) "new_val"
-
-php7 -r 'var_dump(Yaconf::get("foo")["SectionA"]["hash"]);'
-//array(1)
-
-]]>
-   </screen>
   </example>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><methodname>Yaconf::has</methodname></member>
+    <member><methodname>Yaconf::__debug_info</methodname></member>
+   </simplelist>
+  </para>
  </refsect1>
 
 </refentry>
