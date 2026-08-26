@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision$ --> 
+<!-- $Revision$ -->
 
 <chapter xml:id="yar.examples" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  &reftitle.examples;
@@ -23,7 +23,7 @@ class Operator {
     }
 
     /**
-     * Sub 
+     * Sub
      */
     public function sub($a, $b) {
         return $a - $b;
@@ -54,7 +54,14 @@ $server->handle();
  </example>
 
  <example>
-  <title>Access the server in browser(GET request)</title>
+  <title>Access the server in browser (GET request)</title>
+  <simpara>
+   When a GET request is issued to the service URI, Yar renders an
+   information page listing every public method of the executor object
+   together with its doc comment. This is controlled by the
+   <link linkend="ini.yar.expose-info">yar.expose_info</link>
+   directive.
+  </simpara>
   &example.outputs.similar;
   <mediaobject>
    <alt>Yar Server Info</alt>
@@ -69,28 +76,27 @@ $server->handle();
   <programlisting role="php">
 <![CDATA[
 <?php
-$client = new yar_client("http://example.com/operator.php");
+$client = new Yar_Client("http://example.com/operator.php");
 
 /* call directly */
 var_dump($client->add(1, 2));
 
-/* call via call */
+/* call via call() */
 var_dump($client->call("add", array(3, 2)));
 
-
-/* _add cannot be called */
+/* _add cannot be called: it is not public */
 var_dump($client->_add(1, 2));
 ?>
 ]]>
   </programlisting>
   &example.outputs.similar;
-   <screen>
+  <screen>
 <![CDATA[
 int(3)
 int(5)
-PHP Fatal error:  Uncaught exception 'Yar_Server_Exception' with message 'call to api Operator::_add() failed' in *
+PHP Fatal error:  Uncaught Yar_Server_Request_Exception: call to undefined api Operator::_add() in *
 ]]>
-   </screen>
+  </screen>
  </example>
 
  <example>
@@ -99,16 +105,20 @@ PHP Fatal error:  Uncaught exception 'Yar_Server_Exception' with message 'call t
 <![CDATA[
 <?php
 function callback($ret, $callinfo) {
-    echo $callinfo['method'] , " result: ", $ret , "\n";
+    echo $callinfo['method'], " result: ", $ret, "\n";
 }
 
-/* register async call to remote services */
+function error_callback($type, $error, $callinfo) {
+    error_log("[$type] $error");
+}
+
+/* register async calls to remote services */
 Yar_Concurrent_Client::call("http://example.com/operator.php", "add", array(1, 2), "callback");
 Yar_Concurrent_Client::call("http://example.com/operator.php", "sub", array(2, 1), "callback");
 Yar_Concurrent_Client::call("http://example.com/operator.php", "mul", array(2, 2), "callback");
 
-/* sent all request and wait for response */
-Yar_Concurrent_Client::loop();
+/* send all requests and wait for the responses */
+Yar_Concurrent_Client::loop("callback", "error_callback");
 ?>
 ]]>
   </programlisting>
@@ -119,7 +129,26 @@ mul result: 4
 sub result: 1
 add result: 3
 ]]>
-   </screen>
+  </screen>
+ </example>
+
+ <example>
+  <title>Yar TCP Client Example</title>
+  <simpara>
+   Besides HTTP, <classname>Yar_Client</classname> can talk to Yar
+   compatible servers over TCP or Unix sockets, for example a service
+   implemented with the Yar C framework. The remote server must
+   implement the same binary Yar protocol.
+  </simpara>
+  <programlisting role="php">
+<![CDATA[
+<?php
+$client = new Yar_Client("tcp://127.0.0.1:8600");
+
+var_dump($client->add(1, 2));
+?>
+]]>
+  </programlisting>
  </example>
 
 </chapter>

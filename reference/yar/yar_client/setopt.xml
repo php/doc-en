@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision$ --> 
+<!-- $Revision$ -->
 
 <refentry xml:id="yar-client.setopt" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Yar_Client::setOpt</refname>
-  <refpurpose>Set calling contexts</refpurpose>
+  <refpurpose>Set client options</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
-  <methodsynopsis>
-   <modifier>public</modifier> <type class="union"><type>Yar_Client</type><type>false</type></type><methodname>Yar_Client::setOpt</methodname>
+  <methodsynopsis role="Yar_Client">
+   <modifier>public</modifier> <type class="union"><type>Yar_Client</type><type>bool</type></type><methodname>Yar_Client::setOpt</methodname>
    <methodparam><type>int</type><parameter>name</parameter></methodparam>
    <methodparam><type>mixed</type><parameter>value</parameter></methodparam>
   </methodsynopsis>
-  <para>
-
-  </para>
+  <simpara>
+   Sets an option on the client. Options are evaluated when a call is
+   issued, so they can be changed between calls.
+  </simpara>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -25,23 +26,29 @@
    <varlistentry>
     <term><parameter>name</parameter></term>
     <listitem>
-     <para>
-      it can be:
-        <constant>YAR_OPT_PACKAGER</constant>,
-        <constant>YAR_OPT_PERSISTENT</constant> (Need server support),
-        <constant>YAR_OPT_TIMEOUT</constant>,
-        <constant>YAR_OPT_CONNECT_TIMEOUT</constant>,
-        <constant>YAR_OPT_HEADER</constant> (as of 2.0.4),
-        <constant>YAR_OPT_PROXY</constant> (as of 2.2.0)
-     </para>
+     <simpara>
+      One of the <literal>YAR_OPT_*</literal> constants:
+     </simpara>
+     <simplelist>
+      <member><constant>YAR_OPT_PACKAGER</constant> — a packager name: <literal>php</literal>, <literal>json</literal> or, when built with msgpack support, <literal>msgpack</literal></member>
+      <member><constant>YAR_OPT_PERSISTENT</constant> — a boolean persistent-connection flag (HTTP keep-alive)</member>
+      <member><constant>YAR_OPT_TIMEOUT</constant> — a timeout in milliseconds, overriding <link linkend="ini.yar.timeout">yar.timeout</link></member>
+      <member><constant>YAR_OPT_CONNECT_TIMEOUT</constant> — a connect timeout in milliseconds, overriding <link linkend="ini.yar.connect-timeout">yar.connect_timeout</link></member>
+      <member><constant>YAR_OPT_HEADER</constant> (as of 2.0.4) — an &array; of additional HTTP header lines</member>
+      <member><constant>YAR_OPT_RESOLVE</constant> (as of 2.1.0) — an &array; of hostname resolution entries</member>
+      <member><constant>YAR_OPT_PROXY</constant> (as of 2.2.0) — an HTTP proxy address</member>
+      <member><constant>YAR_OPT_PROVIDER</constant> (as of 2.3.0) — the provider identity, up to 32 bytes</member>
+      <member><constant>YAR_OPT_TOKEN</constant> (as of 2.3.0) — the authentication token, up to 32 bytes</member>
+     </simplelist>
     </listitem>
    </varlistentry>
    <varlistentry>
     <term><parameter>value</parameter></term>
     <listitem>
-     <para>
-      
-     </para>
+     <simpara>
+      The option value. An invalid value raises a warning and makes the call
+      return &false;.
+     </simpara>
     </listitem>
    </varlistentry>
   </variablelist>
@@ -49,50 +56,78 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-   Returns <varname>$this</varname> on success&return.falseforfailure;.
-  </para>
+  <simpara>
+   Returns the client object itself, allowing a fluent interface, or
+   &false; when the option name is unknown, the value is invalid, or the
+   option does not apply to the protocol the client was created with.
+  </simpara>
+ </refsect1>
+
+ <refsect1 role="errors">
+  &reftitle.errors;
+  <simpara>
+   Conditions that make the call return &false; also raise a warning:
+  </simpara>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <constant>YAR_OPT_HEADER</constant>,
+     <constant>YAR_OPT_RESOLVE</constant> and
+     <constant>YAR_OPT_PROXY</constant> only work with the HTTP protocol;
+     using them with a <literal>tcp://</literal> or
+     <literal>unix://</literal> client raises a warning.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>YAR_OPT_RESOLVE</constant> additionally requires libcurl
+     &gt;= 7.21.3.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     Each option expects a specific value type (string, boolean, integer or
+     array), described on the
+     <link linkend="yar.constants">constants</link> page.
+    </simpara>
+   </listitem>
+  </itemizedlist>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><function>Yar_Client::setOpt</function> example</title>
+   <title><methodname>Yar_Client::setOpt</methodname> example</title>
    <programlisting role="php">
 <![CDATA[
 <?php
 
-$cient = new Yar_Client("http://host/api/");
+$client = new Yar_Client("http://host/api/");
 
-//Set timeout to 1s
-$client->SetOpt(YAR_OPT_CONNECT_TIMEOUT, 1000);
+/* Set timeout to 1s */
+$client->setOpt(YAR_OPT_TIMEOUT, 1000);
 
-//Set packager to JSON
-$client->SetOpt(YAR_OPT_PACKAGER, "json");
+/* Set packager to JSON */
+$client->setOpt(YAR_OPT_PACKAGER, "json");
 
-//Set Custom headers
-$client->SetOpt(YAR_OPT_HEADER, array("hr1: val1", "hd2: val2"));
+/* Set custom headers */
+$client->setOpt(YAR_OPT_HEADER, ["X-Api-Key: value"]);
 
-// Set Http Proxy
-$client->SetOpt(YAR_OPT_PROXY, "127.0.0.1:8888");
+/* Route through an HTTP proxy */
+$client->setOpt(YAR_OPT_PROXY, "127.0.0.1:8888");
 
 /* call remote service */
 $result = $client->some_method("parameter");
 ?>
 ]]>
    </programlisting>
-   &example.outputs.similar;
-   <screen>
-<![CDATA[
-]]>
-   </screen>
   </example>
  </refsect1>
-
 
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
+   <member><methodname>Yar_Client::getOpt</methodname></member>
    <member><methodname>Yar_Client::__call</methodname></member>
   </simplelist>
  </refsect1>
