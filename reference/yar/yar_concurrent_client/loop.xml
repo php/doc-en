@@ -1,21 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision$ --> 
+<!-- $Revision$ -->
 
 <refentry xml:id="yar-concurrent-client.loop" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Yar_Concurrent_Client::loop</refname>
-  <refpurpose>Send all calls</refpurpose>
+  <refpurpose>Send and wait for all registered calls</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
-  <methodsynopsis>
-   <modifier>public</modifier> <modifier>static</modifier> <type>bool</type><methodname>Yar_Concurrent_Client::loop</methodname>
-   <methodparam choice="opt"><type>callable</type><parameter>callback</parameter></methodparam>
-   <methodparam choice="opt"><type>callable</type><parameter>error_callback</parameter></methodparam>
+  <methodsynopsis role="Yar_Concurrent_Client">
+   <modifier>public</modifier> <modifier>static</modifier> <type class="union"><type>bool</type><type>null</type></type><methodname>Yar_Concurrent_Client::loop</methodname>
+   <methodparam choice="opt"><type class="union"><type>callable</type><type>null</type></type><parameter>callback</parameter><initializer>null</initializer></methodparam>
+   <methodparam choice="opt"><type class="union"><type>callable</type><type>null</type></type><parameter>error_callback</parameter><initializer>null</initializer></methodparam>
+   <methodparam choice="opt"><type class="union"><type>array</type><type>null</type></type><parameter>options</parameter><initializer>null</initializer></methodparam>
   </methodsynopsis>
   <simpara>
-    Send all registered remote RPC calls.
+   Sends all calls registered with
+   <methodname>Yar_Concurrent_Client::call</methodname> in parallel and
+   blocks until every response has arrived and been handled. The call list
+   is emptied when this method returns.
   </simpara>
  </refsect1>
 
@@ -25,24 +29,34 @@
    <varlistentry>
     <term><parameter>callback</parameter></term>
     <listitem>
-     <para>
-      If this callback is set, then Yar will call this callback after all
-      calls are sent and before any response return, with a $callinfo NULL.
-     </para>
-     <para>
-      Then, if user didn't specify callback when registering concurrent call,
-      this callback will be used to handle response, otherwise, the callback
-      specified while registering will be used.
-     </para>
+     <simpara>
+      A <type>callable</type> used to handle responses for calls that were
+      registered without their own callback. Right after all requests have
+      been sent, it is additionally called once with two &null; arguments,
+      before any response arrives.
+     </simpara>
     </listitem>
    </varlistentry>
    <varlistentry>
     <term><parameter>error_callback</parameter></term>
     <listitem>
-     <para>
-      If this callback is set, then Yar will call this callback while error
-      occurred.
-     </para>
+     <simpara>
+      A <type>callable</type> used to handle errors for calls that were
+      registered without their own error callback. It receives three
+      arguments: the error type (one of the <literal>YAR_ERR_*</literal>
+      codes), the error message, and the <literal>callinfo</literal>
+      &array;.
+     </simpara>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>options</parameter></term>
+    <listitem>
+     <simpara>
+      An &array; of client options, keyed by the
+      <literal>YAR_OPT_*</literal> constants, applied to every registered
+      call that does not override them.
+     </simpara>
     </listitem>
    </varlistentry>
   </variablelist>
@@ -50,42 +64,41 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-
-  </para>
+  <simpara>
+   Returns &true; when every registered call has been handled, or when no
+   calls have been registered at all. Returns &false; if the concurrent
+   client is already running inside another loop; in that case a warning is
+   raised.
+  </simpara>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><function>Yar_Concurrent_Client::loop</function> example</title>
+   <title><methodname>Yar_Concurrent_Client::loop</methodname> example</title>
    <programlisting role="php">
 <![CDATA[
 <?php
 function callback($retval, $callinfo) {
-     if ($callinfo == NULL) {
+    if ($callinfo == NULL) {
         echo "Now, all requests are sent, and no response available\n";
-     } else {
-        echo "This is a remote call response, the method name is", $callinfo["method"], 
-             ". calling sequence is " , $callinfo["sequence"] , "\n";
+    } else {
+        echo "This is a remote call response, the method name is ", $callinfo["method"],
+             ". calling sequence is ", $callinfo["sequence"], "\n";
         var_dump($retval);
-     }
-} 
+    }
+}
 
 function error_callback($type, $error, $callinfo) {
     error_log($error);
 }
 
 Yar_Concurrent_Client::call("http://host/api/", "some_method", array("parameters"), "callback");
-Yar_Concurrent_Client::call("http://host/api/", "some_method", array("parameters"));   // if the callback is not specificed, 
-                                                                               // callback in loop will be used
-Yar_Concurrent_Client::call("http://host/api/", "some_method", array("parameters"), "callback", NULL, array(YAR_OPT_PACKAGER => "json"));
-                                                                               //this server accept json packager
-Yar_Concurrent_Client::call("http://host/api/", "some_method", array("parameters"), "callback", NULL, array(YAR_OPT_TIMEOUT=>1));
-                                                                               //custom timeout 
 
-Yar_Concurrent_Client::loop("callback", "error_callback"); //send the requests, 
-                                                           //the error_callback is optional
+/* if the callback is not specified, the callback of loop() will be used */
+Yar_Concurrent_Client::call("http://host/api/", "some_method", array("parameters"));
+
+Yar_Concurrent_Client::loop("callback", "error_callback");
 ?>
 ]]>
    </programlisting>
@@ -93,27 +106,20 @@ Yar_Concurrent_Client::loop("callback", "error_callback"); //send the requests,
    <screen>
 <![CDATA[
 Now, all requests are sent, and no response available
-This is a remote call response, the method name issome_method. calling sequence is 4
+This is a remote call response, the method name is some_method. calling sequence is 2
 string(11) "some_method"
-This is a remote call response, the method name issome_method. calling sequence is 1
-string(11) "some_method"
-This is a remote call response, the method name issome_method. calling sequence is 2
-string(11) "some_method"
-This is a remote call response, the method name issome_method. calling sequence is 3
+This is a remote call response, the method name is some_method. calling sequence is 1
 string(11) "some_method"
 ]]>
    </screen>
   </example>
  </refsect1>
 
-
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
    <member><methodname>Yar_Concurrent_Client::call</methodname></member>
    <member><methodname>Yar_Concurrent_Client::reset</methodname></member>
-   <member><methodname>Yar_Server::__construct</methodname></member>
-   <member><methodname>Yar_Server::handle</methodname></member>
   </simplelist>
  </refsect1>
 
