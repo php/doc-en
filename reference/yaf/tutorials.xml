@@ -4,36 +4,81 @@
 <chapter xml:id="yaf.tutorials" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  &reftitle.examples;
 
+ <section xml:id="yaf.tutorials.quickstart">
+  <title>Quick Start</title>
+
  <example>
   <title>A classic Application directory layout</title>
   <screen>
 <![CDATA[
-- index.php 
-- .htaccess 
-+ conf
-  |- application.ini //application config
+- .htaccess           // Rewrite rules
++ public/
+  | - index.php       // Application entry
+  | + css/
+  | + js/
+  | + img/
++ conf/
+  | - application.ini // Application config
 - application/
-  - Bootstrap.php   
-  + controllers
-     - Index.php //default controller
-  + views    
-     |+ index   
-        - index.phtml //view template for default action
-  + modules 
-  - library
-  - models  
-  - plugins 
+  - Bootstrap.php     // Bootstrap
+  + controllers/
+     - Index.php      // Default controller
+  + views/
+     |+ index/
+        - index.phtml // View template for default action
+  + library/          // Libraries
+  + models/           // Models
+  + plugins/          // Plugins
 ]]>
   </screen>
+  <simpara>
+   Set the web server <literal>DocumentRoot</literal> to the
+   <filename>public</filename> directory, so that only the public
+   assets are accessible from the web.
+  </simpara>
+ </example>
+
+ <example>
+  <title>A multi-module Application directory layout</title>
+  <screen>
+<![CDATA[
++ public/
++ conf/
++ application/
+  + modules/
+    + Index/       //default module
+      + controllers/
+      + views/
+    + Admin/       //another module
+      + controllers/
+      + views/
+  + library/
+  + models/
+  + plugins/
+  - Bootstrap.php
+]]>
+  </screen>
+  <simpara>
+   In a multi-module application, each module has its own
+   <literal>controllers</literal> and <literal>views</literal> directory
+   under <literal>application/modules/&lt;ModuleName&gt;/</literal>. The
+   registered modules are declared in
+   <link linkend="configuration.yaf.modules">application.modules</link>.
+  </simpara>
  </example>
 
  <example>
   <title>Entry</title>
-  <para>index.php in the top directory is the only way in of the application, you should rewrite all request to it. (You can use .htaccess in Apache + php_mod) </para>
+  <simpara>
+   <filename>index.php</filename> in the public directory is the only way
+   into the application, you should rewrite all requests to it (you can
+   use <filename>.htaccess</filename> in Apache + mod_php, or the
+   equivalent in your web server, see below).
+  </simpara>
    <programlisting role="php">
 <![CDATA[
 <?php
-define("APPLICATION_PATH",  dirname(__FILE__));
+define("APPLICATION_PATH",  dirname(dirname(__FILE__)));
 
 $app  = new Yaf_Application(APPLICATION_PATH . "/conf/application.ini");
 $app->bootstrap() //call bootstrap methods defined in Bootstrap.php
@@ -54,13 +99,13 @@ RewriteRule .* index.php
 
 #for nginx
 server {
-  listen ****;
-  server_name  domain.com;
+  listen 80;
+  server_name domain.com;
   root   document_root;
   index  index.php index.html index.htm;
 
-  if (!-e $request_filename) {
-    rewrite ^/(.*)  /index.php$1 last;
+  location / {
+    try_files $uri $uri/ /index.php?$args;
   }
 }
 
@@ -75,12 +120,52 @@ $HTTP["host"] =~ "(www.)?domain.com$" {
  </example>
 
  <example>
+  <title>Bootstrap</title>
+  <simpara>
+   Any method of the <classname>Bootstrap</classname> class whose name
+   begins with <literal>_init</literal> is automatically called, in
+   definition order, by
+   <methodname>Yaf_Application::bootstrap</methodname>. Each such method
+   receives the <classname>Yaf_Dispatcher</classname> instance as its
+   argument. Methods with other names are not called automatically.
+  </simpara>
+  <programlisting role="php">
+<![CDATA[
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract
+{
+    public function _initConfig(Yaf_Dispatcher $dispatcher)
+    {
+        // called first
+    }
+
+    public function _initPlugin(Yaf_Dispatcher $dispatcher)
+    {
+        // called second
+    }
+
+    public function _initRoute(Yaf_Dispatcher $dispatcher)
+    {
+        // called third
+    }
+}
+?>
+]]>
+  </programlisting>
+ </example>
+
+ <example>
   <title>Application config</title>
+  <simpara>
+   <filename>application.ini</filename> is the application configuration
+   file. Constants defined in <filename>index.php</filename> can be used
+   in it, and sections can inherit from one another.
+  </simpara>
    <programlisting role="ini">
 <![CDATA[
 [yaf]
 ;APPLICATION_PATH is the constant defined in index.php
-application.directory=APPLICATION_PATH "/application/" 
+application.directory=APPLICATION_PATH "/application/"
 
 ;product section inherit from yaf section
 [product:yaf]
@@ -90,17 +175,43 @@ foo=bar
  </example>
 
  <example>
-  <title>Default controller</title>
+  <title>Application config as a PHP array</title>
+  <simpara>
+   Besides an INI configuration file, a plain PHP array can also be passed
+   to <methodname>Yaf_Application::__construct</methodname> as the
+   configuration.
+  </simpara>
    <programlisting role="php">
 <![CDATA[
 <?php
-class IndexController extends Yaf_Controller_Abstract {
-   /* default action */
-   public function indexAction() {
-       $this->_view->word = "hello world";
-       //or
-       // $this->getView()->word = "hello world";
-   }
+$config = array(
+    "application" => array(
+        "directory" => APPLICATION_PATH . "/application/",
+    ),
+);
+
+$app = new Yaf_Application($config);
+?>
+]]>
+   </programlisting>
+ </example>
+
+ <example>
+  <title>Default controller</title>
+  <simpara>
+   In Yaf, the default controller is named
+   <classname>IndexController</classname>:
+  </simpara>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class IndexController extends Yaf_Controller_Abstract
+{
+    // default action name
+    public function indexAction()
+    {
+        $this->getView()->content = "Hello World";
+    }
 }
 ?>
 ]]>
@@ -109,6 +220,12 @@ class IndexController extends Yaf_Controller_Abstract {
 
  <example>
   <title>Default view template</title>
+  <simpara>
+   The view script for the default controller/action is
+   <filename>application/views/index/index.phtml</filename>. Yaf provides
+   a small view engine called <classname>Yaf_View_Simple</classname>,
+   whose templates are plain PHP scripts.
+  </simpara>
    <programlisting role="php">
 <![CDATA[
 <html>
@@ -116,7 +233,7 @@ class IndexController extends Yaf_Controller_Abstract {
    <title>Hello World</title>
  </head>
  <body>
-   <?php echo $word;?>
+   <?php echo $content;?>
  </body>
 </html>
 ]]>
@@ -125,6 +242,11 @@ class IndexController extends Yaf_Controller_Abstract {
 
  <example>
   <title>Run the Application</title>
+  <simpara>
+   Point the browser at the configured domain
+   (e.g. <literal>http://www.example.com</literal>) and the response
+   will look like:
+  </simpara>
   &example.outputs.similar;
   <screen>
 <![CDATA[
@@ -139,12 +261,126 @@ class IndexController extends Yaf_Controller_Abstract {
 ]]>
   </screen>
   <note>
-   <para>
-    you can also generate above example by use Yaf codes generator, which
-    could be found here yaf@github.
-   </para>
+   <simpara>
+    The example above can also be generated with the Yaf code generator
+    (<literal>tools/cg</literal>), which can be found in the
+    <link xlink:href="https://github.com/laruence/yaf">Yaf source
+    repository</link>:
+   </simpara>
+   <screen>
+<![CDATA[
+$ ./yaf_cg -d output_directory [-a application_name] [--namespace]
+]]>
+   </screen>
   </note>
  </example>
+
+ </section>
+
+ <section xml:id="yaf.tutorials.routes">
+  <title>Custom Routes</title>
+
+ <example>
+  <title>Custom routes</title>
+  <simpara>
+   Besides the default <classname>Yaf_Route_Static</classname> route,
+   custom routes can be registered on the
+   <classname>Yaf_Router</classname> route stack, usually in a
+   <literal>_initRoute</literal> method of the Bootstrap, using
+   <methodname>Yaf_Router::addRoute</methodname>. Routes can also be
+   declared in configuration files and loaded with
+   <methodname>Yaf_Router::addConfig</methodname>.
+  </simpara>
+  <programlisting role="php">
+<![CDATA[
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract
+{
+    public function _initRoute(Yaf_Dispatcher $dispatcher)
+    {
+        $router = $dispatcher->getRouter();
+
+        // /user/123 -> controller=user, action=index, id=123
+        $router->addRoute("user", new Yaf_Route_Rewrite(
+            "/user/:id",
+            array("controller" => "user", "action" => "index")
+        ));
+    }
+}
+?>
+]]>
+  </programlisting>
+ </example>
+
+ </section>
+
+ <section xml:id="yaf.tutorials.plugins">
+  <title>Plugins</title>
+
+ <example>
+  <title>Plugins</title>
+  <simpara>
+   A plugin hooks into the dispatch cycle by extending
+   <classname>Yaf_Plugin_Abstract</classname> and overriding one or more
+   of its six hook methods, then is registered on the dispatcher with
+   <methodname>Yaf_Dispatcher::registerPlugin</methodname>, typically in
+   the Bootstrap:
+  </simpara>
+  <programlisting role="php">
+<![CDATA[
+<?php
+class UserPlugin extends Yaf_Plugin_Abstract
+{
+    public function routerStartup(
+        Yaf_Request_Abstract $request, Yaf_Response_Abstract $response)
+    {
+        // before routing: inspect or rewrite the raw request URI
+    }
+
+    public function routerShutdown(
+        Yaf_Request_Abstract $request, Yaf_Response_Abstract $response)
+    {
+        // after routing: module/controller/action are known, good for per-route access control
+    }
+
+    public function dispatchLoopStartup(
+        Yaf_Request_Abstract $request, Yaf_Response_Abstract $response)
+    {
+        // before the dispatch loop: one-time setup shared by all dispatches
+    }
+
+    public function preDispatch(
+        Yaf_Request_Abstract $request, Yaf_Response_Abstract $response)
+    {
+        // before each dispatch: filter parameters or redirect before the action runs
+    }
+
+    public function postDispatch(
+        Yaf_Request_Abstract $request, Yaf_Response_Abstract $response)
+    {
+        // after each dispatch: decorate the response or the rendered view
+    }
+
+    public function dispatchLoopShutdown(
+        Yaf_Request_Abstract $request, Yaf_Response_Abstract $response)
+    {
+        // after the dispatch loop: final cleanup, logging or flushing
+    }
+}
+
+class Bootstrap extends Yaf_Bootstrap_Abstract
+{
+    public function _initPlugin(Yaf_Dispatcher $dispatcher)
+    {
+        $dispatcher->registerPlugin(new UserPlugin());
+    }
+}
+?>
+]]>
+  </programlisting>
+ </example>
+
+ </section>
 
 </chapter>
 <!-- Keep this comment at the end of the file

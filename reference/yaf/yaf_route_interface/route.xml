@@ -66,6 +66,91 @@
  </refsect1>
 
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title><methodname>Yaf_Route_Interface::route</methodname> example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class ApiRoute implements Yaf_Route_Interface {
+
+    private $_prefix;
+
+    public function __construct(string $prefix) {
+        $this->_prefix = $prefix;
+    }
+
+    public function route(Yaf_Request_Abstract $request): bool {
+        $uri = $request->getRequestUri();
+        if (0 !== strpos($uri, $this->_prefix)) {
+            /* not our business, let the router try the next route */
+            return false;
+        }
+
+        /* parse the URI "/api/user/list" into controller/action */
+        $segments = explode("/", ltrim(substr($uri, strlen($this->_prefix)), "/"));
+        $controller = isset($segments[0]) ? ucfirst($segments[0]) : NULL;
+        $action = isset($segments[1]) ? $segments[1] : NULL;
+
+        if (empty($controller)) {
+            return false;
+        }
+
+        $request->setModuleName("index");
+        $request->setControllerName($controller);
+        $request->setActionName($action);
+        $request->setRouted(); /* the route process ends here */
+
+        return true;
+    }
+
+    public function assemble(array $info, ?array $query = null): string {
+        $uri = $this->_prefix . "/" . strtolower($info[':c']);
+        if (isset($info[':a'])) {
+            $uri .= "/" . $info[':a'];
+        }
+
+        if (!empty($query)) {
+            $uri .= "?" . http_build_query($query);
+        }
+
+        return $uri;
+    }
+}
+
+/**
+ * register the custom route
+ */
+Yaf_Dispatcher::getInstance()->getRouter()->addRoute("api", new ApiRoute("/api"));
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+/* http://yourdomain.com/api/user/list
+ * routes to the following values:
+ */
+array(
+  "module"     => "index",
+  "controller" => "User",
+  "action"     => "list",
+)
+]]>
+   </screen>
+  </example>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <simplelist>
+   <member><methodname>Yaf_Route_Interface::assemble</methodname></member>
+   <member><methodname>Yaf_Router::addRoute</methodname></member>
+   <member><methodname>Yaf_Request_Abstract::setRouted</methodname></member>
+  </simplelist>
+ </refsect1>
+
 </refentry>
 
 <!-- Keep this comment at the end of the file
