@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision$ --> 
+<!-- $Revision$ -->
 
 <section xml:id="yar.configuration" xmlns="http://docbook.org/ns/docbook">
  &reftitle.runtime;
@@ -18,9 +18,15 @@
     </thead>
     <tbody>
      <row>
-      <entry><link linkend="ini.yar.packager">yar.packager</link></entry>
-      <entry>php</entry>
-      <entry><constant>INI_SYSTEM</constant></entry>
+      <entry><link linkend="ini.yar.connect-timeout">yar.connect_timeout</link></entry>
+      <entry>1000</entry>
+      <entry><constant>INI_ALL</constant></entry>
+      <entry><!-- leave empty, this will be filled by an automatic script --></entry>
+     </row>
+     <row>
+      <entry><link linkend="ini.yar.content-type">yar.content_type</link></entry>
+      <entry>application/octet-stream</entry>
+      <entry><constant>INI_ALL</constant></entry>
       <entry><!-- leave empty, this will be filled by an automatic script --></entry>
      </row>
      <row>
@@ -30,8 +36,20 @@
       <entry><!-- leave empty, this will be filled by an automatic script --></entry>
      </row>
      <row>
-      <entry><link linkend="ini.yar.connect-timeout">yar.connect_timeout</link></entry>
-      <entry>1000</entry>
+      <entry><link linkend="ini.yar.expose-info">yar.expose_info</link></entry>
+      <entry>On</entry>
+      <entry><constant>INI_PERDIR</constant></entry>
+      <entry><!-- leave empty, this will be filled by an automatic script --></entry>
+     </row>
+     <row>
+      <entry><link linkend="ini.yar.packager">yar.packager</link></entry>
+      <entry>php</entry>
+      <entry><constant>INI_PERDIR</constant></entry>
+      <entry><!-- leave empty, this will be filled by an automatic script --></entry>
+     </row>
+     <row>
+      <entry><link linkend="ini.yar.ssl-verify">yar.ssl_verify</link></entry>
+      <entry>Off</entry>
       <entry><constant>INI_ALL</constant></entry>
       <entry><!-- leave empty, this will be filled by an automatic script --></entry>
      </row>
@@ -39,12 +57,6 @@
       <entry><link linkend="ini.yar.timeout">yar.timeout</link></entry>
       <entry>5000</entry>
       <entry><constant>INI_ALL</constant></entry>
-      <entry><!-- leave empty, this will be filled by an automatic script --></entry>
-     </row>
-     <row>
-      <entry><link linkend="ini.yar.expose-info">yar.expose_info</link></entry>
-      <entry>On</entry>
-      <entry><constant>INI_SYSTEM</constant></entry>
       <entry><!-- leave empty, this will be filled by an automatic script --></entry>
      </row>
     </tbody>
@@ -56,48 +68,53 @@
 
  <para>
   <variablelist>
-   <varlistentry xml:id="ini.yar.packager">
-     <term>
-      <parameter>yar.packager</parameter>
-      <type>string</type>
-     </term>
-     <listitem>
-      <para>
-        it could be php, json, and msgpack(require built with msgpack support)
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry xml:id="ini.yar.debug">
-     <term>
-      <parameter>yar.debug</parameter>
-      <type>string</type>
-     </term>
-     <listitem>
-      <para>
-       
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry xml:id="ini.yar.connect-timeout">
+   <varlistentry xml:id="ini.yar.connect-timeout">
      <term>
       <parameter>yar.connect_timeout</parameter>
       <type>int</type>
      </term>
      <listitem>
-      <para>
-       timeout in ms 
-      </para>
+      <simpara>
+       Connect timeout in milliseconds for HTTP calls issued through
+       <classname>Yar_Client</classname> and
+       <classname>Yar_Concurrent_Client</classname>.
+      </simpara>
+      <note>
+       <simpara>
+        This value is interpreted in milliseconds. Prior to Yar 1.2.1 it
+        was measured in seconds (the default was
+        <literal>1</literal>).
+       </simpara>
+      </note>
      </listitem>
     </varlistentry>
-    <varlistentry xml:id="ini.yar.timeout">
+    <varlistentry xml:id="ini.yar.content-type">
      <term>
-      <parameter>yar.timeout</parameter>
-      <type>int</type>
+      <parameter>yar.content_type</parameter>
+      <type>string</type>
      </term>
      <listitem>
-      <para>
-       timeout in ms
-      </para>
+      <simpara>
+       The value of the <literal>Content-Type</literal> response header
+       sent by <classname>Yar_Server</classname>. Yar speaks a binary
+       protocol, so the default is
+       <literal>application/octet-stream</literal>.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.yar.debug">
+     <term>
+      <parameter>yar.debug</parameter>
+      <type>bool</type>
+     </term>
+     <listitem>
+      <simpara>
+       Enables debug mode. When on, Yar emits
+       <constant>E_WARNING</constant> messages with protocol-level
+       details for every request and response, prefixed with
+       <literal>[Debug Yar_Server]</literal> or
+       <literal>[Debug Yar_Client]</literal> and a timestamp.
+      </simpara>
      </listitem>
     </varlistentry>
     <varlistentry xml:id="ini.yar.expose-info">
@@ -106,9 +123,64 @@
       <type>bool</type>
      </term>
      <listitem>
-      <para>
-       whether expose the service info(when access the server via GET)
-      </para>
+      <simpara>
+       Whether <methodname>Yar_Server::handle</methodname> outputs the
+       service information page for non-POST (usually GET) requests.
+       When this directive is off, such requests throw a
+       <exceptionname>Yar_Server_Exception</exceptionname> instead.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.yar.packager">
+     <term>
+      <parameter>yar.packager</parameter>
+      <type>string</type>
+     </term>
+     <listitem>
+      <simpara>
+       The default packager used to serialize request and response
+       bodies. Valid values are <literal>php</literal> (PHP
+       serialization), <literal>json</literal>, and
+       <literal>msgpack</literal> (only when Yar was built with
+       <option role="configure">--enable-msgpack</option>).
+      </simpara>
+      <simpara>
+       When Yar is built with msgpack support, the default becomes
+       <literal>msgpack</literal>.
+      </simpara>
+      <simpara>
+       This value can be overridden per client with the
+       <constant>YAR_OPT_PACKAGER</constant> option.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.yar.ssl-verify">
+     <term>
+      <parameter>yar.ssl_verify</parameter>
+      <type>bool</type>
+     </term>
+     <listitem>
+      <simpara>
+       Whether to verify the TLS certificate of HTTPS servers. When on,
+       the curl transport sets
+       <constant>CURLOPT_SSL_VERIFYPEER</constant> and
+       <constant>CURLOPT_SSL_VERIFYHOST</constant>, and requests to
+       servers with invalid certificates fail. Off by default for
+       backward compatibility. Available as of Yar 2.4.0.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.yar.timeout">
+     <term>
+      <parameter>yar.timeout</parameter>
+      <type>int</type>
+     </term>
+     <listitem>
+      <simpara>
+       Timeout in milliseconds for RPC calls issued by
+       <classname>Yar_Client</classname> and
+       <classname>Yar_Concurrent_Client</classname>.
+      </simpara>
      </listitem>
     </varlistentry>
 
