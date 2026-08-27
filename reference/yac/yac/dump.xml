@@ -4,29 +4,41 @@
 <refentry xml:id="yac.dump" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Yac::dump</refname>
-  <refpurpose>Dump cache</refpurpose>
+  <refpurpose>Dump cache entries for inspection</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>mixed</type><methodname>Yac::dump</methodname>
-   <methodparam><type>int</type><parameter>num</parameter></methodparam>
+   <modifier>public</modifier> <type>array</type><methodname>Yac::dump</methodname>
+   <methodparam choice="opt"><type>int</type><parameter>limit</parameter><initializer>100</initializer></methodparam>
+   <methodparam choice="opt"><type>int</type><parameter>offset</parameter><initializer>0</initializer></methodparam>
   </methodsynopsis>
-  <para>
-   Dump values stored in cache
-  </para>
+  <simpara>
+   Dumps metadata of the entries currently stored in the cache. The
+   values themselves are not returned.
+  </simpara>
  </refsect1>
 
  <refsect1 role="parameters">
   &reftitle.parameters;
   <variablelist>
    <varlistentry>
-    <term><parameter>num</parameter></term>
+    <term><parameter>limit</parameter></term>
     <listitem>
-     <para>
-       Maximum number of items should be returned
-     </para>
+     <simpara>
+      Maximum number of entries to return.
+     </simpara>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>offset</parameter></term>
+    <listitem>
+     <simpara>
+      Number of entries to skip before collecting, which can be used to
+      page through a cache that holds more entries than
+      <parameter>limit</parameter>.
+     </simpara>
     </listitem>
    </varlistentry>
   </variablelist>
@@ -34,11 +46,215 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-   mixed
-  </para>
+  <simpara>
+   An <type>array</type> with one element per dumped entry. Each element
+   is itself an array describing the entry:
+  </simpara>
+  <variablelist>
+   <varlistentry>
+    <term><literal>index</literal></term>
+    <listitem><simpara>
+     The slot index of the entry in the hash table.
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>hash</literal></term>
+    <listitem><simpara>
+     The 64-bit hash of the key, used for slot probing.
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>crc</literal></term>
+    <listitem><simpara>
+     The CRC32 checksum of the stored value, used to detect torn reads.
+     <literal>0</literal> for embedded entries, which have no value block.
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>ttl</literal></term>
+    <listitem><simpara>
+     The expiration timestamp (Unix time). <literal>0</literal> means the
+     entry never expires by time. Note that
+     <methodname>Yac::delete</methodname> only marks an entry expired, so
+     deleted entries can still show up in the dump; a non-zero
+     <literal>ttl</literal> in the past indicates an expired or deleted
+     entry.
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>k_len</literal></term>
+    <listitem><simpara>
+     The length of the key, in bytes.
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>v_len</literal></term>
+    <listitem><simpara>
+     The length of the value, in bytes. For compressed entries this is the
+     length of the <emphasis>original</emphasis> value before compression
+     (as of yac 2.4.0; earlier versions reported the stored, compressed
+     length).
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>c_len</literal></term>
+    <listitem><simpara>
+     Only present for compressed entries (as of yac 2.4.0): the length of
+     the compressed payload actually stored in shared memory, in bytes.
+     Comparing <literal>c_len</literal> with <literal>v_len</literal> shows
+     how much compression saves per entry.
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>size</literal></term>
+    <listitem><simpara>
+     The allocated size of the value block in shared memory, in bytes.
+     <literal>0</literal> for embedded entries.
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>atime</literal></term>
+    <listitem><simpara>
+     The last access time (Unix time), updated on each successful
+     <methodname>Yac::get</methodname>. When the cache is full, the entry
+     with the oldest <literal>atime</literal> among the candidate slots is
+     evicted first (as of yac 2.4.0).
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>hits</literal></term>
+    <listitem><simpara>
+     A per-entry hit counter, bumped on each successful
+     <methodname>Yac::get</methodname>, reset when the entry is overwritten,
+     deleted or expires (as of yac 2.4.0).
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>embedded</literal></term>
+    <listitem><simpara>
+     Whether the value is stored directly inside the slot instead of in a
+     separate value block (as of yac 2.4.0). Small values —
+     <constant>NULL</constant>, booleans, small integers, strings of up to
+     7 bytes and empty arrays — are embedded this way and allocate no value
+     memory at all; for them <literal>crc</literal> and
+     <literal>size</literal> are reported as <literal>0</literal>.
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>key</literal></term>
+    <listitem><simpara>
+     The cache key, without any instance prefix.
+    </simpara></listitem>
+   </varlistentry>
+  </variablelist>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title><methodname>Yac::dump</methodname> example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$yac = new Yac();
+$yac->set("foo", "bar");
+$yac->set("baz", "qux");
+
+print_r($yac->dump());
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+Array
+(
+    [0] => Array
+        (
+            [index] => 12345
+            [hash] => 14463105906481965911
+            [crc] => 0
+            [ttl] => 0
+            [k_len] => 3
+            [v_len] => 3
+            [size] => 0
+            [atime] => 1725955200
+            [hits] => 0
+            [embedded] => 1
+            [key] => foo
+        )
+
+    [1] => Array
+        (
+            [index] => 12987
+            [hash] => 15132029420525657053
+            [crc] => 0
+            [ttl] => 0
+            [k_len] => 3
+            [v_len] => 3
+            [size] => 0
+            [atime] => 1725955200
+            [hits] => 0
+            [embedded] => 1
+            [key] => baz
+        )
+
+)
+]]>
+   </screen>
+   <simpara>
+    Entries are listed in slot order, not in the order they were stored.
+    Embedded entries (short scalars kept inside the slot itself) have
+    <literal>crc</literal> and <literal>size</literal> set to zero; entries
+    stored in a separate value block carry their checksum and block size,
+    and compressed entries additionally carry <literal>c_len</literal>.
+   </simpara>
+  </example>
+  <example>
+   <title>Paging through a large cache</title>
+   <simpara>
+    <parameter>limit</parameter> bounds how many entries a single call returns,
+    and <parameter>offset</parameter> skips that many entries before collecting,
+    so the two can be combined to page through a cache that holds more
+    entries than one call may return.
+   </simpara>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$yac = new Yac();
+
+$page_size = 100;
+$page_num  = 2;
+
+// skip the first 100 entries and return the next 100 (page 2)
+$page = $yac->dump($page_size, $page_size * ($page_num - 1));
+
+var_dump(count($page));
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+int(100)
+]]>
+   </screen>
+   <simpara>
+    Fewer entries than requested are returned when the cache holds fewer
+    entries than the requested page covers, and an empty array is returned
+    once the offset points past the last occupied slot.
+   </simpara>
+  </example>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <para>
+   <simplelist>
+    <member><methodname>Yac::info</methodname></member>
+   </simplelist>
+  </para>
+ </refsect1>
 
 </refentry>
 
