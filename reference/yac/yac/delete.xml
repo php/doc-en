@@ -17,6 +17,21 @@
   <simpara>
    Removes one or more items from the cache.
   </simpara>
+  <note>
+   <simpara>
+    Deletion is implemented by marking the entry expired rather than
+    clearing its slot: the entry immediately stops being readable, but
+    the slot stays occupied until the same key is stored again or a
+    later write reclaims the slot. As a result, the used-slot count
+    reported by <methodname>Yac::info</methodname> does not decrease
+    after a deletion, and <methodname>Yac::dump</methodname> still
+    lists the deleted entry until its slot is recycled; a non-zero
+    <literal>ttl</literal> in the past marks a deleted or expired
+    entry, so when inspecting the output of
+    <methodname>Yac::dump</methodname>, such entries have to be
+    filtered out by the caller.
+   </simpara>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -49,7 +64,14 @@
   &reftitle.returnvalues;
   <simpara>
    Returns &true; on success, or &false; if the key was not present in
-   the cache.
+   the cache. Because a deletion only marks the entry expired, a key
+   that was deleted but not yet overwritten still counts as present:
+   deleting the same key again returns &true;.
+  </simpara>
+  <simpara>
+   When an <type>array</type> of keys is given, &true; is returned
+   only if every key was present; if any key is missing, &false; is
+   returned.
   </simpara>
  </refsect1>
 
@@ -63,16 +85,25 @@
 $yac = new Yac();
 $yac->set("foo", "bar");
 
-var_dump($yac->delete("foo"));            // bool(true)
-var_dump($yac->delete("foo"));            // bool(false): already gone
+var_dump($yac->delete("foo"));      // bool(true): marked expired
+var_dump($yac->get("foo"));         // bool(false): a miss from now on
+var_dump($yac->delete("foo"));      // bool(true) again: the slot has not
+                                     // been overwritten yet
+var_dump($yac->delete("never"));    // bool(false): was never stored
 
-// delayed deletion: keep the entry readable for 60 more seconds,
-// it disappears only after that time has passed
+// a deletion does not free the slot: slots_used does not drop, and
+// the expired entry still shows up in the dump
+var_dump($yac->info()["slots_used"]); // int(1)
+print_r($yac->dump());                // "foo" is still listed; its ttl
+                                       // is in the past
+
+// delayed deletion: keep the entry readable for 60 more seconds
 $yac->set("tmp", "value");
-var_dump($yac->delete("tmp", 60));        // bool(true)
+var_dump($yac->delete("tmp", 60));    // bool(true)
 
-// delete several keys at once
-var_dump($yac->delete(array("a", "b")));
+// deleting several keys at once returns true only when every key
+// was present
+var_dump($yac->delete(array("tmp", "nope"))); // bool(false): "nope" missing
 ?>
 ]]>
    </programlisting>
@@ -85,6 +116,8 @@ var_dump($yac->delete(array("a", "b")));
    <simplelist>
     <member><methodname>Yac::set</methodname></member>
     <member><methodname>Yac::flush</methodname></member>
+    <member><methodname>Yac::info</methodname></member>
+    <member><methodname>Yac::dump</methodname></member>
    </simplelist>
   </para>
  </refsect1>
