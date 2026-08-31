@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry xml:id="pdo-sqlite.setauthorizer" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <refnamediv>
+  <refname>Pdo\Sqlite::setAuthorizer</refname>
+  <refpurpose>Configures a callback to be used as an authorizer to limit what a statement can do</refpurpose>
+ </refnamediv>
+
+ <refsect1 role="description">
+  &reftitle.description;
+  <methodsynopsis role="Pdo\\Sqlite">
+   <modifier>public</modifier> <type>void</type><methodname>Pdo\Sqlite::setAuthorizer</methodname>
+   <methodparam><type class="union"><type>callable</type><type>null</type></type><parameter>callback</parameter></methodparam>
+  </methodsynopsis>
+  <simpara>
+   Sets a callback that will be called by SQLite every time an action is performed
+   (reading, deleting, updating, etc.). This is used when preparing an SQL statement
+   from an untrusted source to ensure that the statement does not access data it is
+   not allowed to see or execute malicious statements that damage the database.
+  </simpara>
+  <simpara>
+   The authorizer is used only during the statement preparation phase.
+   It may be called several times for a single statement: a
+   <literal>SELECT</literal> or <literal>UPDATE</literal> query calls it for every
+   column that would be read or updated. It runs again whenever SQLite
+   re-prepares a statement, which may happen while the statement is being
+   executed, for instance after the schema has changed.
+  </simpara>
+  <simpara>
+   The authorizer is called with up to five arguments. The arguments received are
+   described at <methodname>SQLite3::setAuthorizer</methodname>.
+  </simpara>
+  <simpara>
+   Only a single authorizer can be in place on a database connection at a time.
+   Each call to this method overrides the previous one. The authorizer is disabled
+   by default, and can be disabled again by setting a &null; callback.
+  </simpara>
+  <simpara>
+   The callback must not modify the database connection that invoked it.
+  </simpara>
+  <simpara>
+   More details can be found in the
+   <link xlink:href="&url.sqlite;c3ref/set_authorizer.html">SQLite documentation</link>.
+  </simpara>
+  <note>
+   <simpara>
+    This method is the equivalent of <methodname>SQLite3::setAuthorizer</methodname>,
+    except that it returns <type>void</type> instead of <type>bool</type>.
+   </simpara>
+  </note>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <variablelist>
+   <varlistentry>
+    <term><parameter>callback</parameter></term>
+    <listitem>
+     <simpara>
+      The <type>callable</type> to be invoked, or &null; to disable the current
+      authorizer callback.
+     </simpara>
+     <simpara>
+      It must return one of <constant>Pdo\Sqlite::OK</constant>,
+      <constant>Pdo\Sqlite::DENY</constant>, or
+      <constant>Pdo\Sqlite::IGNORE</constant>.
+      When <constant>Pdo\Sqlite::DENY</constant> is returned, the statement that
+      triggered the authorizer fails with an error stating that access is denied.
+      When <constant>Pdo\Sqlite::IGNORE</constant> is returned for a read action,
+      the statement is prepared so that a &null; value is substituted for the
+      column that would have been read.
+     </simpara>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <simpara>
+   &return.void;
+  </simpara>
+ </refsect1>
+
+ <refsect1 role="errors">
+  &reftitle.errors;
+  <simpara>
+   This method itself does not throw, but if the authorizer callback does not return
+   an <type>int</type>, or returns an <type>int</type> which is not one of
+   <constant>Pdo\Sqlite::OK</constant>, <constant>Pdo\Sqlite::DENY</constant>, or
+   <constant>Pdo\Sqlite::IGNORE</constant>, the statement preparation throws a
+   <exceptionname>TypeError</exceptionname> or a <exceptionname>ValueError</exceptionname>
+   respectively.
+  </simpara>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title><methodname>Pdo\Sqlite::setAuthorizer</methodname> example</title>
+   <simpara>
+    Only read actions are allowed on the connection. The action codes are exposed
+    as <classname>SQLite3</classname> class constants, which requires the
+    <link linkend="book.sqlite3">SQLite3</link> extension to be available; their
+    integer values may be used directly otherwise.
+   </simpara>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$db = new Pdo\Sqlite('sqlite::memory:');
+$db->exec('CREATE TABLE users (id, name)');
+
+$db->setAuthorizer(function (int $action, ...$args) {
+    return match ($action) {
+        SQLite3::SELECT, SQLite3::READ => Pdo\Sqlite::OK,
+        default => Pdo\Sqlite::DENY,
+    };
+});
+
+var_dump($db->query('SELECT name FROM users') instanceof PDOStatement);
+
+try {
+    $db->exec('DROP TABLE users');
+} catch (PDOException $e) {
+    echo $e->getMessage(), "\n";
+}
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+bool(true)
+SQLSTATE[HY000]: General error: 23 not authorized
+]]>
+   </screen>
+  </example>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <simplelist>
+   <member><methodname>SQLite3::setAuthorizer</methodname></member>
+  </simplelist>
+ </refsect1>
+
+</refentry>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
