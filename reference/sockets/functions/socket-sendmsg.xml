@@ -157,6 +157,79 @@
   </informaltable>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title>Sending a message with <function>socket_sendmsg</function></title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$server = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+socket_bind($server, '127.0.0.1', 1053);
+
+$client = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+$sent = socket_sendmsg($client, [
+    'name' => ['addr' => '127.0.0.1', 'port' => 1053],
+    'iov'  => ['Hello ', 'world'],
+], 0);
+
+echo "sent: $sent\n";
+
+socket_recvfrom($server, $buffer, 64, 0, $from, $port);
+echo "received: $buffer\n";
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+sent: 11
+received: Hello world
+]]>
+   </screen>
+  </example>
+  <example>
+   <title>Passing a file descriptor over a Unix socket</title>
+   <simpara>
+    The <varname>control</varname> key carries ancillary data. With
+    <constant>SCM_RIGHTS</constant>, it transfers open file descriptors to the
+    process on the other end of a Unix socket.
+   </simpara>
+   <programlisting role="php">
+<![CDATA[
+<?php
+socket_create_pair(AF_UNIX, SOCK_STREAM, 0, $pair);
+[$sender, $receiver] = $pair;
+
+$file = fopen(__FILE__, 'r');
+
+socket_sendmsg($sender, [
+    'iov'     => ['fd'],
+    'control' => [
+        ['level' => SOL_SOCKET, 'type' => SCM_RIGHTS, 'data' => [$file]],
+    ],
+], 0);
+
+$message = [
+    'buffer_size' => 16,
+    'controllen'  => socket_cmsg_space(SOL_SOCKET, SCM_RIGHTS, 1),
+];
+socket_recvmsg($receiver, $message, 0);
+
+$received = $message['control'][0]['data'][0];
+echo fgets($received);
+?>
+]]>
+   </programlisting>
+   &example.outputs.similar;
+   <screen>
+<![CDATA[
+<?php
+]]>
+   </screen>
+  </example>
+ </refsect1>
+
  <refsect1 role="seealso">
   &reftitle.seealso;
   <para>
