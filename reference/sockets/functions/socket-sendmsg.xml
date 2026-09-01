@@ -3,7 +3,7 @@
 <refentry xml:id="function.socket-sendmsg" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>socket_sendmsg</refname>
-  <refpurpose>Send a message, a general I/O function</refpurpose>
+  <refpurpose>Send a message</refpurpose>
  </refnamediv>
  <refsect1 role="description">
   &reftitle.description;
@@ -14,8 +14,9 @@
    <methodparam choice="opt"><type>int</type><parameter>flags</parameter><initializer>0</initializer></methodparam>
   </methodsynopsis>
   <simpara>
-   The function <function>socket_sendmsg</function> wraps <literal>sendmsg</literal> system call.
-   Sends <parameter>message</parameter> from <parameter>socket</parameter>.
+   The function <function>socket_sendmsg</function> sends the message described by
+   <parameter>message</parameter> through the socket <parameter>socket</parameter>.
+   It is a thin wrapper around the <literal>sendmsg</literal> system call.
   </simpara>
  </refsect1>
 
@@ -36,15 +37,47 @@
      <term><parameter>message</parameter></term>
      <listitem>
       <simpara>
-       The arrays match the native structures closely, except prefixes are dropped.
-       It contains keys: <varname>name</varname>, <varname>iov</varname>, <varname>control</varname>
-       and <varname>flags</varname>.<varname>name</varname> is an array containing
-       <varname>addr</varname> and <varname>port</varname> specifying the remote host.
-       <varname>iov</varname> is an array specifying the output buffers.<varname>control</varname>
-       specify optional ancillary data, contains three keys: <varname>level</varname>, <varname>type</varname>
-       and <varname>data</varname>.<varname>flags</varname> will be ignored in <literal>sendmsg</literal>
-       system call.
+       An array whose structure mirrors the native message structure, with the
+       <literal>msg_</literal> prefixes dropped. All of the following keys are
+       optional, and any other key is ignored.
       </simpara>
+      <variablelist>
+       <varlistentry>
+        <term><varname>name</varname></term>
+        <listitem>
+         <simpara>
+          The address of the remote host. Its keys depend on the address family:
+          <varname>addr</varname> and <varname>port</varname> for
+          <constant>AF_INET</constant>, additionally <varname>flowinfo</varname>
+          and <varname>scope_id</varname> for <constant>AF_INET6</constant>, and
+          <varname>path</varname> for <constant>AF_UNIX</constant>. An optional
+          <varname>family</varname> key selects the address family explicitly;
+          when it is omitted, the family of <parameter>socket</parameter> is used.
+         </simpara>
+        </listitem>
+       </varlistentry>
+       <varlistentry>
+        <term><varname>iov</varname></term>
+        <listitem>
+         <simpara>
+          A list of output buffers, sent in order. Keys are ignored and values are
+          cast to string. When this key is missing or empty, an empty message is
+          sent and the function returns <literal>0</literal>.
+         </simpara>
+        </listitem>
+       </varlistentry>
+       <varlistentry>
+        <term><varname>control</varname></term>
+        <listitem>
+         <simpara>
+          A list of ancillary data messages, each of them an array with the keys
+          <varname>level</varname>, <varname>type</varname> and
+          <varname>data</varname>. The accepted shape of <varname>data</varname>
+          depends on the <varname>level</varname> and <varname>type</varname> pair.
+         </simpara>
+        </listitem>
+       </varlistentry>
+      </variablelist>
      </listitem>
     </varlistentry>
     <varlistentry>
@@ -66,8 +99,15 @@
           <row>
            <entry><constant>MSG_EOR</constant></entry>
            <entry>
-            Indicate a logic record mark.The sent data completes a logic record.
-            TCP dose not use this flag.
+            Indicate a record mark. The sent data completes the record.
+           </entry>
+          </row>
+          <row>
+           <entry><constant>MSG_EOF</constant></entry>
+           <entry>
+            Close the sender side of the socket and include an appropriate
+            notification of this at the end of the sent data. The sent data
+            completes the transaction.
            </entry>
           </row>
           <row>
