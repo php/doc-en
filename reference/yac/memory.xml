@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+
+<chapter xml:id="yac.memory-management" xmlns="http://docbook.org/ns/docbook">
+ <title>Memory Management</title>
+
+ <simpara>
+  Yac keeps its data in two independent shared-memory pools, configured
+  with
+  <link linkend="ini.yac.keys-memory-size">yac.keys_memory_size</link>
+  and
+  <link linkend="ini.yac.values-memory-size">yac.values_memory_size</link>.
+  They fill up and free up in different ways, so it helps to know which
+  pool a symptom belongs to before touching either knob.
+ </simpara>
+
+ <section xml:id="yac.memory-layout" annotations="chunk:false">
+  <title>What Each Pool Holds</title>
+  <simpara>
+   The two pools store different halves of an entry. The key pool holds
+   the keys: one slot per cached key, carrying the key itself (up to 48
+   bytes) together with its hash, TTL, hit count and last-access time;
+   the value is only referenced through a pointer to the value pool. The
+   value pool holds the values: every stored value occupies one block of
+   serialized bytes — the compressed form when the entry went through
+   <link linkend="ini.yac.compress-threshold">yac.compress_threshold</link>.
+  </simpara>
+  <simpara>
+   The one exception is embedded values: tiny scalars — &null;,
+   &true;, &false;, most integers (those that fit in 60 signed bits on
+   64-bit builds), strings of up to 7 bytes and empty arrays — are
+   stored directly inside the slot, in the pointer that would otherwise
+   reference a block. Such values occupy no space in the value pool at
+   all; only their key does.
+  </simpara>
+  <para>
+   As a rough sizing guide:
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      the key pool holds around 8,000 keys per MB, so size
+      <link linkend="ini.yac.keys-memory-size">yac.keys_memory_size</link>
+      as the number of distinct keys divided by 8,000 per MB, rounded up
+      — the default <literal>8M</literal> holds around 64,000 keys;
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      the value pool must hold every value that may still be read, so
+      size
+      <link linkend="ini.yac.values-memory-size">yac.values_memory_size</link>
+      as the number of live values times their average serialized size
+      (after compression), and allow roughly twice that: the pool is a
+      ring, and a value only dies once the allocator cursor comes back
+      around to overwrite it.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+   Embedded values occupy a slot like any other entry, but consume no
+   space in the value pool, so leave them out of the second calculation.
+  </para>
+ </section>
+
+ <section xml:id="yac.memory-keys" annotations="chunk:false">
+  <title>The key pool (slots)</title>
+  <simpara>
+   <link linkend="ini.yac.keys-memory-size">yac.keys_memory_size</link>
+   holds a fixed-size table of slots — the default of
+   <literal>8M</literal> gives around 65,536 slots. Each
+   stored key occupies exactly one slot, so this pool caps the number
+   of entries that can exist at once; unlike the value pool, slots are
+   never individually freed. An expired slot — one past its TTL, or the
+   tombstone left by <methodname>Yac::delete</methodname> — is recycled
+   for free when a new key needs it. Only when all four candidate slots
+   of a probe path hold live entries is one of them evicted to make
+   room — one <literal>kick</literal> (the
+   <literal>kicks</literal> counter of <methodname>Yac::info</methodname>).
+  </simpara>
+  <para>
+   The eviction picks among the four live candidates of the colliding
+   probe path only:
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      the least recently used one (the oldest
+      <literal>atime</literal>) is evicted;
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      on a tie the least-hit entry, then the earliest probe position.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <simpara>
+   A common point of confusion: <literal>slots_used</literal> reaching
+   <literal>slots_size</literal> is <emphasis>not</emphasis> an error
+   condition. A cache whose working set of keys is larger than the slot
+   table simply runs at 100% occupancy from then on, evicting and
+   re-inserting as needed. The only thing that says whether the key
+   pool is sized correctly is the hit rate
+   (<literal>hits / (hits + miss)</literal>, computed over the deltas
+   between two <methodname>Yac::info</methodname> snapshots rather than
+   the lifetime average). A high <literal>kicks</literal> count on its
+   own means nothing is wrong — the key distribution is simply not
+   uniform and some probe paths collide more than others. Only when the
+   hit rate <emphasis>and</emphasis> <literal>kicks</literal> are both
+   bad is the table too small for the key set, and the remedy is a
+   bigger <link linkend="ini.yac.keys-memory-size">yac.keys_memory_size</link>.
+  </simpara>
+  <simpara>
+   A second consequence of slots never being freed: entries with no TTL
+   (<literal>ttl = 0</literal>) that are never read again keep occupying
+   a slot until an eviction happens to pick them. If an application
+   stores large amounts of such one-shot data, give those entries a TTL
+   so they expire and can be recycled without displacing live entries,
+   or size the key pool for the full key set.
+  </simpara>
+ </section>
+
+ <section xml:id="yac.memory-values" annotations="chunk:false">
+  <title>The value pool (segments)</title>
+  <simpara>
+   <link linkend="ini.yac.values-memory-size">yac.values_memory_size</link>
+   is split into segments of 4M each, managed as rings: writes advance a
+   per-segment cursor and space is never freed per entry. When an
+   allocation no longer fits, the cursor wraps back to the start of a
+   segment — one <literal>recycle</literal> (the
+   <literal>recycles</literal> counter of
+   <methodname>Yac::info</methodname>). A recycle does not invalidate
+   the segment at once: overwritten values stay readable until the
+   wrapped cursor actually overwrites them, at which point their reads
+   fail the integrity guard and turn into misses.
+  </simpara>
+  <simpara>
+   Two sizes matter for this pool: the total
+   <link linkend="ini.yac.values-memory-size">yac.values_memory_size</link>
+   must hold the working set of live values, and a single entry can
+   hold at most 1 MB as stored
+   (<constant>YAC_MAX_RAW_COMPRESSED_LEN</constant>). Values larger
+   than that are therefore always compressed before being stored; a
+   value that cannot shrink below 1 MB — most often because it is
+   random data — is rejected and bumps the
+   <literal>fails</literal> counter. The absolute size limit on the
+   value itself is much higher: serialized values above 64 MB
+   (<constant>YAC_MAX_VALUE_RAW_LEN</constant>, that is
+   <literal>(1 &lt;&lt; 26) - 1</literal> bytes) are rejected
+   outright.
+  </simpara>
+ </section>
+
+ <section xml:id="yac.memory-tuning" annotations="chunk:false">
+  <title>Sizing and what to watch</title>
+  <simpara>
+   Start with the defaults and watch the counters of
+   <methodname>Yac::info</methodname> — they accumulate from
+   <literal>start_time</literal>, so compare two snapshots taken some
+   time apart:
+  </simpara>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     hit rate healthy (say &gt;= 90%): the cache is fine; nothing to do,
+     whatever the other counters show;
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     hit rate low and <literal>kicks</literal> climbing: the key pool is
+     too small for the key set — live entries get evicted before they are
+     re-read. Raise
+     <link linkend="ini.yac.keys-memory-size">yac.keys_memory_size</link>;
+    </simpara>
+   </listitem>
+   <listitem>
+    <para>
+     <literal>recycles</literal> frequent: this is a real problem, not a
+     benign counter. A recycle means the value allocator has wrapped and is
+     about to overwrite entries — anything overwritten dies before it could
+     be re-read, so the bytes spent storing it were wasted and the hit rate
+     suffers. The value pool is too small for the volume of live data. In
+     order of impact:
+     <itemizedlist>
+      <listitem>
+       <simpara>
+        give entries a TTL. Values written with <literal>ttl = 0</literal>
+        stay live forever, so they keep occupying the pool and force the
+        cursor to wrap sooner. A TTL bounds how long each entry may live,
+        shrinking the live working set the pool has to hold;
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        raise
+        <link linkend="ini.yac.values-memory-size">yac.values_memory_size</link>
+        so the pool holds the whole live value set (remember to budget
+        roughly twice the live footprint — a value only dies once the
+        cursor comes back around to overwrite it);
+       </simpara>
+      </listitem>
+      <listitem>
+       <simpara>
+        store less per entry: lower
+        <link linkend="ini.yac.compress-threshold">yac.compress_threshold</link>
+        if it is set above the <literal>1024</literal> minimum, so large
+        payloads are compressed, and trim values that do not need to be
+        cached in full;
+       </simpara>
+      </listitem>
+     </itemizedlist>
+    </para>
+   </listitem>
+   <listitem>
+    <simpara>
+     <literal>fails</literal> growing: values that could not be stored,
+     most often a single value larger than the 1 MB stored-size limit
+     even after compression — split the value.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+ </section>
+
+</chapter>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
