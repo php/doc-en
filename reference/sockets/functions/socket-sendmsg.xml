@@ -15,8 +15,8 @@
   </methodsynopsis>
   <simpara>
    The function <function>socket_sendmsg</function> sends the message described by
-   <parameter>message</parameter> through the socket <parameter>socket</parameter>.
-   It is a thin wrapper around the <literal>sendmsg</literal> system call.
+   <parameter>message</parameter> through the socket <parameter>socket</parameter>,
+   using the <literal>sendmsg()</literal> system call.
   </simpara>
  </refsect1>
 
@@ -28,8 +28,8 @@
      <term><parameter>socket</parameter></term>
      <listitem>
       <simpara>
-       A <classname>Socket</classname> instance created with <function>socket_create</function>
-       or <function>socket_accept</function>.
+       A <classname>Socket</classname> instance created with <function>socket_create</function>,
+       <function>socket_accept</function> or <function>socket_create_pair</function>.
       </simpara>
      </listitem>
     </varlistentry>
@@ -37,22 +37,27 @@
      <term><parameter>message</parameter></term>
      <listitem>
       <simpara>
-       An array whose structure mirrors the native message structure, with the
-       <literal>msg_</literal> prefixes dropped. All of the following keys are
-       optional, and any other key is ignored.
+       An associative array which may contain the following elements. All of them
+       are optional, and unrecognized keys are silently ignored. In particular
+       there is no <varname>flags</varname> element when sending; that key only
+       appears in the array filled in by <function>socket_recvmsg</function>.
       </simpara>
       <variablelist>
        <varlistentry>
         <term><varname>name</varname></term>
         <listitem>
          <simpara>
-          The address of the remote host. Its keys depend on the address family:
+          The address of the remote host, as an array. Its keys are
           <varname>addr</varname> and <varname>port</varname> for
-          <constant>AF_INET</constant>, additionally <varname>flowinfo</varname>
-          and <varname>scope_id</varname> for <constant>AF_INET6</constant>, and
-          <varname>path</varname> for <constant>AF_UNIX</constant>. An optional
-          <varname>family</varname> key selects the address family explicitly;
-          when it is omitted, the family of <parameter>socket</parameter> is used.
+          <constant>AF_INET</constant>; <varname>addr</varname>,
+          <varname>port</varname>, <varname>flowinfo</varname> and
+          <varname>scope_id</varname> for <constant>AF_INET6</constant>; and
+          <varname>path</varname> for <constant>AF_UNIX</constant>.
+          <varname>addr</varname> accepts an IP address or a host name, which is
+          then resolved. An optional <varname>family</varname> key selects the
+          address family explicitly; if omitted, the family of
+          <parameter>socket</parameter> is used. A family the socket does not
+          support makes the call fail.
          </simpara>
         </listitem>
        </varlistentry>
@@ -60,9 +65,10 @@
         <term><varname>iov</varname></term>
         <listitem>
          <simpara>
-          A list of output buffers, sent in order. Keys are ignored and values are
-          cast to string. When this key is missing or empty, an empty message is
-          sent and the function returns <literal>0</literal>.
+          A list of buffers holding the data to send, which are sent in order as a
+          single message. Array keys are ignored and the values are converted to
+          string. When this key is missing or empty, no data is sent and the
+          function returns <literal>0</literal>.
          </simpara>
         </listitem>
        </varlistentry>
@@ -70,11 +76,62 @@
         <term><varname>control</varname></term>
         <listitem>
          <simpara>
-          A list of ancillary data messages, each of them an array with the keys
+          A list of ancillary data messages. Each is an array with the keys
           <varname>level</varname>, <varname>type</varname> and
-          <varname>data</varname>. The accepted shape of <varname>data</varname>
-          depends on the <varname>level</varname> and <varname>type</varname> pair.
+          <varname>data</varname>. Only the pairs below are supported, and their
+          availability depends on the platform.
          </simpara>
+         <table>
+          <title>Supported ancillary data</title>
+          <tgroup cols="3">
+           <thead>
+            <row>
+             <entry><varname>level</varname></entry>
+             <entry><varname>type</varname></entry>
+             <entry><varname>data</varname></entry>
+            </row>
+           </thead>
+           <tbody>
+            <row>
+             <entry><constant>SOL_SOCKET</constant></entry>
+             <entry><constant>SCM_RIGHTS</constant></entry>
+             <entry>
+              A non-empty list of <classname>Socket</classname> instances or
+              stream resources, whose file descriptors are sent to the receiving
+              process.
+             </entry>
+            </row>
+            <row>
+             <entry><constant>SOL_SOCKET</constant></entry>
+             <entry><constant>SCM_CREDENTIALS</constant></entry>
+             <entry>
+              An array with the keys <varname>pid</varname>,
+              <varname>uid</varname> and <varname>gid</varname>. Named
+              <constant>SCM_CREDS</constant> or <constant>SCM_CREDS2</constant>
+              on some systems.
+             </entry>
+            </row>
+            <row>
+             <entry><constant>IPPROTO_IPV6</constant></entry>
+             <entry><constant>IPV6_PKTINFO</constant></entry>
+             <entry>
+              An array with the keys <varname>addr</varname> and
+              <varname>ifindex</varname>.
+             </entry>
+            </row>
+            <row>
+             <entry><constant>IPPROTO_IPV6</constant></entry>
+             <entry><constant>IPV6_HOPLIMIT</constant></entry>
+             <entry>An <type>int</type>.</entry>
+            </row>
+            <row>
+             <entry><constant>IPPROTO_IPV6</constant></entry>
+             <entry><constant>IPV6_TCLASS</constant></entry>
+             <entry>An <type>int</type>.</entry>
+            </row>
+           </tbody>
+          </tgroup>
+         </table>
         </listitem>
        </varlistentry>
       </variablelist>
@@ -100,14 +157,6 @@
            <entry><constant>MSG_EOR</constant></entry>
            <entry>
             Indicate a record mark. The sent data completes the record.
-           </entry>
-          </row>
-          <row>
-           <entry><constant>MSG_EOF</constant></entry>
-           <entry>
-            Close the sender side of the socket and include an appropriate
-            notification of this at the end of the sent data. The sent data
-            completes the transaction.
            </entry>
           </row>
           <row>
@@ -189,11 +238,11 @@ received: Hello world
    </screen>
   </example>
   <example>
-   <title>Passing a file descriptor over a Unix socket</title>
+   <title>Passing a file descriptor over a UNIX socket</title>
    <simpara>
     The <varname>control</varname> key carries ancillary data. With
     <constant>SCM_RIGHTS</constant>, it transfers open file descriptors to the
-    process on the other end of a Unix socket.
+    process at the other end of a UNIX socket. This is not available on Windows.
    </simpara>
    <programlisting role="php">
 <![CDATA[
@@ -204,6 +253,7 @@ socket_create_pair(AF_UNIX, SOCK_STREAM, 0, $pair);
 $file = fopen(__FILE__, 'r');
 
 socket_sendmsg($sender, [
+    // At least one byte of regular data must accompany the ancillary data.
     'iov'     => ['fd'],
     'control' => [
         ['level' => SOL_SOCKET, 'type' => SCM_RIGHTS, 'data' => [$file]],
@@ -217,14 +267,14 @@ $message = [
 socket_recvmsg($receiver, $message, 0);
 
 $received = $message['control'][0]['data'][0];
-echo fgets($received);
+echo "first line: ", fgets($received);
 ?>
 ]]>
    </programlisting>
-   &example.outputs.similar;
+   &example.outputs;
    <screen>
 <![CDATA[
-<?php
+first line: <?php
 ]]>
    </screen>
   </example>
