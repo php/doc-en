@@ -3,7 +3,7 @@
 <refentry xml:id="function.array-column" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
   <refname>array_column</refname>
-  <refpurpose>Return the values from a single column or object property in the input array</refpurpose>
+  <refpurpose>Return the values from a single column in the input array</refpurpose>
  </refnamediv>
  <refsect1 role="description">
   &reftitle.description;
@@ -21,6 +21,14 @@
    returned array by the values from the <parameter>index_key</parameter>
    column of the input array.
   </para>
+  <simpara>
+   <parameter>array</parameter> is treated as a list of rows, each of which is
+   itself an array or an object; a column is the entry or property that
+   <parameter>column_key</parameter> names in every row.
+   Rows that are neither an array nor an object, and rows in which that entry
+   or property is absent, are skipped without a diagnostic.
+   The keys of <parameter>array</parameter> are never preserved.
+  </simpara>
  </refsect1>
  <refsect1 role="parameters">
   &reftitle.parameters;
@@ -29,26 +37,30 @@
     <varlistentry>
      <term><parameter>array</parameter></term>
      <listitem>
-      <para>
-       A multi-dimensional array or an array of objects from which to pull a
-       column of values from. If an array of objects is provided, then public
-       properties can be directly pulled. In order for protected or private
-       properties to be pulled, the class must implement both the
-       <function>__get</function> and <function>__isset</function> magic
-       methods.
-      </para>
+      <simpara>
+       A list whose rows are arrays or objects, from which a column of values
+       is pulled. If a row is an object, public properties are read directly.
+       For a property that is not publicly accessible to be read, the class
+       must implement both the
+       <link linkend="object.get">__get()</link> and
+       <link linkend="object.isset">__isset()</link> magic methods: without
+       <link linkend="object.isset">__isset()</link> the row is skipped, and
+       with <link linkend="object.isset">__isset()</link> but no
+       <link linkend="object.get">__get()</link> an
+       <exceptionname>Error</exceptionname> is thrown.
+      </simpara>
      </listitem>
     </varlistentry>
     <varlistentry>
      <term><parameter>column_key</parameter></term>
      <listitem>
-      <para>
+      <simpara>
        The column of values to return. This value may be an integer key of the
-       column you wish to retrieve, or it may be a string key name for an
+       column to retrieve, or it may be a string key name for an
        associative array or property name. It may also be &null; to return
-       complete arrays or objects (this is useful together with
+       complete rows (this is useful together with
        <parameter>index_key</parameter> to reindex the array).
-      </para>
+      </simpara>
      </listitem>
     </varlistentry>
     <varlistentry>
@@ -68,9 +80,11 @@
  </refsect1>
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-   Returns an array of values representing a single column from the input array.
-  </para>
+  <simpara>
+   Returns an array of values representing a single column from the input
+   array. If <parameter>column_key</parameter> is &null;, the rows themselves
+   are returned.
+  </simpara>
  </refsect1>
  <refsect1 role="changelog">
   &reftitle.changelog;
@@ -89,6 +103,20 @@
        <entry>
         Objects in columns indicated by <parameter>index_key</parameter> parameter
         will no longer be cast to string and will now throw a <classname>TypeError</classname> instead.
+       </entry>
+      </row>
+      <row>
+       <entry>7.1.0</entry>
+       <entry>
+        Property visibility is now respected. Formerly, protected and private
+        properties were read directly.
+       </entry>
+      </row>
+      <row>
+       <entry>7.0.0</entry>
+       <entry>
+        The rows of <parameter>array</parameter> may now be objects as well as
+        arrays.
        </entry>
       </row>
      </tbody>
@@ -250,7 +278,7 @@ Array
    <example>
     <title>
      Get the column of names from the private "name" property of an object
-     using the magic methods <function>__isset</function> and <function>__get</function>
+     using the magic methods <link linkend="object.isset">__isset()</link> and <link linkend="object.get">__get()</link>
     </title>
     <programlisting role="php">
 <![CDATA[
@@ -298,8 +326,8 @@ Array
 ]]>
     </screen>
    </example>
-   If <function>__isset</function> is not provided, then an empty array will be
-   returned.
+   If <link linkend="object.isset">__isset()</link> is not provided, the object
+   contributes no entry to the returned array.
   </para>
  </refsect1>
 
