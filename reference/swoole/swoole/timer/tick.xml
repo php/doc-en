@@ -4,23 +4,22 @@
 <refentry xml:id="swoole-timer.tick" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Swoole\Timer::tick</refname>
-  <refpurpose>
-   Set an interval timer, unlike the after timer,
-   the tick timer will trigger repeatedly until cleared by Timer::clear.
-  </refpurpose>
+  <refpurpose>Set a repeating interval timer</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <modifier>static</modifier> <type class="union"><type>false</type><type>int</type></type><methodname>Swoole\Timer::tick</methodname>
+   <modifier>public</modifier> <modifier>static</modifier> <type class="union"><type>int</type><type>false</type></type><methodname>Swoole\Timer::tick</methodname>
    <methodparam><type>int</type><parameter>ms</parameter></methodparam>
    <methodparam><type>callable</type><parameter>callback</parameter></methodparam>
    <methodparam rep="repeat"><type>mixed</type><parameter>params</parameter></methodparam>
   </methodsynopsis>
   <simpara>
-   Set an interval timer that will persist until cleared. Different from after timer,
-   tick timer will keep triggering until cleared by Timer::clear.
+   Sets a timer that triggers every <parameter>ms</parameter> milliseconds.
+   Unlike a timer created with <methodname>Swoole\Timer::after</methodname>,
+   it keeps triggering until it is removed with
+   <methodname>Swoole\Timer::clear</methodname>.
   </simpara>
  </refsect1>
 
@@ -31,7 +30,9 @@
     <term><parameter>ms</parameter></term>
     <listitem>
      <simpara>
-      Specified time in milliseconds (e.g. 1000 means 1 second)
+      The interval in milliseconds. Must be greater than or equal to
+      <literal>1</literal>; a lower value emits an <constant>E_WARNING</constant>
+      and the call fails.
      </simpara>
     </listitem>
    </varlistentry>
@@ -39,7 +40,10 @@
     <term><parameter>callback</parameter></term>
     <listitem>
      <simpara>
-      The callback function to be executed when timer expires
+      The function to execute on every tick. It is called as
+      <literal>callback(int $timer_id, mixed ...$params)</literal>: the ID of
+      the timer is passed as the first argument, followed by the values given
+      in <parameter>params</parameter>.
      </simpara>
     </listitem>
    </varlistentry>
@@ -47,7 +51,8 @@
     <term><parameter>params</parameter></term>
     <listitem>
      <simpara>
-      Additional parameters to pass to the callback function
+      Additional values passed to <parameter>callback</parameter> after the
+      timer ID.
      </simpara>
     </listitem>
    </varlistentry>
@@ -57,26 +62,39 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <simpara>
-   Returns timer ID which can be used to clear the timer.
+   Returns the timer ID, which can be passed to
+   <methodname>Swoole\Timer::clear</methodname>. Returns &false; if the timer
+   could not be created, in particular when <parameter>ms</parameter> is less
+   than <literal>1</literal>.
   </simpara>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
-  <para>
-   <example>
-    <title><function>Swoole\Timer::tick</function> example</title>
-    <programlisting role="php">
-     <![CDATA[
+  <example>
+   <title><function>Swoole\Timer::tick</function> example</title>
+   <programlisting role="php">
+<![CDATA[
 <?php
-Swoole\Timer::tick(1000, function(){
-    echo "timeout\n";
-});
+$ticks = 0;
+Swoole\Timer::tick(1000, function (int $timer_id, string $label) use (&$ticks) {
+    echo "tick #", ++$ticks, " ($label)\n";
+    if ($ticks === 3) {
+        Swoole\Timer::clear($timer_id);
+    }
+}, "job");
 ?>
 ]]>
-    </programlisting>
-   </example>
-  </para>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+tick #1 (job)
+tick #2 (job)
+tick #3 (job)
+]]>
+   </screen>
+  </example>
  </refsect1>
 </refentry>
 

@@ -4,20 +4,20 @@
 <refentry xml:id="swoole-timer.after" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Swoole\Timer::after</refname>
-  <refpurpose>Execute a function after specified time.</refpurpose>
+  <refpurpose>Execute a function after a specified time</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <modifier>static</modifier> <type class="union"><type>false</type><type>int</type></type><methodname>Swoole\Timer::after</methodname>
+   <modifier>public</modifier> <modifier>static</modifier> <type class="union"><type>int</type><type>false</type></type><methodname>Swoole\Timer::after</methodname>
    <methodparam><type>int</type><parameter>ms</parameter></methodparam>
    <methodparam><type>callable</type><parameter>callback</parameter></methodparam>
    <methodparam rep="repeat"><type>mixed</type><parameter>params</parameter></methodparam>
   </methodsynopsis>
   <simpara>
-   Execute a function after a specified time. The Swoole\Timer::after function is a one-time timer that will be
-   destroyed once executed.
+   Creates a one-shot timer, which is destroyed once its callback has run.
+   Unlike <function>sleep</function>, it does not block the current process.
   </simpara>
  </refsect1>
 
@@ -28,7 +28,9 @@
     <term><parameter>ms</parameter></term>
     <listitem>
      <simpara>
-      Specified time in milliseconds (e.g. 1000 means 1 second).
+      The delay in milliseconds. Must be greater than or equal to
+      <literal>1</literal>; a lower value emits an <constant>E_WARNING</constant>
+      and the call fails.
      </simpara>
     </listitem>
    </varlistentry>
@@ -36,7 +38,10 @@
     <term><parameter>callback</parameter></term>
     <listitem>
      <simpara>
-      The callback function to be executed when timer expires.
+      The function to execute once the delay has elapsed. It is called as
+      <literal>callback(mixed ...$params)</literal>. Unlike
+      <methodname>Swoole\Timer::tick</methodname>, the timer ID is not passed
+      to the callback.
      </simpara>
     </listitem>
    </varlistentry>
@@ -44,7 +49,7 @@
     <term><parameter>params</parameter></term>
     <listitem>
      <simpara>
-      Additional parameters to pass to the callback function.
+      Additional values passed to <parameter>callback</parameter>.
      </simpara>
     </listitem>
    </varlistentry>
@@ -54,27 +59,33 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <simpara>
-   Returns timer ID which can be used to clear the timer.
+   Returns the timer ID, which can be passed to
+   <methodname>Swoole\Timer::clear</methodname> to cancel the timer before it
+   fires. Returns &false; if the timer could not be created, in particular when
+   <parameter>ms</parameter> is less than <literal>1</literal>.
   </simpara>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
-  <para>
-   <example>
-    <title><function>Swoole\Timer::after</function> example</title>
-    <programlisting role="php">
-     <![CDATA[
+  <example>
+   <title><function>Swoole\Timer::after</function> example</title>
+   <programlisting role="php">
+<![CDATA[
 <?php
-$str = "Swoole";
-Swoole\Timer::after(1000, function() use ($str) {
-    echo "Hello, $str\n";
-});
+Swoole\Timer::after(1000, function (string $name) {
+    echo "Hello, $name\n";
+}, "Swoole");
 ?>
 ]]>
-    </programlisting>
-   </example>
-  </para>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+Hello, Swoole
+]]>
+   </screen>
+  </example>
  </refsect1>
 </refentry>
 
