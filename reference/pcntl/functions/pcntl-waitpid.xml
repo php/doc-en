@@ -133,15 +133,19 @@
     <varlistentry>
      <term><parameter>resource_usage</parameter></term>
      <listitem>
-      <para>
+      <simpara>
        The <parameter>resource_usage</parameter> parameter is set to an
        associative <type>array</type> containing resource usage statistics
-       from the child process.
-
-       This is supported either if the wait6 system call is available
-       (e.g. on FreeBSD), or on Linux through the raw waitid system call. For
-       information on the contents see <function>getrusage</function>.
-      </para>
+       from the child process. For information on the contents see
+       <function>getrusage</function>.
+      </simpara>
+      <simpara>
+       This is only supported if the <literal>wait4(2)</literal> system call is
+       available on the system; otherwise the parameter is left untouched.
+       If no child process was reaped, that is if the function returns
+       <literal>0</literal> or <literal>-1</literal>, the parameter is set to
+       an empty <type>array</type>.
+      </simpara>
      </listitem>
     </varlistentry>
    </variablelist>
@@ -159,10 +163,9 @@
 
  <refsect1 role="examples">
   &reftitle.examples;
-  <para>
-   <example>
-    <title><function>pcntl_waitpid</function> example</title>
-    <programlisting role="php">
+  <example>
+   <title><function>pcntl_waitpid</function> example</title>
+   <programlisting role="php">
 <![CDATA[
 <?php
 function checkChild(int $pid, bool $wait): void
@@ -172,13 +175,16 @@ function checkChild(int $pid, bool $wait): void
     if ($deadPid === -1) {
         $errNo = pcntl_get_last_error();
         $errMsg = pcntl_strerror($errNo);
-        print "PARENT pcntl_waitpid FAILED ({$deadPid}): {$errMsg}\n";
+        print "PARENT pcntl_waitpid FAILED ({$errNo}): {$errMsg}\n";
     } elseif ($deadPid === 0) {
         print "PARENT pcntl_waitpid: No exited children.\n";
-    } else {
+    } elseif (pcntl_wifexited($status)) {
         print "PARENT pcntl_waitpid: Child PID {$deadPid} exited with status: "
-            . pcntl_wexitstatus($status) ."\n";
+            . pcntl_wexitstatus($status) . "\n";
         var_dump($rusage);
+    } else {
+        print "PARENT pcntl_waitpid: Child PID {$deadPid} was terminated by signal: "
+            . pcntl_wtermsig($status) . "\n";
     }
 }
 
@@ -210,9 +216,8 @@ if ($forkedPid == -1) {
     exit(7);
 }
 ]]>
-    </programlisting>
-   </example>
-  </para>
+   </programlisting>
+  </example>
  </refsect1>
 
  <refsect1 role="seealso">
