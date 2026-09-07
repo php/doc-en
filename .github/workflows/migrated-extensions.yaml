@@ -1,0 +1,111 @@
+# https://docs.github.com/en/actions
+
+name: "Migrated Extensions"
+
+on:
+  pull_request:
+    branches:
+      - "master"
+    types:
+      - "opened"
+      - "synchronize"
+      - "reopened"
+      - "labeled"
+      - "unlabeled"
+
+permissions:
+  contents: "read"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  migrated-extensions:
+    name: "Migration Notice Check"
+    runs-on: "ubuntu-latest"
+    # Escape hatch for repository-wide sweeps; only a maintainer can label.
+    if: "! contains(github.event.pull_request.labels.*.name, 'skip-migrated-check')"
+
+    env:
+      BASE_SHA: "${{ github.event.pull_request.base.sha }}"
+      NOTICE: "MOVING_TO_DOC_EXTENSIONS_DO_NOT_CHANGE_HERE.md"
+
+    steps:
+      - name: "Checkout php/doc-en"
+        uses: "actions/checkout@v7"
+        with:
+          ref: "${{ github.event.pull_request.head.sha }}"
+          fetch-depth: 50
+
+      - name: "Fetch diff base"
+        run: |
+          set -euo pipefail
+
+          if ! git fetch origin "$BASE_SHA" --depth=50; then
+            echo "::error::Cannot fetch the base commit $BASE_SHA, it may have been force-pushed."
+            exit 1
+          fi
+          # Deepen until the merge-base is reachable (long-lived branches)
+          for i in 1 2 3 4 5; do
+            git merge-base "$BASE_SHA" HEAD >/dev/null 2>&1 && break
+            git fetch --deepen=100 origin "$BASE_SHA"
+          done
+
+          if ! git merge-base "$BASE_SHA" HEAD >/dev/null 2>&1; then
+            echo "::error::No merge base with $BASE_SHA, cannot determine the changed files."
+            exit 1
+          fi
+
+      - name: "Check for changes to migrated extensions"
+        run: |
+          set -euo pipefail
+
+          # Migrated extensions are those carrying a notice, read at the base.
+          # core.quotePath=false keeps non-ASCII paths from coming back quoted.
+          if ! tree="$(git -c core.quotePath=false ls-tree -r --name-only \
+            "$BASE_SHA" -- reference)"; then
+            echo "::error::Cannot read reference/ at $BASE_SHA."
+            exit 1
+          fi
+
+          extensions="$(printf '%s\n' "$tree" \
+            | grep -E "^reference/[^/]+/${NOTICE//./\\.}\$" \
+            | cut -d/ -f2 | sort -u || true)"
+
+          if [ -z "$extensions" ]; then
+            echo "No extension carries a migration notice, nothing to check."
+            exit 0
+          fi
+
+          # Deletions are left alone: emptying a migrated folder is the
+          # cleanup this check exists to lead to.
+          changed="$(git -c core.quotePath=false diff --name-only --no-renames \
+            --diff-filter=d "$BASE_SHA...HEAD")"
+
+          # Compare folder names, so reference/mysql/ never catches mysqli.
+          offending=""
+          while IFS= read -r file; do
+            case "$file" in
+              reference/*/*) ;;
+              *) continue ;;
+            esac
+            folder="${file#reference/}"
+            folder="${folder%%/*}"
+            if printf '%s\n' "$extensions" | grep -qxF "$folder"; then
+              offending="${offending}${file}"$'\n'
+            fi
+          done <<< "$changed"
+
+          if [ -z "$offending" ]; then
+            echo "No file of a migrated extension is modified."
+            exit 0
+          fi
+
+          echo "::error::This pull request modifies extensions that are migrating to php/doc-extensions."
+          echo
+          echo "The following files belong to extensions carrying a $NOTICE notice:"
+          printf '%s' "$offending" | sed 's/^/  /'
+          echo
+          echo "Please open the pull request against https://github.com/php/doc-extensions instead."
+          exit 1
