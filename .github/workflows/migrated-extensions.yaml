@@ -32,25 +32,20 @@ jobs:
       NOTICE: "MOVING_TO_DOC_EXTENSIONS_DO_NOT_CHANGE_HERE.md"
 
     steps:
+      # The check only reads path names, never file contents, so a tree:0
+      # partial clone brings the whole commit history for about the cost
+      # of a shallow one. The base commit is then always present, which
+      # is all the diff below needs.
       - name: "Checkout php/doc-en"
         uses: "actions/checkout@v7"
         with:
           ref: "${{ github.event.pull_request.head.sha }}"
-          fetch-depth: 50
+          fetch-depth: 0
+          filter: "tree:0"
 
-      - name: "Fetch diff base"
+      - name: "Check the diff base is reachable"
         run: |
           set -euo pipefail
-
-          if ! git fetch origin "$BASE_SHA" --depth=50; then
-            echo "::error::Cannot fetch the base commit $BASE_SHA, it may have been force-pushed."
-            exit 1
-          fi
-          # Deepen until the merge-base is reachable (long-lived branches)
-          for i in 1 2 3 4 5; do
-            git merge-base "$BASE_SHA" HEAD >/dev/null 2>&1 && break
-            git fetch --deepen=100 origin "$BASE_SHA"
-          done
 
           if ! git merge-base "$BASE_SHA" HEAD >/dev/null 2>&1; then
             echo "::error::No merge base with $BASE_SHA, cannot determine the changed files."
