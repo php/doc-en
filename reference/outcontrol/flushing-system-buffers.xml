@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<chapter xml:id="outcontrol.flushing-system-buffers" xmlns="http://docbook.org/ns/docbook">
+ <title>Flushing System Buffers</title>
+ <para>
+  PHP provides two related ways
+  to flush (send and discard the contents of) system buffers:
+  through calling <function>flush</function>
+  and through enabling implicit flushing
+  with <function>ob_implicit_flush</function>
+  or the <link linkend="ini.implicit-flush">implicit_flush</link>
+  &php.ini; setting.
+ </para>
+
+ <section>
+  <title>Output Flushing Behaviour</title>
+  <para>
+   With implicit flushing disabled, PHP will flush output only
+   when <function>flush</function> is called or when the script ends.
+  </para>
+  <para>
+   With implicit flushing enabled, PHP will attempt to flush
+   after every block of code resulting in output.
+   Output in this context is non-zero length data that is:
+   <itemizedlist xml:id="outputcontrol.what-is-output">
+    <listitem>
+     <simpara>
+      outside of the <literal>&#60;?php ?&#62;</literal> tags
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      printed by language constructs and functions
+      whose explicit purpose is to output user provided variables or strings such as
+      <function>echo</function>, <function>print</function>,
+      <function>printf</function>, <function>var_dump</function>,
+      <function>var_export</function>, <function>vprintf</function>
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      printed by functions whose purpose is to collect and output
+      data/information on the running script or PHP such as
+      <function>debug_print_backtrace</function>, <function>phpcredits</function>,
+      <function>phpinfo</function>,
+      <methodname>ReflectionExtension::info</methodname>
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      printed by PHP on an uncaught exception or an unhandled error
+      (subject to the settings of
+      <link linkend="ini.display-errors">display_errors</link>
+      and <link linkend="ini.error-reporting">error_reporting</link>)
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      anything written to <literal>php://output</literal>
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <note>
+   <simpara>
+    Printing empty strings or sending headers is not considered output
+    and will not result in a flush operation.
+   </simpara>
+  </note>
+  <warning>
+   <simpara>
+    If implicit flushing is enabled, control characters
+    (e.g. <literal>"\n"</literal>, <literal>"\r"</literal>,
+    <literal>"\0"</literal>)
+    will trigger flushing as well.
+   </simpara>
+  </warning>
+ </section>
+
+ <section>
+  <title>Limitations</title>
+  <para>
+   This functionality cannot flush user-level output buffers.
+   To use these together, user-level output buffers must be flushed
+   before flushing system buffers in order for PHP to produce any output.
+  </para>
+  <warning>
+   <simpara>
+    Calling <function>flush</function> or implicit flushing being enabled
+    can interfere with output handlers of user-level output buffers
+    that set and send headers in a web context
+    (e.g. <function>ob_gzhandler</function>)
+    by sending headers before these handlers can do so.
+   </simpara>
+  </warning>
+  <para>
+   Buffering implemented by the underlying software/hardware
+   cannot be overridden by PHP and should be taken into account
+   when working with PHP's buffer control functions.
+   Checking the web servers/browsers/consoles buffering settings
+   and working with these can alleviate possible issues.
+   Working in a web context, either the web server's buffering settings
+   or the script's buffering could be adjusted to work in tandem
+   whereas working around the buffering strategies of various browsers
+   can be achieved by adjusting buffering in the PHP script.
+   On consoles that implement line buffering,
+   newline characters could be inserted in the appropriate places
+   before flushing output.
+  </para>
+ </section>
+
+ <section>
+  <title><acronym>SAPI</acronym> Differences In Flushing</title>
+  <para>
+   Although flushing is implemented by each <acronym>SAPI</acronym>
+   in a slightly different way,
+   these implementations fall in one of two categories:
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      <acronym>SAPI</acronym>s used in a web context will flush headers first
+      followed by the output.
+      <literal>Apache2Handler</literal>, <literal>CGI</literal>,
+      <literal>FastCGI</literal> and <literal>FPM</literal>
+      are such <acronym>SAPI</acronym>s
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      other <acronym>SAPI</acronym>s
+      such as <literal>CLI</literal> and <literal>embed</literal>
+      will flush output only
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+ </section>
+
+</chapter>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

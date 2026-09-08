@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
- <chapter xml:id="language.references" xmlns="http://docbook.org/ns/docbook">
+ <chapter xml:id="language.references" xmlns="http://docbook.org/ns/docbook" annotations="interactive">
   <title>References Explained</title>
   
   <sect1 xml:id="language.references.whatare">
@@ -11,9 +11,10 @@
     you cannot perform pointer arithmetic using them, they are not
     actual memory addresses, and so on. See
     <xref linkend="language.references.arent" /> for more
-    information. Instead, they are symbol table aliases. Note that in
-    PHP, variable name and variable content are different, so the same
-    content can have different names.  The closest analogy is with
+    information. Instead, they are
+    <link linkend="features.gc.refcounting-basics">symbol table</link>
+    aliases. Note that in PHP, variable name and variable content are different, so the same
+    content can have different names. The closest analogy is with
     Unix filenames and files - variable names are directory entries,
     while variable content is the file itself. References can be
     likened to hardlinking in Unix filesystem.
@@ -37,11 +38,10 @@
      In the first of these, PHP references allow you to make two
      variables refer to the same content. Meaning, when you do:
      <informalexample>
-      <programlisting role="php">
+      <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 $a =& $b;
-?>
 ]]>
       </programlisting>
      </informalexample>
@@ -66,7 +66,8 @@ $a =& $b;
        <programlisting role="php">
 <![CDATA[
 <?php
-function foo(&$var) { }
+
+function foo(&$var) {}
 
 foo($a); // $a is "created" and assigned to null
 
@@ -74,10 +75,9 @@ $b = array();
 foo($b['b']);
 var_dump(array_key_exists('b', $b)); // bool(true)
 
-$c = new stdClass;
+$c = new stdClass();
 foo($c->d);
 var_dump(property_exists($c, 'd')); // bool(true)
-?>
 ]]>
        </programlisting>
       </example>
@@ -87,11 +87,10 @@ var_dump(property_exists($c, 'd')); // bool(true)
      The same syntax can be used with functions that return
      references:
      <informalexample>
-      <programlisting role="php">
+      <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 $foo =& find_var($bar);
-?>
 ]]>
       </programlisting>
      </informalexample>
@@ -119,6 +118,7 @@ $var2 = "";
 function global_references($use_globals)
 {
     global $var1, $var2;
+
     if (!$use_globals) {
         $var2 =& $var1; // visible only inside the function
     } else {
@@ -128,9 +128,9 @@ function global_references($use_globals)
 
 global_references(false);
 echo "var2 is set to '$var2'\n"; // var2 is set to ''
+
 global_references(true);
 echo "var2 is set to '$var2'\n"; // var2 is set to 'Example variable'
-?>
 ]]>
        </programlisting>
       </example>
@@ -150,11 +150,12 @@ echo "var2 is set to '$var2'\n"; // var2 is set to 'Example variable'
 <?php
 $ref = 0;
 $row =& $ref;
+
 foreach (array(1, 2, 3) as $row) {
-    // do something
+    // Do something
 }
+
 echo $ref; // 3 - last element of the iterated array
-?>
 ]]>
        </programlisting>
       </example>
@@ -172,10 +173,14 @@ echo $ref; // 3 - last element of the iterated array
 <?php
 $a = 1;
 $b = array(2, 3);
+
 $arr = array(&$a, &$b[0], &$b[1]);
-$arr[0]++; $arr[1]++; $arr[2]++;
+$arr[0]++;
+$arr[1]++;
+$arr[2]++;
 /* $a == 2, $b == array(3, 4); */
-?>
+var_dump($a);
+var_dump($b);
 ]]>
       </programlisting>
      </informalexample>
@@ -190,20 +195,24 @@ $arr[0]++; $arr[1]++; $arr[2]++;
       <programlisting role="php">
 <![CDATA[
 <?php
+
 /* Assignment of scalar variables */
 $a = 1;
 $b =& $a;
 $c = $b;
-$c = 7; //$c is not a reference; no change to $a or $b
+$c = 7; // $c is not a reference; no change to $a or $b
+print "a = {$a}; b = {$b}; c = {$c}\n\n";
 
 /* Assignment of array variables */
 $arr = array(1);
-$a =& $arr[0]; //$a and $arr[0] are in the same reference set
-$arr2 = $arr; //not an assignment-by-reference!
+$a =& $arr[0]; // $a and $arr[0] are in the same reference set
+$arr2 = $arr; // Not an assignment-by-reference!
 $arr2[0]++;
 /* $a == 2, $arr == array(2) */
 /* The contents of $arr are changed even though it's not a reference! */
-?>
+print "a = {$a}\n";
+var_dump($arr);
+var_dump($arr2);
 ]]>
       </programlisting>
      </informalexample>
@@ -228,9 +237,9 @@ function foo(&$var)
     $var++;
 }
 
-$a=5;
+$a = 5;
 foo($a);
-?>
+print $a;
 ]]>
       </programlisting>
      </informalexample>
@@ -257,15 +266,15 @@ foo($a);
     As said before, references are not pointers. That means, the
     following construct won't do what you expect:
     <informalexample>
-     <programlisting role="php">
+     <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 function foo(&$var)
 {
     $var =& $GLOBALS["baz"];
 }
-foo($bar); 
-?>
+
+foo($bar);
 ]]>
      </programlisting>
     </informalexample>
@@ -280,7 +289,7 @@ foo($bar);
     available in the function <varname>foo</varname> (it is represented by
     <varname>$var</varname>, but <varname>$var</varname> has only
     variable contents and not name-to-value binding in the calling
-    symbol table).
+    <link linkend="features.gc.refcounting-basics">symbol table</link>).
     You can use <link linkend="language.references.return">returning
     references</link> to reference variables selected by the function.
    </simpara>
@@ -300,10 +309,9 @@ function foo(&$var)
     $var++;
 }
 
-$a=5;
+$a = 5;
 foo($a);
-// $a is 6 here
-?>
+print $a; // $a is 6 here
 ]]>
      </programlisting>
     </informalexample>
@@ -330,17 +338,20 @@ foo($a);
      <programlisting role="php">
 <![CDATA[
 <?php
+
 function foo(&$var)
 {
     $var++;
+    print $var;
 }
+
 function &bar()
 {
     $a = 5;
     return $a;
 }
+
 foo(bar());
-?>
 ]]>
      </programlisting>
     </informalexample>
@@ -355,30 +366,30 @@ foo(bar());
   result is undefined. For example, the following examples of passing
   by reference are invalid:
     <informalexample>
-     <programlisting role="php">
+     <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
+
 function foo(&$var)
 {
     $var++;
 }
+
 function bar() // Note the missing &
 {
     $a = 5;
     return $a;
 }
+
 foo(bar()); // Produces a notice
 
 foo($a = 5); // Expression, not variable
 foo(5); // Produces fatal error
 
-class Foobar
-{
-}
+class Foobar {}
 
 foo(new Foobar()) // Produces a notice as of PHP 7.0.7
                   // Notice: Only variables should be passed by reference
-?>
 ]]>
      </programlisting>
     </informalexample>
@@ -398,19 +409,21 @@ foo(new Foobar()) // Produces a notice as of PHP 7.0.7
      <programlisting role="php">
 <![CDATA[
 <?php
-class foo {
+
+class Foo
+{
     public $value = 42;
 
-    public function &getValue() {
+    public function &getValue()
+    {
         return $this->value;
     }
 }
 
-$obj = new foo;
-$myValue = &$obj->getValue(); // $myValue is a reference to $obj->value, which is 42.
+$obj = new Foo();
+$myValue = &$obj->getValue(); // $myValue is a reference to $obj->value, which is 42
 $obj->value = 2;
-echo $myValue;                // prints the new value of $obj->value, i.e. 2.
-?> 
+echo $myValue;                // Prints the new value of $obj->value, i.e. 2
 ]]>
      </programlisting>
     </informalexample>
@@ -442,28 +455,51 @@ echo $myValue;                // prints the new value of $obj->value, i.e. 2.
      <programlisting role="php">
 <![CDATA[
 <?php
-function &collector() {
-  static $collection = array();
-  return $collection;
+
+function &collector()
+{
+    static $collection = array();
+    return $collection;
 }
+
 $collection = &collector();
+// Now the $collection is a referenced variable that references the static array inside the function
+
 $collection[] = 'foo';
-?> 
+
+print_r(collector());
 ]]>
      </programlisting>
+     &example.outputs;
+     <screen>
+<![CDATA[
+Array
+(
+    [0] => foo
+)
+]]>
+     </screen>
     </informalexample>
+   <note>
+    <simpara>
+     If the assignment is done without the <literal>&amp;</literal> symbol, e.g. <code>$collection = collector();</code>,
+     the <varname>$collection</varname> variable will receive a copy of the value, not the reference returned by the function.
+    </simpara>
+   </note>
    To pass the returned reference to another function expecting a reference
    you can use this syntax:
     <informalexample>
-     <programlisting role="php">
+     <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
-function &collector() {
-  static $collection = array();
-  return $collection;
+
+function &collector()
+{
+    static $collection = array();
+    return $collection;
 }
+
 array_push(collector(), 'foo');
-?> 
 ]]>
      </programlisting>
     </informalexample>
@@ -486,10 +522,12 @@ array_push(collector(), 'foo');
      <programlisting role="php">
 <![CDATA[
 <?php
+
 $a = 1;
 $b =& $a;
 unset($a); 
-?>
+var_dump($a);
+var_dump($b);
 ]]>
      </programlisting>
     </informalexample>
@@ -518,11 +556,10 @@ unset($a);
      are in fact creating reference to a global variable. That means,
      this is the same as:
      <informalexample>
-      <programlisting role="php">
+      <programlisting role="php" annotations="non-interactive">
 <![CDATA[
 <?php
 $var =& $GLOBALS["var"];
-?>
 ]]>
       </programlisting>
      </informalexample>

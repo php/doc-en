@@ -19,44 +19,44 @@
     <tbody>
      <row>
       <entry><link linkend="ini.yac.compress-threshold">yac.compress_threshold</link></entry>
-      <entry>-1</entry>
-      <entry>PHP_INI_SYSTEM</entry>
+      <entry>4K</entry>
+      <entry><constant>INI_SYSTEM</constant></entry>
       <entry><!-- leave empty, this will be filled by an automatic script --></entry>
      </row>
      <row>
       <entry><link linkend="ini.yac.debug">yac.debug</link></entry>
       <entry>0</entry>
-      <entry>PHP_INI_ALL</entry>
+      <entry><constant>INI_ALL</constant></entry>
       <entry><!-- leave empty, this will be filled by an automatic script --></entry>
      </row>
      <row>
       <entry><link linkend="ini.yac.enable">yac.enable</link></entry>
       <entry>1</entry>
-      <entry>PHP_INI_SYSTEM</entry>
+      <entry><constant>INI_SYSTEM</constant></entry>
       <entry><!-- leave empty, this will be filled by an automatic script --></entry>
      </row>
      <row>
       <entry><link linkend="ini.yac.enable-cli">yac.enable_cli</link></entry>
       <entry>0</entry>
-      <entry>PHP_INI_SYSTEM</entry>
+      <entry><constant>INI_SYSTEM</constant></entry>
       <entry><!-- leave empty, this will be filled by an automatic script --></entry>
      </row>
      <row>
       <entry><link linkend="ini.yac.keys-memory-size">yac.keys_memory_size</link></entry>
-      <entry>4M</entry>
-      <entry>PHP_INI_SYSTEM</entry>
+      <entry>8M</entry>
+      <entry><constant>INI_SYSTEM</constant></entry>
       <entry><!-- leave empty, this will be filled by an automatic script --></entry>
      </row>
      <row>
       <entry><link linkend="ini.yac.serializer">yac.serializer</link></entry>
       <entry>php</entry>
-      <entry>PHP_INI_SYSTEM</entry>
+      <entry><constant>INI_SYSTEM</constant></entry>
       <entry><!-- leave empty, this will be filled by an automatic script --></entry>
      </row>
      <row>
       <entry><link linkend="ini.yac.values-memory-size">yac.values_memory_size</link></entry>
       <entry>64M</entry>
-      <entry>PHP_INI_SYSTEM</entry>
+      <entry><constant>INI_SYSTEM</constant></entry>
       <entry><!-- leave empty, this will be filled by an automatic script --></entry>
      </row>
     </tbody>
@@ -74,9 +74,20 @@
       <type>int</type>
      </term>
      <listitem>
-      <para>
-       
-      </para>
+      <simpara>
+       Serialized values larger than this number of bytes are
+       compressed (with LZ4, since Yac 2.4.0) before being stored.
+       Values above the <literal>1M</literal> stored entry limit
+       (<constant>YAC_MAX_RAW_COMPRESSED_LEN</constant>) are always
+       compressed regardless of this setting, because they cannot be
+       stored uncompressed. The default of <literal>4K</literal>
+       enables compression; <literal>-1</literal> disables it for
+       values below the stored entry limit, and other positive values
+       are clamped to the
+       <literal>1024</literal>..<literal>1M</literal> range.
+       Compressing large values saves shared memory at the cost of
+       some CPU on both store and retrieve.
+      </simpara>
      </listitem>
     </varlistentry>
     <varlistentry xml:id="ini.yac.debug">
@@ -85,9 +96,10 @@
       <type>int</type>
      </term>
      <listitem>
-      <para>
-       
-      </para>
+      <simpara>
+       Reserved for debugging. As of Yac 2.4.0 this directive is
+       registered but has no effect.
+      </simpara>
      </listitem>
     </varlistentry>
     <varlistentry xml:id="ini.yac.enable">
@@ -96,9 +108,10 @@
       <type>int</type>
      </term>
      <listitem>
-      <para>
-       
-      </para>
+      <simpara>
+       Whether Yac is enabled. If disabled, creating a
+       <classname>Yac</classname> instance throws an exception.
+      </simpara>
      </listitem>
     </varlistentry>
     <varlistentry xml:id="ini.yac.enable-cli">
@@ -107,9 +120,12 @@
       <type>int</type>
      </term>
      <listitem>
-      <para>
-       
-      </para>
+      <simpara>
+       Whether Yac is enabled when running under the
+       <literal>CLI</literal> SAPI. It is disabled by default because
+       command line scripts usually start and stop immediately, and the
+       shared memory segment would be created for nothing.
+      </simpara>
      </listitem>
     </varlistentry>
     <varlistentry xml:id="ini.yac.keys-memory-size">
@@ -118,20 +134,14 @@
       <type>string</type>
      </term>
      <listitem>
-      <para>
-       
-      </para>
-     </listitem>
-    </varlistentry>
-    <varlistentry xml:id="ini.yac.serializer">
-     <term>
-      <parameter>yac.serializer</parameter>
-      <type>string</type>
-     </term>
-     <listitem>
-      <para>
-       
-      </para>
+      <simpara>
+       Amount of shared memory for the table of keys. It caps how many
+       entries can exist at once — the default of
+       <literal>8M</literal> gives around 65,536 entries. Raise this
+       when the hit rate drops and <literal>kicks</literal> climb; see
+       <xref linkend="yac.memory-management"/> for how a full table
+       behaves and when that actually matters.
+      </simpara>
      </listitem>
     </varlistentry>
     <varlistentry xml:id="ini.yac.values-memory-size">
@@ -140,9 +150,34 @@
       <type>string</type>
      </term>
      <listitem>
-      <para>
-       
-      </para>
+      <simpara>
+       Amount of shared memory for storing values. Values are allocated
+       in a bump allocator over segments of 4M each; when no segment has
+       room for a new value, an allocator cursor wraps and the oldest
+       values are silently overwritten ("recycled"). Their reads then
+       degrade to misses, detected by an integrity guard. Enlarge this
+       if <literal>recycles</literal> climb while slots still have room,
+       or enable <link linkend="ini.yac.compress-threshold">yac.compress_threshold</link>
+       to shrink large payloads. See <xref linkend="yac.memory-management"/>.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry xml:id="ini.yac.serializer">
+     <term>
+      <parameter>yac.serializer</parameter>
+      <type>string</type>
+     </term>
+     <listitem>
+      <simpara>
+       Serializer used to turn arbitrary PHP values into bytes before
+       storing them. Allowed values are <literal>php</literal> (the
+       default), <literal>json</literal>, <literal>igbinary</literal> and
+       <literal>msgpack</literal>. The latter three require the extension
+       to be built with the corresponding support. Binary serializers such
+       as <literal>igbinary</literal> and <literal>msgpack</literal> are
+       typically faster and produce smaller payloads than
+       <literal>php</literal>.
+      </simpara>
      </listitem>
     </varlistentry>
 

@@ -3,23 +3,18 @@
 
 <refentry xml:id="yaf-view-interface.assign" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
-  <refname>Yaf_View_Interface::assign</refname>
-  <refpurpose>Assign value to View engine</refpurpose>
+<refname>Yaf_View_Interface::assign</refname>
+<refpurpose>Assign a variable to the view</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
    <modifier>abstract</modifier> <modifier>public</modifier> <type>bool</type><methodname>Yaf_View_Interface::assign</methodname>
-   <methodparam><type>string</type><parameter>name</parameter></methodparam>
-   <methodparam choice="opt"><type>string</type><parameter>value</parameter></methodparam>
+   <methodparam><type>mixed</type><parameter>name</parameter></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>value</parameter><initializer>NULL</initializer></methodparam>
   </methodsynopsis>
-  <para>
-     Assigan values to View engine, then the value can access directly by name in template.
-  </para>
-
-  &warn.undocumented.func;
-
+  <simpara>Assigns a variable to the view. Assigned variables are available to the template under their names.</simpara>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -28,30 +23,97 @@
    <varlistentry>
     <term><parameter>name</parameter></term>
     <listitem>
-     <para>
-      
-     </para>
+<simpara>The name under which the variable becomes available to the template.</simpara>
     </listitem>
    </varlistentry>
    <varlistentry>
     <term><parameter>value</parameter></term>
     <listitem>
-     <para>
-      
-     </para>
+<simpara>The value to assign.</simpara>
     </listitem>
    </varlistentry>
   </variablelist>
  </refsect1>
-
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-
-  </para>
+<simpara>The return value is defined by the concrete implementation. <classname>Yaf_View_Simple</classname>, the default view engine, returns the view instance.</simpara>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title><methodname>Yaf_View_Interface::assign</methodname> example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class MyView implements Yaf_View_Interface
+{
+    private $tpl_dir;
+    private $vars = array();
 
+    public function __construct($template_dir, $options = null)
+    {
+        $this->tpl_dir = $template_dir;
+    }
+
+    public function assign($name, $value = null)
+    {
+        $this->vars[$name] = $value;
+        return true;
+    }
+
+    public function display($tpl, $tpl_vars = null)
+    {
+        echo $this->render($tpl, $tpl_vars);
+        return true;
+    }
+
+    public function render($tpl, $tpl_vars = null)
+    {
+        extract($this->vars);
+        if ($tpl_vars !== null) {
+            extract($tpl_vars);
+        }
+        ob_start();
+        include $this->tpl_dir . "/" . $tpl;
+        return ob_get_clean();
+    }
+
+    public function setScriptPath($template_dir)
+    {
+        $this->tpl_dir = $template_dir;
+        return $this;
+    }
+
+    public function getScriptPath()
+    {
+        return $this->tpl_dir;
+    }
+}
+
+/* plug the custom view engine into the dispatcher in the bootstrap */
+class Bootstrap extends Yaf_Bootstrap_Abstract
+{
+    public function _initView(Yaf_Dispatcher $dispatcher)
+    {
+        $dispatcher->setView(new MyView(APPLICATION_PATH . "/views"));
+    }
+}
+?>
+]]>
+   </programlisting>
+  </example>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <simplelist>
+   <member><methodname>Yaf_View_Interface::display</methodname></member>
+   <member><methodname>Yaf_View_Interface::render</methodname></member>
+   <member><methodname>Yaf_View_Interface::setScriptPath</methodname></member>
+   <member><methodname>Yaf_View_Interface::getScriptPath</methodname></member>
+  </simplelist>
+ </refsect1>
 </refentry>
 
 <!-- Keep this comment at the end of the file

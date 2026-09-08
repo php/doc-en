@@ -20,7 +20,98 @@
    <methodparam><type>mysqli</type><parameter>mysql</parameter></methodparam>
   </methodsynopsis>
 
-  &warn.undocumented.func;
+  <simpara>
+   Returns a singly linked list comprised of
+   <classname>mysqli_warning</classname> or &false; if there are no warnings.
+   Each object in the list corresponds to a single line from the result of
+   <code>SHOW WARNINGS</code>.
+   Calling <methodname>mysqli_warning::next</methodname> will refill the object
+   with the values from the next row.
+  </simpara>
+  <note>
+   <simpara>
+    To retrieve warning messages, it is recommended to use the SQL command
+    <literal>SHOW WARNINGS [limit row_count]</literal> instead of this function.
+   </simpara>
+  </note>
+  <warning>
+   <simpara>
+    The linked list cannot be rewound or retrieved again.
+   </simpara>
+  </warning>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <variablelist>
+   &mysqli.link.description;
+  </variablelist>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <simpara>
+   Returns a singly linked list comprised of
+   <classname>mysqli_warning</classname> or &false; if there are no warnings.
+  </simpara>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title>Traversing the linked list to fetch all warnings</title>
+   <para>&style.oop;</para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = new mysqli("localhost", "my_user", "my_password", "world");
+
+$mysqli->query("SELECT 1/0, CAST('NULL' AS UNSIGNED)");
+
+if ($mysqli->warning_count > 0) {
+    $warning = $mysqli->get_warnings();
+    if ($warning !== false) {
+        do {
+            printf("Error number: %s\n", $warning->errno);
+            printf("Message: %s\n", $warning->message);
+        } while ($warning->next());
+    }
+}
+]]>
+   </programlisting>
+   <para>&style.procedural;</para>
+   <programlisting role="php">
+<![CDATA[
+<?php
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$link = mysqli_connect("localhost", "user", "password", "test");
+
+mysqli_query($link, "SELECT 1/0, CAST('NULL' AS UNSIGNED)");
+
+if (mysqli_warning_count($link) > 0) {
+    $warning = mysqli_get_warnings($link);
+    if ($warning !== false) {
+        do {
+            printf("Error number: %s\n", $warning->errno);
+            printf("Message: %s\n", $warning->message);
+        } while ($warning->next());
+    }
+}
+]]>
+   </programlisting>
+   &examples.outputs;
+   <screen>
+<![CDATA[
+Error number: 1365
+Message: Division by 0
+Error number: 1292
+Message: Truncated incorrect INTEGER value: 'NULL'
+]]>
+   </screen>
+  </example>
  </refsect1>
 
 </refentry>

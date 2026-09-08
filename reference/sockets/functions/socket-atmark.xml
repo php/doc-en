@@ -44,18 +44,54 @@
   &reftitle.examples;
   <para>
    <example>
-    <title>Using <function>socket_atmark</function> to set the source address</title>
+    <title>Using <function>socket_atmark</function> to check if the socket is ready to read out-of-band data.</title>
     <programlisting role="php">
 <![CDATA[
 <?php
-// Create a new socket
-$sock = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-var_dump(socket_atmark($sock));
-// Close
-socket_close($sock);
+$socketServer = socket_create( AF_INET, SOCK_STREAM, SOL_TCP );
+socket_set_option( $socketServer, SOL_SOCKET, SO_REUSEADDR, 1 );
+socket_bind( $socketServer, '127.0.0.1' );
+socket_listen( $socketServer );
+
+$socketClient = socket_create( AF_INET, SOCK_STREAM, SOL_TCP );
+socket_getsockname( $socketServer, $stAddr, $uPort );
+socket_connect( $socketClient, $stAddr, $uPort );
+
+$socket = socket_accept( $socketServer );
+socket_shutdown( $socket, 1 );
+
+$st = 'This is normal data.';
+socket_send( $socketClient, $st, strlen( $st ), 0 );
+$st = '!'; # TCP only allows one byte of urgent data.
+socket_send( $socketClient, $st, strlen( $st ), MSG_OOB );
+$st = 'Not so urgent.';
+socket_send( $socketClient, $st, strlen( $st ), 0 );
+socket_shutdown( $socketClient );
+
+do {
+    if ( socket_atmark( $socket ) ) {
+        $rc = socket_recv( $socket, $st, 65536, MSG_OOB );
+        echo "Received urgent data: ({$rc}) {$st}\n";
+    } else {
+        $rc = socket_recv( $socket, $st, 1024, 0 );
+        echo "Received normal data: ({$rc}) {$st}\n";
+    }
+} while ( $rc > 0 );
+socket_close( $socketServer );
+socket_close( $socketClient );
+socket_close( $socket );
 ?>
 ]]>
     </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+Received normal data: (20) This is normal data.
+Received urgent data: (1) !
+Received normal data: (14) Not so urgent.
+Received normal data: (0)
+]]>
+    </screen>
    </example>
   </para>
  </refsect1>
