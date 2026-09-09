@@ -40,12 +40,18 @@
     <link linkend="object.unserialize">__unserialize()</link> magic methods
     instead, available as of PHP 7.4.0.
     When a class declares both them and this interface,
-    the magic methods take precedence and the interface methods are never
-    called.
-    Implementing <interfacename>Serializable</interfacename> is therefore only
-    of use to support PHP versions prior to 7.4.0, where the magic methods are
-    ignored; declaring all four methods covers both, and avoids the
-    deprecation notice.
+    <function>serialize</function> always uses
+    <link linkend="object.serialize">__serialize()</link> and never reaches
+    <methodname>Serializable::serialize</methodname>.
+    Unserializing is decided by the format of the data instead: a payload
+    written by PHP 7.4.0 or later is read by
+    <link linkend="object.unserialize">__unserialize()</link>, one written
+    before it is still read by
+    <methodname>Serializable::unserialize</methodname>.
+    Implementing <interfacename>Serializable</interfacename> therefore remains
+    of use for reading such older payloads, and for satisfying a
+    <interfacename>Serializable</interfacename> type declaration; declaring all
+    four methods covers every case, and avoids the deprecation notice.
    </simpara>
 
    <note>
@@ -75,7 +81,7 @@
   <section xml:id="serializable.examples">
    &reftitle.examples;
    <example xml:id="serializable.example.basic">
-    <title>Supporting PHP versions prior to 7.4.0</title>
+    <title>Supporting PHP 7.1.0 through 7.3.0</title>
     <simpara>
      The magic methods carry the serialized form, and the interface methods
      delegate to them, so that a single representation serves both.
@@ -102,12 +108,13 @@ class Task implements Serializable
         $this->label = $data['label'];
     }
 
-    // Only ever called on PHP versions prior to 7.4.0
+    // Never called as of PHP 7.4.0
     public function serialize()
     {
         return serialize($this->__serialize());
     }
 
+    // Still called as of PHP 7.4.0, for data written before it
     public function unserialize($data)
     {
         $this->__unserialize(unserialize($data));
