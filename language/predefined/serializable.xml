@@ -33,6 +33,35 @@
      As of PHP 8.1.0, a class which implements <interfacename>Serializable</interfacename> without also implementing <link linkend="object.serialize">__serialize()</link> and <link linkend="object.unserialize">__unserialize()</link> will generate a deprecation warning.
     </para>
    </warning>
+
+   <simpara>
+    New code should use the
+    <link linkend="object.serialize">__serialize()</link> and
+    <link linkend="object.unserialize">__unserialize()</link> magic methods
+    instead, available as of PHP 7.4.0.
+    When a class declares both them and this interface,
+    <function>serialize</function> always uses
+    <link linkend="object.serialize">__serialize()</link> and never reaches
+    <methodname>Serializable::serialize</methodname>.
+    Unserializing is decided by the format of the data instead: a payload
+    written by PHP 7.4.0 or later is read by
+    <link linkend="object.unserialize">__unserialize()</link>, one written
+    before it is still read by
+    <methodname>Serializable::unserialize</methodname>.
+    Implementing <interfacename>Serializable</interfacename> therefore remains
+    of use for reading such older payloads, and for satisfying a
+    <interfacename>Serializable</interfacename> type declaration; declaring all
+    four methods covers every case, and avoids the deprecation notice.
+   </simpara>
+
+   <note>
+    <simpara>
+     The magic methods have no interface of their own, so a class which
+     declares them without implementing
+     <interfacename>Serializable</interfacename> is not an instance of it.
+     <function>method_exists</function> is the way to detect them.
+    </simpara>
+   </note>
   </section>
 
   <section xml:id="serializable.synopsis">
@@ -52,45 +81,61 @@
   <section xml:id="serializable.examples">
    &reftitle.examples;
    <example xml:id="serializable.example.basic">
-    <title>Basic usage</title>
+    <title>Supporting PHP 7.1.0 through 7.3.0</title>
+    <simpara>
+     The magic methods carry the serialized form, and the interface methods
+     delegate to them, so that a single representation serves both.
+    </simpara>
     <programlisting role="php">
 <![CDATA[
 <?php
-class obj implements Serializable {
-    private $data;
-    public function __construct() {
-        $this->data = "My private data";
+class Task implements Serializable
+{
+    private $label;
+
+    public function __construct($label)
+    {
+        $this->label = $label;
     }
-    public function serialize() {
-        return serialize($this->data);
+
+    public function __serialize(): array
+    {
+        return ['label' => $this->label];
     }
-    public function unserialize($data) {
-        $this->data = unserialize($data);
+
+    public function __unserialize(array $data): void
+    {
+        $this->label = $data['label'];
     }
-    public function getData() {
-        return $this->data;
+
+    // Never called as of PHP 7.4.0
+    public function serialize()
+    {
+        return serialize($this->__serialize());
+    }
+
+    // Still called as of PHP 7.4.0, for data written before it
+    public function unserialize($data)
+    {
+        $this->__unserialize(unserialize($data));
     }
 }
 
-$obj = new obj;
-$ser = serialize($obj);
-
-var_dump($ser);
-
-$newobj = unserialize($ser);
-
-var_dump($newobj->getData());
+var_dump(serialize(new Task('deploy')));
 ?>
 ]]>
     </programlisting>
-    &example.outputs.similar;
+    &example.outputs;
     <screen>
 <![CDATA[
-Deprecated: obj implements the Serializable interface, which is deprecated. Implement __serialize() and __unserialize() instead (or in addition, if support for old PHP versions is necessary) in script on line 2
-string(38) "C:3:"obj":23:{s:15:"My private data";}"
-string(15) "My private data"
+string(40) "O:4:"Task":1:{s:5:"label";s:6:"deploy";}"
 ]]>
     </screen>
+    <simpara>
+     Prior to PHP 7.4.0, the same code serializes through the interface
+     instead, and outputs
+     <literal>string(47) "C:4:"Task":31:{a:1:{s:5:"label";s:6:"deploy";}}"</literal>.
+    </simpara>
    </example>
   </section>
 
