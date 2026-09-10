@@ -32,7 +32,8 @@
    A <classname>Throwable</classname> error, is an execution event which disrupts
    the normal flow of instructions. When a <classname>Throwable</classname> error
    is &throw;n, be that by the engine or manually, it will unwind the call stack
-   all the way up to the global scope and terminate the program with a fatal error.
+   all the way up to the global scope and terminate the program with a fatal error,
+   unless it is intercepted by a &try;-&catch; block or a global exception handler.
    All &finally; blocks it encounters along the way will be executed.
   </para>
   <para>
@@ -40,7 +41,7 @@
    must use the &throw; keyword followed by an instance of the
    <classname>Error</classname> or <classname>Exception</classname> class or
    a subclass of one of them.
-   Trying to throw an object that is not will result in an
+   Trying to throw an object that does not implement <classname>Throwable</classname> will result in an
    <classname>Error</classname> being thrown with the following message:
    <literal>Cannot throw objects that do not implement Throwable</literal>.
   </para>
@@ -78,11 +79,14 @@
    <title><literal>Global exception handler</literal></title>
    <para>
     If a <classname>Throwable</classname> object is allowed to bubble up to the
-    global scope, it may be caught by a global exception handler if set.
-    The <function>set_exception_handler</function> function can set a function
-    that will be called in place of a &catch; block if no other block is invoked.
-    The effect is essentially the same as if the entire program were wrapped
-    in a &try;-&catch; block with that function as the &catch;.
+    global scope, it will be caught by a global exception handler if one is set.
+    The <function>set_exception_handler</function> accepts a &callable;
+    which takes an exception as a parameter. It will be triggered when
+    a <classname>Throwable</classname> object bubbles up the whole call stack
+    without being caught. It acts as the ultimate &catch; for the entire program.
+    The default exception handler will stop the execution by generating a Fatal Error.
+    You can customise this behaviour by setting your own handler, and end the execution
+    of your program gracefully.
    </para>
   </sect2>
 
@@ -91,8 +95,6 @@
    <para>
     A user-defined exception can be defined by extending the built-in
     <classname>Exception</classname> class.
-    To see which methods and properties are accessible within a child class
-    derived from <classname>Exception</classname> visit its page.
    </para>
    <para>
     If a class extends the built-in <classname>Exception</classname> class and
@@ -217,11 +219,13 @@ A custom function for this type of exception
   </para>
   <para>
    In contrast to <classname>Throwable</classname> errors, diagnostic errors do
-   <emphasis>not</emphasis> disrupt the normal flow of execution.
+   <emphasis>not</emphasis> disrupt the normal flow of execution by default.
+   However, they can take control of execution when a handler has been set
+   with <function>set_error_handler</function>.
   </para>
   <para>
    Which diagnostics are reported and which are ignored is controlled by the
-   <link linkend="ini.error-reporting"><parameter>error_reporting</parameter></link>
+   <link linkend="ini.error-reporting"><option>error_reporting</option></link>
    &php.ini; directive, or at runtime by calling <function>error_reporting</function>.
    It is strongly recommended that the configuration directive be set,
    as some errors can occur before execution of your script begins.
@@ -229,7 +233,7 @@ A custom function for this type of exception
   <note>
    <para>
     In a development environment,
-    <link linkend="ini.error-reporting"><parameter>error_reporting</parameter></link>
+    <link linkend="ini.error-reporting"><option>error_reporting</option></link>
     should always be set to <constant>E_ALL</constant> to be aware of and fix
     issues raised by PHP.
     However, in production the level of verbosity could be reduced to
