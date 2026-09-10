@@ -87,6 +87,68 @@ myClass::test();
     </programlisting>
    </example>
   </para>
+  <simpara>
+   <function>property_exists</function> returns &true; regardless of property
+   visibility, detects dynamic properties added to instances (when the class
+   uses <literal>#[AllowDynamicProperties]</literal>), and ignores
+   <link linkend="language.oop5.overloading.members"><literal>__isset</literal></link>
+   and <literal>__get</literal> magic methods.
+  </simpara>
+  <para>
+   <example>
+    <title>Visibility, dynamic properties, and magic methods</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+
+#[AllowDynamicProperties]
+class MyClass {
+    public $public;
+    private $private;
+    static protected $protectedStatic;
+
+    // ignored by property_exists
+    public function __isset(string $name): bool {
+        return true;
+    }
+
+    // ignored by property_exists
+    public function __get(string $name): string {
+        return '';
+    }
+}
+
+$instance = new MyClass();
+$instance->instanced = 'abc';
+
+var_dump(property_exists($instance, 'public'));          // true  (public)
+var_dump(property_exists($instance, 'private'));         // true  (visibility ignored)
+var_dump(property_exists($instance, 'protectedStatic')); // true  (visibility ignored)
+var_dump(property_exists($instance, 'instanced'));       // true  (dynamic property on instance)
+var_dump(property_exists($instance, 'undefined'));       // false (not declared, __isset ignored)
+
+var_dump(property_exists(MyClass::class, 'public'));    // true
+var_dump(property_exists(MyClass::class, 'instanced')); // false (dynamic props not on class)
+var_dump(property_exists(MyClass::class, 'undefined')); // false
+
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(false)
+bool(true)
+bool(false)
+bool(false)
+]]>
+    </screen>
+   </example>
+  </para>
  </refsect1>
 
  <refsect1 role="notes">

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision$ --> 
+<!-- $Revision$ -->
 
 <book xml:id="book.taint" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <?phpdoc extension-membership="pecl" ?>
@@ -8,49 +8,56 @@
 
  <preface xml:id="intro.taint">
   &reftitle.intro;
-  <para>
-   Taint is an extension, which is used for detecting XSS codes (tainted
-   string).
-   And also can be used to spot sql injection vulnerabilities, and shell
-   inject, etc.
-  </para>
-  <para>
-   When taint is enabled, if you pass a tainted string (comes from <varname>$_GET</varname>,
-   <varname>$_POST</varname> or <varname>$_COOKIE</varname>) to some functions, taint will warn you about that.
-  </para>
+  <simpara>
+   Taint is an extension for detecting XSS code (tainted strings). It can
+   also be used to spot SQL injection, command injection, file path
+   injection and similar vulnerabilities.
+  </simpara>
+  <simpara>
+   When taint is enabled, strings received from user input —
+   <varname>$_GET</varname>, <varname>$_POST</varname> and
+   <varname>$_COOKIE</varname> — are marked as tainted at request startup,
+   and the mark is tracked through string operations. When a tainted
+   string reaches a dangerous sink (output, SQL query, shell command,
+   file path, ...), taint raises a warning pointing at that spot. See
+   <link linkend="taint.detail">Propagation and Checked Sinks</link> for
+   the complete lists.
+  </simpara>
+  <simpara>
+   Taint is a development and auditing tool, not a runtime defense: it
+   only reports possible problems and never blocks or alters data. It is
+   deliberately conservative and may over-report, so a clean run means
+   only "nothing taint could see", never "provably secure". Do not enable
+   it in production environments.
+  </simpara>
   <example>
-   <title><function>Taint</function>example</title>
+   <title>Taint example</title>
    <programlisting role="php">
 <![CDATA[
 <?php
 $a = trim($_GET['a']);
 
-$file_name = '/tmp' .  $a;
+$file_name = '/tmp/' . $a;
 $output    = "Welcome, {$a} !!!";
-$var       = "output";
-$sql       = "Select *  from " . $a;
-$sql      .= "ooxx";
+$sql       = "SELECT * FROM users WHERE name = " . $a;
 
 echo $output;
-
-print $$var;
-
+print $output;
 include $file_name;
-
-mysql_query($sql);
+mysqli_query($link, $sql);
 ?>
 ]]>
    </programlisting>
    &example.outputs.similar;
    <screen>
 <![CDATA[
-Warning: main() [function.echo]: Attempt to echo a string that might be tainted
+Warning: main() [echo]: Attempt to echo a string that might be tainted in /path/to/script.php on line 9
 
-Warning: main() [function.echo]: Attempt to print a string that might be tainted
+Warning: main() [print]: Attempt to print a string that might be tainted in /path/to/script.php on line 10
 
-Warning: include() [function.include]: File path contains data that might be tainted
+Warning: main() [include]: File path contains data that might be tainted in /path/to/script.php on line 11
 
-Warning: mysql_query() [function.mysql-query]: SQL statement contains data that might be tainted
+Warning: main() [mysqli_query]: SQL statement contains data that might be tainted in /path/to/script.php on line 12
 ]]>
    </screen>
   </example>

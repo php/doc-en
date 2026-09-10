@@ -7,92 +7,136 @@
 
  <partintro>
 
-<!-- {{{ Serializable intro -->
   <section xml:id="serializable.intro">
    &reftitle.intro;
    <para>
     Interface for customized serializing.
    </para>
 
-   <para>
+   <simpara>
     Classes that implement this interface no longer support
     <link linkend="object.sleep">__sleep()</link> and
-    <link linkend="object.wakeup">__wakeup()</link>. The method serialize is
-    called whenever an instance needs to be serialized. This does not invoke __destruct()
-    or have any other side effect unless programmed inside the method. When the data is
-    unserialized the class is known and the appropriate unserialize() method is called as
-    a constructor instead of calling __construct(). If you need to execute the standard
-    constructor you may do so in the method.
-   </para>
+    <link linkend="object.wakeup">__wakeup()</link>.
+    The <methodname>serialize</methodname> method is
+    called whenever an instance needs to be serialized.
+    This does not invoke <methodname>__destruct</methodname>
+    or have any other side effect unless programmed inside the method.
+    When the data is unserialized the class is known and the appropriate
+    <methodname>unserialize</methodname> method is called as
+    a constructor instead of calling <methodname>__construct</methodname>.
+    The constructor can be called from within the
+    <methodname>unserialize</methodname> method if desired.
+   </simpara>
    
    <warning>
     <para>
      As of PHP 8.1.0, a class which implements <interfacename>Serializable</interfacename> without also implementing <link linkend="object.serialize">__serialize()</link> and <link linkend="object.unserialize">__unserialize()</link> will generate a deprecation warning.
     </para>
    </warning>
+
+   <simpara>
+    New code should use the
+    <link linkend="object.serialize">__serialize()</link> and
+    <link linkend="object.unserialize">__unserialize()</link> magic methods
+    instead, available as of PHP 7.4.0.
+    When a class declares both them and this interface,
+    <function>serialize</function> always uses
+    <link linkend="object.serialize">__serialize()</link> and never reaches
+    <methodname>Serializable::serialize</methodname>.
+    Unserializing is decided by the format of the data instead: a payload
+    written by PHP 7.4.0 or later is read by
+    <link linkend="object.unserialize">__unserialize()</link>, one written
+    before it is still read by
+    <methodname>Serializable::unserialize</methodname>.
+    Implementing <interfacename>Serializable</interfacename> therefore remains
+    of use for reading such older payloads, and for satisfying a
+    <interfacename>Serializable</interfacename> type declaration; declaring all
+    four methods covers every case, and avoids the deprecation notice.
+   </simpara>
+
+   <note>
+    <simpara>
+     The magic methods have no interface of their own, so a class which
+     declares them without implementing
+     <interfacename>Serializable</interfacename> is not an instance of it.
+     <function>method_exists</function> is the way to detect them.
+    </simpara>
+   </note>
   </section>
-<!-- }}} -->
 
   <section xml:id="serializable.synopsis">
    &reftitle.interfacesynopsis;
 
-<!-- {{{ Synopsis -->
    <classsynopsis class="interface">
     <oointerface>
      <interfacename>Serializable</interfacename>
     </oointerface>
 
     <classsynopsisinfo role="comment">&Methods;</classsynopsisinfo>
-    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('class.serializable')/db:refentry/db:refsect1[@role='description']/descendant::db:methodsynopsis[@role='Serializable'])">
-     <xi:fallback/>
-    </xi:include>
+    <xi:include xpointer="xmlns(db=http://docbook.org/ns/docbook) xpointer(id('class.serializable')/db:refentry/db:refsect1[@role='description']/descendant::db:methodsynopsis[@role='Serializable'])"/>
    </classsynopsis>
-<!-- }}} -->
 
   </section>
 
   <section xml:id="serializable.examples">
    &reftitle.examples;
-   <example xml:id="serializable.example.basic"><!-- {{{ -->
-    <title>Basic usage</title>
+   <example xml:id="serializable.example.basic">
+    <title>Supporting PHP 7.1.0 through 7.3.0</title>
+    <simpara>
+     The magic methods carry the serialized form, and the interface methods
+     delegate to them, so that a single representation serves both.
+    </simpara>
     <programlisting role="php">
 <![CDATA[
 <?php
-class obj implements Serializable {
-    private $data;
-    public function __construct() {
-        $this->data = "My private data";
+class Task implements Serializable
+{
+    private $label;
+
+    public function __construct($label)
+    {
+        $this->label = $label;
     }
-    public function serialize() {
-        return serialize($this->data);
+
+    public function __serialize(): array
+    {
+        return ['label' => $this->label];
     }
-    public function unserialize($data) {
-        $this->data = unserialize($data);
+
+    public function __unserialize(array $data): void
+    {
+        $this->label = $data['label'];
     }
-    public function getData() {
-        return $this->data;
+
+    // Never called as of PHP 7.4.0
+    public function serialize()
+    {
+        return serialize($this->__serialize());
+    }
+
+    // Still called as of PHP 7.4.0, for data written before it
+    public function unserialize($data)
+    {
+        $this->__unserialize(unserialize($data));
     }
 }
 
-$obj = new obj;
-$ser = serialize($obj);
-
-var_dump($ser);
-
-$newobj = unserialize($ser);
-
-var_dump($newobj->getData());
+var_dump(serialize(new Task('deploy')));
 ?>
 ]]>
     </programlisting>
-    &example.outputs.similar;
+    &example.outputs;
     <screen>
 <![CDATA[
-string(38) "C:3:"obj":23:{s:15:"My private data";}"
-string(15) "My private data"
+string(40) "O:4:"Task":1:{s:5:"label";s:6:"deploy";}"
 ]]>
     </screen>
-   </example><!-- }}} -->
+    <simpara>
+     Prior to PHP 7.4.0, the same code serializes through the interface
+     instead, and outputs
+     <literal>string(47) "C:4:"Task":31:{a:1:{s:5:"label";s:6:"deploy";}}"</literal>.
+    </simpara>
+   </example>
   </section>
 
 

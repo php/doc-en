@@ -251,6 +251,23 @@
         'ip.add.re.ss:port', 'port', '/path/to/unix/socket'. This option is
         mandatory for each pool.
        </para>
+       <warning>
+        <simpara>
+         An exposed FastCGI endpoint allows arbitrary code execution.
+         When the web server runs on the same host, a Unix socket should be
+         preferred; on Linux its access is then controlled by
+         <link linkend="listen-owner">listen.owner</link>,
+         <literal>listen.group</literal> and <literal>listen.mode</literal>,
+         although many BSD-derived systems accept connections regardless of
+         those permissions.
+         When a TCP socket is used, the addresses allowed to connect must be
+         listed in
+         <link linkend="listen-allowed-clients">listen.allowed_clients</link>,
+         which is unset by default and then accepts any address.
+         In container setups, the FPM service should not publish its port on
+         the host; containers on the same network reach each other directly.
+        </simpara>
+       </warning>
       </listitem>
      </varlistentry>
      <varlistentry xml:id="listen-backlog">
@@ -392,16 +409,16 @@
        <para>
         <literal>static</literal> - the number of child processes is fixed (<literal>pm.max_children</literal>).
        </para>
-       <para>
+       <simpara>
         <literal>ondemand</literal> - the processes spawn on demand (when requested,
         as opposed to dynamic, where <literal>pm.start_servers</literal> are started
-        when the service is started.
-       </para>
-       <para>
+        when the service is started).
+       </simpara>
+       <simpara>
         <literal>dynamic</literal> - the number of child processes is set dynamically based on the
         following directives: <literal>pm.max_children</literal>, <literal>pm.start_servers</literal>,
         <literal>pm.min_spare_servers</literal>, <literal>pm.max_spare_servers</literal>.
-       </para>
+       </simpara>
       </listitem>
      </varlistentry>
      <varlistentry xml:id="pm.max-children">
@@ -410,12 +427,12 @@
        <type>int</type>
       </term>
       <listitem>
-       <para>
+       <simpara>
         The number of child processes to be created when <literal>pm</literal> is set to
         <literal>static</literal> and the maximum number of child processes to be created
-        when <literal>pm</literal> is set to <literal>dynamic</literal>. This
-        option is mandatory.
-       </para>
+        when <literal>pm</literal> is set to <literal>dynamic</literal> or <literal>ondemand</literal>.
+        This option is mandatory.
+       </simpara>
        <para>
         This option sets the limit on the number of simultaneous requests that
         will be served. Equivalent to the ApacheMaxClients directive with
@@ -1004,6 +1021,21 @@
      </varlistentry>
     </variablelist>
     <para>
+     Configuration values can be set using environment variable expansion.
+     Setting default values when the environment variable is unset or null is also supported as of PHP 8.3.0.
+     For example:
+        <example>
+        <title>Using environment variable expansion</title>
+        <programlisting role="ini">
+<![CDATA[
+listen = /var/run/php-fpm-${POOL_NAME}.sock
+user = ${USER_NAME:-www-data}
+group = ${USER_NAME:-www-data}
+]]>
+        </programlisting>
+       </example>
+    </para>
+    <para>
      It's possible to pass additional environment variables and update PHP settings of a certain pool.
      To do this, you need to add the following options to the pool configuration file.
      <example>
@@ -1027,8 +1059,7 @@ php_admin_value[memory_limit] = 32M
      PHP settings passed with <literal>php_value</literal> or
      <literal>php_flag</literal> will overwrite their previous value.
      Please note that defining
-     <link linkend="ini.disable-functions">disable_functions</link> or
-     <link linkend="ini.disable-classes">disable_classes</link> will
+     <link linkend="ini.disable-functions">disable_functions</link> will
      not overwrite previously defined <filename>php.ini</filename> values,
      but will append the new value instead.
     </para>

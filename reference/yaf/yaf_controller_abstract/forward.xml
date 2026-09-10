@@ -4,38 +4,47 @@
 <refentry xml:id="yaf-controller-abstract.forward" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>Yaf_Controller_Abstract::forward</refname>
-  <refpurpose>Forward to another action</refpurpose>
+  <refpurpose>Forward the current request to another action</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
   <methodsynopsis>
-   <modifier>public</modifier> <type>bool</type><methodname>Yaf_Controller_Abstract::forward</methodname>
+   <modifier>public</modifier> <type class="union"><type>bool</type><type>null</type></type><methodname>Yaf_Controller_Abstract::forward</methodname>
    <methodparam><type>string</type><parameter>action</parameter></methodparam>
-   <methodparam choice="opt"><type>array</type><parameter>paramters</parameter></methodparam>
+   <methodparam choice="opt"><type class="union"><type>array</type><type>null</type></type><parameter>parameters</parameter></methodparam>
   </methodsynopsis>
   <methodsynopsis>
-   <modifier>public</modifier> <type>bool</type><methodname>Yaf_Controller_Abstract::forward</methodname>
+   <modifier>public</modifier> <type class="union"><type>bool</type><type>null</type></type><methodname>Yaf_Controller_Abstract::forward</methodname>
    <methodparam><type>string</type><parameter>controller</parameter></methodparam>
    <methodparam><type>string</type><parameter>action</parameter></methodparam>
-   <methodparam choice="opt"><type>array</type><parameter>paramters</parameter></methodparam>
+   <methodparam choice="opt"><type class="union"><type>array</type><type>null</type></type><parameter>parameters</parameter></methodparam>
   </methodsynopsis>
   <methodsynopsis>
-   <modifier>public</modifier> <type>bool</type><methodname>Yaf_Controller_Abstract::forward</methodname>
+   <modifier>public</modifier> <type class="union"><type>bool</type><type>null</type></type><methodname>Yaf_Controller_Abstract::forward</methodname>
    <methodparam><type>string</type><parameter>module</parameter></methodparam>
    <methodparam><type>string</type><parameter>controller</parameter></methodparam>
    <methodparam><type>string</type><parameter>action</parameter></methodparam>
-   <methodparam choice="opt"><type>array</type><parameter>paramters</parameter></methodparam>
+   <methodparam choice="opt"><type class="union"><type>array</type><type>null</type></type><parameter>parameters</parameter></methodparam>
   </methodsynopsis>
-  <para>
-   forward current execution process to other action.
-   <note>
-    <para>
-      this method doesn't switch to the destination action immediately, it
-      will take place after current flow finish.
-    </para>
-   </note>
-  </para>
+  <simpara>
+   Forward the current request to another action. The target is
+   determined from the number and types of the arguments:
+  </simpara>
+  <simplelist>
+   <member><parameter>action</parameter> only: forward to another action of the current controller.</member>
+   <member><parameter>controller</parameter> and <parameter>action</parameter>: forward to another controller.</member>
+   <member><parameter>module</parameter>, <parameter>controller</parameter> and <parameter>action</parameter>: forward to another module.</member>
+   <member>The optional <parameter>parameters</parameter> array carries invocation arguments retrievable with <methodname>Yaf_Request_Abstract::getParam</methodname>.</member>
+  </simplelist>
+  <note>
+   <simpara>
+    This method does not switch to the destination action immediately;
+    the switch takes place after the current flow finishes. To hand over
+    control right away, return from the current action method (returning
+    &false; also tells Yaf not to auto-render the current view).
+   </simpara>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -44,34 +53,35 @@
    <varlistentry>
     <term><parameter>module</parameter></term>
     <listitem>
-     <para>
-       destination module name, if NULL was given, then default module name
-       is assumed
-     </para>
+     <simpara>
+      The destination module name. If the current module is given, it is
+      used as is.
+     </simpara>
     </listitem>
    </varlistentry>
    <varlistentry>
     <term><parameter>controller</parameter></term>
     <listitem>
-     <para>
-       destination controller name
-     </para>
+     <simpara>
+      The destination controller name.
+     </simpara>
     </listitem>
    </varlistentry>
    <varlistentry>
     <term><parameter>action</parameter></term>
     <listitem>
-     <para>
-       destination action name
-     </para>
+     <simpara>
+      The destination action name.
+     </simpara>
     </listitem>
    </varlistentry>
    <varlistentry>
-    <term><parameter>paramters</parameter></term>
+    <term><parameter>parameters</parameter></term>
     <listitem>
-     <para>
-      calling arguments
-     </para>
+     <simpara>
+      Invocation arguments for the destination action, retrievable
+      with <methodname>Yaf_Request_Abstract::getParam</methodname>.
+     </simpara>
     </listitem>
    </varlistentry>
   </variablelist>
@@ -79,33 +89,33 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-   &return.success;
-  </para>
+  <simpara>
+   Returns &true; on success, or &false; / &null; on failure.
+  </simpara>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><function>Yaf_Controller_Abstract::forward</function>example</title>
+   <title><function>Yaf_Controller_Abstract::forward</function> example</title>
    <programlisting role="php">
 <![CDATA[
 <?php
 class IndexController extends Yaf_Controller_Abstract
 {
-    public function indexAction(){   
-         $logined = $_SESSION["login"];
-         if (!$logined) {
-             $this->forward("login", array("from" => "Index")); // forward to login action
-             return FALSE;  // this is important, this finish current working flow
-                            // and tell the Yaf do not doing auto-render
-         }
+    public function indexAction() {
+        $logined = $_SESSION["login"];
+        if (!$logined) {
+            $this->forward("login", array("from" => "Index")); // forward to the login action
+            return false; // this is important, it ends the current flow
+                          // and tells Yaf not to auto-render
+        }
 
-         // other processes
+        // other processes
     }
 
     public function loginAction() {
-         echo "login, redirected from ", $this->_request->getParam("from") , " action";
+        echo "login, redirected from ", $this->_request->getParam("from") , " action";
     }
 }
 ?>
@@ -122,9 +132,11 @@ class IndexController extends Yaf_Controller_Abstract
 
  <refsect1 role="seealso">
   &reftitle.seealso;
-  <simplelist>
-   <member><methodname>Yaf_Request_Abstrace::getParam</methodname></member>
-  </simplelist>
+  <para>
+   <simplelist>
+    <member><methodname>Yaf_Request_Abstract::getParam</methodname></member>
+   </simplelist>
+  </para>
  </refsect1>
 
 </refentry>
