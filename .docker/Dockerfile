@@ -18,5 +18,11 @@ RUN echo 'memory_limit = 512M' >> /usr/local/etc/php/conf.d/local.ini
 
 ENV FORMAT=xhtml
 
-CMD php doc-base/configure.php --disable-segfault-error && \
-    php phd/render.php --docbook doc-base/.manual.xml --output=/var/www/en/output --package PHP --format ${FORMAT}
+CMD ["sh", "-c", "\
+php doc-base/configure.php && \
+exec php phd/render.php \
+  --docbook doc-base/.manual.xml \
+  --output=/var/www/en/output \
+  --package PHP \
+  --format ${FORMAT}\
+"]

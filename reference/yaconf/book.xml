@@ -8,65 +8,56 @@
 
  <preface xml:id="intro.yaconf">
   &reftitle.intro;
-  <para>
+  <simpara>
    <literal>Yet Another Configurations Container</literal>
-   (<acronym>Yaconf</acronym>) is a configurations container,
-   it parses <literal>INI</literal> files, and store the result
-   in PHP when PHP is started, the result lives with the
-   whole PHP lifecycle.
-  </para>
-  <para>
-   Yaconf stores all configurations as
-   interned string or immutable array, which means they are
-   not refcounted-able, thus when you retrieving configurations
-   from <acronym>Yaconf</acronym>, it could be considered as zero-copy, very fast.
-  </para>
-  <para>
-   Yaconf supports sections and sections
-   inheritance in <literal>INI</literal> files. If PHP is built as non-ZTS build,
-   Yaconf also supports automatically reloading after <literal>INI</literal> files
-   are changed.
-  </para>
-  <para>
+   (<acronym>Yaconf</acronym>) is a configuration container. It parses
+   <literal>INI</literal> files when PHP starts up and keeps the result
+   in persistent memory for the whole PHP lifecycle, so every retrieval
+   is a fast hash lookup with no file I/O and no per-request parsing.
+  </simpara>
+  <simpara>
+   Yaconf stores all configurations as interned strings or immutable
+   arrays. They are not refcounted, so retrieving a configuration from
+   Yaconf is effectively zero-copy. Since Yaconf 1.2.0, the whole parsed
+   configuration tree is additionally compacted into a single contiguous
+   block, which lowers memory overhead and improves cache locality.
+  </simpara>
+  <simpara>
+   The parsed configuration lives in persistent memory shared by all
+   PHP-FPM workers through copy-on-write: until a configuration file
+   changes, the workers share the same physical memory pages no matter
+   how many of them are running.
+  </simpara>
+  <simpara>
+   Yaconf supports sections and section inheritance in INI files. On
+   non-ZTS builds it also reloads the files automatically when they
+   change; on ZTS (thread-safe) builds, configurations are loaded at
+   startup and a restart is required to pick up changes.
+  </simpara>
+  <simpara>
+   Since Yaconf 1.2.0, sub-directories of the configured directory are
+   loaded recursively (up to 16 levels deep) and addressed with the
+   directory name as a key level: for example,
+   <literal>Yaconf::get("users.database.master")</literal> reads the
+   <literal>master</literal> key from the file
+   <filename>database.ini</filename> placed in the
+   <filename>users/</filename> sub-directory.
+  </simpara>
+  <simpara>
+   Storing sensitive configurations outside the web tree also lowers
+   the attack surface. Configuration files under the web root can be
+   retrieved by an attacker, for example through a file disclosure
+   vulnerability. With Yaconf, the <filename>.ini</filename> files can
+   instead be placed in a directory readable only by root, such as
+   <filename>/etc/yaconf</filename>: the PHP-FPM master loads the
+   configurations when the service starts, while the forked workers —
+   which run under an unprivileged user and are the ones executing
+   web requests — do not need, and are not given, access to that
+   directory.
+  </simpara>
+  <simpara>
    Yaconf requires PHP 7.0 or greater.
-  </para>
-  <example>
-   <title>INI example</title>
-   <programlisting role="ini">
-<![CDATA[
-;Simple key val
-key=val
-
-;Hash
-hash.a=val
-
-;Array
-arr.0=val
-;or
-arr[]=val
-
-;PHP constant
-version=PHP_VERSION
-
-;Environment variable
-env=${PATH}
-]]>
-   </programlisting>
-  </example>
-  <example>
-   <title>INI sections example</title>
-   <programlisting role="ini">
-<![CDATA[
-[SectionA]
-key=val
-hash.a=val
-
-;SectionB inherits SectionA
-[SectionB:SectionA]
-key=new_val                  ;override configuration key in SectionA
-]]>
-   </programlisting>
-  </example>
+  </simpara>
  </preface>
 
  &reference.yaconf.setup;

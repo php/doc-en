@@ -11,9 +11,68 @@
 <!-- {{{ Swoole\Timer intro -->
   <section xml:id="swoole-timer.intro">
    &reftitle.intro;
+   <simpara>
+    Millisecond precision timer. The underlying implementation is based on epoll_wait and setitimer,
+    using a min-heap data structure that supports adding a large number of timers.
+   </simpara>
+   <simpara>
+    In synchronous I/O processes, such as the Manager and TaskWorker processes, it is
+    implemented using setitimer and signals.
+   </simpara>
+   <simpara>
+    In asynchronous I/O processes, it is implemented using the timeout of
+    epoll_wait/kevent/poll/select.
+   </simpara>
    <para>
-
+    The underlying system does not support timers with a delay of <literal>0</literal>;
+    values below <literal>1</literal> millisecond emit an
+    <constant>E_WARNING</constant> and the call fails. This differs from
+    languages such as Node.js.
+    <methodname linkend="swoole-event.defer">Swoole\Event::defer</methodname>
+    may be used to achieve similar functionality.
+    <programlisting role="php">
+<![CDATA[
+<?php
+Swoole\Event::defer(function () {
+  echo "hello\n";
+});
+?>
+]]>
+    </programlisting>
    </para>
+   <simpara>
+    Timer Correction: The execution time of the timer callback function does not affect the timing of the
+    next timer execution. For example, setting a tick timer of 10ms after 0.002s, the first callback will
+    be executed at 0.012s, if the callback function takes 5ms to execute, the next timer will still trigger
+    at 0.022s, not at 0.027s.
+   </simpara>
+   <simpara>
+    However, if the execution time of the timer callback function is too long, even covering the time of the
+    next timer execution, the underlying system will perform time correction, discarding the expired behavior
+    and triggering the timer callback at the next available time. For example, if the callback function
+    at 0.012s takes 15ms to execute, causing the timer at 0.022s to be delayed, the timer callback
+    will be triggered again at 0.032s.
+   </simpara>
+   <simpara>
+    By default, when a timer is triggered, a coroutine is automatically created
+    to execute the callback function. This can be disabled with
+    <function>swoole_async_set</function>.
+   </simpara>
+   <warning>
+    <simpara>
+     Timer only works within the current process space.
+    </simpara>
+   </warning>
+   <warning>
+    <simpara>
+     Timer is purely asynchronous and incompatible with synchronous I/O functions.
+    </simpara>
+   </warning>
+   <warning>
+    <simpara>
+     Timer execution may experience minor timing deviations.
+    </simpara>
+   </warning>
   </section>
 <!-- }}} -->
 

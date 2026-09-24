@@ -156,6 +156,26 @@
     </simpara>
    </listitem>
   </varlistentry>
+  <varlistentry xml:id="constant.filter-throw-on-failure">
+   <term>
+    <constant>FILTER_THROW_ON_FAILURE</constant>
+    (<type>int</type>)
+   </term>
+   <listitem>
+    <simpara>
+     Throws a <exceptionname>Filter\FilterFailedException</exceptionname> when a
+     validation filter fails, instead of returning &false;.
+    </simpara>
+    <simpara>
+     Can be used with any validation
+     <constant>FILTER_VALIDATE_<replaceable>*</replaceable></constant>
+     filter.
+    </simpara>
+    <simpara>
+     Available as of PHP 8.5.0.
+    </simpara>
+   </listitem>
+  </varlistentry>
  </variablelist>
 
  <variablelist xml:id="filter.constants.flags.sanitization">
@@ -233,7 +253,7 @@
    </term>
    <listitem>
     <simpara>
-     Singe and double quotes (<literal>'</literal> and <literal>"</literal>)
+     Single and double quotes (<literal>'</literal> and <literal>"</literal>)
      will not be encoded.
     </simpara>
    </listitem>
@@ -264,15 +284,15 @@
    <listitem>
     <simpara>
      Returns &true; for <literal>"1"</literal>,
-     <literal>1</literal> including binary, octal and hexadecimal notations, <literal>1.0</literal>,
-     <literal>"true"</literal>, <literal>true</literal>,
+     <literal>1</literal> including binary, octal and hexadecimal notations, <literal>1.0</literal> including scientific notation,
+     <literal>"true"</literal>, &true;,
      <literal>"on"</literal>,
      and <literal>"yes"</literal>.
     </simpara>
     <simpara>
      Returns &false; for <literal>"0"</literal>,
-     <literal>0</literal> including binary, octal and hexadecimal notations, <literal>0.0</literal>,
-     <literal>"false"</literal>, <literal>false</literal>,
+     <literal>0</literal> including binary, octal and hexadecimal notations, <literal>0.0</literal> including scientific notation,
+     <literal>"false"</literal>, &false;,
      <literal>"off"</literal>,
      <literal>"no"</literal>, and
      <literal>""</literal>.
@@ -551,7 +571,7 @@
          <emphasis>DEPRECATED</emphasis> as of PHP 7.3.0 and
          <emphasis>REMOVED</emphasis> as of PHP 8.0.0.
          This is because it is always implied by the
-         <constant>FILTER_VALIDATE_URL</constant> filter.
+         <constant>FILTER_VALIDATE_URL</constant> filter for most schemes.
         </simpara>
        </warning>
       </listitem>
@@ -593,6 +613,50 @@
       This filter only works on <acronym>ASCII</acronym> <acronym>URL</acronym>s.
       This means that Internationalized Domain Names (IDN) will always be rejected.
      </simpara>
+    </warning>
+    <warning>
+     <simpara>
+      This filter is very permissive. For any scheme other than
+      <literal>http://</literal> or <literal>https://</literal>, host content
+      will be accepted without any validation, though the presence of a host
+      is still required unless the URL has a scheme of
+      <literal>mailto:</literal>, <literal>news:</literal>, or
+      <literal>file:</literal>. Schemes are not themselves validated and may be
+      accepted despite not corresponding to a known URL scheme, or having some
+      other meaning in PHP (like <link linkend="book.phar">phar://</link>). The
+      filter also accepts <link xlink:href="&url.filter.loopback;">loopback</link>
+      addresses that correspond to the current host.
+     </simpara>
+     <informalexample>
+      <programlisting role="php">
+<![CDATA[
+<?php
+
+var_dump(filter_var('javascript://x%0aalert(1)', FILTER_VALIDATE_URL));
+var_dump(filter_var('javascript://?demo', FILTER_VALIDATE_URL));
+var_dump(filter_var('news:?demo', FILTER_VALIDATE_URL));
+var_dump(filter_var('phar://demo', FILTER_VALIDATE_URL));
+var_dump(filter_var('123://demo', FILTER_VALIDATE_URL));
+var_dump(filter_var('-://demo', FILTER_VALIDATE_URL));
+var_dump(filter_var('http://127.0.0.1', FILTER_VALIDATE_URL));
+var_dump(filter_var('gopher://127.0.0.1', FILTER_VALIDATE_URL));
+?>
+]]>
+      </programlisting>
+      &example.outputs;
+      <screen>
+<![CDATA[
+string(25) "javascript://x%0aalert(1)"
+bool(false)
+string(10) "news:?demo"
+string(11) "phar://demo"
+string(10) "123://demo"
+string(8) "-://demo"
+string(16) "http://127.0.0.1"
+string(18) "gopher://127.0.0.1"
+]]>
+      </screen>
+     </informalexample>
     </warning>
    </listitem>
   </varlistentry>
@@ -700,9 +764,9 @@
     (<type>int</type>)
    </term>
    <listitem>
-    <para>
+    <simpara>
      Validates value as IP address.
-    </para>
+    </simpara>
     <variablelist xml:id="filter.constants.validation.ip.options">
      <title>Available options</title>
      <varlistentry>
@@ -1215,12 +1279,20 @@ NULL
 ]]>
      </screen>
     </example>
-    <warning>
+    <note>
      <simpara>
-      This filter cannot be used with any other filter flags, e.g.
-      <constant>FILTER_NULL_ON_FAILURE</constant>.
+      As of PHP 8.1.25 and 8.2.12, the structural flags
+      <constant>FILTER_REQUIRE_ARRAY</constant>,
+      <constant>FILTER_FORCE_ARRAY</constant> and
+      <constant>FILTER_REQUIRE_SCALAR</constant> apply to this filter, and
+      <constant>FILTER_NULL_ON_FAILURE</constant> changes how such a
+      structural failure is reported. In earlier versions all flags were
+      ignored. Filter specific flags are always ignored, and since the return
+      value of the callback is the result, the callback itself cannot fail: no
+      flag turns a <literal>false</literal> returned by the callback into
+      &null; or an exception.
      </simpara>
-    </warning>
+    </note>
    </listitem>
   </varlistentry>
  </variablelist>

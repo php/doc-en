@@ -306,9 +306,9 @@
      </row>
      <row>
       <entry><link linkend="ini.opcache.jit-hot-loop">opcache.jit_hot_loop</link></entry>
-      <entry>64</entry>
+      <entry>61</entry>
       <entry><constant>INI_SYSTEM</constant></entry>
-      <entry>Available as of PHP 8.0.0</entry>
+      <entry>Available as of PHP 8.0.0. Before PHP 8.5.0, the default value was 64</entry>
      </row>
      <row>
       <entry><link linkend="ini.opcache.jit-hot-func">opcache.jit_hot_func</link></entry>
@@ -408,6 +408,14 @@
      The size of the shared memory storage used by OPcache, in megabytes.
      The minimum permissible value is <literal>"8"</literal>,
      which is enforced if a smaller value is set.
+    </simpara>
+    <simpara>
+     When the JIT is enabled, the shared memory segment also holds the JIT
+     buffer, so its total size is this value plus
+     <link linkend="ini.opcache.jit-buffer-size">opcache.jit_buffer_size</link>.
+     OPcache first attempts to allocate the segment using HUGE PAGES, and
+     silently falls back to regular pages when the operating system has not
+     set aside enough of them.
     </simpara>
    </listitem>
   </varlistentry>
@@ -977,6 +985,11 @@ function getA() { return A; }
     <simpara>
      Enables or disables copying of PHP code (text segment) into HUGE PAGES.
      This should improve performance, but requires appropriate OS configuration.
+     Only the text segment of the PHP binary is remapped; the shared memory
+     segment described under
+     <link linkend="ini.opcache.memory-consumption">opcache.memory_consumption</link>
+     is unaffected by this directive. When the remapping fails, OPcache emits
+     an <constant>E_WARNING</constant>.
      Available on Linux as of PHP 7.0.0, and on FreeBSD as of PHP 7.4.0.
     </simpara>
    </listitem>
@@ -1158,7 +1171,8 @@ function getA() { return A; }
      <member><literal>off</literal>:  Disabled, but can be enabled at runtime.</member>
      <member>
       <literal>tracing</literal>/<literal>on</literal>: Use tracing JIT.
-      Enabled by default and recommended for most users.
+      Recommended for most users. Prior to PHP 8.4.0, this was the default
+      value; as of PHP 8.4.0 the default is <literal>disable</literal>.
      </member>
      <member><literal>function</literal>: Use function JIT.</member>
     </simplelist>
@@ -1220,6 +1234,12 @@ function getA() { return A; }
      The <literal>"tracing"</literal> mode corresponds to <code>CRTO = 1254</code>,
      the <literal>"function"</literal> mode corresponds to <code>CRTO = 1205</code>.
     </para>
+    <note>
+     <simpara>
+      As of PHP 8.4.0, if JIT is enabled, PHP exits with a fatal error
+      during startup when JIT initialization fails.
+     </simpara>
+    </note>
    </listitem>
   </varlistentry>
   <varlistentry xml:id="ini.opcache.jit-buffer-size">
@@ -1325,6 +1345,12 @@ function getA() { return A; }
      e.g. <literal>-1</literal> or <literal>256</literal>, default value will be
      used instead. <literal>0</literal> will disable JIT to trace and compile any loops.
     </simpara>
+    <note>
+     <simpara>
+      It is recommended that this parameter is set to a prime number,
+      to prevent it from being a multiple of loop iteration counts.
+     </simpara>
+    </note>
    </listitem>
   </varlistentry>
   <varlistentry xml:id="ini.opcache.jit-hot-func">
