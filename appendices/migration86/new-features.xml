@@ -40,17 +40,66 @@ var_dump($config->timeout); // int(30)
     beforehand.
    </simpara>
 
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$obj = new stdClass();
+$map = new WeakMap();
+$count = 0;
+
+// Previously: Error: "Object stdClass#1 not contained in WeakMap"
+$map[$obj] = &$count;
+$count++;
+
+var_dump($map[$obj]); // int(1)
+]]>
+    </programlisting>
+   </informalexample>
+
   </sect3>
 
   <sect3 xml:id="migration86.new-features.core.debuginfo-on-enums">
-   <title>__debugInfo() on enums</title>
+   <title><methodname>__debugInfo</methodname> on enums</title>
 
    <simpara>
     It is now possible to define the
     <link linkend="language.oop5.magic.debuginfo">__debugInfo()</link>
     magic method on <link linkend="language.enumerations">enums</link>.
+    Previously, this resulted in a fatal error.
     <!-- RFC: https://wiki.php.net/rfc/debugable-enums -->
    </simpara>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+enum Suit: string
+{
+    case Hearts = 'H';
+    case Spades = 'S';
+
+    public function __debugInfo(): array
+    {
+        return ['suit' => $this->name, 'symbol' => $this->value];
+    }
+}
+
+var_dump(Suit::Hearts);
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+enum(Suit::Hearts) (2) {
+  ["suit"]=>
+  string(6) "Hearts"
+  ["symbol"]=>
+  string(1) "H"
+}
+]]>
+    </screen>
+   </informalexample>
 
   </sect3>
 
@@ -60,8 +109,33 @@ var_dump($config->timeout); // int(30)
    <simpara>
     The <classname>Override</classname> attribute can now be applied to
     class constants, including enum cases.
+    As with methods and properties, a compile-time error is raised if no
+    matching constant exists in a parent class or implemented interface.
     <!-- RFC: https://wiki.php.net/rfc/override_constants -->
    </simpara>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+interface HasVersion
+{
+    const VERSION = '1.0';
+}
+
+class Package implements HasVersion
+{
+    #[\Override]
+    const VERSION = '2.0';
+
+    // Fatal error: Package::NAME has #[\Override] attribute,
+    // but no matching parent constant exists
+    // #[\Override]
+    // const NAME = 'package';
+}
+]]>
+    </programlisting>
+   </informalexample>
 
   </sect3>
 
@@ -81,13 +155,22 @@ var_dump($config->timeout); // int(30)
     <programlisting role="php">
 <![CDATA[
 <?php
-function add(int $a, int $b): int
+function add(int $a, int $b, int $c = 0): int
 {
-    return $a + $b;
+    return $a + $b + $c;
 }
 
+// "?" replaces exactly one argument
 $addOne = add(1, ?);
 var_dump($addOne(5)); // int(6)
+
+// "..." replaces all remaining arguments
+$addToOne = add(1, ...);
+var_dump($addToOne(2, 3)); // int(6)
+
+// Works with any callable, including internal functions
+$stripSpaces = str_replace(' ', '', ?);
+var_dump($stripSpaces('a b c')); // string(3) "abc"
 ]]>
     </programlisting>
    </informalexample>
@@ -103,6 +186,20 @@ var_dump($addOne(5)); // int(6)
     <!-- RFC: https://wiki.php.net/rfc/const_object_property_write -->
    </simpara>
 
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+const CONFIG = new stdClass();
+
+// Previously: "Fatal error: Cannot use temporary expression in write context"
+CONFIG->debug = true;
+
+var_dump(CONFIG->debug); // bool(true)
+]]>
+    </programlisting>
+   </informalexample>
+
   </sect3>
 
   <sect3 xml:id="migration86.new-features.core.pack-unpack-endianness">
@@ -110,17 +207,25 @@ var_dump($addOne(5)); // int(6)
 
    <simpara>
     <function>pack</function> and <function>unpack</function> now accept the
-    <literal>&lt;</literal> and <literal>&gt;</literal> endianness modifiers
-    on the signed and unsigned integer format codes.
+    <literal>&lt;</literal> (little-endian) and <literal>&gt;</literal>
+    (big-endian) modifiers after the signed and unsigned integer format codes,
+    and after the float and double format codes.
     <!-- RFC: https://wiki.php.net/rfc/pack-unpack-endianness-signed-integers-support -->
-   </simpara>
-
-   <simpara>
-    <function>pack</function> and <function>unpack</function> now accept the
-    <literal>&lt;</literal> and <literal>&gt;</literal> endianness modifiers
-    on the float and double format codes.
     <!-- RFC: https://wiki.php.net/rfc/pack-unpack-float-endianness-modifier -->
    </simpara>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+echo bin2hex(pack('l>', 1)), PHP_EOL;   // Prints "00000001"
+echo bin2hex(pack('l<', 1)), PHP_EOL;   // Prints "01000000"
+echo bin2hex(pack('f>', 1.5)), PHP_EOL; // Prints "3fc00000"
+
+var_dump(unpack('s>value', "\xff\xfe")); // ["value" => int(-2)]
+]]>
+    </programlisting>
+   </informalexample>
 
   </sect3>
 
@@ -213,20 +318,25 @@ var_dump($addOne(5)); // int(6)
    <!-- RFC: https://wiki.php.net/rfc/getdisplaykeyword_and_getdisplaykeywordvalue -->
   </simpara>
 
-  <simpara>
+  <para>
    Added the <classname>IntlNumberRangeFormatter</classname> class to format
-   an interval of two numbers with a given skeleton, locale,
-   <constant>IntlNumberRangeFormatter::COLLAPSE_AUTO</constant>,
-   <constant>IntlNumberRangeFormatter::COLLAPSE_NONE</constant>,
-   <constant>IntlNumberRangeFormatter::COLLAPSE_UNIT</constant>,
-   <constant>IntlNumberRangeFormatter::COLLAPSE_ALL</constant> collapse and
-   <constant>IntlNumberRangeFormatter::IDENTITY_FALLBACK_SINGLE_VALUE</constant>,
-   <constant>IntlNumberRangeFormatter::IDENTITY_FALLBACK_APPROXIMATELY_OR_SINGLE_VALUE</constant>,
-   <constant>IntlNumberRangeFormatter::IDENTITY_FALLBACK_APPROXIMATELY</constant>
-   and <constant>IntlNumberRangeFormatter::IDENTITY_FALLBACK_RANGE</constant>
-   identity fallbacks.
+   an interval of two numbers with a given skeleton and locale.
    It is supported as of <acronym>ICU</acronym> 63.
-  </simpara>
+   The collapse behavior is one of:
+   <simplelist>
+    <member><constant>IntlNumberRangeFormatter::COLLAPSE_AUTO</constant></member>
+    <member><constant>IntlNumberRangeFormatter::COLLAPSE_NONE</constant></member>
+    <member><constant>IntlNumberRangeFormatter::COLLAPSE_UNIT</constant></member>
+    <member><constant>IntlNumberRangeFormatter::COLLAPSE_ALL</constant></member>
+   </simplelist>
+   The identity fallback is one of:
+   <simplelist>
+    <member><constant>IntlNumberRangeFormatter::IDENTITY_FALLBACK_SINGLE_VALUE</constant></member>
+    <member><constant>IntlNumberRangeFormatter::IDENTITY_FALLBACK_APPROXIMATELY_OR_SINGLE_VALUE</constant></member>
+    <member><constant>IntlNumberRangeFormatter::IDENTITY_FALLBACK_APPROXIMATELY</constant></member>
+    <member><constant>IntlNumberRangeFormatter::IDENTITY_FALLBACK_RANGE</constant></member>
+   </simplelist>
+  </para>
 
   <simpara>
    Added <methodname>SpoofChecker::areBidiConfusable</methodname> to check
@@ -252,16 +362,16 @@ var_dump($addOne(5)); // int(6)
  <sect2 xml:id="migration86.new-features.io">
   <title>IO</title>
 
-  <simpara>
-   Added a new polling <acronym>API</acronym>, consisting of the
-   <classname>Io\Poll\Context</classname> and
-   <classname>Io\Poll\Watcher</classname> classes, the
-   <classname>Io\Poll\Backend</classname> and
-   <classname>Io\Poll\Event</classname> enums, the
-   <classname>Io\Poll\Handle</classname> interface, and the
-   <classname>StreamPollHandle</classname> class to watch streams.
+  <para>
+   Added a new polling <acronym>API</acronym>, consisting of:
+   <simplelist>
+    <member>The <classname>Io\Poll\Context</classname> and <classname>Io\Poll\Watcher</classname> classes</member>
+    <member>The <enumname>Io\Poll\Backend</enumname> and <enumname>Io\Poll\Event</enumname> enums</member>
+    <member>The <interfacename>Io\Poll\Handle</interfacename> interface</member>
+    <member>The <classname>StreamPollHandle</classname> class to watch streams</member>
+   </simplelist>
    <!-- RFC: https://wiki.php.net/rfc/poll_api -->
-  </simpara>
+  </para>
 
  </sect2>
 
@@ -279,19 +389,25 @@ var_dump($addOne(5)); // int(6)
  <sect2 xml:id="migration86.new-features.openssl">
   <title>OpenSSL</title>
 
-  <simpara>
-   Added <acronym>TLS</acronym> session resumption support for streams with
-   the new <link linkend="context.ssl">SSL context</link> options
-   <literal>session_data</literal>, <literal>session_new_cb</literal>,
-   <literal>session_cache</literal>, <literal>session_cache_size</literal>,
-   <literal>session_timeout</literal>, <literal>session_id_context</literal>,
-   <literal>session_get_cb</literal>, <literal>session_remove_cb</literal>,
-   and <literal>num_tickets</literal>.
+  <para>
+   Added <acronym>TLS</acronym> session resumption support for streams.
    This allows saving and restoring client sessions across requests,
    implementing custom server-side session storage, and controlling session
-   cache behavior.
+   cache behavior, using the following new
+   <link linkend="context.ssl">SSL context</link> options:
+   <simplelist>
+    <member><literal>session_data</literal></member>
+    <member><literal>session_new_cb</literal></member>
+    <member><literal>session_cache</literal></member>
+    <member><literal>session_cache_size</literal></member>
+    <member><literal>session_timeout</literal></member>
+    <member><literal>session_id_context</literal></member>
+    <member><literal>session_get_cb</literal></member>
+    <member><literal>session_remove_cb</literal></member>
+    <member><literal>num_tickets</literal></member>
+   </simplelist>
    <!-- RFC: https://wiki.php.net/rfc/tls_session_resumption -->
-  </simpara>
+  </para>
 
   <simpara>
    Added <acronym>TLS</acronym> external <acronym>PSK</acronym> support for
@@ -362,41 +478,42 @@ var_dump($addOne(5)); // int(6)
    <!-- RFC: https://wiki.php.net/rfc/snmp_improvements_2026#allow_the_snmp_mib_to_be_reset -->
   </simpara>
 
-  <simpara>
+  <para>
    Additional <acronym>MIB</acronym> parsing and output control functionality
-   has been exposed via the <function>snmp_set_mib_option</function>,
-   <function>snmp_set_output_option</function>, and
-   <function>snmp_set_string_output_format</function> functions, the
-   <property>SNMP::$numeric_index</property>,
-   <property>SNMP::$numeric_timeticks</property>,
-   <property>SNMP::$extended_index</property>,
-   <property>SNMP::$dont_print_units</property>,
-   <property>SNMP::$escape_quotes</property>, and
-   <property>SNMP::$print_hex_text</property> properties, and the
-   <methodname>SNMP::setOidOutputFormat</methodname> and
-   <methodname>SNMP::setStringOutputFormat</methodname> methods.
+   has been exposed via:
+   <simplelist>
+    <member><function>snmp_set_mib_option</function></member>
+    <member><function>snmp_set_output_option</function></member>
+    <member><function>snmp_set_string_output_format</function></member>
+    <member><property>SNMP::$numeric_index</property></member>
+    <member><property>SNMP::$numeric_timeticks</property></member>
+    <member><property>SNMP::$extended_index</property></member>
+    <member><property>SNMP::$dont_print_units</property></member>
+    <member><property>SNMP::$escape_quotes</property></member>
+    <member><property>SNMP::$print_hex_text</property></member>
+    <member><methodname>SNMP::setOidOutputFormat</methodname></member>
+    <member><methodname>SNMP::setStringOutputFormat</methodname></member>
+   </simplelist>
    <!-- RFC: https://wiki.php.net/rfc/snmp_improvements_2026#implement_more_mib_parsing_and_value_output_controls -->
-  </simpara>
+  </para>
 
  </sect2>
 
  <sect2 xml:id="migration86.new-features.streams">
   <title>Streams</title>
 
-  <simpara>
-   Added a new stream errors <acronym>API</acronym> including the
-   <exceptionname>StreamError</exceptionname> and
-   <exceptionname>StreamException</exceptionname> classes, the
-   <classname>StreamErrorStore</classname>,
-   <classname>StreamErrorMode</classname>, and
-   <classname>StreamErrorCode</classname> enums, and the
-   <function>stream_last_errors</function> and
-   <function>stream_clear_errors</function> functions.
+  <para>
+   Added a new stream errors <acronym>API</acronym>, consisting of:
+   <simplelist>
+    <member>The <classname>StreamError</classname> and <exceptionname>StreamException</exceptionname> classes</member>
+    <member>The <enumname>StreamErrorStore</enumname>, <enumname>StreamErrorMode</enumname>, and <enumname>StreamErrorCode</enumname> enums</member>
+    <member>The <function>stream_last_errors</function> and <function>stream_clear_errors</function> functions</member>
+   </simplelist>
    It is controlled using the <literal>error_mode</literal>,
    <literal>error_store</literal> and <literal>error_handler</literal>
    stream context options.
    <!-- RFC: https://wiki.php.net/rfc/stream_errors -->
-  </simpara>
+  </para>
 
   <simpara>
    Added the <literal>filter.max_filter_count</literal> stream context option
@@ -449,15 +566,19 @@ var_dump($addOne(5)); // int(6)
    <function>stream_select</function>.
   </simpara>
 
-  <simpara>
+  <para>
    Added the <literal>"write_seek_mode"</literal> filter parameter for the
    bz2, iconv, zlib, and <link linkend="filters.string">string</link> stream
    filters.
    This parameter must be set via an associative array where the key is
    <literal>"write_seek_mode"</literal> and the value is one of the following
-   strings: <literal>"preserve"</literal>, <literal>"reset"</literal>, or
-   <literal>"strict"</literal>.
-  </simpara>
+   strings:
+   <simplelist>
+    <member><literal>"preserve"</literal></member>
+    <member><literal>"reset"</literal></member>
+    <member><literal>"strict"</literal></member>
+   </simplelist>
+  </para>
 
  </sect2>
 
