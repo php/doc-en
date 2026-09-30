@@ -9,7 +9,8 @@
    <title>By-reference foreach after array compaction</title>
 
    <simpara>
-    By-reference <literal>foreach</literal> loops may now visit previously
+    By-reference <link linkend="control-structures.foreach">foreach</link>
+    loops may now visit previously
     skipped elements after array compaction.
     Internal pointers on deleted elements now move to the next surviving
     element during copy-on-write.
@@ -18,7 +19,7 @@
   </sect3>
 
   <sect3 xml:id="migration86.incompatible.core.magic-property-isset">
-   <title>Null coalescing and empty() on magic properties</title>
+   <title>Null coalescing and <function>empty</function> on magic properties</title>
 
    <simpara>
     <literal>??</literal> and <function>empty</function> on a magic property
@@ -29,10 +30,37 @@
     <function>isset</function> is unaffected.
    </simpara>
 
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+#[\AllowDynamicProperties]
+class Example
+{
+    public function __isset(string $name): bool
+    {
+        $this->$name = 'from __isset()';
+        return true;
+    }
+
+    public function __get(string $name): string
+    {
+        return 'from __get()';
+    }
+}
+
+$example = new Example();
+var_dump($example->foo ?? 'default');
+// As of PHP 8.6.0: string(14) "from __isset()"
+// Prior to PHP 8.6.0: string(12) "from __get()"
+]]>
+    </programlisting>
+   </informalexample>
+
   </sect3>
 
   <sect3 xml:id="migration86.incompatible.core.array-intersect">
-   <title>String conversion in array_intersect()</title>
+   <title>String conversion in <function>array_intersect</function></title>
 
    <simpara>
     <function>array_intersect</function> with at least two arrays now converts
@@ -60,48 +88,75 @@
     <!-- RFC: https://wiki.php.net/rfc/trim_form_feed -->
    </simpara>
 
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+var_dump(trim("\f hello \f"));
+// As of PHP 8.6.0: string(5) "hello"
+// Prior to PHP 8.6.0: string(9) "\f hello \f"
+]]>
+    </programlisting>
+   </informalexample>
+
   </sect3>
 
   <sect3 xml:id="migration86.incompatible.core.new-value-errors">
-   <title>New ValueError and TypeError exceptions</title>
+   <title>New errors for invalid arguments</title>
+
+   <para>
+    The following functions now raise a
+    <exceptionname>ValueError</exceptionname> when an invalid flag or mode
+    value is passed:
+
+    <simplelist>
+     <member><function>array_filter</function> (<parameter>mode</parameter>)</member>
+     <member><function>array_change_key_case</function> (<parameter>case</parameter>)</member>
+     <member><function>pathinfo</function> (<parameter>flags</parameter>)</member>
+     <member><function>scandir</function> (<parameter>sorting_order</parameter>)</member>
+    </simplelist>
+   </para>
+
+   <para>
+    The following functions now raise a
+    <exceptionname>ValueError</exceptionname> when the given argument contains
+    <literal>NUL</literal> bytes:
+
+    <simplelist>
+     <member><function>getenv</function> and <function>putenv</function> (first argument)</member>
+     <member><function>dl</function> (<parameter>extension_filename</parameter>)</member>
+     <member><function>openlog</function> (<parameter>prefix</parameter>)</member>
+     <member><function>parse_str</function> (<parameter>string</parameter>)</member>
+     <member><function>proc_open</function> (<parameter>cwd</parameter>)</member>
+    </simplelist>
+   </para>
+
+   <para>
+    The following functions now raise a
+    <exceptionname>ValueError</exceptionname> for out-of-range values instead
+    of silently clamping them or allowing them to overflow:
+
+    <simplelist>
+     <member>
+      <function>number_format</function>, when <parameter>decimals</parameter>
+      is outside the integer range.
+     </member>
+     <member>
+      <function>sleep</function>, when <parameter>seconds</parameter> is
+      greater than <literal>UINT_MAX</literal>, or
+      <literal>UINT_MAX / 1000</literal> on Windows.
+     </member>
+     <member>
+      <function>usleep</function>, when <parameter>microseconds</parameter> is
+      greater than <literal>UINT_MAX</literal>.
+     </member>
+    </simplelist>
+   </para>
 
    <simpara>
-    <function>array_filter</function> now raises a
-    <exceptionname>ValueError</exceptionname> when an invalid
-    <parameter>mode</parameter> argument value is passed.
-   </simpara>
-
-   <simpara>
-    <function>array_change_key_case</function> now raises a
-    <exceptionname>ValueError</exceptionname> when an invalid
-    <parameter>case</parameter> argument value is passed.
-   </simpara>
-
-   <simpara>
-    <function>getenv</function> and <function>putenv</function> now raise a
-    <exceptionname>ValueError</exceptionname> when the first argument contains
-    <literal>NUL</literal> bytes.
-   </simpara>
-
-   <simpara>
-    <function>dl</function> now raises a
+    <function>linkinfo</function> now raises a
     <exceptionname>ValueError</exceptionname> when the
-    <parameter>extension_filename</parameter> argument contains
-    <literal>NUL</literal> bytes.
-   </simpara>
-
-   <simpara>
-    <function>openlog</function> now raises a
-    <exceptionname>ValueError</exceptionname> when the
-    <parameter>prefix</parameter> argument contains <literal>NUL</literal>
-    bytes.
-   </simpara>
-
-   <simpara>
-    <function>parse_str</function> now raises a
-    <exceptionname>ValueError</exceptionname> when the
-    <parameter>string</parameter> argument contains <literal>NUL</literal>
-    bytes.
+    <parameter>path</parameter> argument is empty.
    </simpara>
 
    <simpara>
@@ -115,52 +170,6 @@
     Passing any additional locale arguments when
     <parameter>locales</parameter> is an array now throws an
     <exceptionname>ArgumentCountError</exceptionname>.
-   </simpara>
-
-   <simpara>
-    <function>linkinfo</function> now raises a
-    <exceptionname>ValueError</exceptionname> when the
-    <parameter>path</parameter> argument is empty.
-   </simpara>
-
-   <simpara>
-    <function>pathinfo</function> now raises a
-    <exceptionname>ValueError</exceptionname> when an invalid
-    <parameter>flags</parameter> argument value is passed.
-   </simpara>
-
-   <simpara>
-    <function>scandir</function> now raises a
-    <exceptionname>ValueError</exceptionname> when an invalid
-    <parameter>sorting_order</parameter> argument value is passed.
-   </simpara>
-
-   <simpara>
-    <function>number_format</function> now raises a
-    <exceptionname>ValueError</exceptionname> when
-    <parameter>decimals</parameter> is outside the integer range instead of
-    silently clamping very large positive values.
-   </simpara>
-
-   <simpara>
-    <function>sleep</function> now raises a
-    <exceptionname>ValueError</exceptionname> when
-    <parameter>seconds</parameter> is greater than the platform limit
-    (<literal>UINT_MAX</literal> seconds, or <literal>UINT_MAX / 1000</literal>
-    seconds on Windows) instead of allowing the value to overflow.
-   </simpara>
-
-   <simpara>
-    <function>usleep</function> now raises a
-    <exceptionname>ValueError</exceptionname> when
-    <parameter>microseconds</parameter> is greater than
-    <literal>UINT_MAX</literal> instead of allowing the value to overflow.
-   </simpara>
-
-   <simpara>
-    <function>proc_open</function> now raises a
-    <exceptionname>ValueError</exceptionname> when the
-    <parameter>cwd</parameter> argument contains <literal>NUL</literal> bytes.
    </simpara>
 
    <para>
@@ -205,7 +214,7 @@
   </sect3>
 
   <sect3 xml:id="migration86.incompatible.core.unpack-endianness">
-   <title>Endianness modifiers in unpack() format names</title>
+   <title>Endianness modifiers in <function>unpack</function> format names</title>
 
    <simpara>
     <function>unpack</function> now reads a <literal>&lt;</literal> or
@@ -219,8 +228,22 @@
     format code accepts no endianness modifier.
     A name starting with these characters is unaffected when a repeater
     precedes it, as in <literal>"s1&lt;value"</literal>.
+    See also the
+    <link linkend="migration86.new-features.core.pack-unpack-endianness">new
+    endianness modifiers</link>.
     <!-- RFC: https://wiki.php.net/rfc/pack-unpack-endianness-signed-integers-support -->
    </simpara>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+var_dump(unpack('s<value', "\x01\x00"));
+// As of PHP 8.6.0: ["value" => 1]
+// Prior to PHP 8.6.0: ["<value" => 1]
+]]>
+    </programlisting>
+   </informalexample>
 
   </sect3>
 
@@ -271,14 +294,9 @@
   <simpara>
    Array access on <classname>Dom\DtdNamedNodeMap</classname> objects now
    returns &null; for negative integer indexes instead of returning the first
-   node.
-  </simpara>
-
-  <simpara>
-   Array access on <classname>Dom\DtdNamedNodeMap</classname> objects now
-   raises a <exceptionname>ValueError</exceptionname> when the integer index
-   is greater than <constant>PHP_INT_MAX</constant> instead of overflowing
-   to a smaller index.
+   node, and raises a <exceptionname>ValueError</exceptionname> when the
+   integer index is greater than <constant>PHP_INT_MAX</constant> instead of
+   overflowing to a smaller index.
   </simpara>
 
  </sect2>
@@ -347,9 +365,9 @@
   </simpara>
 
   <simpara>
-   <function>gmp_powm</function> modulo-by-zero now raises a
-   <exceptionname>DivisionByZeroError</exceptionname> whose message includes
-   the function name and argument index (<parameter>modulus</parameter>).
+   The message of the <exceptionname>DivisionByZeroError</exceptionname>
+   raised by <function>gmp_powm</function> on modulo by zero now includes the
+   function name and argument index (<parameter>modulus</parameter>).
   </simpara>
 
  </sect2>
@@ -420,7 +438,7 @@
    <methodname>Collator::sort</methodname>,
    <function>collator_sort</function>,
    <methodname>Collator::asort</methodname>, and
-   <function>collator_asort</function> now report UTF-8/UTF-16 conversion
+   <function>collator_asort</function> now report <acronym>UTF-8</acronym>/<acronym>UTF-16</acronym> conversion
    failures during comparison through the intl error mechanism and return
    &false;.
    With <link linkend="ini.intl.use-exceptions">intl.use_exceptions</link>
@@ -463,7 +481,8 @@
 
   <simpara>
    <function>preg_grep</function> now returns &false; instead of a partial
-   array when a PCRE execution error occurs (e.g. malformed UTF-8 input with
+   array when a <acronym>PCRE</acronym> execution error occurs (e.g. malformed
+   <acronym>UTF-8</acronym> input with
    the <literal>u</literal> modifier).
    This is consistent with the other <literal>preg_*</literal> functions.
   </simpara>
@@ -474,10 +493,10 @@
   <title>PGSQL</title>
 
   <simpara>
-   <function>pg_fetch_object</function> now reports the
-   <exceptionname>ValueError</exceptionname> for a non-empty
-   <parameter>constructor_args</parameter> on a class without a constructor
-   on the <parameter>constructor_args</parameter> argument instead of
+   When <function>pg_fetch_object</function> is given a non-empty
+   <parameter>constructor_args</parameter> for a class without a constructor,
+   the <exceptionname>ValueError</exceptionname> now refers to the
+   <parameter>constructor_args</parameter> argument instead of
    <parameter>class</parameter>.
    Errors raised when the requested class is not instantiable (abstract,
    interface, enum) now surface before the row is fetched.
@@ -501,12 +520,8 @@
    <exceptionname>BadMethodCallException</exceptionname> for attempts to
    create the reserved magic <literal>".phar"</literal> directory through
    that form.
-  </simpara>
-
-  <simpara>
-   <methodname>Phar::addEmptyDir</methodname> now treats non-magic names that
-   merely share the <literal>".phar"</literal> prefix as ordinary
-   directories.
+   Non-magic names that merely share the <literal>".phar"</literal> prefix
+   are now treated as ordinary directories.
   </simpara>
 
   <simpara>
@@ -596,7 +611,7 @@
      <link linkend="ini.session.cookie-samesite">session.cookie_samesite</link>
      is now <literal>"Lax"</literal> (was unset).
      Session cookies are no longer sent on cross-site requests other than
-     top-level navigations using safe HTTP methods.
+     top-level navigations using safe <acronym>HTTP</acronym> methods.
      Applications that depend on session cookies being sent on cross-site
      POST submissions must explicitly set this to <literal>"None"</literal>
      (and also set
@@ -609,9 +624,9 @@
   <simpara>
    <methodname>SessionHandler::validateId</methodname> has been added and
    delegates to the configured save handler.
-   A subclass that declares <literal>validateId()</literal> without a return
-   type now emits a deprecation notice for the tentative <type>bool</type>
-   return type.
+   A subclass that declares <methodname>SessionHandler::validateId</methodname>
+   without a return type now emits a deprecation notice for the tentative
+   <type>bool</type> return type.
    A subclass that overrides <methodname>SessionHandler::open</methodname>
    without calling <code>parent::open()</code> keeps its previous behavior
    and emits a warning when an ID is validated.
@@ -665,7 +680,7 @@
   </simpara>
 
   <simpara>
-   WSDL/XML Schema parsing now rejects out-of-range integer values for
+   <acronym>WSDL</acronym>/<acronym>XML</acronym> Schema parsing now rejects out-of-range integer values for
    occurrence constraints and integer restriction facets.
    Negative <literal>minOccurs</literal> and <literal>maxOccurs</literal>
    values are rejected as well.
@@ -749,9 +764,9 @@
   </simpara>
 
   <simpara>
-   <methodname>SplFileObject::next</methodname> past EOF no longer increments
+   <methodname>SplFileObject::next</methodname> past <acronym>EOF</acronym> no longer increments
    <methodname>SplFileObject::key</methodname> without bound.
-   <methodname>SplFileObject::seek</methodname> past EOF now produces the same
+   <methodname>SplFileObject::seek</methodname> past <acronym>EOF</acronym> now produces the same
    <methodname>SplFileObject::key</methodname> value as
    <classname>SplTempFileObject</classname>; the two previously returned
    different values.
@@ -816,8 +831,9 @@
   <simpara>
    Serializing or unserializing a <classname>ZipArchive</classname> now
    throws an <exceptionname>Exception</exceptionname>.
-   A subclass can override <literal>__serialize()</literal> and
-   <literal>__unserialize()</literal> to round-trip through
+   A subclass can override
+   <link linkend="object.serialize">__serialize()</link> and
+   <link linkend="object.unserialize">__unserialize()</link> to round-trip through
    <methodname>ZipArchive::closeString</methodname> and
    <methodname>ZipArchive::openString</methodname>.
   </simpara>
