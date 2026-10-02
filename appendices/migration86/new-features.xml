@@ -1,0 +1,633 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sect1 xml:id="migration86.new-features" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>New Features</title>
+
+ <sect2 xml:id="migration86.new-features.core">
+  <title>PHP Core</title>
+
+  <sect3 xml:id="migration86.new-features.core.readonly-property-defaults">
+   <title>Default values for readonly properties</title>
+
+   <simpara>
+    <link linkend="language.oop5.properties.readonly-properties">Readonly
+    properties</link> may now declare default values.
+    <!-- RFC: https://wiki.php.net/rfc/readonly_property_defaults -->
+   </simpara>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+class Config
+{
+    public readonly int $timeout = 30;
+}
+
+$config = new Config();
+var_dump($config->timeout); // int(30)
+]]>
+    </programlisting>
+   </informalexample>
+
+  </sect3>
+
+  <sect3 xml:id="migration86.new-features.core.weakmap-reference-assignment">
+   <title>Reference assignment on WeakMap</title>
+
+   <simpara>
+    It is now possible to use reference assignment on a
+    <classname>WeakMap</classname> without the key needing to be present
+    beforehand.
+   </simpara>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+$obj = new stdClass();
+$map = new WeakMap();
+$count = 0;
+
+// Previously: Error: "Object stdClass#1 not contained in WeakMap"
+$map[$obj] = &$count;
+$count++;
+
+var_dump($map[$obj]); // int(1)
+]]>
+    </programlisting>
+   </informalexample>
+
+  </sect3>
+
+  <sect3 xml:id="migration86.new-features.core.debuginfo-on-enums">
+   <title><methodname>__debugInfo</methodname> on enums</title>
+
+   <simpara>
+    It is now possible to define the
+    <link linkend="language.oop5.magic.debuginfo">__debugInfo()</link>
+    magic method on <link linkend="language.enumerations">enums</link>.
+    Previously, this resulted in a fatal error.
+    <!-- RFC: https://wiki.php.net/rfc/debugable-enums -->
+   </simpara>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+enum Suit: string
+{
+    case Hearts = 'H';
+    case Spades = 'S';
+
+    public function __debugInfo(): array
+    {
+        return ['suit' => $this->name, 'symbol' => $this->value];
+    }
+}
+
+var_dump(Suit::Hearts);
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+enum(Suit::Hearts) (2) {
+  ["suit"]=>
+  string(6) "Hearts"
+  ["symbol"]=>
+  string(1) "H"
+}
+]]>
+    </screen>
+   </informalexample>
+
+  </sect3>
+
+  <sect3 xml:id="migration86.new-features.core.override-for-constants">
+   <title><code>#[\Override]</code> for class constants</title>
+
+   <simpara>
+    The <classname>Override</classname> attribute can now be applied to
+    class constants, including enum cases.
+    As with methods and properties, a compile-time error is raised if no
+    matching constant exists in a parent class or implemented interface.
+    <!-- RFC: https://wiki.php.net/rfc/override_constants -->
+   </simpara>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+interface HasVersion
+{
+    const VERSION = '1.0';
+}
+
+class Package implements HasVersion
+{
+    #[\Override]
+    const VERSION = '2.0';
+
+    // Fatal error: Package::NAME has #[\Override] attribute,
+    // but no matching parent constant exists
+    // #[\Override]
+    // const NAME = 'package';
+}
+]]>
+    </programlisting>
+   </informalexample>
+
+  </sect3>
+
+  <sect3 xml:id="migration86.new-features.core.partial-function-application">
+   <title>Partial function application</title>
+
+   <simpara>
+    Added support for partial function application. A call in which one or
+    more arguments are replaced by the <literal>?</literal> placeholder, or
+    the remaining arguments by the <literal>...</literal> placeholder,
+    creates a <classname>Closure</classname> that accepts the missing
+    arguments.
+    <!-- RFC: https://wiki.php.net/rfc/partial_function_application_v2 -->
+   </simpara>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function add(int $a, int $b, int $c = 0): int
+{
+    return $a + $b + $c;
+}
+
+// "?" replaces exactly one argument
+$addOne = add(1, ?);
+var_dump($addOne(5)); // int(6)
+
+// "..." replaces all remaining arguments
+$addToOne = add(1, ...);
+var_dump($addToOne(2, 3)); // int(6)
+
+// Works with any callable, including internal functions
+$stripSpaces = str_replace(' ', '', ?);
+var_dump($stripSpaces('a b c')); // string(3) "abc"
+]]>
+    </programlisting>
+   </informalexample>
+
+  </sect3>
+
+  <sect3 xml:id="migration86.new-features.core.const-object-property-write">
+   <title>Mutating objects stored in constants</title>
+
+   <simpara>
+    Objects stored in constants or class constants can now be mutated
+    directly via <code>OBJ->prop = $val</code>.
+    <!-- RFC: https://wiki.php.net/rfc/const_object_property_write -->
+   </simpara>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+const CONFIG = new stdClass();
+
+// Previously: "Fatal error: Cannot use temporary expression in write context"
+CONFIG->debug = true;
+
+var_dump(CONFIG->debug); // bool(true)
+]]>
+    </programlisting>
+   </informalexample>
+
+  </sect3>
+
+  <sect3 xml:id="migration86.new-features.core.pack-unpack-endianness">
+   <title>Endianness modifiers for pack() and unpack()</title>
+
+   <simpara>
+    <function>pack</function> and <function>unpack</function> now accept the
+    <literal>&lt;</literal> (little-endian) and <literal>&gt;</literal>
+    (big-endian) modifiers after the signed and unsigned integer format codes,
+    and after the float and double format codes.
+    <!-- RFC: https://wiki.php.net/rfc/pack-unpack-endianness-signed-integers-support -->
+    <!-- RFC: https://wiki.php.net/rfc/pack-unpack-float-endianness-modifier -->
+   </simpara>
+
+   <informalexample>
+    <programlisting role="php">
+<![CDATA[
+<?php
+echo bin2hex(pack('l>', 1)), PHP_EOL;   // Prints "00000001"
+echo bin2hex(pack('l<', 1)), PHP_EOL;   // Prints "01000000"
+echo bin2hex(pack('f>', 1.5)), PHP_EOL; // Prints "3fc00000"
+
+var_dump(unpack('s>value', "\xff\xfe")); // ["value" => int(-2)]
+]]>
+    </programlisting>
+   </informalexample>
+
+  </sect3>
+
+ </sect2>
+
+ <sect2 xml:id="migration86.new-features.curl">
+  <title>cURL</title>
+
+  <simpara>
+   The array returned by <function>curl_getinfo</function> now includes a new
+   <literal>"size_delivered"</literal> key, which indicates the total number of
+   bytes passed to the download write callback.
+   This value can also be obtained by passing
+   <constant>CURLINFO_SIZE_DELIVERED</constant> as the
+   <parameter>option</parameter> parameter.
+   Requires libcurl 8.20.0 or later.
+  </simpara>
+
+  <simpara>
+   Added <constant>CURLOPT_SEEKFUNCTION</constant> to register a callback that
+   repositions a streamed request body, so libcurl can rewind and resend it on
+   a redirect, multi-pass authentication, or a retried reused connection
+   instead of failing with <constant>CURLE_SEND_FAIL_REWIND</constant>.
+   The callback receives the <classname>CurlHandle</classname>, offset and
+   origin, and must return one of <constant>CURL_SEEKFUNC_OK</constant>,
+   <constant>CURL_SEEKFUNC_FAIL</constant> or
+   <constant>CURL_SEEKFUNC_CANTSEEK</constant>.
+  </simpara>
+
+ </sect2>
+
+ <sect2 xml:id="migration86.new-features.date">
+  <title>Date</title>
+
+  <simpara>
+   Added the <classname>Time\Duration</classname> class.
+   <!-- RFC: https://wiki.php.net/rfc/duration_class -->
+  </simpara>
+
+ </sect2>
+
+ <sect2 xml:id="migration86.new-features.fileinfo">
+  <title>FileInfo</title>
+
+  <simpara>
+   <function>finfo_file</function> now works with remote streams.
+  </simpara>
+
+ </sect2>
+
+ <sect2 xml:id="migration86.new-features.gmp">
+  <title>GMP</title>
+
+  <simpara>
+   Added <function>gmp_powm_sec</function> for side-channel quiet modular
+   exponentiation.
+   Requires GNU MP 5.0.0 or later; it is not available on official Windows
+   builds using MPIR.
+  </simpara>
+
+  <simpara>
+   Added <function>gmp_prevprime</function> to get the largest prime smaller
+   than the given number.
+   The optional <parameter>definitely_prime</parameter> output parameter
+   indicates whether the returned number is definitely prime, as opposed to
+   probably prime.
+   A <exceptionname>ValueError</exceptionname> is thrown if no such prime
+   exists.
+   This function is only available when PHP is built against GNU MP 6.3.0 or
+   later; it is not available on official Windows builds using MPIR.
+  </simpara>
+
+ </sect2>
+
+ <sect2 xml:id="migration86.new-features.intl">
+  <title>Intl</title>
+
+  <simpara>
+   Added the static methods
+   <methodname>IntlDatePatternGenerator::getSkeleton</methodname> and
+   <methodname>IntlDatePatternGenerator::getBaseSkeleton</methodname> to
+   generate the unique skeleton and base skeleton for a date/time pattern.
+  </simpara>
+
+  <simpara>
+   Added <methodname>Locale::getDisplayKeyword</methodname> and
+   <methodname>Locale::getDisplayKeywordValue</methodname>, with the aliases
+   <function>locale_get_display_keyword</function> and
+   <function>locale_get_display_keyword_value</function>, respectively.
+   <!-- RFC: https://wiki.php.net/rfc/getdisplaykeyword_and_getdisplaykeywordvalue -->
+  </simpara>
+
+  <para>
+   Added the <classname>IntlNumberRangeFormatter</classname> class to format
+   an interval of two numbers with a given skeleton and locale.
+   It is supported as of <acronym>ICU</acronym> 63.
+   The collapse behavior is one of:
+   <simplelist>
+    <member><constant>IntlNumberRangeFormatter::COLLAPSE_AUTO</constant></member>
+    <member><constant>IntlNumberRangeFormatter::COLLAPSE_NONE</constant></member>
+    <member><constant>IntlNumberRangeFormatter::COLLAPSE_UNIT</constant></member>
+    <member><constant>IntlNumberRangeFormatter::COLLAPSE_ALL</constant></member>
+   </simplelist>
+   The identity fallback is one of:
+   <simplelist>
+    <member><constant>IntlNumberRangeFormatter::IDENTITY_FALLBACK_SINGLE_VALUE</constant></member>
+    <member><constant>IntlNumberRangeFormatter::IDENTITY_FALLBACK_APPROXIMATELY_OR_SINGLE_VALUE</constant></member>
+    <member><constant>IntlNumberRangeFormatter::IDENTITY_FALLBACK_APPROXIMATELY</constant></member>
+    <member><constant>IntlNumberRangeFormatter::IDENTITY_FALLBACK_RANGE</constant></member>
+   </simplelist>
+  </para>
+
+  <simpara>
+   Added <methodname>SpoofChecker::areBidiConfusable</methodname> to check
+   whether two strings are confusable for a given text direction, along with
+   the <constant>SpoofChecker::LTR</constant> and
+   <constant>SpoofChecker::RTL</constant> direction constants.
+   It is supported as of <acronym>ICU</acronym> 74.
+  </simpara>
+
+  <simpara>
+   Added <methodname>SpoofChecker::getBidiSkeleton</methodname> to generate a
+   confusable skeleton for a given text direction.
+   It is supported as of <acronym>ICU</acronym> 74.
+  </simpara>
+
+  <simpara>
+   Added <methodname>SpoofChecker::getSkeleton</methodname> to generate a
+   confusable skeleton for a given string.
+  </simpara>
+
+ </sect2>
+
+ <sect2 xml:id="migration86.new-features.io">
+  <title>IO</title>
+
+  <para>
+   Added a new polling <acronym>API</acronym>, consisting of:
+   <simplelist>
+    <member>The <classname>Io\Poll\Context</classname> and <classname>Io\Poll\Watcher</classname> classes</member>
+    <member>The <enumname>Io\Poll\Backend</enumname> and <enumname>Io\Poll\Event</enumname> enums</member>
+    <member>The <interfacename>Io\Poll\Handle</interfacename> interface</member>
+    <member>The <classname>StreamPollHandle</classname> class to watch streams</member>
+   </simplelist>
+   <!-- RFC: https://wiki.php.net/rfc/poll_api -->
+  </para>
+
+ </sect2>
+
+ <sect2 xml:id="migration86.new-features.json">
+  <title>JSON</title>
+
+  <simpara>
+   Added extra information about the error location to the error messages
+   returned by <function>json_last_error_msg</function> and to the message of
+   <exceptionname>JsonException</exceptionname>.
+  </simpara>
+
+ </sect2>
+
+ <sect2 xml:id="migration86.new-features.openssl">
+  <title>OpenSSL</title>
+
+  <para>
+   Added <acronym>TLS</acronym> session resumption support for streams.
+   This allows saving and restoring client sessions across requests,
+   implementing custom server-side session storage, and controlling session
+   cache behavior, using the following new
+   <link linkend="context.ssl">SSL context</link> options:
+   <simplelist>
+    <member><literal>session_data</literal></member>
+    <member><literal>session_new_cb</literal></member>
+    <member><literal>session_cache</literal></member>
+    <member><literal>session_cache_size</literal></member>
+    <member><literal>session_timeout</literal></member>
+    <member><literal>session_id_context</literal></member>
+    <member><literal>session_get_cb</literal></member>
+    <member><literal>session_remove_cb</literal></member>
+    <member><literal>num_tickets</literal></member>
+   </simplelist>
+   <!-- RFC: https://wiki.php.net/rfc/tls_session_resumption -->
+  </para>
+
+  <simpara>
+   Added <acronym>TLS</acronym> external <acronym>PSK</acronym> support for
+   streams with the new <link linkend="context.ssl">SSL context</link>
+   options <literal>psk_client_cb</literal> and
+   <literal>psk_server_cb</literal>.
+   This allows setting and receiving pre-shared keys.
+  </simpara>
+
+  <simpara>
+   Added <acronym>TLS</acronym> 1.3 early data (0-RTT) support for streams.
+   Clients send early data with the <literal>early_data</literal>
+   <link linkend="context.ssl">SSL context</link> option; servers accept it
+   with <literal>max_early_data</literal> and receive it through the
+   <literal>early_data_cb</literal> callback.
+   The outcome is reported as <literal>"accepted"</literal>,
+   <literal>"rejected"</literal> or <literal>"not_sent"</literal> in the
+   <literal>"early_data"</literal> key of the <literal>"crypto"</literal>
+   entry of the <function>stream_get_meta_data</function> array.
+  </simpara>
+
+ </sect2>
+
+ <sect2 xml:id="migration86.new-features.pdo-pgsql">
+  <title>PDO_PGSQL</title>
+
+  <simpara>
+   Added <constant>Pdo\Pgsql::ATTR_CHUNK_SIZE</constant>, the number of rows a
+   statement fetches per chunk.
+   A value of 1 or more enters the lazy fetch mode of
+   <code>PDO::ATTR_PREFETCH => 0</code>.
+   Setting <constant>PDO::ATTR_PREFETCH</constant> replaces the chunk size.
+   Statements that are prepared with neither it nor
+   <constant>PDO::ATTR_PREFETCH</constant> fall back to the value set on the
+   connection.
+   Requires libpq 17 or later.
+  </simpara>
+
+ </sect2>
+
+ <sect2 xml:id="migration86.new-features.phar">
+  <title>Phar</title>
+
+  <simpara>
+   Overriding the <methodname>SplFileInfo::getMTime</methodname> and
+   <methodname>SplFileInfo::getPathname</methodname> methods now influences
+   the result of the <methodname>Phar::buildFromDirectory</methodname> and
+   <methodname>Phar::buildFromIterator</methodname> family of methods.
+   This makes it possible to override the timestamp and names of files.
+  </simpara>
+
+ </sect2>
+
+ <sect2 xml:id="migration86.new-features.snmp">
+  <title>SNMP</title>
+
+  <simpara>
+   It is now possible to use <literal>AES192</literal>,
+   <literal>AES192C</literal>, <literal>AES256</literal>, and
+   <literal>AES256C</literal> as SNMPv3 security protocols if the underlying
+   library supports them.
+   <!-- RFC: https://wiki.php.net/rfc/snmp_improvements_2026#increase_the_number_of_snmpv3_security_protocols_supported -->
+  </simpara>
+
+  <simpara>
+   It is now possible to reset the <acronym>MIB</acronym> tree using the new
+   <function>snmp_init_mib</function> function.
+   <!-- RFC: https://wiki.php.net/rfc/snmp_improvements_2026#allow_the_snmp_mib_to_be_reset -->
+  </simpara>
+
+  <para>
+   Additional <acronym>MIB</acronym> parsing and output control functionality
+   has been exposed via:
+   <simplelist>
+    <member><function>snmp_set_mib_option</function></member>
+    <member><function>snmp_set_output_option</function></member>
+    <member><function>snmp_set_string_output_format</function></member>
+    <member><property>SNMP::$numeric_index</property></member>
+    <member><property>SNMP::$numeric_timeticks</property></member>
+    <member><property>SNMP::$extended_index</property></member>
+    <member><property>SNMP::$dont_print_units</property></member>
+    <member><property>SNMP::$escape_quotes</property></member>
+    <member><property>SNMP::$print_hex_text</property></member>
+    <member><methodname>SNMP::setOidOutputFormat</methodname></member>
+    <member><methodname>SNMP::setStringOutputFormat</methodname></member>
+   </simplelist>
+   <!-- RFC: https://wiki.php.net/rfc/snmp_improvements_2026#implement_more_mib_parsing_and_value_output_controls -->
+  </para>
+
+ </sect2>
+
+ <sect2 xml:id="migration86.new-features.streams">
+  <title>Streams</title>
+
+  <para>
+   Added a new stream errors <acronym>API</acronym>, consisting of:
+   <simplelist>
+    <member>The <exceptionname>StreamError</exceptionname> and <exceptionname>StreamException</exceptionname> classes</member>
+    <member>The <enumname>StreamErrorStore</enumname>, <enumname>StreamErrorMode</enumname>, and <enumname>StreamErrorCode</enumname> enums</member>
+    <member>The <function>stream_last_errors</function> and <function>stream_clear_errors</function> functions</member>
+   </simplelist>
+   It is controlled using the <literal>error_mode</literal>,
+   <literal>error_store</literal> and <literal>error_handler</literal>
+   stream context options.
+   <!-- RFC: https://wiki.php.net/rfc/stream_errors -->
+  </para>
+
+  <simpara>
+   Added the <literal>filter.max_filter_count</literal> stream context option
+   for <link linkend="wrappers.php">php://filter</link> URLs.
+   When set, opening the stream fails with a warning if the URL would add more
+   filters than the configured value.
+   Negative values disable the check.
+   <!-- RFC: https://wiki.php.net/rfc/limit-maximum-number-of-filter-chains -->
+  </simpara>
+
+  <simpara>
+   Added the <link linkend="context.socket">socket context</link> option
+   <literal>so_reuseaddr</literal> that allows disabling address reuse
+   (<literal>SO_REUSEADDR</literal>) and explicitly uses
+   <literal>SO_EXCLUSIVEADDRUSE</literal> on Windows.
+  </simpara>
+
+  <simpara>
+   Added the <link linkend="context.socket">socket context</link> options
+   <literal>so_keepalive</literal>, <literal>tcp_keepidle</literal>,
+   <literal>tcp_keepintvl</literal> and <literal>tcp_keepcnt</literal> that
+   allow setting socket keepalive options.
+  </simpara>
+
+  <simpara>
+   Added the <link linkend="context.socket">socket context</link> option
+   <literal>so_linger</literal> that sets <literal>SO_LINGER</literal> on
+   <acronym>TCP</acronym> sockets.
+   A positive value enables lingering for that many seconds, zero or a
+   negative value disables it.
+   Values above 65535 are clamped as the linger time is limited to an
+   unsigned short on some platforms.
+  </simpara>
+
+  <simpara>
+   Added the <link linkend="context.socket">socket context</link> options
+   <literal>so_rcvbuf</literal> and <literal>so_sndbuf</literal> that set the
+   socket receive and send buffer sizes in bytes
+   (<literal>SO_RCVBUF</literal> and <literal>SO_SNDBUF</literal>) on
+   <acronym>TCP</acronym> and <acronym>UDP</acronym> sockets.
+   The value must be an integer between 1 and 2147483647, any other value
+   makes the stream creation fail.
+   The operating system may round, cap or otherwise adjust the requested size,
+   and may stop sizing that buffer automatically, so the size read back can
+   differ from the one requested.
+  </simpara>
+
+  <simpara>
+   Filtered streams can now be cast to file descriptors for use with
+   <function>stream_select</function>.
+  </simpara>
+
+  <para>
+   Added the <literal>"write_seek_mode"</literal> filter parameter for the
+   bz2, iconv, zlib, and <link linkend="filters.string">string</link> stream
+   filters.
+   This parameter must be set via an associative array where the key is
+   <literal>"write_seek_mode"</literal> and the value is one of the following
+   strings:
+   <simplelist>
+    <member><literal>"preserve"</literal></member>
+    <member><literal>"reset"</literal></member>
+    <member><literal>"strict"</literal></member>
+   </simplelist>
+  </para>
+
+ </sect2>
+
+ <sect2 xml:id="migration86.new-features.uri">
+  <title>URI</title>
+
+  <simpara>
+   Added <methodname>Uri\Rfc3986\Uri::getUriType</methodname> and
+   <methodname>Uri\WhatWg\Url::isSpecialScheme</methodname>.
+   <!-- RFC: https://wiki.php.net/rfc/uri_followup#uri_type_detection -->
+  </simpara>
+
+  <simpara>
+   Added <methodname>Uri\Rfc3986\Uri::getHostType</methodname> and
+   <methodname>Uri\WhatWg\Url::getHostType</methodname>.
+   <!-- RFC: https://wiki.php.net/rfc/uri_followup#host_type_detection -->
+  </simpara>
+
+  <simpara>
+   Added the <classname>Uri\Rfc3986\UriBuilder</classname> and
+   <classname>Uri\WhatWg\UrlBuilder</classname> classes.
+   <!-- RFC: https://wiki.php.net/rfc/uri_followup#uri_building -->
+  </simpara>
+
+  <simpara>
+   Added <function>Uri\WhatWg\url_percent_encode</function>.
+   <!-- RFC: https://wiki.php.net/rfc/uri_followup#percent-encoding_support -->
+  </simpara>
+
+ </sect2>
+
+</sect1>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
