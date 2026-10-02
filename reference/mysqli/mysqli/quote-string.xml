@@ -1,53 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- $Revision$ -->
-<refentry xml:id="mysqli.real-escape-string" xmlns="http://docbook.org/ns/docbook">
+<refentry xml:id="mysqli.quote-string" xmlns="http://docbook.org/ns/docbook">
  <refnamediv>
-  <refname>mysqli::real_escape_string</refname>
-  <refname>mysqli_real_escape_string</refname>
-  <refpurpose>Escapes special characters in a string for use in an SQL statement, taking into account the current charset of the connection</refpurpose>
+  <refname>mysqli::quote_string</refname>
+  <refname>mysqli_quote_string</refname>
+  <refpurpose>Quotes and escapes a string for use in an SQL statement</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
   &reftitle.description;
-  <para>&style.oop;</para>
+  <simpara>&style.oop;</simpara>
   <methodsynopsis role="mysqli">
-   <modifier>public</modifier> <type>string</type><methodname>mysqli::real_escape_string</methodname>
+   <modifier>public</modifier> <type>string</type><methodname>mysqli::quote_string</methodname>
    <methodparam><type>string</type><parameter>string</parameter></methodparam>
   </methodsynopsis>
-  <para>&style.procedural;</para>
+  <simpara>&style.procedural;</simpara>
   <methodsynopsis>
-   <type>string</type><methodname>mysqli_real_escape_string</methodname>
+   <type>string</type><methodname>mysqli_quote_string</methodname>
    <methodparam><type>mysqli</type><parameter>mysql</parameter></methodparam>
    <methodparam><type>string</type><parameter>string</parameter></methodparam>
   </methodsynopsis>
-  <para>
-   This function is used to create a legal SQL string that you can use in an
-   SQL statement. The given string is encoded to produce an escaped SQL string,
-   taking into account the current character set of the connection.
-  </para>
+  <simpara>
+   Creates a legal SQL string literal that can be used in an SQL statement.
+   The given string is escaped in the same way as
+   <methodname>mysqli::real_escape_string</methodname>, taking into account
+   the current character set of the connection, and the result is wrapped in
+   single quotes. The returned value must therefore be inserted into the
+   query without adding any further quotes around it.
+  </simpara>
+  <simpara>
+   Unlike <methodname>mysqli::real_escape_string</methodname>, the result is
+   also safe when the <literal>NO_BACKSLASH_ESCAPES</literal> SQL mode is
+   enabled on the connection.
+  </simpara>
   <caution>
    <title>Security: the default character set</title>
-   <para>
+   <simpara>
     The character set must be set either at the server level, or with
     the API function <function>mysqli_set_charset</function> for it to affect
-    <function>mysqli_real_escape_string</function>. See the concepts section
+    <function>mysqli_quote_string</function>. See the concepts section
     on <link linkend="mysqlinfo.concepts.charset">character sets</link> for
     more information.
-   </para>
-  </caution>
-  <warning>
-   <simpara>
-    This function does not add quotes around the result; they must be added
-    by the caller. If the <literal>NO_BACKSLASH_ESCAPES</literal> SQL mode is
-    enabled on the connection, only the single quote
-    (<literal>'</literal>) is escaped, so a value placed between double quotes
-    (<literal>"</literal>) can terminate the string and allow SQL injection.
-    Use <link linkend="mysqli.quickstart.prepared-statements">prepared
-    statements</link> instead. If that is not possible, use
-    <methodname>mysqli::quote_string</methodname>, which always wraps the
-    result in single quotes.
    </simpara>
-  </warning>
+  </caution>
+  <note>
+   <simpara>
+    Quoting is only suitable for string literals. It does not make
+    identifiers, such as table or column names, safe. Whenever possible, use
+    <link linkend="mysqli.quickstart.prepared-statements">prepared
+    statements</link> instead of building queries manually.
+   </simpara>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -58,9 +61,9 @@
     <varlistentry>
      <term><parameter>string</parameter></term>
      <listitem>
-      <para>
-       The string to be escaped.
-      </para>
+      <simpara>
+       The string to be quoted and escaped.
+      </simpara>
       <simpara>
        Characters encoded are <literal>NUL (ASCII 0)</literal>,
        <literal>\n</literal>, <literal>\r</literal>, <literal>\</literal>,
@@ -77,16 +80,16 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-   Returns an escaped string.
-  </para>
+  <simpara>
+   Returns the escaped string enclosed in single quotes.
+  </simpara>
  </refsect1>
 
  <refsect1 role="examples">
   &reftitle.examples;
   <example>
-   <title><methodname>mysqli::real_escape_string</methodname> example</title>
-   <para>&style.oop;</para>
+   <title><methodname>mysqli::quote_string</methodname> example</title>
+   <simpara>&style.oop;</simpara>
    <programlisting role="php">
 <![CDATA[
 <?php
@@ -96,18 +99,17 @@ $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
 
 $city = "'s-Hertogenbosch";
 
-/* this query with escaped $city will work */
-$query = sprintf("SELECT CountryCode FROM City WHERE name='%s'",
-	$mysqli->real_escape_string($city));
+/* this query with quoted $city will work */
+$query = sprintf("SELECT CountryCode FROM City WHERE name=%s", $mysqli->quote_string($city));
 $result = $mysqli->query($query);
 printf("Select returned %d rows.\n", $result->num_rows);
 
-/* this query will fail, because we didn't escape $city */
+/* this query will fail, because we didn't quote and escape $city */
 $query = sprintf("SELECT CountryCode FROM City WHERE name='%s'", $city);
 $result = $mysqli->query($query);
 ]]>
    </programlisting>
-   <para>&style.procedural;</para>
+   <simpara>&style.procedural;</simpara>
    <programlisting role="php">
 <![CDATA[
 <?php
@@ -117,13 +119,12 @@ $mysqli = mysqli_connect("localhost", "my_user", "my_password", "world");
 
 $city = "'s-Hertogenbosch";
 
-/* this query with escaped $city will work */
-$query = sprintf("SELECT CountryCode FROM City WHERE name='%s'",
-	mysqli_real_escape_string($mysqli, $city));
+/* this query with quoted $city will work */
+$query = sprintf("SELECT CountryCode FROM City WHERE name=%s", mysqli_quote_string($mysqli, $city));
 $result = mysqli_query($mysqli, $query);
 printf("Select returned %d rows.\n", mysqli_num_rows($result));
 
-/* this query will fail, because we didn't escape $city */
+/* this query will fail, because we didn't quote and escape $city */
 $query = sprintf("SELECT CountryCode FROM City WHERE name='%s'", $city);
 $result = mysqli_query($mysqli, $query);
 ]]>
@@ -142,8 +143,8 @@ Fatal error: Uncaught mysqli_sql_exception: You have an error in your SQL syntax
  <refsect1 role="seealso">
   &reftitle.seealso;
   <simplelist>
-   <member><function>mysqli_set_charset</function></member>
-   <member><function>mysqli_quote_string</function></member>
+   <member><methodname>mysqli::real_escape_string</methodname></member>
+   <member><methodname>mysqli::set_charset</methodname></member>
   </simplelist>
  </refsect1>
 
