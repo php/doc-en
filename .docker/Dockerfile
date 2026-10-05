@@ -1,4 +1,4 @@
-FROM php:8.2-cli
+FROM php:8.4-cli
 ARG UID=1000
 ARG GID=1000
 
