@@ -320,7 +320,15 @@
     <varlistentry>
      <term><emphasis>\R</emphasis></term>
      <listitem>
-      <simpara>line break: matches \n, \r and \r\n</simpara>
+      <simpara>
+       line break. By default, <literal>\R</literal> matches any Unicode
+       newline sequence: in 8-bit non-UTF-8 mode this is equivalent to
+       <literal>(?&gt;\r\n|\n|\x0b|\f|\r|\x85)</literal>; in UTF-8 mode, two
+       further characters, U+2028 and U+2029, are added. If the pattern
+       contains the <literal>(*BSR_ANYCRLF)</literal> special sequence,
+       <literal>\R</literal> matches only <literal>\r\n</literal>,
+       <literal>\r</literal> and <literal>\n</literal>.
+      </simpara>
      </listitem>
     </varlistentry>
     <varlistentry>
@@ -334,6 +342,26 @@
      <listitem>
       <simpara>
        character with hex code hh
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><emphasis>\x{hhhh}</emphasis></term>
+     <listitem>
+      <simpara>
+       in <emphasis>UTF-8 mode</emphasis>, the Unicode character whose code
+       point is the given hexadecimal number
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><emphasis>\N{U+hhhh}</emphasis></term>
+     <listitem>
+      <simpara>
+       in <emphasis>UTF-8 mode</emphasis>, the Unicode character whose code
+       point is the given hexadecimal number, equivalent in that mode to
+       <literal>\x{hhhh}</literal>; unlike <literal>\x{hhhh}</literal>, this
+       syntax is not recognized outside UTF-8 mode
       </simpara>
      </listitem>
     </varlistentry>
@@ -1076,13 +1104,19 @@
    <xref linkend="regexp.reference.onlyonce"/>). Characters with the "mark"
    property are typically accents that affect the preceding character.
   </simpara>
-  <para>
+  <simpara>
    Matching characters by Unicode property is not fast, because PCRE has
    to search a structure that contains data for over fifteen thousand
-   characters. That is why the traditional escape sequences such as
-   <literal>\d</literal> and <literal>\w</literal> do not use Unicode properties
-   in PCRE.
-  </para>
+   characters. Since PHP 5.4.0, the generic character type escape sequences
+   <literal>\d</literal>, <literal>\s</literal> and <literal>\w</literal> (and
+   their upper case counterparts) use Unicode properties when the
+   <link linkend="reference.pcre.pattern.modifiers">PCRE_UTF8</link>
+   (<literal>u</literal>) modifier is set, so that, for example,
+   <literal>\d</literal> also matches non-ASCII decimal digits. Before PHP
+   5.4.0, these escape sequences did not use Unicode properties, for
+   efficiency reasons, unless <literal>(*UCP)</literal> was explicitly
+   added to the pattern.
+  </simpara>
  </section>
 
  <section xml:id="regexp.reference.anchors">
@@ -1860,15 +1894,16 @@
 
  <section xml:id="regexp.reference.assertions">
   <title>Assertions</title>
-  <para>
+  <simpara>
    An assertion is a test on the characters following or
    preceding the current matching point that does not actually
    consume any characters. The simple assertions coded as \b,
    \B, \A, \Z, \z, ^ and $ are described in <link linkend="regexp.reference.escape">escape sequences</link>. More complicated
    assertions are coded as subpatterns. There are two
-   kinds: those that <emphasis>look ahead</emphasis> of the current position in the
-   subject string, and those that <emphasis>look behind</emphasis> it.
-  </para>
+   kinds: <emphasis>lookahead</emphasis> assertions, which look ahead of the
+   current position in the subject string, and
+   <emphasis>lookbehind</emphasis> assertions, which look behind it.
+  </simpara>
   <para>
    An assertion subpattern is matched in the normal way, except
    that it does not cause the current matching position to be
