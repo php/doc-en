@@ -76,7 +76,8 @@
     <term><literal>crc</literal></term>
     <listitem><simpara>
      The CRC32 checksum of the stored value, used to detect torn reads.
-     <literal>0</literal> for embedded entries, which have no value block.
+     <literal>0</literal> for values stored in the slot, which have no value
+     block.
     </simpara></listitem>
    </varlistentry>
    <varlistentry>
@@ -118,7 +119,7 @@
     <term><literal>size</literal></term>
     <listitem><simpara>
      The allocated size of the value block in shared memory, in bytes.
-     <literal>0</literal> for embedded entries.
+     <literal>0</literal> for values stored in the slot.
     </simpara></listitem>
    </varlistentry>
    <varlistentry>
@@ -143,17 +144,45 @@
     <term><literal>embedded</literal></term>
     <listitem><simpara>
      Whether the value is stored directly inside the slot instead of in a
-     separate value block (as of yac 2.4.0). Small values —
-     <constant>NULL</constant>, booleans, small integers, strings of up to
-     7 bytes and empty arrays — are embedded this way and allocate no value
-     memory at all; for them <literal>crc</literal> and
-     <literal>size</literal> are reported as <literal>0</literal>.
+     separate value block. Small values — &null;, booleans, small integers,
+     strings of up to 7 bytes, and empty arrays — are embedded this way and
+     allocate no value memory. For them <literal>crc</literal> and
+     <literal>size</literal> are <literal>0</literal>. This field is available
+     through Yac 2.4.2; use <literal>loc</literal> in Yac 3.0.0 and later.
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>kind</literal></term>
+    <listitem><simpara>
+     The value kind. It is one of <constant>YAC_KIND_FLAG</constant>,
+     <constant>YAC_KIND_LONG</constant>, <constant>YAC_KIND_DOUBLE</constant>,
+     <constant>YAC_KIND_STRING</constant>, or <constant>YAC_KIND_BLOB</constant>.
+     Available as of Yac 3.0.0.
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>loc</literal></term>
+    <listitem><simpara>
+     The value storage location: <constant>YAC_LOC_BLOCK</constant> for a
+     value-pool block, <constant>YAC_LOC_VALWORD</constant> for a scalar held
+     in the slot value word, or <constant>YAC_LOC_INLINE</constant> for a
+     short string held inline in the slot. Available as of Yac 3.0.0.
+    </simpara></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><literal>enc</literal></term>
+    <listitem><simpara>
+     The encoder used for the payload: <constant>YAC_ENC_NONE</constant> when
+     no serialization was needed, <constant>YAC_ENC_PHP</constant> for PHP
+     serialization, or <constant>YAC_ENC_YAC</constant> for Yac's internal
+     serializer. Available as of Yac 3.0.0.
     </simpara></listitem>
    </varlistentry>
    <varlistentry>
     <term><literal>key</literal></term>
     <listitem><simpara>
-     The cache key, without any instance prefix.
+     The cache key. As of Yac 3.0.0, the instance prefix is removed; earlier
+     versions return the stored key including that prefix.
     </simpara></listitem>
    </varlistentry>
   </variablelist>
@@ -190,7 +219,9 @@ Array
             [size] => 0
             [atime] => 1725955200
             [hits] => 0
-            [embedded] => 1
+            [kind] => 5
+            [loc] => 1
+            [enc] => 0
             [key] => foo
         )
 
@@ -214,10 +245,10 @@ Array
    </screen>
    <simpara>
     Entries are listed in slot order, not in the order they were stored.
-    Embedded entries (short scalars kept inside the slot itself) have
-    <literal>crc</literal> and <literal>size</literal> set to zero; entries
-    stored in a separate value block carry their checksum and block size,
-    and compressed entries additionally carry <literal>c_len</literal>.
+    Values stored in the slot have <literal>crc</literal> and
+    <literal>size</literal> set to zero. The <literal>kind</literal>,
+    <literal>loc</literal>, and <literal>enc</literal> fields are available as
+    of Yac 3.0.0.
    </simpara>
   </example>
   <example>
