@@ -444,6 +444,12 @@ Fatal error: Maximum execution time of 30+2 seconds exceeded (terminated) in Unk
         <entry><constant>INI_SYSTEM</constant></entry>
         <entry>Available as of PHP 8.5.0</entry>
        </row>
+       <row>
+        <entry><link linkend="ini.memory-hard-limit-percent">memory_hard_limit_percent</link></entry>
+        <entry>"-1"</entry>
+        <entry><constant>INI_ALL</constant></entry>
+        <entry>Available as of PHP 8.5.12, 8.4.27, 8.3.36 and 8.2.35</entry>
+       </row>
       </tbody>
      </tgroup>
     </table>
@@ -464,6 +470,15 @@ Fatal error: Maximum execution time of 30+2 seconds exceeded (terminated) in Unk
         is allowed to allocate.  This helps prevent poorly written
         scripts for eating up all available memory on a server. Note that
         to have no memory limit, set this directive to <literal>-1</literal>.
+       </para>
+       <para>
+        As of PHP 8.5.12, 8.4.27, 8.3.36 and 8.2.35, this is a soft limit:
+        an internal operation that crosses it is allowed to finish before the
+        fatal error is raised, so the memory usage of a process may briefly
+        exceed <parameter>memory_limit</parameter>. A separate hard limit,
+        controlled by
+        <link linkend="ini.memory-hard-limit-percent">memory_hard_limit_percent</link>,
+        bounds how far it may be exceeded.
        </para>
 
        &ini.shorthandbytes;
@@ -489,6 +504,61 @@ Fatal error: Maximum execution time of 30+2 seconds exceeded (terminated) in Unk
 
        &ini.shorthandbytes;
 
+      </listitem>
+     </varlistentry>
+     <varlistentry xml:id="ini.memory-hard-limit-percent">
+      <term>
+       <parameter>memory_hard_limit_percent</parameter>
+       <type>int</type>
+      </term>
+      <listitem>
+       <para>
+        Available as of PHP 8.5.12, 8.4.27, 8.3.36 and 8.2.35. Sets the hard
+        memory limit as a percentage of
+        <link linkend="ini.memory-limit">memory_limit</link>.
+       </para>
+       <para>
+        When an allocation exceeds <link linkend="ini.memory-limit">memory_limit</link>
+        (the soft limit), the memory is still allocated, and the usual
+        <literal>Allowed memory size of xxx bytes exhausted</literal> fatal
+        error is raised once the engine reaches a safe point.
+        Shutdown functions registered with
+        <function>register_shutdown_function</function> still run.
+       </para>
+       <para>
+        When an allocation would exceed the hard limit, the process is
+        terminated immediately with exit status <literal>137</literal>.
+        A <literal>Hard memory limit of xxx bytes exhausted</literal> message is
+        written directly to the standard error stream; it does not go through
+        the error handling mechanism, so it is not passed to error handlers or
+        written to the <link linkend="ini.error-log">error_log</link>.
+        Shutdown functions, destructors and output buffer handlers are not
+        run.
+       </para>
+       <para>
+        The value must be <literal>100</literal> or greater, or
+        <literal>-1</literal>.
+       </para>
+       <para>
+        When set to <literal>-1</literal>, the hard
+        limit is twice <link linkend="ini.memory-limit">memory_limit</link>
+        if <link linkend="ini.memory-limit">memory_limit</link> is
+        <literal>1G</literal> or less, and
+        <link linkend="ini.memory-limit">memory_limit</link> plus
+        <literal>1G</literal> otherwise. For example, with the default
+        <literal>memory_limit=128M</literal>, the hard limit is
+        <literal>256M</literal>. If
+        <link linkend="ini.memory-limit">memory_limit</link> is set to
+        <literal>-1</literal>, there is no hard limit either.
+       </para>
+       <caution>
+        <simpara>
+         A value of <literal>100</literal> makes the hard limit equal to
+         <link linkend="ini.memory-limit">memory_limit</link>, which turns
+         every out-of-memory condition into an immediate termination of the
+         process instead of a fatal error.
+        </simpara>
+       </caution>
       </listitem>
      </varlistentry>
     </variablelist>
