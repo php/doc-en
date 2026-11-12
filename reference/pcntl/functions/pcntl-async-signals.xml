@@ -66,6 +66,65 @@
   </informaltable>
  </refsect1>
 
+ <refsect1 role="examples"><!-- {{{ -->
+  &reftitle.examples;
+  <example>
+   <title>Calling signal handlers during a cURL transfer</title>
+   <simpara>
+    Without the progress callback, the handler would not be called until the
+    transfer has completed.
+   </simpara>
+   <programlisting role="php">
+<![CDATA[
+<?php
+pcntl_async_signals(true);
+
+pcntl_signal(SIGALRM, function () {
+    echo "Heartbeat\n";
+    pcntl_alarm(1);
+});
+pcntl_alarm(1);
+
+$ch = curl_init('https://example.com/slow-endpoint');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+// Calling back into PHP code during the transfer lets the handler run
+curl_setopt($ch, CURLOPT_NOPROGRESS, false);
+curl_setopt($ch, CURLOPT_XFERINFOFUNCTION, function () {
+    return 0;
+});
+
+$response = curl_exec($ch);
+?>
+]]>
+   </programlisting>
+  </example>
+ </refsect1><!-- }}} -->
+
+ <refsect1 role="notes"><!-- {{{ -->
+  &reftitle.notes;
+  <simpara>
+   With asynchronous signal handling enabled, a handler installed with
+   <function>pcntl_signal</function> is not called at the moment the signal
+   is received. The signal is recorded, and the handler is called the next
+   time the engine checks for pending signals while executing PHP code, for
+   instance after a function call returns, or on the next iteration of a loop.
+  </simpara>
+  <simpara>
+   As a consequence, a long-running call to an internal function, such as
+   <function>curl_exec</function> or a database query, is not interrupted to
+   call the handler: the handler is only called once that function returns.
+   The handler is called earlier only if the function calls back into PHP code
+   while it runs, for instance through a
+   <constant>CURLOPT_XFERINFOFUNCTION</constant> callback.
+  </simpara>
+  <simpara>
+   A signal may still interrupt a system call the function is blocked in.
+   For instance, <function>sleep</function> then returns early, and the
+   handler is called once it has returned.
+  </simpara>
+ </refsect1><!-- }}} -->
+
  <refsect1 role="seealso"><!-- {{{ -->
   &reftitle.seealso;
   <simplelist>
