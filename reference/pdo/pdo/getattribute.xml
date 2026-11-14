@@ -20,10 +20,11 @@
    <methodname>PDOStatement::getAttribute</methodname>.
   </para>
 
-  <para>
-   Note that some database/driver combinations may not support all of the
-   database connection attributes.
-  </para>
+  <simpara>
+   Only the generic attributes listed below can be retrieved with every
+   driver. Whether any other attribute can be retrieved depends on the
+   driver.
+  </simpara>
 
  </refsect1>
 
@@ -35,9 +36,10 @@
      <term><parameter>attribute</parameter></term>
      <listitem>
       <para>
-       One of the <constant>PDO::ATTR_<replaceable>*</replaceable></constant> constants. The generic attributes that
-       apply to database connections are as follows:
-       <simplelist> 
+       One of the <constant>PDO::ATTR_<replaceable>*</replaceable></constant> constants.
+       The following generic attributes are handled by PDO itself
+       and can be retrieved with every driver:
+       <simplelist>
         <member><constant>PDO::ATTR_CASE</constant></member>
         <member><constant>PDO::ATTR_DEFAULT_FETCH_MODE</constant></member>
         <member><constant>PDO::ATTR_DRIVER_NAME</constant></member>
@@ -46,10 +48,19 @@
         <member><constant>PDO::ATTR_PERSISTENT</constant></member>
         <member><constant>PDO::ATTR_STATEMENT_CLASS</constant></member>
         <member><constant>PDO::ATTR_STRINGIFY_FETCHES</constant></member>
-       </simplelist> 
+       </simplelist>
       </para>
       <simpara>
-       Some drivers may make use of additional driver specific attributes.
+       All other attributes are handled by the driver.
+       Which of them can be retrieved varies from driver to driver.
+       This includes generic attributes such as
+       <constant>PDO::ATTR_AUTOCOMMIT</constant>,
+       <constant>PDO::ATTR_CLIENT_VERSION</constant>,
+       <constant>PDO::ATTR_CONNECTION_STATUS</constant>,
+       <constant>PDO::ATTR_SERVER_INFO</constant>,
+       <constant>PDO::ATTR_SERVER_VERSION</constant> and
+       <constant>PDO::ATTR_TIMEOUT</constant>,
+       as well as driver specific attributes.
        Note that driver specific attributes <emphasis>must not</emphasis> be used
        with other drivers.
       </simpara>
@@ -62,17 +73,21 @@
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
   <simpara>
-   A successful call returns the value of the requested PDO attribute.
-   An unsuccessful call returns &null;.
+   Returns the value of the requested attribute, or &false; on failure.
+  </simpara>
+  <simpara>
+   The value of some attributes, such as
+   <constant>PDO::ATTR_PERSISTENT</constant>, can itself be &false;,
+   so a &false; return value does not always indicate a failure.
   </simpara>
  </refsect1>
 
  <refsect1 role="errors">
   &reftitle.errors;
-  <para>
+  <simpara>
    <methodname>PDO::getAttribute</methodname> may throw a <exceptionname>PDOException</exceptionname>
    when the underlying driver does not support the requested <parameter>attribute</parameter>.
-  </para>
+  </simpara>
  </refsect1>
 
  <refsect1 role="changelog">
@@ -117,28 +132,38 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-$conn = new PDO('odbc:sample', 'db2inst1', 'ibmdb2');
-$attributes = array(
-    "AUTOCOMMIT", "ERRMODE", "CASE", "CLIENT_VERSION", "CONNECTION_STATUS",
-    "ORACLE_NULLS", "PERSISTENT", "PREFETCH", "SERVER_INFO", "SERVER_VERSION",
-    "TIMEOUT"
-);
+$pdo = new PDO('sqlite::memory:');
 
-foreach ($attributes as $val) {
-    echo "PDO::ATTR_$val: ";
-    echo $conn->getAttribute(constant("PDO::ATTR_$val")) . "\n";
+$attributes = [
+    'DRIVER_NAME', 'ERRMODE', 'CASE', 'ORACLE_NULLS', 'PERSISTENT',
+    'CLIENT_VERSION', 'SERVER_VERSION', 'AUTOCOMMIT', 'TIMEOUT',
+];
+
+foreach ($attributes as $name) {
+    try {
+        $value = $pdo->getAttribute(constant("PDO::ATTR_$name"));
+        echo "PDO::ATTR_$name: ", var_export($value, true), "\n";
+    } catch (PDOException $e) {
+        echo "PDO::ATTR_$name: ", $e->getMessage(), "\n";
+    }
 }
 ?>
 ]]>
     </programlisting>
-    <!--
-    &example.outputs;
+    &example.outputs.similar;
     <screen>
 <![CDATA[
-Use the PEAR Coding Standards
+PDO::ATTR_DRIVER_NAME: 'sqlite'
+PDO::ATTR_ERRMODE: 2
+PDO::ATTR_CASE: 0
+PDO::ATTR_ORACLE_NULLS: 0
+PDO::ATTR_PERSISTENT: false
+PDO::ATTR_CLIENT_VERSION: '3.46.1'
+PDO::ATTR_SERVER_VERSION: '3.46.1'
+PDO::ATTR_AUTOCOMMIT: SQLSTATE[IM001]: Driver does not support this function: driver does not support that attribute
+PDO::ATTR_TIMEOUT: SQLSTATE[IM001]: Driver does not support this function: driver does not support that attribute
 ]]>
     </screen>
-    -->
    </example>
   </para>
  </refsect1>
