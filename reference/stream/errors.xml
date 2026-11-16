@@ -13,6 +13,104 @@
   if a failure occurs an <constant>E_WARNING</constant> message will be generated
   describing the nature of the error.
  </para>
+
+ <section xml:id="stream.errors.handling">
+  <title>Configuring error handling</title>
+  <simpara>
+   As of PHP 8.6.0, the way stream errors are reported can be changed for
+   every operation that uses a
+   <link linkend="stream.contexts">stream context</link>, by setting the
+   <link linkend="context.stream">stream context options</link>
+   <parameter>error_mode</parameter>, <parameter>error_store</parameter>
+   and <parameter>error_handler</parameter>.
+   Each error is described by a <exceptionname>StreamError</exceptionname> object,
+   whose <link linkend="streamerror.props.code">code</link> property
+   is a <enumname>StreamErrorCode</enumname> case.
+  </simpara>
+  <simpara>
+   An error is either <emphasis>terminating</emphasis>, if it made the
+   operation fail, such as a file that cannot be opened, or
+   <emphasis>non-terminating</emphasis>, if the operation continued after
+   reporting it. A single operation may report several errors.
+  </simpara>
+  <simpara>
+   The <parameter>error_mode</parameter> option takes a
+   <enumname>StreamErrorMode</enumname> case and selects how errors are
+   reported:
+  </simpara>
+  <itemizedlist>
+   <listitem>
+    <simpara>
+     <constant>StreamErrorMode::Error</constant>, the default, emits
+     diagnostics such as <constant>E_WARNING</constant> and
+     <constant>E_NOTICE</constant>.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>StreamErrorMode::Exception</constant> throws a
+     <exceptionname>StreamException</exceptionname> if the operation
+     reported a terminating error. Non-terminating errors do not throw and
+     emit no diagnostics.
+    </simpara>
+   </listitem>
+   <listitem>
+    <simpara>
+     <constant>StreamErrorMode::Silent</constant> neither emits diagnostics
+     nor throws.
+    </simpara>
+   </listitem>
+  </itemizedlist>
+  <simpara>
+   The <parameter>error_store</parameter> option takes a
+   <enumname>StreamErrorStore</enumname> case and selects which errors
+   are kept for <function>stream_last_errors</function>. With the default,
+   <constant>StreamErrorStore::Auto</constant>, this depends on the error mode:
+  </simpara>
+  <informaltable>
+   <tgroup cols="2">
+    <thead>
+     <row>
+      <entry>Error mode</entry>
+      <entry>Errors stored with <constant>StreamErrorStore::Auto</constant></entry>
+     </row>
+    </thead>
+    <tbody>
+     <row>
+      <entry><constant>StreamErrorMode::Error</constant></entry>
+      <entry>None</entry>
+     </row>
+     <row>
+      <entry><constant>StreamErrorMode::Exception</constant></entry>
+      <entry>Non-terminating errors</entry>
+     </row>
+     <row>
+      <entry><constant>StreamErrorMode::Silent</constant></entry>
+      <entry>All errors</entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </informaltable>
+  <simpara>
+   The <parameter>error_handler</parameter> option is a
+   <type>callable</type> that receives the list of
+   <exceptionname>StreamError</exceptionname> objects of every operation that
+   reported errors, regardless of the other two options.
+  </simpara>
+  <note>
+   <simpara>
+    These options cannot be set on the default context, so that code
+    which does not pass a context keeps receiving diagnostics.
+    They must be set on a context created with
+    <function>stream_context_create</function> that is passed to the
+    function, or that the stream was opened with.
+   </simpara>
+  </note>
+  <simpara>
+   See the <link linkend="context.stream">stream context options</link>
+   for examples of each error mode and of an error handler.
+  </simpara>
+ </section>
 </chapter>
 
 <!-- Keep this comment at the end of the file
