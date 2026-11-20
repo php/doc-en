@@ -17,6 +17,35 @@
   <para>
    Outputs or saves a BMP version of the given <parameter>image</parameter>.
   </para>
+  <para>
+   The bit depth of the BMP is chosen from the <parameter>image</parameter>;
+   it cannot be specified:
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      A truecolor image is saved with 32 bits per pixel, including its alpha
+      channel, if at least one of its pixels is not fully opaque, and with 24
+      bits per pixel otherwise.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      A palette image is saved with 1 bit per pixel if its palette has at most
+      2 colors, with 4 bits per pixel if it has at most 16 colors, and with 8
+      bits per pixel otherwise. The number of colors in the palette is the
+      one returned by <function>imagecolorstotal</function>.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+  </para>
+  <note>
+   <simpara>
+    This applies to the bundled GD library as of PHP 8.6.0. Older versions of
+    the GD library, including the bundled one prior to PHP 8.6.0, save
+    truecolor images with 24 bits per pixel, without their alpha channel, and
+    palette images with 8 bits per pixel.
+   </simpara>
+  </note>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -42,6 +71,10 @@
       <para>
        Whether the BMP should be compressed with run-length encoding (RLE), or not.
       </para>
+      <simpara>
+       Only BMPs with 4 or 8 bits per pixel can be compressed; for other bit
+       depths, this parameter is ignored.
+      </simpara>
      </listitem>
     </varlistentry>
    </variablelist>
@@ -67,6 +100,16 @@
      </row>
     </thead>
     <tbody>
+     <row>
+      <entry>8.6.0</entry>
+      <entry>
+       The bundled GD library now saves truecolor images that are not fully
+       opaque with 32 bits per pixel, and palette images with 1, 4, or 8 bits
+       per pixel, depending on the number of colors in their palette.
+       Previously, truecolor images were always saved with 24 bits per pixel,
+       and palette images with 8 bits per pixel.
+      </entry>
+     </row>
      &gd.changelog.image-param;
      <row>
       <entry>8.0.0</entry>
@@ -101,6 +144,28 @@ imagebmp($im, 'php.bmp');
     </programlisting>
    </example>
   </para>
+  <example>
+   <title>Saving a 1-bit BMP</title>
+   <simpara>
+    As of PHP 8.6.0, with the bundled GD library, an image converted to a
+    palette with 2 colors is saved with 1 bit per pixel, as expected by
+    devices such as thermal printers.
+   </simpara>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$im = imagecreatetruecolor(120, 40);
+imagefill($im, 0, 0, imagecolorallocate($im, 255, 255, 255));
+imagestring($im, 5, 10, 12, 'Total: 9.99', imagecolorallocate($im, 0, 0, 0));
+
+// Reduce the image to 2 colors, using dithering
+imagetruecolortopalette($im, true, 2);
+
+imagebmp($im, 'receipt.bmp');
+?>
+]]>
+   </programlisting>
+  </example>
  </refsect1>
 </refentry>
 <!-- Keep this comment at the end of the file
