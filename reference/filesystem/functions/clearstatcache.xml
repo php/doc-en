@@ -108,33 +108,36 @@
     <programlisting role="php">
 <![CDATA[
 <?php
-$file = 'output_log.txt';
 
-function get_owner($file)
-{
-    $stat = stat($file);
-    $user = posix_getpwuid($stat['uid']);
-    return $user['name'];
-}
+$file = tempnam(sys_get_temp_dir(), 'stat-demo-');
+file_put_contents($file, 'Hello');
 
-$format = "UID @ %s: %s\n";
+echo "Run this command in another shell:\n";
+echo "\techo \" World!\" >> $file\n";
 
-printf($format, date('r'), get_owner($file));
+$before = filesize($file); // caches the metadata
 
-chown($file, 'ross');
-printf($format, date('r'), get_owner($file));
+sleep(20); // Run the echo-command in another shell
+
+$cached = filesize($file); // stale data is returned
 
 clearstatcache();
-printf($format, date('r'), get_owner($file));
-?>
+
+$fresh = filesize($file);  // returns the correct data
+
+printf("Before: %d\nCached: %d\nFresh: %d\n", $before, $cached, $fresh);
+
+unlink($file);
 ]]>
     </programlisting>
     &example.outputs.similar;
     <screen>
 <![CDATA[
-UID @ Sun, 12 Oct 2008 20:48:28 +0100: root
-UID @ Sun, 12 Oct 2008 20:48:28 +0100: root
-UID @ Sun, 12 Oct 2008 20:48:28 +0100: ross
+Run this command in another shell:
+    echo " World!" >> /tmp/stat-demo-6fjvs4vir9ll2haCl4W
+Before: 5
+Cached: 5
+Fresh: 13
 ]]>
     </screen>
    </example>

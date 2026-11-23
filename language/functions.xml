@@ -1711,6 +1711,31 @@ $privateMethod();  // Foo1::privateMethod
     </programlisting>
    </informalexample>
 
+   <para>
+    As of PHP 8.6.0, some of the arguments can be provided when creating
+    the <classname>Closure</classname>, using the <code>?</code> placeholder
+    for the others. See
+    <link linkend="functions.partial-application">partial function application</link>.
+    <example>
+     <title>Simple partial function application</title>
+     <programlisting role="php" annotations="non-interactive">
+<![CDATA[
+<?php
+class Foo {
+    public function method($first, $second) {}
+    public static function staticmethod($first, $second) {}
+}
+
+$obj = new Foo();
+
+$partial1 = $obj->method(1, ?);          // accepts $second
+$partial2 = $obj->method(?, 2);          // accepts $first
+$partial3 = Foo::staticmethod(1, ...);   // accepts all remaining arguments
+]]>
+     </programlisting>
+    </example>
+   </para>
+
    <note>
     <para>
      Object creation by this syntax (e.g <code>new Foo(...)</code>) is not supported, because <code>new Foo()</code> syntax is not considered a call.
@@ -1753,6 +1778,302 @@ $obj?->prop->method(...);
       </tbody>
      </tgroup>
     </informaltable>
+   </sect2>
+  </sect1>
+
+  <sect1 xml:id="functions.partial-application">
+   <title>Partial function application</title>
+
+   <simpara>
+    Partial function application is available as of PHP 8.6.0. A function
+    or method call that provides some of the arguments and uses
+    placeholders for the others does not perform the call. Instead, it
+    creates a <classname>Closure</classname> whose parameters are the ones
+    that were replaced by a placeholder. It extends the
+    <link linkend="functions.first_class_callable_syntax">first class callable syntax</link>,
+    which is the particular case where no argument is provided: any
+    expression that can be called may be used, and the function or method
+    to call is determined when the <classname>Closure</classname> is
+    created.
+   </simpara>
+
+   <itemizedlist>
+    <listitem>
+     <simpara>
+      <code>?</code> stands for exactly one argument. The corresponding
+      parameter of the <classname>Closure</classname> is always required,
+      even if the parameter of the original function is optional.
+     </simpara>
+    </listitem>
+    <listitem>
+     <simpara>
+      <code>...</code> stands for all the parameters that have not been
+      mentioned otherwise. These keep their default values, and a
+      variadic parameter remains variadic. It may only appear once, and
+      must be the last argument.
+     </simpara>
+    </listitem>
+   </itemizedlist>
+
+   <example>
+    <title>Partial function application</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+function volume(int $length, int $width, int $height): int
+{
+    return $length * $width * $height;
+}
+
+// "?" stands for exactly one argument
+$closure = volume(2, ?, 4);
+// equivalent to: static fn(int $width): int => volume(2, $width, 4)
+var_dump($closure(3));
+
+$closure = volume(?, 3, ?);
+// equivalent to: static fn(int $length, int $height): int => volume($length, 3, $height)
+var_dump($closure(2, 4));
+
+// "..." stands for all remaining arguments
+$closure = volume(2, ...);
+// equivalent to: static fn(int $width, int $height): int => volume(2, $width, $height)
+var_dump($closure(3, 4));
+
+// With every argument provided, "..." merely delays the call
+$closure = volume(2, 3, 4, ...);
+// equivalent to: static fn(): int => volume(2, 3, 4)
+var_dump($closure());
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+int(24)
+int(24)
+int(24)
+int(24)
+]]>
+    </screen>
+   </example>
+
+   <simpara>
+    Partial function application is a convenient way of providing the
+    single-parameter callable expected by the
+    <link linkend="language.operators.functional">pipe operator</link>.
+   </simpara>
+
+   <example>
+    <title>Partial function application with <literal>|&gt;</literal></title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+echo ' Hello  World '
+    |> trim(...)
+    |> str_replace(' ', '', ?)
+    |> strtoupper(...)
+    |> str_pad(?, 12, '*', STR_PAD_BOTH);
+?>
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+*HELLOWORLD*
+]]>
+    </screen>
+   </example>
+
+   <simpara>
+    The parameters of the <classname>Closure</classname> take their name,
+    type declaration and pass-by-reference mode from the original function,
+    as well as its return type. Partial function application can be used in
+    constant expressions, provided that the arguments are constant
+    expressions themselves.
+   </simpara>
+
+   <sect2 xml:id="functions.partial-application.named">
+    <title>Named placeholders</title>
+
+    <simpara>
+     <link linkend="functions.named-arguments">Named arguments</link> may
+     be used to provide an argument, and a placeholder may be named as
+     well, using <code>name: ?</code>. As in a regular call, they must come
+     after the positional arguments. The parameters of the
+     <classname>Closure</classname> follow the order in which the named
+     placeholders are written, which makes it possible to reorder them.
+    </simpara>
+
+    <example>
+     <title>Named placeholders</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+// The parameters of the closure are $subject, then $search
+$remove = str_replace(subject: ?, search: ?, replace: '');
+
+var_dump($remove('a-b-c', '-'));
+?>
+]]>
+     </programlisting>
+     &example.outputs;
+     <screen>
+<![CDATA[
+string(3) "abc"
+]]>
+     </screen>
+    </example>
+   </sect2>
+
+   <sect2 xml:id="functions.partial-application.evaluation">
+    <title>Evaluation of the arguments</title>
+
+    <simpara>
+     The provided arguments are evaluated once, when the
+     <classname>Closure</classname> is created, and not each time it is
+     called. This differs from an
+     <link linkend="functions.arrow">arrow function</link> wrapping the
+     same call, whose body is evaluated on every call.
+    </simpara>
+
+    <example>
+     <title>Arguments are evaluated when the <classname>Closure</classname> is created</title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+function now(): string
+{
+    echo "now() called\n";
+    return '12:00';
+}
+
+function greet(string $name, string $time): string
+{
+    return "Hello $name, it is $time\n";
+}
+
+$arrow = fn(string $name) => greet($name, now());
+echo "Arrow function created\n";
+echo $arrow('Alice');
+
+$partial = greet(?, now());
+echo "Partial application created\n";
+echo $partial('Bob');
+?>
+]]>
+     </programlisting>
+     &example.outputs;
+     <screen>
+<![CDATA[
+Arrow function created
+now() called
+Hello Alice, it is 12:00
+now() called
+Partial application created
+Hello Bob, it is 12:00
+]]>
+     </screen>
+    </example>
+   </sect2>
+
+   <sect2 xml:id="functions.partial-application.extra-arguments">
+    <title>Additional arguments</title>
+
+    <simpara>
+     If the <code>...</code> placeholder is not used, arguments passed to
+     the <classname>Closure</classname> beyond its parameters are ignored.
+     If it is used, they are forwarded to the original function. This
+     matters when the <classname>Closure</classname> is used as a callback
+     by a function passing more arguments than expected, such as the key
+     of an array element: with <code>...</code> these reach the optional
+     parameters of the original function.
+    </simpara>
+
+    <example>
+     <title>Additional arguments are only forwarded with <code>...</code></title>
+     <programlisting role="php">
+<![CDATA[
+<?php
+function greet(string $name, string $greeting = 'Hello'): string
+{
+    return "$greeting $name\n";
+}
+
+// The second argument is ignored
+$closure = greet(?);
+echo $closure('Alice', 'Goodbye');
+
+// The second argument is forwarded to greet()
+$closure = greet(?, ...);
+echo $closure('Alice', 'Goodbye');
+?>
+]]>
+     </programlisting>
+     &example.outputs;
+     <screen>
+<![CDATA[
+Hello Alice
+Goodbye Alice
+]]>
+     </screen>
+    </example>
+   </sect2>
+
+   <sect2 xml:id="functions.partial-application.errors">
+    <title>Restrictions</title>
+
+    <itemizedlist>
+     <listitem>
+      <simpara>
+       Object creation (e.g. <code>new Foo(1, ?)</code>) is not supported,
+       because <code>new Foo()</code> syntax is not considered a call.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Placeholders cannot be combined with the
+       <link linkend="language.oop5.basic.nullsafe">nullsafe operator</link>.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Placeholders cannot be combined with
+       <link linkend="functions.variable-arg-list">argument unpacking</link>.
+      </simpara>
+     </listitem>
+     <listitem>
+      <simpara>
+       Functions that inspect the calling scope, such as
+       <function>compact</function>, <function>extract</function>,
+       <function>func_get_args</function> and
+       <function>get_defined_vars</function>, cannot be used.
+       An <exceptionname>Error</exceptionname> is thrown.
+      </simpara>
+     </listitem>
+    </itemizedlist>
+
+    <example>
+     <title>Invalid usages resulting in a compile-time error</title>
+     <programlisting role="php" annotations="non-interactive">
+<![CDATA[
+<?php
+new Foo(1, ?);             // Cannot create Closure for new expression
+
+$obj?->method(1, ?);       // Cannot combine nullsafe operator with Closure creation
+
+foo(?, ...$array);         // Cannot combine partial application and unpacking
+
+foo(..., ?);               // Variadic placeholder must be last
+foo(a: 1, ?);              // Cannot use positional argument after named argument
+]]>
+     </programlisting>
+    </example>
+
+    <simpara>
+     An <exceptionname>ArgumentCountError</exceptionname> is thrown when the
+     <classname>Closure</classname> is created if the number of arguments
+     and placeholders does not match the parameters of the function.
+    </simpara>
    </sect2>
   </sect1>
 

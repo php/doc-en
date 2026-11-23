@@ -444,6 +444,12 @@ Fatal error: Maximum execution time of 30+2 seconds exceeded (terminated) in Unk
         <entry><constant>INI_SYSTEM</constant></entry>
         <entry>Available as of PHP 8.5.0</entry>
        </row>
+       <row>
+        <entry><link linkend="ini.memory-hard-limit-percent">memory_hard_limit_percent</link></entry>
+        <entry>&null;</entry>
+        <entry><constant>INI_ALL</constant></entry>
+        <entry>Available as of PHP 8.5.12, 8.4.27, 8.3.36 and 8.2.35</entry>
+       </row>
       </tbody>
      </tgroup>
     </table>
@@ -465,6 +471,15 @@ Fatal error: Maximum execution time of 30+2 seconds exceeded (terminated) in Unk
         scripts for eating up all available memory on a server. Note that
         to have no memory limit, set this directive to <literal>-1</literal>.
        </para>
+       <simpara>
+        As of PHP 8.5.12, 8.4.27, 8.3.36 and 8.2.35, this is a soft limit:
+        an allocation that crosses it is, in most cases, allowed to complete
+        before the fatal error is raised, so the memory usage of a process may
+        briefly exceed <parameter>memory_limit</parameter>. A separate hard limit,
+        controlled by
+        <link linkend="ini.memory-hard-limit-percent">memory_hard_limit_percent</link>,
+        bounds how far it may be exceeded.
+       </simpara>
 
        &ini.shorthandbytes;
 
@@ -489,6 +504,101 @@ Fatal error: Maximum execution time of 30+2 seconds exceeded (terminated) in Unk
 
        &ini.shorthandbytes;
 
+      </listitem>
+     </varlistentry>
+     <varlistentry xml:id="ini.memory-hard-limit-percent">
+      <term>
+       <parameter>memory_hard_limit_percent</parameter>
+       <type>int</type>
+      </term>
+      <listitem>
+       <simpara>
+        Available as of PHP 8.5.12, 8.4.27, 8.3.36 and 8.2.35. Sets a hard
+        memory limit, expressed as a percentage of
+        <link linkend="ini.memory-limit">memory_limit</link>.
+        For example, with <literal>memory_limit=128M</literal> and
+        <literal>memory_hard_limit_percent=150</literal>, the hard limit is
+        <literal>192M</literal>. Unlike
+        <link linkend="ini.memory-limit">memory_limit</link>, the hard limit
+        can never be exceeded.
+       </simpara>
+       <warning>
+        <simpara>
+         This directive was introduced in the security releases of
+         21 October 2026, which fix two critical vulnerabilities
+         (CVE-2026-109618, CVE-2026-109619) that can allow unauthenticated
+         remote code execution, one of them triggered through out-of-memory
+         handling. If this directive is not recognized, the PHP version in
+         use is affected by these vulnerabilities and must be updated
+         immediately. See the
+         <link xlink:href="&url.php;archive/2026.php#2026-10-21-5">security advisory</link>
+         for details.
+        </simpara>
+       </warning>
+       <simpara>
+        When an allocation exceeds <link linkend="ini.memory-limit">memory_limit</link>
+        (the soft limit), the memory is still allocated, and the usual
+        fatal error is raised once the engine reaches a safe point.
+        Shutdown functions registered with
+        <function>register_shutdown_function</function> still run.
+       </simpara>
+       <simpara>
+        When an allocation would exceed the hard limit, the process is
+        terminated immediately with exit status <literal>137</literal>.
+        A message is written directly to the standard error stream, looking
+        something like this:
+       </simpara>
+       <screen>
+<![CDATA[
+Hard memory limit of 201326592 bytes exhausted
+]]>
+       </screen>
+       <simpara>
+        The message does not go through the error handling mechanism, so it
+        is not passed to error handlers or written to the
+        <link linkend="ini.error-log">error_log</link>. No further PHP code
+        runs: shutdown functions, destructors and output buffer handlers are
+        all skipped.
+       </simpara>
+       <simpara>
+        The value must be <literal>100</literal> or greater, or
+        <literal>-1</literal>.
+       </simpara>
+       <simpara>
+        When unset (the default) or set to <literal>-1</literal>, the hard
+        limit is twice <link linkend="ini.memory-limit">memory_limit</link>
+        if <link linkend="ini.memory-limit">memory_limit</link> is
+        <literal>1G</literal> or less, and
+        <link linkend="ini.memory-limit">memory_limit</link> plus
+        <literal>1G</literal> otherwise. For example, with the default
+        <literal>memory_limit=128M</literal>, the hard limit is
+        <literal>256M</literal>, and with <literal>memory_limit=4G</literal>
+        it is <literal>5G</literal>. If
+        <link linkend="ini.memory-limit">memory_limit</link> is set to
+        <literal>-1</literal>, there is no hard limit either.
+       </simpara>
+       <caution>
+        <simpara>
+         A value of <literal>100</literal> makes the hard limit equal to
+         <link linkend="ini.memory-limit">memory_limit</link>, which turns
+         most out-of-memory conditions into an immediate termination of the
+         process instead of a fatal error. Shutdown-time work such as
+         logging, releasing locks or finishing a response will then never
+         run on out-of-memory.
+        </simpara>
+       </caution>
+       <note>
+        <simpara>
+         Because the process exits without producing output, in
+         multi-request environments such as PHP-FPM the worker serving the
+         request is terminated and the client receives no response from
+         PHP; the process manager starts a replacement worker. Exit status
+         <literal>137</literal> is also the status reported for a process
+         killed by <literal>SIGKILL</literal>, for example by the kernel
+         OOM killer or a container runtime, so check the standard error
+         stream to tell the cases apart.
+        </simpara>
+       </note>
       </listitem>
      </varlistentry>
     </variablelist>

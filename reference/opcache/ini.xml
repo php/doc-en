@@ -227,6 +227,12 @@
       <entry>Windows only.</entry>
      </row>
      <row>
+      <entry><link linkend="ini.opcache.file-cache-read-only">opcache.file_cache_read_only</link></entry>
+      <entry>0</entry>
+      <entry><constant>INI_SYSTEM</constant></entry>
+      <entry>Available as of PHP 8.5.0.</entry>
+     </row>
+     <row>
       <entry><link linkend="ini.opcache.validate-permission">opcache.validate_permission</link></entry>
       <entry>0</entry>
       <entry><constant>INI_SYSTEM</constant></entry>
@@ -417,6 +423,11 @@
      silently falls back to regular pages when the operating system has not
      set aside enough of them.
     </simpara>
+    <simpara>
+     As of PHP 8.5.0, changing this directive once OPcache is set up fails and
+     logs a warning, for example when using <literal>php_admin_value</literal>
+     in a FPM pool configuration. Previously, the change was silently ignored.
+    </simpara>
    </listitem>
   </varlistentry>
   <varlistentry xml:id="ini.opcache.interned-strings-buffer">
@@ -476,10 +487,26 @@
    </term>
    <listitem>
     <simpara>
-     If enabled, OPcache appends the current working directory to the script
-     key, thereby eliminating possible collisions between files with the same
-     base name. Disabling this directive improves performance, but may break
-     existing applications.
+     If enabled, OPcache appends the current working directory, the
+     <link linkend="ini.include-path">include_path</link> and the directory of
+     the including script to the key of a script that is included with a
+     relative path, thereby eliminating possible collisions between different
+     files included with the same relative path. Disabling this directive
+     improves performance, but may break existing applications.
+    </simpara>
+    <simpara>
+     If disabled, the relative path is used as the key on its own. For
+     instance, if <filename>foo/x.php</filename> and
+     <filename>bar/y.php</filename> both contain
+     <code>include 'config.php';</code>, the second inclusion runs the cached
+     <filename>foo/config.php</filename> instead of
+     <filename>bar/config.php</filename>.
+    </simpara>
+    <simpara>
+     This directive has no effect on scripts included with an absolute path or
+     through a stream wrapper, nor when
+     <link linkend="ini.opcache.revalidate-path">opcache.revalidate_path</link>
+     is enabled.
     </simpara>
    </listitem>
   </varlistentry>
@@ -532,10 +559,20 @@
    </term>
    <listitem>
     <simpara>
-     If disabled, existing cached files using the same
-     <link linkend="ini.include-path">include_path</link> will be reused.
-     Thus, if a file with the same name is elsewhere in the include_path, it
-     won't be found.
+     If disabled, OPcache first looks for a cached script using the path passed
+     to <function>include</function> or <function>require</function> as the
+     key (see <link linkend="ini.opcache.use-cwd">opcache.use_cwd</link>), and
+     uses that script without resolving the path again. Thus, if the path now
+     resolves to another file, the previously cached script is still used.
+     For instance, a file with the same name that is added earlier in the
+     <link linkend="ini.include-path">include_path</link> won't be found, and
+     a symbolic link in the path that is changed to point to another directory
+     is not followed.
+    </simpara>
+    <simpara>
+     If enabled, the path is always resolved to the real path of the file,
+     which is then used to look for the cached script. This is slower, but
+     always uses the file that the path currently resolves to.
     </simpara>
    </listitem>
   </varlistentry>
@@ -956,9 +993,36 @@ function getA() { return A; }
    </term>
    <listitem>
     <simpara>
-     Allows calling OPcache API functions only from PHP scripts which path
-     is started from specified string. The default <literal>""</literal>
+     Allows calling OPcache API functions only from PHP scripts whose path
+     starts with the specified string. The default <literal>""</literal>
      means no restriction.
+     When the restriction applies, <function>opcache_get_status</function>,
+     <function>opcache_get_configuration</function>,
+     <function>opcache_reset</function>, <function>opcache_invalidate</function>,
+     <function>opcache_is_script_cached</function> and
+     <function>opcache_is_script_cached_in_file_cache</function> (as of PHP 8.5.0)
+     raise an <constant>E_WARNING</constant> and return &false;.
+    </simpara>
+    <simpara>
+     The path that is checked is the one of the main script, that is the
+     script requested from the web server or passed to the CLI, as reported by
+     the SAPI. The path of the file the function is called from does not
+     matter: files included by an allowed script may call the API, whereas
+     files in the allowed directory may not if they are included by a script
+     outside of it. The CLI SAPI resolves symbolic links in the path of the
+     script before it is checked.
+    </simpara>
+    <simpara>
+     The comparison is a plain, case-sensitive prefix match, without any
+     normalization of the paths. As a consequence, a value of
+     <literal>/var/www/admin</literal> also allows scripts in
+     <literal>/var/www/administrator</literal>; end the value with a directory
+     separator to match only that directory and its subdirectories. The value
+     must also use the same directory separators as the path reported by the SAPI: with the
+     apache2handler SAPI on Windows, that path uses forward slashes (for instance
+     <literal>C:/www/admin/status.php</literal>), so
+     <literal>C:/www/admin</literal> has to be used instead of
+     <literal>C:\www\admin</literal>.
     </simpara>
    </listitem>
   </varlistentry>
@@ -1076,6 +1140,32 @@ function getA() { return A; }
       and is therefore discouraged.
      </simpara>
     </caution>
+   </listitem>
+  </varlistentry>
+  <varlistentry xml:id="ini.opcache.file-cache-read-only">
+   <term>
+    <parameter>opcache.file_cache_read_only</parameter>
+    <type>bool</type>
+   </term>
+   <listitem>
+    <simpara>
+     When enabled, allows using a read-only
+     <link linkend="ini.opcache.file-cache">opcache.file_cache</link> directory.
+     This is intended for use with read-only file systems such as read-only Docker
+     containers. Best used in combination with
+     <literal>opcache.validate_timestamps=0</literal>,
+     <literal>opcache.enable_file_override=1</literal>, and
+     <literal>opcache.file_cache_consistency_checks=0</literal>.
+    </simpara>
+    <note>
+     <simpara>
+      A cache generated with a different build of PHP, a different file path,
+      or different settings (including which extensions are loaded) may be ignored.
+     </simpara>
+    </note>
+    <simpara>
+     Available as of PHP 8.5.0.
+    </simpara>
    </listitem>
   </varlistentry>
   <varlistentry xml:id="ini.opcache.validate-permission">

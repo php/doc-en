@@ -3,7 +3,7 @@
 <refentry xml:id="multipleiterator.current" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
  <refnamediv>
   <refname>MultipleIterator::current</refname>
-  <refpurpose>Gets the registered iterator instances</refpurpose>
+  <refpurpose>Gets the current elements of the attached iterators</refpurpose>
  </refnamediv>
 
  <refsect1 role="description">
@@ -12,12 +12,17 @@
    <modifier>public</modifier> <type>array</type><methodname>MultipleIterator::current</methodname>
    <void/>
   </methodsynopsis>
-  <para>
-   Get the registered iterator instances current() result.
-  </para>
-
-  &warn.undocumented.func;
-
+  <simpara>
+   Gets the current elements of all attached iterators, by calling
+   <methodname>Iterator::current</methodname> on each valid one.
+  </simpara>
+  <simpara>
+   With <constant>MultipleIterator::MIT_KEYS_NUMERIC</constant>, the elements
+   are listed in the order in which the iterators were attached. With
+   <constant>MultipleIterator::MIT_KEYS_ASSOC</constant>, they are keyed by
+   the information associated with each iterator by
+   <methodname>MultipleIterator::attachIterator</methodname>.
+  </simpara>
  </refsect1>
 
  <refsect1 role="parameters">
@@ -27,21 +32,26 @@
 
  <refsect1 role="returnvalues">
   &reftitle.returnvalues;
-  <para>
-   An <type>array</type> containing the current values of each attached iterator.
-  </para>
+  <simpara>
+   An <type>array</type> containing the current elements of each attached
+   iterator. With <constant>MultipleIterator::MIT_NEED_ANY</constant>, &null;
+   is used for the iterators that are not valid.
+  </simpara>
  </refsect1>
 
  <refsect1 role="errors">
   &reftitle.errors;
-  <para>
-   A <classname>RuntimeException</classname> if the iterator is invalid (as of PHP 8.1.0),
-   or mode <constant>MIT_NEED_ALL</constant> is set and at least one attached iterator is
-   not valid. Or an <classname>IllegalValueException</classname> if a key is &null; and
-   <constant>MIT_KEYS_ASSOC</constant> is set.
-  </para>
+  <simpara>
+   Throws a <exceptionname>RuntimeException</exceptionname> if no iterator is
+   attached, or if <constant>MultipleIterator::MIT_NEED_ALL</constant> is set
+   and at least one attached iterator is not valid.
+  </simpara>
+  <simpara>
+   Throws an <exceptionname>InvalidArgumentException</exceptionname> if
+   <constant>MultipleIterator::MIT_KEYS_ASSOC</constant> is set and an
+   iterator was attached without associated information.
+  </simpara>
  </refsect1>
-
 
  <refsect1 role="changelog">
   &reftitle.changelog;
@@ -57,9 +67,9 @@
      <row>
       <entry>8.1.0</entry>
       <entry>
-       A <classname>RuntimeException</classname> is now thrown if
-       <methodname>MultipleIterator::current</methodname> is called on an
-       invalid iterator.  Previously, &false; was returned.
+       A <exceptionname>RuntimeException</exceptionname> is now thrown if
+       <methodname>MultipleIterator::current</methodname> is called when no
+       iterator is attached. Previously, &false; was returned.
       </entry>
      </row>
     </tbody>
@@ -67,13 +77,51 @@
   </informaltable>
  </refsect1>
 
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example>
+   <title><methodname>MultipleIterator::current</methodname> example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$iterator = new MultipleIterator(MultipleIterator::MIT_NEED_ANY | MultipleIterator::MIT_KEYS_ASSOC);
+$iterator->attachIterator(new ArrayIterator(['a' => 'apple', 'b' => 'banana']), 'fruit');
+$iterator->attachIterator(new ArrayIterator(['x' => 'red']), 'color');
+
+$iterator->rewind();
+while ($iterator->valid()) {
+    var_dump($iterator->current());
+    $iterator->next();
+}
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+array(2) {
+  ["fruit"]=>
+  string(5) "apple"
+  ["color"]=>
+  string(3) "red"
+}
+array(2) {
+  ["fruit"]=>
+  string(6) "banana"
+  ["color"]=>
+  NULL
+}
+]]>
+   </screen>
+  </example>
+ </refsect1>
+
  <refsect1 role="seealso">
   &reftitle.seealso;
-  <para>
-   <simplelist>
-    <member><methodname>MultipleIterator::valid</methodname></member>
-   </simplelist>
-  </para>
+  <simplelist>
+   <member><methodname>MultipleIterator::key</methodname></member>
+   <member><methodname>MultipleIterator::valid</methodname></member>
+  </simplelist>
  </refsect1>
 
 </refentry>

@@ -410,6 +410,153 @@ class Person {
    Only working with elements of the array requires special care.
   </simpara>
  </sect2>
+ <sect2 xml:id="language.oop5.property-hooks.isset-unset">
+  <title><function>isset</function>, <function>empty</function> and <function>unset</function></title>
+  <simpara>
+   When <function>isset</function> or <function>empty</function> is used on a
+   property that has a <literal>get</literal> hook, the hook is called and
+   the value it returns is checked instead of the backing value of the property.
+   <function>isset</function> returns &true; if that value is not &null;,
+   and <function>empty</function> returns &true; if that value is equal to &false;.
+   This is intentional: a <literal>get</literal> hook may compute or initialize
+   the value when it is read, so code outside the hooks of the property cannot
+   observe the backing value directly.
+  </simpara>
+  <simpara>
+   As a consequence, if the <literal>get</literal> hook reads a backing value
+   that has not been initialized, using <function>isset</function> or
+   <function>empty</function> on the property throws an <exceptionname>Error</exceptionname>,
+   just like reading the property does.
+   The same applies to the
+   <link linkend="language.operators.comparison.coalesce">null coalescing operator</link>.
+  </simpara>
+  <example>
+   <title><function>isset</function> on a property with a <literal>get</literal> hook</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class Article
+{
+    public ?string $title = null {
+        get => $this->title ?? 'Untitled';
+    }
+
+    public string $author {
+        get => ucfirst($this->author);
+        set => $this->author = $value;
+    }
+}
+
+$article = new Article();
+
+// The backing value is null, but the get hook returns 'Untitled'.
+var_dump(isset($article->title));
+
+// The get hook reads an uninitialized backing value.
+try {
+    var_dump(isset($article->author));
+} catch (Error $e) {
+    echo $e->getMessage(), "\n";
+}
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+bool(true)
+Typed property Article::$author must not be accessed before initialization
+]]>
+   </screen>
+  </example>
+  <simpara>
+   If a backed property has no <literal>get</literal> hook,
+   <function>isset</function> and <function>empty</function> check the backing
+   value directly, as they do for a property without hooks.
+   On a virtual property that has no <literal>get</literal> hook,
+   they throw an <exceptionname>Error</exceptionname>, because the property cannot be read.
+  </simpara>
+  <simpara>
+   Inside the hooks of a property, <code>$this->propName</code> refers to the
+   backing value of that property, so <code>isset($this->propName)</code> checks
+   the backing value directly.
+   A <literal>get</literal> hook can use this to handle an uninitialized backing value.
+   Often, it is simpler to give the property a default value, such as &null;.
+  </simpara>
+  <example>
+   <title>Handling an uninitialized backing value</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class Article
+{
+    // Initializing the backing value avoids the error.
+    public ?string $subtitle = null {
+        get => $this->subtitle !== null ? ucfirst($this->subtitle) : null;
+    }
+
+    // The get hook checks its own backing value.
+    public string $author {
+        get => isset($this->author) ? ucfirst($this->author) : 'Anonymous';
+        set => $this->author = $value;
+    }
+}
+
+$article = new Article();
+
+var_dump(isset($article->subtitle));
+var_dump(isset($article->author));
+var_dump($article->author);
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+bool(false)
+bool(true)
+string(9) "Anonymous"
+]]>
+   </screen>
+  </example>
+  <simpara>
+   A property that has hooks cannot be unset.
+   Using <function>unset</function> on it throws an <exceptionname>Error</exceptionname>,
+   whether the property is backed or virtual, and even when
+   <function>unset</function> is called from inside the class or one of its hooks.
+  </simpara>
+  <example>
+   <title><function>unset</function> on a property with hooks</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+class Rectangle
+{
+    public int $area {
+        get => $this->h * $this->w;
+    }
+
+    public function __construct(public int $h, public int $w) {}
+}
+
+$r = new Rectangle(4, 5);
+
+try {
+    unset($r->area);
+} catch (Error $e) {
+    echo $e->getMessage(), "\n";
+}
+?>
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+Cannot unset hooked property Rectangle::$area
+]]>
+   </screen>
+  </example>
+ </sect2>
  <sect2>
   <title>Inheritance</title>
   <sect3>

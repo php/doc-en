@@ -61,6 +61,14 @@
        Locale to use when formatting or parsing or &null; to use the value
        specified in the ini setting <link linkend="ini.intl.default-locale">intl.default_locale</link>.
       </para>
+      <simpara>
+       Both <literal>en_US</literal> and <literal>en-US</literal> are accepted.
+       The locale may carry ICU keywords, such as
+       <literal>fa_IR@calendar=persian</literal>, but the
+       <literal>calendar</literal> keyword only changes the calendar used when
+       <parameter>calendar</parameter> is
+       <constant>IntlDateFormatter::TRADITIONAL</constant>.
+      </simpara>
      </listitem>
     </varlistentry>
     <varlistentry>
@@ -117,15 +125,34 @@
        if &null; is given for the <parameter>timezone</parameter> parameter,
        also the timezone used.
       </para>
+      <simpara>
+       <constant>IntlDateFormatter::GREGORIAN</constant> always uses the
+       Gregorian calendar, even if the locale has a <literal>calendar</literal>
+       keyword. <constant>IntlDateFormatter::TRADITIONAL</constant> uses the
+       default calendar of the locale: the one given by its
+       <literal>calendar</literal> keyword if there is one, otherwise the one
+       ICU defines for the region of the locale (for example persian for
+       <literal>fa_IR</literal> and buddhist for <literal>th_TH</literal>, but
+       gregorian for <literal>en_US</literal>). The latter depends on the ICU
+       version. The calendar types available for a locale are listed by
+       <methodname>IntlCalendar::getKeywordValuesForLocale</methodname>.
+      </simpara>
      </listitem>
     </varlistentry>
     <varlistentry>
      <term><parameter>pattern</parameter></term>
      <listitem>
-      <para>
-       Optional pattern to use when formatting or parsing.
+      <simpara>
+       Optional pattern to use when formatting or parsing. If given, it is used
+       instead of the format determined by <parameter>dateType</parameter> and
+       <parameter>timeType</parameter>.
        Possible patterns are documented at <link xlink:href="&url.icu.datepattern;">&url.icu.datepattern;</link>.
-      </para>
+      </simpara>
+      <simpara>
+       A pattern holds no time zone: the time it shows, and the name shown by
+       the <literal>z</literal> letters, are those of the
+       <parameter>timezone</parameter> parameter.
+      </simpara>
      </listitem>
     </varlistentry>
    </variablelist>
@@ -260,6 +287,45 @@ First Formatted output with pattern is 12/31/1969
 Second Formatted output with pattern is 12/31/1969
          ]]>
   </screen>
+  <example>
+   <title>Calendar of the locale and time zone with a pattern</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+$timestamp = 1700000000;
+
+foreach ([IntlDateFormatter::GREGORIAN, IntlDateFormatter::TRADITIONAL] as $calendar) {
+    $formatter = new IntlDateFormatter(
+        'en_US@calendar=persian',
+        IntlDateFormatter::FULL,
+        IntlDateFormatter::FULL,
+        'UTC',
+        $calendar,
+        'yyyy-MM-dd'
+    );
+    echo $formatter->format($timestamp), "\n";
+}
+
+$formatter = new IntlDateFormatter(
+    'en_US',
+    IntlDateFormatter::FULL,
+    IntlDateFormatter::FULL,
+    'Asia/Singapore',
+    null,
+    'yyyy-MM-dd HH:mm zzzz'
+);
+echo $formatter->format(gmmktime(21, 0, 0, 6, 1, 2024)), "\n";
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+2023-11-14
+1402-08-23
+2024-06-02 05:00 Singapore Standard Time
+]]>
+   </screen>
+  </example>
  </refsect1>
 
  <refsect1 role="seealso">
