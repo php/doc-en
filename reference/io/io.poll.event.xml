@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<reference xml:id="enum.io-poll-event" role="enum" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>The Io\Poll\Event enum</title>
+ <titleabbrev>Io\Poll\Event</titleabbrev>
+
+ <partintro>
+  <section xml:id="enum.io-poll-event.intro">
+   &reftitle.intro;
+   <simpara>
+    The <enumname>Io\Poll\Event</enumname> enum lists the conditions an
+    <classname>Io\Poll\Context</classname> can watch for and report, together
+    with two modifiers that change how they are reported.
+   </simpara>
+   <simpara>
+    A list of cases is passed to
+    <methodname>Io\Poll\Context::add</methodname>,
+    <methodname>Io\Poll\Watcher::modify</methodname> and
+    <methodname>Io\Poll\Watcher::modifyEvents</methodname>, and returned by
+    <methodname>Io\Poll\Watcher::getWatchedEvents</methodname> and
+    <methodname>Io\Poll\Watcher::getTriggeredEvents</methodname>.
+   </simpara>
+  </section>
+
+  <section xml:id="enum.io-poll-event.synopsis">
+   &reftitle.enumsynopsis;
+
+   <packagesynopsis>
+    <package>Io\Poll</package>
+
+    <enumsynopsis>
+     <enumname>Event</enumname>
+
+     <enumitem>
+      <enumidentifier>Read</enumidentifier>
+      <enumitemdescription>
+       Data is available for reading.
+       For a listening socket, a connection is ready to be accepted.
+      </enumitemdescription>
+     </enumitem>
+
+     <enumitem>
+      <enumidentifier>Write</enumidentifier>
+      <enumitemdescription>
+       Data can be written without blocking.
+      </enumitemdescription>
+     </enumitem>
+
+     <enumitem>
+      <enumidentifier>Error</enumidentifier>
+      <enumitemdescription>
+       An error occurred on the handle.
+       This event is reported even if it was not requested.
+      </enumitemdescription>
+     </enumitem>
+
+     <enumitem>
+      <enumidentifier>HangUp</enumidentifier>
+      <enumitemdescription>
+       The other end closed the connection.
+       This event is reported even if it was not requested.
+      </enumitemdescription>
+     </enumitem>
+
+     <enumitem>
+      <enumidentifier>ReadHangUp</enumidentifier>
+      <enumitemdescription>
+       The other end closed the connection or shut down its writing half.
+       This event is only reported if it was requested, and only by the
+       backends that can detect it:
+       <constant>Io\Poll\Backend::Epoll</constant> reports it,
+       <constant>Io\Poll\Backend::Poll</constant> does not.
+      </enumitemdescription>
+     </enumitem>
+
+     <enumitem>
+      <enumidentifier>OneShot</enumidentifier>
+      <enumitemdescription>
+       A modifier: the watcher is reported once, and then stays silent until
+       its events are set again with
+       <methodname>Io\Poll\Watcher::modify</methodname> or
+       <methodname>Io\Poll\Watcher::modifyEvents</methodname>.
+      </enumitemdescription>
+     </enumitem>
+
+     <enumitem>
+      <enumidentifier>EdgeTriggered</enumidentifier>
+      <enumitemdescription>
+       A modifier: the watcher is reported when its state changes, for example
+       when new data arrives, instead of for as long as the condition holds.
+       It is only supported by the backends for which
+       <methodname>Io\Poll\Backend::supportsEdgeTriggering</methodname>
+       returns &true;.
+      </enumitemdescription>
+     </enumitem>
+    </enumsynopsis>
+   </packagesynopsis>
+  </section>
+
+  <section xml:id="enum.io-poll-event.examples">
+   &reftitle.examples;
+   <example xml:id="enum.io-poll-event.examples.edge-triggered">
+    <title>Level-triggered and edge-triggered reporting</title>
+    <programlisting role="php">
+<![CDATA[
+<?php
+use Io\Poll\Context;
+use Io\Poll\Event;
+use Time\Duration;
+
+[$reader, $writer] = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+
+$context = new Context();
+$context->add(new StreamPollHandle($reader), [Event::Read, Event::EdgeTriggered]);
+
+fwrite($writer, 'ping');
+var_dump(count($context->wait(Duration::fromMilliseconds(10))));
+
+// The data was not read, but the readiness is not reported a second time.
+var_dump(count($context->wait(Duration::fromMilliseconds(10))));
+
+fwrite($writer, 'pong');
+var_dump(count($context->wait(Duration::fromMilliseconds(10))));
+]]>
+    </programlisting>
+    &example.outputs;
+    <screen>
+<![CDATA[
+int(1)
+int(0)
+int(1)
+]]>
+    </screen>
+   </example>
+  </section>
+
+  <section role="seealso">
+   &reftitle.seealso;
+   <simplelist>
+    <member><methodname>Io\Poll\Context::add</methodname></member>
+    <member><methodname>Io\Poll\Watcher::hasTriggered</methodname></member>
+    <member><enumname>Io\Poll\Backend</enumname></member>
+   </simplelist>
+  </section>
+ </partintro>
+
+</reference>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

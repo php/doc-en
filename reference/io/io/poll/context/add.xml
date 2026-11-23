@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry xml:id="io-poll-context.add" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <refnamediv>
+  <refname>Io\Poll\Context::add</refname>
+  <refpurpose>Starts watching a handle</refpurpose>
+ </refnamediv>
+
+ <refsect1 role="description">
+  &reftitle.description;
+  <methodsynopsis role="Io\\Poll\\Context">
+   <modifier>public</modifier> <type>Io\Poll\Watcher</type><methodname>Io\Poll\Context::add</methodname>
+   <methodparam><type>Io\Poll\Handle</type><parameter>handle</parameter></methodparam>
+   <methodparam><type>array</type><parameter>events</parameter></methodparam>
+   <methodparam choice="opt"><type>mixed</type><parameter>data</parameter><initializer>&null;</initializer></methodparam>
+  </methodsynopsis>
+  <simpara>
+   Registers <parameter>handle</parameter> with the context, so that
+   <methodname>Io\Poll\Context::wait</methodname> reports it when one of the
+   given <parameter>events</parameter> occurs.
+  </simpara>
+  <simpara>
+   A handle can be watched only once by a context.
+   Two <classname>StreamPollHandle</classname> objects created from the same
+   stream count as the same handle.
+  </simpara>
+  <simpara>
+   The context keeps the returned <classname>Io\Poll\Watcher</classname> alive
+   until it is removed with <methodname>Io\Poll\Watcher::remove</methodname>,
+   its stream is closed, or the context is destroyed.
+  </simpara>
+ </refsect1>
+
+ <refsect1 role="parameters">
+  &reftitle.parameters;
+  <variablelist>
+   <varlistentry>
+    <term><parameter>handle</parameter></term>
+    <listitem>
+     <simpara>
+      The handle to watch.
+     </simpara>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>events</parameter></term>
+    <listitem>
+     <simpara>
+      A non-empty list of <enumname>Io\Poll\Event</enumname> cases.
+      It combines the conditions to watch for, such as
+      <constant>Io\Poll\Event::Read</constant> and
+      <constant>Io\Poll\Event::Write</constant>, with the
+      <constant>Io\Poll\Event::OneShot</constant> and
+      <constant>Io\Poll\Event::EdgeTriggered</constant> modifiers.
+     </simpara>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term><parameter>data</parameter></term>
+    <listitem>
+     <simpara>
+      An arbitrary value to associate with the watcher, for example a callback
+      or an object describing the connection.
+      It is returned by <methodname>Io\Poll\Watcher::getData</methodname>.
+     </simpara>
+    </listitem>
+   </varlistentry>
+  </variablelist>
+ </refsect1>
+
+ <refsect1 role="returnvalues">
+  &reftitle.returnvalues;
+  <simpara>
+   Returns the <classname>Io\Poll\Watcher</classname> that represents the
+   registration.
+  </simpara>
+ </refsect1>
+
+ <refsect1 role="errors">
+  &reftitle.errors;
+  <simpara>
+   Throws a <exceptionname>TypeError</exceptionname> if
+   <parameter>events</parameter> is empty or contains a value that is not an
+   <enumname>Io\Poll\Event</enumname> case.
+  </simpara>
+  <simpara>
+   Throws an <exceptionname>Io\Poll\InvalidHandleException</exceptionname> if
+   <parameter>handle</parameter> cannot be polled, for example because its
+   stream was closed or is not backed by a file descriptor.
+  </simpara>
+  <simpara>
+   Throws an
+   <exceptionname>Io\Poll\HandleAlreadyWatchedException</exceptionname> if
+   <parameter>handle</parameter> is already watched by this context.
+  </simpara>
+  <simpara>
+   Throws an <exceptionname>Io\Poll\FailedHandleAddException</exceptionname>
+   if the backend rejects the registration, for example when
+   <constant>Io\Poll\Event::EdgeTriggered</constant> is requested from a
+   backend that does not support it.
+  </simpara>
+ </refsect1>
+
+ <refsect1 role="examples">
+  &reftitle.examples;
+  <example xml:id="io-poll-context.add.example.basic">
+   <title><methodname>Io\Poll\Context::add</methodname> example</title>
+   <programlisting role="php">
+<![CDATA[
+<?php
+use Io\Poll\Context;
+use Io\Poll\Event;
+use Io\Poll\HandleAlreadyWatchedException;
+
+[$reader, $writer] = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+
+$context = new Context();
+$handle = new StreamPollHandle($reader);
+
+$watcher = $context->add($handle, [Event::Read], ['name' => 'reader']);
+var_dump($watcher->isActive());
+var_dump($watcher->getData());
+
+try {
+    $context->add($handle, [Event::Write]);
+} catch (HandleAlreadyWatchedException $exception) {
+    echo $exception->getMessage(), PHP_EOL;
+}
+]]>
+   </programlisting>
+   &example.outputs;
+   <screen>
+<![CDATA[
+bool(true)
+array(1) {
+  ["name"]=>
+  string(6) "reader"
+}
+Handle already added
+]]>
+   </screen>
+  </example>
+ </refsect1>
+
+ <refsect1 role="seealso">
+  &reftitle.seealso;
+  <simplelist>
+   <member><methodname>Io\Poll\Context::wait</methodname></member>
+   <member><methodname>Io\Poll\Watcher::modify</methodname></member>
+   <member><methodname>Io\Poll\Watcher::remove</methodname></member>
+   <member><classname>StreamPollHandle</classname></member>
+  </simplelist>
+ </refsect1>
+
+</refentry>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
