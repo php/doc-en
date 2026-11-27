@@ -33,9 +33,6 @@ for directory in (
 ):
     LABELS[directory] = "Extension: standard"
 
-# Pages mixing the engine and several extensions get no label.
-UNLABELED = {"classobj", "errorfunc", "funchand"}
-
 # https://www.php.net/manual/en/function.strlen.php, https://php.net/function.strlen
 URL = re.compile(
     r"php\.net/(?:manual/[a-z_]+/)?([a-z0-9_.-]+?)(?:\.php)?(?=[\s#?)\]>\"'`]|$)",
@@ -66,7 +63,6 @@ for page_id in URL.findall(body):
 labels = sorted({
     LABELS.get(directory, f"Extension: {directory}")
     for directory in directories
-    if directory not in UNLABELED
 })
 
 print("labels<<EOF")
