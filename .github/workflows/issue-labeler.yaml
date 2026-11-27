@@ -11,10 +11,6 @@ on:
 permissions:
   contents: "read"
 
-concurrency:
-  group: "${{ github.workflow }}-${{ github.event.issue.number }}"
-  cancel-in-progress: true
-
 jobs:
   label:
     name: "Label issue"
@@ -27,31 +23,42 @@ jobs:
       - name: "Checkout php/doc-en"
         uses: "actions/checkout@v7.0.1"
         with:
-          sparse-checkout: |
-            .github
-            reference
+          sparse-checkout: "reference"
 
-      - name: "Find the extension labels"
-        id: "labels"
+      - name: "Add the extension labels of the linked pages"
         env:
           BODY: "${{ github.event.issue.body }}"
-        run: python3 .github/scripts/issue-labeler.py >> "$GITHUB_OUTPUT"
-
-      - name: "Add the labels"
-        if: "steps.labels.outputs.labels != ''"
-        env:
           GH_TOKEN: "${{ github.token }}"
           ISSUE: "${{ github.event.issue.number }}"
-          LABELS: "${{ steps.labels.outputs.labels }}"
         run: |
-          set -euo pipefail
+          # Folders of reference/ named by a php.net URL or a file path.
+          folders="$(
+            grep -oiE 'php\.net/(manual/[a-z_]+/)?[a-z0-9_.-]+[a-z0-9]' <<< "$BODY" \
+              | sed -E 's#.*/##; s#\.php$##' \
+              | while read -r id; do grep -rliF --include='*.xml' "xml:id=\"$id\"" reference | head -n 1; done
+            grep -oE 'reference/[a-z0-9_]+/' <<< "$BODY"
+          )"
 
-          # Only add labels that already exist, never create new ones.
-          existing="$(gh label list --repo "$GITHUB_REPOSITORY" --limit 500 --json name --jq '.[].name')"
-          while IFS= read -r label; do
-            if printf '%s\n' "$existing" | grep -qxF "$label"; then
-              gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" --add-label "$label"
-            else
-              echo "Label \"$label\" does not exist, skipped."
+          existing="$(gh label list --limit 500 --json name --jq '.[].name')"
+
+          for folder in $(cut -d/ -f2 <<< "$folders" | sort -u); do
+            case "$folder" in
+              array|dir|exec|filesystem|info|mail|math|misc|network|outcontrol|password|stream|strings|url|var) label="standard" ;;
+              pdo_*) label="pdo" ;;
+              bc) label="bcmath" ;;
+              bzip2) label="bz2" ;;
+              com) label="com_dotnet" ;;
+              datetime) label="date" ;;
+              image) label="gd" ;;
+              sem) label="System V" ;;
+              simplexml) label="SimpleXml" ;;
+              xmlreader) label="xml-reader" ;;
+              xmlwriter) label="xml-writer" ;;
+              *) label="$folder" ;;
+            esac
+
+            # Only existing labels are added, none is created.
+            if grep -qxF "Extension: $label" <<< "$existing"; then
+              gh issue edit "$ISSUE" --add-label "Extension: $label"
             fi
-          done <<< "$LABELS"
+          done
