@@ -1,0 +1,57 @@
+# https://docs.github.com/en/actions
+
+name: "Issue Labeler"
+
+on:
+  issues:
+    types:
+      - "opened"
+      - "edited"
+
+permissions:
+  contents: "read"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.issue.number }}"
+  cancel-in-progress: true
+
+jobs:
+  label:
+    name: "Label issue"
+    runs-on: "ubuntu-latest"
+
+    permissions:
+      issues: "write"
+
+    steps:
+      - name: "Checkout php/doc-en"
+        uses: "actions/checkout@v7.0.1"
+        with:
+          sparse-checkout: |
+            .github
+            reference
+
+      - name: "Find the extension labels"
+        id: "labels"
+        env:
+          BODY: "${{ github.event.issue.body }}"
+        run: python3 .github/scripts/issue-labeler.py >> "$GITHUB_OUTPUT"
+
+      - name: "Add the labels"
+        if: "steps.labels.outputs.labels != ''"
+        env:
+          GH_TOKEN: "${{ github.token }}"
+          ISSUE: "${{ github.event.issue.number }}"
+          LABELS: "${{ steps.labels.outputs.labels }}"
+        run: |
+          set -euo pipefail
+
+          # Only add labels that already exist, never create new ones.
+          existing="$(gh label list --repo "$GITHUB_REPOSITORY" --limit 500 --json name --jq '.[].name')"
+          while IFS= read -r label; do
+            if printf '%s\n' "$existing" | grep -qxF "$label"; then
+              gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" --add-label "$label"
+            else
+              echo "Label \"$label\" does not exist, skipped."
+            fi
+          done <<< "$LABELS"
