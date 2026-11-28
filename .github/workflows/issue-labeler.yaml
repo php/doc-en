@@ -1,0 +1,64 @@
+# https://docs.github.com/en/actions
+
+name: "Issue Labeler"
+
+on:
+  issues:
+    types:
+      - "opened"
+      - "edited"
+
+permissions:
+  contents: "read"
+
+jobs:
+  label:
+    name: "Label issue"
+    runs-on: "ubuntu-latest"
+
+    permissions:
+      issues: "write"
+
+    steps:
+      - name: "Checkout php/doc-en"
+        uses: "actions/checkout@v7.0.1"
+        with:
+          sparse-checkout: "reference"
+
+      - name: "Add the extension labels of the linked pages"
+        env:
+          BODY: "${{ github.event.issue.body }}"
+          GH_TOKEN: "${{ github.token }}"
+          ISSUE: "${{ github.event.issue.number }}"
+        run: |
+          # Folders of reference/ named by a php.net URL or a file path.
+          folders="$(
+            grep -oiE 'php\.net/(manual/[a-z_]+/)?[a-z0-9_.-]+[a-z0-9]' <<< "$BODY" \
+              | sed -E 's#.*/##; s#\.php$##' \
+              | while read -r id; do grep -rliF --include='*.xml' "xml:id=\"$id\"" reference | head -n 1; done
+            grep -oE 'reference/[a-z0-9_]+/' <<< "$BODY" || true
+          )"
+
+          existing="$(gh label list --limit 500 --json name --jq '.[].name')"
+
+          for folder in $(cut -d/ -f2 <<< "$folders" | sort -u); do
+            case "$folder" in
+              array|dir|exec|filesystem|info|mail|math|misc|network|outcontrol|password|stream|strings|url|var) label="standard" ;;
+              pdo_*) label="pdo" ;;
+              bc) label="bcmath" ;;
+              bzip2) label="bz2" ;;
+              com) label="com_dotnet" ;;
+              datetime) label="date" ;;
+              image) label="gd" ;;
+              sem) label="System V" ;;
+              simplexml) label="SimpleXml" ;;
+              xmlreader) label="xml-reader" ;;
+              xmlwriter) label="xml-writer" ;;
+              *) label="$folder" ;;
+            esac
+
+            # Only existing labels are added, none is created.
+            if grep -qxF "Extension: $label" <<< "$existing"; then
+              gh issue edit "$ISSUE" --add-label "Extension: $label"
+            fi
+          done
